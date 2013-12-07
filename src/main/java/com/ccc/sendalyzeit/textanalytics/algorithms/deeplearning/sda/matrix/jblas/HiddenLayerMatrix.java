@@ -1,66 +1,80 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas;
 
 import java.io.Serializable;
-import java.util.Random;
 
+import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
+
+/**
+ * Vectorized Hidden Layer
+ * @author Adam Gibson
+ *
+ */
 public class HiddenLayerMatrix implements Serializable {
 
 	private static final long serialVersionUID = 915783367350830495L;
 	public int N;
+	//number of in neurons
 	public int n_in;
+	//number of out neurons
 	public int n_out;
+	//weight vector
 	public DoubleMatrix W;
+	//bias
 	public DoubleMatrix b;
-	public Random rng;
+	public JDKRandomGenerator rng;
+	//input for this layer: note
+	//that this input is typically cached whenever
+	//any input is processed by this layer
 	public DoubleMatrix input;
-	private static Logger log = LoggerFactory.getLogger(HiddenLayerMatrix.class);
-	public double uniform(double min, double max) {
-		return rng.nextDouble() * (max - min) + min;
-	}
-
-	public int binomial(int n, double p) {
-		if(p < 0 || p > 1) return 0;
-
-		int c = 0;
-		double r;
-
-		for(int i = 0; i < n; i++) {
-			r = rng.nextDouble();
-			if (r < p) 
-				c++;
-		}
-
-		return c;
-	}
-
-	public static double sigmoid(double x) {
-		return 1f / (1f + Math.pow(Math.E, -x));
-	}
-
-	public static DoubleMatrix sigmoid(DoubleMatrix x) {
-		DoubleMatrix matrix = new DoubleMatrix(x.rows,x.columns);
-		for(int i = 0; i < matrix.length; i++)
-			matrix.put(i, 1f / (1f + Math.pow(Math.E, -x.get(i))));
-
-		return matrix;
-	}
 
 
-	public HiddenLayerMatrix(int N, int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, Random rng) {
+
+
+
+	/**
+	 * 
+	 * @param N number of examples
+	 * @param n_in number of input neurons
+	 * @param n_out number of output neurons
+	 * @param W the number of weights (maybe null) a uniform distributed
+	 * weight vector with the following formula:
+	 * a = 1 / n_in 
+	 * the uniform distribution is sampled from -a to a
+	 * @param b the bias (maybe null)
+	 * 
+	 * @param rng the rng to use (maybe null) default: seed with 1234
+	 * @param input
+	 */
+	public HiddenLayerMatrix(int N, int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, JDKRandomGenerator rng,DoubleMatrix input) {
 		this.N = N;
 		this.n_in = n_in;
 		this.n_out = n_out;
+		this.input = input;
+		if(rng == null) {
+			this.rng = new JDKRandomGenerator();
+			this.rng.setSeed(1234);
+		}
+		else 
+			this.rng = rng;
 
-		if(rng == null)
-			this.rng = new Random(1234);
-		else this.rng = rng;
+		if(W == null) {
+			//scaled down weights
+			//a value between zero and 1
+			//causes strange values to be output
+			//also closer to more standard practices
+			double a = 1.0 / (double) n_in;
+			UniformRealDistribution u = new UniformRealDistribution(-a,a);
 
-		if(W == null) 
-			this.W = DoubleMatrix.randn(n_out,n_in);
+			this.W = DoubleMatrix.zeros(n_in,n_out);
+
+			for(int i = 0; i < this.W.rows; i++) 
+				for(int j = 0; j < this.W.columns; j++) 
+					this.W.put(i,j,u.sample());
+		}
 
 		else 
 			this.W = W;
@@ -73,72 +87,34 @@ public class HiddenLayerMatrix implements Serializable {
 	}
 
 	public DoubleMatrix outputMatrix() {
-		return sigmoid(b.add(W.dot(input)));
+		DoubleMatrix mult = this.input.mmul(W);
+		mult = mult.addRowVector(b);
+		return MatrixUtil.sigmoid(mult);
 	}
 
 	public DoubleMatrix outputMatrix(DoubleMatrix input) {
 		this.input = input;
-		DoubleMatrix ret = new DoubleMatrix(W.rows);
-		for(int i = 0; i < W.rows; i++)
-			ret.put(i,output(input,W.getRow(i),b.get(i)));
-		return ret;
+		return outputMatrix();
 	}
 
-	public double output(DoubleMatrix input, DoubleMatrix w, double b) {
-		if(input.length != n_in)
-			throw new IllegalArgumentException("Input length must be equal to the number of specified inputs" + n_in);
-		if(w.length != n_in)
-			throw new IllegalArgumentException("Input length must be equal to the number of specified inputs" + n_in);
-		
-		
-		return sigmoid(w.dot(input) + b);
-	}
-
-	public DoubleMatrix outputMatrix(DoubleMatrix input,int i) {
-		this.input = input.isColumnVector() ? input : input.transpose();
-		DoubleMatrix ret = new DoubleMatrix(1,input.length);
-		for(int j = 0 ; j < ret.length; j++) {
-			double score = sigmoid(output(input,W.getRow(i),b.get(i)));
-			ret.put(j,score);
-		}
-
-		return ret;
-	}
-
-	public double output() {
-		return sigmoid(b.add(W.dot(input)).sum());
-	}
-
-	public double output(DoubleMatrix input) {
-		this.input = input;
-		return sigmoid(b.add(W.dot(input)).sum());
-	}
-
-	public double output(DoubleMatrix input,int i) {
-		this.input = input;
-		return sigmoid(b.get(i) + (W.getRow(i).dot(input)));
-	}
-
-	public DoubleMatrix sample_h_given_v(DoubleMatrix input,int length) {
-		this.input = input;
-		DoubleMatrix ret = DoubleMatrix.zeros(length);
-		for(int i = 0; i < ret.length; i++)
-			ret.put(i,binomial(1,output(input, W.getRow(i), b.get(i))));
-		return ret;
-	}
 	
+	/**
+	 * Binomial sampling of the input
+	 * The algorithm is a binomial sampling along the 1st axis (also
+	 * known as a column wise mean with the 0 based 1st column being the output)
+	 * @param input the input matrix
+	 * @return the sampled vector
+	 */
 	public DoubleMatrix sample_h_given_v(DoubleMatrix input) {
-		this.input = input;
-		DoubleMatrix ret = DoubleMatrix.zeros(b.length);
-		for(int i = 0; i < ret.length; i++)
-			ret.put(i,binomial(1,output(input, W.getRow(i), b.get(i))));
+		DoubleMatrix ret = MatrixUtil.binomial(outputMatrix(), 1, rng);
 		return ret;
 	}
-	
+	/**
+	 * Sample based on earlier specified input
+	 * @return
+	 */
 	public DoubleMatrix sample_h_given_v() {
-		DoubleMatrix ret = DoubleMatrix.zeros(input.length);
-		for(int i = 0; i < ret.length; i++)
-			ret.put(i,binomial(1,output(input, W.getRow(i), b.get(i))));
+		DoubleMatrix ret = MatrixUtil.binomial(outputMatrix(), 1, rng);
 		return ret;
 	}
 }

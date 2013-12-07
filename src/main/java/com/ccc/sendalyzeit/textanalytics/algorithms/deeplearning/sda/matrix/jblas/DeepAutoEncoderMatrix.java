@@ -6,9 +6,7 @@ import java.util.Random;
 import org.jblas.DoubleMatrix;
 
 public class DeepAutoEncoderMatrix implements Serializable  {
-	/**
-	 * 
-	 */
+	
 	private static final long serialVersionUID = -6445530486350763837L;
 	public int N;
 	public int n_visible;

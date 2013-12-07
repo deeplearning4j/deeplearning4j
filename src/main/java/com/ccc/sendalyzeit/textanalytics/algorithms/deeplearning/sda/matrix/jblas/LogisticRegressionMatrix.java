@@ -6,11 +6,15 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
+/**
+ * Logistic regression implementation with jblas.
+ * @author Adam Gibson
+ *
+ */
 public class LogisticRegressionMatrix implements Serializable {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = -7065564817460914364L;
 	public int N;
 	public int n_in;
@@ -23,48 +27,46 @@ public class LogisticRegressionMatrix implements Serializable {
 		this.N = N;
 		this.n_in = n_in;
 		this.n_out = n_out;
-		W = DoubleMatrix.zeros(n_out,n_in);
+		W = DoubleMatrix.zeros(n_in,n_out);
 		b = DoubleMatrix.zeros(n_out);
 	}
 
 	public void train(DoubleMatrix x,DoubleMatrix y, final double lr) {
-		if(!x.isColumnVector()) {
-			log.warn("X " + x.toString() +  " is not a column vector; transforming");
-			if(x.isRowVector())
-				x = x.transpose();
-			else
-				throw new IllegalStateException("Unable to transform in to a column vector");
-		}
+		DoubleMatrix mul = x.mmul(W);
 
-		DoubleMatrix p_y_given_x = softmax(W.mmul(x).add(b));
-		final DoubleMatrix dy = y.sub(p_y_given_x);
-
-		for(int i = 0; i < n_out; i++) {
-			for(int j = 0; j < n_in; j++) 
-				W.put(i,j,W.get(i,j) + lr * dy.get(i) * x.get(j) / N);
-			b.put(i,b.get(i) + lr * dy.get(i) / N);
-		}
-
-
-	}
-
-	public DoubleMatrix softmax(DoubleMatrix x) {
-		final double max = x.max();
-		for(int i = 0; i < x.length; i++)
-			x.put(i,Math.exp(x.get(i) - max));
-		double sum = x.sum();
-		for(int i = 0; i < x.length; i++)
-			x.put(i,x.get(i) / sum);
+		DoubleMatrix p_y_given_x = softmax(mul.addRowVector(b));
+		DoubleMatrix dy = y.sub(p_y_given_x);
+		//self.W += lr * numpy.dot(self.x.T, d_y) - lr * L2_reg * self.W
+		// self.b += lr * numpy.mean(d_y, axis=0)
+		DoubleMatrix mult2 = x.transpose().mmul(dy);
+		//TECHNICALLY THE CALCULATION COULD INCLUDE L2REG WHICH IS THE FOLLOWING: 
+		//lr * numpy.dot(self.x.T, d_y) - lr * L2_reg * self.W
+		//lr * x.T * d_y is all that is needed; if L2_Reg is zero
+		//it will zero out the rest of that quantity
+		W = W.add(mult2);
+		b = b.add(MatrixUtil.columnWiseMean(p_y_given_x, 0).mul(lr));
 		
-		return x;
 	}
 
-	public DoubleMatrix predict(DoubleMatrix x) {
-		DoubleMatrix ret = new DoubleMatrix(1,n_out);
-		for(int i = 0; i < n_out; i++) {
-			ret.put(i,W.getRow(i).dot(x) + b.get(i));
-		}
-		log.info("Matrix before softmax " + ret);
-		return softmax(ret);
-	}		
+
+
+
+public DoubleMatrix softmax(DoubleMatrix x) {
+	final double max = x.max();
+	for(int i = 0; i < x.length; i++)
+		x.put(i,Math.exp(x.get(i) - max));
+	double sum = x.sum();
+	for(int i = 0; i < x.length; i++)
+		x.put(i,x.get(i) / sum);
+
+	return x;
+}
+
+public DoubleMatrix predict(DoubleMatrix x) {
+	DoubleMatrix ret = new DoubleMatrix(1,n_out);
+	for(int i = 0; i < n_out; i++) 
+		ret.put(i,W.getRow(i).dot(x) + b.get(i));
+
+	return softmax(ret);
+}		
 }
