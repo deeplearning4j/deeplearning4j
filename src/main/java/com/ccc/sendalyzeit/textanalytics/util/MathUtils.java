@@ -2,20 +2,14 @@ package com.ccc.sendalyzeit.textanalytics.util;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.random.JDKRandomGenerator;
-import org.apache.commons.math3.random.RandomAdaptor;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 
@@ -42,9 +36,19 @@ public class MathUtils  {
 	 * @return
 	 */
 	public static int binomial(RandomGenerator rng,int n, double p) {
+	if(p < 0 || p > 1)
+		return 0;
 		
-		BinomialDistribution dist = new BinomialDistribution(rng,n, p);
-		return dist.sample();
+		int c = 0;
+		double r;
+		
+		for(int i=0; i < n; i++) {
+			r = rng.nextDouble();
+			if (r < p) 
+				c++;
+		}
+		
+		return c;
 	}
 	
 	/**
