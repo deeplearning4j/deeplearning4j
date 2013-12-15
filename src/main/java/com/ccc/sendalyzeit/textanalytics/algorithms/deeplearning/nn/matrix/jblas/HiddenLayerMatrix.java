@@ -42,7 +42,7 @@ public class HiddenLayerMatrix implements Serializable {
 		if(W == null) {
 			double a = 1.0 / (double) n_in;
 
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a,UniformRealDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
 			this.W = DoubleMatrix.zeros(n_in,n_out);
 

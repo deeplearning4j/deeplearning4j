@@ -36,11 +36,20 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 	}
 
 
+	public SdAMatrix(int nIns, int[] hiddenLayerSizes, int nOuts,
+			int n_layers, RandomGenerator rng) {
+		super(nIns, hiddenLayerSizes, nOuts, n_layers, rng);
+	}
+
+
 	public void pretrain( double lr,  double corruptionLevel,  int epochs) {
 		pretrain(this.input,lr,corruptionLevel,epochs);
 	}
 
 	public void pretrain( DoubleMatrix input,double lr,  double corruption_level,  int epochs) {
+		if(this.input == null)
+			initializeLayers(input);
+		
 		DoubleMatrix layerInput = null;
 
 		for(int i = 0; i < nLayers; i++) {  // layer-wise                        

@@ -34,14 +34,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 
 	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng,DoubleMatrix input,DoubleMatrix labels) {
-		int input_size;
 		this.nIns = n_ins;
 		this.hiddenLayerSizes = hidden_layer_sizes;
 		this.input = input;
 		this.labels = labels;
 
 		if(hidden_layer_sizes.length != n_layers)
-			throw new IllegalArgumentException("Te number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + n_layers);
+			throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + n_layers);
 
 		this.nOuts = n_outs;
 		this.nLayers = n_layers;
@@ -54,8 +53,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 
 		else 
-			this.rng = rng;                
+			this.rng = rng;  
+
+
+		if(input != null) {
+          initializeLayers(input);
+		}
+
+	}
+
+
+	protected void initializeLayers(DoubleMatrix input) {
 		DoubleMatrix layer_input = input;
+		int input_size;
+
 		// construct multi-layer
 		for(int i = 0; i < this.nLayers; i++) {
 			if(i == 0) 
@@ -81,6 +92,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 		// layer for output using LogisticRegressionMatrix
 		this.logLayer = new LogisticRegressionMatrix(layer_input, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
+
 	}
 
 
@@ -155,6 +167,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 		public Builder<E> hiddenLayerSizes(int[] hiddenLayerSizes) {
 			this.hiddenLayerSizes = hiddenLayerSizes;
+			this.nLayers = hiddenLayerSizes.length;
 			return this;
 		}
 
