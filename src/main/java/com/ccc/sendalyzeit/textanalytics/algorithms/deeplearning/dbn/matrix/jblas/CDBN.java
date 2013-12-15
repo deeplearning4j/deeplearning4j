@@ -3,6 +3,7 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jbl
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.CRBM;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
@@ -36,7 +37,12 @@ public class CDBN extends DBN {
 	public NeuralNetwork[] createNetworkLayers(int numLayers) {
 		return new RBM[numLayers];
 	}
-
-
+	
+	public static class Builder extends BaseMultiLayerNetwork.Builder<CDBN> {
+		public Builder() {
+			this.clazz = CDBN.class;
+		}
+	}
+	
 
 }

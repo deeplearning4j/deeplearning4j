@@ -1,9 +1,7 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda;
 
 import java.io.IOException;
-import java.util.Random;
 
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.jblas.DoubleMatrix;
 import org.junit.Before;

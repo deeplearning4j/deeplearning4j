@@ -7,6 +7,8 @@ import org.jblas.MatrixFunctions;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
+
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 
@@ -19,6 +21,12 @@ public class RBM extends BaseNeuralNetwork {
 	
 
 	
+	public RBM(int n_visible, int n_hidden, DoubleMatrix W, DoubleMatrix hbias,
+			DoubleMatrix vbias, RandomGenerator rng) {
+		super(n_visible, n_hidden, W, hbias, vbias, rng);
+	}
+
+
 	public RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
 			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng);
@@ -135,5 +143,12 @@ public class RBM extends BaseNeuralNetwork {
 
 	}
 
+	
+	public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
+		public Builder() {
+			this.clazz =  RBM.class;
+		}
+ 		
+	}
 
 }

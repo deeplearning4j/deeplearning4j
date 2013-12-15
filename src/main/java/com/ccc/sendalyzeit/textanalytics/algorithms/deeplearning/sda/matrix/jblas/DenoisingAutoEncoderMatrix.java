@@ -85,4 +85,13 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 		DoubleMatrix y = get_hidden_values(x);
 		return get_reconstructed_input(y);
 	}	
+	
+	
+	
+	public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoderMatrix> {
+		public Builder()  {
+			this.clazz = DenoisingAutoEncoderMatrix.class;
+		}
+	}
+	
 }

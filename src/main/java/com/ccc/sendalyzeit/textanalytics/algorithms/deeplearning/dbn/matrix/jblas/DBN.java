@@ -9,12 +9,13 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
-
+/**
+ * Deep Belief Network
+ * @author Adam Gibson
+ *
+ */
 public class DBN extends BaseMultiLayerNetwork {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -9068772752220902983L;
 	private static Logger log = LoggerFactory.getLogger(DBN.class);
 
@@ -29,13 +30,13 @@ public class DBN extends BaseMultiLayerNetwork {
 	
 	public void pretrain(int k,double learningRate,int epochs) {
 		DoubleMatrix layerInput = null;
-		for(int i = 0; i < n_layers; i++) {
+		for(int i = 0; i < nLayers; i++) {
 			if(i == 0)
 				layerInput = this.input;
 			else 
-				layerInput = sigmoid_layers[i-1].sample_h_given_v(layerInput);
+				layerInput = sigmoidLayers[i-1].sample_h_given_v(layerInput);
 			RBM r = (RBM) this.layers[i];
-			HiddenLayerMatrix h = this.sigmoid_layers[i];
+			HiddenLayerMatrix h = this.sigmoidLayers[i];
 
 			for(int  epoch = 0; epoch < epochs; epoch++) {
 				r.contrastiveDivergence(learningRate, k, layerInput);
@@ -59,7 +60,12 @@ public class DBN extends BaseMultiLayerNetwork {
 		return new RBM[numLayers];
 	}
 	
-	
+
+	public static class Builder extends BaseMultiLayerNetwork.Builder<DBN> {
+		public Builder() {
+			this.clazz = DBN.class;
+		}
+	}
 	
 
 }

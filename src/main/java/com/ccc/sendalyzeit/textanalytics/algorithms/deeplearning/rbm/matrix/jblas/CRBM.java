@@ -6,6 +6,7 @@ import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 
@@ -21,6 +22,15 @@ public class CRBM extends RBM {
 		super(input, nVisible, nHidden, W, hBias, vBias, rng);
 	}
 	
+	
+	
+	public CRBM(int n_visible, int n_hidden, DoubleMatrix W,
+			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
+		super(n_visible, n_hidden, W, hbias, vbias, rng);
+	}
+
+
+
 	public DoubleMatrix propDown(DoubleMatrix h) {
 		DoubleMatrix preAct = h.mmul(W.transpose());
 	    preAct = preAct.addRowVector(vBias);
@@ -38,7 +48,7 @@ public class CRBM extends RBM {
 		
 		DoubleMatrix v1Mean = MatrixUtil.oneDiv(diff);
 		
-		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1,UniformRealDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1);
 		DoubleMatrix U = new DoubleMatrix(v1Mean.rows,v1Mean.columns);
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++) 
@@ -54,6 +64,13 @@ public class CRBM extends RBM {
 			
 		
 	    
+	}
+	
+	
+	public static class Builder extends BaseNeuralNetwork.Builder<CRBM> {
+		public Builder() {
+			this.clazz = CRBM.class;
+		}
 	}
 	
 

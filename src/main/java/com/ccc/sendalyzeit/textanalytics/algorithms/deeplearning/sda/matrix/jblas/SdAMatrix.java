@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
-import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 
 /**
@@ -33,24 +32,28 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 	public SdAMatrix(int n_ins, int[] hidden_layer_sizes, int n_outs,
 			int n_layers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
 		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
-		
+
 	}
 
 
-	public void pretrain( double lr,  double corruption_level,  int epochs) {
-		DoubleMatrix layer_input = null;
+	public void pretrain( double lr,  double corruptionLevel,  int epochs) {
+		pretrain(this.input,lr,corruptionLevel,epochs);
+	}
 
-		for(int i = 0; i < n_layers; i++) {  // layer-wise                        
+	public void pretrain( DoubleMatrix input,double lr,  double corruption_level,  int epochs) {
+		DoubleMatrix layerInput = null;
+
+		for(int i = 0; i < nLayers; i++) {  // layer-wise                        
 			//input layer
 			if(i == 0)
-				layer_input = input;
+				layerInput = input;
 			else
-				layer_input = this.sigmoid_layers[i - 1].sample_h_given_v(layer_input);
+				layerInput = this.sigmoidLayers[i - 1].sample_h_given_v(layerInput);
 
 			DenoisingAutoEncoderMatrix da = (DenoisingAutoEncoderMatrix) this.layers[i];
-			HiddenLayerMatrix h = this.sigmoid_layers[i];
+			HiddenLayerMatrix h = this.sigmoidLayers[i];
 			for(int epoch = 0; epoch < epochs; epoch++)  {
-				da.train(layer_input, lr, corruption_level);
+				da.train(layerInput, lr, corruption_level);
 				if(h.W != (da.W))
 					h.W = da.W;
 				if(h.b != da.hBias)
@@ -63,7 +66,6 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 
 
 	}
-
 
 
 	public void load(InputStream is) {
@@ -83,13 +85,13 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 
 	public void update(SdAMatrix matrix) {
 		this.layers = matrix.layers;
-		this.hidden_layer_sizes = matrix.hidden_layer_sizes;
-		this.log_layer = matrix.log_layer;
-		this.n_ins = matrix.n_ins;
-		this.n_layers = matrix.n_layers;
-		this.n_outs = matrix.n_outs;
+		this.hiddenLayerSizes = matrix.hiddenLayerSizes;
+		this.logLayer = matrix.logLayer;
+		this.nIns = matrix.nIns;
+		this.nLayers = matrix.nLayers;
+		this.nOuts = matrix.nOuts;
 		this.rng = matrix.rng;
-		this.sigmoid_layers = matrix.sigmoid_layers;
+		this.sigmoidLayers = matrix.sigmoidLayers;
 
 	}
 
@@ -108,6 +110,11 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 	}
 
 
+	public static class Builder extends BaseMultiLayerNetwork.Builder<SdAMatrix> {
+		public Builder() {
+			this.clazz = SdAMatrix.class;
+		}
+	}
 
 
 
