@@ -1,4 +1,6 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda;
+import static org.junit.Assert.*;
+
 
 import java.io.IOException;
 
@@ -98,14 +100,17 @@ public class SdaTest {
 
 
 	@Test
-	@Ignore
 	public void testOutput() {
 		SdAMatrix sda = sdamatrix();
 		sda.pretrain( pretrain_lr, corruption_level, pretraining_epochs);
 		// finetune
 		sda.finetune(finetune_lr, finetune_epochs);
 		log.info("OUTPUT TEST");
-		log.info(sda.predict(test_X_matrix).toString());
+		DoubleMatrix predicted = sda.predict(train_X_matrix);
+		for(int i = 0; i < predicted.rows; i++) {
+			assertEquals(SimpleBlas.iamax(predicted.getRow(i)),SimpleBlas.iamax(train_Y_matrix));
+		}
+	
 
 	}
 
@@ -117,44 +122,6 @@ public class SdaTest {
 	}
 
 	
-
-
-
-	@Test
-	public void testIris() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> pair = IrisUtils.loadIris(1000);
-		DoubleMatrix input = pair.getFirst();
-		DoubleMatrix y = pair.getSecond();
-	
-		int[] hidden_layer_sizes_arr = {300, 300};
-
-		
-
-		SdAMatrix sdaMatrix = new SdAMatrix(input.columns,hidden_layer_sizes_arr,y.columns,n_layers,rng,input,train_Y_matrix);
-		sdaMatrix.pretrain( pretrain_lr, 0.5, 1000);
-		sdaMatrix.finetune(finetune_lr, 1000);
-
-		DoubleMatrix output = sdaMatrix.predict(input);
-		int numCorrect = 0;
-		Counter<Integer> yIndices = new Counter<Integer>();
-		Counter<Integer> guessIndices = new Counter<Integer>();
-		for(int i = 0; i < y.rows; i++) {
-			int yMax = SimpleBlas.iamax(y.getRow(i));
-			int outputMax = SimpleBlas.iamax(output.getRow(i));
-			yIndices.incrementCount(yMax,1.0);
-			guessIndices.incrementCount(outputMax,1.0);
-			if(yMax == outputMax) {
-				numCorrect++;
-			}
-		}
-		log.info("Y " + yIndices.toString());
-		log.info("Guesses " + guessIndices.toString());
-		log.info("Correct was " + numCorrect);
-		
-		//log.info("Prediction was " + sdaMatrix.predict(input).toString().replace(";","\n")  + " \n Y was " + y.toString().replace(";","\n"));
-
-	}
-
 
 
 

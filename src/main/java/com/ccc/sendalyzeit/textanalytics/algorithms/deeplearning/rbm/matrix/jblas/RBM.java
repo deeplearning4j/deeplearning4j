@@ -4,11 +4,11 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jbl
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
-
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 
@@ -18,9 +18,9 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  *
  */
 public class RBM extends BaseNeuralNetwork {
-	
 
-	
+	private static Logger log = LoggerFactory.getLogger(RBM.class);
+
 	public RBM(int n_visible, int n_hidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vbias, RandomGenerator rng) {
 		super(n_visible, n_hidden, W, hbias, vbias, rng);
@@ -55,14 +55,16 @@ public class RBM extends BaseNeuralNetwork {
 			nvMeans = matrices.getFirst().getFirst();
 			nvSamples = matrices.getFirst().getSecond();
 			nhMeans = matrices.getSecond().getFirst();
+			if(MatrixUtil.isNaN(nhMeans))
+				throw new IllegalStateException("No");
 			nhSamples = matrices.getSecond().getSecond();
 		}
-		
+
 		DoubleMatrix inputTimesPhSample =  this.input.transpose().mmul(ph.getSecond());
 		DoubleMatrix nvSamplesTTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
 		DoubleMatrix diff = inputTimesPhSample.sub(nvSamplesTTimesNhMeans);
 		DoubleMatrix wAdd = diff.mul(learningRate);
-		
+
 		W = W.add(wAdd);
 
 
@@ -71,6 +73,8 @@ public class RBM extends BaseNeuralNetwork {
 
 
 		DoubleMatrix hBiasAdd = MatrixUtil.mean(ph.getSecond().sub(nhMeans), 0).mul(learningRate);
+
+
 		hBiasAdd = hBiasAdd.mul(learningRate);
 
 		hBias = hBias.add(hBiasAdd);
@@ -143,12 +147,13 @@ public class RBM extends BaseNeuralNetwork {
 
 	}
 
-	
+
 	public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
 		public Builder() {
 			this.clazz =  RBM.class;
 		}
- 		
+
 	}
+
 
 }

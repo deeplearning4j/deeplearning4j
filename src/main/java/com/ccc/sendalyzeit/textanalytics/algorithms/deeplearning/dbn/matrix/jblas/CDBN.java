@@ -23,6 +23,11 @@ public class CDBN extends DBN {
 		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
 	}
 
+	public CDBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
+			RandomGenerator rng) {
+		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng);
+	}
+
 	@Override
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
