@@ -1,6 +1,5 @@
 package com.ccc.sendalyzeit.textanalytics.util;
 
-import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -14,7 +13,29 @@ public class MatrixUtil {
 				throw new IllegalArgumentException("Found something that is not an integer at linear index " + i);
 		}
 	}
-	
+
+
+	public static DoubleMatrix toOutcomeVector(int index,int numOutcomes) {
+		int[] nums = new int[numOutcomes];
+		nums[index] = 1;
+		return toMatrix(nums);
+	}
+
+	public static DoubleMatrix toMatrix(int[][] arr) {
+		DoubleMatrix d = new DoubleMatrix(arr.length,arr[0].length);
+		for(int i = 0; i < arr.length; i++)
+			for(int j = 0; j < arr[i].length; j++)
+				d.put(i,j,arr[i][j]);
+		return d;
+	}
+
+	public static DoubleMatrix toMatrix(int[] arr) {
+		DoubleMatrix d = new DoubleMatrix(arr.length);
+		for(int i = 0; i < arr.length; i++)
+			d.put(i,arr[i]);
+		return d;
+	}
+
 	public static DoubleMatrix add(DoubleMatrix a,DoubleMatrix b) {
 		return a.addi(b);
 	}
@@ -69,8 +90,8 @@ public class MatrixUtil {
 			ret.put(i,input.getRow(i).sum());
 		return ret;
 	}
-	
-	
+
+
 
 	/**
 	 * Generate a binomial distribution based on the given rng,
@@ -147,7 +168,7 @@ public class MatrixUtil {
 	public static DoubleMatrix oneMinus(DoubleMatrix ep) {
 		return DoubleMatrix.ones(ep.rows, ep.columns).sub(ep);
 	}
-	
+
 	public static DoubleMatrix oneDiv(DoubleMatrix ep) {
 		for(int i = 0; i < ep.rows; i++) {
 			for(int j = 0; j < ep.columns; j++) {
