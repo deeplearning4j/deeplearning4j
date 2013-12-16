@@ -33,38 +33,16 @@ public abstract class DeepLearningTest {
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> getMnistExample(int example) throws IOException {
 		File ensureExists = new File("/tmp/MNIST");
-		if(ensureExists.exists()) {
-			MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
-			man.setCurrent(example);
-			int[][] image = man.readImage();
-			int[] imageExample = new int[image.length * image[0].length];
-			int linearCount = 0;
-			for(int i = 0; i < image.length; i++)
-				for(int j = 0; j < image[i].length; j++) {
-					imageExample[linearCount++] = image[i][j];
-				}
+		if(!ensureExists.exists())
+			new MnistFetcher().downloadAndUntar();
 
-			return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(imageExample),MatrixUtil.toOutcomeVector(man.readLabel(),10));
-		}
-		else {
-			MnistFetcher fetcher = new MnistFetcher();
-			fetcher.downloadAndUntar();
-			MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
-			man.setCurrent(example);
-			int[][] image = man.readImage();
-			int[] imageExample = new int[image.length * image[0].length];
-			int linearCount = 0;
-			for(int i = 0; i < image.length; i++)
-				for(int j = 0; j < image[i].length; j++) {
-					imageExample[linearCount++] = image[i][j];
-				}
-
-			return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(imageExample),MatrixUtil.toOutcomeVector(man.readLabel(),10));
-
-		}
-
-
+		MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
+		man.setCurrent(example);
+		int[] imageExample = ArrayUtil.flatten(man.readImage());
+		return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(imageExample).transpose(),MatrixUtil.toOutcomeVector(man.readLabel(),10));
 	}
+
+
 
 
 	/**
@@ -82,21 +60,22 @@ public abstract class DeepLearningTest {
 		if(!ensureExists.exists()) 
 			new MnistFetcher().downloadAndUntar();
 		MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
-		
+
 		int[][] image = man.readImage();
 		int[] imageExample = ArrayUtil.flatten(image);
 		int[][] examples = new int[batchSize][imageExample.length];
 		int[][] outcomeMatrix = new int[batchSize][10];
-		for(int i = 1; i < batchSize; i++) {
+		for(int i = 1; i < batchSize + 1; i++) {
+			//1 based indices
 			man.setCurrent(i);
 			int[] currExample = ArrayUtil.flatten(man.readImage());
-			examples[i] = currExample;
-			outcomeMatrix[i] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
+			examples[i - 1] = currExample;
+			outcomeMatrix[i - 1] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
 		}
 
 
 
-		return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(imageExample),MatrixUtil.toMatrix(outcomeMatrix));
+		return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(examples),MatrixUtil.toMatrix(outcomeMatrix));
 
 	}
 

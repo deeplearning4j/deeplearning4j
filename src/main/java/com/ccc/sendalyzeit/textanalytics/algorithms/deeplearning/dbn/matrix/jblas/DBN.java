@@ -9,6 +9,7 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 /**
  * Deep Belief Network
  * @author Adam Gibson
@@ -28,7 +29,17 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 	
-	public void pretrain(int k,double learningRate,int epochs) {
+	public DBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
+			RandomGenerator rng) {
+		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng);
+	}
+	
+	
+	public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
+		if(this.input == null) {
+			this.input = input;
+			initializeLayers(input);
+		}
 		DoubleMatrix layerInput = null;
 		for(int i = 0; i < nLayers; i++) {
 			if(i == 0)
@@ -42,9 +53,14 @@ public class DBN extends BaseMultiLayerNetwork {
 				r.contrastiveDivergence(learningRate, k, layerInput);
 				h.W = r.W;
 				h.b = r.hBias;
+			
 			}
 				
 		}
+	}
+
+	public void pretrain(int k,double learningRate,int epochs) {
+	       pretrain(this.input,k,learningRate,epochs);
 	}
 	
 	

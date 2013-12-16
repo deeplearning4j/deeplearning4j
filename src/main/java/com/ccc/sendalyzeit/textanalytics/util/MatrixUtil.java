@@ -14,7 +14,24 @@ public class MatrixUtil {
 		}
 	}
 
-
+	public static boolean isInfinite(DoubleMatrix test) {
+		DoubleMatrix nan = test.isInfinite();
+		for(int i = 0; i < nan.length; i++) {
+			if(nan.get(i) > 0)
+				return true;
+		}
+		return false;
+	}
+	
+	public static boolean isNaN(DoubleMatrix test) {
+		DoubleMatrix nan = test.isNaN();
+		for(int i = 0; i < nan.length; i++) {
+			if(nan.get(i) > 0)
+				return true;
+		}
+		return false;
+	}
+	
 	public static DoubleMatrix toOutcomeVector(int index,int numOutcomes) {
 		int[] nums = new int[numOutcomes];
 		nums[index] = 1;
@@ -146,9 +163,8 @@ public class MatrixUtil {
 
 
 	public static DoubleMatrix sigmoid(DoubleMatrix x) {
-		DoubleMatrix denominator = MatrixFunctions.exp(x.neg()).add(1); 
-		denominator = DoubleMatrix.ones(denominator.rows,denominator.columns).div(denominator);
-		return denominator;
+		DoubleMatrix ones = DoubleMatrix.ones(x.rows, x.columns);
+	    return ones.div(ones.add(MatrixFunctions.exp(x.neg())));
 	}
 
 	public static DoubleMatrix dot(DoubleMatrix a,DoubleMatrix b) {

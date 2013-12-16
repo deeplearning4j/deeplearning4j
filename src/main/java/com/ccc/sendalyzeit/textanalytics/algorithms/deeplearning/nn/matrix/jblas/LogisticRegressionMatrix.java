@@ -50,6 +50,8 @@ public class LogisticRegressionMatrix implements Serializable {
 	}
 
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+		if(x.rows != y.rows)
+			throw new IllegalArgumentException("Can't train on the 2 given inputs and labels");
 		DoubleMatrix mul = x.mmul(W);
 
 		DoubleMatrix p_y_given_x = MatrixUtil.softmax(mul.addRowVector(b));
