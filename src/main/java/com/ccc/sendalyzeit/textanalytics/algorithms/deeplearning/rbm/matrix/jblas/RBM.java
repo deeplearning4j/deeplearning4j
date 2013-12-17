@@ -36,9 +36,9 @@ public class RBM extends BaseNeuralNetwork {
 	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		Pair<DoubleMatrix,DoubleMatrix> ph = this.sampleHGivenV(this.input);
-
-		DoubleMatrix chainStart = ph.getSecond();
+		Pair<DoubleMatrix,DoubleMatrix> probHidden = this.sampleHiddenGivenVisible(this.input);
+        
+		DoubleMatrix chainStart = probHidden.getSecond();
 		Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
 		DoubleMatrix nvMeans = null;
 		DoubleMatrix nvSamples = null;
@@ -48,19 +48,17 @@ public class RBM extends BaseNeuralNetwork {
 
 
 			if(i == 0) 
-				matrices = this.gibbhVh(chainStart);
+				matrices = gibbhVh(chainStart);
 			else
-				matrices = this.gibbhVh(nhSamples);
+				matrices = gibbhVh(nhSamples);
 
 			nvMeans = matrices.getFirst().getFirst();
 			nvSamples = matrices.getFirst().getSecond();
 			nhMeans = matrices.getSecond().getFirst();
-			if(MatrixUtil.isNaN(nhMeans))
-				throw new IllegalStateException("No");
 			nhSamples = matrices.getSecond().getSecond();
 		}
 
-		DoubleMatrix inputTimesPhSample =  this.input.transpose().mmul(ph.getSecond());
+		DoubleMatrix inputTimesPhSample =  this.input.transpose().mmul(probHidden.getSecond());
 		DoubleMatrix nvSamplesTTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
 		DoubleMatrix diff = inputTimesPhSample.sub(nvSamplesTTimesNhMeans);
 		DoubleMatrix wAdd = diff.mul(learningRate);
@@ -72,7 +70,7 @@ public class RBM extends BaseNeuralNetwork {
 		vBias = vBiasAdd.mul(learningRate);
 
 
-		DoubleMatrix hBiasAdd = MatrixUtil.mean(ph.getSecond().sub(nhMeans), 0).mul(learningRate);
+		DoubleMatrix hBiasAdd = MatrixUtil.mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
 
 
 		hBiasAdd = hBiasAdd.mul(learningRate);
@@ -111,7 +109,7 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 
-	public Pair<DoubleMatrix,DoubleMatrix> sampleHGivenV(DoubleMatrix v) {
+	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
 		DoubleMatrix h1Sample = MatrixUtil.binomial(h1Mean, 1, rng);
 		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
@@ -121,7 +119,7 @@ public class RBM extends BaseNeuralNetwork {
 	public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
 		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = this.sampleVGivenH(h);
 		DoubleMatrix vSample = v1MeanAndSample.getSecond();
-		Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = this.sampleHGivenV(vSample);
+		Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = this.sampleHiddenGivenVisible(vSample);
 		return new Pair<>(v1MeanAndSample,h1MeanAndSample);
 	}
 

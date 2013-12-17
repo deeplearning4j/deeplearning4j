@@ -1,3 +1,5 @@
 target/
+application.home_IS_UNDEFINEiD
+*.log
 .project
 .claspath

@@ -12,24 +12,24 @@ import org.junit.Test;
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.CDBN;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.DBN;
 
 public class IrisDBNTest extends DeepLearningTest {
 	@Test
 	public void testIris() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> data =getIris();
+		Pair<DoubleMatrix,DoubleMatrix> data = getIris();
 		int nIns = data.getFirst().columns;
 		int nOuts = data.getSecond().columns;
 		
 		double preTrainLr = 0.1;
 		int preTrainEpochs = 500;
-		int k = 1;
-		int[] hiddenLayerSizes = new int[] {300,300,300};
+		int k = 2;
+		int[] hiddenLayerSizes = new int[] {300,300};
 		double fineTuneLr = 0.1;
-		int fineTuneEpochs = 300;
+		int fineTuneEpochs = 200;
 
 	
-		
-		CDBN dbn = new CDBN.Builder().numberOfInputs(nIns)
+		DBN dbn = new DBN.Builder().numberOfInputs(nIns)
 				.numberOfOutPuts(nOuts).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(hiddenLayerSizes).build();
 		dbn.pretrain(data.getFirst(),k, preTrainLr, preTrainEpochs);

@@ -23,7 +23,6 @@ public class DBNTest  extends DeepLearningTest {
 
 
 	@Test
-	@Ignore
 	public void testDBN() {
 		DoubleMatrix x = new DoubleMatrix(new double[][] 
 				{{1,1,1,0,0,0},
@@ -108,30 +107,5 @@ public class DBNTest  extends DeepLearningTest {
 	}
 	
 
-	@Test
-	public void testIris() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> iris = this.getIris();
-
-		RandomGenerator g = new MersenneTwister(123);
-		int[] layerSizes = new int[]{4,4,4,4};
-		CDBN dbn = new CDBN(4, layerSizes, 3, 4, g, iris.getFirst(),iris.getSecond());
-		dbn.pretrain(1, 0.1, 200);
-		dbn.finetune(0.1, 1000);
-
-		
-
-		
-		DoubleMatrix guess = dbn.predict(iris.getFirst());
-		DoubleMatrix y = iris.getSecond();
-		
-		log.info("GUESS");
-		log.info(guess.toString());
-		log.info("Y");
-		
-		log.info(y.toString());
-		
-		
-	}
-
-
+	
 }

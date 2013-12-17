@@ -2,6 +2,8 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.MnistManager;
 import com.ccc.sendalyzeit.textanalytics.util.ArrayUtil;
+import com.ccc.sendalyzeit.textanalytics.util.MathUtils;
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 
@@ -44,6 +47,46 @@ public abstract class DeepLearningTest {
 
 
 
+	/**
+	 * Gets an mnist example as an input, label pair.
+	 * Keep in mind the return matrix for out come is a 1x1 matrix.
+	 * If you need multiple labels, remember to convert to a zeros
+	 * with 1 as index of the label for the output training vector.
+	 * @param example the example to get
+	 * @param batchSize the batch size of examples to get
+	 * @return the image,label pair
+	 * @throws IOException
+	 */
+	public List<Pair<DoubleMatrix,DoubleMatrix>> getMnistExampleBatches(int batchSize,int numBatches) throws IOException {
+		File ensureExists = new File("/tmp/MNIST");
+		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>();
+		if(!ensureExists.exists()) 
+			new MnistFetcher().downloadAndUntar();
+		MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
+
+		int[][] image = man.readImage();
+		int[] imageExample = ArrayUtil.flatten(image);
+
+		for(int batch = 0; batch < numBatches; batch++) {
+			double[][] examples = new double[batchSize][imageExample.length];
+			int[][] outcomeMatrix = new int[batchSize][10];
+
+			for(int i = 1 + batch; i < batchSize + 1 + batch; i++) {
+				//1 based indices
+				man.setCurrent(i);
+				double[] currExample = ArrayUtil.flatten(ArrayUtil.toDouble(man.readImage()));
+				for(int j = 0; j < currExample.length; j++)
+					currExample[j] = MathUtils.normalize(currExample[j], 0, 255);
+				examples[i - 1 - batch] = currExample;
+				outcomeMatrix[i - 1 - batch] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
+			}
+			DoubleMatrix training = new DoubleMatrix(examples);
+			MatrixUtil.discretizeColumns(training, 5);
+			ret.add(new Pair<>(training,MatrixUtil.toMatrix(outcomeMatrix)));
+		}
+
+		return ret;
+	}
 
 	/**
 	 * Gets an mnist example as an input, label pair.
@@ -63,19 +106,20 @@ public abstract class DeepLearningTest {
 
 		int[][] image = man.readImage();
 		int[] imageExample = ArrayUtil.flatten(image);
-		int[][] examples = new int[batchSize][imageExample.length];
+		double[][] examples = new double[batchSize][imageExample.length];
 		int[][] outcomeMatrix = new int[batchSize][10];
 		for(int i = 1; i < batchSize + 1; i++) {
 			//1 based indices
 			man.setCurrent(i);
-			int[] currExample = ArrayUtil.flatten(man.readImage());
+			double[] currExample = ArrayUtil.flatten(ArrayUtil.toDouble(man.readImage()));
+			for(int j = 0; j < currExample.length; j++)
+				currExample[j] = MathUtils.normalize(currExample[j], 0, 255);
 			examples[i - 1] = currExample;
 			outcomeMatrix[i - 1] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
 		}
-
-
-
-		return new Pair<DoubleMatrix,DoubleMatrix>(MatrixUtil.toMatrix(examples),MatrixUtil.toMatrix(outcomeMatrix));
+		DoubleMatrix training = new DoubleMatrix(examples);
+		MatrixUtil.discretizeColumns(training, 255);
+		return new Pair<DoubleMatrix,DoubleMatrix>(training,MatrixUtil.toMatrix(outcomeMatrix));
 
 	}
 
