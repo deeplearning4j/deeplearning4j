@@ -75,8 +75,6 @@ public abstract class DeepLearningTest {
 				//1 based indices
 				man.setCurrent(i);
 				double[] currExample = ArrayUtil.flatten(ArrayUtil.toDouble(man.readImage()));
-				for(int j = 0; j < currExample.length; j++)
-					currExample[j] = MathUtils.normalize(currExample[j], 0, 255);
 				examples[i - 1 - batch] = currExample;
 				outcomeMatrix[i - 1 - batch] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
 			}
@@ -117,7 +115,6 @@ public abstract class DeepLearningTest {
 			outcomeMatrix[i - 1] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
 		}
 		DoubleMatrix training = new DoubleMatrix(examples);
-		MatrixUtil.discretizeColumns(training, 255);
 		return new Pair<DoubleMatrix,DoubleMatrix>(training,MatrixUtil.toMatrix(outcomeMatrix));
 
 	}
