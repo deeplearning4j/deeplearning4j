@@ -203,8 +203,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 			for(int i = 0; i < c.length; i++) {
 				Constructor<?> curr = c[i];
 				Class<?>[] classes = curr.getParameterTypes();
+				
 				//input matrix found
-				if(classes[0].isAssignableFrom(Integer.class)) {
+				if(classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);

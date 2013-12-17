@@ -81,7 +81,6 @@ public abstract class DeepLearningTest {
 				outcomeMatrix[i - 1 - batch] = ArrayUtil.toOutcomeArray(man.readLabel(), 10);
 			}
 			DoubleMatrix training = new DoubleMatrix(examples);
-			MatrixUtil.discretizeColumns(training, 5);
 			ret.add(new Pair<>(training,MatrixUtil.toMatrix(outcomeMatrix)));
 		}
 
