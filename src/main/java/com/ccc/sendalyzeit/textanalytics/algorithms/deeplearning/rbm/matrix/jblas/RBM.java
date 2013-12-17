@@ -21,9 +21,9 @@ public class RBM extends BaseNeuralNetwork {
 
 	private static Logger log = LoggerFactory.getLogger(RBM.class);
 
-	public RBM(int n_visible, int n_hidden, DoubleMatrix W, DoubleMatrix hbias,
+	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vbias, RandomGenerator rng) {
-		super(n_visible, n_hidden, W, hbias, vbias, rng);
+		super(nVisible, nHidden, W, hbias, vbias, rng);
 	}
 
 
