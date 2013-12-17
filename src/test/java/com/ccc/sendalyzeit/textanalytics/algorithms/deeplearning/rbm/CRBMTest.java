@@ -47,29 +47,6 @@ public class CRBMTest extends DeepLearningTest {
 
 	}
 	
-	@Test
-	public void testIris() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> iris = this.getIris();
 
-		RandomGenerator g = new MersenneTwister(123);
-
-		CRBM r = new CRBM(iris.getFirst(), iris.getFirst().columns, 3, null, null, null, g);
-
-
-
-		for(int i = 0; i < 1000; i++)
-			r.contrastiveDivergence(0.1, 1, null);
-		
-		DoubleMatrix guess = r.reconstruct(iris.getFirst());
-		DoubleMatrix y = iris.getSecond();
-		
-		log.info("GUESS");
-		log.info(guess.toString());
-		log.info("Y");
-		
-		log.info(y.toString());
-		
-		
-	}
 
 }

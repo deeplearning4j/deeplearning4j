@@ -31,6 +31,45 @@ public class MatrixUtil {
 		}
 		return false;
 	}
+
+	
+	
+	
+	public static void discretizeColumns(DoubleMatrix toDiscretize,int numBins) {
+		DoubleMatrix columnMaxes = toDiscretize.columnMaxs();
+		DoubleMatrix columnMins = toDiscretize.columnMins();
+        for(int i = 0; i < toDiscretize.columns; i++) {
+        	double min = columnMins.get(i);
+        	double max = columnMaxes.get(i);
+        	DoubleMatrix col = toDiscretize.getColumn(i);
+        	DoubleMatrix newCol = new DoubleMatrix(col.length);
+        	for(int j = 0; j < col.length; j++) {
+            	int bin = MathUtils.discretize(col.get(j), min, max, numBins);
+            	newCol.put(j,bin);
+        	}
+        	toDiscretize.putColumn(i,newCol);
+        	
+        }
+	}
+	
+	
+	public static DoubleMatrix roundToTheNearest(DoubleMatrix d,double num) {
+		DoubleMatrix ret = d.mul(num);
+		for(int i = 0; i < d.rows; i++)
+			for(int j = 0; j < d.columns; j++) {
+				double newNum = Math.round(d.get(i,j) * num);
+				newNum /= num;
+				ret.put(i,j,newNum);
+			}
+		return ret;
+	}
+	
+	
+	public static void columnNormalizeBySum(DoubleMatrix x) {
+		for(int i = 0; i < x.columns; i++)
+			x.putColumn(i, x.getColumn(i).div(x.getColumn(i).sum()));
+	}
+	
 	
 	public static DoubleMatrix toOutcomeVector(int index,int numOutcomes) {
 		int[] nums = new int[numOutcomes];

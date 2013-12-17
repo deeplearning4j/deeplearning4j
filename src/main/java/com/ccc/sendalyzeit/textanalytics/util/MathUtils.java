@@ -28,6 +28,49 @@ public class MathUtils  {
 	public static double log2 = Math.log(2);
 
 	/**
+	 * Normalize a value
+	 * (val - min) / (max - min)
+	 * @param val value to normalize
+	 * @param max max value
+	 * @param min min value
+	 * @return the normalized value
+	 */
+	public static double normalize(double val,double min,double max) {
+		if(max < min)
+			throw new IllegalArgumentException("Max must be greather than min");
+		
+		return (val - min) / (max - min);
+	}
+	
+	/**
+	 * Clamps the value to a discrete value
+	 * @param value the value to clamp
+	 * @param min min for the probability distribution
+	 * @param max max for the probability distribution
+	 * @return the discrete value
+	 */
+	public static int clamp(int value, int min, int max) {
+	    if (value < min) value = min;
+	    if (value > max) value = max;
+	    return value;
+	}
+	
+	/**
+	 * Discretize the given value 
+	 * @param value the value to discretize
+	 * @param min the min of the distribution
+	 * @param max the max of the distribution
+	 * @param binCount the number of bins
+	 * @return the discretized value
+	 */
+	public static int discretize(double value, double min, double max, int binCount) {
+	    int discreteValue = (int) (binCount * normalize(value, min, max));
+	    return clamp(discreteValue, 0, binCount - 1);
+	}
+
+	
+	
+	/**
 	 * Generates a binomial distributed number using
 	 * the given rng
 	 * @param rng

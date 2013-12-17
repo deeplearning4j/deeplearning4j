@@ -42,7 +42,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 
 		if(W == null) {
 			double a = 1.0 / (double) n_visible;
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a,UniformRealDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
 			this.W = DoubleMatrix.zeros(n_visible,n_hidden);
 
@@ -102,7 +102,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 
 		if(W == null) {
 			double a = 1.0 / (double) n_visible;
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a,UniformRealDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
 			this.W = DoubleMatrix.zeros(n_visible,n_hidden);
 
@@ -227,7 +227,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 				//input matrix found
 				if(classes[0].isAssignableFrom(DoubleMatrix.class)) {
 					try {
-						 ret = (E) curr.newInstance(numVisible, numHidden, 
+						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);
 						return ret;
 					}catch(Exception e) {
@@ -238,10 +238,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 			}
 			return ret;
 		}
-
-
-
-
 	}
 
 
