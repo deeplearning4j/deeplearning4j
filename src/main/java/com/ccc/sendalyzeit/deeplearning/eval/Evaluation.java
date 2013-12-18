@@ -48,6 +48,21 @@ public class Evaluation {
 		}
 	}
 
+	
+	public String stats() {
+		StringBuilder builder = new StringBuilder()
+		.append("\n").append(confusion.toString()).append("\n");
+		
+		
+		builder.append("\n==========================F1 Scores========================================");
+		
+		for(Integer label : confusion.getClasses()) {
+			builder.append("\nLABEL " + label + " f1 " + f1(label));
+		}
+		builder.append("\n===========================================================================");
+		return builder.toString();
+	}
+	
 	/**
 	 * Adds to the confusion matrix
 	 * @param real the actual guess

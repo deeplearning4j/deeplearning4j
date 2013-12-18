@@ -49,7 +49,7 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 	public void pretrain( DoubleMatrix input,double lr,  double corruption_level,  int epochs) {
 		if(this.input == null)
 			initializeLayers(input);
-		
+
 		DoubleMatrix layerInput = null;
 
 		for(int i = 0; i < nLayers; i++) {  // layer-wise                        
@@ -74,6 +74,38 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 		}	
 
 
+	}
+
+	/**
+	 * 
+	 * @param input input examples
+	 * @param labels output labels
+	 * @param otherParams
+	 * 
+	 * (double) learningRate
+	 * (double) corruptionLevel
+	 * (int) epochs
+	 * 
+	 * Optional:
+	 * (double) finetune lr
+	 * (int) finetune epochs
+	 * 
+	 */
+	@Override
+	public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
+			Object[] otherParams) {
+		Double lr = (Double) otherParams[0];
+		Double corruptionLevel = (Double) otherParams[1];
+		Integer epochs = (Integer) otherParams[2];
+
+		pretrain(input, lr, corruptionLevel, epochs);
+		if(otherParams.length <= 3)
+			finetune(labels, lr, epochs);
+		else {
+			Double finetuneLr = (Double) otherParams[3];
+			Integer fineTuneEpochs = (Integer) otherParams[4];
+			finetune(labels,finetuneLr,fineTuneEpochs);
+		}
 	}
 
 
@@ -124,6 +156,8 @@ public class SdAMatrix extends BaseMultiLayerNetwork implements Serializable {
 			this.clazz = SdAMatrix.class;
 		}
 	}
+
+
 
 
 
