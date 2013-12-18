@@ -4,4 +4,4 @@ README.md~
 .settings/
 *.log
 .project
-.claspath
+.classpath
