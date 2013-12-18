@@ -8,6 +8,7 @@ import org.jblas.DoubleMatrix;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
+import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.ComputableWorkerMatrix;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
 
@@ -17,7 +18,6 @@ public class ComputableWorkerAkka extends ComputableWorkerMatrix implements Deep
 	private DoubleMatrix combinedInput;
 	int fineTuneEpochs;
 	int preTrainEpochs;
-	int N;
 	int[] hiddenLayerSizes;
 	int numOuts;
 	int numIns;
@@ -29,7 +29,7 @@ public class ComputableWorkerAkka extends ComputableWorkerMatrix implements Deep
 	private boolean iterationComplete;
 	private int currEpoch;
 	private DoubleMatrix outcomes;
-	
+	Object[] extraParams;
 	
 	public ComputableWorkerAkka(DoubleMatrix whole,DoubleMatrix outcomes,int[] rows) {
 		combinedInput = whole.getRows(rows);
@@ -44,7 +44,7 @@ public class ComputableWorkerAkka extends ComputableWorkerMatrix implements Deep
 
 	@Override
 	public UpdateableMatrix compute() {
-		network.trainNetwork(combinedInput, outcomes, new Object[]{});
+		network.trainNetwork(combinedInput, outcomes,extraParams);
 		return new UpdateableMatrix(network);
 	}
 
@@ -56,7 +56,6 @@ public class ComputableWorkerAkka extends ComputableWorkerMatrix implements Deep
 
 	@Override
 	public void setup(Conf conf) {
-	    N = conf.getInt(ROWS);
 		hiddenLayerSizes = conf.getIntsWithSeparator(LAYER_SIZES, ",");
 		numOuts = conf.getInt(OUT);
 		numIns = conf.getInt(N_IN);
@@ -71,7 +70,7 @@ public class ComputableWorkerAkka extends ComputableWorkerMatrix implements Deep
 		preTrainEpochs = conf.getInt(PRE_TRAIN_EPOCHS);
 		fineTuneEpochs = conf.getInt(FINE_TUNE_EPOCHS);
 		corruptionLevel = conf.getDouble(CORRUPTION_LEVEL);
-		
+		extraParams = conf.loadParams(PARAMS);
 	}
 
 

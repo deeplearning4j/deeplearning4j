@@ -7,9 +7,7 @@
     <artifactId>deeplearning4j-scaleout</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>org.agibsonccc.deeplearning</groupId>
   <artifactId>deeplearning4j-scaleout-akka</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>deeplearning4j-scaleout-akka</name>
   <url>http://maven.apache.org</url>
   <properties>
@@ -19,7 +17,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>4.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
