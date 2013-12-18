@@ -2,12 +2,14 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jbl
 
 import java.util.Collection;
 
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix;
+
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
+import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.ComputableMasterMatrix;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
 

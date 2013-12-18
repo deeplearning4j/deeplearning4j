@@ -19,8 +19,8 @@ import akka.dispatch.OnComplete;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.ComputableMasterAkka;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.ComputableWorkerAkka;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
+import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
 import com.google.common.collect.Lists;
 
@@ -49,6 +49,8 @@ public class NetworkRunner implements DeepLearningConfigurable {
 		this.conf = conf;
 		split = conf.getInt(SPLIT);
 		system = ActorSystem.create();
+		conf.put(N_IN, String.valueOf(input.columns));
+		conf.put(OUT, String.valueOf(outcomes.columns));
 		epochs = conf.getInt(FINE_TUNE_EPOCHS);
 		master = new ComputableMasterAkka();
 		master.setup(this.conf);

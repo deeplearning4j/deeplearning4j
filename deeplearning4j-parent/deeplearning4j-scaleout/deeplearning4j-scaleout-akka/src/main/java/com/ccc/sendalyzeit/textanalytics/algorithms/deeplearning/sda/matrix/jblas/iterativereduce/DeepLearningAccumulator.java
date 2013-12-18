@@ -18,37 +18,31 @@ public class DeepLearningAccumulator {
 	public BaseMultiLayerNetwork averaged() {
 		if(workers.isEmpty())
 			return null;
-		
-		
-		DoubleMatrix rand = DoubleMatrix.rand(workers.size());
-		rand = rand.div(rand.sum()).transpose();
-		
-		BaseMultiLayerNetwork first = workers.get(0);
-		
-		
-		Class<? extends BaseMultiLayerNetwork> clazz = first.getClass();
-		BaseMultiLayerNetwork ret = new BaseMultiLayerNetwork.Builder<BaseMultiLayerNetwork>()
-				.hiddenLayerSizes(first.hiddenLayerSizes).numberOfInputs(first.nIns).numberOfOutPuts(first.nOuts)
-				.withClazz(clazz).withRng(first.rng).build();
-		
-		
-		
+
+
 	
+
+		BaseMultiLayerNetwork first = workers.get(0);
+		BaseMultiLayerNetwork ret = first;
+
+
+
 		//sum and scale each of the weight vectors
-		for(int worker = 0; worker <  workers.size(); worker++) {
+		//start with the second worker as the baseline
+		for(int worker = 1; worker <  workers.size(); worker++) {
 			BaseMultiLayerNetwork network = workers.get(worker);
-			
-			
-			
+
+
+
 			for(int i = 0; i < ret.sigmoidLayers.length; i++) 
-                ret.sigmoidLayers[i].W =  ret.sigmoidLayers[i].W.add(network.sigmoidLayers[i].W);
-			
+				ret.sigmoidLayers[i].W =  ret.sigmoidLayers[i].W.add(network.sigmoidLayers[i].W);
+
 			for(int i = 0; i < ret.layers.length; i++) 
 				ret.layers[i].setW(ret.layers[i].getW().add(network.layers[i].getW()));
-			
-			
+
+
 			ret.logLayer.W = ret.logLayer.W.add(network.logLayer.W);
-		
+
 		}
 
 		for(int i = 0; i < ret.layers.length; i++) {
