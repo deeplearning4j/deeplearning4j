@@ -1,5 +1,6 @@
 target/
 application.home_IS_UNDEFINEiD
+README.md~
 *.log
 .project
 .claspath
