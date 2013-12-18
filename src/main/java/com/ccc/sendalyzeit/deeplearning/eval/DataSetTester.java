@@ -2,6 +2,7 @@ package com.ccc.sendalyzeit.deeplearning.eval;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.jblas.DoubleMatrix;
@@ -67,7 +68,7 @@ public class DataSetTester extends DeepLearningTest {
 			dataset = loadDataset();
 		
 		BaseMultiLayerNetwork neuralNet = getNeuralNet(dataset);
-		
+		long start = System.currentTimeMillis();
 		Evaluation e = new Evaluation();
 
 		for(Pair<DoubleMatrix,DoubleMatrix> pair : dataset) {
@@ -75,6 +76,10 @@ public class DataSetTester extends DeepLearningTest {
 			DoubleMatrix predicted = neuralNet.predict(pair.getFirst());
 			e.eval(pair.getSecond(), predicted);
 		}
+		long end = System.currentTimeMillis();
+		long diff = end - start;
+		
+		log.info("Ended in " + TimeUnit.MILLISECONDS.toSeconds(diff) + " seconds");
 		
 		log.info(e.stats());
 		
