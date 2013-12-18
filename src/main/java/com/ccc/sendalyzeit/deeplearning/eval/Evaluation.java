@@ -25,7 +25,7 @@ public class Evaluation {
 	 * Note that an IllegalArgumentException is thrown if the two passed in
 	 * matrices aren't the same length.
 	 * @param realOutcomes the real outcomes (usually binary)
-	 * @param guesses the guesses (usually a probaility vector)
+	 * @param guesses the guesses (usually a probability vector)
 	 */
 	public void eval(DoubleMatrix realOutcomes,DoubleMatrix guesses) {
 		if(realOutcomes.length != guesses.length)
@@ -99,10 +99,20 @@ public class Evaluation {
 		double recall = recall();
 		return 2.0 * ((precision * recall / (precision + recall)));
 	}
-
+	
+	/**
+	 * Returns the recall for the outcomes
+	 * @return the recall for the outcomes
+	 */
 	public double recall() {
 		return truePositives / (truePositives + falseNegatives);
 	}
+	
+	/**
+	 * Returns the precision for a given label
+ 	 * @param i the label
+	 * @return the precision for the label
+	 */
 	public double precision(int i) {
 		return truePositives / (truePositives + falsePositives.getCount(i));
 	}

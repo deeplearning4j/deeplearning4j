@@ -25,6 +25,34 @@ public abstract class DeepLearningTest {
 		Pair<DoubleMatrix,DoubleMatrix> pair = IrisUtils.loadIris();
 		return pair;
 	}
+	
+	/**
+	 * LFW Dataset: pick first num faces
+	 * @param num
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Pair<DoubleMatrix,DoubleMatrix>> getFirstFaces(int num) throws Exception {
+		LFWLoader loader = new LFWLoader();
+		loader.getIfNotExists();
+		return loader.getFirst(num);
+	}
+	
+	
+	/**
+	 * LFW Dataset: pick all faces
+	 * @param num
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Pair<DoubleMatrix,DoubleMatrix>> getFaces() throws Exception {
+		LFWLoader loader = new LFWLoader();
+		loader.getIfNotExists();
+		return loader.getImagesAsList();
+	}
+	
+	
+	
 	/**
 	 * Gets an mnist example as an input, label pair.
 	 * Keep in mind the return matrix for out come is a 1x1 matrix.
