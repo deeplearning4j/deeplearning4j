@@ -15,7 +15,16 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jbla
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.DBN;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix;
-
+/**
+ * DataSet runner main class.
+ * 
+ * Basic idea is to feed it an algorithm, dataset, and the number of examples to use.
+ * It will then print out f1 scores for each dataset.
+ * 
+ * Note that I need to add WAY more for tuning this yet as far as command line options go.
+ * @author Adam Gibson
+ *
+ */
 public class DataSetTester extends DeepLearningTest {
 
 	private static int[] layers = new int[] {200,200,200};
@@ -76,6 +85,7 @@ public class DataSetTester extends DeepLearningTest {
 			DoubleMatrix predicted = neuralNet.predict(pair.getFirst());
 			e.eval(pair.getSecond(), predicted);
 		}
+		
 		long end = System.currentTimeMillis();
 		long diff = end - start;
 		
@@ -139,7 +149,7 @@ public class DataSetTester extends DeepLearningTest {
 			return Collections.singletonList(getIris());
 		}
 		else if(dataset.equals("mnist")) {
-			return this.getMnistExampleBatches(10, numExamples);
+			return this.getMnistExampleBatches(1, numExamples);
 		}
 
 		return null;
