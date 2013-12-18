@@ -138,6 +138,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 		}
 	}
 
+	
+	public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
 	public abstract NeuralNetwork createLayer(DoubleMatrix input,int nVisible,int nHidden, DoubleMatrix W,DoubleMatrix hbias,DoubleMatrix vBias,RandomGenerator rng,int index);
 
@@ -148,7 +150,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 
 	public static class Builder<E extends BaseMultiLayerNetwork> {
-		protected Class<E> clazz;
+		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
 		private int nIns;
 		private int[] hiddenLayerSizes;
@@ -188,6 +190,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 		public Builder<E> withLabels(DoubleMatrix labels) {
 			this.labels = labels;
+			return this;
+		}
+		
+		public Builder<E> withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
+			this.clazz =  clazz;
 			return this;
 		}
 
