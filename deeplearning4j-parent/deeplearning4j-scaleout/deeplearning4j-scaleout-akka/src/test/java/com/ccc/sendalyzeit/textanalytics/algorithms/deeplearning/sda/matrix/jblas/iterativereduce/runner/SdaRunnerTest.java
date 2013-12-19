@@ -29,7 +29,7 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 	private static Logger log = LoggerFactory.getLogger(SdaRunnerTest.class);
 	private NetworkRunner runner;
 	private Conf conf;
-	Integer[] hidden_layer_sizes_arr = {15, 15};
+	Integer[] hidden_layer_sizes_arr = {300, 300,300};
 	double pretrain_lr = 0.1;
 	double corruption_level = 0.3;
 	int n_layers = hidden_layer_sizes_arr.length;
@@ -110,22 +110,22 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 	}
 
 	@Test
-	public void testIris() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> iris = getIris();
-		runner = new NetworkRunner(iris.getFirst(),iris.getSecond());
+	public void testMnist() throws IOException {
+		Pair<DoubleMatrix,DoubleMatrix> mnist = this.getMnistExampleBatch(6000);
+		runner = new NetworkRunner(mnist.getFirst(),mnist.getSecond());
 		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
 
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
+		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
+				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(30).build());
 			
         runner.setup(conf);
         
         
         BaseMultiLayerNetwork trained = runner.train();
         Evaluation eval = new Evaluation();
-        DoubleMatrix predicted = trained.predict(iris.getFirst());
-        eval.eval(iris.getSecond(), predicted);
+        DoubleMatrix predicted = trained.predict(mnist.getFirst());
+        eval.eval(mnist.getSecond(), predicted);
         log.info(eval.stats());
 	}
 
