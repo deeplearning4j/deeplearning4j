@@ -6,20 +6,15 @@ import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.sendalyzeit.deeplearning.berkeley.Counter;
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.IrisUtils;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.ExtraParamsBuilder;
@@ -82,7 +77,7 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 
 
 
-		runner = new NetworkRunner(train_X_matrix,train_Y_matrix);
+		runner = new NetworkRunner();
 		conf.put(PRE_TRAIN_EPOCHS, 10);
 		conf.put(FINE_TUNE_EPOCHS, 10);
 
@@ -100,29 +95,36 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
 				
 		
+		
+		
 		runner.setup(conf);
+		
+		
 	}
 
 	@Test
 	public void testOutput() {
-		BaseMultiLayerNetwork m = runner.train();
+		BaseMultiLayerNetwork m = runner.train(this.train_X_matrix,this.train_Y_matrix);
 		log.info(m.logLayer.W.toString());
 	}
 
 	@Test
 	public void testMnist() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> mnist = this.getMnistExampleBatch(6000);
-		runner = new NetworkRunner(mnist.getFirst(),mnist.getSecond());
+		Pair<DoubleMatrix,DoubleMatrix> mnist = this.getMnistExampleBatch(1);
+		runner = new NetworkRunner();
 		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
 
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(30).build());
+				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
 			
         runner.setup(conf);
+    	runner.train(mnist.getFirst(), mnist.getSecond());
+
+      
         
         
-        BaseMultiLayerNetwork trained = runner.train();
+        BaseMultiLayerNetwork trained = runner.result();
         Evaluation eval = new Evaluation();
         DoubleMatrix predicted = trained.predict(mnist.getFirst());
         eval.eval(mnist.getSecond(), predicted);

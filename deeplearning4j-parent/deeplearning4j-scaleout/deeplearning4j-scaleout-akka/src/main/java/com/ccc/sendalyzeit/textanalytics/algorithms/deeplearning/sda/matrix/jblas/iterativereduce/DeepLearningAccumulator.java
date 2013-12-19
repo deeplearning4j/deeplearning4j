@@ -35,23 +35,17 @@ public class DeepLearningAccumulator {
 
 
 			for(int i = 0; i < ret.sigmoidLayers.length; i++) 
-				ret.sigmoidLayers[i].W =  ret.sigmoidLayers[i].W.add(network.sigmoidLayers[i].W);
+				ret.sigmoidLayers[i].W =  ret.sigmoidLayers[i].W.add(network.sigmoidLayers[i].W.sub(ret.sigmoidLayers[i].W).div(workers.size()));
 
 			for(int i = 0; i < ret.layers.length; i++) 
-				ret.layers[i].setW(ret.layers[i].getW().add(network.layers[i].getW()));
+				ret.layers[i].setW(ret.layers[i].getW().add(network.layers[i].getW().sub(ret.layers[i].getW()).div(workers.size())));
 
 
-			ret.logLayer.W = ret.logLayer.W.add(network.logLayer.W);
+			ret.logLayer.W = ret.logLayer.W.add(network.logLayer.W.sub(ret.logLayer.W.div(workers.size())));
 
 		}
 
-		for(int i = 0; i < ret.layers.length; i++) {
-			ret.layers[i].setW(ret.layers[i].getW().div(workers.size()));
-		}
-		for(int i = 0; i < ret.sigmoidLayers.length; i++) { 
-			ret.sigmoidLayers[i].W = ret.sigmoidLayers[i].W.div(workers.size());
-		}
-		ret.logLayer.W = ret.logLayer.W.div(workers.size());
+	
 		return ret;
 	}
 

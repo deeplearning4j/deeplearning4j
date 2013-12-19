@@ -19,6 +19,7 @@ import akka.dispatch.OnComplete;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.ComputableMasterAkka;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.ComputableWorkerAkka;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.DeepLearningAccumulator;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
@@ -31,22 +32,25 @@ public class NetworkRunner implements DeepLearningConfigurable {
 	private Conf conf;
 	private int split;
 	private ActorSystem system;
+	private DeepLearningAccumulator acc;
 	private BaseMultiLayerNetwork output;
 	private int epochs;
 	private DoubleMatrix input;
 	private DoubleMatrix outcomes;
 	private static Logger log = LoggerFactory.getLogger(NetworkRunner.class);
+	private boolean setup;
 
 
 
-
-	public NetworkRunner(DoubleMatrix input, DoubleMatrix outcomes) {
-		this.input = input;
-		this.outcomes = outcomes;
+	public NetworkRunner() {
+		acc = new DeepLearningAccumulator();
 	}
 
 	public void setup(Conf conf) {
 		this.conf = conf;
+	}
+
+	private void doSetup(Conf conf) {
 		split = conf.getInt(SPLIT);
 		system = ActorSystem.create();
 		conf.put(N_IN, String.valueOf(input.columns));
@@ -65,8 +69,7 @@ public class NetworkRunner implements DeepLearningConfigurable {
 		List<List<Integer>> indices = Lists.partition(rows2, split);
 		for(int i = 0; i < indices.size(); i++) 
 			workers.add(fromMatrices(convert(indices.get(i))));
-
-
+		setup = true;
 
 	}
 
@@ -81,14 +84,19 @@ public class NetworkRunner implements DeepLearningConfigurable {
 		ComputableWorkerAkka ret =  new ComputableWorkerAkka(input,outcomes, rows);
 		Conf c = conf.copy();
 		c.put(ROWS, rows.length);
-		c.put(FINE_TUNE_EPOCHS, 100);
-		c.put(PRE_TRAIN_EPOCHS,100);
+		c.put(FINE_TUNE_EPOCHS, 1);
+		c.put(PRE_TRAIN_EPOCHS,1);
 		ret.setup(c);
 		return ret;
 	}
 
 
-	public BaseMultiLayerNetwork train()  {
+	public BaseMultiLayerNetwork train(DoubleMatrix input,DoubleMatrix labels)  {
+		this.input = input;
+		this.outcomes = labels;
+		if(!setup)
+			doSetup(conf);
+
 		for(int i = 0; i < epochs; i++) {
 			final List<UpdateableMatrix> workerUpdates = new CopyOnWriteArrayList<>();
 			final CountDownLatch latch = new CountDownLatch(workers.size());
@@ -102,7 +110,7 @@ public class NetworkRunner implements DeepLearningConfigurable {
 					}
 
 				},system.dispatcher());
-				
+
 				future.onComplete(new OnComplete<UpdateableMatrix>() {
 
 					@Override
@@ -124,8 +132,8 @@ public class NetworkRunner implements DeepLearningConfigurable {
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-			
-			
+
+
 			log.info("Computation for iteration " + i + " done"	);
 			UpdateableMatrix masterResult = master.compute(workerUpdates, workerUpdates);
 
@@ -134,9 +142,30 @@ public class NetworkRunner implements DeepLearningConfigurable {
 
 
 			output = masterResult.get();
-
+			acc.accumulate(output);
 		}
 		return output;
+	}
+	
+	public BaseMultiLayerNetwork result()  {
+		return acc.averaged();
+	}
+	
+
+	public DoubleMatrix getInput() {
+		return input;
+	}
+
+	public void setInput(DoubleMatrix input) {
+		this.input = input;
+	}
+
+	public DoubleMatrix getOutcomes() {
+		return outcomes;
+	}
+
+	public void setOutcomes(DoubleMatrix outcomes) {
+		this.outcomes = outcomes;
 	}
 
 
