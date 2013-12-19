@@ -14,7 +14,7 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas
 
 /**
  * A JBlas implementation of 
- * stacked deep auto encoders.
+ * stacked denoising auto encoders.
  * @author Adam Gibson
  *
  */
