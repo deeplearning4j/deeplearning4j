@@ -125,7 +125,7 @@ public abstract class DeepLearningTest {
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> getMnistExampleBatch(int batchSize) throws IOException {
 		File ensureExists = new File("/tmp/MNIST");
-		if(!ensureExists.exists()) 
+		if(!ensureExists.exists() || !new File("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped).exists() || !new File("/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped).exists()) 
 			new MnistFetcher().downloadAndUntar();
 		MnistManager man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
 

@@ -118,7 +118,6 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 
 
 	public void setup(Conf conf) {
-		// TODO Auto-generated method stub
 		
 	}
 
