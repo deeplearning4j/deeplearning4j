@@ -3,7 +3,6 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jbl
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jblas.DoubleMatrix;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 

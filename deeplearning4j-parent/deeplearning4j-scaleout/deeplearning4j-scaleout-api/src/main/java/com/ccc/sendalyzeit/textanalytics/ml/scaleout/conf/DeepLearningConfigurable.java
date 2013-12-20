@@ -28,7 +28,8 @@ public interface DeepLearningConfigurable {
 	/* Class to load for the base neural network*/
 	public final static String CLASS = "com.ccc.sendalyzeit.textanalytics.class";
 	/* Network implementation specific parameters */
-	public final static String PARAMS = "com.ccc.sendalyzeit.textanalytics.params";
+	public final 
+	static String PARAMS = "com.ccc.sendalyzeit.textanalytics.params";
 	
 	public final static String PARAM_ALGORITHM = "algorithm";
 	public final static String PARAM_SDA = "sda";
