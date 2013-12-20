@@ -7,6 +7,7 @@ import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.jblas.DoubleMatrix;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +79,8 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 
 
 		runner = new ActorNetworkRunner();
-		conf.put(PRE_TRAIN_EPOCHS, 10);
-		conf.put(FINE_TUNE_EPOCHS, 10);
+		conf.put(PRE_TRAIN_EPOCHS, 100);
+		conf.put(FINE_TUNE_EPOCHS, 100);
 
 		conf.put(ROWS,train_X_arr.length);
 		conf.put(LAYER_SIZES, hidden_layer_sizes_arr);
@@ -103,6 +104,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 	}
 
 	@Test
+	@Ignore
 	public void testOutput() {
 		runner.train(this.train_X_matrix,this.train_Y_matrix);
 		BaseMultiLayerNetwork m = runner.getResult().get();
@@ -112,7 +114,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 
 	@Test
 	public void testMnist() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> mnist = this.getMnistExampleBatch(1);
+		Pair<DoubleMatrix,DoubleMatrix> mnist = this.getMnistExampleBatch(100);
 		runner = new ActorNetworkRunner();
 		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
