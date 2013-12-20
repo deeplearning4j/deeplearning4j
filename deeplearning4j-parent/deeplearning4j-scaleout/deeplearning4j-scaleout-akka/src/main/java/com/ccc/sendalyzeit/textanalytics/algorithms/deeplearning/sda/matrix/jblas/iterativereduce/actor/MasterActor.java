@@ -1,15 +1,19 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor;
 
 import java.io.DataOutputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import scala.concurrent.duration.Duration;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
@@ -20,10 +24,10 @@ import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.ComputableM
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
 import com.google.common.collect.Lists;
 
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
 import akka.japi.Creator;
+import akka.japi.Function;
+import akka.actor.*;
+import akka.actor.SupervisorStrategy.Directive;
 
 public class MasterActor extends UntypedActor implements DeepLearningConfigurable,ComputableMaster<UpdateableMatrix> {
 
@@ -89,7 +93,7 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 					listener.epochComplete(masterMatrix);
 				updates.clear();
 			}
-			
+
 		}
 
 		else if(message instanceof UpdateMessage) {
@@ -103,8 +107,25 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 		else if(message instanceof List || message instanceof Pair) {
 			if(message instanceof List) {
 				List<Pair<DoubleMatrix,DoubleMatrix>> list = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+				//each pair in the matrix pairs maybe multiple rows
+				splitListIntoRows(list);
+
+				
+				
 				int split = conf.getInt(SPLIT);
 				List<List<Pair<DoubleMatrix,DoubleMatrix>>> splitList = Lists.partition(list, split);
+				if(splitList.size() >= workers.size()) {
+					log.info("Adding workers to accomadate split and load...");
+					while(workers.size() < splitList.size()) {
+						Conf c = conf.copy();
+						c.put(FINE_TUNE_EPOCHS, 1);
+						c.put(PRE_TRAIN_EPOCHS,1);
+						workers.add(context().actorOf(Props.create(new WorkerActor.WorkerActorFactory(c))));
+
+					}
+				}
+
+				
 				for(int i = 0; i < splitList.size(); i++) {
 					workers.get(i).tell(splitList.get(i), getSelf());
 				}
@@ -112,8 +133,11 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 			}
 			else if(message instanceof Pair) {
 				Pair<DoubleMatrix,DoubleMatrix> pair = (Pair<DoubleMatrix,DoubleMatrix>) message;
+				
+				//split pair up in to rows to ensure parallelism
 				List<DoubleMatrix> inputs = pair.getFirst().rowsAsList();
 				List<DoubleMatrix> labels = pair.getSecond().rowsAsList();
+				
 				List<Pair<DoubleMatrix,DoubleMatrix>> pairs = new ArrayList<>();
 				for(int i = 0; i < inputs.size(); i++) {
 					pairs.add(new Pair<>(inputs.get(i),labels.get(i)));
@@ -142,6 +166,20 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 			unhandled(message);
 	}
 
+	private void splitListIntoRows(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+		Queue<Pair<DoubleMatrix,DoubleMatrix>> q = new ArrayDeque<>(list);
+		list.clear();
+		log.info("Splitting list in to rows...");
+		while(!q.isEmpty()) {
+			Pair<DoubleMatrix,DoubleMatrix> pair = q.poll();
+			List<DoubleMatrix> inputRows = pair.getFirst().rowsAsList();
+			List<DoubleMatrix> labelRows = pair.getSecond().rowsAsList();
+			for(int i = 0; i < inputRows.size(); i++) {
+				list.add(new Pair<DoubleMatrix,DoubleMatrix>(inputRows.get(i),labelRows.get(i)));
+			}
+		}
+	}
+	
 
 	public static class MasterActorFactory implements Creator<MasterActor> {
 
@@ -174,4 +212,14 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 		return masterMatrix;
 	}
 
+	@Override
+	public SupervisorStrategy supervisorStrategy() {
+		return new OneForOneStrategy(0, Duration.Zero(),
+				new Function<Throwable, Directive>() {
+			public Directive apply(Throwable cause) {
+				log.error("Problem with processing",cause);
+				return SupervisorStrategy.stop();
+			}
+		});
+	}
 }
