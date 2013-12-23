@@ -1,6 +1,5 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.runner;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -107,7 +106,6 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		runner.train(this.train_X_matrix,this.train_Y_matrix);
 		BaseMultiLayerNetwork m = runner.getResult().get();
 		log.info(m.logLayer.W.toString());
-		runner.shutdown();
 	}
 
 	@Test
@@ -143,7 +141,6 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
         DoubleMatrix predicted = trained.predict(mnist.getFirst());
         eval.eval(mnist.getSecond(), predicted);
         log.info(eval.stats());
-        runner.shutdown();
 	}
 
 

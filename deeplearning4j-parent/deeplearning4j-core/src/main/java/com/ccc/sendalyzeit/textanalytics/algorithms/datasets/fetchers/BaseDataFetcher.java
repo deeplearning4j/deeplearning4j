@@ -64,5 +64,10 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 		return totalExamples;
 	}
 
+	@Override
+	public void reset() {
+		cursor = 0;
+	}
+
 	
 }

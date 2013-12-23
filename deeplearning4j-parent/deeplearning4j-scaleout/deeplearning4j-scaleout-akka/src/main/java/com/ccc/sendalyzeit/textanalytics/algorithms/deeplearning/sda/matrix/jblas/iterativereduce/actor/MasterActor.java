@@ -47,6 +47,8 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 	protected UpdateableMatrix masterMatrix;
 	private List<UpdateableMatrix> updates = new ArrayList<UpdateableMatrix>();
 	private EpochDoneListener listener;
+	private ActorRef batchActor;
+	private int epochsComplete;
 	private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	public static String BROADCAST = "broadcast";
 	public static String RESULT = "result";
@@ -58,17 +60,20 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
 	 */
-	public MasterActor(Conf conf) {
+	public MasterActor(Conf conf,ActorRef batchActor) {
 		this.conf = conf;
+		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
 	    mediator.tell(new Put(getSelf()), getSelf());
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.RESULT, getSelf()), getSelf());
 		setup(conf);
+		
+		
 	}
 
-	public static Props propsFor(Conf conf) {
-		return Props.create(new MasterActor.MasterActorFactory(conf));
+	public static Props propsFor(Conf conf,ActorRef batchActor) {
+		return Props.create(new MasterActor.MasterActorFactory(conf,batchActor));
 	}
 
 
@@ -119,6 +124,10 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 				masterMatrix = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterMatrix);
+				batchActor.tell(new ResetMessage(), getSelf());
+				//TODO: there is a better way to to this.
+				epochsComplete++;
+				batchActor.tell(up, getSelf());
 				updates.clear();
 			}
 
@@ -197,11 +206,13 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 
 	public static class MasterActorFactory implements Creator<MasterActor> {
 
-		public MasterActorFactory(Conf conf) {
+		public MasterActorFactory(Conf conf,ActorRef batchActor) {
 			this.conf = conf;
+			this.batchActor = batchActor;
 		}
 
 		private Conf conf;
+		private ActorRef batchActor;
 		/**
 		 * 
 		 */
@@ -209,7 +220,7 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 
 		@Override
 		public MasterActor create() throws Exception {
-			return new MasterActor(conf);
+			return new MasterActor(conf,batchActor);
 		}
 
 

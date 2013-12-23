@@ -26,7 +26,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
 		man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
 		numOutcomes = 10;
 		totalExamples = NUM_EXAMPLES;
-
+		//1 based cursor
+		cursor = 1;
 		man.setCurrent(cursor);
 		int[][] image;
 		try {
@@ -63,6 +64,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 		initializeCurrFromList(toConvert);
 
+	}
+
+	@Override
+	public void reset() {
+		cursor = 1;
 	}
 
 
