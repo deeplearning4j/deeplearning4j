@@ -13,6 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.DataSetIterator;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.IrisDataSetIterator;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.LFWDataSetIterator;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZooKeeperConfigurationRegister;
 import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperBuilder;
@@ -94,12 +99,15 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
 	private int numExamples = -1;
 	private ActorNetworkRunner runner;
-
+	private DataSetIterator iter;
+	
+	
 	public ActorNetworkRunnerApp(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
 			parser.parseArgument(args);
 			ensureValidMinConf();
+			getDataSet();
 		} catch (CmdLineException e) {
 			parser.printUsage(System.err);
 			log.error("Unable to parse args",e);
@@ -144,15 +152,14 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		}
 		else {
 			Conf conf = new Conf();
-
-			Pair<DoubleMatrix,DoubleMatrix> dataSets = getDataSet();
-
+			
+		
 
 			conf.put(CLASS, getClassForAlgorithm());
 			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 			conf.put(SPLIT,String.valueOf(10));
-			conf.put(N_IN, String.valueOf(dataSets.getFirst().columns));
-			conf.put(OUT, String.valueOf(dataSets.getSecond().columns));
+			conf.put(N_IN, String.valueOf(iter.inputColumns()));
+			conf.put(OUT, String.valueOf(iter.totalOutcomes()));
 			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
 			conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
 			conf.put(SEED, String.valueOf(rngSeed));
@@ -171,7 +178,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.put(MASTER_URL, runner.getMasterAddress().toString());
 
 			//register the configuration to zookeeper
-			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,new ZookeeperBuilder().build(),"master");
+			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
 			reg.register();
 			reg.close();
 
@@ -184,7 +191,11 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 	}
 
-
+	public void train() {
+		
+	}
+	
+	
 	public void shutdown() {
 		if(runner != null)
 			runner.shutdown();
@@ -194,34 +205,22 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		return dataSet;
 	}
 
-	private Pair<DoubleMatrix,DoubleMatrix> getDataSet() {
+	private void getDataSet() {
 		try {
 			if(dataSet.equals("mnist")) {
-				if(numExamples > 0)
-					return DeepLearningTest.getMnistExampleBatch(numExamples);
-
-				else 
-					return DeepLearningTest.getMnistExampleBatch(60000);
+			  iter = new MnistDataSetIterator(numExamples);
 			}
 
 			else if(dataSet.equals("iris")) {
-				if(numExamples > 0)
-					return DeepLearningTest.getIris(numExamples);
-
-				else 
-					return DeepLearningTest.getIris();
+				iter = new IrisDataSetIterator(numExamples);
 			}
 			else if(dataSet.equals("lfw")) {
-				if(numExamples > 0)
-					return DeepLearningTest.getFaces(numExamples);
-				else
-					return DeepLearningTest.getFacesMatrix();
+				iter = new LFWDataSetIterator(numExamples);
 			}
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		return null;
 	}
 
 

@@ -36,29 +36,14 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 	private String host;
 	private int port;
 	private static Logger log = LoggerFactory.getLogger(ZooKeeperConfigurationRegister.class);
+
 	/**
 	 * 
 	 * @param configuration the configuration to serialize
 	 * @param zk the zookeeper client to use
 	 * @param id the job id to store metadata for
-	 * @param host host of the zookeeper cluster
-	 * @param port the port of the zookeeper cluster
-	 */
-	public ZooKeeperConfigurationRegister(Conf configuration,
-			ZooKeeper zk,String id) {
-		super();
-		this.configuration = configuration;
-		this.zk = zk;
-		this.id = id;
-	
-	}
-	/**
-	 * 
-	 * @param configuration the configuration to serialize
-	 * @param zk the zookeeper client to use
-	 * @param id the job id to store metadata for
-	 * @param host host of the zookeeper cluster
-	 * @param port the port of the zookeeper cluster
+	 * @param host host of the zookeeper cluster (note this is also provided to help setup the zk directory structure)
+	 * @param port the port of the zookeeper cluster (note this is also provided to help setup the zk directory structure)
 	 */
 	public ZooKeeperConfigurationRegister(Conf configuration,String id,String host,int port) {
 		super();

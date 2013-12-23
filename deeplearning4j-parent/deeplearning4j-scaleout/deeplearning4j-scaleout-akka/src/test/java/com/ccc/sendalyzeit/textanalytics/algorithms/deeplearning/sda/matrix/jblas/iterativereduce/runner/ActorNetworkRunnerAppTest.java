@@ -27,7 +27,7 @@ public class ActorNetworkRunnerAppTest {
 	
 	@Test
 	public void testConfig() {
-		ActorNetworkRunnerApp app = new ActorNetworkRunnerApp(new String[]{
+		ActorNetworkRunnerApp app = new ActorNetworkRunnerApp(new String[] {
 				"-data","mnist","-a","sda","-i","1","-o","1"
 		});
 		

@@ -32,11 +32,12 @@ public class TestZookeeperRegister {
 	@Before
 	public void init() throws Exception {
 		conf = new Conf();
+		conf.put("test","test");
 		server = new TestingServer(2181);
 
 		String host = "localhost";
 		keeper = new ZookeeperBuilder().setHost(host).build();
-		register = new ZooKeeperConfigurationRegister(conf, keeper, "test");
+		register = new ZooKeeperConfigurationRegister(conf, "test","localhost",2181);
 		retriever = new ZookeeperConfigurationRetriever(host, 2181,"test");
 
 	}
@@ -55,7 +56,7 @@ public class TestZookeeperRegister {
 	@Test
 	public void testZookeeper() throws Exception {
 		String host = "localhost";
-
+		
 		register.register();
 		String path = new ZookeeperPathBuilder().setHost(host).setPort(2181).addPaths(Arrays.asList("tmp","test")).build();
 
@@ -71,16 +72,7 @@ public class TestZookeeperRegister {
 
 		Conf retrieve = retriever.retreive();
 		assumeNotNull(retrieve);
-		/*
-		 * Not sure what to do here: there are random keys being thrown in, but it doesn't seem to affect
-		 * anything that matters.
-		 */
-		//Map<String,String> confMap = entries(conf);
-		//Map<String,String> retrieveMap = entries(retrieve);
-		//
-		//assertEquals("Key difference was " + SetUtils.union( SetUtils.difference(confMap.keySet(), retrieveMap.keySet()), SetUtils.difference(retrieveMap.keySet(), confMap.keySet())),retrieveMap.keySet().size(),confMap.keySet().size());
-		//assertEquals("Value difference was " + SetUtils.union(SetUtils.difference(confMap.values(), retrieveMap.values()),SetUtils.difference(retrieveMap.values(), confMap.values())),retrieveMap.values().size(),confMap.values().size());
-
+		
 		keeper.delete(path, -1);
 
 

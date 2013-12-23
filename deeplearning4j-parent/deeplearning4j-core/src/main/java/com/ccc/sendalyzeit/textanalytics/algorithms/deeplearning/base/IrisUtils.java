@@ -16,6 +16,44 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 public class IrisUtils {
 
+	
+	public static List<Pair<DoubleMatrix,DoubleMatrix>> loadIris(int from,int to) throws IOException {
+		ClassPathResource resource = new ClassPathResource("/iris.dat");
+		List<String> lines = IOUtils.readLines(resource.getInputStream());
+		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
+		DoubleMatrix ret = DoubleMatrix.ones(lines.size(), 4);
+		List<String> outcomeTypes = new ArrayList<String>();
+		double[][] outcomes = new double[lines.size()][3];
+		for(int i = from; i < to; i++) {
+			String line = lines.get(i);
+			String[] split = line.split(",");
+
+			addRow(ret,i,split);
+
+			String outcome = split[split.length - 1];
+			if(!outcomeTypes.contains(outcome))
+				outcomeTypes.add(outcome);
+			double[] rowOutcome = new double[3];
+			rowOutcome[outcomeTypes.indexOf(outcome)] = 1;
+			outcomes[i] = rowOutcome;
+		}
+
+
+		MatrixUtil.columnNormalizeBySum(ret);
+		ret = MatrixUtil.roundToTheNearest(ret, 10000);
+		MatrixUtil.discretizeColumns(ret,4);
+		ret = ret.mul(0.01);
+		
+		for(int i = 0; i < ret.rows; i++) {
+			list.add(new Pair<>(ret.getRow(i),new DoubleMatrix(outcomes[i])));
+		}
+		
+		
+		return list;
+	}
+
+
+	
 	public static Pair<DoubleMatrix,DoubleMatrix> loadIris() throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
 		List<String> lines = IOUtils.readLines(resource.getInputStream());
