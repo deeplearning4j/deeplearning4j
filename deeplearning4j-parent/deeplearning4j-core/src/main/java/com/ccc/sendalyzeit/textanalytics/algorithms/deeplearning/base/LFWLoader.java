@@ -85,6 +85,11 @@ public class LFWLoader {
 		return convertListPairs(images);
 	}
 	
+
+	public Pair<DoubleMatrix,DoubleMatrix> getAllImagesAsMatrix(int numRows) throws Exception {
+		List<Pair<DoubleMatrix,DoubleMatrix>> images = getImagesAsList().subList(0, numRows);
+		return convertListPairs(images);
+	}
 	
 	public List<Pair<DoubleMatrix,DoubleMatrix>> getImagesAsList() throws Exception {
 		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<Pair<DoubleMatrix,DoubleMatrix>>();

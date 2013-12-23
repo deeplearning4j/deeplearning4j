@@ -21,10 +21,17 @@ public abstract class DeepLearningTest {
 
 	private static Logger log = LoggerFactory.getLogger(DeepLearningTest.class);
 
-	public Pair<DoubleMatrix,DoubleMatrix> getIris() throws IOException {
+	public static Pair<DoubleMatrix,DoubleMatrix> getIris() throws IOException {
 		Pair<DoubleMatrix,DoubleMatrix> pair = IrisUtils.loadIris();
 		return pair;
 	}
+	public static Pair<DoubleMatrix,DoubleMatrix> getIris(int num) throws IOException {
+		Pair<DoubleMatrix,DoubleMatrix> pair = IrisUtils.loadIris(num);
+		return pair;
+	}
+	
+	
+	
 	
 	/**
 	 * LFW Dataset: pick first num faces
@@ -32,7 +39,34 @@ public abstract class DeepLearningTest {
 	 * @return
 	 * @throws Exception
 	 */
-	public List<Pair<DoubleMatrix,DoubleMatrix>> getFirstFaces(int num) throws Exception {
+	public static Pair<DoubleMatrix,DoubleMatrix> getFaces(int num) throws Exception {
+		LFWLoader loader = new LFWLoader();
+		loader.getIfNotExists();
+		return loader.getAllImagesAsMatrix(num);
+	}
+	
+	
+	/**
+	 * LFW Dataset: pick all faces
+	 * @param num
+	 * @return
+	 * @throws Exception
+	 */
+	public static Pair<DoubleMatrix,DoubleMatrix> getFacesMatrix() throws Exception {
+		LFWLoader loader = new LFWLoader();
+		loader.getIfNotExists();
+		return loader.getAllImagesAsMatrix();
+	}
+	
+	
+	
+	/**
+	 * LFW Dataset: pick first num faces
+	 * @param num
+	 * @return
+	 * @throws Exception
+	 */
+	public static List<Pair<DoubleMatrix,DoubleMatrix>> getFirstFaces(int num) throws Exception {
 		LFWLoader loader = new LFWLoader();
 		loader.getIfNotExists();
 		return loader.getFirst(num);
