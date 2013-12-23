@@ -192,7 +192,11 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 	public void train() {
-		
+		Pair<DoubleMatrix,DoubleMatrix> batch = null;
+		while(iter.hasNext()) {
+			batch = iter.next();
+			runner.train(batch);
+		}
 	}
 	
 	
