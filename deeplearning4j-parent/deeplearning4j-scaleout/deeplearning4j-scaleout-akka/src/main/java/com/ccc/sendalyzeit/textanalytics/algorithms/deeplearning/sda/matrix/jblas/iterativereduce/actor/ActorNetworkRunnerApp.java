@@ -1,9 +1,7 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.ZooKeeper;
 import org.jblas.DoubleMatrix;
 import org.kohsuke.args4j.CmdLineException;
@@ -22,7 +20,41 @@ import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperConfigu
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurableDistributed;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.ExtraParamsBuilder;
-
+/**
+ * Main command line app for handling workers or starting up a master for training a neural network:
+ * TODO: Add classification
+ * 
+ * Options:
+ *       Required:
+ *       -a algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)
+ *       -i number of inputs (columns in the input matrix)
+ *       -o number of outputs for the network
+ *       -data dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)
+ *       
+ *       Optional:
+ *        -fte number of fine tune epochs to train on (default: 100)
+ *        -pte number of epochs for pretraining (default: 100)
+ *        -r   seed value for the random number generator (default: 123)
+ *        -ftl the starter fine tune learning rate (default: 0.1)
+ *        -ptl  the starter fine tune learning rate (default: 0.1)
+ *        -sp   number of inputs to split by default: 10
+ *        -e   number of examples to train on: if unspecified will just train on everything found
+ *        DBN/CDBN:
+ *        -k the k for rbms (default: 1)
+ *        
+ *        SDA:
+ *        -c corruption level (for denoising autoencoders) (default: 0.3)
+ *        
+ *        Cluster:
+ *        
+ *            -h the host to connect to as a master (default: 127.0.0.1)
+ *            -t type of worker
+ *            -ad address of master worker
+ *        
+ *      
+ * @author Adam Gibson
+ *
+ */
 public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistributed {
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerApp.class);
 
