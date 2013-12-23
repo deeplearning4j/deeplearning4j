@@ -45,9 +45,8 @@ public class ActorNetworkRunnerAppTest {
 		});
 		
 		app.exec();
-		
-		ZooKeeper zk = new ZookeeperBuilder().setHost("127.0.0.1").build();
-		ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(zk, "master");
+		ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever("master");
+
 		Conf conf = retriever.retreive();
 		assertEquals(true,conf != null);
 		

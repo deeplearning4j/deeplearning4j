@@ -2,7 +2,6 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jbl
 
 import java.util.Arrays;
 
-import org.apache.zookeeper.ZooKeeper;
 import org.jblas.DoubleMatrix;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -13,14 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
-import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.DataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.IrisDataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.LFWDataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.MnistDataSetIterator;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZooKeeperConfigurationRegister;
-import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperBuilder;
 import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperConfigurationRetriever;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurableDistributed;
@@ -100,8 +96,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private int numExamples = -1;
 	private ActorNetworkRunner runner;
 	private DataSetIterator iter;
-	
-	
+
+
 	public ActorNetworkRunnerApp(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
@@ -131,8 +127,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			throw new IllegalStateException("Please define some inputs");
 		if(this.outputs < 1)
 			throw new IllegalStateException("Please define some outputs");
-
-
+		
 	}
 
 
@@ -141,8 +136,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		//this is just a worker node: load everything from the master. All we should need is the ip of the master
 		//to set everything up
 		if(type != null && type.equals("worker"))  {
-			ZooKeeper zk = new ZookeeperBuilder().setHost(host).build();
-			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(zk, "master");
+			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
 			Conf conf = retriever.retreive();
 			String address = conf.get(MASTER_URL);
 			runner = new ActorNetworkRunner(type,address);
@@ -152,8 +146,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		}
 		else {
 			Conf conf = new Conf();
-			
-		
+
+
 
 			conf.put(CLASS, getClassForAlgorithm());
 			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
@@ -188,21 +182,28 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 
-
 	}
 
+
+	/**
+	 * Initializes the training.
+	 * Note that this is only used as a trigger for the initial call.
+	 * The ActorSystem already has a work pull pattern implemented 
+	 * with a batch actor, and a reference to the iterator.
+	 * 
+	 */
 	public void train() {
+		
 		Pair<DoubleMatrix,DoubleMatrix> batch = null;
-		while(iter.hasNext()) {
+		if(iter.hasNext()) {
 			batch = iter.next();
 			runner.train(batch);
 		}
 	}
-	
-	
+
+
 	public void shutdown() {
-		if(runner != null)
-			runner.shutdown();
+		
 	}
 
 	public String getData() {
@@ -212,7 +213,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private void getDataSet() {
 		try {
 			if(dataSet.equals("mnist")) {
-			  iter = new MnistDataSetIterator(numExamples);
+				iter = new MnistDataSetIterator(numExamples);
 			}
 
 			else if(dataSet.equals("iris")) {
@@ -248,7 +249,10 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 * @throws ParseException 
 	 */
 	public static void main(String[] args) throws Exception {
-		new ActorNetworkRunnerApp(args).exec();
+		ActorNetworkRunnerApp app = new ActorNetworkRunnerApp(args);
+		app.exec();
+		if(app.type.equals("master"))
+			app.train();
 	}
 
 	@Override

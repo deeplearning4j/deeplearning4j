@@ -22,19 +22,17 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 	private int port;
 	private String id;
 
+	public ZookeeperConfigurationRetriever(String id) {
+		this("localhost",2181,id);
+	}
+
+	
 	public ZookeeperConfigurationRetriever( String host,
 			int port, String id) {
 		super();
 		this.keeper = new ZookeeperBuilder().setHost(host).setPort(port).build();
 		this.host = host;
 		this.port = port;
-		this.id = id;
-	}
-
-
-	public ZookeeperConfigurationRetriever(ZooKeeper keeper,String id) {
-		super();
-		this.keeper = keeper;
 		this.id = id;
 	}
 

@@ -15,4 +15,6 @@ public interface DataSetIterator extends Iterator<Pair<DoubleMatrix,DoubleMatrix
 	
 	int totalOutcomes();
 	
+	void reset();
+	
 }

@@ -18,4 +18,6 @@ public interface DataSetFetcher {
 	int inputColumns();
 	
 	int totalExamples();
+	
+	void reset();
 }

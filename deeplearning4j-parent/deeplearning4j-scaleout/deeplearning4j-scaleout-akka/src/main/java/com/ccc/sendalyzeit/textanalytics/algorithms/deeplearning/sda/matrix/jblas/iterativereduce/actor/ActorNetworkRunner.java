@@ -30,6 +30,7 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.DataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
@@ -61,11 +62,23 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private static String systemName = "ClusterSystem";
 	private String type = "master";
 	private Address masterAddress;
-
-	public ActorNetworkRunner(String type) {
+	private DataSetIterator iter;
+	
+	/**
+	 * Master constructor
+	 * @param type the type (worker)
+	 * @param iter the dataset to use
+	 */
+	public ActorNetworkRunner(String type,DataSetIterator iter) {
 		this.type = type;
+		this.iter = iter;
 	}
 
+	/**
+	 * The worker constructor
+	 * @param type the type to use
+	 * @param address the address of the master
+	 */
 	public ActorNetworkRunner(String type,String address) {
 		this.type = type;
 		URI u = URI.create(address);
@@ -89,17 +102,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * @param c the neural network configuration
 	 * @return the actor for this backend
 	 */
-	public static Address startBackend(Address joinAddress, String role,Conf c) {
+	public static Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
+		ActorRef batchActor = system.actorOf(Props.create(new BatchActor.BatchActorFactory(iter)));
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
 		Address realJoinAddress =
 				(joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 				Cluster.get(system).join(realJoinAddress);
-				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c), "active", PoisonPill.getInstance(), "master"));
+				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor), "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
 
@@ -144,7 +158,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		if(type.equals("master")) {
 
-			masterAddress  = startBackend(null,"master",conf);
+			masterAddress  = startBackend(null,"master",conf,iter);
 			
 			
 			//wait for start
@@ -162,7 +176,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			Cluster.get(system).join(masterAddress);
 
 			//join with itself
-			startBackend(masterAddress,"master",conf);
+			startBackend(masterAddress,"master",conf,iter);
 
 
 			Conf c = conf.copy();
@@ -251,14 +265,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
 				list), mediator);
 
-		//serializable way of handing convergence
-		do {
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}while(currEpochs < epochs);
+		
 	}
 
 
@@ -275,10 +282,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		train(new Pair<DoubleMatrix,DoubleMatrix>(input,labels));
 	}
 
-	public void shutdown() {
-		system.shutdown();
-	}
-
+	
 	@Override
 	public void epochComplete(UpdateableMatrix result) {
 		currEpochs++;
@@ -312,53 +316,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	}
 
 
-	public static void main(String[] args) throws IOException, InterruptedException {
-		//initialize with a type and uri
-		final ActorNetworkRunner runner  = args.length >= 2 ? args.length >= 3 ? new ActorNetworkRunner(args[1],args[2]) : new ActorNetworkRunner(args[0]) : new ActorNetworkRunner();
-		Conf conf = new Conf();
-		Integer[] hidden_layer_sizes_arr = {300, 300,300};
-		double pretrain_lr = 0.1;
-
-
-		int pretraining_epochs = 1000;
-		double finetune_lr = 0.1;
-		int finetune_epochs = 500;
-
-
-		final Pair<DoubleMatrix,DoubleMatrix> mnist = DeepLearningTest.getMnistExampleBatch(100);
-
-		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
-		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
-		conf.put(SPLIT,String.valueOf(10));
-		conf.put(N_IN, String.valueOf(mnist.getFirst().columns));
-		conf.put(OUT, String.valueOf(mnist.getSecond().columns));
-		conf.put(PRE_TRAIN_EPOCHS, 100);
-		conf.put(FINE_TUNE_EPOCHS, 100);
-		conf.put(SEED, 1);
-		conf.put(LEARNING_RATE, 0.1);
-
-		conf.put(LAYER_SIZES, StringUtils.join(hidden_layer_sizes_arr,","));
-		conf.put(CORRUPTION_LEVEL, 0.3);
-		conf.put(SPLIT, 1);
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
-
-		runner.setup(conf);
-		log.info("Running training");
-		runner.train(mnist.getFirst(), mnist.getSecond());
-
-
-
-
-		BaseMultiLayerNetwork trained = runner.getResult().get();
-		Evaluation eval = new Evaluation();
-		DoubleMatrix predicted = trained.predict(mnist.getFirst());
-		eval.eval(mnist.getSecond(), predicted);
-		log.info(eval.stats());
-		runner.shutdown();	
-
-	}
-
+	
 	@Override
 	public void finish() {
 

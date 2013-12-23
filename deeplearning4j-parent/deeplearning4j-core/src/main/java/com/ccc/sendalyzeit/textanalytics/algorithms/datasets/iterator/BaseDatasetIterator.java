@@ -47,6 +47,11 @@ public class BaseDatasetIterator implements DataSetIterator {
 		return fetcher.totalOutcomes();
 	}
 
+	@Override
+	public void reset() {
+		fetcher.reset();
+	}
+
 	
 
 }
