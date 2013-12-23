@@ -111,7 +111,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 	}
 
 	@Test
-	public void testMnist() throws IOException {
+	public void testMnist() throws Exception {
 		Pair<DoubleMatrix,DoubleMatrix> mnist = getMnistExampleBatch(1);
 		runner = new ActorNetworkRunner();
 		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
@@ -126,6 +126,13 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
 			
         runner.setup(conf);
+        Thread.sleep(10000);
+        
+        
+        ActorNetworkRunner worker = new ActorNetworkRunner("worker",runner.getMasterAddress().toString());
+        worker.setup(conf);
+        
+        
     	runner.train(mnist.getFirst(), mnist.getSecond());
 
       

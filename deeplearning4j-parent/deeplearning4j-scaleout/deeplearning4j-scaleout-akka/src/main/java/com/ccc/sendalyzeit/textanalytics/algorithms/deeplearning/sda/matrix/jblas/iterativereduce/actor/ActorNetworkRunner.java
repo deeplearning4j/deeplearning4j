@@ -1,5 +1,8 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -45,7 +48,7 @@ import com.typesafe.config.ConfigFactory;
  */
 public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener {
 
-	
+
 	private static final long serialVersionUID = -4385335922485305364L;
 	private transient ActorSystem system;
 	private Integer currEpochs = 0;
@@ -142,15 +145,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		if(type.equals("master")) {
 
 			masterAddress  = startBackend(null,"master",conf);
+			
+			
 			//wait for start
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
+
 			
 			system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
-			
+
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
@@ -164,14 +170,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			//TODO: make this tunable
 			c.put(FINE_TUNE_EPOCHS, 1);
 			c.put(PRE_TRAIN_EPOCHS,1);
-			
+
 			//Wait for backend to be up
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-			
+
 			startWorker(masterAddress,c);
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
 					this), mediator);
@@ -187,26 +193,47 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			//TODO: make this tunable
 			c.put(FINE_TUNE_EPOCHS, 1);
 			c.put(PRE_TRAIN_EPOCHS,1);
-			
-			
+
+
 			startWorker(masterAddress,c);
 			//Wait for backend to be up
-			
+
 			try {
 				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-			
+
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
 
-			
+
 			log.info("Setup worker nodes");
 		}
+		
+		writeMasterAddress();
 	}
 
+	private void writeMasterAddress() {
+		String temp = System.getProperty("java.io.tmpdir");
+		File f = new File(temp,"masteraddress");
+		if(f.exists()) 
+			f.delete();
+		try {
+			f.createNewFile();
+			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
+			bos.write(masterAddress.toString().getBytes());
+			bos.flush();
+			bos.close();
+		}catch(IOException e) {
+			log.error("Unable to create file for master address",e);
+		}
+		f.deleteOnExit();
+
+	
+	}
+	
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		this.samples = list;
 		log.info("Publishing to results for training");
@@ -216,14 +243,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		} catch (InterruptedException e1) {
 			Thread.currentThread().interrupt();
 		}
-		
+
 		//ensure the trainer is known so the next iteration can happen
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
 				this), mediator);
 		//start the pipeline
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
 				list), mediator);
-		
+
 		//serializable way of handing convergence
 		do {
 			try {
@@ -254,7 +281,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	@Override
 	public void epochComplete(UpdateableMatrix result) {
- 		currEpochs++;
+		currEpochs++;
 		if(currEpochs < epochs) {
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
 					result), mediator);
@@ -272,12 +299,12 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 					samples), mediator);
 
 		}
-		
+
 		//update the final available result
 		this.result = result;
 		mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
 				result), mediator);
-		
+
 	}
 
 	public UpdateableMatrix getResult() {
@@ -287,7 +314,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		//initialize with a type and uri
-		final ActorNetworkRunner runner  = args.length >= 2 ? args.length >=3 ? new ActorNetworkRunner(args[1],args[2]) : new ActorNetworkRunner(args[0]) : new ActorNetworkRunner();
+		final ActorNetworkRunner runner  = args.length >= 2 ? args.length >= 3 ? new ActorNetworkRunner(args[1],args[2]) : new ActorNetworkRunner(args[0]) : new ActorNetworkRunner();
 		Conf conf = new Conf();
 		Integer[] hidden_layer_sizes_arr = {300, 300,300};
 		double pretrain_lr = 0.1;
@@ -334,8 +361,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	@Override
 	public void finish() {
-		// TODO Auto-generated method stub
-		
+
 	}
+
+	public Address getMasterAddress() {
+		return masterAddress;
+	}
+	
+	
 
 }
