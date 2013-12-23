@@ -58,11 +58,13 @@ public class ModelSavingActor extends UntypedActor {
 
 	public static class ModelSavingActorFactory implements Creator<ModelSavingActor> {
 
+		private static final long serialVersionUID = 6450982780084088162L;
+		private String path;
+
+		
 		public ModelSavingActorFactory(String path) {
 			this.path = path;
 		}
-		private String path;
-
 
 		@Override
 		public ModelSavingActor create() throws Exception {

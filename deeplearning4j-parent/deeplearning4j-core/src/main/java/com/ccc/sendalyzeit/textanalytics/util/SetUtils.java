@@ -10,10 +10,10 @@ public class SetUtils
 
 	// Set specific operations
 
-	public static <T> Set<T> intersection(Set<? extends T> setLeft, Set<? extends T> setRight)
+	public static <T> Set<T> intersection(Collection<T> parentCollection, Collection<T> removeFromCollection)
 	{
-		Set<T> results = new HashSet<T>(setLeft) ;
-		results.retainAll(setRight) ;
+		Set<T> results = new HashSet<T>(parentCollection) ;
+		results.retainAll(removeFromCollection) ;
 		return results ;
 	}
 

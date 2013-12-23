@@ -8,7 +8,6 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<properties>
-		<slf4j.version>1.7.5</slf4j.version>
 		<logback.version>1.0.6</logback.version>
 
 	</properties>
@@ -36,7 +35,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -63,10 +61,10 @@
 			<artifactId>junit</artifactId>
 			<version>4.11</version>
 		</dependency>
+
 		<dependency>
-			<groupId>com.google.collections</groupId>
-			<artifactId>google-collections</artifactId>
-			<version>1.0</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
 		</dependency>
 	</dependencies>
 </project>

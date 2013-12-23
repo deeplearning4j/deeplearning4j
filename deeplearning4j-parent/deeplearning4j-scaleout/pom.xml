@@ -15,5 +15,6 @@
 		<module>deeplearning4j-scaleout-api</module>
 		<module>deeplearning4j-scaleout-core</module>
 		<module>deeplearning4j-scaleout-akka-word2vec</module>
+		<module>deeplearning4j-scaleout-zookeeper</module>
 	</modules>
 </project>
