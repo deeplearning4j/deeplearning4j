@@ -1,14 +1,18 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.ZooKeeper;
 import org.jblas.DoubleMatrix;
+import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.spi.DoubleOptionHandler;
 import org.kohsuke.args4j.spi.IntOptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
@@ -20,7 +24,7 @@ import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurab
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.ExtraParamsBuilder;
 
 public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistributed {
-
+	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerApp.class);
 
 	@Option(name = "-a",usage="algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)")
 	private String algorithm;
@@ -48,84 +52,144 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private String hiddenLayerSizesOption;
 	private int[] hiddenLayerSizes = {300,300,300};
 	@Option(name="-t",usage="type of worker")
-	private String type;
+	private String type = "master";
 	@Option(name="-ad",usage="address of master worker")
 	private String address;
 	@Option(name="-sp",usage="number of inputs to split by default: 10")
 	private int split = 10;
+	@Option(name="-data",usage="dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)")
+	private String dataSet;
+	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
+	private int numExamples = -1;
+	private ActorNetworkRunner runner;
 
-	public ActorNetworkRunnerApp() {
-	}
-
-
-	public void exec(String[] args) throws Exception {
+	public ActorNetworkRunnerApp(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
 			parser.parseArgument(args);
-			if(hiddenLayerSizesOption != null) {
-				String[] split = hiddenLayerSizesOption.split(",");
-				hiddenLayerSizes = new int[split.length];
-				for(int i = 0; i < split.length; i++) {
-					hiddenLayerSizes[i] = Integer.parseInt(split[i]);
-				}
-
-
-			}
-			
-			//this is just a worker node: load everything from the master. All we should need is the ip of the master
-			//to set everything up
-			if(type != null && type.equals("worker"))  {
-				ZooKeeper zk = new ZookeeperBuilder().setHost(host).build();
-				ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(zk, "master");
-				Conf conf = retriever.retreive();
-				String address = conf.get(MASTER_URL);
-				ActorNetworkRunner runner = new ActorNetworkRunner(type,address);
-				runner.setup(conf);
-
-			}
-			else {
-				Conf conf = new Conf();
-
-				Pair<DoubleMatrix,DoubleMatrix> mnist = DeepLearningTest.getMnistExampleBatch(100);
-
-				conf.put(CLASS, getClassForAlgorithm());
-				conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
-				conf.put(SPLIT,String.valueOf(10));
-				conf.put(N_IN, String.valueOf(mnist.getFirst().columns));
-				conf.put(OUT, String.valueOf(mnist.getSecond().columns));
-				conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
-				conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
-				conf.put(SEED, String.valueOf(rngSeed));
-				conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
-
-				conf.put(LAYER_SIZES, StringUtils.join(hiddenLayerSizes,","));
-				conf.put(CORRUPTION_LEVEL,corruptionLevel);
-				conf.put(SPLIT, String.valueOf(split));
-				conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
-						.finetuneLearningRate(finetineLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
-
-				//run the master
-				ActorNetworkRunner runner = new ActorNetworkRunner();
-				runner.setup(conf);
-				//store it in zookeeper for service discovery
-				conf.put(MASTER_URL, runner.getMasterAddress().toString());
-				
-				//register the configuration to zookeeper
-				ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,new ZookeeperBuilder().build(),"master");
-				reg.register();
-				
-				
-				
-			}
-
-
-		} catch (Exception e) {
+			ensureValidMinConf();
+		} catch (CmdLineException e) {
 			parser.printUsage(System.err);
-			System.exit(1);
+			log.error("Unable to parse args",e);
+		}
+
+		if(hiddenLayerSizesOption != null) {
+			String[] split = hiddenLayerSizesOption.split(",");
+			hiddenLayerSizes = new int[split.length];
+			for(int i = 0; i < split.length; i++) {
+				hiddenLayerSizes[i] = Integer.parseInt(split[i]);
+			}
+
+		}
+	}
+
+
+	private void ensureValidMinConf() {
+		if(this.algorithm == null && !Arrays.asList("sda","cdbn","dbn").contains(this.algorithm))
+			throw new IllegalStateException("Algorithm not defined or invalid algorithm specified");
+		if(this.inputs < 1)
+			throw new IllegalStateException("Please define some inputs");
+		if(this.outputs < 1)
+			throw new IllegalStateException("Please define some outputs");
+
+
+	}
+
+
+	public void exec() throws Exception {
+
+		//this is just a worker node: load everything from the master. All we should need is the ip of the master
+		//to set everything up
+		if(type != null && type.equals("worker"))  {
+			ZooKeeper zk = new ZookeeperBuilder().setHost(host).build();
+			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(zk, "master");
+			Conf conf = retriever.retreive();
+			String address = conf.get(MASTER_URL);
+			runner = new ActorNetworkRunner(type,address);
+			runner.setup(conf);
+			retriever.close();
+
+		}
+		else {
+			Conf conf = new Conf();
+
+			Pair<DoubleMatrix,DoubleMatrix> dataSets = getDataSet();
+
+
+			conf.put(CLASS, getClassForAlgorithm());
+			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
+			conf.put(SPLIT,String.valueOf(10));
+			conf.put(N_IN, String.valueOf(dataSets.getFirst().columns));
+			conf.put(OUT, String.valueOf(dataSets.getSecond().columns));
+			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
+			conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
+			conf.put(SEED, String.valueOf(rngSeed));
+			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
+
+			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
+			conf.put(CORRUPTION_LEVEL,corruptionLevel);
+			conf.put(SPLIT, String.valueOf(split));
+			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
+					.finetuneLearningRate(finetineLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
+
+			//run the master
+			runner = new ActorNetworkRunner();
+			runner.setup(conf);
+			//store it in zookeeper for service discovery
+			conf.put(MASTER_URL, runner.getMasterAddress().toString());
+
+			//register the configuration to zookeeper
+			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,new ZookeeperBuilder().build(),"master");
+			reg.register();
+			reg.close();
+
+
+
 		}
 
 
 
+
+	}
+
+
+	public void shutdown() {
+		if(runner != null)
+			runner.shutdown();
+	}
+
+	public String getData() {
+		return dataSet;
+	}
+
+	private Pair<DoubleMatrix,DoubleMatrix> getDataSet() {
+		try {
+			if(dataSet.equals("mnist")) {
+				if(numExamples > 0)
+					return DeepLearningTest.getMnistExampleBatch(numExamples);
+
+				else 
+					return DeepLearningTest.getMnistExampleBatch(60000);
+			}
+
+			else if(dataSet.equals("iris")) {
+				if(numExamples > 0)
+					return DeepLearningTest.getIris(numExamples);
+
+				else 
+					return DeepLearningTest.getIris();
+			}
+			else if(dataSet.equals("lfw")) {
+				if(numExamples > 0)
+					return DeepLearningTest.getFaces(numExamples);
+				else
+					return DeepLearningTest.getFacesMatrix();
+			}
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return null;
 	}
 
 
@@ -149,12 +213,98 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 * @throws ParseException 
 	 */
 	public static void main(String[] args) throws Exception {
-		new ActorNetworkRunnerApp().exec(args);
+		new ActorNetworkRunnerApp(args).exec();
 	}
 
 	@Override
 	public void setup(Conf conf) {
 
 	}
+
+
+	public String getAlgorithm() {
+		return algorithm;
+	}
+
+
+	public int getInputs() {
+		return inputs;
+	}
+
+
+	public int getOutputs() {
+		return outputs;
+	}
+
+
+	public int getFinetuneEpochs() {
+		return finetuneEpochs;
+	}
+
+
+	public int getPretrainEpochs() {
+		return pretrainEpochs;
+	}
+
+
+	public long getRngSeed() {
+		return rngSeed;
+	}
+
+
+	public int getK() {
+		return k;
+	}
+
+
+	public double getCorruptionLevel() {
+		return corruptionLevel;
+	}
+
+
+	public String getHost() {
+		return host;
+	}
+
+
+	public double getFinetineLearningRate() {
+		return finetineLearningRate;
+	}
+
+
+	public double getPretrainLearningRate() {
+		return pretrainLearningRate;
+	}
+
+
+	public String getHiddenLayerSizesOption() {
+		return hiddenLayerSizesOption;
+	}
+
+
+	public int[] getHiddenLayerSizes() {
+		return hiddenLayerSizes;
+	}
+
+
+	public String getType() {
+		return type;
+	}
+
+
+	public String getAddress() {
+		return address;
+	}
+
+
+	public int getSplit() {
+		return split;
+	}
+
+
+	public int getNumExamples() {
+		return numExamples;
+	}
+
 
 }

@@ -36,7 +36,7 @@ public class TestZookeeperRegister {
 
 		String host = "localhost";
 		keeper = new ZookeeperBuilder().setHost(host).build();
-		register = new ZooKeeperConfigurationRegister(conf, keeper, "test",host,2181);
+		register = new ZooKeeperConfigurationRegister(conf, keeper, "test");
 		retriever = new ZookeeperConfigurationRetriever(host, 2181,"test");
 
 	}
