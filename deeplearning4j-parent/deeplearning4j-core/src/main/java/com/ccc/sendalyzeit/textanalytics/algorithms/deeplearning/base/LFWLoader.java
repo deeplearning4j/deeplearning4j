@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -29,6 +30,8 @@ public class LFWLoader {
 	private int numNames;
 	private int numPixelColumns;
 	private ImageLoader loader = new ImageLoader();
+	private List<String> images = new ArrayList<String>();
+	private List<String> outcomes = new ArrayList<String>();
 	
 	public void getIfNotExists() throws Exception {
 		if(!lfwDir.exists()) {
@@ -45,6 +48,14 @@ public class LFWLoader {
 		
 		//each subdir is a person
 		numNames = lfwDir.getAbsoluteFile().listFiles().length;
+		
+		Collection<File> allImages = FileUtils.listFiles(lfwDir, org.apache.commons.io.filefilter.FileFileFilter.FILE, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY);
+		for(File f : allImages) {
+			images.add(f.getAbsolutePath());
+		}
+		for(File dir : lfwDir.getAbsoluteFile().listFiles())
+			outcomes.add(dir.getAbsolutePath());
+		
 	}
 	
 	
@@ -58,6 +69,18 @@ public class LFWLoader {
 			outputs.putRow(i,images.get(i).getSecond());
 		}
 		return new Pair<DoubleMatrix,DoubleMatrix>(inputs,outputs);
+	}
+	
+	
+	
+	public Pair<DoubleMatrix,DoubleMatrix> getDataFor(int i) {
+		File image = new File(images.get(i));
+		int outcome = outcomes.indexOf(image.getParentFile().getAbsolutePath());
+		try {
+			return new Pair<DoubleMatrix,DoubleMatrix>(loader.asRowVector(image),MatrixUtil.toOutcomeVector(outcome, outcomes.size()));
+		} catch (Exception e) {
+			throw new IllegalStateException("Unable to get data for image " + i + " for path " + images.get(i));
+		}
 	}
 	
 	/**
@@ -152,5 +175,19 @@ public class LFWLoader {
 
 
 	}
+
+
+
+	public int getNumNames() {
+		return numNames;
+	}
+
+
+
+	public int getNumPixelColumns() {
+		return numPixelColumns;
+	}
+	
+	
 
 }
