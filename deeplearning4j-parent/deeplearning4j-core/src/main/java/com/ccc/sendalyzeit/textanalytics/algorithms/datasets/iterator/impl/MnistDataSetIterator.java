@@ -7,8 +7,8 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.BaseDatase
 
 public class MnistDataSetIterator extends BaseDatasetIterator {
 
-	public MnistDataSetIterator(int batch) throws IOException {
-		super(batch, new MnistDataFetcher());
+	public MnistDataSetIterator(int batch,int numExamples) throws IOException {
+		super(batch, numExamples,new MnistDataFetcher());
 	}
 
 

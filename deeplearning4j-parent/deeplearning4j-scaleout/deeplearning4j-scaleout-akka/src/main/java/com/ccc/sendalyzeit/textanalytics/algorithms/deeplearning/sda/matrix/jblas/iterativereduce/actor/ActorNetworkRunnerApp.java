@@ -72,7 +72,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	@Option(name="-r",usage="seed value for the random number generator (default: 123)",handler=IntOptionHandler.class)
 	private long rngSeed = 123;
 	@Option(name="-k",usage="the k for rbms (default: 1)",handler=IntOptionHandler.class)
-	private int k;
+	private int k = 1;
 	@Option(name="-c",usage="corruption level (for denoising autoencoders) (default: 0.3)",handler=DoubleOptionHandler.class)
 	private double corruptionLevel = 0.3;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
@@ -153,11 +153,12 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 			conf.put(CORRUPTION_LEVEL,corruptionLevel);
 			conf.put(SPLIT, String.valueOf(split));
-			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
+			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
+					.k(k)
 					.finetuneLearningRate(finetineLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
 
 			//run the master
-			runner = new ActorNetworkRunner();
+			runner = new ActorNetworkRunner("master",iter);
 			runner.setup(conf);
 			//store it in zookeeper for service discovery
 			conf.put(MASTER_URL, runner.getMasterAddress().toString());
@@ -190,6 +191,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			batch = iter.next();
 			runner.train(batch);
 		}
+		else 
+			throw new IllegalStateException("Nothing to train");
 	}
 
 
@@ -206,14 +209,14 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		   return;
 		try {
 			if(dataSet.equals("mnist")) {
-				iter = new MnistDataSetIterator(numExamples);
+				iter = new MnistDataSetIterator(split,numExamples);
 			}
 
 			else if(dataSet.equals("iris")) {
-				iter = new IrisDataSetIterator(numExamples);
+				iter = new IrisDataSetIterator(split,numExamples);
 			}
 			else if(dataSet.equals("lfw")) {
-				iter = new LFWDataSetIterator(numExamples);
+				iter = new LFWDataSetIterator(split,numExamples);
 			}
 
 		} catch (Exception e) {

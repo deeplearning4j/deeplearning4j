@@ -21,7 +21,7 @@ public class MnistDataSetIteratorTest extends BaseDataSetIteratorTest {
 	@Override
 	public DataSetIterator getIter() {
 		try {
-			return new MnistDataSetIterator(10);
+			return new MnistDataSetIterator(10,100);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

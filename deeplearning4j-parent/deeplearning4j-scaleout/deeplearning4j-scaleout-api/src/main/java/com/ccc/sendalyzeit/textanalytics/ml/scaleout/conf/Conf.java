@@ -24,6 +24,7 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		put(OUT,String.valueOf(1));
 		put(N_IN,String.valueOf(1));
 		put(CLASS,"com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
+		put(PARAM_ALGORITHM,"sda");
 		put(LAYER_SIZES, "300,300,300");
 	}
 
@@ -60,7 +61,10 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 			else if(algorithm.equals(PARAM_CDBN) || algorithm.equals(PARAM_DBN)) {
 				//always present
 				Integer k = j.getInt(PARAM_K);
-				Double learningRate = j.getDouble(LEARNING_RATE);
+				if(k < 1)
+					throw new IllegalStateException("K must be greater than 0");
+				
+				Double learningRate = j.getDouble(PARAM_LEARNING_RATE);
 				Integer epochs = j.getInt(PARAM_EPOCHS);
 
 				if(j.length() > 3) {

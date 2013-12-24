@@ -53,6 +53,8 @@ public class BatchActor extends UntypedActor {
 		private static final long serialVersionUID = -2260113511909990862L;
 
 		public BatchActorFactory(DataSetIterator iter) {
+			if(iter == null)
+				throw new IllegalArgumentException("Iter can't be null");
 			this.iter = iter;
 		}
 		

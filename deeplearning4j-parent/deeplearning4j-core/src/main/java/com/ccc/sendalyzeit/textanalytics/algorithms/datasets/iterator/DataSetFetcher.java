@@ -1,10 +1,12 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator;
 
+import java.io.Serializable;
+
 import org.jblas.DoubleMatrix;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 
-public interface DataSetFetcher {
+public interface DataSetFetcher extends Serializable {
 
 	
 	boolean hasMore();

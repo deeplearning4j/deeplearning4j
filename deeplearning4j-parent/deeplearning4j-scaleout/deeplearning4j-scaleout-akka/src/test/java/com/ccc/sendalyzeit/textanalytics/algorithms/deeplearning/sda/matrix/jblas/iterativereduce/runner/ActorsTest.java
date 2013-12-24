@@ -38,7 +38,7 @@ public class ActorsTest {
 
 	@Test
 	public void testBatchActor() throws Exception {
-		final TestActorRef<BatchActor> ref = TestActorRef.create(system, Props.create(new BatchActor.BatchActorFactory(new MnistDataSetIterator(1))), "testA");
+		final TestActorRef<BatchActor> ref = TestActorRef.create(system, Props.create(new BatchActor.BatchActorFactory(new MnistDataSetIterator(1,1))), "testA");
 		BatchActor ref2 = ref.underlyingActor();
 		assertEquals(true,ref2.getIter().hasNext());
 		assertEquals(1,ref2.getIter().batch());
@@ -53,7 +53,7 @@ public class ActorsTest {
 
 	@Test
 	public void testMasterActor() throws Exception {
-		final TestActorRef<BatchActor> ref1 = TestActorRef.create(system, Props.create(new BatchActor.BatchActorFactory(new MnistDataSetIterator(1))), "testC");
+		final TestActorRef<BatchActor> ref1 = TestActorRef.create(system, Props.create(new BatchActor.BatchActorFactory(new MnistDataSetIterator(1,1))), "testC");
 		BatchActor ref2 = ref1.underlyingActor();
 		Conf c = new Conf();
 		c.put(Conf.PRE_TRAIN_EPOCHS, 1);

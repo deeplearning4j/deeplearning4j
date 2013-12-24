@@ -6,19 +6,23 @@ import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 
 public class BaseDatasetIterator implements DataSetIterator {
 
-	private int batch;
+	private int batch,numExamples;
 	private DataSetFetcher fetcher;
 	
 	
 	
-	public BaseDatasetIterator(int batch,DataSetFetcher fetcher) {
+	public BaseDatasetIterator(int batch,int numExamples,DataSetFetcher fetcher) {
 		this.batch = batch;
+		if(numExamples < 0)
+			numExamples = fetcher.totalExamples();
+		
+		this.numExamples = numExamples;
 		this.fetcher = fetcher;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return fetcher.hasMore();
+		return fetcher.hasMore() && fetcher.cursor() < numExamples;
 	}
 
 	@Override
@@ -60,6 +64,11 @@ public class BaseDatasetIterator implements DataSetIterator {
 	@Override
 	public int cursor() {
 		return fetcher.cursor();
+	}
+
+	@Override
+	public int numExamples() {
+		return numExamples;
 	}
 	
 	
