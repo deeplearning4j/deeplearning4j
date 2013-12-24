@@ -43,7 +43,12 @@ public class RBM extends BaseNeuralNetwork {
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng);
 	}
 
-
+	/**
+	 * 
+	 * @param learningRate
+	 * @param k
+	 * @param input
+	 */
 	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
@@ -72,6 +77,10 @@ public class RBM extends BaseNeuralNetwork {
 		
 		/*
 		 * K steps of gibbs sampling. THis is the positive phase of contrastive divergence.
+		 * 
+		 * There are 4 matrices being computed for each gibbs sampling.
+		 * The samples from both the positive and negative phases and their expected values or averages.
+		 * 
 		 */
 		
 		for(int i = 0; i < k; i++) {
@@ -104,7 +113,8 @@ public class RBM extends BaseNeuralNetwork {
 		vBias = vBiasAdd.mul(learningRate);
 
 
-		//update rule: the expected values of the hidden input - the negative hideen  means adjusted by the learning reate
+		//update rule: the expected values of the hidden input - the negative hideen  means adjusted by the learning rate
+		
 		DoubleMatrix hBiasAdd = MatrixUtil.mean(probHidden.getSecond().sub(nhMeans), 0);
 
 		hBiasAdd = hBiasAdd.mul(learningRate);
@@ -201,7 +211,7 @@ public class RBM extends BaseNeuralNetwork {
 	public DoubleMatrix reconstruct(DoubleMatrix v) {
 		//sigmoid(visible * weights + hidden bias
 		DoubleMatrix h = MatrixUtil.sigmoid(v.mmul(W).addRowVector(hBias));
-		//reconstructed: sigmoid(hidden * Weights + the visible bias
+		//reconstructed: propdown
 		return propDown(h);
 	}
 
