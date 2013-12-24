@@ -1,5 +1,6 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
 	public final static int NUM_EXAMPLES = 60000;
 
 	public MnistDataFetcher() throws IOException {
+		if(!new File("/tmp/mnist").exists())
+		      new MnistFetcher().downloadAndUntar();
 		man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
 		numOutcomes = 10;
 		totalExamples = NUM_EXAMPLES;

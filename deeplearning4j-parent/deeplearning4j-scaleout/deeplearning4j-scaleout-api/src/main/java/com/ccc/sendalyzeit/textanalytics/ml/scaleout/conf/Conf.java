@@ -11,6 +11,23 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 
 	private static final long serialVersionUID = -7319565384587251582L;
 	
+	
+	
+	
+	
+	public Conf() {
+		put(SEED,String.valueOf(123));
+		put(PARAM_K,String.valueOf(1));
+		put(PARAM_FINETUNE_LR, String.valueOf(0.1));
+		put(FINE_TUNE_EPOCHS, String.valueOf(100));
+		put(CORRUPTION_LEVEL, String.valueOf(0.3));
+		put(OUT,String.valueOf(1));
+		put(N_IN,String.valueOf(1));
+		put(CLASS,"com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
+		put(LAYER_SIZES, "300,300,300");
+	}
+
+
 	public Conf copy() {
 		Conf conf = new Conf();
 		conf.putAll(this);

@@ -20,4 +20,6 @@ public interface DataSetFetcher {
 	int totalExamples();
 	
 	void reset();
+	
+	int cursor();
 }

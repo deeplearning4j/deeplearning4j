@@ -53,7 +53,8 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 	public static String BROADCAST = "broadcast";
 	public static String RESULT = "result";
 	//number of batches over time
-	private int partition;
+	private int partition = 1;
+	private boolean isDone = false;
 
 
 	/**
@@ -64,12 +65,12 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
-	    mediator.tell(new Put(getSelf()), getSelf());
+		mediator.tell(new Put(getSelf()), getSelf());
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.RESULT, getSelf()), getSelf());
 		setup(conf);
-		
-		
+
+
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
@@ -91,6 +92,8 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 
 		return masterMatrix;
 	}
+
+
 
 	@Override
 	public void setup(Conf conf) {
@@ -124,11 +127,18 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 				masterMatrix = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterMatrix);
+				//reset the dataset
 				batchActor.tell(new ResetMessage(), getSelf());
-				//TODO: there is a better way to to this.
 				epochsComplete++;
 				batchActor.tell(up, getSelf());
 				updates.clear();
+				
+				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
+					isDone = true;
+					log.info("All done; shutting down");
+					context().system().shutdown();
+				}
+
 			}
 
 		}
@@ -247,4 +257,26 @@ public class MasterActor extends UntypedActor implements DeepLearningConfigurabl
 			}
 		});
 	}
+
+	public Conf getConf() {
+		return conf;
+	}
+
+	public int getEpochsComplete() {
+		return epochsComplete;
+	}
+
+	public int getPartition() {
+		return partition;
+	}
+
+	public UpdateableMatrix getMasterMatrix() {
+		return masterMatrix;
+	}
+
+	public boolean isDone() {
+		return isDone;
+	}
+
+
 }

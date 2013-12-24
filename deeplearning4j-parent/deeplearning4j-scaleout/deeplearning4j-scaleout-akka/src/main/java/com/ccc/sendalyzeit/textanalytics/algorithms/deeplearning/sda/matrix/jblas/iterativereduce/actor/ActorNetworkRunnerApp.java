@@ -76,7 +76,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	@Option(name="-c",usage="corruption level (for denoising autoencoders) (default: 0.3)",handler=DoubleOptionHandler.class)
 	private double corruptionLevel = 0.3;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
-	private String host = "127.0.0.1";
+	private String host = "localhost";
 	@Option(name="-ftl",usage="the starter fine tune learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
 	private double finetineLearningRate = 0.1;
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
@@ -102,8 +102,6 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
 			parser.parseArgument(args);
-			ensureValidMinConf();
-			getDataSet();
 		} catch (CmdLineException e) {
 			parser.printUsage(System.err);
 			log.error("Unable to parse args",e);
@@ -120,15 +118,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	private void ensureValidMinConf() {
-		if(this.algorithm == null && !Arrays.asList("sda","cdbn","dbn").contains(this.algorithm))
-			throw new IllegalStateException("Algorithm not defined or invalid algorithm specified");
-		if(this.inputs < 1)
-			throw new IllegalStateException("Please define some inputs");
-		if(this.outputs < 1)
-			throw new IllegalStateException("Please define some outputs");
-		
-	}
+
 
 
 	public void exec() throws Exception {
@@ -136,6 +126,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		//this is just a worker node: load everything from the master. All we should need is the ip of the master
 		//to set everything up
 		if(type != null && type.equals("worker"))  {
+			log.info("Initializing conf from zookeeper at " + host);
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
 			Conf conf = retriever.retreive();
 			String address = conf.get(MASTER_URL);
@@ -148,7 +139,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			Conf conf = new Conf();
 
 
-
+			getDataSet();
 			conf.put(CLASS, getClassForAlgorithm());
 			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 			conf.put(SPLIT,String.valueOf(10));
@@ -172,7 +163,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.put(MASTER_URL, runner.getMasterAddress().toString());
 
 			//register the configuration to zookeeper
-			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
+			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master",host,2181);
 			reg.register();
 			reg.close();
 
@@ -211,6 +202,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 	private void getDataSet() {
+		if(type.equals("worker"))
+		   return;
 		try {
 			if(dataSet.equals("mnist")) {
 				iter = new MnistDataSetIterator(numExamples);
@@ -243,7 +236,11 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-
+	public boolean isDone() {
+		return iter.hasNext();
+	}
+	
+	
 	/**
 	 * @param args
 	 * @throws ParseException 
