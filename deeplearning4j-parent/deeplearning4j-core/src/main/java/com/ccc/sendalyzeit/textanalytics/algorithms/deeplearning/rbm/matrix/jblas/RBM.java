@@ -18,6 +18,9 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  * 
  * Based on Hinton et al.'s work 
  * 
+ * Great reference:
+ * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
+ * 
  * 
  * @author Adam Gibson
  *
@@ -44,10 +47,19 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 	/**
+	 * Contrastive divergence revolves around the idea 
+	 * of approximating the log likelihood around x1(input) with repeated sampling.
+	 * Given this is an energy based model: the higher k is (the more we sample the model)
+	 * the more we lower the energy (increase the likelihood of the model)
 	 * 
-	 * @param learningRate
-	 * @param k
-	 * @param input
+	 * and lower the likelihood (increase the energy) of the hidden samples.
+	 * 
+	 * Other insights:
+	 *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
+	 *    
+ 	 * @param learningRate the learning rate to scale by
+	 * @param k the number of iterations to do
+	 * @param input the input to sample from
 	 */
 	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
@@ -64,7 +76,11 @@ public class RBM extends BaseNeuralNetwork {
 		 */
 		DoubleMatrix chainStart = probHidden.getSecond();
 		
-		
+		/*
+		 * Note that at a later date, we can explore alternative methods of 
+		 * storing the chain transitions for different kinds of sampling
+		 * and exploring the search space.
+		 */
 		Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
 		//negative visble means or expected values
 		DoubleMatrix nvMeans = null;
@@ -161,8 +177,9 @@ public class RBM extends BaseNeuralNetwork {
 
 	/**
 	 * Gibbs sampling step: hidden ---> visible ---> hidden
-	 * @param h
-	 * @return
+	 * @param h the hidden input
+	 * @return the expected values and samples of both the visible samples given the hidden
+	 * and the new hidden input and expected values
 	 */
 	public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
 		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = this.sampleVGivenH(h);
@@ -206,13 +223,11 @@ public class RBM extends BaseNeuralNetwork {
 	 * Reconstructs the visible input.
 	 * A reconstruction is a propdown of the reconstructed hidden input.
 	 * @param v the visible input
-	 * @return
+	 * @return the reconstruction of the visible input
 	 */
 	public DoubleMatrix reconstruct(DoubleMatrix v) {
-		//sigmoid(visible * weights + hidden bias
-		DoubleMatrix h = MatrixUtil.sigmoid(v.mmul(W).addRowVector(hBias));
-		//reconstructed: propdown
-		return propDown(h);
+		//reconstructed: propUp ----> hidden propDown to reconstruct
+		return propDown(propUp(v));
 	}
 
 	public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
