@@ -20,7 +20,7 @@ public class IrisDataSetIteratorTest extends BaseDataSetIteratorTest {
 	
 	@Override
 	public DataSetIterator getIter() {
-		return new IrisDataSetIterator(10);
+		return new IrisDataSetIterator(10,100);
 	}
 
 

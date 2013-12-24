@@ -5,8 +5,8 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.BaseDatase
 
 public class LFWDataSetIterator extends BaseDatasetIterator {
 
-	public LFWDataSetIterator(int batch) {
-		super(batch, new LFWDataFetcher());
+	public LFWDataSetIterator(int batch,int numExamples) {
+		super(batch, numExamples,new LFWDataFetcher());
 	}
 
 }

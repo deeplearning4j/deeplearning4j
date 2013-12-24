@@ -3,6 +3,8 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers;
 import java.util.List;
 
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.DataSetFetcher;
@@ -15,6 +17,8 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	protected int inputColumns = -1;
 	protected Pair<DoubleMatrix,DoubleMatrix> curr;
 	protected int totalExamples;
+	protected static Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
+	
 	
 	protected DoubleMatrix createInputMatrix(int numRows) {
 		return new DoubleMatrix(numRows,inputColumns);
@@ -29,6 +33,10 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	}
 	
 	protected void initializeCurrFromList(List<Pair<DoubleMatrix,DoubleMatrix>> examples) {
+		
+		if(examples.isEmpty())
+			log.warn("Warning: empty dataset from the fetcher");
+		
 		DoubleMatrix inputs = createInputMatrix(examples.size());
 		DoubleMatrix labels = createOutputMatrix(examples.size());
 		for(int i = 0; i < examples.size(); i++) {

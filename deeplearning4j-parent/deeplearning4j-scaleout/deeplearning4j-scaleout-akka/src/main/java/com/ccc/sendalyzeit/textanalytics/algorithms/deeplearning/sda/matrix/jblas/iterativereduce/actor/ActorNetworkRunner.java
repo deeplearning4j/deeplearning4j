@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +28,9 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
-import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.DataSetIterator;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.ExtraParamsBuilder;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.iterativereduce.jblas.UpdateableMatrix;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -155,9 +150,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
 		epochs = conf.getInt(PRE_TRAIN_EPOCHS);
-
 		if(type.equals("master")) {
 
+			if(iter == null)
+				throw new IllegalStateException("Unable to initialize no dataset to train");
+			
 			masterAddress  = startBackend(null,"master",conf,iter);
 			
 			

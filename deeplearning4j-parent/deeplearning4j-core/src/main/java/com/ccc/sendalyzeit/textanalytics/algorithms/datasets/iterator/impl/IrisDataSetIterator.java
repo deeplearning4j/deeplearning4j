@@ -5,8 +5,8 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.BaseDatase
 
 public class IrisDataSetIterator extends BaseDatasetIterator {
 
-	public IrisDataSetIterator(int batch) {
-		super(batch, new IrisDataFetcher());
+	public IrisDataSetIterator(int batch,int numExamples) {
+		super(batch,numExamples,new IrisDataFetcher());
 	}
 
 	

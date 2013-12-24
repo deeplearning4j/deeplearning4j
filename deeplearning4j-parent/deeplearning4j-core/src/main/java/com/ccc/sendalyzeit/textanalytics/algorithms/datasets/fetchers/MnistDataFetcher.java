@@ -20,7 +20,7 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  */
 public class MnistDataFetcher extends BaseDataFetcher {
 
-	private MnistManager man;
+	private transient MnistManager man;
 	public final static int NUM_EXAMPLES = 60000;
 
 	public MnistDataFetcher() throws IOException {
@@ -64,7 +64,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 			}
 		}
-
+	
+		
 		initializeCurrFromList(toConvert);
 
 	}
