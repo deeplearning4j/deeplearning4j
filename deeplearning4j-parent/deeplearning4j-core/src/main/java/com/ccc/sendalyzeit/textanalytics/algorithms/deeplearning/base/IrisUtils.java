@@ -21,7 +21,7 @@ public class IrisUtils {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
 		List<String> lines = IOUtils.readLines(resource.getInputStream());
 		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
-		DoubleMatrix ret = DoubleMatrix.ones(lines.size(), 4);
+		DoubleMatrix ret = DoubleMatrix.ones(to, 4);
 		List<String> outcomeTypes = new ArrayList<String>();
 		double[][] outcomes = new double[lines.size()][3];
 		for(int i = from; i < to; i++) {

@@ -1,23 +1,25 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.runner;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
 import org.apache.curator.test.TestingServer;
-import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor.ActorNetworkRunnerApp;
-import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperBuilder;
 import com.ccc.sendalyzeit.textanalytics.deeplearning.zookeeper.ZookeeperConfigurationRetriever;
 import com.ccc.sendalyzeit.textanalytics.ml.scaleout.conf.Conf;
 
 public class ActorNetworkRunnerAppTest {
 	
 	private TestingServer server;
+	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerAppTest.class);
+	
 	
 	@Before
 	public void init() throws Exception {
@@ -45,12 +47,16 @@ public class ActorNetworkRunnerAppTest {
 		});
 		
 		app.exec();
+		app.train();
+		
 		ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever("master");
 
 		Conf conf = retriever.retreive();
 		assertEquals(true,conf != null);
-		
-		app.shutdown();
+		while(!app.isDone()) {
+			Thread.sleep(10000);
+		}
+		log.info("Done");
 		
 	}
 	

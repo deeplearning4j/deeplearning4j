@@ -76,5 +76,11 @@
 			<artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-testkit_2.10</artifactId>
+			<version>${akka.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>

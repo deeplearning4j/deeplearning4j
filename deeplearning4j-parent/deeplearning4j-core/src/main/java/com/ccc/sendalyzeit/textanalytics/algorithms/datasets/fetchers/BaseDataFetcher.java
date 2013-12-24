@@ -10,7 +10,7 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 public abstract class BaseDataFetcher implements DataSetFetcher {
 	
-	protected int cursor;
+	protected int cursor = 0;
 	protected int numOutcomes = -1;
 	protected int inputColumns = -1;
 	protected Pair<DoubleMatrix,DoubleMatrix> curr;
@@ -68,6 +68,13 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	public void reset() {
 		cursor = 0;
 	}
+
+	@Override
+	public int cursor() {
+		return cursor;
+	}
+	
+	
 
 	
 }

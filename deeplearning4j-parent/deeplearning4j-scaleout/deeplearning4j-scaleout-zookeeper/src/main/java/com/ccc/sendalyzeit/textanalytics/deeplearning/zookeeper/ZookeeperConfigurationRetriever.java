@@ -44,6 +44,30 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 		}
 		return conf;
 	}
+	
+	
+	public Conf retreive(String host) throws Exception {
+		Conf conf = new Conf();
+		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
+		Stat stat = keeper.exists(path, false);
+		if(stat==null) {
+			List<String> list = keeper.getChildren( new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), false);
+			throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
+		}
+		String data = new String( keeper.getData(path, false, stat ) );
+		String[] split = data.split("\n");
+		for(String s : split) {
+			if(s.isEmpty() || s.charAt(0)=='#')
+				continue;
+			String[] split2 = s.split("=");
+			if(split2.length > 1)
+				conf.put(split2[0], split2[1]);
+
+		}
+
+		return conf;
+	}
+	
 	public Conf retreive() throws Exception {
 		Conf conf = new Conf();
 		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();

@@ -12,7 +12,7 @@ public class BatchActor extends UntypedActor {
 
 	private DataSetIterator iter;
 	private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-
+	private int numTimesReset;
 	
 	
 	public BatchActor(DataSetIterator iter) {
@@ -24,6 +24,7 @@ public class BatchActor extends UntypedActor {
 	public void onReceive(Object arg0) throws Exception {
 	    if(arg0 instanceof ResetMessage) {
 	    	iter.reset();
+	    	numTimesReset++;
 	    }
 		else if(iter.hasNext()) {
 			//start the pipeline
@@ -31,9 +32,19 @@ public class BatchActor extends UntypedActor {
 					iter.next()), mediator);
 
 		}
+		else
+			unhandled(arg0);
 		
 	}
 	
+	
+	
+	public DataSetIterator getIter() {
+		return iter;
+	}
+
+
+
 	public static class BatchActorFactory implements Creator<BatchActor> {
 
 		/**
@@ -54,6 +65,12 @@ public class BatchActor extends UntypedActor {
 		
 		
 		
+	}
+
+
+
+	public int getNumTimesReset() {
+		return numTimesReset;
 	}
 	
 	

@@ -52,6 +52,18 @@ public class BaseDatasetIterator implements DataSetIterator {
 		fetcher.reset();
 	}
 
+	@Override
+	public int batch() {
+		return batch;
+	}
+
+	@Override
+	public int cursor() {
+		return fetcher.cursor();
+	}
+	
+	
+
 	
 
 }
