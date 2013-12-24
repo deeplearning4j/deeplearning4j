@@ -72,11 +72,11 @@ public class RBM extends BaseNeuralNetwork {
 		W = W.add(wAdd);
 
 
-		DoubleMatrix  vBiasAdd = MatrixUtil.mean(this.input.sub(nvSamples), 0).mul(learningRate);
+		DoubleMatrix  vBiasAdd = MatrixUtil.mean(this.input.sub(nvSamples), 0);
 		vBias = vBiasAdd.mul(learningRate);
 
 
-		DoubleMatrix hBiasAdd = MatrixUtil.mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
+		DoubleMatrix hBiasAdd = MatrixUtil.mean(probHidden.getSecond().sub(nhMeans), 0);
 
 
 		hBiasAdd = hBiasAdd.mul(learningRate);
