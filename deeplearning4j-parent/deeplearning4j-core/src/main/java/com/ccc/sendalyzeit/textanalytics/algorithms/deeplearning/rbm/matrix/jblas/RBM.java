@@ -197,7 +197,7 @@ public class RBM extends BaseNeuralNetwork {
 	public Pair<DoubleMatrix,DoubleMatrix> sampleVGivenH(DoubleMatrix h) {
 		DoubleMatrix v1Mean = propDown(h);
 		DoubleMatrix v1Sample = MatrixUtil.binomial(v1Mean, 1, rng);
-		return new Pair<DoubleMatrix,DoubleMatrix>(v1Mean,v1Sample);
+		return new Pair<>(v1Mean,v1Sample);
 	}
 
 
