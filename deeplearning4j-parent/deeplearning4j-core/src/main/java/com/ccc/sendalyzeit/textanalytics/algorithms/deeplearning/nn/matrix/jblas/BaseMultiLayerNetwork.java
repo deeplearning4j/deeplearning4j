@@ -203,6 +203,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 	}
 
+	/**
+	 * Load (using {@link ObjectInputStream}
+	 * @param is the input stream to load from (usually a file)
+	 */
+	public static BaseMultiLayerNetwork loadFromFile(InputStream is) {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(is);
+			BaseMultiLayerNetwork loaded = (BaseMultiLayerNetwork) ois.readObject();
+			return loaded;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
 
 
 

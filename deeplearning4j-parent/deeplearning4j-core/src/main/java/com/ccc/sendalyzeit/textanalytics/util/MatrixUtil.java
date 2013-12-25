@@ -1,6 +1,7 @@
 package com.ccc.sendalyzeit.textanalytics.util;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -233,6 +234,22 @@ public class MatrixUtil {
 			}
 		}
 		return DoubleMatrix.ones(ep.rows, ep.columns).div(ep);
+	}
+
+	public static DoubleMatrix columnStd(DoubleMatrix m) {
+		DoubleMatrix ret = new DoubleMatrix(1,m.columns);
+		for(int i = 0; i < m.columns; i++) {
+			StandardDeviation std = new StandardDeviation();
+			std.evaluate(m.getColumn(i).data);
+			ret.put(i,std.getResult());
+		}
+		return ret;
+	}
+	
+	public static void normalizeMatrix(DoubleMatrix toNormalize) {
+		DoubleMatrix columnMeans = toNormalize.columnMeans();
+		toNormalize.subiRowVector(columnMeans);
+		toNormalize.diviRowVector(columnStd(toNormalize));
 	}
 
 }
