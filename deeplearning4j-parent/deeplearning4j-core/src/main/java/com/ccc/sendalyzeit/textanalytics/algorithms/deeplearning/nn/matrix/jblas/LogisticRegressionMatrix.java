@@ -61,8 +61,8 @@ public class LogisticRegressionMatrix implements Serializable {
 		DoubleMatrix mult2 = x.transpose().mmul(dy);
 		mult2 = mult2.mul(lr);
 		//TECHNICALLY THE CALCULATION COULD INCLUDE L2REG WHICH IS THE FOLLOWING: 
-		//lr * numpy.dot(self.x.T, d_y) - lr * L2_reg * self.W
-		//lr * x.T * d_y is all that is needed; if L2_Reg is zero
+		//lr * x^T * y - lr * L2_reg * W
+		//lr * x^T * y is all that is needed; if L2_Reg is zero
 		//it will zero out the rest of that quantity
 		W = W.add(mult2);
 		DoubleMatrix bAdd = dy.columnMeans();

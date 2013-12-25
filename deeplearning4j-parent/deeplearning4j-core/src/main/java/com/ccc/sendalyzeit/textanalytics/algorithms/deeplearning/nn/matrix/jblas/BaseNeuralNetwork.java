@@ -8,14 +8,41 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
+/**
+ * Baseline class for any Neural Network used
+ * as a layer in a deep network such as an {@link DBN}
+ * @author Adam Gibson
+ *
+ */
 public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 
+	
+	private static final long serialVersionUID = -7074102204433996574L;
+	/* Number of visible inputs */
 	public int nVisible;
+	/**
+	 * Number of hidden units
+	 * One tip with this is usually having
+	 * more hidden units than inputs (read: input rows here)
+	 * will typically cause terrible overfitting.
+	 * 
+	 * Another rule worthy of note: more training data typically results
+	 * in more redundant data. It is usually a better idea to use a smaller number
+	 * of hidden units.
+	 *  
+	 *  
+	 *   
+	 **/
 	public int nHidden;
+	/* Weight matrix */
 	public DoubleMatrix W;
+	/* hidden bias */
 	public DoubleMatrix hBias;
+	/* visible bias */
 	public DoubleMatrix vBias;
+	/* RNG for sampling. */
 	public RandomGenerator rng;
+	/* input to the network */
 	public DoubleMatrix input;
 
 
@@ -31,10 +58,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 	 * @param vBias the visible bias (usually b for the output layer)
 	 * @param rng the rng, if not a seed of 1234 is used.
 	 */
-	public BaseNeuralNetwork(int n_visible, int n_hidden, 
+	public BaseNeuralNetwork(int nVisible, int nHidden, 
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
-		this.nVisible = n_visible;
-		this.nHidden = n_hidden;
+		this.nVisible = nVisible;
+		this.nHidden = nHidden;
 
 		if(rng == null)	
 			this.rng = new MersenneTwister(1234);
@@ -43,10 +70,26 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 			this.rng = rng;
 
 		if(W == null) {
-			double a = 1.0 / (double) n_visible;
+			double a = 1.0 / (double) nVisible;
+			/*
+			 * Initialize based on the number of visible units..
+			 * The lower bound is called the fan in
+			 * The outer bound is called the fan out.
+			 * 
+			 * Below's advice works for Denoising AutoEncoders and other 
+			 * neural networks you will use due to the same baseline guiding principles for
+			 * both RBMs and Denoising Autoencoders.
+			 * 
+			 * Hinton's Guide to practical RBMs:
+			 * The weights are typically initialized to small random values chosen from a zero-mean Gaussian with
+			 * a standard deviation of about 0.01. Using larger random values can speed the initial learning, but
+			 * it may lead to a slightly worse final model. Care should be taken to ensure that the initial weight
+			 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
+			 * as this significantly slows the learning.
+			 */
 			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
-			this.W = DoubleMatrix.zeros(n_visible,n_hidden);
+			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
 			for(int i = 0; i < this.W.rows; i++) {
 				for(int j = 0; j < this.W.columns; j++) 
@@ -61,19 +104,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 
 
 		if(hbias == null) 
-			this.hBias = DoubleMatrix.zeros(n_hidden);
+			this.hBias = DoubleMatrix.zeros(nHidden);
 
-		else if(hbias.length != n_hidden)
-			throw new IllegalArgumentException("Hidden bias must have a length of " + n_hidden + " length was " + hbias.length);
+		else if(hbias.length != nHidden)
+			throw new IllegalArgumentException("Hidden bias must have a length of " + nHidden + " length was " + hbias.length);
 
 		else
 			this.hBias = hbias;
 
 		if(vbias == null) 
-			this.vBias = DoubleMatrix.zeros(n_visible);
+			this.vBias = DoubleMatrix.zeros(nVisible);
 
-		else if(vbias.length != n_visible) 
-			throw new IllegalArgumentException("Visible bias must have a length of " + n_visible + " but length was " + vbias.length);
+		else if(vbias.length != nVisible) 
+			throw new IllegalArgumentException("Visible bias must have a length of " + nVisible + " but length was " + vbias.length);
 
 		else 
 			this.vBias = vbias;
@@ -92,51 +135,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 	 */
 	public BaseNeuralNetwork(DoubleMatrix input, int n_visible, int n_hidden, 
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
+		this(n_visible,n_hidden,W,hbias,vbias,rng);
 		this.input = input;
-		this.nVisible = n_visible;
-		this.nHidden = n_hidden;
-
-		if(rng == null)	
-			this.rng = new MersenneTwister(1234);
-
-		else 
-			this.rng = rng;
-
-		if(W == null) {
-			double a = 1.0 / (double) n_visible;
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
-
-			this.W = DoubleMatrix.zeros(n_visible,n_hidden);
-
-			for(int i = 0; i < this.W.rows; i++) {
-				for(int j = 0; j < this.W.columns; j++) 
-					this.W.put(i,j,u.sample());
-
-			}
-
-
-		}
-		else	
-			this.W = W;
-
-
-		if(hbias == null) 
-			this.hBias = DoubleMatrix.zeros(n_hidden);
-
-		else if(hbias.length != n_hidden)
-			throw new IllegalArgumentException("Hidden bias must have a length of " + n_hidden + " length was " + hbias.length);
-
-		else
-			this.hBias = hbias;
-
-		if(vbias == null) 
-			this.vBias = DoubleMatrix.zeros(n_visible);
-
-		else if(vbias.length != n_visible) 
-			throw new IllegalArgumentException("Visible bias must have a length of " + n_visible + " but length was " + vbias.length);
-
-		else 
-			this.vBias = vbias;
 	}
 
 

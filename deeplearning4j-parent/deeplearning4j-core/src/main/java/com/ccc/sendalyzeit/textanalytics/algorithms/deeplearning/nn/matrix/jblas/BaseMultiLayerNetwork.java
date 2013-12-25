@@ -20,19 +20,43 @@ import org.jblas.DoubleMatrix;
 public abstract class BaseMultiLayerNetwork implements Serializable {
 
 	private static final long serialVersionUID = -5029161847383716484L;
+	//number of columns in the input matrix
 	public int nIns;
+	//the hidden layer sizes at each layer
 	public int[] hiddenLayerSizes;
+	//the number of outputs/labels for logistic regression
 	public int nOuts;
 	public int nLayers;
+	//the hidden layers
 	public HiddenLayerMatrix[] sigmoidLayers;
+	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
 	public LogisticRegressionMatrix logLayer;
 	public RandomGenerator rng;
+	//default training examples and associated layers
 	public DoubleMatrix input,labels;
+	/*
+	 * Hinton's Practical guide to RBMS:
+	 * 
+	 * Learning rate updates over time.
+	 * Usually when weights have a large fan in (starting point for a random distribution during initialization)
+	 * you want a smaller update rate.
+	 * 
+	 * For biases this can be bigger.
+	 */
+	public double learningRateUpdate = 0.95;
+	/*
+	 * Any neural networks used as layers.
+	 * This will always have an equivalent sigmoid layer
+	 * with shared weight matrices for training.
+	 * 
+	 * Typically, this is some mix of:
+	 *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
+	 */
 	public NeuralNetwork[] layers;
 
-
+	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
-
+	
 	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng) {
 		this(n_ins,hidden_layer_sizes,n_outs,n_layers,rng,null,null);
 	}
@@ -67,7 +91,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 	}
 
-
+	/**
+	 * Base class for initializing the layers based on the input.
+	 * This is meant for capturing numbers such as input columns or other things.
+	 * @param input the input matrix for training
+	 */
 	protected void initializeLayers(DoubleMatrix input) {
 		DoubleMatrix layer_input = input;
 		int input_size;
@@ -106,14 +134,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 	}
 
-
+	/**
+	 * Run SGD based on the given labels
+	 * @param labels the labels to use
+	 * @param lr the learning rate during training
+	 * @param epochs the number of times to iterate
+	 */
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
-
+		//sample from the final layer in the network and train on the result
 		DoubleMatrix layer_input = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
 
 		for(int epoch = 0; epoch < epochs; epoch++) {
 			logLayer.train(layer_input, labels, lr);
-			lr *= 0.95;
+			lr *= learningRateUpdate;
 		}
 
 
@@ -121,7 +154,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 
 
-
+	/**
+	 * Label the probabilities of the input
+	 * @param x the input to label
+	 * @return a vector of probabilities
+	 * given each label.
+	 * 
+	 * This is typically of the form:
+	 * [0.5, 0.5] or some other probability distribution summing to one
+	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
@@ -147,7 +188,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
          
 	}
 
-
+	/**
+	 * Load (using {@link ObjectInputStream}
+	 * @param is the input stream to load from (usually a file)
+	 */
 	public void load(InputStream is) {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(is);
@@ -162,8 +206,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 
 
-
-	public void update(BaseMultiLayerNetwork matrix) {
+	/**
+	 * Assigns the parameters of this model to the ones specified by this
+	 * network. This is used in loading from input streams, factory methods, etc
+	 * @param matrix the network to get parameters from
+	 */
+	protected void update(BaseMultiLayerNetwork matrix) {
 		this.layers = matrix.layers;
 		this.hiddenLayerSizes = matrix.hiddenLayerSizes;
 		this.logLayer = matrix.logLayer;
@@ -176,9 +224,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	}
 
 
-
+	/**
+	 * Train the network running some unsupervised 
+	 * pretraining followed by SGD/finetune
+	 * @param input the input to train on
+	 * @param labels the labels for the training examples(a matrix of the following format:
+	 * [0,1,0] where 0 represents the labels its not and 1 represents labels for the positive outcomes 
+	 * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
+	 */
 	public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
+	/**
+	 * Creates a layer depending on the index.
+	 * The main reason this matters is for continuous variations such as the {@link CDBN}
+	 * where the first layer needs to be an {@link CRBM} for continuous inputs
+	 * @param input the input to the layer
+	 * @param nVisible the number of visible inputs
+	 * @param nHidden the number of hidden units
+	 * @param W the weight vector
+	 * @param hbias the hidden bias
+ 	 * @param vBias the visible bias
+	 * @param rng the rng to use (THiS IS IMPORTANT; YOU DO NOT WANT TO HAVE A MIS REFERENCED RNG OTHERWISE NUMBERS WILL BE MEANINGLESS)
+	 * @param index the index of the layer
+	 * @return a neural network layer such as {@link RBM} 
+	 */
 	public abstract NeuralNetwork createLayer(DoubleMatrix input,int nVisible,int nHidden, DoubleMatrix W,DoubleMatrix hbias,DoubleMatrix vBias,RandomGenerator rng,int index);
 
 

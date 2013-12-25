@@ -9,9 +9,13 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
-import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
+
 /**
- * Deep Belief Network
+ * Deep Belief Network. This is a MultiLayer Perceptron Model
+ * using Restricted Boltzmann Machines.
+ *  See Hinton's practical guide to RBMs for great examples on
+ *  how to train and tune parameters.
+ *  
  * @author Adam Gibson
  *
  */
@@ -66,6 +70,17 @@ public class DBN extends BaseMultiLayerNetwork {
 		}
 	}
 
+	/**
+	 * This unsupervised learning method runs
+	 * contrastive divergence on each RBM layer in the network.
+	 * @param input the input to train on
+	 * @param k the k to use for running the RBM contrastive divergence.
+	 * The typical tip is that the higher k is the closer to the model
+	 * you will be approximating due to more sampling. K = 1
+	 * usually gives very good results and is the default in quite a few situations.
+	 * @param learningRate the learning rate to use
+	 * @param epochs the number of epochs to train
+	 */
 	public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
 		if(this.input == null) {
 			this.input = input;
