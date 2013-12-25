@@ -1,7 +1,5 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas;
 
-import java.io.Serializable;
-
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -47,6 +45,15 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 		pretrain(this.input,lr,corruptionLevel,epochs);
 	}
 
+	/**
+	 * Unsupervised pretraining based on reconstructing the input
+	 * from a corrupted version
+	 * @param input the input to train on
+	 * @param lr the starting learning rate
+	 * @param corruption_level the corruption level (the smaller number of inputs; the higher the 
+	 * corruption level should be) the percent of inputs to corrupt
+	 * @param epochs the number of iterations to run
+	 */
 	public void pretrain( DoubleMatrix input,double lr,  double corruption_level,  int epochs) {
 		if(this.input == null)
 			initializeLayers(input);

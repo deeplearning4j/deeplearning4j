@@ -57,8 +57,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
 			if(!hasMore())
 				break;
 			man.setCurrent(cursor);
+			//note data normalization
 			try {
-				toConvert.add(new Pair<>(MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage())),createOutputVector(man.readLabel())));
+				toConvert.add(new Pair<>(MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage())).div(255),createOutputVector(man.readLabel())));
 			} catch (IOException e) {
 				throw new IllegalStateException("Unable to read image");
 
