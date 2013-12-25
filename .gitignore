@@ -2,7 +2,7 @@ target/
 application.home_IS_UNDEFINEiD
 README.md~
 *.bin
-*.tar
+*.out
 *~
 .settings/
 *.log
