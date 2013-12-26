@@ -1,0 +1,10 @@
+target/
+application.home_IS_UNDEFINEiD
+README.md~
+*.bin
+*.out
+*~
+.settings/
+*.log
+.project
+.classpath
