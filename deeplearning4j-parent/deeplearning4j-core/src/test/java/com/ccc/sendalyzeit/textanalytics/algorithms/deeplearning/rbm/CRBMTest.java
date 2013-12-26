@@ -35,18 +35,20 @@ public class CRBMTest extends DeepLearningTest {
 
 
 
-		for(int i = 0; i < 1000; i++)
+		for(int i = 0; i < 1000; i++) {
 			r.contrastiveDivergence(0.1, 1, input);
-		
+			log.info("Entropy " + r.getReConstructionCrossEntropy());
+		}
+
 		DoubleMatrix test = new DoubleMatrix(new double[][]
 				{{0.5, 0.5, 0., 0., 0., 0.},
-                     {0., 0., 0., 0.5, 0.5, 0.}});
-		
+				{0., 0., 0., 0.5, 0.5, 0.}});
+
 		log.info(r.reconstruct(test).toString());
 
 
 	}
-	
+
 	@Test
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
@@ -54,24 +56,20 @@ public class CRBMTest extends DeepLearningTest {
 		Pair<DoubleMatrix,DoubleMatrix> pair = fetcher.next();
 		int numVisible = pair.getFirst().columns;
 		RandomGenerator g = new MersenneTwister(123);
-		
+
 		CRBM r = new CRBM.Builder().numberOfVisible(numVisible)
 				.numHidden(100).withRandom(g)
 				.build();
 		DoubleMatrix input = pair.getFirst();
-		DoubleMatrix reconstructed = r.reconstruct(input);
 
 		for(int i = 0; i < 1000; i++) {
 			r.contrastiveDivergence(0.1, 1, input);
-			reconstructed = r.reconstruct(input);
-			SimpleRegression r2 = new SimpleRegression();
-			r2.addData(new double[][] {input.data,reconstructed.data});
-			log.info("Least squares error is " + r2.getSumSquaredErrors());
+			log.info("Entropy " + r.getReConstructionCrossEntropy());
 		}
-	   
+
 
 	}
-	
+
 
 
 }
