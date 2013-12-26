@@ -50,9 +50,12 @@ public class DBNTest  extends DeepLearningTest {
 		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 200;
 
-		DBN dbn = new DBN(nIns, hiddenLayerSizes, nOuts, 2, rng, x, y);
-		dbn.pretrain(k, preTrainLr, preTrainEpochs);
-		dbn.finetune(fineTuneLr, fineTuneEpochs);
+		DBN dbn = new DBN.Builder()
+		.hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
+		.numberOfOutPuts(nOuts).withRng(rng).build();
+		
+		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
+		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
 		DoubleMatrix testX = new DoubleMatrix(new double[][]
 				{{1, 1, 0, 0, 0, 0},
