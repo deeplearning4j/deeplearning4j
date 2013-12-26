@@ -89,6 +89,7 @@ public class LogisticRegressionMatrix implements Serializable {
 		W = W.add(mult2);
 		DoubleMatrix bAdd = dy.columnMeans();
 		b = b.add(bAdd.mul(lr));
+		log.info("New negative log likelihood " + negativeLogLikelihood());
 
 	}
 
