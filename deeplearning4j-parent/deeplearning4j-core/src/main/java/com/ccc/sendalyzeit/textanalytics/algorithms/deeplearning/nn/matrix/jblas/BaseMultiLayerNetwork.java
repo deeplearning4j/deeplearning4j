@@ -11,6 +11,8 @@ import java.lang.reflect.Constructor;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  * A base class for a multi layer neural network with a logistic output layer
  * and multiple hidden layers.
@@ -19,6 +21,7 @@ import org.jblas.DoubleMatrix;
  */
 public abstract class BaseMultiLayerNetwork implements Serializable {
 
+	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 	private static final long serialVersionUID = -5029161847383716484L;
 	//number of columns in the input matrix
 	public int nIns;
@@ -146,6 +149,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 		for(int epoch = 0; epoch < epochs; epoch++) {
 			logLayer.train(layer_input, labels, lr);
+			log.info("For epoch " + epoch + " the negative log likelihood is " + logLayer.negativeLogLikelihood());
 			//lr *= learningRateUpdate;
 		}
 

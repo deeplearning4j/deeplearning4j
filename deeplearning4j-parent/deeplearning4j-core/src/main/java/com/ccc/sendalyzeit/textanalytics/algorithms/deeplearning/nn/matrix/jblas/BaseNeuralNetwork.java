@@ -261,7 +261,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 		DoubleMatrix inner = 
 				input.mul(MatrixFunctions.log(sigV))
 				.add(MatrixUtil.oneMinus(input)
-				.mul(MatrixFunctions.log(MatrixUtil.oneMinus(sigV))));
+				.mul(MatrixFunctions.log(MatrixUtil.oneMinus(sigV)))
+				);
 		
 		return - inner.rowSums().mean();
 	}
