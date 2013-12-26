@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 
@@ -21,16 +23,20 @@ public class ModelTester {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> inputs = DeepLearningTest.getMnistExampleBatch(100);
+		MnistDataSetIterator iter = new MnistDataSetIterator(10, 60000);
+		
 		Evaluation eval = new Evaluation();
 		BaseMultiLayerNetwork load = BaseMultiLayerNetwork.loadFromFile(new FileInputStream(new File(args[0])));
-		DoubleMatrix in = inputs.getFirst();
-		DoubleMatrix outcomes = inputs.getSecond();
+		while(iter.hasNext()) {
+			Pair<DoubleMatrix,DoubleMatrix> inputs = iter.next();
 
-		for(int i = 0; i < in.rows; i++) {
-			DoubleMatrix pre = load.predict(in.getRow(i));
-			eval.eval(outcomes.getRow(i), pre);
+			DoubleMatrix in = inputs.getFirst();
+			DoubleMatrix outcomes = inputs.getSecond();
+			DoubleMatrix predicted = load.predict(in);
+			eval.eval(outcomes, predicted);
 		}
+		
+		
 		
 		
 		log.info(eval.stats());

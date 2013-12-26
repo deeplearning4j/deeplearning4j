@@ -56,7 +56,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
-	
+
 	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng) {
 		this(n_ins,hidden_layer_sizes,n_outs,n_layers,rng,null,null);
 	}
@@ -85,9 +85,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 			this.rng = rng;  
 
 
-		if(input != null) {
+		if(input != null) 
 			initializeLayers(input);
-		}
+
 
 	}
 
@@ -146,7 +146,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 		for(int epoch = 0; epoch < epochs; epoch++) {
 			logLayer.train(layer_input, labels, lr);
-			lr *= learningRateUpdate;
+			//lr *= learningRateUpdate;
 		}
 
 
@@ -178,14 +178,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	 * @param os the output stream to write to
 	 */
 	public void write(OutputStream os) {
-         try {
+		try {
 			ObjectOutputStream oos = new ObjectOutputStream(os);
 			oos.writeObject(this);
-			
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-         
+
 	}
 
 	/**
@@ -257,7 +257,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	 * @param nHidden the number of hidden units
 	 * @param W the weight vector
 	 * @param hbias the hidden bias
- 	 * @param vBias the visible bias
+	 * @param vBias the visible bias
 	 * @param rng the rng to use (THiS IS IMPORTANT; YOU DO NOT WANT TO HAVE A MIS REFERENCED RNG OTHERWISE NUMBERS WILL BE MEANINGLESS)
 	 * @param index the index of the layer
 	 * @return a neural network layer such as {@link RBM} 
@@ -329,52 +329,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 			} 
 		}
 
+		@SuppressWarnings("unchecked")
 		public E build() {
-			if(input != null && labels != null) {
-				return buildWithInputsAndLabels();
-			}
-			else 
-				return buildWithoutInputsAndLabels();
+			try {
+				ret = (E) clazz.newInstance();
+				ret.nOuts = this.nOuts;
+				ret.nIns = this.nIns;
+				ret.labels = this.labels;
+				ret.hiddenLayerSizes = this.hiddenLayerSizes;
+				ret.nLayers = this.nLayers;
+				ret.rng = this.rng;
+				ret.sigmoidLayers = new HiddenLayerMatrix[ret.nLayers];
+				ret.layers = ret.createNetworkLayers(ret.nLayers);
 
+				return ret;
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+			
 		}
 
-		@SuppressWarnings("unchecked")
-		private E buildWithoutInputsAndLabels() {
-			Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-			for(Constructor<?> c : constructors)  {
-				Class<?>[] clazzes = c.getParameterTypes();
-				if(clazzes.length > 0 && clazzes[clazzes.length - 1].isAssignableFrom(RandomGenerator.class)) {
-					try {
-						ret = (E) c.newInstance(nIns, hiddenLayerSizes,nOuts, nLayers,rng);
-					}catch(Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
-
-
-
-			return ret;
-		}
-
-		@SuppressWarnings("unchecked")
-		private E buildWithInputsAndLabels() {
-			Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-			for(Constructor<?> c : constructors)  {
-				Class<?>[] clazzes = c.getParameterTypes();
-				if(clazzes.length > 0 && clazzes[clazzes.length - 1].isAssignableFrom(DoubleMatrix.class)) {
-					try {
-						ret = (E) c.newInstance(nIns, hiddenLayerSizes,nOuts, nLayers,rng,input,labels);
-					}catch(Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
-
-
-			return ret;
-		}
-
+	
 
 	}
 

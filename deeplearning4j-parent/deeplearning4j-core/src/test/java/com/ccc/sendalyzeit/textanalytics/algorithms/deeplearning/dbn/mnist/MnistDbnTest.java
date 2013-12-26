@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
+import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.CDBN;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.DBN;
@@ -22,47 +24,30 @@ public class MnistDbnTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> first = this.getMnistExample(1);
+		MnistDataFetcher fetcher = new MnistDataFetcher();
+		fetcher.fetch(1200);
+		Pair<DoubleMatrix,DoubleMatrix> first = fetcher.next();
 		int numIns = first.getFirst().columns;
-		int numLabels = 10;
-		int[] layerSizes = new int[4];
-		Arrays.fill(layerSizes,500);
-
+		int numLabels = first.getSecond().columns;
+		int[] layerSizes = new int[3];
+		Arrays.fill(layerSizes,100);
 		double lr = 0.1;
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
+		
+		
+		CDBN dbn = new CDBN.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 	
-		List<Pair<DoubleMatrix,DoubleMatrix>> list = this.getMnistExampleBatches(10, 500);
-		for(int iter = 0; iter < list.size(); iter++) {
-			Pair<DoubleMatrix,DoubleMatrix> curr = list.get(iter);
-			int numCorrect = 0;
-
-			if(curr.getFirst().rows != curr.getSecond().rows)
-				throw new IllegalArgumentException("Rows are not the same");
-			
-			dbn.pretrain(curr.getFirst(),2, lr, 200);
-			dbn.finetune(curr.getSecond(), lr,500);
-			
-			DoubleMatrix predicted = dbn.predict(curr.getFirst());
-			DoubleMatrix y = curr.getSecond();
-			
-			for(int i = 0; i < curr.getFirst().rows; i++) {
-				DoubleMatrix actualRow = y.getRow(i);
-				DoubleMatrix predictedRow = predicted.getRow(i);
-				int actualMax = SimpleBlas.iamax(actualRow);
-				int predictedMax = SimpleBlas.iamax(predictedRow);
-				if(actualMax == predictedMax)
-					numCorrect++;
-			}
-			
-			
-			log.info("Correct " + numCorrect + " on iteration " + iter);
-
-		}
+		dbn.pretrain(first.getFirst(),1, lr, 50);
+		dbn.finetune(first.getSecond(),lr, 50);
 		
 		
+		DoubleMatrix predicted = dbn.predict(first.getFirst());
+		//log.info("Predicting\n " + first.getFirst().toString().replaceAll(";","\n"));
 
+		Evaluation eval = new Evaluation();
+		eval.eval(first.getSecond(), predicted);
+		log.info(eval.stats());
 
 	}
 

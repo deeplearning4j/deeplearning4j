@@ -139,27 +139,6 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 
-	public double getReConstructionCrossEntropy() {
-		DoubleMatrix preSigH = input.mmul(W).add(hBias);
-		DoubleMatrix sigH = MatrixUtil.sigmoid(preSigH);
-
-		DoubleMatrix preSigV = sigH.mmul(W.transpose()).add(vBias);
-		DoubleMatrix sigV = MatrixUtil.sigmoid(preSigV);
-
-
-		DoubleMatrix logSigV = MatrixFunctions.log(sigV);
-		DoubleMatrix oneMinusSigV = DoubleMatrix.ones(sigV.rows,sigV.columns).sub(sigV);
-
-		DoubleMatrix logOneMinusSigV = MatrixFunctions.log(oneMinusSigV);
-		DoubleMatrix inputTimesLogSigV = input.mul(logSigV);
-
-
-		DoubleMatrix oneMinusInput = DoubleMatrix.ones(input.rows,input.columns).min(input);
-
-		DoubleMatrix crossEntropyMatrix = MatrixUtil.mean(inputTimesLogSigV.add(oneMinusInput).mul(logOneMinusSigV).rowSums(),1);
-
-		return -crossEntropyMatrix.mean();
-	}
 
 
 
