@@ -5,12 +5,15 @@ import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
+import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
+import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
 
@@ -51,23 +54,26 @@ public class RBMTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException {
-		List<Pair<DoubleMatrix,DoubleMatrix>> mnist = getMnistExampleBatches(10, 5);
-		int numVisible = mnist.get(0).getFirst().columns;
+		MnistDataFetcher fetcher = new MnistDataFetcher();
+		fetcher.fetch(10);
+		Pair<DoubleMatrix,DoubleMatrix> pair = fetcher.next();
+		int numVisible = pair.getFirst().columns;
 		RandomGenerator g = new MersenneTwister(123);
-
+		
 		RBM r = new RBM.Builder().numberOfVisible(numVisible)
-				.numHidden(10).withRandom(g)
+				.numHidden(100).withRandom(g)
 				.build();
-		DoubleMatrix input = mnist.get(0).getFirst();
-		for(int i = 0; i < 1000; i++)
-			r.contrastiveDivergence(0.1, 1, input);
+		DoubleMatrix input = pair.getFirst();
 		DoubleMatrix reconstructed = r.reconstruct(input);
-		for(int i = 0; i < 5; i++) {
 
-			log.info("INPUT " + i +   "\n" + input.getRow(i).toString().replaceAll(";","\n"));
-			log.info("TRANSFORMED " + i + "\n" + reconstructed.getRow(i).toString().replaceAll(";","\n"));
-
+		for(int i = 0; i < 1000; i++) {
+			r.contrastiveDivergence(0.1, 1, input);
+			reconstructed = r.reconstruct(input);
+			SimpleRegression r2 = new SimpleRegression();
+			r2.addData(new double[][] {input.data,reconstructed.data});
+			log.info("Least squares error is " + r2.getSumSquaredErrors());
 		}
+	   
 
 	}
 

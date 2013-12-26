@@ -2,6 +2,7 @@ package com.ccc.sendalyzeit.textanalytics.util;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -244,6 +245,38 @@ public class MatrixUtil {
 			ret.put(i,std.getResult());
 		}
 		return ret;
+	}
+	
+	/**
+	 * Returns the mean squared error of the 2 matrices.
+	 * Note that the matrices must be the same length
+	 * or an {@link IllegalArgumentException} is thrown
+	 * @param input the first one
+	 * @param other the second one
+	 * @return the mean square error of the matrices
+	 */
+	public static double meanSquaredError(DoubleMatrix input,DoubleMatrix other) {
+		if(input.length != other.length)
+			throw new IllegalArgumentException("Matrices must be same length");
+		SimpleRegression r = new SimpleRegression();
+		r.addData(new double[][]{input.data,other.data});
+		return r.getMeanSquareError();
+	}
+	
+	/**
+	 * Returns the sum squared error of the 2 matrices.
+	 * Note that the matrices must be the same length
+	 * or an {@link IllegalArgumentException} is thrown
+	 * @param input the first one
+	 * @param other the second one
+	 * @return the sum square error of the matrices
+	 */
+	public static double sumSquaredError(DoubleMatrix input,DoubleMatrix other) {
+		if(input.length != other.length)
+			throw new IllegalArgumentException("Matrices must be same length");
+		SimpleRegression r = new SimpleRegression();
+		r.addData(new double[][]{input.data,other.data});
+		return r.getSumSquaredErrors();
 	}
 	
 	public static void normalizeMatrix(DoubleMatrix toNormalize) {

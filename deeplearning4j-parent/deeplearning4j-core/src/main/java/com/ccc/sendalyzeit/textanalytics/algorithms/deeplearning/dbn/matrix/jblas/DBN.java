@@ -24,6 +24,7 @@ public class DBN extends BaseMultiLayerNetwork {
 	private static final long serialVersionUID = -9068772752220902983L;
 	private static Logger log = LoggerFactory.getLogger(DBN.class);
 
+	public DBN() {}
 
 
 	public DBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
@@ -99,7 +100,7 @@ public class DBN extends BaseMultiLayerNetwork {
 				r.contrastiveDivergence(learningRate, k, layerInput);
 				h.W = r.W;
 				h.b = r.hBias;
-
+				log.info("Reconstruction entropy on epoch " + epoch + " of epochs " + epochs + " " + r.getReConstructionCrossEntropy() + " for layer " + i);
 			}
 
 		}

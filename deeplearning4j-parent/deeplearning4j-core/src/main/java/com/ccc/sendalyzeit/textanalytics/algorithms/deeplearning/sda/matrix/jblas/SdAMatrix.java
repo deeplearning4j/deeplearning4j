@@ -134,7 +134,7 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 
 	public static class Builder extends BaseMultiLayerNetwork.Builder<SdAMatrix> {
 		public Builder() {
-			this.clazz = BaseMultiLayerNetwork.class;
+			this.clazz = SdAMatrix.class;
 		}
 	}
 

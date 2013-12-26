@@ -7,6 +7,9 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
+
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 /**
  * Baseline class for any Neural Network used
@@ -211,6 +214,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);
+						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
 					}
@@ -241,6 +245,29 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 			}
 			return ret;
 		}
+	}
+
+	
+	public double getReConstructionCrossEntropy() {
+		DoubleMatrix preSigH = input.mmul(W).addRowVector(hBias);
+		DoubleMatrix sigH = MatrixUtil.sigmoid(preSigH);
+
+		DoubleMatrix preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
+		DoubleMatrix sigV = MatrixUtil.sigmoid(preSigV);
+
+
+		DoubleMatrix logSigV = MatrixFunctions.log(sigV);
+		DoubleMatrix oneMinusSigV = DoubleMatrix.ones(sigV.rows,sigV.columns).sub(sigV);
+
+		DoubleMatrix logOneMinusSigV = MatrixFunctions.log(oneMinusSigV);
+		DoubleMatrix inputTimesLogSigV = input.mul(logSigV);
+
+
+		DoubleMatrix oneMinusInput = DoubleMatrix.ones(input.rows,input.columns).min(input);
+
+		DoubleMatrix crossEntropyMatrix = MatrixUtil.mean(inputTimesLogSigV.add(oneMinusInput).mul(logOneMinusSigV).rowSums(),1);
+
+		return -crossEntropyMatrix.mean();
 	}
 
 

@@ -18,6 +18,9 @@ public class CDBN extends DBN {
 
 	private static final long serialVersionUID = 3838174630098935941L;
 
+	
+	public CDBN() {}
+	
 	public CDBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
 			RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
 		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
