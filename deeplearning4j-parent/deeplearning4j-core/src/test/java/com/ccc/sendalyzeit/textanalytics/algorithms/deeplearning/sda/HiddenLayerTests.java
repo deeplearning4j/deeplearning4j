@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayer;
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 public class HiddenLayerTests {
@@ -166,7 +166,7 @@ public class HiddenLayerTests {
 
 
 
-		HiddenLayerMatrix h = new HiddenLayerMatrix(test[0].length, 2, W,b, rng,input);
+		HiddenLayer h = new HiddenLayer(test[0].length, 2, W,b, rng,input);
 		log.info(h.sample_h_given_v().toString().replace(";","\n"));
 		log.info(h.outputMatrix().toString().replace(";","\n"));
 

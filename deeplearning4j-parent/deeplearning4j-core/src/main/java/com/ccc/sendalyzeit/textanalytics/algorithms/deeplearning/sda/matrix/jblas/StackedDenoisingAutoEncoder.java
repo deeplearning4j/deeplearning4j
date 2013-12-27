@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayer;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 
 
@@ -16,7 +16,7 @@ import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas
  * @author Adam Gibson
  *
  */
-public class SdAMatrix extends BaseMultiLayerNetwork  {
+public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 
 
@@ -26,16 +26,16 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 
 
-	public SdAMatrix() {}
+	public StackedDenoisingAutoEncoder() {}
 
-	public SdAMatrix(int n_ins, int[] hidden_layer_sizes, int n_outs,
+	public StackedDenoisingAutoEncoder(int n_ins, int[] hidden_layer_sizes, int n_outs,
 			int n_layers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
 		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
 
 	}
 
 
-	public SdAMatrix(int nIns, int[] hiddenLayerSizes, int nOuts,
+	public StackedDenoisingAutoEncoder(int nIns, int[] hiddenLayerSizes, int nOuts,
 			int n_layers, RandomGenerator rng) {
 		super(nIns, hiddenLayerSizes, nOuts, n_layers, rng);
 	}
@@ -66,8 +66,8 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 				layerInput = input;
 			else
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
-			DenoisingAutoEncoderMatrix da = (DenoisingAutoEncoderMatrix) this.layers[i];
-			HiddenLayerMatrix h = this.sigmoidLayers[i];
+			DenoisingAutoEncoder da = (DenoisingAutoEncoder) this.layers[i];
+			HiddenLayer h = this.sigmoidLayers[i];
 			for(int epoch = 0; epoch < epochs; epoch++)  {
 				da.train(layerInput, lr, corruption_level);
 				if(h.W != (da.W))
@@ -123,19 +123,19 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		return new DenoisingAutoEncoderMatrix(input, nVisible, nHidden, vBias, vBias, vBias, rng);
+		return new DenoisingAutoEncoder(input, nVisible, nHidden, vBias, vBias, vBias, rng);
 	}
 
 
 	@Override
 	public NeuralNetwork[] createNetworkLayers(int numLayers) {
-		return new DenoisingAutoEncoderMatrix[numLayers];
+		return new DenoisingAutoEncoder[numLayers];
 	}
 
 
-	public static class Builder extends BaseMultiLayerNetwork.Builder<SdAMatrix> {
+	public static class Builder extends BaseMultiLayerNetwork.Builder<StackedDenoisingAutoEncoder> {
 		public Builder() {
-			this.clazz = SdAMatrix.class;
+			this.clazz = StackedDenoisingAutoEncoder.class;
 		}
 	}
 

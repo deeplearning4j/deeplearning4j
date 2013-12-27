@@ -228,7 +228,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private String getClassForAlgorithm() {
 		switch(algorithm) {
 		case  "sda" :
-			return "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix";
+			return "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder";
 
 		case "dbn" : 
 			return "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.DBN";

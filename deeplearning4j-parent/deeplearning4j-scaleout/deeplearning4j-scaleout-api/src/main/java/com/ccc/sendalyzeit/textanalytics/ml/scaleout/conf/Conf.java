@@ -23,7 +23,7 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		put(CORRUPTION_LEVEL, String.valueOf(0.3));
 		put(OUT,String.valueOf(1));
 		put(N_IN,String.valueOf(1));
-		put(CLASS,"com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
+		put(CLASS,"com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder");
 		put(PARAM_ALGORITHM,"sda");
 		put(LAYER_SIZES, "300,300,300");
 	}

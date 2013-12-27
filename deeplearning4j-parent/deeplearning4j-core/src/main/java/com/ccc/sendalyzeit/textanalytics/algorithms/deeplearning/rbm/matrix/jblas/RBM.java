@@ -204,6 +204,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * @param v the visible input
 	 * @return the reconstruction of the visible input
 	 */
+	@Override
 	public DoubleMatrix reconstruct(DoubleMatrix v) {
 		//reconstructed: propUp ----> hidden propDown to reconstruct
 		return propDown(propUp(v));

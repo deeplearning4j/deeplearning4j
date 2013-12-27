@@ -16,7 +16,7 @@ import com.ccc.sendalyzeit.deeplearning.eval.Evaluation;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.DataSet;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder;
 
 public class MnistSdaTest extends DeepLearningTest {
 
@@ -33,7 +33,7 @@ public class MnistSdaTest extends DeepLearningTest {
 		int[] layerSizes = new int[2];
 		Arrays.fill(layerSizes,300);
 		double lr = 0.1;
-		SdAMatrix sda = new SdAMatrix.Builder().numberOfInputs(numIns)
+		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 

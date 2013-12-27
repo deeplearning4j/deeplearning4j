@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayerMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.HiddenLayer;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.NeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jblas.RBM;
 
@@ -94,7 +94,7 @@ public class DBN extends BaseMultiLayerNetwork {
 			else 
 				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
 			RBM r = (RBM) this.layers[i];
-			HiddenLayerMatrix h = this.sigmoidLayers[i];
+			HiddenLayer h = this.sigmoidLayers[i];
 
 			for(int  epoch = 0; epoch < epochs; epoch++) {
 				r.contrastiveDivergence(learningRate, k, layerInput);

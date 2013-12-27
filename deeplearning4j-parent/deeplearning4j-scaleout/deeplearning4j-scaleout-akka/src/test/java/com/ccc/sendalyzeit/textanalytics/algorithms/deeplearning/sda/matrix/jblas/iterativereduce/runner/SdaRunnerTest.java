@@ -91,7 +91,7 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 		conf.put(CORRUPTION_LEVEL, 0.3);
 		conf.put(SPLIT, 1);
 		conf.put(OUT, 2);
-		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
+		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder");
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
 				
@@ -120,7 +120,7 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 		Arrays.fill(layerSizes,100);
 		runner = new NetworkRunner();
 		conf.put(SPLIT, String.valueOf(600));
-		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix");
+		conf.put(CLASS, "com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
 
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)

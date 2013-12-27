@@ -14,7 +14,7 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public class LogisticRegressionMatrix implements Serializable {
+public class LogisticRegression implements Serializable {
 
 	private static final long serialVersionUID = -7065564817460914364L;
 	public int nIn;
@@ -22,11 +22,11 @@ public class LogisticRegressionMatrix implements Serializable {
 	public DoubleMatrix input,labels;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
-	private static Logger log = LoggerFactory.getLogger(LogisticRegressionMatrix.class);
+	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 
 
-	public LogisticRegressionMatrix(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
+	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
 		this.input = input;
 		this.labels = labels;
 		this.nIn = nIn;
@@ -35,7 +35,7 @@ public class LogisticRegressionMatrix implements Serializable {
 		b = DoubleMatrix.zeros(nOut);
 	}
 
-	public LogisticRegressionMatrix(DoubleMatrix input, int nIn, int nOut) {
+	public LogisticRegression(DoubleMatrix input, int nIn, int nOut) {
 		this(input,null,nIn,nOut);
 	}
 
@@ -113,7 +113,7 @@ public class LogisticRegressionMatrix implements Serializable {
 
 	public static class Builder {
 		private DoubleMatrix W;
-		private LogisticRegressionMatrix ret;
+		private LogisticRegression ret;
 		private DoubleMatrix b;
 		private int nIn;
 		private int nOut;
@@ -140,8 +140,8 @@ public class LogisticRegressionMatrix implements Serializable {
 			return this;
 		}
 
-		public LogisticRegressionMatrix build() {
-			ret = new LogisticRegressionMatrix(input, nIn, nOut);
+		public LogisticRegression build() {
+			ret = new LogisticRegression(input, nIn, nOut);
 			return ret;
 		}
 

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.DeepLearningTest;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.LogisticRegressionMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.LogisticRegression;
 
 
 public class LogisticTest extends DeepLearningTest {
@@ -40,7 +40,7 @@ public class LogisticTest extends DeepLearningTest {
 
 	@Test
 	public void testLogistic() {
-		LogisticRegressionMatrix log2 = new LogisticRegressionMatrix(xTestMatrix,x[0].length,2);
+		LogisticRegression log2 = new LogisticRegression(xTestMatrix,x[0].length,2);
 		double learningRate = 0.01;
 		for(int i = 0; i < 1000; i++) {
 			log2.train(xMatrix, yMatrix, learningRate);
@@ -53,7 +53,7 @@ public class LogisticTest extends DeepLearningTest {
 	@Test
 	public void testIris() throws IOException {
 		Pair<DoubleMatrix,DoubleMatrix> iris = getIris();
-		LogisticRegressionMatrix classifier = new LogisticRegressionMatrix.Builder().numberOfInputs(4).numberOfOutputs(3)
+		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
 				.build();
 		for(int i = 0; i < 1000; i++)
 			classifier.train(iris.getFirst(), iris.getSecond(), 0.1);
