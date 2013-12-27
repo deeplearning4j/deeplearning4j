@@ -73,19 +73,6 @@ Configuration is based on the constants specified in DeepLearningConfigurable.
              -ad address of master worker
 
 
-
-Training tips:
-
-      For classification: Due to heavy sampling leveraged in deep learning, try to have 
-      
-      training batches (each row in a training matrix is an individual part of a batch)
-      
-      It is reccomended to have one class of each label in each training batch to
-      
-      minimize sampling error (See Hinton's Practical Guide to RBMs)
-
-
-
 Maven central and other support coming soon.
 
 
