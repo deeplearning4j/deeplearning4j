@@ -92,7 +92,6 @@ public class HiddenLayerMatrix implements Serializable {
 	 */
 	public DoubleMatrix sampleHGivenV(DoubleMatrix input) {
 		this.input = input;
-		//reset the seed to ensure consistent generation of data
 		DoubleMatrix ret = MatrixUtil.binomial(outputMatrix(), 1, rng);
 		return ret;
 	}

@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 import com.ccc.sendalyzeit.textanalytics.util.MathUtils;
@@ -17,7 +19,7 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 	
 
 	private static final long serialVersionUID = -6445530486350763837L;
-
+	private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoderMatrix.class);
 	
 	public DenoisingAutoEncoderMatrix() {}
 
@@ -39,27 +41,51 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng);
 	}
 
-
-	public DoubleMatrix get_corrupted_input(DoubleMatrix x, double p) {
+	/**
+	 * Corrupts the given input by doing a binomial sampling
+	 * given the corruption level
+	 * @param x the input to corrupt
+	 * @param corruptionLevel the corruption value
+	 * @return the binomial sampled corrupted input
+	 */
+	public DoubleMatrix getCorruptedInput(DoubleMatrix x, double corruptionLevel) {
 		DoubleMatrix tilde_x = DoubleMatrix.zeros(x.rows,x.columns);
 		for(int i = 0; i < x.rows; i++)
 			for(int j = 0; j < x.columns; j++)
-				tilde_x.put(i,j,MathUtils.binomial(rng,1,p));
+				tilde_x.put(i,j,MathUtils.binomial(rng,1,corruptionLevel));
 		DoubleMatrix  ret = x.mul(tilde_x);
 		return ret;
 	}
 
 
+	
+
+
+	/**
+	 * Negative log likelihood of the current input given
+	 * the corruption level
+	 * @param corruptionLevel the corruption level to use
+	 * @return the negative log likelihood of the auto encoder
+	 * given the corruption level
+	 */
+	public double negativeLoglikelihood(double corruptionLevel) {
+		DoubleMatrix corrupted = this.getCorruptedInput(input, corruptionLevel);
+		DoubleMatrix y = this.getHiddenValues(corrupted);
+		DoubleMatrix z = this.getReconstructedInput(y);
+		DoubleMatrix inside = input.mul(MatrixUtil.log(z)).add(MatrixUtil.oneMinus(input).mul(MatrixUtil.log(MatrixUtil.oneMinus(z))));
+		return - inside.columnSums().mean();
+	}
+
 
 
 	// Encode
-	public DoubleMatrix get_hidden_values(DoubleMatrix x) {
+	public DoubleMatrix getHiddenValues(DoubleMatrix x) {
 		DoubleMatrix mul = x.mmul(W);
 		return MatrixUtil.sigmoid(mul.addRowVector(hBias));
 	}
 
 	// Decode
-	public DoubleMatrix get_reconstructed_input(DoubleMatrix y) {
+	public DoubleMatrix getReconstructedInput(DoubleMatrix y) {
 		DoubleMatrix z = y.mmul(W.transpose());
 		z = z.addRowVector(vBias);
 		z = MatrixUtil.sigmoid(z);
@@ -68,12 +94,13 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 
 	public void train(DoubleMatrix x, double lr, double corruption_level) {
 
-
+		this.input = x;
+		
 		double p = 1 - corruption_level;
 
-		DoubleMatrix tilde_x = get_corrupted_input(x, p);
-		DoubleMatrix y = get_hidden_values(tilde_x);
-		DoubleMatrix z = get_reconstructed_input(y);
+		DoubleMatrix tilde_x = getCorruptedInput(x, p);
+		DoubleMatrix y = getHiddenValues(tilde_x);
+		DoubleMatrix z = getReconstructedInput(y);
 
 		DoubleMatrix L_h2 = x.sub(z);
 
@@ -92,12 +119,13 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 		L_vbias_mean = L_vbias_mean.mul(lr);
 		this.hBias = hBias.add(L_hbias_mean);
 		this.vBias = vBias.add(L_vbias_mean);
+		log.info("Training negative log likelihood " + this.negativeLoglikelihood(corruption_level));
 
 	}
 
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
-		DoubleMatrix y = get_hidden_values(x);
-		return get_reconstructed_input(y);
+		DoubleMatrix y = getHiddenValues(x);
+		return getReconstructedInput(y);
 	}	
 	
 	
