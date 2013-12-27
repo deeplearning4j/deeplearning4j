@@ -17,7 +17,15 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  */
 public class CRBM extends RBM {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 598767790003731193L;
+
+
 	public CRBM() {}
+	
+	
 	
 	public CRBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
 			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng) {
@@ -32,13 +40,14 @@ public class CRBM extends RBM {
 	}
 
 
-
+	@Override
 	public DoubleMatrix propDown(DoubleMatrix h) {
 		DoubleMatrix preAct = h.mmul(W.transpose());
 	    preAct = preAct.addRowVector(vBias);
 	    return preAct;
 	}
 	
+	@Override
 	public Pair<DoubleMatrix, DoubleMatrix> sampleVGivenH(DoubleMatrix h) {
 		DoubleMatrix aH = propDown(h);
 		DoubleMatrix en = MatrixFunctions.exp(aH.neg());

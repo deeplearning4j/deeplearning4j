@@ -15,18 +15,18 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Serializable  {
+public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializable  {
 	
 
 	private static final long serialVersionUID = -6445530486350763837L;
-	private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoderMatrix.class);
+	private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoder.class);
 	
-	public DenoisingAutoEncoderMatrix() {}
+	public DenoisingAutoEncoder() {}
 
 	
 	
 	
-	public DenoisingAutoEncoderMatrix(int nVisible, int nHidden,
+	public DenoisingAutoEncoder(int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng) {
 		super(nVisible, nHidden, W, hbias, vbias, rng);
@@ -35,7 +35,7 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 
 
 
-	public DenoisingAutoEncoderMatrix(DoubleMatrix input, int n_visible, int n_hidden,
+	public DenoisingAutoEncoder(DoubleMatrix input, int n_visible, int n_hidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng) {
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng);
@@ -122,7 +122,8 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 		log.info("Training negative log likelihood " + this.negativeLoglikelihood(corruption_level));
 
 	}
-
+	
+	@Override
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
 		DoubleMatrix y = getHiddenValues(x);
 		return getReconstructedInput(y);
@@ -130,9 +131,9 @@ public class DenoisingAutoEncoderMatrix extends BaseNeuralNetwork implements Ser
 	
 	
 	
-	public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoderMatrix> {
+	public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoder> {
 		public Builder()  {
-			this.clazz = DenoisingAutoEncoderMatrix.class;
+			this.clazz = DenoisingAutoEncoder.class;
 		}
 	}
 	

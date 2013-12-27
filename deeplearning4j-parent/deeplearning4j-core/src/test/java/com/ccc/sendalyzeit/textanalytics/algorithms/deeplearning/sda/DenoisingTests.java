@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.DenoisingAutoEncoderMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.DenoisingAutoEncoder;
 
 
 public class DenoisingTests {
@@ -61,7 +61,7 @@ public class DenoisingTests {
 	public void testOther() {
 		MersenneTwister rand = new MersenneTwister(123);
 		for(int j = 0; j < 5; j++) {
-			DenoisingAutoEncoderMatrix da = new DenoisingAutoEncoderMatrix.Builder().numberOfVisible(1).numHidden(1).withRandom(rand).build();
+			DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(1).numHidden(1).withRandom(rand).build();
 			double lr = 0.1;
 			for(int i = 0; i < 50; i++) {
 					da.train(train_X_matrix, lr, 0.3);

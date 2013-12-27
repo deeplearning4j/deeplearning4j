@@ -7,6 +7,8 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.activation.ActivationFunction;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.activation.Sigmoid;
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 /**
@@ -14,7 +16,7 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public class HiddenLayerMatrix implements Serializable {
+public class HiddenLayer implements Serializable {
 
 	private static final long serialVersionUID = 915783367350830495L;
 	public int n_in;
@@ -23,12 +25,47 @@ public class HiddenLayerMatrix implements Serializable {
 	public DoubleMatrix b;
 	public RandomGenerator rng;
 	public DoubleMatrix input;
+	private ActivationFunction activationFunction = new Sigmoid();
 
 
 
 
+	public HiddenLayer(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
+		this.n_in = n_in;
+		this.n_out = n_out;
+		this.input = input;
+		this.activationFunction = activationFunction;
+		
+		if(rng == null) {
+			this.rng = new MersenneTwister(1234);
+		}
+		else 
+			this.rng = rng;
 
-	public HiddenLayerMatrix(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
+		if(W == null) {
+			double a = 1.0 / (double) n_in;
+
+			UniformRealDistribution u = new UniformRealDistribution(this.rng,-a,a);
+
+			this.W = DoubleMatrix.zeros(n_in,n_out);
+
+			for(int i = 0; i < this.W.rows; i++) 
+				for(int j = 0; j < this.W.columns; j++) 
+					this.W.put(i,j,u.sample());
+		}
+
+		else 
+			this.W = W;
+
+
+		if(b == null) 
+			this.b = DoubleMatrix.zeros(n_out);
+		else 
+			this.b = b;
+	}
+
+
+	public HiddenLayer(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
 		this.n_in = n_in;
 		this.n_out = n_out;
 		this.input = input;
@@ -68,7 +105,7 @@ public class HiddenLayerMatrix implements Serializable {
 	public DoubleMatrix outputMatrix() {
 		DoubleMatrix mult = this.input.mmul(W);
 		mult = mult.addRowVector(b);
-		return MatrixUtil.sigmoid(mult);
+		return activationFunction.apply(mult);
 	}
 
 	/**

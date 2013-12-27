@@ -380,7 +380,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 		this.input = input;
 	}
 
-
+	/**
+	 * All neural networks are based on this idea of 
+	 * minimizing reconstruction error.
+	 * Both RBMs and Denoising AutoEncoders
+	 * have a component for reconstructing, ala different implementations.
+	 *  
+	 * @param x the input to reconstruct
+	 * @return the reconstructed input
+	 */
+	public abstract DoubleMatrix reconstruct(DoubleMatrix x);
 
 
 

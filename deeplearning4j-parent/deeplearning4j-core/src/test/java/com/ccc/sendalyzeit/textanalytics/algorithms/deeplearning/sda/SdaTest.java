@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.ccc.sendalyzeit.deeplearning.berkeley.Counter;
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.base.IrisUtils;
-import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.SdAMatrix;
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.StackedDenoisingAutoEncoder;
 
 public class SdaTest {
 
@@ -101,7 +101,7 @@ public class SdaTest {
 
 	@Test
 	public void testOutput() {
-		SdAMatrix sda = sdamatrix();
+		StackedDenoisingAutoEncoder sda = sdamatrix();
 		sda.pretrain( pretrain_lr, corruption_level, pretraining_epochs);
 		// finetune
 		sda.finetune(finetune_lr, finetune_epochs);
@@ -115,9 +115,9 @@ public class SdaTest {
 	}
 
 
-	public SdAMatrix sdamatrix() {
+	public StackedDenoisingAutoEncoder sdamatrix() {
 		// construct SdA
-		SdAMatrix sda = new SdAMatrix( n_ins, hidden_layer_sizes_arr, n_outs, n_layers, rng,train_X_matrix,train_Y_matrix);
+		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder( n_ins, hidden_layer_sizes_arr, n_outs, n_layers, rng,train_X_matrix,train_Y_matrix);
 		return sda;
 	}
 

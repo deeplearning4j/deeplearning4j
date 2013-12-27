@@ -23,7 +23,7 @@ public class HiddenLayerTest {
         ,{0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,1}
         ,{0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0}});
 		
-		HiddenLayerMatrix layer = new HiddenLayerMatrix(20, 2, null, null, null, input);
+		HiddenLayer layer = new HiddenLayer(20, 2, null, null, null, input);
 		log.info(layer.sample_h_given_v().toString());
 		log.info(layer.outputMatrix().toString());
 		

@@ -31,9 +31,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	public int nOuts;
 	public int nLayers;
 	//the hidden layers
-	public HiddenLayerMatrix[] sigmoidLayers;
+	public HiddenLayer[] sigmoidLayers;
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
-	public LogisticRegressionMatrix logLayer;
+	public LogisticRegression logLayer;
 	public RandomGenerator rng;
 	//default training examples and associated layers
 	public DoubleMatrix input,labels;
@@ -83,7 +83,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 		this.nOuts = n_outs;
 		this.nLayers = n_layers;
 
-		this.sigmoidLayers = new HiddenLayerMatrix[n_layers];
+		this.sigmoidLayers = new HiddenLayer[n_layers];
 		this.layers = createNetworkLayers(n_layers);
 
 		if(rng == null)   
@@ -118,13 +118,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 
 			if(i == 0) {
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayerMatrix(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
 
 			}
 			else {
 				layer_input = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayerMatrix(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
 
 			}
 
@@ -132,8 +132,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 			this.layers[i] = createLayer(layer_input,input_size, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
 		}
 
-		// layer for output using LogisticRegressionMatrix
-		this.logLayer = new LogisticRegressionMatrix(layer_input, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
+		// layer for output using LogisticRegression
+		this.logLayer = new LogisticRegression(layer_input, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
 
 	}
 
@@ -177,7 +177,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	public DoubleMatrix predict(DoubleMatrix x) {
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
-			HiddenLayerMatrix layer = sigmoidLayers[i];
+			HiddenLayer layer = sigmoidLayers[i];
 			input = layer.outputMatrix(input);
 		}
 		return logLayer.predict(input);
@@ -357,7 +357,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 				ret.hiddenLayerSizes = this.hiddenLayerSizes;
 				ret.nLayers = this.nLayers;
 				ret.rng = this.rng;
-				ret.sigmoidLayers = new HiddenLayerMatrix[ret.nLayers];
+				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
 				ret.layers = ret.createNetworkLayers(ret.nLayers);
 
 				return ret;
