@@ -56,6 +56,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	 *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
 	 */
 	public NeuralNetwork[] layers;
+	
+	/*
+	 * The delta from the previous iteration to this iteration for
+	 * cross entropy must change >= this amount in order to continue.
+	 */
+	public double errorTolerance = 0.0001;
 
 	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
@@ -146,10 +152,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layer_input = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
-
 		for(int epoch = 0; epoch < epochs; epoch++) {
 			logLayer.train(layer_input, labels, lr);
-			//lr *= learningRateUpdate;
+			lr *= learningRateUpdate;
+		
+			if(epoch % 10 == 0)
+				log.info("Current negative log likelihood " + negativeLogLikelihood());
 		}
 
 

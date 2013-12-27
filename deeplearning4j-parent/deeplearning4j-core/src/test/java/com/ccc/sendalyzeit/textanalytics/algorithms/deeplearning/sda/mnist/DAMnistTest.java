@@ -26,8 +26,9 @@ public class DAMnistTest {
 		for(int i = 0; i < 1000; i++) {
 			da.train(data.getFirst(), lr, 0.3);
 			lr *= 0.95;
+			log.info("Cross entropy " + da.getReConstructionCrossEntropy() + " negative log likelihood " + da.negativeLoglikelihood(0.3));
+
 		}
-		log.info("Cross entropy " + da.getReConstructionCrossEntropy());
 
 	}
 

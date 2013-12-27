@@ -62,10 +62,10 @@ public class RBMTest extends DeepLearningTest {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
 		fetcher.fetch(100);
 		DataSet pair = fetcher.next();
-		pair.roundToTheNearest(100);
+		pair.roundToTheNearest(1200);
 		int numVisible = pair.getFirst().columns;
 		RandomGenerator g = new MersenneTwister(123);
-		MnistDataSetIterator iter = new MnistDataSetIterator(100,600);
+		MnistDataSetIterator iter = new MnistDataSetIterator(100,1200);
 		RBM r = new RBM.Builder().numberOfVisible(numVisible)
 				.numHidden(100).withRandom(g)
 				.build();
@@ -74,8 +74,9 @@ public class RBMTest extends DeepLearningTest {
 			pair = iter.next();
 			for(int i = 0; i < 1000; i++) {
 				r.contrastiveDivergence(0.1, 1, pair.getFirst());
+				log.info("Entropy " + r.getReConstructionCrossEntropy());
+
 			}
-			log.info("Entropy " + r.getReConstructionCrossEntropy());
 
 		}
 		

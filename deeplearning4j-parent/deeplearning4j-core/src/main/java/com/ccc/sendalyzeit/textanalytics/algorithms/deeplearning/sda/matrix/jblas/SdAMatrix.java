@@ -25,9 +25,9 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 	private static final long serialVersionUID = 1448581794985193009L;
 	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 
-	
+
 	public SdAMatrix() {}
-	
+
 	public SdAMatrix(int n_ins, int[] hidden_layer_sizes, int n_outs,
 			int n_layers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
 		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
@@ -66,7 +66,6 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 				layerInput = input;
 			else
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
-
 			DenoisingAutoEncoderMatrix da = (DenoisingAutoEncoderMatrix) this.layers[i];
 			HiddenLayerMatrix h = this.sigmoidLayers[i];
 			for(int epoch = 0; epoch < epochs; epoch++)  {
@@ -75,6 +74,8 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 					h.W = da.W;
 				if(h.b != da.hBias)
 					h.b = da.hBias;
+				if(epoch % 100 == 0)
+					log.info("Auto encoder " + (i + 1) + " cross entropy for epoch " + (epoch + 1) + " " + da.getReConstructionCrossEntropy());
 
 
 			}
@@ -117,7 +118,7 @@ public class SdAMatrix extends BaseMultiLayerNetwork  {
 	}
 
 
-	
+
 	@Override
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hbias,

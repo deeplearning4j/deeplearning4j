@@ -27,18 +27,18 @@ public class MnistSdaTest extends DeepLearningTest {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
 		fetcher.fetch(1200);
 		DataSet first = fetcher.next();
-		first.roundToTheNearest(100);
+		first.roundToTheNearest(10);
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = new int[3];
-		Arrays.fill(layerSizes,100);
+		int[] layerSizes = new int[2];
+		Arrays.fill(layerSizes,300);
 		double lr = 0.1;
 		SdAMatrix sda = new SdAMatrix.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 
-		sda.pretrain(first.getFirst(), lr, 0.5, 200);
-		sda.finetune(first.getSecond(), lr,200);
+		sda.pretrain(first.getFirst(), lr, 0.5, 2000);
+		sda.finetune(first.getSecond(), lr,2000);
 
 
 
