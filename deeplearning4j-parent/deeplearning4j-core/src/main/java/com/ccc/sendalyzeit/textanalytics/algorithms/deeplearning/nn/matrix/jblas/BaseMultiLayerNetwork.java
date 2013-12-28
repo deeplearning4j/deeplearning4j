@@ -6,7 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -154,13 +153,34 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
-		DoubleMatrix layer_input = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
-		for(int epoch = 0; epoch < epochs; epoch++) {
-			logLayer.train(layer_input, labels, lr);
+		DoubleMatrix layerInput = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
+		logLayer.input = layerInput;
+		logLayer.labels = labels;
+		double cost = this.negativeLogLikelihood();
+		boolean done = false;
+		while(!done) {
+			DoubleMatrix W = logLayer.W.dup();
+			logLayer.train(layerInput, labels, lr);
 			lr *= learningRateUpdate;
-		
-			if(epoch % 10 == 0)
-				log.info("Current negative log likelihood " + negativeLogLikelihood());
+			double currCost = this.negativeLogLikelihood();
+			if(currCost <= cost) {
+				double diff = Math.abs(cost - currCost);
+				if(diff <= 0.000001) {
+					done = true;
+					log.info("Converged on finetuning at " + cost);
+					break;
+				}
+				else
+					cost = currCost;
+				log.info("Found new log likelihood " + cost);
+			}
+			
+			else if(currCost > cost) {
+				done = true;
+				logLayer.W = W;
+				log.info("Converged on finetuning at " + cost + " due to a higher cost coming out than " + currCost);
+				break;
+			}
 		}
 
 

@@ -59,7 +59,16 @@ public class MnistDataFetcher extends BaseDataFetcher {
 			man.setCurrent(cursor);
 			//note data normalization
 			try {
-				DoubleMatrix in = MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage())).div(255);
+				DoubleMatrix in = MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage()));
+				for(int d = 0; d < in.length; d++) {
+					if(in.get(d) > 30) {
+						in.put(d,1);
+					}
+					else 
+						in.put(d,0);
+				}
+				
+				
 				DoubleMatrix out = createOutputVector(man.readLabel());
 				boolean found = false;
 				for(int col = 0; col < out.length; col++) {

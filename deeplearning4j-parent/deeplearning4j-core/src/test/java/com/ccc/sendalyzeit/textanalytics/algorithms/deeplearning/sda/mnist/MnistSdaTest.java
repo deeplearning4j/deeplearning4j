@@ -1,6 +1,8 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.mnist;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -21,7 +23,7 @@ public class MnistSdaTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException {
-		MnistDataSetIterator iter = new MnistDataSetIterator(100,60000);
+		MnistDataSetIterator iter = new MnistDataSetIterator(600,6000);
 		RandomGenerator rng = new MersenneTwister(123);
 
 
@@ -33,29 +35,36 @@ public class MnistSdaTest extends DeepLearningTest {
 
 		double lr = 0.1;
 
+
 		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(rng)
 				.hiddenLayerSizes(layerSizes).build();
 
 
-		Evaluation eval = new Evaluation();
+		sda.pretrain(first.getFirst(), lr, 0.6, 100);
+		sda.finetune(first.getSecond(), lr,50);
+
 		while(iter.hasNext()) {
 			first = iter.next();
-			sda.pretrain(first.getFirst(), lr, 0.6, 50);
-			sda.finetune(first.getSecond(), lr,100);
-
-
-
-			DoubleMatrix predicted = sda.predict(first.getFirst());
-			log.info("Predicting\n " + predicted.toString().replaceAll(";","\n"));
-
-			eval.eval(first.getSecond(), predicted);
-			log.info(eval.stats());
-			log.info("Loss is " + sda.negativeLogLikelihood());
-
+			sda.pretrain(first.getFirst(), lr, 0.6, 100);
+			sda.finetune(first.getSecond(), lr,50);
 
 		}
 
+
+		Evaluation eval = new Evaluation();
+		log.info("BEGIN EVAL ON " + first.numExamples());
+		//	while(iter.hasNext()) {
+
+		DoubleMatrix predicted = sda.predict(first.getFirst());
+		log.info("Predicting\n " + predicted.toString().replaceAll(";","\n"));
+
+		eval.eval(first.getSecond(), predicted);
+		log.info(eval.stats());
+		log.info("Loss is " + sda.negativeLogLikelihood());
+
+
+		//}
 
 
 

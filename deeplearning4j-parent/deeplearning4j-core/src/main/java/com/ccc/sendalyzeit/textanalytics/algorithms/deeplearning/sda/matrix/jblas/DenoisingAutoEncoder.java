@@ -16,16 +16,16 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  *
  */
 public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializable  {
-	
+
 
 	private static final long serialVersionUID = -6445530486350763837L;
 	private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoder.class);
-	
+
 	public DenoisingAutoEncoder() {}
 
-	
-	
-	
+
+
+
 	public DenoisingAutoEncoder(int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng) {
@@ -58,7 +58,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	}
 
 
-	
+
 
 
 	/**
@@ -92,11 +92,56 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		return z;
 	}
 
-	public void train(DoubleMatrix x, double lr, double corruption_level) {
+
+
+	public void trainTillConverge(DoubleMatrix x, double lr,double corruptionLevel) {
+		boolean done = false;
+		Double currBestError = null;
+		while(!done) {
+			if(done)
+				break;
+			DoubleMatrix hBias = this.hBias.dup();
+			DoubleMatrix vBias = this.vBias.dup();
+			DoubleMatrix W = this.W.dup();
+			
+			train(x,lr,corruptionLevel);
+			lr *= 0.95;
+
+		
+			if(currBestError != null) {
+				Double currError = negativeLoglikelihood(corruptionLevel);
+				if(currError <= currBestError) {
+					log.info("Found new best negative log likelihood " + currError + " the current reconstruction entropy is " + getReConstructionCrossEntropy());
+					Double diff = Math.abs(currError - currBestError);
+					if(diff <= 0.000001) {
+						log.info("Converged at " + currError);
+						done = true;
+						break;
+					}
+					else
+						currBestError = currError;
+				}
+				
+				else if(currError > currBestError) {
+					this.W = W;
+					this.vBias = vBias;
+					this.hBias = hBias;
+					log.info("Converged at " + currError + " due to greater error where the best was " + currBestError);
+					done = true;
+					break;
+					
+				}
+			}
+			else 
+				currBestError = negativeLoglikelihood(corruptionLevel);
+		}
+	}
+
+	public void train(DoubleMatrix x, double lr, double corruptionLevel) {
 
 		this.input = x;
-		
-		double p = 1 - corruption_level;
+
+		double p = 1 - corruptionLevel;
 
 		DoubleMatrix tilde_x = getCorruptedInput(x, p);
 		DoubleMatrix y = getHiddenValues(tilde_x);
@@ -121,19 +166,19 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		this.vBias = vBias.add(L_vbias_mean);
 
 	}
-	
+
 	@Override
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
 		DoubleMatrix y = getHiddenValues(x);
 		return getReconstructedInput(y);
 	}	
-	
-	
-	
+
+
+
 	public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoder> {
 		public Builder()  {
 			this.clazz = DenoisingAutoEncoder.class;
 		}
 	}
-	
+
 }

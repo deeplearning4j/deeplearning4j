@@ -96,11 +96,11 @@ public class DBN extends BaseMultiLayerNetwork {
 			RBM r = (RBM) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
 
-			for(int  epoch = 0; epoch < epochs; epoch++) {
-				r.contrastiveDivergence(learningRate, k, layerInput);
-				h.W = r.W;
-				h.b = r.hBias;
-			}
+			//for(int  epoch = 0; epoch < epochs; epoch++) {
+			r.trainTillConvergence(learningRate, k, layerInput);	
+			h.W = r.W;
+			h.b = r.hBias;
+			//}
 
 		}
 	}

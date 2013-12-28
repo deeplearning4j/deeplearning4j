@@ -3,13 +3,12 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.rbm.matrix.jbl
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
-import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
+import static com.ccc.sendalyzeit.textanalytics.util.MatrixUtil.*;
 
 
 /**
@@ -34,7 +33,7 @@ public class RBM extends BaseNeuralNetwork {
 	private static Logger log = LoggerFactory.getLogger(RBM.class);
 
 	public RBM() {}
-	
+
 	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vbias, RandomGenerator rng) {
 		super(nVisible, nHidden, W, hbias, vbias, rng);
@@ -47,9 +46,50 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 	/**
+	 * Trains till global minimum is found.
+	 * @param learningRate
+	 * @param k
+	 * @param input
+	 */
+	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
+		if(input != null)
+			this.input = input;
+		double score = getReConstructionCrossEntropy();
+		boolean done = false;
+		while(!done) {
+			DoubleMatrix W = this.W.dup();
+			DoubleMatrix hBias = this.hBias.dup();
+			DoubleMatrix vBias = this.vBias.dup();
+			contrastiveDivergence(learningRate,k,input);
+			double currScore = getReConstructionCrossEntropy();
+			if(currScore <= score)	{
+				double diff = Math.abs(currScore - score);
+				if(diff <= 0.000001) {
+					done = true;
+					score = currScore;
+					log.info("Converged on cost " + currScore);
+					break;
+				}
+				else
+					score = currScore;
+				log.info("Found new reconstruction entropy " + score);
+			}
+			else if(currScore > score) {
+				log.info("Converged on score " + score + " due to greater entropy after the last training batch");
+				this.W = W;
+				this.hBias = hBias;
+				this.vBias = vBias;
+				done = true;
+				break;
+			}
+
+		}
+	}
+
+	/**
 	 * Contrastive divergence revolves around the idea 
 	 * of approximating the log likelihood around x1(input) with repeated sampling.
-	 * Given this is an energy based model: the higher k is (the more we sample the model)
+	 * Given is an energy based model: the higher k is (the more we sample the model)
 	 * the more we lower the energy (increase the likelihood of the model)
 	 * 
 	 * and lower the likelihood (increase the energy) of the hidden samples.
@@ -57,25 +97,25 @@ public class RBM extends BaseNeuralNetwork {
 	 * Other insights:
 	 *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
 	 *    
- 	 * @param learningRate the learning rate to scale by
+	 * @param learningRate the learning rate to scale by
 	 * @param k the number of iterations to do
 	 * @param input the input to sample from
 	 */
 	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		
+
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
 		 */
-		Pair<DoubleMatrix,DoubleMatrix> probHidden = this.sampleHiddenGivenVisible(this.input);
-        
+		Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
+
 		/*
 		 * Start the gibbs sampling.
 		 */
 		DoubleMatrix chainStart = probHidden.getSecond();
-		
+
 		/*
 		 * Note that at a later date, we can explore alternative methods of 
 		 * storing the chain transitions for different kinds of sampling
@@ -90,7 +130,7 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix nhMeans = null;
 		//negative hidden samples
 		DoubleMatrix nhSamples = null;
-		
+
 		/*
 		 * K steps of gibbs sampling. THis is the positive phase of contrastive divergence.
 		 * 
@@ -98,10 +138,10 @@ public class RBM extends BaseNeuralNetwork {
 		 * The samples from both the positive and negative phases and their expected values or averages.
 		 * 
 		 */
-		
+
 		for(int i = 0; i < k; i++) {
 
-			
+
 			if(i == 0) 
 				matrices = gibbhVh(chainStart);
 			else
@@ -113,9 +153,9 @@ public class RBM extends BaseNeuralNetwork {
 			nhSamples = matrices.getSecond().getSecond();
 		}
 
-		
+
 		//input times the positive hidden sample
-		DoubleMatrix inputTimesPhSample =  this.input.transpose().mmul(probHidden.getSecond());
+		DoubleMatrix inputTimesPhSample =  input.transpose().mmul(probHidden.getSecond());
 		//negative samples times the negative hidden means
 		DoubleMatrix nvSamplesTTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
 		//delta: input times the positive hidden sample - negative visible samples * negative hidden means
@@ -125,13 +165,13 @@ public class RBM extends BaseNeuralNetwork {
 		W = W.add(wAdd);
 
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
-		DoubleMatrix  vBiasAdd = MatrixUtil.mean(this.input.sub(nvSamples), 0);
+		DoubleMatrix  vBiasAdd = mean(input.sub(nvSamples), 0);
 		vBias = vBiasAdd.mul(learningRate);
 
 
 		//update rule: the expected values of the hidden input - the negative hideen  means adjusted by the learning rate
-		
-		DoubleMatrix hBiasAdd = MatrixUtil.mean(probHidden.getSecond().sub(nhMeans), 0);
+
+		DoubleMatrix hBiasAdd = mean(probHidden.getSecond().sub(nhMeans), 0);
 
 		hBiasAdd = hBiasAdd.mul(learningRate);
 
@@ -149,7 +189,7 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
-		DoubleMatrix h1Sample = MatrixUtil.binomial(h1Mean, 1, rng);
+		DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
 		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
 
 	}
@@ -161,9 +201,9 @@ public class RBM extends BaseNeuralNetwork {
 	 * and the new hidden input and expected values
 	 */
 	public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
-		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = this.sampleVGivenH(h);
+		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = sampleVGivenH(h);
 		DoubleMatrix vSample = v1MeanAndSample.getSecond();
-		Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = this.sampleHiddenGivenVisible(vSample);
+		Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
 		return new Pair<>(v1MeanAndSample,h1MeanAndSample);
 	}
 
@@ -175,7 +215,7 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> sampleVGivenH(DoubleMatrix h) {
 		DoubleMatrix v1Mean = propDown(h);
-		DoubleMatrix v1Sample = MatrixUtil.binomial(v1Mean, 1, rng);
+		DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
 		return new Pair<>(v1Mean,v1Sample);
 	}
 
@@ -183,10 +223,10 @@ public class RBM extends BaseNeuralNetwork {
 	public DoubleMatrix propUp(DoubleMatrix v) {
 		DoubleMatrix preSig = v.mmul(W);
 		preSig = preSig.addRowVector(hBias);
-		return MatrixUtil.sigmoid(preSig);
+		return sigmoid(preSig);
 
 	}
-	
+
 	/**
 	 * Propagates hidden down to visible
 	 * @param h the hidden layer
@@ -194,7 +234,7 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	public DoubleMatrix propDown(DoubleMatrix h) {
 		DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
-		return MatrixUtil.sigmoid(preSig);
+		return sigmoid(preSig);
 
 	}
 
@@ -212,7 +252,7 @@ public class RBM extends BaseNeuralNetwork {
 
 	public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
 		public Builder() {
-			this.clazz =  RBM.class;
+			clazz =  RBM.class;
 		}
 
 	}

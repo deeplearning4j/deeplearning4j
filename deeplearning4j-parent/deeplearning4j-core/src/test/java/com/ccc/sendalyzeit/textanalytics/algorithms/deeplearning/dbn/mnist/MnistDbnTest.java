@@ -35,8 +35,7 @@ public class MnistDbnTest extends DeepLearningTest {
 		double lr = 0.1;
 		
 		first.roundToTheNearest(100);
-		
-		CDBN dbn = new CDBN.Builder().numberOfInputs(numIns)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 	

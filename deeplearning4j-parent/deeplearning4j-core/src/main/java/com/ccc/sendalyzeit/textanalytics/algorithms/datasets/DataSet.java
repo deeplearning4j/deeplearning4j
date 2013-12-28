@@ -50,7 +50,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	
 	public static DataSet merge(List<DataSet> data) {
 		if(data.isEmpty())
-			return null;
+			throw new IllegalArgumentException("Unable to merge empty dataset");
 		DataSet first = data.iterator().next();
 
 		DoubleMatrix in = new DoubleMatrix(data.size(),first.getFirst().columns);
@@ -315,6 +315,18 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		return getFirst().rows;
 	}
 
+	
+	
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("===========INPUT===================\n")
+		.append(getFirst().toString().replaceAll(";","\n"))
+		.append("\n=================OUTPUT==================\n")
+		.append(getSecond().toString().replaceAll(";","\n"));
+		return builder.toString();
+	}
 
 	public static void main(String[] args) throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
