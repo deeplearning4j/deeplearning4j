@@ -50,11 +50,11 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	 * from a corrupted version
 	 * @param input the input to train on
 	 * @param lr the starting learning rate
-	 * @param corruption_level the corruption level (the smaller number of inputs; the higher the 
+	 * @param corruptionLevel the corruption level (the smaller number of inputs; the higher the 
 	 * corruption level should be) the percent of inputs to corrupt
 	 * @param epochs the number of iterations to run
 	 */
-	public void pretrain( DoubleMatrix input,double lr,  double corruption_level,  int epochs) {
+	public void pretrain( DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
 		if(this.input == null)
 			initializeLayers(input);
 
@@ -68,17 +68,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
 			DenoisingAutoEncoder da = (DenoisingAutoEncoder) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
-			for(int epoch = 0; epoch < epochs; epoch++)  {
-				da.train(layerInput, lr, corruption_level);
-				if(h.W != (da.W))
-					h.W = da.W;
-				if(h.b != da.hBias)
-					h.b = da.hBias;
-				if(epoch % 100 == 0)
-					log.info("Auto encoder " + (i + 1) + " cross entropy for epoch " + (epoch + 1) + " " + da.getReConstructionCrossEntropy());
+			da.trainTillConverge(layerInput, lr, corruptionLevel);
+			if(h.W != (da.W))
+				h.W = da.W;
+			if(h.b != da.hBias)
+				h.b = da.hBias;
+			
 
 
-			}
 
 		}	
 
