@@ -7,8 +7,8 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
+import com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.dbn.matrix.jblas.DBN;
 import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 /**

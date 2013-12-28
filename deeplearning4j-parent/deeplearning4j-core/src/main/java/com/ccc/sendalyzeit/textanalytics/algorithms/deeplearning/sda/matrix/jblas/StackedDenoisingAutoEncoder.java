@@ -28,9 +28,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 	public StackedDenoisingAutoEncoder() {}
 
-	public StackedDenoisingAutoEncoder(int n_ins, int[] hidden_layer_sizes, int n_outs,
-			int n_layers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
-		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
+	public StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
+			int nLayers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
+		super(n_ins, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
 
 	}
 

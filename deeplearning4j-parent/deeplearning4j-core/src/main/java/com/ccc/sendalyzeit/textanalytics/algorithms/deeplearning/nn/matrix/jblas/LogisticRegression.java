@@ -3,11 +3,10 @@ package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jbla
 import java.io.Serializable;
 
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
+import static com.ccc.sendalyzeit.textanalytics.util.MatrixUtil.*;
 
 /**
  * Logistic regression implementation with jblas.
@@ -22,7 +21,6 @@ public class LogisticRegression implements Serializable {
 	public DoubleMatrix input,labels;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
-	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 
 
@@ -55,11 +53,15 @@ public class LogisticRegression implements Serializable {
 	 * @return the negative log likelihood of the model
 	 */
 	public double negativeLogLikelihood() {
-		DoubleMatrix sigAct = MatrixUtil.softmax(input.mmul(W).addRowVector(b));
-		DoubleMatrix inner = labels.mul(MatrixUtil.log(sigAct)).add(MatrixUtil.oneMinus(labels).mul(MatrixUtil.log(MatrixUtil.oneMinus(sigAct))));
-		return - inner.rowSums().mean();
+		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
+		
+		return - labels.mul(log(sigAct)).add(
+				oneMinus(labels).mul(
+						log(oneMinus(sigAct))
+				))
+				.columnSums().mean();
 	}
-	
+
 	/**
 	 * Train on the given inputs and labels.
 	 * This will assign the passed in values
@@ -70,25 +72,19 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate
 	 */
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+		ensureValidOutcomeMatrix(y);
+
 		this.input = x;
 		this.labels = y;
-		
+
 		if(x.rows != y.rows)
 			throw new IllegalArgumentException("Can't train on the 2 given inputs and labels");
-		DoubleMatrix mul = x.mmul(W);
 
-		DoubleMatrix p_y_given_x = MatrixUtil.softmax(mul.addRowVector(b));
+		DoubleMatrix p_y_given_x = softmax(x.mmul(W).addRowVector(b));
 		DoubleMatrix dy = y.sub(p_y_given_x);
-	
-		DoubleMatrix mult2 = x.transpose().mmul(dy);
-		mult2 = mult2.mul(lr);
-		//TECHNICALLY THE CALCULATION COULD INCLUDE L2REG WHICH IS THE FOLLOWING: 
-		//lr * x^T * y - lr * L2_reg * W
-		//lr * x^T * y is all that is needed; if L2_Reg is zero
-		//it will zero out the rest of that quantity
-		W = W.add(mult2);
-		DoubleMatrix bAdd = dy.columnMeans();
-		b = b.add(bAdd.mul(lr));
+
+		W = W.add(x.transpose().mmul(dy).mul(lr));
+		b = b.add(dy.columnMeans().mul(lr));
 
 	}
 
@@ -105,8 +101,7 @@ public class LogisticRegression implements Serializable {
 	 * @return a probability distribution for each row
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
-		DoubleMatrix ret = x.mmul(W).addRowVector(b);
-		return MatrixUtil.softmax(ret);
+		return softmax(x.mmul(W).addRowVector(b));
 	}	
 
 

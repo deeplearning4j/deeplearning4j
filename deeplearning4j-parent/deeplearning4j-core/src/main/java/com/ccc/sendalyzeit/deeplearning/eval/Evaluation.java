@@ -1,10 +1,13 @@
 package com.ccc.sendalyzeit.deeplearning.eval;
 
 
+import java.util.Set;
+
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Counter;
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 
 /**
  * Evaluation metrics: precision, recall, f1
@@ -48,21 +51,25 @@ public class Evaluation {
 		}
 	}
 
-	
+
+
 	public String stats() {
 		StringBuilder builder = new StringBuilder()
-		.append("\n").append(confusion.toString()).append("\n");
-		
-		
-		builder.append("\n==========================F1 Scores========================================");
-		
-		for(Integer label : confusion.getClasses()) {
-			builder.append("\nLABEL " + label + " f1 " + f1(label) + " precision " + precision(label) + " recall " + recall());
+		.append("\n");
+		Set<Integer> classes = confusion.getClasses();
+		for(Integer clazz : classes) {
+			for(Integer clazz2 : classes) {
+				int count = confusion.getCount(clazz, clazz2);
+				if(count != 0)
+					builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
+			}
 		}
+		builder.append("\n==========================F1 Scores========================================");
+		builder.append("\n " + f1());
 		builder.append("\n===========================================================================");
 		return builder.toString();
 	}
-	
+
 	/**
 	 * Adds to the confusion matrix
 	 * @param real the actual guess
@@ -82,7 +89,7 @@ public class Evaluation {
 	public int classCount(int i) {
 		return confusion.getActualTotal(i);
 	}
-	
+
 	/**
 	 * Returns the number of times a given label was predicted 
 	 * @param label the label to get
@@ -91,7 +98,7 @@ public class Evaluation {
 	public int numtimesPredicted(int label) {
 		return confusion.getPredictedTotal(label);
 	}
-	
+
 	/**
 	 * Gets the number of times the 
 	 * given class was predicted for the 
@@ -103,7 +110,24 @@ public class Evaluation {
 	public int numTimesPredicted(int actual,int predicted) {
 		return confusion.getCount(actual, predicted);
 	}
-	
+
+	public double precision() {
+		double prec = 0.0;
+		for(Integer i : confusion.getClasses()) {
+			prec += precision(i);
+		}
+		return prec / (double) confusion.getClasses().size();
+	}
+
+
+	public double f1() {
+		double precision = precision();
+		double recall = recall();
+		if(precision == 0 || recall == 0)
+			return 0;
+		return 2.0 * ((precision * recall / (precision + recall)));
+	}
+
 	/**
 	 * Calculate f1 score for a given class
 	 * @param i the label to calculate f1 for
@@ -112,23 +136,29 @@ public class Evaluation {
 	public double f1(int i) {
 		double precision = precision(i);
 		double recall = recall();
+		if(precision == 0 || recall == 0)
+			return 0;
 		return 2.0 * ((precision * recall / (precision + recall)));
 	}
-	
+
 	/**
 	 * Returns the recall for the outcomes
 	 * @return the recall for the outcomes
 	 */
 	public double recall() {
+		if(truePositives == 0)
+			return 0;
 		return truePositives / (truePositives + falseNegatives);
 	}
-	
+
 	/**
 	 * Returns the precision for a given label
- 	 * @param i the label
+	 * @param i the label
 	 * @return the precision for the label
 	 */
 	public double precision(int i) {
+		if(truePositives == 0)
+			return 0;
 		return truePositives / (truePositives + falsePositives.getCount(i));
 	}
 
