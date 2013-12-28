@@ -1,16 +1,28 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.datasets;
 
 import java.io.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.sendalyzeit.deeplearning.berkeley.Pair;
 import com.ccc.sendalyzeit.textanalytics.algorithms.datasets.fetchers.MnistDataFetcher;
 import com.ccc.sendalyzeit.textanalytics.util.MathUtils;
+import com.google.common.collect.Lists;
 
 /**
  * A data set (example/outcome pairs)
@@ -22,40 +34,187 @@ import com.ccc.sendalyzeit.textanalytics.util.MathUtils;
 public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 
 	private static final long serialVersionUID = 1935520764586513365L;
-	
+	private static Logger log = LoggerFactory.getLogger(DataSet.class);
+
 	public DataSet(Pair<DoubleMatrix,DoubleMatrix> pair) {
 		this(pair.getFirst(),pair.getSecond());
 	}
-	
+
 	public DataSet(DoubleMatrix first, DoubleMatrix second) {
 		super(first, second);
 	}
 
+	public DataSet copy() {
+		return new DataSet(getFirst(),getSecond());
+	}
 	
+	public static DataSet merge(List<DataSet> data) {
+		if(data.isEmpty())
+			return null;
+		DataSet first = data.iterator().next();
+
+		DoubleMatrix in = new DoubleMatrix(data.size(),first.getFirst().columns);
+		DoubleMatrix out = new DoubleMatrix(data.size(),first.getSecond().columns);
+
+
+		for(int i = 0; i < data.size(); i++) {
+			in.putRow(i,data.get(i).getFirst());
+			out.putRow(i,data.get(i).getSecond());
+
+		}
+		return new DataSet(in,out);
+	}
+
+
+	public List<List<DataSet>> batchBy(int num) {
+		return Lists.partition(asList(),num);
+	}
+
+	/**
+	 * Sorts the dataset by label:
+	 * Splits the data set such that examples are sorted by their labels.
+	 * A ten label dataset would produce lists with batches like the following:
+	 * x1   y = 1
+	 * x2   y = 2
+	 * ...
+	 * x10  y = 10
+	 * @return a list of data sets partitioned by outcomes
+	 */
+	public List<List<DataSet>> sortAndBatchByNumLabels() {
+		sortByLabel();
+		return Lists.partition(asList(),numOutcomes());
+	}
+
+	public List<List<DataSet>> batchByNumLabels() {
+		return Lists.partition(asList(),numOutcomes());
+	}
+
+
+	public List<DataSet> asList() {
+		List<DataSet> list = new ArrayList<DataSet>(numExamples());
+		for(int i = 0; i < numExamples(); i++)  {
+			list.add(new DataSet(getFirst().getRow(i),getSecond().getRow(i)));
+		}
+		return list;
+	}
+
+	public Pair<DataSet,DataSet> splitTestAndTrain(int numHoldout) {
+
+		if(numHoldout >= numExamples())
+			throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
+
+
+		List<DataSet> list = asList();
+
+		Collections.rotate(list, 3);
+		Collections.shuffle(list);
+		List<List<DataSet>> partition = new ArrayList<List<DataSet>>();
+		partition.add(list.subList(0, numHoldout));
+		partition.add(list.subList(numHoldout, list.size()));
+		DataSet train = merge(partition.get(0));
+		DataSet test = merge(partition.get(1));
+		return new Pair<>(train,test);
+	}
+
+	/**
+	 * Organizes the dataset to minimize sampling error
+	 * while still allowing efficient batching.
+	 */
+	public void sortByLabel() {
+		Map<Integer,Queue<DataSet>> map = new HashMap<Integer,Queue<DataSet>>();
+		List<DataSet> data = asList();
+		int numLabels = numOutcomes();
+		int examples = numExamples();
+		for(DataSet d : data) {
+			int label = getLabel(d);
+			Queue<DataSet> q = map.get(label);
+			if(q == null) {
+				q = new ArrayDeque<DataSet>();
+				map.put(label, q);
+			}
+			q.add(d);
+		}
+
+		for(Integer label : map.keySet()) {
+			log.info("Label " + label + " has " + map.get(label).size() + " elements");
+		}
+
+		//ideal input splits: 1 of each label in each batch
+		//after we run out of ideal batches: fall back to a new strategy
+		boolean optimal = true;
+		for(int i = 0; i < examples; i++) {
+			if(optimal) {
+				for(int j = 0; j < numLabels; j++) {
+					Queue<DataSet> q = map.get(j);
+					DataSet next = q.poll();
+					//add a row; go to next
+					if(next != null) {
+						addRow(next,i);
+						i++;
+					}
+					else {
+						optimal = false;
+						break;
+					}
+				}
+			}
+			else {
+				DataSet add = null;
+				for(Queue<DataSet> q : map.values()) {
+					if(!q.isEmpty()) {
+						add = q.poll();
+						break;
+					}
+				}
+
+				addRow(add,i);
+
+			}
+
+
+		}
+
+
+	}
+
+
+	public void addRow(DataSet d, int i) {
+		if(i > numExamples() || d == null)
+			throw new IllegalArgumentException("Invalid index for adding a row");
+		getFirst().putRow(i, d.getFirst());
+		getSecond().putRow(i,d.getSecond());
+	}
+
+
+	private int getLabel(DataSet data) {
+		return SimpleBlas.iamax(data.getSecond());
+	}
+
+
 	public DoubleMatrix exampleSums() {
 		return getFirst().columnSums();
 	}
-	
+
 	public DoubleMatrix exampleMaxs() {
 		return getFirst().columnMaxs();
 	}
-	
+
 	public DoubleMatrix exampleMeans() {
 		return getFirst().columnMeans();
 	}
-	
+
 	public void saveTo(File file,boolean binary) throws IOException {
 		if(file.exists())
 			file.delete();
 		file.createNewFile();
-		
+
 		if(binary) {
 			DataOutputStream bos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 			getFirst().out(bos);
 			getSecond().out(bos);
 			bos.flush();
 			bos.close();
-			
+
 		}
 		else {
 			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
@@ -65,15 +224,15 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 				bos.write(getSecond().getRow(i).toString("%.3f", "[", "]", ", ", ";").getBytes());
 				bos.write("\n".getBytes())	;
 
-				
+
 			}
 			bos.flush();
 			bos.close();
-			
+
 		}
 	}
-	
-	
+
+
 	public static DataSet load(File path) throws IOException {
 		DataInputStream bis = new DataInputStream(new BufferedInputStream(new FileInputStream(path)));
 		DoubleMatrix x = new DoubleMatrix(1,1);
@@ -83,7 +242,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		bis.close();
 		return new DataSet(x,y);
 	}
-	
+
 	/**
 	 * Sample without replacement and a random rng
 	 * @param numSamples the number of samples to get
@@ -92,7 +251,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	public DataSet sample(int numSamples) {
 		return sample(numSamples,new MersenneTwister(System.currentTimeMillis()));
 	}
-	
+
 	/**
 	 * Sample without replacement
 	 * @param numSamples the number of samples to get
@@ -102,7 +261,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	public DataSet sample(int numSamples,RandomGenerator rng) {
 		return sample(numSamples,rng,false);
 	}
-	
+
 	/**
 	 * Sample a dataset numSamples times
 	 * @param numSamples the number of samples to get
@@ -112,7 +271,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	public DataSet sample(int numSamples,boolean withReplacement) {
 		return sample(numSamples,new MersenneTwister(System.currentTimeMillis()),withReplacement);
 	}
-	
+
 	/**
 	 * Sample a dataset
 	 * @param numSamples the number of samples to get
@@ -147,7 +306,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 			getFirst().put(i,MathUtils.roundDouble(curr, roundTo));
 		}
 	}
-	
+
 	public int numOutcomes() {
 		return getSecond().columns;
 	}
@@ -156,14 +315,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		return getFirst().rows;
 	}
 
-	
+
 	public static void main(String[] args) throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
 		fetcher.fetch(100);
 		DataSet write = new DataSet(fetcher.next());
 		write.saveTo(new File(args[0]), false);
-		
-		
+
+
 	}
 
 }

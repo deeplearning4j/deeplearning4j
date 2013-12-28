@@ -13,6 +13,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
 /**
  * A base class for a multi layer neural network with a logistic output layer
  * and multiple hidden layers.
@@ -150,6 +152,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	 * @param epochs the number of times to iterate
 	 */
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
+		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layer_input = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
 		for(int epoch = 0; epoch < epochs; epoch++) {

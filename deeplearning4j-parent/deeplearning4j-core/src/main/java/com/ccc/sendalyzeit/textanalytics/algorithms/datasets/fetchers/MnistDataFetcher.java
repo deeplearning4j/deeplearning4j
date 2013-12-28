@@ -60,7 +60,18 @@ public class MnistDataFetcher extends BaseDataFetcher {
 			//note data normalization
 			try {
 				DoubleMatrix in = MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage())).div(255);
-				toConvert.add(new Pair<>(in,createOutputVector(man.readLabel())));
+				DoubleMatrix out = createOutputVector(man.readLabel());
+				boolean found = false;
+				for(int col = 0; col < out.length; col++) {
+				     if(out.get(col) > 0) {
+				    	 found = true;
+				    	 break;
+				     }
+				}
+				if(!found)
+					throw new IllegalStateException("Found a matrix without an outcome");
+				
+				toConvert.add(new Pair<>(in,out));
 			} catch (IOException e) {
 				throw new IllegalStateException("Unable to read image");
 
@@ -69,6 +80,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
 	
 		
 		initializeCurrFromList(toConvert);
+		
+	
 
 	}
 

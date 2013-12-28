@@ -8,6 +8,32 @@ import org.jblas.MatrixFunctions;
 
 public class MatrixUtil {
 
+
+	public static boolean isValidOutcome(DoubleMatrix out) {
+		boolean found = false;
+		for(int col = 0; col < out.length; col++) {
+		     if(out.get(col) > 0) {
+		    	 found = true;
+		    	 break;
+		     }
+		}
+		return found;
+	}
+	
+	
+	public static void ensureValidOutcomeMatrix(DoubleMatrix out) {
+		boolean found = false;
+		for(int col = 0; col < out.length; col++) {
+		     if(out.get(col) > 0) {
+		    	 found = true;
+		    	 break;
+		     }
+		}
+		if(!found)
+			throw new IllegalStateException("Found a matrix without an outcome");
+		
+	}
+	
 	public static void assertIntMatrix(DoubleMatrix matrix) {
 		for(int i = 0; i < matrix.length; i++) {
 			int cast = (int) matrix.get(i);
@@ -99,17 +125,21 @@ public class MatrixUtil {
 	}
 
 	public static DoubleMatrix softmax(DoubleMatrix input) {
-		input = input.sub(input.max());
-		input = MatrixFunctions.exp(input);
-		if(input.columns == 1) {
-			DoubleMatrix sum = sum(input,0);
-			return input.divi(sum);
-		}
-		else {
-			DoubleMatrix sum = sum(input,1).transpose();
-			return input.diviColumnVector(sum);
-
-		}
+		 double max = input.max();
+         double sum = 0.0;
+         
+         
+         for(int i = 0; i < input.length; i++) {
+                 input.put(i,Math.exp(input.get(i) - max));                
+                
+         }
+         sum += input.sum();
+         
+         for(int i = 0; i< input.length; i++) {
+        	 input.put(i,input.get(i) / sum);
+         }
+         
+         return input;
 	}
 	public static DoubleMatrix mean(DoubleMatrix input,int axis) {
 		DoubleMatrix ret = new DoubleMatrix(input.rows,1);

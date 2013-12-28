@@ -119,7 +119,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		L_vbias_mean = L_vbias_mean.mul(lr);
 		this.hBias = hBias.add(L_hbias_mean);
 		this.vBias = vBias.add(L_vbias_mean);
-		log.info("Training negative log likelihood " + this.negativeLoglikelihood(corruption_level));
 
 	}
 	

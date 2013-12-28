@@ -1,4 +1,4 @@
-package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda;
+package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas;
 
 import static org.junit.Assert.*;
 
