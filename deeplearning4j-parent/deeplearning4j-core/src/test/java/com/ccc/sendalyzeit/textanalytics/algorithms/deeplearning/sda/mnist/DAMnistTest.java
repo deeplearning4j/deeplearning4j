@@ -30,11 +30,14 @@ public class DAMnistTest {
 		List<DataSet> list = new ArrayList<DataSet>();
 		while(fetcher.hasNext()) {
 			first = fetcher.next();
-			for(int i = 0; i < 5; i++)
-				da.trainTillConverge(first.getFirst(), 0.1, 0.4);
-			list.add(first.copy());
+			for(int i = 0; i < first.numExamples(); i++)
+				if(first.get(i).outcome() == 2)
+					list.add(first.get(i).copy());
 		}
+
 		first = DataSet.merge(list);
+		for(int i = 0; i < 3; i++)
+			da.trainTillConverge(first.getFirst(), 0.1, 0.6);
 
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
 
