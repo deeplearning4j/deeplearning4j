@@ -273,5 +273,12 @@ public class RBM extends BaseNeuralNetwork {
 
 	}
 
+	@Override
+	public void trainTillConvergence(DoubleMatrix input, double lr,
+			Object[] params) {
+		int k = (int) params[0];
+		trainTillConvergence(lr,k,input);
+	}
+
 
 }

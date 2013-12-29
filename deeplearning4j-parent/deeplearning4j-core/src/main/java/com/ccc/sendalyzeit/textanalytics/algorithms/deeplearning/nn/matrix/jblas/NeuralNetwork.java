@@ -44,5 +44,6 @@ public interface NeuralNetwork extends Serializable {
 	public double getMomentum();
 	public void setMomentum(double momentum);
 	
+	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
 
 }

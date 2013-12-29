@@ -184,4 +184,13 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		}
 	}
 
+
+
+	@Override
+	public void trainTillConvergence(DoubleMatrix input, double lr,
+			Object[] params) {
+		double corruptionLevel = (double) params[0];
+		trainTillConverge(input, lr, corruptionLevel);
+	}
+
 }
