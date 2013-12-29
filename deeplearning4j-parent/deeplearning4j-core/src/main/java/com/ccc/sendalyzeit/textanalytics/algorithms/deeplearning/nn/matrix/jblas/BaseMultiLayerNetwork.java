@@ -165,7 +165,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 			double currCost = this.negativeLogLikelihood();
 			if(currCost <= cost) {
 				double diff = Math.abs(cost - currCost);
-				if(diff <= 0.000001) {
+				if(diff <= 0.0000001) {
 					done = true;
 					log.info("Converged on finetuning at " + cost);
 					break;
