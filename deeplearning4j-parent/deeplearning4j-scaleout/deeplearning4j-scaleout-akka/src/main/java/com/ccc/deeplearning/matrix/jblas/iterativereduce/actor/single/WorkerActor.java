@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer;
+package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.single;
 
 import java.util.List;
 

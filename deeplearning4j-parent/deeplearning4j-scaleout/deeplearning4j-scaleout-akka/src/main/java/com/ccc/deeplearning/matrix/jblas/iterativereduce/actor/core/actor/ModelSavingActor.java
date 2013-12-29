@@ -4,7 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 
-import com.ccc.deeplearning.scaleout.iterativereduce.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;

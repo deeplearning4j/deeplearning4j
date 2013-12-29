@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer;
+package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.single;
 
 import java.io.DataOutputStream;
 import java.util.ArrayList;
@@ -15,20 +15,19 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.japi.Creator;
 
 import com.ccc.deeplearning.berkeley.Pair;
-import com.ccc.deeplearning.iterativereduce.akka.DeepLearningAccumulator;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
 
 /**
  * Handles a set of workers and acts as a parameter server for iterative reduce
  * @author Adam Gibson
  *
  */
-public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
+public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.MasterActor<UpdateableSingleImpl> {
 
 
 
@@ -47,12 +46,12 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 
 	@Override
-	public UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
-			Collection<UpdateableImpl> masterUpdates) {
+	public UpdateableSingleImpl compute(Collection<UpdateableSingleImpl> workerUpdates,
+			Collection<UpdateableSingleImpl> masterUpdates) {
 
 
-		DeepLearningAccumulator acc = new DeepLearningAccumulator();
-		for(UpdateableImpl m : workerUpdates) 
+		SingleNetworkAccumulator acc = new SingleNetworkAccumulator();
+		for(UpdateableSingleImpl m : workerUpdates) 
 			acc.accumulate(m.get());
 
 		masterResults.set(acc.averaged());
@@ -66,11 +65,14 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	public void setup(Conf conf) {
 		//use the rng with the given seed
 		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
-		BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
-				.numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
-				.hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+		BaseNeuralNetwork matrix = new BaseNeuralNetwork.Builder<>()
+				.withClazz(conf.getClazzSingle(CLASS))
+				.withRandom(rng).withL2(conf.getDouble(L2))
+				.withMomentum(conf.getDouble(MOMENTUM))
+				.numberOfVisible(conf.getInt(N_IN))
+				.numHidden(conf.getInt(OUT))
 				.build();
-		masterResults = new UpdateableImpl(matrix);
+		masterResults = new UpdateableSingleImpl(matrix);
 
 	}
 
@@ -83,12 +85,12 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 			log.info("Subscribed " + ack.toString());
 		}
 		else if(message instanceof EpochDoneListener) {
-			listener = (EpochDoneListener<UpdateableImpl>) message;
+			listener = (EpochDoneListener<UpdateableSingleImpl>) message;
 			log.info("Set listener");
 		}
 
-		else if(message instanceof UpdateableImpl) {
-			UpdateableImpl up = (UpdateableImpl) message;
+		else if(message instanceof UpdateableSingleImpl) {
+			UpdateableSingleImpl up = (UpdateableSingleImpl) message;
 			updates.add(up);
 			if(updates.size() == partition) {
 				masterResults = this.compute(updates, updates);

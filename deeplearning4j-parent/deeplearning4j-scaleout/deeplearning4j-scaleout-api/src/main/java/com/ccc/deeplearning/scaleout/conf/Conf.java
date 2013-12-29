@@ -5,6 +5,7 @@ import java.util.HashMap;
 import org.json.JSONObject;
 
 import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 
 public class Conf extends HashMap<String,String> implements DeepLearningConfigurable {
 
@@ -87,6 +88,14 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 	public Class<? extends BaseMultiLayerNetwork> getClazz(String key) {
 		try {
 			return (Class<? extends BaseMultiLayerNetwork>) Class.forName(get(key));
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	@SuppressWarnings("unchecked")
+	public Class<? extends BaseNeuralNetwork> getClazzSingle(String key) {
+		try {
+			return (Class<? extends BaseNeuralNetwork>) Class.forName(get(key));
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}

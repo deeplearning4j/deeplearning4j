@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer;
+package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.single;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -36,6 +36,7 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDon
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -46,7 +47,7 @@ import com.typesafe.config.ConfigFactory;
  * @author Adam Gibson
  *
  */
-public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<UpdateableImpl> {
+public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<UpdateableSingleImpl> {
 
 
 	private static final long serialVersionUID = -4385335922485305364L;
@@ -54,7 +55,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private Integer currEpochs = 0;
 	private Integer epochs;
 	private List<Pair<DoubleMatrix,DoubleMatrix>> samples;
-	private UpdateableImpl result;
+	private UpdateableSingleImpl result;
 	private  ActorRef mediator;
 
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
@@ -285,7 +286,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	
 	@Override
-	public void epochComplete(UpdateableImpl result) {
+	public void epochComplete(UpdateableSingleImpl result) {
 		currEpochs++;
 		if(currEpochs < epochs) {
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
@@ -312,7 +313,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	}
 
-	public UpdateableImpl getResult() {
+	public UpdateableSingleImpl getResult() {
 		return result;
 	}
 

@@ -30,6 +30,10 @@ public interface DeepLearningConfigurable {
 	/* Network implementation specific parameters */
 	public final 
 	static String PARAMS = "com.ccc.sendalyzeit.textanalytics.params";
+	/* L2 regularization constant */
+	public final static String L2 = "com.ccc.deeplearning.l2";
+	/* Momentum */
+	public final static String MOMENTUM = "com.ccc.deeplearning.momentum";
 	
 	public final static String PARAM_ALGORITHM = "algorithm";
 	public final static String PARAM_SDA = "sda";

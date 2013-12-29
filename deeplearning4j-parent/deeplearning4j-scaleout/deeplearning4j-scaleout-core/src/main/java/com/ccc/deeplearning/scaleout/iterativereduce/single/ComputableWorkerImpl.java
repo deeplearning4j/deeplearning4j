@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.scaleout.iterativereduce;
+package com.ccc.deeplearning.scaleout.iterativereduce.single;
 
 
 
@@ -9,19 +9,19 @@ import com.ccc.deeplearning.scaleout.iterativereduce.ComputableWorker;
  * @author Adam Gibson
  *
  */
-public abstract class ComputableWorkerImpl implements ComputableWorker<UpdateableImpl> {
+public abstract class ComputableWorkerImpl implements ComputableWorker<UpdateableSingleImpl> {
 
-	protected UpdateableImpl workerMatrix;
+	protected UpdateableSingleImpl workerMatrix;
 
 	
 
 	@Override
-	public UpdateableImpl getResults() {
+	public UpdateableSingleImpl getResults() {
 		return workerMatrix;
 	}
 
 	@Override
-	public void update(UpdateableImpl t) {
+	public void update(UpdateableSingleImpl t) {
 		this.workerMatrix = t;
 	}
 

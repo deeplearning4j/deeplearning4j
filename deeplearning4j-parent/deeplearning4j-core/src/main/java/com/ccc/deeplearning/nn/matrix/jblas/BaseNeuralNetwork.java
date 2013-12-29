@@ -1,5 +1,10 @@
 package com.ccc.deeplearning.nn.matrix.jblas;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
@@ -182,6 +187,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 		}
 		
 		
+		public E buildEmpty() {
+			try {
+				return (E) clazz.newInstance();
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		public Builder<E> withClazz(Class<? extends BaseNeuralNetwork> clazz) {
+			this.clazz = clazz;
+			return this;
+		}
+		
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
 			return this;
@@ -287,6 +305,39 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 		}
 	}
 
+	/**
+	 * Copies params from the passed in network
+	 * to this one
+	 * @param n the network to copy
+	 */
+	public void update(BaseNeuralNetwork n) {
+		this.W = n.W;
+		this.hBias = n.hBias;
+		this.vBias = n.vBias;
+		this.l2 = n.l2;
+		this.momentum = n.momentum;
+		this.nHidden = n.nHidden;
+		this.nVisible = n.nVisible;
+		this.rng = n.rng;
+		this.sparsity = n.sparsity;
+	}
+	
+	/**
+	 * Load (using {@link ObjectInputStream}
+	 * @param is the input stream to load from (usually a file)
+	 */
+	public void load(InputStream is) {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(is);
+			BaseNeuralNetwork loaded = (BaseNeuralNetwork) ois.readObject();
+			update(loaded);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	
 	/**
 	 * Reconstruction error.
 	 * @return reconstruction error
@@ -440,6 +491,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 		this.l2 = l2;
 	}
 	
+	public void write(OutputStream os) {
+		try {
+			ObjectOutputStream os2 = new ObjectOutputStream(os);
+			os2.writeObject(this);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 	
 	/**
 	 * All neural networks are based on this idea of 
