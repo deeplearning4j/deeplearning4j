@@ -1,6 +1,5 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas;
 
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
@@ -17,7 +16,8 @@ import com.ccc.sendalyzeit.textanalytics.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
+public abstract class BaseNeuralNetwork implements NeuralNetwork {
+
 
 
 	private static final long serialVersionUID = -7074102204433996574L;
@@ -47,8 +47,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 	public RandomGenerator rng;
 	/* input to the network */
 	public DoubleMatrix input;
-
-
+	/* sparsity target */
+	public double sparsity = 0.01;
+	/* momentum for learning */
+	public double momentum = 0.1;
+	/* L2 Regularization constant */
+	public double l2 = 0.1;
+	
+	
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -126,6 +132,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 	}
 
 	/**
+	 * Regularize weights or weight averaging.
+	 * This accounts for momentum, sparsity target,
+	 * and batch size
+	 * @param batchSize the batch size of the recent training set
+	 * @param lr the learning rate
+	 */
+	public void regularizeWeights(int batchSize,double lr) {
+		if(batchSize < 1)
+			throw new IllegalArgumentException("Batch size must be at least 1");
+		this.W = W.div(batchSize).mul(1 - momentum).add(W.min(W.mul(l2)));
+	}
+	
+	/**
 	 * 
 	 * @param input the input examples
 	 * @param nVisible the number of outbound nodes
@@ -153,7 +172,25 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 		private int numHidden;
 		private RandomGenerator gen;
 		private DoubleMatrix input;
-
+		private double sparsity = 0.01;
+		private double l2 = 0.01;
+		private double momentum = 0.1;
+		
+		public Builder<E> withL2(double l2) {
+			this.l2 = l2;
+			return this;
+		}
+		
+		
+		public Builder<E> withSparsity(double sparsity) {
+			this.sparsity = sparsity;
+			return this;
+		}
+		public Builder<E> withMomentum(double momentum) {
+			this.momentum = momentum;
+			return this;
+		}
+		
 		public Builder<E> withInput(DoubleMatrix input) {
 			this.input = input;
 			return this;
@@ -236,6 +273,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);
+						ret.sparsity = this.sparsity;
+						ret.l2 = this.l2;
+						ret.momentum = this.momentum;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
@@ -380,6 +420,27 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Serializable {
 		this.input = input;
 	}
 
+
+	public double getSparsity() {
+		return sparsity;
+	}
+	public void setSparsity(double sparsity) {
+		this.sparsity = sparsity;
+	}
+	public double getMomentum() {
+		return momentum;
+	}
+	public void setMomentum(double momentum) {
+		this.momentum = momentum;
+	}
+	public double getL2() {
+		return l2;
+	}
+	public void setL2(double l2) {
+		this.l2 = l2;
+	}
+	
+	
 	/**
 	 * All neural networks are based on this idea of 
 	 * minimizing reconstruction error.

@@ -178,7 +178,8 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix wAdd = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
 		//update rule
 		W = W.add(wAdd);
-
+		
+		regularizeWeights(input.rows, learningRate);
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
 		DoubleMatrix  vBiasAdd = mean(input.sub(nvSamples), 0);
 		vBias = vBiasAdd.mul(learningRate);

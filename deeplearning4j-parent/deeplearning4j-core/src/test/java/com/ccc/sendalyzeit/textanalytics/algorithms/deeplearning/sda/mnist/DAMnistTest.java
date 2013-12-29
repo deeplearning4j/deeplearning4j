@@ -23,36 +23,26 @@ public class DAMnistTest {
 		MnistDataSetIterator fetcher = new MnistDataSetIterator(600,60000);
 		MersenneTwister rand = new MersenneTwister(123);
 
-		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(784).numHidden(100).withRandom(rand).build();
-		
-		
+		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(784).numHidden(500).withRandom(rand).build();
+
+
 		DataSet first = fetcher.next();
-		List<DataSet> twos = new ArrayList<DataSet>();
-		for(int i = 0; i < first.numExamples(); i++) {
-			if(first.get(i).outcome() == 1)
-				twos.add(first.get(i));
-		}
-
-
+		List<DataSet> list = new ArrayList<DataSet>();
 		while(fetcher.hasNext()) {
 			first = fetcher.next();
-			for(int i = 0; i < first.numExamples(); i++) {
-				if(first.get(i).outcome() == 1)
-					twos.add(first.get(i));
-			}
+			for(int i = 0; i < 5; i++)
+				da.trainTillConverge(first.getFirst(), 0.1, 0.4);
+			list.add(first.copy());
 		}
+		first = DataSet.merge(list);
 
-		DataSet twosData = DataSet.merge(twos);
+		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
 
-		da.trainTillConverge(twosData.getFirst(), 0.1, 0.6);
-		
-		DoubleMatrix reconstruct = da.reconstruct(twosData.getFirst());
-		
-		for(int i = 0; i < twosData.numExamples(); i++) {
-			DoubleMatrix draw1 = twosData.get(i).getFirst().mul(255);
+		for(int i = 0; i < first.numExamples(); i++) {
+			DoubleMatrix draw1 = first.get(i).getFirst().mul(255);
 			DoubleMatrix reconstructed2 = reconstruct.getRow(i);
 			DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
-			
+
 			DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
 			d.title = "REAL";
 			d.draw();
@@ -64,7 +54,8 @@ public class DAMnistTest {
 			d2.frame.dispose();
 
 		}
-		
+
+
 
 
 	}
