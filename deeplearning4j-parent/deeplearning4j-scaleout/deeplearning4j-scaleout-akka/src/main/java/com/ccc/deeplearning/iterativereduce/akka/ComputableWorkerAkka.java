@@ -9,8 +9,8 @@ import org.jblas.DoubleMatrix;
 import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.deeplearning.scaleout.iterativereduce.ComputableWorkerImpl;
-import com.ccc.deeplearning.scaleout.iterativereduce.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.multi.ComputableWorkerImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 
 public class ComputableWorkerAkka extends ComputableWorkerImpl implements DeepLearningConfigurable {
 

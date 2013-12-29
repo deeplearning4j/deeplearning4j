@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.scaleout.iterativereduce;
+package com.ccc.deeplearning.scaleout.iterativereduce.multi;
 
 import java.io.DataOutputStream;
 

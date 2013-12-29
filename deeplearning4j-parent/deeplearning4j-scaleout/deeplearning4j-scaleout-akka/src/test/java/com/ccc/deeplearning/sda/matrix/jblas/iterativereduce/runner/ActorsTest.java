@@ -16,7 +16,7 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.BatchActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.MasterActor;
 import com.ccc.deeplearning.scaleout.conf.Conf;
-import com.ccc.deeplearning.scaleout.iterativereduce.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 
 public class ActorsTest {
 
