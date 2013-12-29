@@ -1,9 +1,11 @@
 package com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.nn.matrix.jblas;
 
+import java.io.Serializable;
+
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
-public interface NeuralNetwork {
+public interface NeuralNetwork extends Serializable {
 
 	public abstract int getnVisible();
 
@@ -32,5 +34,15 @@ public interface NeuralNetwork {
 	public abstract DoubleMatrix getInput();
 
 	public abstract void setInput(DoubleMatrix input);
+	
+	public double getSparsity();
+	public abstract void setSparsity(double sparsity);
+	
+	public double getL2();
+	public void setL2(double l2);
+	
+	public double getMomentum();
+	public void setMomentum(double momentum);
+	
 
 }
