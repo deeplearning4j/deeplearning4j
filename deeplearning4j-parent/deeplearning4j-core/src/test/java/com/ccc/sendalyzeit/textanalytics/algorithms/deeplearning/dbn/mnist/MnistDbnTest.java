@@ -26,15 +26,13 @@ public class MnistDbnTest extends DeepLearningTest {
 	@Test
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(1200);
+		fetcher.fetch(8000);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = new int[3];
-		Arrays.fill(layerSizes,100);
+		int[] layerSizes = {1000,1000,2000};
 		double lr = 0.1;
 		
-		first.roundToTheNearest(100);
 		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();

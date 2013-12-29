@@ -27,6 +27,7 @@ public class RBMTest extends DeepLearningTest {
 
 
 	@Test
+	@Ignore
 	public void testBasic() {
 		double[][] data = new double[][]
 				{{1,1,1,0,0,0},
@@ -67,19 +68,16 @@ public class RBMTest extends DeepLearningTest {
 		RandomGenerator g = new MersenneTwister(123);
 		MnistDataSetIterator iter = new MnistDataSetIterator(100,1200);
 		RBM r = new RBM.Builder().numberOfVisible(numVisible)
-				.numHidden(100).withRandom(g)
+				.numHidden(1000).withRandom(g)
 				.build();
-		
+
 		while(iter.hasNext()) {
 			pair = iter.next();
-			for(int i = 0; i < 1000; i++) {
-				r.contrastiveDivergence(0.1, 1, pair.getFirst());
-				log.info("Entropy " + r.getReConstructionCrossEntropy());
-
-			}
-
+			r.trainTillConvergence(0.1, 1, pair.getFirst());
+			
+			
 		}
-		
+
 
 
 	}

@@ -65,7 +65,16 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		return new DataSet(in,out);
 	}
 
+	public int outcome() {
+		if(this.numExamples() > 1)
+			throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
+		return SimpleBlas.iamax(getSecond());
+	}
 
+	public DataSet get(int i) {
+		return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
+	}
+	
 	public List<List<DataSet>> batchBy(int num) {
 		return Lists.partition(asList(),num);
 	}

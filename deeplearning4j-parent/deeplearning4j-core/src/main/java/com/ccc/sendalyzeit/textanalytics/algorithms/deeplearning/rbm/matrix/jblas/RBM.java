@@ -56,6 +56,8 @@ public class RBM extends BaseNeuralNetwork {
 			this.input = input;
 		double score = getReConstructionCrossEntropy();
 		boolean done = false;
+		int numTimesExceeded = 0;
+
 		while(!done) {
 			DoubleMatrix W = this.W.dup();
 			DoubleMatrix hBias = this.hBias.dup();
@@ -63,6 +65,8 @@ public class RBM extends BaseNeuralNetwork {
 			contrastiveDivergence(learningRate,k,input);
 			double currScore = getReConstructionCrossEntropy();
 			if(currScore <= score)	{
+				//increase patience
+				numTimesExceeded = 0;
 				double diff = Math.abs(currScore - score);
 				if(diff <= 0.000001) {
 					done = true;
@@ -75,12 +79,29 @@ public class RBM extends BaseNeuralNetwork {
 				log.info("Found new reconstruction entropy " + score);
 			}
 			else if(currScore > score) {
-				log.info("Converged on score " + score + " due to greater entropy after the last training batch");
-				this.W = W;
-				this.hBias = hBias;
-				this.vBias = vBias;
-				done = true;
-				break;
+			
+				if(numTimesExceeded >= 5) {
+					done = true;
+					log.info("Converged on score " + score + " due to greater entropy after the last training batch");
+					this.W = W;
+					this.hBias = hBias;
+					this.vBias = vBias;
+					break;
+				}
+				else {
+					numTimesExceeded++;
+					int diff = 5 - numTimesExceeded;
+					log.info("Entropy exceeded going to iterate " + diff + " more times to search for possible local minima, otherwise converging.");
+					if(numTimesExceeded >= 5) {
+						done = true;
+						log.info("Converged on score " + score + " due to greater entropy after the last training batch");
+						this.W = W;
+						this.hBias = hBias;
+						this.vBias = vBias;
+						break;
+					}
+				}
+				
 			}
 
 		}
@@ -154,13 +175,7 @@ public class RBM extends BaseNeuralNetwork {
 		}
 
 
-		//input times the positive hidden sample
-		DoubleMatrix inputTimesPhSample =  input.transpose().mmul(probHidden.getSecond());
-		//negative samples times the negative hidden means
-		DoubleMatrix nvSamplesTTimesNhMeans = nvSamples.transpose().mmul(nhMeans);
-		//delta: input times the positive hidden sample - negative visible samples * negative hidden means
-		DoubleMatrix diff = inputTimesPhSample.sub(nvSamplesTTimesNhMeans);
-		DoubleMatrix wAdd = diff.mul(learningRate);
+		DoubleMatrix wAdd = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
 		//update rule
 		W = W.add(wAdd);
 
@@ -169,7 +184,7 @@ public class RBM extends BaseNeuralNetwork {
 		vBias = vBiasAdd.mul(learningRate);
 
 
-		//update rule: the expected values of the hidden input - the negative hideen  means adjusted by the learning rate
+		//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
 
 		DoubleMatrix hBiasAdd = mean(probHidden.getSecond().sub(nhMeans), 0);
 
