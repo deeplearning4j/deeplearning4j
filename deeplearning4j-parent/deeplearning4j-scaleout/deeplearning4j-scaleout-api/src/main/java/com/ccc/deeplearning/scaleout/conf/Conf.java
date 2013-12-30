@@ -36,7 +36,8 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		return conf;
 	}
 
-
+	
+	
 	public Object[] loadParams(String key) {
 		String json = get(key);
 		if(json == null)
@@ -77,6 +78,21 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 				else {
 					return new Object[]{k,learningRate,epochs};
 				}
+			}
+			
+			else if(algorithm.equals(PARAM_RBM) || algorithm.equals(PARAM_CRBM)) {
+				//always present
+				Integer k = j.getInt(PARAM_K);
+				if(k < 1)
+					throw new IllegalStateException("K must be greater than 0");
+				
+				return new Object[]{k};
+			}
+			else if(algorithm.equals(PARAM_DA)) {
+				Double corruptionLevel = j.getDouble(PARAM_CORRUPTION_LEVEL);
+
+				return new Object[]{corruptionLevel};
+
 			}
 
 		}

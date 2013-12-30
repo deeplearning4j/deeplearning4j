@@ -39,6 +39,9 @@ public interface DeepLearningConfigurable {
 	public final static String PARAM_SDA = "sda";
 	public final static String PARAM_CDBN = "cdbn";
 	public final static String PARAM_DBN = "dbn";
+	public final static String PARAM_RBM = "rbm";
+	public final static String PARAM_CRBM = "crbm";
+	public final static String PARAM_DA = "da";
 	public final static String PARAM_K = "k";
 	public final static String PARAM_EPOCHS = "epochs";
 	public final static String PARAM_FINETUNE_LR = "finetunelr";

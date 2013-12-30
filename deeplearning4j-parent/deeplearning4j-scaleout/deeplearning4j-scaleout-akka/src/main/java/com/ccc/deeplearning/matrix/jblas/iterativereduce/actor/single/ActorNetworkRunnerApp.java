@@ -85,6 +85,11 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private String dataSet;
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
 	private int numExamples = -1;
+	@Option(name="-l2",usage="l2 regularization constant")
+	private double l2 = 0.1;
+	@Option(name="-m",usage="momentun")
+	private double momentum = 0.1;
+	
 	private ActorNetworkRunner runner;
 	private DataSetIterator iter;
 
@@ -131,7 +136,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
 			conf.put(SEED, String.valueOf(rngSeed));
 			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
-
+			conf.put(L2,String.valueOf(l2));
+			conf.put(MOMENTUM,String.valueOf(momentum));
 			conf.put(CORRUPTION_LEVEL,corruptionLevel);
 			conf.put(SPLIT, String.valueOf(split));
 			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel)
