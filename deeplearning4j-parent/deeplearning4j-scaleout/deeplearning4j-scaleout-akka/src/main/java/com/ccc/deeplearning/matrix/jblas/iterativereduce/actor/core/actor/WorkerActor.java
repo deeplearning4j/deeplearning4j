@@ -32,8 +32,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected int fineTuneEpochs;
 	protected int preTrainEpochs;
 	protected int[] hiddenLayerSizes;
-	protected int numOuts;
-	protected int numIns;
+	protected int numHidden;
+	protected int numVisible;
 	protected int numHiddenNeurons;
 	protected long seed;
 	protected double learningRate;
@@ -108,8 +108,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	@Override
 	public void setup(Conf conf) {
 		hiddenLayerSizes = conf.getIntsWithSeparator(LAYER_SIZES, ",");
-		numOuts = conf.getInt(OUT);
-		numIns = conf.getInt(N_IN);
+		numHidden = conf.getInt(OUT);
+		numVisible = conf.getInt(N_IN);
 		numHiddenNeurons = conf.getIntsWithSeparator(LAYER_SIZES, ",").length;
 		seed = conf.getLong(SEED);
 		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));

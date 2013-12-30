@@ -1,6 +1,5 @@
 package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.single;
 
-import java.util.Arrays;
 
 import org.jblas.DoubleMatrix;
 import org.kohsuke.args4j.CmdLineException;
@@ -23,7 +22,6 @@ import com.ccc.deeplearning.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import com.ccc.deeplearning.scaleout.zookeeper.ZookeeperConfigurationRetriever;
 /**
  * Main command line app for handling workers or starting up a master for training a neural network:
- * TODO: Add classification
  * 
  * Options:
  *       Required:
@@ -65,8 +63,6 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private int inputs;
 	@Option(name="-o",usage="number of outputs for the network",handler=IntOptionHandler.class)
 	private int outputs;
-	@Option(name="-fte",usage="number of fine tune epochs to train on (default: 100)",handler=IntOptionHandler.class)
-	private int finetuneEpochs = 100;
 	@Option(name="-pte",usage="number of epochs for pretraining (default: 100)",handler=IntOptionHandler.class)
 	private int pretrainEpochs = 100;
 	@Option(name="-r",usage="seed value for the random number generator (default: 123)",handler=IntOptionHandler.class)
@@ -77,13 +73,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private double corruptionLevel = 0.3;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	private String host = "localhost";
-	@Option(name="-ftl",usage="the starter fine tune learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	private double finetineLearningRate = 0.1;
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
 	private double pretrainLearningRate = 0.1;
-	@Option(name="-hl",usage="hidden layer sizes (comma separated list)")
-	private String hiddenLayerSizesOption;
-	private int[] hiddenLayerSizes = {300,300,300};
 	@Option(name="-t",usage="type of worker")
 	private String type = "master";
 	@Option(name="-ad",usage="address of master worker")
@@ -107,14 +98,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			log.error("Unable to parse args",e);
 		}
 
-		if(hiddenLayerSizesOption != null) {
-			String[] split = hiddenLayerSizesOption.split(",");
-			hiddenLayerSizes = new int[split.length];
-			for(int i = 0; i < split.length; i++) {
-				hiddenLayerSizes[i] = Integer.parseInt(split[i]);
-			}
 
-		}
 	}
 
 
@@ -141,21 +125,18 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 			getDataSet();
 			conf.put(CLASS, getClassForAlgorithm());
-			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 			conf.put(SPLIT,String.valueOf(10));
 			conf.put(N_IN, String.valueOf(iter.inputColumns()));
 			conf.put(OUT, String.valueOf(iter.totalOutcomes()));
 			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
-			conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
 			conf.put(SEED, String.valueOf(rngSeed));
 			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
 
-			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 			conf.put(CORRUPTION_LEVEL,corruptionLevel);
 			conf.put(SPLIT, String.valueOf(split));
-			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
+			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel)
 					.k(k)
-					.finetuneLearningRate(finetineLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
+					.learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
 
 			//run the master
 			runner = new ActorNetworkRunner("master",iter);
@@ -185,7 +166,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 * 
 	 */
 	public void train() {
-		
+
 		Pair<DoubleMatrix,DoubleMatrix> batch = null;
 		if(iter.hasNext()) {
 			batch = iter.next();
@@ -197,7 +178,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 	public void shutdown() {
-		
+
 	}
 
 	public String getData() {
@@ -206,7 +187,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 	private void getDataSet() {
 		if(type.equals("worker"))
-		   return;
+			return;
 		try {
 			if(dataSet.equals("mnist")) {
 				iter = new MnistDataSetIterator(split,numExamples);
@@ -227,13 +208,13 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 	private String getClassForAlgorithm() {
 		switch(algorithm) {
-		case  "sda" :
-			return "com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder";
+		case  "da" :
+			return "com.ccc.deeplearning.sda.jblas.DenoisingAutoEncoder";
 
-		case "dbn" : 
-			return "com.ccc.deeplearning.dbn.matrix.jblas.DBN";
-		case "cdbn":
-			return "com.ccc.deeplearning.dbn.matrix.jblas.CDBN";
+		case "rbm" : 
+			return "com.ccc.deeplearning.rbm.matrix.jblas.RBM";
+		case "crbm":
+			return "com.ccc.deeplearning.rbm.matrix.jblas.CRBM";
 		}
 		return null;
 	}
@@ -242,8 +223,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	public boolean isDone() {
 		return iter.hasNext();
 	}
-	
-	
+
+
 	/**
 	 * @param args
 	 * @throws ParseException 
@@ -276,10 +257,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	public int getFinetuneEpochs() {
-		return finetuneEpochs;
-	}
-
+	
 
 	public int getPretrainEpochs() {
 		return pretrainEpochs;
@@ -306,24 +284,11 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	public double getFinetineLearningRate() {
-		return finetineLearningRate;
-	}
-
-
+	
 	public double getPretrainLearningRate() {
 		return pretrainLearningRate;
 	}
 
-
-	public String getHiddenLayerSizesOption() {
-		return hiddenLayerSizesOption;
-	}
-
-
-	public int[] getHiddenLayerSizes() {
-		return hiddenLayerSizes;
-	}
 
 
 	public String getType() {

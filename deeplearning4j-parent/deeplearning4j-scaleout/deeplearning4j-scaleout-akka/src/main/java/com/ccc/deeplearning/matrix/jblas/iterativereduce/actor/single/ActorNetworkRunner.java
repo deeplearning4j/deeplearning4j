@@ -35,7 +35,6 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.Simple
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
