@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -18,17 +17,15 @@ import akka.japi.Creator;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
-import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.deeplearning.scaleout.iterativereduce.ComputableWorker;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
 
-public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
-	private BaseMultiLayerNetwork network;
+public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.WorkerActor<UpdateableSingleImpl> {
+	private BaseNeuralNetwork network;
 	private DoubleMatrix combinedInput;
 
-	protected UpdateableImpl workerMatrix;
+	protected UpdateableSingleImpl workerResult;
 	private ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 
 	private static Logger log = LoggerFactory.getLogger(WorkerActor.class);
@@ -68,8 +65,8 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		}
 
 		else if(message instanceof UpdateMessage) {
-			UpdateMessage<UpdateableImpl> m = (UpdateMessage<UpdateableImpl>) message;
-			workerMatrix = (UpdateableImpl) m.getUpdateable().get();
+			UpdateMessage<UpdateableSingleImpl> m = (UpdateMessage<UpdateableSingleImpl>) message;
+			workerResult = (UpdateableSingleImpl) m.getUpdateable().get();
 		}
 		else
 			unhandled(message);
@@ -84,7 +81,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		}
 		this.combinedInput = newInput;
 		this.outcomes = newOutput;
-		UpdateableImpl work = compute();
+		UpdateableSingleImpl work = compute();
 		log.info("Updating parent actor...");
 		//update parameters in master param server
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
@@ -92,15 +89,15 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	}
 
 	@Override
-	public UpdateableImpl compute(List<UpdateableImpl> records) {
+	public UpdateableSingleImpl compute(List<UpdateableSingleImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public UpdateableImpl compute() {
+	public UpdateableSingleImpl compute() {
 		log.info("Training network");
-		network.trainNetwork(combinedInput, outcomes,extraParams);
-		return new UpdateableImpl(network);
+		network.trainTillConvergence(combinedInput, learningRate, extraParams);
+		return new UpdateableSingleImpl(network);
 	}
 
 	@Override
@@ -113,23 +110,23 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		super.setup(conf);
 		
 		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
-		network = new BaseMultiLayerNetwork.Builder<>()
-				.numberOfInputs(numIns).numberOfOutPuts(numOuts)
-				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)
-				.withClazz(conf.getClazz(CLASS)).build();
+		network = new BaseNeuralNetwork.Builder<>()
+				.numberOfVisible(numVisible).numHidden(numHidden)
+				.withRandom(rng)
+				.withClazz(conf.getClazzSingle(CLASS)).build();
 		
 	}
 
 
 
 	@Override
-	public UpdateableImpl getResults() {
-		return workerMatrix;
+	public UpdateableSingleImpl getResults() {
+		return workerResult;
 	}
 
 	@Override
-	public void update(UpdateableImpl t) {
-		this.workerMatrix = t;
+	public void update(UpdateableSingleImpl t) {
+		this.workerResult = t;
 	}
 
 
