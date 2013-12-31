@@ -1,5 +1,6 @@
 package com.ccc.deeplearning.util;
 
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
@@ -9,6 +10,16 @@ import org.jblas.MatrixFunctions;
 public class MatrixUtil {
 
 
+	public static DoubleMatrix uniform(RandomGenerator rng,int rows,int columns) {
+
+		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1);
+		DoubleMatrix U = new DoubleMatrix(rows,columns);
+		for(int i = 0; i < U.rows; i++)
+			for(int j = 0; j < U.columns; j++) 
+				U.put(i,j,uDist.sample());
+		return U;
+	}
+	
 	public static boolean isValidOutcome(DoubleMatrix out) {
 		boolean found = false;
 		for(int col = 0; col < out.length; col++) {
