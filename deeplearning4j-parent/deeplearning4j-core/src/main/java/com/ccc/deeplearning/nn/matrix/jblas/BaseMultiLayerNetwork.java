@@ -153,7 +153,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param epochs the number of times to iterate
 	 */
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
-		optimizer = new MultiLayerNetworkOptimizer(this);
+		optimizer = new MultiLayerNetworkOptimizer(this,lr);
 		optimizer.optimize(labels, lr);
 	}
 
