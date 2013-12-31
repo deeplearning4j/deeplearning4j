@@ -9,10 +9,16 @@
 	<properties>
 		<slf4j.version>1.7.5</slf4j.version>
 	</properties>
+
+	<scm>
+		  <connection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</connection>
+    <developerConnection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</developerConnection>
+    <url>git@github.com:agibsonccc/java-deeplearning.git</url>
+	</scm>
+
 	<modules>
 		<module>deeplearning4j-core</module>
 		<module>deeplearning4j-scaleout</module>
-
 		<module>deeplearning4j-plot</module>
 	</modules>
 
