@@ -4,6 +4,8 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 
+import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
+import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 
 import akka.actor.ActorRef;
@@ -40,8 +42,8 @@ public class ModelSavingActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if(message instanceof UpdateableImpl) {
-			UpdateableImpl u = (UpdateableImpl) message;
+		if(message instanceof Updateable) {
+			Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
 			File save = new File(pathToSave);
 			if(save.exists()) {
 				File parent = save.getParentFile();

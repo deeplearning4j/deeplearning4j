@@ -20,24 +20,19 @@ public class DAMnistTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(600,60000);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(1000,1000);
 		MersenneTwister rand = new MersenneTwister(123);
 
-		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(784).numHidden(500).withRandom(rand).build();
+		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(784).numHidden(500).withRandom(rand)
+				.withMomentum(0.9).build();
 
 
 		DataSet first = fetcher.next();
-		List<DataSet> list = new ArrayList<DataSet>();
-		while(fetcher.hasNext()) {
-			first = fetcher.next();
-			for(int i = 0; i < first.numExamples(); i++)
-				if(first.get(i).outcome() == 2)
-					list.add(first.get(i).copy());
-		}
-
-		first = DataSet.merge(list);
-		for(int i = 0; i < 3; i++)
-			da.trainTillConverge(first.getFirst(), 0.1, 0.6);
+		//for(int i = 0; i < 1000; i++)
+		do {
+			da.trainTillConverge(first.getFirst(), 0.1, 0.3);
+		}while(da.lossFunction(new Object[]{0.3}) > 1);
+		log.info(String.valueOf(da.optimizer.getErrors()));
 
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
 
@@ -60,7 +55,7 @@ public class DAMnistTest {
 
 
 
-
 	}
+
 
 }

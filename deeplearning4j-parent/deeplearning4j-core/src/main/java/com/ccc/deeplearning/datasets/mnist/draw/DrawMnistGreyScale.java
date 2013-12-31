@@ -60,6 +60,10 @@ public class DrawMnistGreyScale {
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 
+	public void close() {
+		frame.dispose();
+	}
+	
 	public Image getImage() {
 		return img;
 	}

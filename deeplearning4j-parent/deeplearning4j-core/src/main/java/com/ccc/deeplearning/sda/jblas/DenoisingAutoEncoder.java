@@ -1,17 +1,23 @@
 package com.ccc.deeplearning.sda.jblas;
 
+import static com.ccc.deeplearning.util.MatrixUtil.log;
+import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
+import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
+
 import java.io.Serializable;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
-import com.ccc.deeplearning.util.MathUtils;
-import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
+import static com.ccc.deeplearning.util.MathUtils.*;
+
 /**
- * Denoising autoencoder
+ * Denoising Autoencoder.
+ * Add Gaussian noise to input and learn
+ * a reconstruction function.
+ * 
  * @author Adam Gibson
  *
  */
@@ -19,7 +25,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 	private static final long serialVersionUID = -6445530486350763837L;
-	private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoder.class);
 
 	public DenoisingAutoEncoder() {}
 
@@ -52,8 +57,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix tilde_x = DoubleMatrix.zeros(x.rows,x.columns);
 		for(int i = 0; i < x.rows; i++)
 			for(int j = 0; j < x.columns; j++)
-				tilde_x.put(i,j,MathUtils.binomial(rng,1,corruptionLevel));
-		DoubleMatrix  ret = x.mul(tilde_x);
+				tilde_x.put(i,j,binomial(rng,1,1 - corruptionLevel));
+		DoubleMatrix  ret = tilde_x.mul(x);
 		return ret;
 	}
 
@@ -69,102 +74,69 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	 * given the corruption level
 	 */
 	public double negativeLoglikelihood(double corruptionLevel) {
-		DoubleMatrix corrupted = this.getCorruptedInput(input, corruptionLevel);
-		DoubleMatrix y = this.getHiddenValues(corrupted);
-		DoubleMatrix z = this.getReconstructedInput(y);
-		DoubleMatrix inside = input.mul(MatrixUtil.log(z)).add(MatrixUtil.oneMinus(input).mul(MatrixUtil.log(MatrixUtil.oneMinus(z))));
-		return - inside.columnSums().mean();
+		DoubleMatrix corrupted = getCorruptedInput(input, corruptionLevel);
+		DoubleMatrix y = getHiddenValues(corrupted);
+		DoubleMatrix z = getReconstructedInput(y);
+		return - input.mul(log(z)).add(
+				oneMinus(input).mul(log(oneMinus(z)))).
+	    columnSums().mean();
 	}
 
 
 
 	// Encode
 	public DoubleMatrix getHiddenValues(DoubleMatrix x) {
-		DoubleMatrix mul = x.mmul(W);
-		return MatrixUtil.sigmoid(mul.addRowVector(hBias));
+		return sigmoid(x.mmul(W).addRowVector(hBias));
 	}
 
 	// Decode
 	public DoubleMatrix getReconstructedInput(DoubleMatrix y) {
-		DoubleMatrix z = y.mmul(W.transpose());
-		z = z.addRowVector(vBias);
-		z = MatrixUtil.sigmoid(z);
-		return z;
+		return sigmoid(y.mmul(W.transpose()).addRowVector(vBias));
 	}
 
 
-
+	/**
+	 * Run a network optimizer
+	 * @param x the input
+	 * @param lr the learning rate
+	 * @param corruptionLevel the corruption level
+	 */
 	public void trainTillConverge(DoubleMatrix x, double lr,double corruptionLevel) {
-		boolean done = false;
-		Double currBestError = null;
-		while(!done) {
-			if(done)
-				break;
-			DoubleMatrix hBias = this.hBias.dup();
-			DoubleMatrix vBias = this.vBias.dup();
-			DoubleMatrix W = this.W.dup();
-			
-			train(x,lr,corruptionLevel);
-			lr *= 0.95;
-
-		
-			if(currBestError != null) {
-				Double currError = negativeLoglikelihood(corruptionLevel);
-				if(currError <= currBestError) {
-					log.info("Found new best negative log likelihood " + currError + " the current reconstruction entropy is " + getReConstructionCrossEntropy());
-					Double diff = Math.abs(currError - currBestError);
-					if(diff <= 0.000001) {
-						log.info("Converged at " + currError);
-						done = true;
-						break;
-					}
-					else
-						currBestError = currError;
-				}
-				
-				else if(currError > currBestError) {
-					this.W = W;
-					this.vBias = vBias;
-					this.hBias = hBias;
-					log.info("Converged at " + currError + " due to greater error where the best was " + currBestError);
-					done = true;
-					break;
-					
-				}
-			}
-			else 
-				currBestError = negativeLoglikelihood(corruptionLevel);
-		}
+		optimizer = new DenoisingAutoEncoderOptimizer(this, lr, new Object[]{corruptionLevel});
+		optimizer.train(x);
 	}
-
+	
+	/**
+	 * Perform one iteration of training
+	 * @param x the input
+	 * @param lr the learning rate
+	 * @param corruptionLevel the corruption level to train with
+	 */
 	public void train(DoubleMatrix x, double lr, double corruptionLevel) {
 
 		this.input = x;
 
-		double p = 1 - corruptionLevel;
 
-		DoubleMatrix tilde_x = getCorruptedInput(x, p);
-		DoubleMatrix y = getHiddenValues(tilde_x);
+		DoubleMatrix tildeX = getCorruptedInput(x, corruptionLevel);
+		DoubleMatrix y = getHiddenValues(tildeX);
 		DoubleMatrix z = getReconstructedInput(y);
 
 		DoubleMatrix L_h2 = x.sub(z);
 
-		DoubleMatrix L_h1 = L_h2.mmul(W).mul(y).mul(DoubleMatrix.ones(y.length).sub(y));
+		DoubleMatrix L_h1 = L_h2.mmul(W).mul(y).mul(oneMinus(y));
 
 		DoubleMatrix L_vbias = L_h2;
 		DoubleMatrix L_hbias = L_h1;
-		//L_W =  numpy.dot(tilde_x.T, L_h1) + numpy.dot(L_h2.T, y)
-		//
-		DoubleMatrix L_W = tilde_x.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
-		DoubleMatrix learnMulL_W = L_W.mul(lr);
-		this.W = W.add(learnMulL_W);
-		regularizeWeights(x.rows, lr);
+		
+		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y)).mul(lr);
+		
+		this.W = W.add(L_W).mul(momentum);
+		//regularizeWeights(x.rows, lr);
 		
 		
-		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
-		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
-		L_hbias_mean = L_hbias_mean.mul(lr);
-		L_vbias_mean = L_vbias_mean.mul(lr);
+		DoubleMatrix L_hbias_mean = L_hbias.columnMeans().mul(lr);
+		DoubleMatrix L_vbias_mean = L_vbias.columnMeans().mul(lr);
+	
 		this.hBias = hBias.add(L_hbias_mean);
 		this.vBias = vBias.add(L_vbias_mean);
 
@@ -191,6 +163,24 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 			Object[] params) {
 		double corruptionLevel = (double) params[0];
 		trainTillConverge(input, lr, corruptionLevel);
+	}
+
+
+
+
+	@Override
+	public double lossFunction(Object[] params) {
+		double corruptionLevel = (double) params[0];
+		return negativeLoglikelihood(corruptionLevel);
+	}
+
+
+
+
+	@Override
+	public void train(DoubleMatrix input, double lr, Object[] params) {
+		double corruptionLevel = (double) params[0];
+		train(input, lr, corruptionLevel);
 	}
 
 }
