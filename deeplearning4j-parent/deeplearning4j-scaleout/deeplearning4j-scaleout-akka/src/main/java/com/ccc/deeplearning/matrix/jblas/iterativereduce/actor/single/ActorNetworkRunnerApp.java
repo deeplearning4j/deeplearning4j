@@ -1,7 +1,6 @@
 package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.single;
 
 
-import org.jblas.DoubleMatrix;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -10,7 +9,7 @@ import org.kohsuke.args4j.spi.IntOptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.IrisDataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.LFWDataSetIterator;
@@ -61,10 +60,10 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private String algorithm;
 	@Option(name = "-i",usage="number of inputs (columns in the input matrix)",handler=IntOptionHandler.class)
 	private int inputs;
-	@Option(name="-o",usage="number of outputs for the network",handler=IntOptionHandler.class)
+	@Option(name="-o",usage="number hidden units for the network",handler=IntOptionHandler.class)
 	private int outputs;
 	@Option(name="-pte",usage="number of epochs for pretraining (default: 100)",handler=IntOptionHandler.class)
-	private int pretrainEpochs = 100;
+	private int pretrainEpochs = 1;
 	@Option(name="-r",usage="seed value for the random number generator (default: 123)",handler=IntOptionHandler.class)
 	private long rngSeed = 123;
 	@Option(name="-k",usage="the k for rbms (default: 1)",handler=IntOptionHandler.class)
@@ -87,9 +86,9 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	private int numExamples = -1;
 	@Option(name="-l2",usage="l2 regularization constant")
 	private double l2 = 0.1;
-	@Option(name="-m",usage="momentun")
+	@Option(name="-m",usage="momentum")
 	private double momentum = 0.1;
-	
+
 	private ActorNetworkRunner runner;
 	private DataSetIterator iter;
 
@@ -131,8 +130,14 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			getDataSet();
 			conf.put(CLASS, getClassForAlgorithm());
 			conf.put(SPLIT,String.valueOf(10));
-			conf.put(N_IN, String.valueOf(iter.inputColumns()));
-			conf.put(OUT, String.valueOf(iter.totalOutcomes()));
+			if(inputs < 1)
+				conf.put(N_IN, String.valueOf(iter.inputColumns()));
+			else
+				conf.put(N_IN,String.valueOf(inputs));
+			if(outputs < 1)
+				conf.put(OUT, String.valueOf(iter.totalOutcomes()));
+			else
+				conf.put(OUT,String.valueOf(outputs));
 			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
 			conf.put(SEED, String.valueOf(rngSeed));
 			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
@@ -173,13 +178,17 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 */
 	public void train() {
 
-		Pair<DoubleMatrix,DoubleMatrix> batch = null;
+		DataSet batch = null;
+		int numBatches = 0;
+		//trainer will handle batching for the rest 
+		//based on responding to actors
 		if(iter.hasNext()) {
+			log.info("Training next batch " + (numBatches + 1));
 			batch = iter.next();
 			runner.train(batch);
+			numBatches++;
 		}
-		else 
-			throw new IllegalStateException("Nothing to train");
+
 	}
 
 
@@ -263,7 +272,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	
+
 
 	public int getPretrainEpochs() {
 		return pretrainEpochs;
@@ -290,7 +299,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	
+
 	public double getPretrainLearningRate() {
 		return pretrainLearningRate;
 	}

@@ -2,8 +2,6 @@ package com.ccc.deeplearning.sda.jblas;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.nn.matrix.jblas.HiddenLayer;
@@ -18,12 +16,7 @@ import com.ccc.deeplearning.nn.matrix.jblas.NeuralNetwork;
  */
 public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
-
-
-
-
 	private static final long serialVersionUID = 1448581794985193009L;
-	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 
 
 	public StackedDenoisingAutoEncoder() {}
@@ -54,7 +47,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	 * corruption level should be) the percent of inputs to corrupt
 	 * @param epochs the number of iterations to run
 	 */
-	public void pretrain( DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
+	public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
 		if(this.input == null)
 			initializeLayers(input);
 
@@ -73,10 +66,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				h.W = da.W;
 			if(h.b != da.hBias)
 				h.b = da.hBias;
-			
-
-
-
 		}	
 
 

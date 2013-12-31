@@ -20,7 +20,12 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessag
 import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
-
+/**
+ * Single worker actor for handling sub batches
+ * of a training set.
+ * @author Adam Gibson
+ *
+ */
 public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.WorkerActor<UpdateableSingleImpl> {
 	private BaseNeuralNetwork network;
 	private DoubleMatrix combinedInput;
@@ -35,7 +40,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		super(conf);
 		setup(conf);
 		//subscribe to broadcasts from workers (location agnostic)
-	    mediator.tell(new Put(getSelf()), getSelf());
+		mediator.tell(new Put(getSelf()), getSelf());
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
@@ -95,8 +100,25 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 	@Override
 	public UpdateableSingleImpl compute() {
-		log.info("Training network");
-		network.trainTillConvergence(combinedInput, learningRate, extraParams);
+		int epochs = this.preTrainEpochs;
+		log.info("Training network line search " + epochs + " times");
+		Double currError = null;
+		int numIterated = 0;
+		do {
+			network.trainTillConvergence(combinedInput, learningRate, extraParams);
+			double entropy = network.lossFunction(extraParams);
+			if(currError != null) {
+				double diff = Math.abs(currError - entropy);
+				if(diff <= 0.01) {
+					log.info("Trained line search " + numIterated + " times and converged on " + entropy);
+					break;
+				}
+
+			}
+
+			currError = entropy;
+			numIterated++;
+		}while(true);
 		return new UpdateableSingleImpl(network);
 	}
 
@@ -108,13 +130,13 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);
-		
+
 		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
 		network = new BaseNeuralNetwork.Builder<>()
 				.numberOfVisible(numVisible).numHidden(numHidden)
 				.withRandom(rng)
 				.withClazz(conf.getClazzSingle(CLASS)).build();
-		
+
 	}
 
 

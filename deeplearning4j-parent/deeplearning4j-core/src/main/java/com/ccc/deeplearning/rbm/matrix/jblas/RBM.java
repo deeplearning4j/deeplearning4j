@@ -1,19 +1,22 @@
 package com.ccc.deeplearning.rbm.matrix.jblas;
 
 
+import static com.ccc.deeplearning.util.MatrixUtil.binomial;
+import static com.ccc.deeplearning.util.MatrixUtil.mean;
+import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
+
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
-
-import static com.ccc.deeplearning.util.MatrixUtil.*;
+import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 
 
 /**
- * Restricted Boltzmann Machine
+ * Restricted Boltzmann Machine.
+ * 
+ * Markov chain with gibbs sampling.
  * 
  * 
  * Based on Hinton et al.'s work 
@@ -31,8 +34,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * 
 	 */
 	private static final long serialVersionUID = 6189188205731511957L;
-	private static Logger log = LoggerFactory.getLogger(RBM.class);
-
+	protected NeuralNetworkOptimizer optimizer;
 	public RBM() {}
 
 	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
@@ -55,57 +57,8 @@ public class RBM extends BaseNeuralNetwork {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		double score = getReConstructionCrossEntropy();
-		boolean done = false;
-		int numTimesExceeded = 0;
-
-		while(!done) {
-			DoubleMatrix W = this.W.dup();
-			DoubleMatrix hBias = this.hBias.dup();
-			DoubleMatrix vBias = this.vBias.dup();
-			contrastiveDivergence(learningRate,k,input);
-			double currScore = getReConstructionCrossEntropy();
-			if(currScore <= score)	{
-				//increase patience
-				numTimesExceeded = 0;
-				double diff = Math.abs(currScore - score);
-				if(diff <= 0.000001) {
-					done = true;
-					score = currScore;
-					log.info("Converged on cost " + currScore);
-					break;
-				}
-				else
-					score = currScore;
-				log.info("Found new reconstruction entropy " + score);
-			}
-			else if(currScore > score) {
-			
-				if(numTimesExceeded >= 5) {
-					done = true;
-					log.info("Converged on score " + score + " due to greater entropy after the last training batch");
-					this.W = W;
-					this.hBias = hBias;
-					this.vBias = vBias;
-					break;
-				}
-				else {
-					numTimesExceeded++;
-					int diff = 5 - numTimesExceeded;
-					log.info("Entropy exceeded going to iterate " + diff + " more times to search for possible local minima, otherwise converging.");
-					if(numTimesExceeded >= 5) {
-						done = true;
-						log.info("Converged on score " + score + " due to greater entropy after the last training batch");
-						this.W = W;
-						this.hBias = hBias;
-						this.vBias = vBias;
-						break;
-					}
-				}
-				
-			}
-
-		}
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k});
+		optimizer.train(input);
 	}
 
 	/**
@@ -144,7 +97,8 @@ public class RBM extends BaseNeuralNetwork {
 		 * and exploring the search space.
 		 */
 		Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
-		//negative visble means or expected values
+		//negative visible means or expected values
+		@SuppressWarnings("unused")
 		DoubleMatrix nvMeans = null;
 		//negative value samples
 		DoubleMatrix nvSamples = null;
@@ -175,23 +129,21 @@ public class RBM extends BaseNeuralNetwork {
 			nhSamples = matrices.getSecond().getSecond();
 		}
 
-
-		DoubleMatrix wAdd = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
+		/*
+		 * Update gradient parameters
+		 */
+		DoubleMatrix wAdd = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate).mul(momentum);
 		//update rule
 		W = W.add(wAdd);
-		
+
 		regularizeWeights(input.rows, learningRate);
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
-		DoubleMatrix  vBiasAdd = mean(input.sub(nvSamples), 0);
-		vBias = vBiasAdd.mul(learningRate);
+		DoubleMatrix  vBiasAdd = mean(input.sub(nvSamples), 0).mul(learningRate);
+		vBias = vBias.add(vBiasAdd);
 
 
 		//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-
-		DoubleMatrix hBiasAdd = mean(probHidden.getSecond().sub(nhMeans), 0);
-
-		hBiasAdd = hBiasAdd.mul(learningRate);
-
+		DoubleMatrix hBiasAdd = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
 		hBias = hBias.add(hBiasAdd);
 	}
 
@@ -279,6 +231,17 @@ public class RBM extends BaseNeuralNetwork {
 			Object[] params) {
 		int k = (int) params[0];
 		trainTillConvergence(lr,k,input);
+	}
+
+	@Override
+	public double lossFunction(Object[] params) {
+		return getReConstructionCrossEntropy();
+	}
+
+	@Override
+	public void train(DoubleMatrix input,double lr, Object[] params) {
+		int k = (int) params[0];
+		contrastiveDivergence(lr, k, input);
 	}
 
 

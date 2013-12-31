@@ -13,7 +13,9 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
 import com.ccc.deeplearning.dbn.matrix.jblas.DBN;
-import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
+
+import static com.ccc.deeplearning.util.MatrixUtil.*;
 
 /**
  * Baseline class for any Neural Network used
@@ -21,7 +23,7 @@ import com.ccc.deeplearning.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public abstract class BaseNeuralNetwork implements NeuralNetwork {
+public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
@@ -58,7 +60,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 	public double momentum = 0.1;
 	/* L2 Regularization constant */
 	public double l2 = 0.1;
-	
+	public NeuralNetworkOptimizer optimizer;
 	
 
 	public BaseNeuralNetwork() {}
@@ -167,144 +169,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 	}
 
 
-	public static class Builder<E extends BaseNeuralNetwork> {
-		private E ret = null;
-		private DoubleMatrix W;
-		protected Class<? extends NeuralNetwork> clazz;
-		private DoubleMatrix vBias;
-		private DoubleMatrix hBias;
-		private int numVisible;
-		private int numHidden;
-		private RandomGenerator gen;
-		private DoubleMatrix input;
-		private double sparsity = 0.01;
-		private double l2 = 0.01;
-		private double momentum = 0.1;
-		
-		public Builder<E> withL2(double l2) {
-			this.l2 = l2;
-			return this;
-		}
-		
-		
-		public E buildEmpty() {
-			try {
-				return (E) clazz.newInstance();
-			} catch (InstantiationException | IllegalAccessException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		
-		public Builder<E> withClazz(Class<? extends BaseNeuralNetwork> clazz) {
-			this.clazz = clazz;
-			return this;
-		}
-		
-		public Builder<E> withSparsity(double sparsity) {
-			this.sparsity = sparsity;
-			return this;
-		}
-		public Builder<E> withMomentum(double momentum) {
-			this.momentum = momentum;
-			return this;
-		}
-		
-		public Builder<E> withInput(DoubleMatrix input) {
-			this.input = input;
-			return this;
-		}
-
-		public Builder<E> asType(Class<E> clazz) {
-			this.clazz = clazz;
-			return this;
-		}
-
-
-		public Builder<E> withWeights(DoubleMatrix W) {
-			this.W = W;
-			return this;
-		}
-
-		public Builder<E> withVisibleBias(DoubleMatrix vBias) {
-			this.vBias = vBias;
-			return this;
-		}
-
-		public Builder<E> withHBias(DoubleMatrix hBias) {
-			this.hBias = hBias;
-			return this;
-		}
-
-		public Builder<E> numberOfVisible(int numVisible) {
-			this.numVisible = numVisible;
-			return this;
-		}
-
-		public Builder<E> numHidden(int numHidden) {
-			this.numHidden = numHidden;
-			return this;
-		}
-
-		public Builder<E> withRandom(RandomGenerator gen) {
-			this.gen = gen;
-			return this;
-		}
-
-		public E build() {
-			if(input != null) 
-				return buildWithInput();
-			else 
-				return buildWithoutInput();
-		}
-
-		@SuppressWarnings("unchecked")
-		private  E buildWithoutInput() {
-			Constructor<?>[] c = clazz.getDeclaredConstructors();
-			for(int i = 0; i < c.length; i++) {
-				Constructor<?> curr = c[i];
-				Class<?>[] classes = curr.getParameterTypes();
-
-				//input matrix found
-				if(classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
-					try {
-						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen);
-						return ret;
-					}catch(Exception e) {
-						throw new RuntimeException(e);
-					}
-
-				}
-			}
-			return ret;
-		}
-
-
-		@SuppressWarnings("unchecked")
-		private  E buildWithInput()  {
-			Constructor<?>[] c = clazz.getDeclaredConstructors();
-			for(int i = 0; i < c.length; i++) {
-				Constructor<?> curr = c[i];
-				Class<?>[] classes = curr.getParameterTypes();
-				//input matrix found
-				if(classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
-					try {
-						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen);
-						ret.sparsity = this.sparsity;
-						ret.l2 = this.l2;
-						ret.momentum = this.momentum;
-						return ret;
-					}catch(Exception e) {
-						throw new RuntimeException(e);
-					}
-
-				}
-			}
-			return ret;
-		}
-	}
-
 	/**
 	 * Copies params from the passed in network
 	 * to this one
@@ -344,16 +208,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 	 */
 	public double getReConstructionCrossEntropy() {
 		DoubleMatrix preSigH = input.mmul(W).addRowVector(hBias);
-		DoubleMatrix sigH = MatrixUtil.sigmoid(preSigH);
+		DoubleMatrix sigH = sigmoid(preSigH);
 
 		DoubleMatrix preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
-		DoubleMatrix sigV = MatrixUtil.sigmoid(preSigV);
+		DoubleMatrix sigV = sigmoid(preSigV);
 		DoubleMatrix inner = 
-				input.mul(MatrixUtil.log(sigV))
-				.add(MatrixUtil.oneMinus(input)
-						.mul(MatrixUtil.log(MatrixUtil.oneMinus(sigV)))
-		
-						);
+				input.mul(log(sigV))
+				.add(oneMinus(input)
+						.mul(log(oneMinus(sigV))));
 		
 		return - inner.rowSums().mean();
 	}
@@ -491,6 +353,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 		this.l2 = l2;
 	}
 	
+	/**
+	 * Write this to an object output stream
+	 * @param os the output stream to write to
+	 */
 	public void write(OutputStream os) {
 		try {
 			ObjectOutputStream os2 = new ObjectOutputStream(os);
@@ -510,7 +376,165 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork {
 	 * @return the reconstructed input
 	 */
 	public abstract DoubleMatrix reconstruct(DoubleMatrix x);
+	
+	/**
+	 * The loss function (cross entropy, reconstruction error,...)
+	 * @return the loss function
+	 */
+	public abstract double lossFunction(Object[] params);
+
+	public double lossFunction() {
+		return lossFunction(null);
+	}
+	
+	/**
+	 * Train one iteration of the network
+	 * @param input the input to train on
+	 * @param lr the learning rate to train at
+	 * @param params the extra params (k, corruption level,...)
+	 */
+	public abstract void train(DoubleMatrix input,double lr,Object[] params);
+	
+	
 
 
+	public static class Builder<E extends BaseNeuralNetwork> {
+		private E ret = null;
+		private DoubleMatrix W;
+		protected Class<? extends NeuralNetwork> clazz;
+		private DoubleMatrix vBias;
+		private DoubleMatrix hBias;
+		private int numVisible;
+		private int numHidden;
+		private RandomGenerator gen;
+		private DoubleMatrix input;
+		private double sparsity = 0.01;
+		private double l2 = 0.01;
+		private double momentum = 0.1;
+		
+		public Builder<E> withL2(double l2) {
+			this.l2 = l2;
+			return this;
+		}
+		
+		
+		@SuppressWarnings("unchecked")
+		public E buildEmpty() {
+			try {
+				return (E) clazz.newInstance();
+			} catch (InstantiationException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		public Builder<E> withClazz(Class<? extends BaseNeuralNetwork> clazz) {
+			this.clazz = clazz;
+			return this;
+		}
+		
+		public Builder<E> withSparsity(double sparsity) {
+			this.sparsity = sparsity;
+			return this;
+		}
+		public Builder<E> withMomentum(double momentum) {
+			this.momentum = momentum;
+			return this;
+		}
+		
+		public Builder<E> withInput(DoubleMatrix input) {
+			this.input = input;
+			return this;
+		}
+
+		public Builder<E> asType(Class<E> clazz) {
+			this.clazz = clazz;
+			return this;
+		}
+
+
+		public Builder<E> withWeights(DoubleMatrix W) {
+			this.W = W;
+			return this;
+		}
+
+		public Builder<E> withVisibleBias(DoubleMatrix vBias) {
+			this.vBias = vBias;
+			return this;
+		}
+
+		public Builder<E> withHBias(DoubleMatrix hBias) {
+			this.hBias = hBias;
+			return this;
+		}
+
+		public Builder<E> numberOfVisible(int numVisible) {
+			this.numVisible = numVisible;
+			return this;
+		}
+
+		public Builder<E> numHidden(int numHidden) {
+			this.numHidden = numHidden;
+			return this;
+		}
+
+		public Builder<E> withRandom(RandomGenerator gen) {
+			this.gen = gen;
+			return this;
+		}
+
+		public E build() {
+			if(input != null) 
+				return buildWithInput();
+			else 
+				return buildWithoutInput();
+		}
+
+		@SuppressWarnings("unchecked")
+		private  E buildWithoutInput() {
+			Constructor<?>[] c = clazz.getDeclaredConstructors();
+			for(int i = 0; i < c.length; i++) {
+				Constructor<?> curr = c[i];
+				Class<?>[] classes = curr.getParameterTypes();
+
+				//input matrix found
+				if(classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
+					try {
+						ret = (E) curr.newInstance(numVisible, numHidden, 
+								W, hBias,vBias, gen);
+						return ret;
+					}catch(Exception e) {
+						throw new RuntimeException(e);
+					}
+
+				}
+			}
+			return ret;
+		}
+
+
+		@SuppressWarnings("unchecked")
+		private  E buildWithInput()  {
+			Constructor<?>[] c = clazz.getDeclaredConstructors();
+			for(int i = 0; i < c.length; i++) {
+				Constructor<?> curr = c[i];
+				Class<?>[] classes = curr.getParameterTypes();
+				//input matrix found
+				if(classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
+					try {
+						ret = (E) curr.newInstance(numVisible, numHidden, 
+								W, hBias,vBias, gen);
+						ret.sparsity = this.sparsity;
+						ret.l2 = this.l2;
+						ret.momentum = this.momentum;
+						return ret;
+					}catch(Exception e) {
+						throw new RuntimeException(e);
+					}
+
+				}
+			}
+			return ret;
+		}
+	}
 
 }

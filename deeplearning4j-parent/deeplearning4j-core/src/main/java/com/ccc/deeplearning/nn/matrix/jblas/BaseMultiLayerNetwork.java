@@ -13,14 +13,15 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
+
 /**
  * A base class for a multi layer neural network with a logistic output layer
  * and multiple hidden layers.
  * @author Adam Gibson
  *
  */
-public abstract class BaseMultiLayerNetwork implements Serializable {
+public abstract class BaseMultiLayerNetwork implements Serializable,Persistable {
 
 	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 	private static final long serialVersionUID = -5029161847383716484L;
@@ -38,6 +39,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	public RandomGenerator rng;
 	//default training examples and associated layers
 	public DoubleMatrix input,labels;
+	public MultiLayerNetworkOptimizer optimizer;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -151,39 +153,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable {
 	 * @param epochs the number of times to iterate
 	 */
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
-		MatrixUtil.ensureValidOutcomeMatrix(labels);
-		//sample from the final layer in the network and train on the result
-		DoubleMatrix layerInput = this.sigmoidLayers[sigmoidLayers.length - 1].sample_h_given_v();
-		logLayer.input = layerInput;
-		logLayer.labels = labels;
-		double cost = this.negativeLogLikelihood();
-		boolean done = false;
-		while(!done) {
-			DoubleMatrix W = logLayer.W.dup();
-			logLayer.train(layerInput, labels, lr);
-			lr *= learningRateUpdate;
-			double currCost = this.negativeLogLikelihood();
-			if(currCost <= cost) {
-				double diff = Math.abs(cost - currCost);
-				if(diff <= 0.0000001) {
-					done = true;
-					log.info("Converged on finetuning at " + cost);
-					break;
-				}
-				else
-					cost = currCost;
-				log.info("Found new log likelihood " + cost);
-			}
-			
-			else if(currCost > cost) {
-				done = true;
-				logLayer.W = W;
-				log.info("Converged on finetuning at " + cost + " due to a higher cost coming out than " + currCost);
-				break;
-			}
-		}
-
-
+		optimizer = new MultiLayerNetworkOptimizer(this);
+		optimizer.optimize(labels, lr);
 	}
 
 

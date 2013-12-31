@@ -25,7 +25,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 	public MnistDataFetcher() throws IOException {
 		if(!new File("/tmp/mnist").exists())
-		      new MnistFetcher().downloadAndUntar();
+			new MnistFetcher().downloadAndUntar();
 		man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
 		numOutcomes = 10;
 		totalExamples = NUM_EXAMPLES;
@@ -56,6 +56,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
 		for(int i = 0; i < numExamples; i++,cursor++) {
 			if(!hasMore())
 				break;
+			if(man == null) {
+				try {
+					man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 			man.setCurrent(cursor);
 			//note data normalization
 			try {
@@ -67,30 +74,30 @@ public class MnistDataFetcher extends BaseDataFetcher {
 					else 
 						in.put(d,0);
 				}
-				
-				
+
+
 				DoubleMatrix out = createOutputVector(man.readLabel());
 				boolean found = false;
 				for(int col = 0; col < out.length; col++) {
-				     if(out.get(col) > 0) {
-				    	 found = true;
-				    	 break;
-				     }
+					if(out.get(col) > 0) {
+						found = true;
+						break;
+					}
 				}
 				if(!found)
 					throw new IllegalStateException("Found a matrix without an outcome");
-				
+
 				toConvert.add(new Pair<>(in,out));
 			} catch (IOException e) {
 				throw new IllegalStateException("Unable to read image");
 
 			}
 		}
-	
-		
+
+
 		initializeCurrFromList(toConvert);
-		
-	
+
+
 
 	}
 
