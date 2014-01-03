@@ -25,8 +25,6 @@ import static com.ccc.deeplearning.util.MatrixUtil.*;
  */
 public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
-
-
 	private static final long serialVersionUID = -7074102204433996574L;
 	/* Number of visible inputs */
 	public int nVisible;
@@ -137,6 +135,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		else 
 			this.vBias = vbias;
 	}
+
+	@Override
+	public void merge(NeuralNetwork network,int batchSize) {
+		W.addi(network.getW().mini(W).div(batchSize));
+		hBias.addi(network.gethBias().mini(hBias).div(batchSize));
+		vBias.addi(network.getvBias().mini(vBias).div(batchSize));
+	}
+
 
 	/**
 	 * Regularize weights or weight averaging.

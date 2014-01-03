@@ -45,5 +45,16 @@ public interface NeuralNetwork extends Serializable {
 	public void setMomentum(double momentum);
 	
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
+	/**
+	 * Performs a network merge in the form of
+	 * a += b - a / n
+	 * where a is a matrix here
+	 * b is a matrix on the incoming network
+	 * and n is the batch size
+	 * @param network the network to merge with
+	 * @param batchSize the batch size (number of training examples)
+	 * to average by
+	 */
+	void merge(NeuralNetwork network,int batchSize);
 
 }

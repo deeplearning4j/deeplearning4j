@@ -30,16 +30,10 @@ public class SingleNetworkAccumulator {
 		//start with the second worker as the baseline
 		for(int worker = 1; worker <  workers.size(); worker++) {
 			BaseNeuralNetwork network = workers.get(worker);
-		
-			ret.vBias = ret.vBias.add(network.vBias);
-			ret.hBias = ret.hBias.add(network.hBias);
-			ret.W = ret.W.add(network.W);
+			first.merge(network,workers.size());
 
 		}
 
-		ret.vBias.div(workers.size());
-		ret.hBias.div(workers.size());
-		ret.W.div(workers.size());
 	
 		return ret;
 	}

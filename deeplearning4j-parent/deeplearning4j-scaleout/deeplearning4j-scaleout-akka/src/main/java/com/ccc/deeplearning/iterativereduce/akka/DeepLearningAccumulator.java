@@ -30,17 +30,7 @@ public class DeepLearningAccumulator {
 		//start with the second worker as the baseline
 		for(int worker = 1; worker <  workers.size(); worker++) {
 			BaseMultiLayerNetwork network = workers.get(worker);
-
-
-
-			for(int i = 0; i < ret.sigmoidLayers.length; i++) 
-				ret.sigmoidLayers[i].W =  ret.sigmoidLayers[i].W.add(network.sigmoidLayers[i].W.sub(ret.sigmoidLayers[i].W).div(workers.size()));
-
-			for(int i = 0; i < ret.layers.length; i++) 
-				ret.layers[i].setW(ret.layers[i].getW().add(network.layers[i].getW().sub(ret.layers[i].getW()).div(workers.size())));
-
-
-			ret.logLayer.W = ret.logLayer.W.add(network.logLayer.W.sub(ret.logLayer.W.div(workers.size())));
+			first.merge(network, workers.size());
 
 		}
 

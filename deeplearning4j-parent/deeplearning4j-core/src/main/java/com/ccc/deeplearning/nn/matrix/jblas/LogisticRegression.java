@@ -47,6 +47,11 @@ public class LogisticRegression implements Serializable {
 		train(x,labels,lr);
 
 	}
+	
+	public void merge(LogisticRegression l,int batchSize) {
+		W.addi(l.W.subi(W).div(batchSize));
+		b.addi(l.b.subi(b).div(batchSize));
+	}
 
 	/**
 	 * Objective function:  minimize negative log likelihood
