@@ -38,7 +38,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue {
 
 
 
-	public void optimize(DoubleMatrix labels,double lr) {
+	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
 
@@ -55,34 +55,35 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue {
 		opt  = new ConjugateGradient(this);
 
 		boolean done = false;
-		while(!done) {
-			try {
-				done = opt.optimize();
+		for(int i = 0; i < epochs; i++)
+			while(!done) {
+				try {
+					done = opt.optimize();
+				}
+				catch(InvalidOptimizableException e) {
+					network.logLayer.input = layerInput;
+					network.logLayer.labels = labels;
+
+					network.logLayer.train(layerInput, labels, lr);
+
+
+					lr *= network.learningRateUpdate;
+
+					log.warn("Invalid step taken; trying again. Error was ",e);
+				}
+				catch(OptimizationException e2) {
+					network.logLayer.input = layerInput;
+					network.logLayer.labels = labels;
+
+					network.logLayer.train(layerInput, labels, lr);
+
+
+					lr *= network.learningRateUpdate;
+					log.warn("Invalid step taken; trying again. Error was ",e2);
+
+				}
+
 			}
-			catch(InvalidOptimizableException e) {
-				network.logLayer.input = layerInput;
-				network.logLayer.labels = labels;
-
-				network.logLayer.train(layerInput, labels, lr);
-
-
-				lr *= network.learningRateUpdate;
-
-				log.warn("Invalid step taken; trying again. Error was ",e);
-			}
-			catch(OptimizationException e2) {
-				network.logLayer.input = layerInput;
-				network.logLayer.labels = labels;
-
-				network.logLayer.train(layerInput, labels, lr);
-
-
-				lr *= network.learningRateUpdate;
-				log.warn("Invalid step taken; trying again. Error was ",e2);
-
-			}
-
-		}
 
 	}
 

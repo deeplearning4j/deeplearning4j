@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.datasets.DataSet;
+import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
+import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
@@ -92,12 +95,12 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		conf.put(CLASS, "com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder");
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
-				
-		
-		
-		
-		
-		
+
+
+
+
+
+
 	}
 
 	@Test
@@ -110,37 +113,33 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 
 	@Test
 	public void testMnist() throws Exception {
-		Pair<DoubleMatrix,DoubleMatrix> mnist = getMnistExampleBatch(1);
-		runner = new ActorNetworkRunner();
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(60,600);
+		runner = new ActorNetworkRunner("master",fetcher);
 		conf.put(CLASS, "com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
 		conf.put(SPLIT,String.valueOf(10));
-		conf.put(N_IN, String.valueOf(mnist.getFirst().columns));
-		conf.put(OUT, String.valueOf(mnist.getSecond().columns));
 		conf.put(PRE_TRAIN_EPOCHS, String.valueOf(1));
 		conf.put(FINE_TUNE_EPOCHS, String.valueOf(1));
 
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
-			
-        runner.setup(conf);
-        Thread.sleep(10000);
-        
-        
-        ActorNetworkRunner worker = new ActorNetworkRunner("worker",runner.getMasterAddress().toString());
-        worker.setup(conf);
-        
-        
-    	runner.train(mnist.getFirst(), mnist.getSecond());
 
-      
-        
-        
-        BaseMultiLayerNetwork trained = runner.getResult().get();
-        Evaluation eval = new Evaluation();
-        DoubleMatrix predicted = trained.predict(mnist.getFirst());
-        eval.eval(mnist.getSecond(), predicted);
-        log.info(eval.stats());
+		runner.setup(conf);
+		Thread.sleep(10000);
+
+
+		ActorNetworkRunner worker = new ActorNetworkRunner("worker",runner.getMasterAddress().toString());
+		worker.setup(conf);
+
+		DataSet first = fetcher.next();
+
+		runner.train(first.getFirst(), first.getSecond());  
+/*
+		BaseMultiLayerNetwork trained = runner.getResult().get();
+		Evaluation eval = new Evaluation();
+		DoubleMatrix predicted = trained.predict(first.getFirst());
+		eval.eval(first.getSecond(), predicted);
+		log.info(eval.stats());*/
 	}
 
 
