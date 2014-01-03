@@ -8,14 +8,12 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
-import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.ccc.deeplearning.word2vec.util.WindowConverter;
