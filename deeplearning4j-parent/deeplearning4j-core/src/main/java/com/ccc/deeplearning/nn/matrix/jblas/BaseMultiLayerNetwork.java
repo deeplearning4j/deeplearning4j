@@ -280,7 +280,35 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
 
 
-
+	/**
+	 * Merges this network with the other one.
+	 * This is a weight averaging with the update of:
+	 * a += b - a / n
+	 * where a is a matrix on the network
+	 * b is the incoming matrix and n
+	 * is the batch size.
+	 * This update is performed across the network layers
+	 * as well as hidden layers and logistic layers
+	 * 
+	 * @param network the network to merge with
+	 * @param batchSize the batch size (number of training examples)
+	 * to average by
+	 */
+	public void merge(BaseMultiLayerNetwork network,int batchSize) {
+		if(network.nLayers != nLayers)
+			throw new IllegalArgumentException("Unable to merge networks that are not of equal length");
+		for(int i = 0; i < nLayers; i++) {
+			NeuralNetwork n = layers[i];
+			NeuralNetwork otherNetwork = network.layers[i];
+			n.merge(otherNetwork, batchSize);
+			//tied weights: must be updated at the same time
+			HiddenLayer l = sigmoidLayers[i];
+			l.b = n.gethBias();
+			l.W = n.getW();
+		}
+		
+		logLayer.merge(network.logLayer, batchSize);
+	}
 
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
