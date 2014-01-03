@@ -1,0 +1,7 @@
+3
+You may one day have to do different actions to unlock your Android phone based on where you are, according to a patent filed by Google .
+The patent explains a technology that would let Google determine where your phone is (which it already can do), and be able to tell when it is in a “familiar” place. That familiar place likely is your home. Once Google determines this, it will change the action you need to perform in order to access the phone.
+This might mean that when you’re in your familiar place you have to use an unlock pattern, but when you’re outside of the familiar place, you have to complete a two-factor authentication approach or some other heightened security measure.
+Google says in its patent that it will get this location data from both global position system data (GPS) and from Wi-Fi data. That is, when the phone connects to a Wi-Fi network in the vicinity, it adds redundancy to the GPS data, making a stronger case for the phone’s location.
+And, this won’t just be segmented into two different locations: a familiar one and an unfamiliar one. You could have a second familiar location, such as work. The patent stresses that Google will be able to determine this without you needing to input location information or create a geofence.
+This could be a good way to get more businesses interested in Android phones. Chief information officers seem to care just as much about the physical security of the phone as the apps and documents inside the phone.

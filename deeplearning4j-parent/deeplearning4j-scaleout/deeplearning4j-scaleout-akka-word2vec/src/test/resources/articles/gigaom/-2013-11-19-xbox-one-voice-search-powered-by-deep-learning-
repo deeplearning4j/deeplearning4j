@@ -1,0 +1,21 @@
+photo: Shutterstock / Will Deganello
+Summary:
+You didn’t think all the research Microsoft has done around deep learning was just for show, did you? The company’s deep learning models are now powering voice commands on the Xbox One platform, thanks to a direct connection to Bing.
+photo: Shutterstock / Will Deganello
+It’s no secret that Microsoft Research has been hard at work on deep learning techniques over the past few years, and the company showed off one of the reasons why on Tuesday: natural-language voice search on the new Xbox One console.
+From the blog post detailing the feature :
+“Over the past few years, we’ve focused on overcoming limitations of previous voice experiences. To achieve speed and accuracy improvements, we focused on an advanced approach called Deep Neural Networks (DNNs). DNN is a technology that is inspired by the functioning of neurons in the human brain. In a similar way, DNN technology can detect patterns akin to the way biological systems recognize patterns allowing us to better understand natural language. With Xbox One, you can search using natural phrases. For instance, you can say:
+“I feel like watching comedy movies from the 1980’s”
+“Show me popular dubstep music”
+“I want to watch the movie Star Trek Into Darkness”
+“I want to play Forza Motorsport”
+“With an arsenal of over 300,000 servers powering the back-end of Xbox One, the system is learning and adapting every day so as the vast expanse of the digital entertainment and services continues to morph at record speeds, the experience will continue to get better.”
+That Microsoft would roll out such a feature is hardly surprising — in fact, the company pretty much cued it up in March to reporters at its TechForum at its Redmond, Wash. headquarters. There, executives spoke in detail about advances in machine learning for tasks like voice recognition and the importance of incorporating the technological lessons learned from Bing (or, in this case, Bing itself) into the company’s broader product portfolio — including the Xbox .
+Bing is the key to all of this because data is the key to deep learning, and, really, all varieties of big data analysis. The more Microsoft understands about how sentences and search queries are constructed, and what the invidual words mean, the better it can understand what users are asking for when they speak to the Xbox. Already, Microsoft has famously demonstrated how well its deep learning models can handle real-time voice translation from one language to another.
+Having so much data is what allows others companies such as Google and Facebook to do their deep learning research, too. While Facebook is just getting started in its quest to better personalize its Newsfeed features, Google has already made big advances in text analysis and image recognition (try searching your unlabeled photos in Google+, for example), and its deep learning models power voice search on Android phones .
+The real promise of deep learning, however, isn’t just more-convenient gaming consoles or mobile experiences, but actually using its inherent capabilities in pattern and feature recognition to revolutionize entire industries and fields of science. Science , law, medicine , communication — anyplace there’s a lot of words, images or other complex data to analyze, there’s an opportunity to teach computers to do some pretty amazing things (even things we might not be able to (or really want to) teach ourselves .
+Feature image courtesy of Shutterstock user Willy Deganello .
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

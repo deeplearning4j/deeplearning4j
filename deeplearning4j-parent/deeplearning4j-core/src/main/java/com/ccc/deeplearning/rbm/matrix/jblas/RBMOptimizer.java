@@ -10,6 +10,8 @@ import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 
 public class RBMOptimizer extends NeuralNetworkOptimizer {
 
+	protected int k = -1;
+	protected int numTimesIterated = 0;
 	public RBMOptimizer(BaseNeuralNetwork network, double lr,
 			Object[] trainingParams) {
 		super(network, lr, trainingParams);
@@ -18,6 +20,21 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	@Override
 	public void getValueGradient(double[] buffer) {
 		int k = (int) extraParams[0];
+		numTimesIterated++;
+		//adaptive k based on the number of iterations.
+		//typically over time, you want to increase k.
+		if(this.k <= 0)
+			this.k = k;
+		if(numTimesIterated % 10 == 0) {
+			this.k++;
+		}
+		
+		
+		//Don't go over 15
+		if(this.k >= 15) 
+		     this.k = 15;
+		
+		k = this.k;
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases

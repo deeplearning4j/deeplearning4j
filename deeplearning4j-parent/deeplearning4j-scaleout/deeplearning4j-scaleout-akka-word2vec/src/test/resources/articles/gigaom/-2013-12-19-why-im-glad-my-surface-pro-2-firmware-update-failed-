@@ -1,0 +1,22 @@
+A
+Summary:
+Microsoft has pulled the latest Surface Pro 2 firmware update but not soon enough for some. Users are experiencing power problems and other issues with their devices. The situation exemplifies the complexities of Windows in a new era of simpler computing.
+Although I’m trying to keep an open mind about the latest Microsoft devices, the company sure is making it difficult. A December firmware update to the Surface Pro 2 has been pulled amid a strange series of events ranging from the company saying everything’s fine, to forum posters reporting unusable devices.
+For a company that’s actually making great strides this year — and has literally defined the PC industry for the past few decades — it’s a bit of an embarrassment for Microsoft’s flagship device; one where it controls both the hardware and the software.
+Microsoft released the firmware update on December 10 for all Surface Pro 2 users. I recently bought one of these devices and saw the update arrive — without warning , which is both the Microsoft recommended and express setup option – download and presumably install. The install failed for me, and many others, with a specific error code. Not to worry, said Microsoft.
+WinBeta got an official statement with this information : “Some people may be experiencing a false error message, 80070490. The firmware update should be installing correctly; however, if you received this error message, we recommend that you go to Device Manager check the firmware history to ensure the latest update installed.”
+It’s all good, right? Not on my Surface Pro 2 per the Device Manager and, based on this Microsoft forum , not for others as well. But that’s a good thing, according to those who did get the update to install.
+Several reports in the forums indicate their Surface Pro 2 is actually performing worse with the firmware update, with some showing visual evidence that the device won’t even charge while plugged in. Some are having issues with sleep mode and other power-related functions. One of my peers in the gadget review space, Hector Gomez, is experiencing these issues and is also having problems with the Type Cover after the update.
+@ surface Now my Type Cover track pad doesn't work, have to remove Type Cover and then reattach. This is all happening after Firmware update.—
+HG (@MobileHG) December 19, 2013
+At this point, Microsoft has officially pulled the update and said it’s working on the problem. I’m actually able to work on my Surface Pro 2 because the update failed. For those that successfully installed it, they’re currently left dealing with whatever problems the update introduced. I know Microsoft is working on the problems — it has said so in the forums — which I’m sure users appreciate.
+But this speaks volumes about current computing models and doesn’t provide confidence in this product.
+For starters, the days of looking up archaic error codes and checking firmware version histories in the good old Device Manager isn’t what people want to be doing. They want to be computing, as in using their devices to get things done without the device or the operating system getting in the way. There’s no “Device Manager” to sift through on today’s mobile phones or non-Windows tablets, for example.
+That doesn’t mean other devices aren’t immune to this type of problem. I fully recognize and appreciate that fact. Today’s mobile devices are built to be more like consumer electronics, however: they generally just work. And when they don’t, it’s typically not on the consumer to dig around driver device files, system logs and such to figure out what’s going on.
+This situation is a perfect example of why I’ve used a Chromebook for the past 1.5 years: it simply works and it works simply.
+There’s no legacy of Device Manager in the front-facing interface. Software updates are regular but generally without fail. And most importantly: I have little doubt that when I need the device to work, it will.
+By acting as a solution for both enterprises and consumers, Windows continues to leave itself vulnerable to situations like this: one of complexity that consumers generally don’t need.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

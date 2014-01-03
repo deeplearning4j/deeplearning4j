@@ -1,0 +1,11 @@
+0
+Updated at 8:30 AM PT with a quote and additional information from Datical’s marketing director
+Datical aims to prevent downtime, delays, and data loss stemming from database changes — and the software maker just raised $3 million to expand its product development and marketing efforts.
+Datical DB manages the database schema lifecycle for people who develop, deploy, and maintain applications. It works with a variety of databases, including Oracle, DB2, MySQL, SQL Server, and Postgres.
+Building on Liquibase , an open source project, Datical DB is said to eliminate manual change scripting so developers don’t have to grapple with SQL syntax. It also provides an automatic audit trail of database changes, enabling you to roll back to an earlier version if necessary, and it forecasts the impact of database production changes before deployment.
+“There are plenty of tools that companies use to write and execute scripts — TOAD, dbMaestro, Red Gate, Embarcadero — but those simply mask the problem and have a top end to efficiency gains,” Datical marketing director Ruth Davidson told VentureBeat.
+“Datical is different … because we manage database schema change in lockstep with application code by keeping everything — code, people and processes — in sync as applications move from development to QA-test and on to production environments,” she said.
+Mercury Fund led this current funding round in Datical, which included participation from Austin Ventures and other investors. The startup previously raised a $1 million seed round this past May.
+The Austin, Texas-based startup was founded by the same team that started Phurnace Software, which BMC Software acquired in 2010. It emerged from stealth mode this October and currently has 16 employees, a figure the company expects to double within a year. Datical declined to divulge current customer information, but it is focused on selling to financial services, banking, insurance, and retail customers.
+Check out the video below to learn more about Datical DB.
+Related articles

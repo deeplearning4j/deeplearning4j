@@ -1,0 +1,35 @@
+I’m so excited to present to you my next-generation enterprise software-as-a-service CRM that also be an on-prem component for safety and security.
+Did y’all just die a little, too?
+That’s what jargon looks like from a blimp over Silicon Valley. But developer jargon is a whole different matter . It’s what helps make this world of humans who make computers, well, useful. It’s a culture in and of itself.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+Jargon is not to be confused with slang or techspeak in this world. Jargon is something of its own. Slang is what you hear in high school. The general population comes up with ways to describe the world around them, and suddenly everyone becomes hip to that jazz. Or something. Techspeak is literally that: a collection of the technical terms developers use to correctly describe what they’re doing, building, hacking, etc.
+Jargon, on the other hand, is a specific melding of the slang and the techspeak — where developers and techies come up with inner-circle ways to describe their work.
+And jargon construction is a huge part of it. Devs aren’t all numbers and logic; they love word play and emotional expressions of their work. I’m sure you’ve heard the term “elegant solution” thrown around or frontends and backends that elicit some visual of physical space the software exists in beyond hardware.
+Yup, let’s get philosophical, people.
+This is unlike crackers, who in the dev community are NOT hackers, who have their own jargon construction that seems to be a little harsher. Back in the days of bulletin boards and pre-Def Con meetups, crackers and fone phreakers started creating their own jargon style that is still used by Anonymous hacktivists yelling on Twitter and more.
+It involves purposeful misspelling, Zs where Ss should be, all-caps typing, and more.
+But any kind of jargon can lead to some hilarity and inside jokiness. So let’s take a look at some of our favorite jargon-y dev quotes (attributed and non), which are undoubtedly hanging on the sides of your monitors in Post-It note form.
+All quotes taken from The Jargon File , a must-read for would-be nerds and a hilarous time-suck for confirmed neckbeards of all genders and facial-hair statuses.
+“To go forward, you must backup.”
+“I/O, I/O, It’s off to disk I go. A bit or byte to read or write, I/O, I/O, I/O… .”
+“Q: How many software engineers does it take to change a lightbulb? A: It can’t be done; it’s a hardware problem.”
+“Hardware /nm./: the part of the computer that you can kick.”
+“SUPERCOMPUTER: what it sounded like before you bought it.”
+“UNIX is an operating system, OS/2 is half an operating system, Windows is a shell, and DOS is a boot partition virus.” — Peter H. Coffin.
+“Linux is only free if your time is worthless.” — Jamie Zawinski.
+“This is Macintrash.”
+“It took me 48 hours with no sleep, but I’m done. I’m progasming.”
+“We are going to reconfigure the network, are you ready to suck mud?”
+“I haven’t done it yet because every time I pop my stack something new gets pushed.”
+“Is reading in the bathroom considered Multi-Tasking?”
+“Premature optimization is the root of all evil.” — Donald E. Knuth.
+“The first rule of optimization is: Don’t do it. The second rule of optimization (for experts only) is: Don’t do it yet.”
+The story of Tom Knight and the Lisp Machine:
+A novice was trying to fix a broken Lisp machine by turning the power off and on.
+Knight, seeing what the student was doing, spoke sternly: “You cannot fix a machine by just power-cycling it with no understanding of what is going wrong.”
+Knight turned the machine off and on. The machine worked.

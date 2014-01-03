@@ -1,0 +1,14 @@
+A
+Summary:
+Big customers may want to use OpenStack but need hard metrics on how it performs in very large implementations. Mirantis and iBM are using Rally to fill that need.
+Enterprises are still unsure that OpenStack open-source cloud technology can scale enough to handle massive applications. Now Mirantis, a systems integrator and something of an OpenStack gadfly, is working with IBM and its SoftLayer cloud unit to prove that it does, in fact, do so.
+Mirantis is deploying OpenStack across more than 1,500 bare-metal SoftLayer servers and using its Rally benchmarking tool to provide performance metrics.
+Some big customers are interested in  OpenStack but want numbers and metrics to show that it’s a feasible solution, Mirantis president Adrian Ionel said in an interview. When they asked for  metrics about how OpenStack was performing at this scale, “we drew a blank. We had estimates but not hard data on how it performs on a variety of loads and configurations, and performance can be configuration specific. The tooling in the OpenStack framework did not exist for this so we built it and contributed it back to the community,” Ionel said.
+IBM is a big OpenStack proponent, holding a Platinum sponsorship on the OpenStack Foundation. That and it’s $2 billion purchase of SoftLayer earlier this year constitute two tent poles of its cloud strategy — even though SoftLayer was not a huge OpenStack proponent. But IBM is banking that a combination of these two  assets can help it counter forays by AmazonWeb Services into the enterprise.
+Big Blue was stung when AWS won a big contract to build the CIA cloud over IBM and sources there have said that SoftLayer will play a key role in making sure IBM has a better scalable cloud story going forward.
+Mirantis started out as a systems integrator with growing OpenStack expertise — it worked with PayPal and Cisco to implement the technology, added a spate of related tooling, and then decided to launch its own OpenStack distribution . It also pledged a vendor neutral approach which got more tricky when  Dell and Intel invested in the company , and now it’s pretty clearly in bed with IBM. So i guess you could say this is complicated.
+IBM’s collaboration with  Mirantis, as well as its application of   Netflix AWS-focused tools to its SmartCloud Enterprise and its SoftLayer successor, are steps in making its cloud offerings more credible to the enterprise customers that are its lifeblood.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,8 @@
+2
+Today, platform-as-a-service company Engine Yard announced support for Java and added Oracle to its lineup of partners.
+Engine Yard already supports technologies such as Ruby, PHP, and Node.js. By bringing Java into the mix, the company hopes to reach out to large corporations with legacy software written in Java as well as newer companies deploying Android apps written in Java.
+Support will officially begin in 30 days, but customers can sign up for early access now .
+“We have listened closely to our customers’ requirements. Increasingly, they include the need to innovate with new apps and services on the Java platform, extend existing Java apps, and migrate them to a cloud application platform,” said Engine Yard CTO Rob Walters in a statement on the news.
+“By delivering support for Java, we’re able to provide our industry leading PaaS across a variety of markets and use cases. We also continue to expand our list of infrastructure providers and look forward to offering support for Oracle Cloud.”
+Engine Yard brought PHP support via an acquisition in 2011, and it added Node.js support almost exactly one year ago.
+Engine Yard is based in San Francisco and was founded in 2006. To date, the company has taken a total of $37.5 million in three rounds of venture capital financing. Competitors include Heroku and Rackspace.

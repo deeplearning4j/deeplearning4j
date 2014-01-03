@@ -1,0 +1,28 @@
+0
+SANTA CLARA, Calif. — At ZendCon today, we caught up with IBM’s cloud services division chief technology officer, Mac Devine. While the rest of his peers were buzzing about agility, DevOps, and mobile/cloud technologies, we wanted to ask Devine about something a bit more accessible: his company’s legal dispute with the CIA and its ongoing feud with Amazon.
+Here’s the case in a nutshell: Both IBM and Amazon submitted bids for a lucrative CIA contract ($600 million, to be exact). Amazon, the incumbent, won the bid despite that IBM’s proposal was significantly less expensive and (IBM claims) would perform better. IBM thought it smelled a rat, so it appealed the decision and won. Then Amazon appealed. It also won .
+“The federal judge basically reversed an earlier ruling,” said Devine. “IBM protested the original process that we went through with the government. Certain things were not considered — that all the capabilities that IBM could bring weren’t considered.
+“Of course, IBM is appealing, and that could go on for a while. We’ll see how this plays out in court. It’s a typical back-and-forth.”
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+Going into the rebid process, Devine said IBM “felt very confident. We felt like we had a superior story to what Amazon has, especially as it relates to performance and big data.”
+But the big difference, and the main and probably only reason IBM feels that confidence, comes down to one extremely strategic acquisition: cloud powerhouse SoftLayer , for a rumored $2 billion. And while IBM tends to “blue-wash” and fully integrate these acquisitions, it chose to create a cloud services division with SoftLayer as its center of gravity.
+The acquisition took place over the summer, so during this year’s bidding process, Devine said, “We could also showcase the SoftLayer acquisition. For the government, they need to scale big data. The Amazon model … the predictability of your data I/O is somewhat spiky. There are periods where the performance is good and where it’s not. With SoftLayer, you get 30 to 35 percent better performance for those data-intensive services. So that drives the cost down significantly.”
+Devine said IBM was, of course, working on the same kinds of things prior to the deal, but SoftLayer had been doing it since 2006. IBM saw an opportunity to grow bigger, faster with an acquisition.
+Devine said SoftLayer also brought more speed to the table. “They have bare-metal capabilities. They also have a dark-fiber layer. Whenever you have any congestion in the network, if you can avoid it end-to-end, you can avoid issues where your performance gets progressively worse as the endpoints re-transmit.”
+To sum up IBM’s position, their big came in better, faster, and cheaper. So what’s the CIA’s hold-up?
+“It’s an interesting dynamic,” Devine continued. “We have a lot of history with the federal government. With the Department of Defense, there’s a large contact we won with the [SoftLayer] acquisition.”
+That was a $1 billion contract that was finalized in August. In one fell swoop, SoftLayer had paid back half its reported worth to IBM.
+But the DoD deal, Devine said, didn’t carry much weight with the CIA. “That’s another thing that we felt wasn’t taken into consideration.”
+Ultimately, Devine contends, the problem isn’t about systems and software; it’s about people. Legacy people with legacy fears, uncertainty, and doubts.
+A great example is the state of cloud security.
+“In terms of security, we’ve been doing strategic outsourcing where we’re basically the IT for large companies. We lock down the data centers and the data, and we incorporate that into our cloud services division. We’re combining those with some of SoftLayer’s services. A lot of people don’t realize that SoftLayer had very sensitive customers and information — health care and other things. They had to have the same rigor to support that from a security standpoint. Customers had to be comfortable that their provider would give them better security than they could get on their own.”
+In other words, IBM is responsible for a huge PR job: convincing IT folks that they could take something that seems fundamentally insecure and lock it up tighter than a supermax.
+Another example: The belief that old-school organizations like Big Blue are irrelevant as the paradigms shift and the world of computing turns.
+“One of the things Amazon does very well is these new, cloud-first workloads,” Devine said. “We didn’t really have an atmosphere that was conducive to that model until we bought SoftLayer. Every industry is reinventing itself with this continuous delivery model. … And SoftLayer gives us that.”
+But this factor that can work to IBM’s detriment is also its saving grace — especially when it comes to enterprise, government, health care, and education organizations. There’s the old, old adage: No one ever got fired for buying IBM. As seemingly ancient as IBM is, it’s also built up a long tradition of stability, support, and trust with large entities.
+“When they get to a point where they realize they’re better off with our entire team working on their system than just their IT guy,” said Devine, “I think that’s where IBM’s trust factor and global presence comes into play.”

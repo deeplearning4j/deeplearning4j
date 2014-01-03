@@ -1,0 +1,12 @@
+A
+Summary:
+Mobile retail app developer Shopkick is selling iBeacon devices to businesses that will let them track and interact with customers as they move throughout their stores. Macy’s is its first trial partner.
+When Apple rolled iOS 7 in June, it quietly included a proximity-based service called iBeacon, which Gigaom contributor Hari Gottipati predicted would become a force in retail and location-based services . It didn’t take long for retailers to get wise to iBeacon as well.
+On Wednesday, Shopkick announced a new service called ShopBeacon that uses Apple’s technology to track customers when they enter and move around in stores. Macy’s is ShopBeacon’s first trial partner.
+Macy’s is installing iBeacon transmitters throughout two stores, NYC’s Herald Square and San Francisco’s Union Square. Those transmitters send encrypted signals to any iPhone with Bluetooth Low Energy capabilities and the Shopkick retail companion app.
+The network for instance can automatically wake up the Shopkick app when you enter one of its partners’ stores. It can push special offers and recommendations to customers, and because of Bluetooth’s limited range, the app can detect the specific floor or department a customer is in, allowing the store to tailor alerts.
+The service is already running in closed beta, but Shopkick and Macy’s will open it to all Shopkick users in coming weeks. Afterwards, Shopkick will begin selling the network gear to its other retail partners. Each transmitter costs $40 and is designed to be mounted on walls or any flat surface.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

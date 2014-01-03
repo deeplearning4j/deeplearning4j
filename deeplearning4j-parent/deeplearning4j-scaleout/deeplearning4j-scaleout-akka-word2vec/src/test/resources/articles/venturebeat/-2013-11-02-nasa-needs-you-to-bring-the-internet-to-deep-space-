@@ -1,0 +1,22 @@
+2
+In our fiction about the future, sending messages through vast distances of space is a huge theme. But at some point, we need to bring our reality up to speed, too.
+That’s why NASA is teaming up with Harvard and developer community TopCoder to figure out how the Internet (or something like it) will function as humans and our spacecraft venture further into other planets’ orbits, interstellar space, and even other star systems.
+The first thing we have to understand is that there are big obstacles to connectivity in space. Like planets, for example. NASA and the European Space Agency have obviously been working on this for a while, but the basic premise is that a new Internet protocol is required.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+Unlike TCP( Transmission Control Protocol ), RTP ( Real-time Transport Protocol ), or UDP ( User Diagram Protocol ), the new protocol needs to be able to handle all kinds of disruption without losing data or security.
+So now, NASA and others are working on DTN: Disruption Tolerant Networking, a new architecture that takes into account stuff like massive distances, interference from stars, low-power devices, planetary rotation, you name it.
+After a series of experiments on DTN technology last year, NASA space comms chief Badri Younes said, “The demonstration showed the feasibility of using a new communications infrastructure to send commands to a surface robot from an orbiting spacecraft and receive images and data back from the robot.
+“The experimental DTN we’ve tested from the space station may one day be used by humans on a spacecraft in orbit around Mars to operate robots on the surface, or from Earth using orbiting satellites as relay stations.”
+And this year, NASA’s putting that plan into action with a little crowdsourcing magic.
+“This is the first time we have tapped the professional crowd to help develop a major keystone in the future era of space exploration,” said NASA Tournament Lab data scientist Rinat Sergeev in a statement, “and [we] look forward to seeing the community’s 600,000 member strong response.”
+As TopCoder has announced , the space agency has issued three challenges to move DTN forward.
+First, DTN communication needs to include cryptographic key support for security.
+Second, devs need to implement, test, and validate Delay-Tolerant Payload Conditioning (DTPC), a protocol developed by Marshall Space Flight Center.
+And finally, NASA’s looking for some brave soul to add sender authentication to the Licklider Transmission Protocol.
+As TCP/IP co-author Vint Cerf said in a statement on the three challenges, “Born out of a belief that 10 years in the future (i.e. about 2023) a richer networking environment than point-to-point radio links would be required to communicate, a small team of developers debated the architecture of an interplanetary Internet.
+“Today, that vision is being fulfilled with prototype operations on the surface of Mars and in orbit, on the International Space Station and on board the EPOXI comet-visiting spacecraft.”

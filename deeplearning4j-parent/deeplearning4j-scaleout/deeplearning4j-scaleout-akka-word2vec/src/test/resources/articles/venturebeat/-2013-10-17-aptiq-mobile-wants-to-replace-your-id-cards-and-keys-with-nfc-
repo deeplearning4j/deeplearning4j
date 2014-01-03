@@ -1,0 +1,13 @@
+0
+SANTA CLARA, Calif. — Tap. Hold. You just entered a secure building. Or paid for your lunch. Or verified your identity.
+That’s the premise of Aptiq Mobile , a company that’s presenting today at DEMO. In a pilot program at the University of San Francisco, students can pre-order food, pay for laundry machines, enter dormitories, check out books at the library, or ID themselves to staff with NFC technology.
+Aptiq is in the business of credential management, which basically means that, in an ideal world, you can leave your wallet, keys, and credit cards at home, simply tapping your phone to an NFC or other reader to hook you up with the tasks you need to perform.
+Here’s how it works: Your administrator sets you up with an Aptiq credential — that could include a badge or identification card, a virtual key fob, a payment account, what have you. You download the Aptiq app and verify the credential, all remotely from your phone. When you tap your phone to use your credentials, the app launches automatically and activates NFC functions to transfer any relevant data between your phone and the reader. The tech can also be used to keep you out of secure areas entirely or just at specific times of day.
+The tech works with existing magnetic, proximity, and smart card readers, as well.
+Here’s how it works in action:
+Of course, as with any startup product, there are always a few bumps in the path. First, not many phones have NFC functions. Aptiq’s workaround involves issuing NCF phone cases.
+“We went with NFC because our readers support that technology right now,” said a company rep onstage today — and Aptiq maker Ingersoll Rand Security Technologies already supports a lot of these systems.
+The other big issue is security. With an automatically launching app requiring no password for ever launch instance, the user is totally reliant on the phone’s passcode. This is a more significant problem. If you lose your phone and your oily fingerprints give away your passcode, you’re pretty much screwed unless you can remotely brick the device or wipe out the app.
+The company says its screen lock feature keeps credentials secure if your phone gets lost or stolen, and it also says personal info isn’t stored in the same memory location as other passwords and data.
+Also, “The credential is encrypted, and only the reader has the key to read that credential,” said the rep.
+The product comes from $14 billion business Ingersoll Rand Security Technologies — with a name like that, the company has doubtless considered these issues already. We’ll see how these pilot university programs turn out and whether Aptiq works well with other use case.
