@@ -84,7 +84,7 @@ public class Word2Vec implements Serializable {
 	private int words = 0;
 	private DoubleMatrix syn0;
 	private DoubleMatrix syn1;
-	private List<String> sentences;
+	private List<String> sentences = new ArrayList<String>();
 	private int allWordsCount = 0;
 	private static ActorSystem trainingSystem;
 	private double[] oob;

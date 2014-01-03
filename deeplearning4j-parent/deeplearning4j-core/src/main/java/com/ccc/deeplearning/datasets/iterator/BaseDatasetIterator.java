@@ -1,12 +1,17 @@
 package com.ccc.deeplearning.datasets.iterator;
 
-import org.jblas.DoubleMatrix;
-
-import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.datasets.DataSet;
-
+/**
+ * Baseline implementation includes
+ * control over the data fetcher and some basic
+ * getters for metadata
+ * @author Adam Gibson
+ *
+ */
 public class BaseDatasetIterator implements DataSetIterator {
 
+
+	private static final long serialVersionUID = -116636792426198949L;
 	private int batch,numExamples;
 	private DataSetFetcher fetcher;
 	
