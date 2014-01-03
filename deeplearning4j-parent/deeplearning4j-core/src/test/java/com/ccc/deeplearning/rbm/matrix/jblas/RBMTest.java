@@ -27,15 +27,17 @@ public class RBMTest extends DeepLearningTest {
 
 
 	@Test
-	@Ignore
 	public void testBasic() {
 		double[][] data = new double[][]
-				{{1,1,1,0,0,0},
+				{
+				{1,1,1,0,0,0},
 				{1,0,1,0,0,0},
 				{1,1,1,0,0,0},
 				{0,0,1,1,1,0},
 				{0,0,1,1,0,0},
-				{0,0,1,1,1,0}};
+				{0,0,1,1,1,0},
+				{0,0,1,1,1,0}
+			};
 
 		DoubleMatrix d = new DoubleMatrix(data);
 		RandomGenerator g = new MersenneTwister(123);
@@ -44,7 +46,7 @@ public class RBMTest extends DeepLearningTest {
 
 
 
-		for(int i = 0; i < 1000; i++) {
+		for(int i = 0; i < 10; i++) {
 			r.contrastiveDivergence(0.1, 1, d);
 			log.info("Cross entropy " + r.getReConstructionCrossEntropy());
 		}

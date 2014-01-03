@@ -7,7 +7,6 @@ import static com.ccc.deeplearning.util.MatrixUtil.uniform;
 
 import static org.jblas.MatrixFunctions.exp;
 
-import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
@@ -46,9 +45,7 @@ public class CRBM extends RBM {
 
 	@Override
 	public DoubleMatrix propDown(DoubleMatrix h) {
-		DoubleMatrix preAct = h.mmul(W.transpose());
-		preAct = preAct.addRowVector(vBias);
-		return preAct;
+		return h.mmul(W.transpose()).addRowVector(vBias);
 	}
 
 	@Override
