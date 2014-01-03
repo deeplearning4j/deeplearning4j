@@ -195,6 +195,12 @@ public class Word2Vec implements Serializable {
 		};
 		final Counter<String> totalWords = new Counter<String>(factory);
 		final CountDownLatch sentenceCounter = new CountDownLatch(sentences.size());
+		//came in through empty constructor, build vocab.
+		if(syn0 == null) {
+			this.buildVocab(sentences);
+		}
+		
+		
 		if(syn0.rows != this.vocab.size())
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
