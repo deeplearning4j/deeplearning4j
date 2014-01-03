@@ -65,8 +65,8 @@ public class DBN extends BaseMultiLayerNetwork {
 		if(otherParams.length < 3)
 			finetune(labels, lr, epochs);
 		else {
-			double finetuneLr = (double) otherParams[3];
-			int finetuneEpochs = (int) otherParams[4];
+			double finetuneLr = otherParams.length > 3 ? (double) otherParams[3] : lr;
+			int finetuneEpochs = otherParams.length > 4 ? (int) otherParams[4] : epochs;
 			finetune(labels,finetuneLr,finetuneEpochs);
 		}
 	}
@@ -93,14 +93,15 @@ public class DBN extends BaseMultiLayerNetwork {
 				layerInput = this.input;
 			else 
 				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
+			log.info("Training on layer " + (i + 1));
 			RBM r = (RBM) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
 
-			//for(int  epoch = 0; epoch < epochs; epoch++) {
-			r.trainTillConvergence(learningRate, k, layerInput);	
-			h.W = r.W;
-			h.b = r.hBias;
-			//}
+			for(int  epoch = 0; epoch < epochs; epoch++) {
+				r.trainTillConvergence(learningRate, k, layerInput);	
+				h.W = r.W;
+				h.b = r.hBias;
+			}
 
 		}
 	}

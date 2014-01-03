@@ -61,11 +61,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
 			DenoisingAutoEncoder da = (DenoisingAutoEncoder) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
-			da.trainTillConverge(layerInput, lr, corruptionLevel);
-			if(h.W != (da.W))
-				h.W = da.W;
-			if(h.b != da.hBias)
-				h.b = da.hBias;
+			for(int l = 0; l < epochs; l++) {
+				da.trainTillConverge(layerInput, lr, corruptionLevel);
+				if(h.W != (da.W))
+					h.W = da.W;
+				if(h.b != da.hBias)
+					h.b = da.hBias;
+			}
+			
 		}	
 
 
