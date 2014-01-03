@@ -1,0 +1,14 @@
+1
+SAN FRANCISCO — At TwilioCon today, the company has announced the rollout of a much-requested feature: picture messaging. Hooray!
+The feature will launch right now with support for shortcodes in the U.S. and phone numbers in Canada.
+“We’re bringing this out with shortcodes first,” said Twilio product manager Patrick Malatack in a conversation with VentureBeat yesterday. “That product line is for enterprises and high volume messaging. Our phone numbers are more person-to-person communication.”
+In other words, the first customers for MMS in the United States will be businesses using the feature for a more visual kind of marketing and customer service.
+For example, a Home Depot company called Redbeacon is using the feature to match consumers with contractors for home repair projects.
+As for person-to-person MMS, Malatack said, “We’re going to see how things perform in Canada and we’re working hard to bring this to the United States as well. It’s a brand new feature, one of our biggest launches in a while, and we want to do it right. We actually have a good number of Canadian customers, and for us, it’s been a really good group of early adopters.”
+While tons of developers were clamoring for this feature, Malatack also said it was inspired by some of the bigger success stories in mobile apps and social media.
+“Sometimes, there’s certain things that words are not enough to communicate the experience. Instagram, Snapchat, Facebook — photos have been a killer feature. It’s also something we’ve heard a lot about from our community,” he said.
+Finally, the wiener question: How will Twilio cope with the inevitable onslaught of penis pictures?
+“I don’t think we’ll be going down the sexting angle,” Malatack said. “On the shortcode side, this isn’t something our customers find interesting. On the phone number side, our terms of service clearly state there should be no objectionable content.”
+As for pricing, MMS messages will cost $0.02 to send and $0.01 to receive.
+There are a couple more developer-friendly announcements today, as well. First, Twilio is lengthening its SMS message limit from 160 characters to 1,600 characters. It’s also cutting the cost of Twilio Text messaging for U.S. phone numbers from $0.03 per message to just a three quarters of a cent per message.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

@@ -1,0 +1,12 @@
+2
+Sharing SD cards might soon be as risky as sharing USB drives.
+You can hack those small memory chips to perform man-in-the-middle attacks, as shown off by two researchers, Bunnie and xobs , at 30C3 (Computer Chaos Congress).
+A man-in-the-middle attack is when a hacker gets between you and the connection you think you’re making in order to steal information. It isn’t generally associated with SD cards because this seems like a relatively closed connection. But it’s not.
+SD cards actually are small computers unto themselves. It would take a lot of resources to check to make sure ever cheap-o SD card works exactly like they should, as noted by Gizmodo , so instead, manufacturers stuff the cards with a microcontroller. The controller is able to clean up any issues that happen once you start using the card, but can also be manipulated to do the dirty work of someone who wants your data.
+Of course, these could be used by good-natured tinkerers, as noted by Bunnie, on his blog .
+“From the DIY and hacker perspective, our findings indicate a potentially interesting source of cheap and powerful microcontrollers for use in simple projects,” Bunnie writes, “While SD cards are admittedly I/O-limited, some clever hacking of the microcontroller in an SD card could make for a very economical and compact data logging solution for I2C or SPI-based sensors.”
+But, of course, there will be people who might want to trick you into “sending something quickly” for them at a conference, or some other ruse. It also adds to the list of devices folks should be wary of sharing.
+From the conference-goer perspective, SD cards and USBs are off the list, but so now are chargers.
+Researchers from Georgia Tech recently created a fake iPhone charger that could unlock your phone and siphon off information. The charger was made from a 3D printer and doesn’t actually look like a traditional Apple charger, but that’s not to say the design couldn’t become stealthier in the future.
+There is, however, hope. In September, a community of developers called Int.33 put forth the design for a “condom-like sleeve” for USBs . The sleeve would cut off the data transferring pins so that you can safely connect your devices to the power supply — and only the power supply.
+If you’re headed to CES this year, think twice about plugging in those SD cards and the like. They might just be doing a little extra data collection on the sly.

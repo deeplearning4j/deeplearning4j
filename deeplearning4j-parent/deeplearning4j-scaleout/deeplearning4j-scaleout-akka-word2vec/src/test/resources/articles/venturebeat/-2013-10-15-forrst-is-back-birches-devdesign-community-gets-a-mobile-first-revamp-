@@ -1,0 +1,23 @@
+0
+Forrst , a cult classic among web and mobile developers and designers, is making a big comeback today with a ground-up overhaul that puts the focus on mobile.
+Let’s go on a hyperspeed jaunt down memory lane: Forrst was the brainchild of one Kyle Bragger, an awesome hacker guy in San Francisco. It worked kind of like a Dribbble (a popular design community) for developers as well as designers, letting you post code snippets and design samples for critique and comments from your peers.
+From day one, it was really cool, and people liked it.
+Then, Bragger sold the whole shebang to Colourlovers , where it received no attention and slowly began to stagnate.
+Zurb to the rescue! Dev shop Zurb bought Forrst, because, as a Zurber told us at the time, “We were intrigued by the existing community of designers/developers on the site, and the opportunity to evolve the interface into something great.”
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+Interestingly, just weeks after the acquisition, Zurb rolled out Foundation 4 , its mobile-first front-end framework. Coincidence?
+That brings us up to date, with the unveiling of Forrst’s new face and functionality. And yes, it’s all based on Foundation 4, which means added smartphone and tablet features.
+Since the acquisition and the Foundation launch were so close together, Forrst ended up being a great testing ground for the platform.
+“It was a very big case study,” said a Zurbonian to VentureBeat via email.
+“It was one of the first sites we approached with a mobile first direction with Foundation 4. This will give designers and developers an example of how mobile first can improve the success of a site.”
+Another interesting factor is that Zurb decided to take a mobile-first stance without planting a flag in any particular mobile OS or OSes. That’s right; we’re talkin’ mobile web.
+“We very much believe in responsive design. We believe responsive is the future of the web,” a Zurbian told us.
+“We also added annotation boxes from our Notable app technology. We needed to consider what was the best way for Forrsters to give feedback from a mobile device,” said a Zurbite in a statement on today’s news.
+“Now users can quickly and conveniently add their feedback precisely in the spot where they are looking to add their thoughts about an image.”
+In addition to a design upgrade, Zurb said it also wants to focus on building the community behind Forrst: all those talented web and mobile folks, creative and technical alike.
+Here’s what the new Forrst looks like:

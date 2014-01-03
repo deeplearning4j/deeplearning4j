@@ -1,0 +1,12 @@
+0
+In a new post on web technology performance, Mozilla says it’s cracked the code on faster, better-performing JavaScript.
+In fact, Mozilla researcher Alon Zakai writes, JavaScript is getting closer and closer to matching native OS technologies when it comes to certain performance benchmarks.
+“Asm.js performance getting yet closer to native speed,” writes Zakai.
+“It’s an exciting increase in performance. And even the current performance numbers — 1.5x slower than native, or better — are not the limit of what can be achieved, as there are still big improvements either under way or in planning.”
+Asm.js is a low-level subset of JavaScript with a special focus on speed and performance. Devs can use programs like Emscripten to compile bytecode to JavaScript — meaning C/C++ programs can take advantage of asm.js optimizations.
+“Earlier this year Firefox could run asm.js code at about half of native speed,” Zakai writes.
+“Since then many speedups have arrived, lots of them small and specific, but there were also a few large features as well.”
+Here’s a graphic showing today’s optimizations (red) compared to older versions of the same tech (yellow) as well as native code (blue and purple):
+Click the image to see a full-size version.
+The lower the number, the better the performance.
+Also, Zakai notes, “‘Native speed’ is a somewhat loose term, since there are differences between native compilers. In fact, on some benchmarks, like box2d, fasta and copy, asm.js is as close or closer to clang than clang is to gcc.”

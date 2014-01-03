@@ -1,0 +1,22 @@
+A
+Summary:
+Can Google Chrome Apps rival native software on desktops and mobiles? The company thinks so and is creating the tools necessary for developers to build such apps. This video shows them off along with software that runs on multiple devices and platforms.
+The future of Chrome as a strategic platform was on center-stage last month. At its Chrome Developer Summit, Google shared a number of presentations, but one in particular stands out in light of two recent events: Microsoft’s Scroogled ads and recent news that Chrome apps would be coming to mobile devices; this was actually already demonstrated back in May at Google I/O.
+This recent 30 minute presentation from Google Chrome Developer Advocate, Joe Marini, is worth the watch to see where Google is headed when it comes to web and native apps on the desktop and mobiles.
+Marini highlights five key functions that Chrome Apps offer developers, namely:
+The apps run offline by default.
+They run on multiple platforms: Windows, Mac, Linux, iOS and Android.
+Deep access to platform functions and hardware.
+A rich, engaging user experience is possible.
+All distribution and updates are centrally handled by the Chrome App Store.
+For those who haven’t been following Chrome of late, these apps are a key element in Google’s Chrome strategy to boost engagement with Google services on desktops , laptops, smartphones and tablets. As long as a device is running the Chrome framework, it can use these Chrome Apps which can run outside of the browser.
+About three minutes in, Marini shows a web app to control the colors of a connected Hue light bulb, for example. And there’s even a central notification service supported by Chrome that Marini notes can “wake up” the browser when it isn’t running so that it can notify users of new information.
+This photo is a good example of item no. 3: Chrome apps having hardware access on different platforms. Here I’m running the Chrome Camera app on a Microsoft Surface device and yes, my mind is blown by how this app accesses the camera no differently than a native app; there’s no plug-in involved and no hoops to jump through.
+While Google is providing the tools and framework for this new breed of apps, there’s no guarantee of success. Even as a Chromebook Pixel owner, I know that.
+The company has to convince developers that building Chrome Apps is to their advantage. That may be a tough sell when native apps are the current standard. The fact that iOS developers are collectively making billions of dollars for their mobile apps is another obstacle; how can Google convince these programmers to build for Chrome?
+It’s going to take a while, if it happens at all, for a number of reasons. Chrome App capabilities are still maturing, for one. Until a developer can create exactly the app they — or rather, their users — want with HTML, CSS and JavaScript, native programming techniques and languages will still rule the roost. There is the alternative of Google’s Native Client technology, which takes a C or C++ app and wraps it up for use on a device with Chrome, but even that won’t appeal to many devs at first.
+Still, the tools that Google is offering provides a chance for change. After watching the full video — and seeing another demonstration of a Chrome App running both on a desktop and a smartphone — I think the company is on to a potential paradigm shift. It doesn’t matter what I think though: It’s all up to developers at this point and I’m certain Google will be doing everything it can to continue wooing them because of what’s at stake: The attention of billions of app users around the globe.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

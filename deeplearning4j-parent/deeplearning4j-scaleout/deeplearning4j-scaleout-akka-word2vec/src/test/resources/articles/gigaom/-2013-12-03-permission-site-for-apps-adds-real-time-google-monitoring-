@@ -1,0 +1,14 @@
+A
+Summary:
+More people are letting app makers access their Google accounts — MyPermissions expanded to provide instant notifications when a new app asks for data.
+MyPermissions , a site that offers a handy dashboard of all the apps that are burrowing into your social media accounts, expanded the features it offers on Tuesday to alert users when an app asks for data from Gmail, Google Calendar and a suite of other Google services.
+The Google alert feature comes in addition to existing ones for Facebook and Twitter and, for practical purposes, means that users receive a pop-up notification via their browser or mobile device if a new app tries to access information from their Google account:
+The ability to monitor apps’ ties to social media accounts is important because today most people rely on those accounts as a proxy permission service — the app uses it to gain access to a persons’ contacts and often much more. And, with so many apps out there, many people lose track of which apps have access to which accounts. The situation is even harder to keep track of because many apps change the scope of the data they want to see.
+In my case, I tested MyPermissions and discovered that apps I haven’t used or thought about in ages were still sipping on my social media data. MyPermissions makes it easy (and satisfying!) to revoke that access on the browser or through its app. Here’s a screenshot:
+According to CEO Olivier Amar, MyPermissions evolved in response to user demand for a single place to view all permission requests, and for notifications when a new app seeks data. The company added Google notifications because more than 400 million people have accounts with the search giant.
+Amar, however, argued that the biggest danger to consumers’ privacy isn’t companies like Google. Instead, he said a bigger threat comes from rather small app companies that might be controlled by a 20-year-old programmer or a hacking syndicate in Russia, which have access to your Facebook or Google accounts.
+All of this, of course, raises the question whether we can trust MyPermissions. Apparently, the answer is yes; the company addresses this directly at the top of its FAQ , noting it doesn’t save any passwords or other sensitive information.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

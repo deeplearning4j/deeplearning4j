@@ -1,0 +1,11 @@
+A
+Summary:
+Firefox’s nightly version got support for Google’s VP9 video codec a few days ago, Firefox Aurora users will be able to use the codec later this week.
+Firefox has started to roll out support for VP9 , Google’s next-generation video codec that aims to compete with H.265 and enable 4K video streaming. Firefox developers added VP9 video decoding capabilities to Firefox nightly builds late last week, which means that users of these bleeding-edge versions can already watch VP9 video with the browser.
+However, Firefox nightly is meant to be only used by “extremely technical early adopters,” because things are still being tested and can and will break. VP9 support is going to be added to the “ Aurora ” (think: alpha) version of Firefox later this week, then to Firefox beta in February. The stable version of Firefox, which is distributed to regular end users, is finally going to get VP9 support on March 18 of 2014, according to Mozilla’s release schedule.
+VP9 is the next version of Google’s open video codec, and it’s the first version that the company developed entirely in-house after it acquired the video codec specialist On2 in 2009. Google released On2’s VP8 codec under a royalty-free license in 2010 , in part to make it the default codec for real-time video communication on the web. But efforts to make VP8 part of the WebRTC standard have failed , and Mozilla has in fact agreed to also implement H.264 through a collaboration with Cisco.
+However, Mozilla also started to develop its own next-generation video codec dubbed Daala , and recently hired Xiph.org founder and open media codec veteran Monty Montgomery to work on these efforts. Daala is expected to be ready for end-user applications by the end of 2015.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,11 @@
+A
+Summary:
+Media center app Plex could be coming to Chromecast soon: A recent version of Plex’s server software already includes a Chromecast configuration file.
+One of the most-requested features for Google’s Chromecast streaming stick has been support for local file playback, and it looks like Chromecast users won’t have to wait much longer: Media center app Plex could get support for Chromecast very soon, as traces of Chromecast code can already be found in Plex’s software.
+A Reddit user first spotted a file called Chromecast.xml in a recent version of the Plex Media Server software this week. Upon closer inspection, it looks like the file is one of a number of device profiles that the software uses to determine whether it has to transcode a video file before streaming it to a media player. I asked the makers of Plex about it, but haven’t heard back.
+The Plex team has long hinted at Chromecast support, but kept quiet on details, with a spokesperson only telling me back in July that the company was “actively investigating and optimistic.” However, Plex has since taken steps to support DIAL , the multiscreen protocol that is at the core of Chromecast and that could be used to add the ability to control Plex with your phone to other platforms as well.
+For its part, Google seems to be gearing up to allow more apps on Chromecast. The company is hosting a hackathon this weekend to preview the Google Cast API, which developers will be able to use to build their own apps for the platform. Google also just announced a firmware update for Chromecast that includes a “refreshed home screen,” hinting at further changes ahead.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

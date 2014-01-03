@@ -1,0 +1,18 @@
+8
+PHP ‘s creator Rasmus Lerdorf did not intend to create an entirely new programming language.
+Over 20 years ago, the Danish software engineer was looking for a better way to fix what he described as a “young problem.” The PHP project kicked off in 1995 and would eventually become a server-side scripting language and general-purpose programming language used by tech giants like Facebook , Yahoo , and Etsy .
+Lerdoff, who is a contributor to many open source projects, worked as an infrastructure architect at Yahoo for more than seven years and joined Etsy in 2012.
+In an Ask me Anything (AMA) session at our DevBeat conference, developers asked Lerdoff a series of tough questions about how he developed the language and what his future holds.
+If you could change one fundamental thing about PHP, what would it be? 
+Lerdoff: Case sensitivity in PHP —  the question of whether it should be lower case or upper case. Back then [when I started PHP] there were huge arguments, and I didn’t want to take sides in this religious argument. It’s more painful to make changes now, as much as people criticize pieces of PHP. There were semi-intelligent reasons for doing this at the time though.
+Do you continue to code? 
+Lerdoff: I spend more time on the infrastructure and keeping the project afloat. I do occasionally write code. I do have some commits on Github now and again; generally, bug tracking. My time is usually better spent motivating others to write code. I used to code 20 hours a day.
+Do you intend to create a new programming language? 
+Lerdoff: PHP wasn’t written because I wanted to write a language. It was to solve a problem. No one had come up with the right tools yet. Honestly, I am passionate about solving problems — I don’t like programming. It’s tedious. I’m an engineer who will use whatever tools I have [and] if I don’t have a tool, I’ll make a new one. There is no mission to write another language.
+What’s your favorite programming language? 
+Lerdoff: C. I’m more of a C developer than PHP.
+Why has Facebook so heavily invested in PHP? 
+Lerdoff: PHP was supposed to be a thin layer on top of a bunch of C++ code, which is what I did at Yahoo. Facebook rolled everything out in PHP instead of translating that to C++. They just write faster Gits for PHP — I wonder what will be the next engine? Google has done some work along these lines. Maybe we’ll have some Git competition in a few years.
+I’m new to PHP — but can code in Python. Will it be a challenge to learn? 
+Lerdoff: Just dive in and download some code. Start solving problems using PHP. I often joke that I can teach a moderately intelligent monkey to write PHP in a day. The learning curve is really shallow, so you’ll get up and running really fast.
+Related articles

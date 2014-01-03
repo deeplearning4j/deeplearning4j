@@ -1,0 +1,44 @@
+13
+A few weeks ago my team at MuleSoft created a video describing what it’s like to be a developer at the company, and I noted in the video how developers are like artists. In response, I received numerous questions and comments about it being an interesting metaphor and requests to elaborate on the concept.
+There are a whole variety of reasons why I see real similarities between developers and artists. These perceptions are based on observations in the workplace and personal experience, too. I code and sometimes paint when I have time.
+I’m not the only one who thinks this. Paul Graham , founder of Y-Combinator, wrote an article a few years ago called Hackers and Painters . He described how people seemed surprised that someone interested in computers would also be interested in art. They seemed to think that hacking and painting were very different kinds of work – that hacking was cold, precise, and methodical, and that painting was more creative. He said both of these images are wrong, that of all the different types of people he’d known, “hackers and painters are among the most alike.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+Starting with a blank canvas
+Artists can take a blank canvas and use their creativity to create something special. It requires lots of abstract thinking, trying to connect things and creating something special with their minds and hands.
+As a developer, you are often doing something similar. Take an abstract problem, come up with a solution and portray it through code. Isn’t it reasonable to look at a blank project in an IDE or vim as a blank canvas?
+Gradual refinement
+Paintings are often created by gradual refinement. They usually begin with a sketch and gradually the details are filled in. However, it is not just a process of filling in. Sometimes the original plans turn out to be mistaken.
+Countless paintings, when you look at them under x-ray, turn out to have parts that have been changed or adjusted. Some are even completely painted over with another painting .
+Developing a piece of software often starts out with a sketch on a whiteboard, iterating on the idea and code, backtracking when we go down the wrong route, refactoring something and sometimes throwing the whole thing out and starting from scratch again.
+Taking inspiration from others
+There is a famous quote from Picasso: “Good artists copy, great artists steal.” Many famous artists are deeply influenced by work done before their time. If not by direct exposure, the ideas artists are exposed to through other people and media inevitably influence them.
+Van Gogh admired and studied the works of many artists including Rembrandt and Doré. He allegedly copied 21 paintings of Jean Francois Millet and here you can see that Van Gogh’s Rest from Work was clearly inspired by Millet’s Noonday Rest.
+Andy Warhol’s The Last Supper was clearly inspired by Leonardo da Vinci’s The Last Supper. He created more than 100 paintings and works on paper based on Da Vinci’s masterpiece.
+Developers are inspired through work done by others, as well. We Google search to see if a problem we’re trying solve has been solved before and reuse it, often saving days or weeks of work. Most developers fork projects on GitHub to alter or improve an existing piece of work. We use and contribute to open source projects. We get ideas from fellow developers on Twitter. We learn from other companies who have gone through scalability challenges and published their designs . This is common practice in the software development community.
+In the zone
+There’s a reason you’ll see developers wearing headphones. Coding often requires deep concentration and getting into the “zone.” It’s often when they are at their most productive. Time passes in the blink of an eye, brilliant solutions appear, complex code with numerous pieces that interact can be created — and it all just flows out automatically. Artists are also known for getting in the zone, often spending hours or even days working continuously on a project. Great pieces of work often take weeks or months, whether it’s creating a painting or coding a software system.
+Code is clay
+In the video, I mentioned how code is like clay, and as a programmer, you’re moving code around trying to get a piece of software into a perfect shape or design — very similar to sculpting a piece of art using clay with your hands. Same thing with coding: You often refactor until you get to the right design and there is a sense of achievement when you finish.
+Great work takes time
+Creating great works of art take time and perseverance. Some artists are lucky and create that great piece of work quickly, but for most others it takes perseverance and a long time. It supposedly took Leonardo da Vinci 14 years to create the Mona Lisa. Jay DeFeo’s The Rose took almost eight years to create, weighed over 2,300 pounds and had to be forklifted out of her house .
+Creating a great piece of software can often take months or even years until you get to the final product. Like an artist you often get stuck and feel like giving up, until you have a breakthrough. However, unlike a piece of art that is unveiled in the gallery, software is best when “released over time” — first launched as an MVP and then followed up with many subsequent releases. It can still take years to get to the final product you initially dreamed of.
+Art (and software) decay over time
+Pieces of art decay over time. That’s why we have art restorers. Software is known to rot and decay over time , first incurring technical debt and sometimes eventually turning into legacy code . Code that is not maintained, pruned or updated degrades over time and become impossible to work with and difficult to comprehend. This is why developers refactor code, to keep it up to date and remove technical debt. Refactoring is the fine art restoration of the digital world.
+Many developers are artists
+Many developers actually are artists, literally. Just take a look around at some of the people in this field.
+Leonardo da Vinci was a painter and sculptor. He was also an engineer, architect, mathematician, and inventor.
+The Ruby community is well-known for having many developers who are also artists and musicians. Jonathan Gillette , also known as why the lucky stiff, was a prolific writer, cartoonist, artist, and computer programmer most notable for his work with the Ruby programming language, where he was seen as a key figure in the community.
+Here’s a video of Giles Bowkett, DJ and Ruby developer hacking a MIDI generator and talking about the correlation between art and developers.
+For many developers today, the line between programming and art has become increasingly blurred. Today’s web developers are required to have design skills, be able to use Photoshop, style pages and content, and understand web aesthetics and responsive web design.
+I saw an exhibit at SFMOMA last year called Frequency and Volume by Rafael Lozano-Hemmer, one of the most important media artists to emerge in the 1990s. It was a video and sound installation that responds to the size and position of visitors’ shadows on the gallery wall, encouraging participants to use their bodies to tune in to a range of public and private radio frequencies, from commercial music stations to police bands and air traffic control. He could only have created this through a combination of artistic skills, engineering and programming.
+Back to the hackers
+Programming can be perceived as being analytical, scientific, precise. It’s some of that, but it’s more than that.
+It requires inspiration, creativity, thoughtfulness, and skill. It requires shaping code into works of art that can stand the test of time. Maybe hackers and painters are a lot more alike than we think.
+Are you a developer and consider yourself an artist? Include your thoughts in the comments below.
+James Donelan is VP of engineering at MuleSoft , provider of an integration platform to connect apps in the cloud and on premise..
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

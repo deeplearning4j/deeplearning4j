@@ -1,0 +1,12 @@
+A
+Summary:
+In its march to support all the relevant cloud platforms, Cloud Munch adds the Cloud Foundry platform-as-a-service to a list that includes AWS and OpenStack IaaS platforms.
+CloudMunch, which offers a continuous integration service in the Amazon Web Services and OpenStack realms and via Chef now adds support for the  Cloud Foundry PaaS as well.
+With Cloud Foundry in the fold, CloudMunch users can keep using their preferred devops toolchain to deploy to hosted Pivotal.io or on-premise Cloud Foundry, according to the company. Pivotal announced general availability of its commercial PivotalCF last week.
+The Seattle-based startup competes with Werker ,  Electric Cloud,   CloudBees,   CircleCI  and  Atlassian Bamboo  continuous integration products as well as Nolio or legacy BMC and IBM products that handle deployment and release automation.
+Last spring, CloudMunch CEO Pradeep Prabhu told me that his company’s advantage is that it does all of that — the CI, the deployment and release automation via a SaaS model, freeing up devops to just do their jobs with the toolchain they prefer. They can sign on from their Github account, for example.
+Now with Cloud Foundry support, they have another target cloud.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

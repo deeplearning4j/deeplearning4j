@@ -1,0 +1,13 @@
+= $47,654.40
+(The extra $2 per hour on EC2 is charged once per region)
+Note that because we have to go for the largest Rackspace instance, the comparison isn’t direct — you’re paying Rackspace for 120GB RAM and x4 300GB SSDs. On one hand this isn’t a fair comparison because the specs are entirely different but on the other hand, Rackspace doesn’t have the flexibility to give you a dedicated 30GB instance.
+Consider the dedicated hardware option…
+Given the annual cost of these instances, the next logical step is to consider dedicated hardware where you rent the resources and the provider is responsible for upkeep. At my company, Server Density, we use Softlayer, now owned by IBM , and have dedicated hardware for our database nodes. IBM is becoming very competitive with Amazon and Rackspace so let’s add a similarly spec’d dedicated server from SoftLayer, at list prices:
+To match a similar spec we can choose the Dual Processor Hex Core Xeon 2620 – 2.0Ghz Sandy Bridge with 32GB RAM, 32GB system disk and 400GB secondary disk. This costs $789/month or $9,468/year. This is 80 percent cheaper than Rackspace and 61 percent cheaper than Amazon before you add data transfer costs – SoftLayer includes 5,000GB of data transfer per month which would cost $600/month on both Amazon and Rackspace, a saving of $7200/yearly.
+… or buy your own
+There is another step you can take as you continue to grow — purchasing your own hardware and renting data center space i.e. colocation. We’ll look into the tradeoffs on that scenario in a post to come.
+David Mytton is founder and CEO of Server Density  which offers a SaaS tool to provision and monitor infrastructure.  He can be reached at  david@serverdensity.com  or followed on Twitter: @davidmytton
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

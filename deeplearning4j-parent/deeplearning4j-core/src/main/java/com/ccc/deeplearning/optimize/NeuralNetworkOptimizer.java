@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
 
 import cc.mallet.optimize.ConjugateGradient;
 import cc.mallet.optimize.InvalidOptimizableException;
-import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.OptimizationException;
+import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
 /**
@@ -34,24 +34,34 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-
+	protected Optimizer opt;
 	public void train(DoubleMatrix x) {
-		ConjugateGradient lbfgs = new ConjugateGradient(this);
+		if(opt == null)
+			opt = new ConjugateGradient(this);
+		
 		boolean done = false;
 		network.train(x, lr, extraParams);
-
+		int numErrorsCaught = 0;
 		while(!done) {
 			try {
-				done = lbfgs.optimize();
+				done = opt.optimize();
 			}
 			catch(InvalidOptimizableException e) {
 				network.train(x, lr, extraParams);
-
+				numErrorsCaught++;
+				if(numErrorsCaught >= 5) {
+					log.warn("Too many invalid line searches; breaking");
+					break;
+				}
 				log.warn("Invalid step taken; trying again. Error was ",e);
 			}
 			catch(OptimizationException e2) {
 				network.train(x, lr, extraParams);
-
+				numErrorsCaught++;
+				if(numErrorsCaught >= 5) {
+					log.warn("Too many invalid line searches; breaking");
+					break;
+				}
 				log.warn("Invalid step taken; trying again. Error was ",e2);
 
 			}

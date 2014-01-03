@@ -1,0 +1,8 @@
+1
+Microsoft is apparently creating a brand new programming language to build a non-Windows operating system.
+The new language came to light on Friday when Microsoft researcher Jim Duffy blogged about it . A ZDNet report says the language is codenamed M# (“M Sharp”), though Duffy doesn’t refer to that name in his post.
+Duffy describes the language as a set of “systems programming” extensions to C# that offers a better balance between “performance” and “safety & productivity” than other popular languages. His team has been working on it for four years, he said, and his “goal is to eventually open source this thing” — potentially in 2014.
+In a Reddit thread discussing Duffy’s post, a self-identified former Microsoft employee said the language “grew out of Sing# , the system language of Microsoft Research’s Singularity OS .”
+Microsoft Research developed the microkernal-based Singularity OS between 2003 and 2010. That project reportedly gave rise to the Midori team, which was tasked with building a fast, lightweight OS that didn’t have to run Windows apps as an experiment.
+But now it seems that Midori is more than a research project: it’s been moved to Microsoft’s Unified Operating System group, according to ZDNet. Midori is unlikely to see a standalone release, but pieces of it may emerge in future Microsoft operating systems.
+Meanwhile, M# is being developed alongside (and utilized for) Midori. It could be used to build all sorts of applications, but may be especially useful for cloud computing apps.

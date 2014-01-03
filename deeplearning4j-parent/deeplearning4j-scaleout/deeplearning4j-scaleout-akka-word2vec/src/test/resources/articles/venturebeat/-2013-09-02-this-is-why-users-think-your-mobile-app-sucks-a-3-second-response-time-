@@ -1,0 +1,9 @@
+13
+Our bosom pals over at New Relic know an awful lot about app performance. I mean, it’s their entire job, for Pete’s sake.
+So when they show you a chart about why most apps are getting poor ratings from users, you tend to pay attention. Here are some stats from the company’s latest blog post:
+For New Relic-using apps, each app has an average of 639,000 active users per minute. Zoinks! The average response time, however, is a lazy-river 3.28 seconds.
+Editor’s note: Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, is a hands-on developer event packed with master classes, presentations, Q&As, and hackathons, all aimed at boosting your skillset in code, security, hardware, and career development. Register today!
+On average each app has a per-minute network request failure rate of 1.86 percent, which adds up to 15,550 failed requests each minute.. And with an average 1.7 percent server error rate, an app will experience around 14,200 server errors in a minute. Again, zoinks.
+Here’s an infographic for ya. Monitor and optimize, y’all.
+Zoinks.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

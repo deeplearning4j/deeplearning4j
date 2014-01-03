@@ -34,7 +34,7 @@ public class ModelTrainer {
 			sentences.addAll(lines);
 		}
 		Word2Vec vec = new Word2Vec(sentences);
-
+		vec.setMinWordFrequency(1);
 		vec.train();
 		vec.saveModel(new File(args[1]));
 		log.info("Saved to " + args[1]);
