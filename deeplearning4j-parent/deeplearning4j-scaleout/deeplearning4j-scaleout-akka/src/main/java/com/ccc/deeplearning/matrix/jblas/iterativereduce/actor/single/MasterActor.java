@@ -11,6 +11,7 @@ import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.japi.Creator;
 
@@ -97,14 +98,23 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 				if(listener != null)
 					listener.epochComplete(masterResults);
 				//reset the dataset
-				batchActor.tell(new ResetMessage(), getSelf());
-				epochsComplete++;
-				batchActor.tell(up, getSelf());
-				updates.clear();
 
 				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
 					isDone = true;
+					batchActor.tell(up, getSelf());
+					updates.clear();
+					Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
+					context().system().shutdown();
+					log.info("Last iteration; left cluster");
 				}
+				else {
+					batchActor.tell(new ResetMessage(), getSelf());
+					epochsComplete++;
+					batchActor.tell(up, getSelf());
+					updates.clear();
+				}
+				
+
 
 			}
 

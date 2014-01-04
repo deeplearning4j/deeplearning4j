@@ -58,7 +58,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double momentum = 0.1;
 	/* L2 Regularization constant */
 	public double l2 = 0.1;
-	public NeuralNetworkOptimizer optimizer;
+	public transient NeuralNetworkOptimizer optimizer;
 	
 
 	public BaseNeuralNetwork() {}

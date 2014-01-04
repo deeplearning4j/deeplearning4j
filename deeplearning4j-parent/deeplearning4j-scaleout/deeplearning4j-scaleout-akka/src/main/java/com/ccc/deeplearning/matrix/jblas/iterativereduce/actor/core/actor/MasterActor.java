@@ -17,6 +17,7 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -110,7 +111,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
 					isDone = true;
 					log.info("All done; shutting down");
-					context().system().shutdown();
+					Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
+
 				}
 
 			}
