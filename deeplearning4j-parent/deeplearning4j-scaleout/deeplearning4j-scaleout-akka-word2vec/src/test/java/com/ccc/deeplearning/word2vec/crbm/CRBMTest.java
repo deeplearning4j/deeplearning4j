@@ -15,6 +15,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
 import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.ccc.deeplearning.word2vec.util.WindowConverter;
 import com.ccc.deeplearning.word2vec.util.Windows;
@@ -30,8 +31,7 @@ public class CRBMTest {
 		ClassPathResource model = new ClassPathResource("/word2vecmodel.bin");
 		File f = model.getFile();
 
-		Word2Vec vec = new Word2Vec();
-		vec.loadModel(f);
+		Word2Vec vec = Word2VecLoader.loadModel(f);
 
 		int nIn = vec.getWindow() * vec.getSyn0().columns;
 		CRBM r = null;

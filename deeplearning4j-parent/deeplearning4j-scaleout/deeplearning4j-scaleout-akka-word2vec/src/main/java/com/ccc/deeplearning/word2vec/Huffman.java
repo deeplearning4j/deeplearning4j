@@ -3,7 +3,6 @@ package com.ccc.deeplearning.word2vec;
 import java.util.Collection;
 import java.util.PriorityQueue;
 
-import com.ccc.deeplearning.word2vec.Word2Vec.VocabWord;
 
 public class Huffman {
 

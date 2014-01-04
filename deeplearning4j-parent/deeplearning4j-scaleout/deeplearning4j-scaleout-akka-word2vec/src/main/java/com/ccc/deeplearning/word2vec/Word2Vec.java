@@ -2,13 +2,10 @@ package com.ccc.deeplearning.word2vec;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -17,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -30,8 +28,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +57,16 @@ public class Word2Vec implements Serializable {
 
 	private static final long serialVersionUID = -2367495638286018038L;
 	private Map<String,VocabWord> vocab = new HashMap<String,VocabWord>();
+	/* all words; including those not in the actual ending index */
+	private Map<String,VocabWord> rawVocab = new HashMap<String,VocabWord>();
+
 	private Map<Integer,String> indexToWord = new HashMap<Integer,String>();
 	private Random rand = new Random(1);
 	private int topNSize = 40;
 	public int EXP_TABLE_SIZE = 1000;
 	//matrix row of a given word
 	private Index wordIndex = new Index();
-
+	/* pre calculated sigmoid table */
 	private double[] expTable = new double[EXP_TABLE_SIZE];
 	private int sample = 1;
 	//learning rate
@@ -78,35 +79,70 @@ public class Word2Vec implements Serializable {
 	//context to use for gathering word frequencies
 	private int window = 5;
 	private int trainWordsCount = 0;
+	//number of neurons per layer
 	private int layerSize = 100;
 	private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
 	private int size = 0;
 	private int words = 0;
+	//input layer
 	private DoubleMatrix syn0;
+	//hidden layer
 	private DoubleMatrix syn1;
 	private List<String> sentences = new ArrayList<String>();
 	private int allWordsCount = 0;
 	private static ActorSystem trainingSystem;
+	/* out of vocab */
 	private double[] oob;
+	/*
+	 * Used as a pair for when
+	 * the number of sentences is not known
+	 */
+	private Iterator<File> fileIterator;
+	private int numLines;
 
+	/**
+	 * Mainly meant for use with
+	 * static loading methods.
+	 * Please consider one of the other constructors
+	 * That being {@link #Word2Vec(Iterator)} (streaming dataset)
+	 * or         {@link #Word2Vec(Collection)}
+	 * or         {@link #Word2Vec(Collection, int)}
+	 */
 	public Word2Vec() {
 		createExpTable();
 		oob = new double[layerSize];
-		Arrays.fill(oob,0.0);
+		Arrays.fill(oob,1.0);
 
 	}
 
+	/**
+	 * This is meant for streaming a dataset
+	 * alongside with add {@link #addToVocab(String)}
+	 * @param fileIterator the iterator over the dataset
+	 */
+	public Word2Vec(Iterator<File> fileIterator) {
+		this();
+		this.fileIterator = fileIterator;
+	}
 
-
+	/**
+	 * Assumes whole dataset is passed in. 
+	 * This is purely meant for batch methods.
+	 * Same as calling {@link #Word2Vec(Collection, int)}
+	 * with the second argument being 5
+	 * @param sentences the sentences to use
+	 * to train on
+	 */
 	public Word2Vec(Collection<String> sentences) {
-		createExpTable();
-		this.buildVocab(sentences);
-		this.sentences = new ArrayList<String>(sentences);
-		oob = new double[layerSize];
-		Arrays.fill(oob,0.0);
-
+		this(sentences,5);
 	}
 
+	/**
+	 * Initializes based on assumption of whole data set being passed in.
+	 * @param sentences the sentences to be used for training
+	 * @param minWordFrequency the minimum word frequency
+	 * to be counted in the vocab
+	 */
 	public Word2Vec(Collection<String> sentences,int minWordFrequency) {
 		createExpTable();
 		this.minWordFrequency = minWordFrequency;
@@ -118,10 +154,6 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	public double[]	 getOob() {
-		return oob;
-	}
-
 	public double[] getWordVector(String word) {
 		int i = this.wordIndex.indexOf(word);
 		if(i < 0)
@@ -132,7 +164,7 @@ public class Word2Vec implements Serializable {
 	public DoubleMatrix getWordVectorMatrix(String word) {
 		int i = this.wordIndex.indexOf(word);
 		if(i < 0)
-			return null;
+			return new DoubleMatrix(oob);
 		return syn0.getRow(i);
 	}
 
@@ -179,10 +211,16 @@ public class Word2Vec implements Serializable {
 
 	}
 
+	public boolean hasWord(String word) {
+		return wordIndex.indexOf(word) >= 0;
+	}
+
 	public void train() {
 		if(trainingSystem == null)
 			trainingSystem = ActorSystem.create();
+
 		log.info("Training word2vec multithreaded");
+
 		MapFactory<String,Double> factory = new MapFactory<String,Double>() {
 
 			private static final long serialVersionUID = 5447027920163740307L;
@@ -193,61 +231,122 @@ public class Word2Vec implements Serializable {
 			}
 
 		};
+
 		final Counter<String> totalWords = new Counter<String>(factory);
-		final CountDownLatch sentenceCounter = new CountDownLatch(sentences.size());
+
+
 		//came in through empty constructor, build vocab.
-		if(syn0 == null) {
+		//the other scenario is being initialized through a file iterator
+		//this means that vocab should have already been trained
+		//but not the vectors
+		if(syn0 == null && !sentences.isEmpty()) {
 			this.buildVocab(sentences);
 		}
-		
-		
+
+
 		if(syn0.rows != this.vocab.size())
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
-		for(final String sentence : sentences) {
+		if(sentences.isEmpty()) {
+			//no sentences or file iterator defined
+			if(fileIterator == null)
+				throw new IllegalStateException("Unable to train sentences, no iterator or sentences defined");
 
-			Future<Void> future = Futures.future(new Callable<Void>() {
+			else {
 
-				@Override
-				public Void call() throws Exception {
-					if(!sentence.isEmpty())
-						trainSentence(sentence, totalWords);
+				if(!fileIterator.hasNext()) 
+					throw new IllegalStateException("File iterator does not appear to have any files to train on");
+				/*
+				 * Count the number of lines
+				 */
+				final CountDownLatch sentenceCounter = new CountDownLatch(numLines);
+				int numLinesIterated = 0;
+				while(fileIterator.hasNext()) {
+					try {
+						LineIterator lines = FileUtils.lineIterator(fileIterator.next());
+						while(lines.hasNext()) {
+							final String sentence = lines.nextLine();
+							numLinesIterated++;
+							processSentence(sentence, sentenceCounter,totalWords);
 
-					return null;
-				}
+						}
 
-			},trainingSystem.dispatcher());
-
-
-			future.onComplete(new OnComplete<Void>() {
-
-				@Override
-				public void onComplete(Throwable arg0, Void arg1)
-						throws Throwable {
-
-					sentenceCounter.countDown();
-
-					if(sentenceCounter.getCount() % 10000 == 0) {
-						alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
-						log.info("Alpha updated " + alpha + " progress " + sentenceCounter.getCount() + " sentence size " + sentences.size());
+						
+					} catch (Exception e) {
+						throw new RuntimeException(e);
 					}
 
 				}
-
-			},trainingSystem.dispatcher());
-
-
+				
+				try {
+					sentenceCounter.await();
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				
+				if(numLinesIterated != numLines)
+					throw new IllegalStateException("We appear to have a misynchronized data set. Perhaps the wrong iterator was passed in?");
+				
+			}
 		}
 
-		try {
-			sentenceCounter.await();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+
+		else {
+
+			final CountDownLatch sentenceCounter = new CountDownLatch(sentences.size());
+
+
+			for(final String sentence : sentences) 
+				processSentence(sentence, sentenceCounter,totalWords);
+
+
+			try {
+				sentenceCounter.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
+
+
 		if(trainingSystem != null)
 			trainingSystem.shutdown();
 
 	}
+
+	private void processSentence(final String sentence,final CountDownLatch sentenceCounter,final Counter<String> totalWords) {
+		Future<Void> future = Futures.future(new Callable<Void>() {
+
+			@Override
+			public Void call() throws Exception {
+				if(!sentence.isEmpty())
+					trainSentence(sentence, totalWords);
+
+				return null;
+			}
+
+		},trainingSystem.dispatcher());
+
+
+		future.onComplete(new OnComplete<Void>() {
+
+			@Override
+			public void onComplete(Throwable arg0, Void arg1)
+					throws Throwable {
+
+				sentenceCounter.countDown();
+
+				if(sentenceCounter.getCount() % 10000 == 0) {
+					alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
+					log.info("Alpha updated " + alpha + " progress " + sentenceCounter.getCount() + " sentence size " + sentences.size());
+				}
+
+			}
+
+		},trainingSystem.dispatcher());
+
+
+	}
+
 
 	public List<VocabWord> trainSentence(String sentence,Counter<String> totalWords) {
 		StringTokenizer tokenizer = new StringTokenizer(sentence);
@@ -267,241 +366,6 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	public static class VocabWord implements Comparable<VocabWord>,Serializable {
-
-		private static final long serialVersionUID = 2223750736522624256L;
-		private double wordFrequency = 1;
-		private int index = -1;
-		private VocabWord left;
-		private VocabWord right;
-		private int code;
-		private VocabWord parent;
-		private int[] codes = null;
-		private int[] points = null;
-
-		//input layer to hidden layer, hidden layer to output layer
-		private int layerSize = 200;
-		/**
-		 * 
-		 * @param wordFrequency count of the word
-		 * @param layerSize
-		 */
-		public VocabWord(double wordFrequency,int layerSize) {
-			this.wordFrequency = wordFrequency;
-			this.layerSize = layerSize;
-
-		}
-
-
-		private VocabWord() {}
-
-
-		@Override
-		public String toString() {
-			return "VocabWord [wordFrequency=" + wordFrequency + ", index="
-					+ index + ", left=" + left + ", right=" + right + ", code="
-					+ code + ", codes=" + Arrays.toString(codes) + ", points=" + Arrays.toString(points)
-					+ ", layerSize=" + layerSize + "]";
-		}
-
-
-
-
-		public void write(DataOutputStream dos) throws IOException {
-			dos.writeDouble(wordFrequency);
-
-		}
-
-		public VocabWord read(DataInputStream dos,int layerSize) throws IOException {
-			this.wordFrequency = dos.readDouble();
-			this.layerSize = layerSize;
-			return this;
-		}
-
-
-
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + code;
-			result = prime * result + ((codes == null) ? 0 : codes.hashCode());
-			result = prime * result + index;
-			result = prime * result + layerSize;
-			result = prime * result + ((left == null) ? 0 : left.hashCode());
-			result = prime * result
-					+ ((points == null) ? 0 : points.hashCode());
-			result = prime * result + ((right == null) ? 0 : right.hashCode());
-			long temp;
-			temp = Double.doubleToLongBits(wordFrequency);
-			result = prime * result + (int) (temp ^ (temp >>> 32));
-			return result;
-		}
-
-
-
-
-
-
-
-
-
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			VocabWord other = (VocabWord) obj;
-			if (code != other.code)
-				return false;
-			if (codes == null) {
-				if (other.codes != null)
-					return false;
-			} else if (!codes.equals(other.codes))
-				return false;
-			if (index != other.index)
-				return false;
-			if (layerSize != other.layerSize)
-				return false;
-			if (left == null) {
-				if (other.left != null)
-					return false;
-			} else if (!left.equals(other.left))
-				return false;
-			if (points == null) {
-				if (other.points != null)
-					return false;
-			} else if (!points.equals(other.points))
-				return false;
-			if (right == null) {
-				if (other.right != null)
-					return false;
-			} else if (!right.equals(other.right))
-				return false;
-			if (Double.doubleToLongBits(wordFrequency) != Double
-					.doubleToLongBits(other.wordFrequency))
-				return false;
-			return true;
-		}
-
-
-
-		public int[] getCodes() {
-			return codes;
-		}
-
-		public void setCodes(int[] codes) {
-			this.codes = codes;
-		}
-
-		public int[] getPoints() {
-			return points;
-		}
-
-
-		public void setPoints(int[] points) {
-			this.points = points;
-		}
-
-
-		public void setWordFrequency(double wordFrequency) {
-			this.wordFrequency = wordFrequency;
-		}
-
-
-		public int getLayerSize() {
-			return layerSize;
-		}
-
-
-		public void setLayerSize(int layerSize) {
-			this.layerSize = layerSize;
-		}
-
-
-		public VocabWord getParent() {
-			return parent;
-		}
-
-
-
-		public void setParent(VocabWord parent) {
-			this.parent = parent;
-		}
-
-
-
-
-
-		public int getCode() {
-			return code;
-		}
-
-
-
-
-
-		public void setCode(int code) {
-			this.code = code;
-		}
-
-
-
-
-
-		public VocabWord getLeft() {
-			return left;
-		}
-
-
-
-		public void setLeft(VocabWord left) {
-			this.left = left;
-		}
-
-
-
-		public VocabWord getRight() {
-			return right;
-		}
-
-
-
-		public void setRight(VocabWord right) {
-			this.right = right;
-		}
-
-
-
-		public void increment() {
-			wordFrequency++;
-		}
-
-
-		public int getIndex() {
-			return index;
-		}
-
-		public void setIndex(int index) {
-			this.index = index;
-		}
-
-		public double getWordFrequency() {
-			return wordFrequency;
-		}
-
-
-		@Override
-		public int compareTo(VocabWord o) {
-			return Double.compare(wordFrequency, o.wordFrequency);
-		}
-
-	}
 
 
 
@@ -563,158 +427,6 @@ public class Word2Vec implements Serializable {
 		catch(IOException e) {
 			log.error("Unable to read file for loading model",e);
 		}
-	}
-
-
-	public void loadModel(File file) throws Exception {
-		log.info("Loading model from " + file.getAbsolutePath());
-		try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
-			int vocabSize = dis.readInt();
-			int layerSize = dis.readInt();
-			setLayerSize(layerSize);
-			for(int i = 0; i < vocabSize; i++) {
-				String word = dis.readUTF();
-				wordIndex.add(word);
-				vocab.put(word,new VocabWord().read(dis, layerSize));
-
-			}
-			syn0 = DoubleMatrix.zeros(vocabSize, layerSize);
-			syn1 = DoubleMatrix.zeros(vocabSize, layerSize);
-
-			syn0.in(dis);
-			syn1.in(dis);
-
-			dis.close();
-
-		}
-		catch(IOException e) {
-			log.error("Unable to read file for loading model",e);
-		}
-	}
-
-	public static double readFloat(InputStream is) throws IOException {
-		byte[] bytes = new byte[4];
-		is.read(bytes);
-		return getFloat(bytes);
-	}
-
-	/**
-	 *
-	 * 
-	 * @param b
-	 * @return
-	 */
-	public static double getFloat(byte[] b) {
-		int accum = 0;
-		accum = accum | (b[0] & 0xff) << 0;
-		accum = accum | (b[1] & 0xff) << 8;
-		accum = accum | (b[2] & 0xff) << 16;
-		accum = accum | (b[3] & 0xff) << 24;
-		return Float.intBitsToFloat(accum);
-	}
-
-
-
-
-	public void loadTextModel(File file) throws IOException {
-		List<String> list = FileUtils.readLines(file);
-		this.buildVocab(list);
-		this.sentences = new ArrayList<String>(list);
-		this.train();
-
-	}
-
-	public void loadBinary(File file) throws IOException {
-		try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(
-				file)))) {
-			words = dis.readInt();
-			size = dis.readInt();
-			this.layerSize = size;
-			double len = 0;
-			double vector = 0;
-			syn0 = DoubleMatrix.zeros(words, size);
-			syn1 = DoubleMatrix.zeros(words,size);
-
-			String key = null;
-			double[] value = null;
-			for (int i = 0; i < words; i++) {
-				key = dis.readUTF();
-				value = new double[size];
-				for (int j = 0; j < size; j++) {
-					vector = dis.readDouble();
-					len += vector * vector;
-					value[j] = vector;
-				}
-
-				len = Math.sqrt(len);
-
-				for (int j = 0; j < size; j++) 
-					value[j] /= len;
-				wordIndex.add(key);
-				syn0.putRow(i,new DoubleMatrix(value));
-
-			}
-
-		}
-	}
-
-	private void loadGoogleVocab(String path) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
-		String temp = null;
-		this.wordIndex = new Index();
-		vocab.clear();
-		while((temp = reader.readLine()) != null) {
-			String[] split = temp.split(" ");
-			if(split[0].equals("</s>"))
-				continue;
-
-			int freq = Integer.parseInt(split[1]);
-			VocabWord realWord = new VocabWord(freq,layerSize);
-			realWord.setIndex(vocab.size());
-			this.vocab.put(split[0], realWord);
-			wordIndex.add(split[0]);
-		}
-		reader.close();
-	}
-
-
-	public void loadGoogleText(String path,String vocabPath) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));
-		String temp = null;
-		boolean first = true;
-		Integer vectorSize = null;
-		Integer rows = null;
-		int currRow = 0;
-		while((temp = reader.readLine()) != null) {
-			if(first) {
-				String[] split = temp.split(" ");
-				rows = Integer.parseInt(split[0]);
-				vectorSize = Integer.parseInt(split[1]);
-				this.layerSize = vectorSize;
-				syn0 = new DoubleMatrix(rows - 1,vectorSize);
-				first = false;
-			}
-
-			else {
-				StringTokenizer tokenizer = new StringTokenizer(temp);
-				double[] vec = new double[layerSize];
-				int count = 0;
-				String word = tokenizer.nextToken();
-				if(word.equals("</s>"))
-					continue;
-
-				while(tokenizer.hasMoreTokens()) {
-					vec[count++] = Double.parseDouble(tokenizer.nextToken());
-				}
-				syn0.putRow(currRow, new DoubleMatrix(vec));
-				currRow++;
-
-			}
-		}
-		reader.close();
-
-		loadGoogleVocab(vocabPath);
-
 	}
 
 
@@ -783,10 +495,68 @@ public class Word2Vec implements Serializable {
 		return new TreeSet<VocabWord>(wordEntrys);
 	}
 
+	/**
+	 * Meant for streaming methods of 
+	 * adding to the vocabulary.
+	 * House keeping related to the 
+	 * file iterator that will be needed
+	 * when training the word vectors later on
+	 * (assumed to be passed in)
+	 * is also done within this method.
+	 * 
+	 * Note that an IllegalStateException is also
+	 * thrown when sentences is not empty and this method is called.
+	 * This ensures a consistent state.
+	 * @param words the words to be added
+	 */
+	public void addToVocab(String words) {
+		if(!sentences.isEmpty())
+			throw new IllegalStateException("Only one method (complete sentences passed in) or streaming is allowed. Please clear sentences and pass in a file iterator to use the other method");
+		int count = 0;
+		//
+		numLines++;
+		StringTokenizer tokenizer = new StringTokenizer(words);
+
+		this.allWordsCount += tokenizer.countTokens();
+		count++;
+		if(count % 10000 == 0)
+			log.info("Processed  sentence " + count + " current word count " + allWordsCount);
+
+		while(tokenizer.hasMoreTokens()) {
+			String token = tokenizer.nextToken();
+			VocabWord word = rawVocab.get(token);
+
+			//this will also increment the
+			//vocab word at the final level
+			//due to the reference being the same
+			if(word != null)
+				word.increment();
+			else {
+				word = new VocabWord(1.0,layerSize);
+				rawVocab.put(token,word);
+			}
+
+
+			if(word.getWordFrequency() >= minWordFrequency) {
+				word.setIndex(wordIndex.size());
+				wordIndex.add(token);
+				this.vocab.put(token, word);
+			}
+
+		}
+
+	}
+
+	public void setup() {
+
+		log.info("Building binary tree");
+		buildBinaryTree();
+		log.info("Resetting weights");
+		resetWeights();
+	}
 
 
 	public void buildVocab(Collection<String> sentences) {
-		Map<String,VocabWord> vocab = new HashMap<String,VocabWord>();
 
 		Queue<String> queue = new ArrayDeque<>(sentences);
 		int count = 0;
@@ -802,7 +572,7 @@ public class Word2Vec implements Serializable {
 
 			while(tokenizer.hasMoreTokens()) {
 				String token = tokenizer.nextToken();
-				VocabWord word = vocab.get(token);
+				VocabWord word = rawVocab.get(token);
 
 				//this will also increment the
 				//vocab word at the final level
@@ -811,7 +581,7 @@ public class Word2Vec implements Serializable {
 					word.increment();
 				else {
 					word = new VocabWord(1.0,layerSize);
-					vocab.put(token,word);
+					rawVocab.put(token,word);
 				}
 				//note that for purposes of word frequency, the 
 				//internal vocab and the final vocab
@@ -830,11 +600,8 @@ public class Word2Vec implements Serializable {
 			}
 
 		}
+		setup();
 
-		log.info("Building binary tree");
-		buildBinaryTree();
-		log.info("Resetting weights");
-		resetWeights();
 	}
 
 	public void addSentence(String sentence) {
@@ -860,17 +627,6 @@ public class Word2Vec implements Serializable {
 		}
 	}
 
-	public static double sigmoid(double x) {
-		return 1f / (1f + Math.pow(Math.E, -x));
-	}
-
-	public static DoubleMatrix sigmoid(DoubleMatrix x) {
-		DoubleMatrix matrix = new DoubleMatrix(x.rows,x.columns);
-		for(int i = 0; i < matrix.length; i++)
-			matrix.put(i, 1f / (1f + Math.pow(Math.E, -x.get(i))));
-
-		return matrix;
-	}
 
 
 	public void skipGram(int i,List<VocabWord> sentence,int b) {
@@ -894,19 +650,19 @@ public class Word2Vec implements Serializable {
 	}
 
 	public void  iterate(VocabWord w1,VocabWord w2) {
-		DoubleMatrix l1 = syn0.getRow(w2.index);
-		DoubleMatrix l2a = syn1.getRows(w1.points);
-		DoubleMatrix fa = sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
+		DoubleMatrix l1 = syn0.getRow(w2.getIndex());
+		DoubleMatrix l2a = syn1.getRows(w1.getCodes());
+		DoubleMatrix fa = MatrixUtil.sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
 		// ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-		DoubleMatrix ga = DoubleMatrix.ones(fa.length).sub(toMatrix(w1.codes)).sub(fa).mul(alpha);
+		DoubleMatrix ga = DoubleMatrix.ones(fa.length).sub(MatrixUtil.toMatrix(w1.getCodes())).sub(fa).mul(alpha);
 		DoubleMatrix outer = ga.mmul(l1);
-		for(int i = 0; i < w1.points.length; i++) {
+		for(int i = 0; i < w1.getPoints().length; i++) {
 			DoubleMatrix toAdd = l2a.getRow(i).add(outer.getRow(i));
-			syn1.putRow(w1.points[i],toAdd);
+			syn1.putRow(w1.getPoints()[i],toAdd);
 		}
 
 		DoubleMatrix updatedInput = l1.add(MatrixUtil.dot(ga, l2a));
-		syn0.putRow(w2.index,updatedInput);
+		syn0.putRow(w2.getIndex(),updatedInput);
 	}
 
 	public DoubleMatrix toExp(DoubleMatrix input) {
@@ -920,14 +676,7 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	private DoubleMatrix toMatrix(int [] codes) {
-		double[] ret = new double[codes.length];
-		for(int i = 0; i < codes.length; i++)
-			ret[i] = codes[i];
-		return new DoubleMatrix(ret);
-	}
-
-
+	/* Builds the binary tree for the word relationships */
 	private void buildBinaryTree() {
 		PriorityQueue<VocabWord> heap = new PriorityQueue<VocabWord>(vocab.values());
 		int i = 0;
@@ -936,7 +685,7 @@ public class Word2Vec implements Serializable {
 			VocabWord min2 = heap.poll();
 
 
-			VocabWord add = new VocabWord(min1.wordFrequency + min2.wordFrequency,layerSize);
+			VocabWord add = new VocabWord(min1.getWordFrequency() + min2.getWordFrequency(),layerSize);
 			int index = (vocab.size() + i);
 
 			add.setIndex(index); 
@@ -958,12 +707,16 @@ public class Word2Vec implements Serializable {
 			int[] codes = triple.getSecond();
 			int[] points = triple.getThird();
 			VocabWord node = triple.getFirst();
-			if(node.index < vocab.size()) {
+			if(node == null) {
+				log.info("Node was null");
+				continue;
+			}
+			if(node.getIndex() < vocab.size()) {
 				node.setCodes(codes);
 				node.setPoints(points);
 			}
 			else {
-				int[] copy = plus(points,node.index - vocab.size());
+				int[] copy = plus(points,node.getIndex() - vocab.size());
 				points = copy;
 				triple.setThird(points);
 				stack.add(new Triple<VocabWord,int[],int[]>(node.getLeft(),plus(codes,0),points));
@@ -981,11 +734,11 @@ public class Word2Vec implements Serializable {
 		int[] copy = new int[addTo.length + 1];
 		for(int c = 0; c < addTo.length; c++)
 			copy[c] = addTo[c];
-		copy[addTo.length] =add;
+		copy[addTo.length] = add;
 		return copy;
 	}
 
-
+	/* reinit weights */
 	private void resetWeights() {
 		syn1 = DoubleMatrix.zeros(vocab.size(), layerSize);
 		//self.syn0 += (random.rand(len(self.vocab), self.layer1_size) - 0.5) / self.layer1_size
@@ -998,55 +751,12 @@ public class Word2Vec implements Serializable {
 	}
 
 
-
-
-
-
-
-	public Map<String, VocabWord> getVocab() {
-		return vocab;
-	}
-
-
-
-
-	public Map<Integer, String> getIndexToWord() {
-		return indexToWord;
-	}
-
-	public Random getRand() {
-		return rand;
-	}
-
-
-
-
-	public double getAlpha() {
-		return alpha;
-	}
-
-
-
-
-	public int getWordCount() {
-		return wordCount;
-	}
-
-
-
-
-	public int getMinWordFrequency() {
-		return minWordFrequency;
-	}
-
-
-
-
-	public int getWindow() {
-		return window;
-	}
-
-
+	/**
+	 * Returns the similarity of 2 words
+	 * @param word the first word
+	 * @param word2 the second word
+	 * @return a normalized similarity (cosine similarity)
+	 */
 	public double similarity(String word,String word2) {
 		if(word.equals(word2))
 			return 1.0;
@@ -1055,26 +765,12 @@ public class Word2Vec implements Serializable {
 		double[] vector2 = getWordVector(word2);
 		if(vector == null || vector2 == null)
 			return -1;
-		DoubleMatrix matrix = new DoubleMatrix(vector);
-		DoubleMatrix matrix2 = new DoubleMatrix(vector2);
-		double dot = matrix.dot(matrix2);
-		double mag1 = magnitude(matrix);
-		double mag2 = magnitude(matrix2);
-		return dot / (mag1 * mag2);
+		DoubleMatrix d1 = MatrixUtil.unitVec(new DoubleMatrix(vector));
+		DoubleMatrix d2 = MatrixUtil.unitVec(new DoubleMatrix(vector2));
+		return d1.dot(d2);
+
 	}
 
-	private static double magnitude(DoubleMatrix vec) { 
-		double sum_mag = 0; 
-		for(int i = 0; i < vec.length;i++) 
-			sum_mag = sum_mag + vec.get(i) * vec.get(i); 
-
-		return Math.sqrt(sum_mag); 
-	} 
-
-	public static double cosine(DoubleMatrix matrix) {
-		//1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
-		return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
-	}
 
 
 	public static DoubleMatrix unitVec(DoubleMatrix matrix) {
@@ -1143,6 +839,100 @@ public class Word2Vec implements Serializable {
 
 	public DoubleMatrix getSyn1() {
 		return syn1;
+	}
+
+
+	public Map<String, VocabWord> getVocab() {
+		return vocab;
+	}
+
+
+
+
+	public Map<Integer, String> getIndexToWord() {
+		return indexToWord;
+	}
+
+	public Random getRand() {
+		return rand;
+	}
+
+
+
+
+	public double getAlpha() {
+		return alpha;
+	}
+
+
+
+
+	public int getWordCount() {
+		return wordCount;
+	}
+
+
+
+
+	public int getMinWordFrequency() {
+		return minWordFrequency;
+	}
+
+
+
+
+	public int getWindow() {
+		return window;
+	}
+
+	public Map<String, VocabWord> getRawVocab() {
+		return rawVocab;
+	}
+
+	public int getTopNSize() {
+		return topNSize;
+	}
+
+	public int getSample() {
+		return sample;
+	}
+
+
+
+	public int getSize() {
+		return size;
+	}
+
+	public double[]	 getOob() {
+		return oob;
+	}
+
+	public int getWords() {
+		return words;
+	}
+
+	public List<String> getSentences() {
+		return sentences;
+	}
+
+	public int getAllWordsCount() {
+		return allWordsCount;
+	}
+
+	public static ActorSystem getTrainingSystem() {
+		return trainingSystem;
+	}
+
+	public Iterator<File> getFileIterator() {
+		return fileIterator;
+	}
+
+	public void setSyn0(DoubleMatrix syn0) {
+		this.syn0 = syn0;
+	}
+
+	public void setSyn1(DoubleMatrix syn1) {
+		this.syn1 = syn1;
 	}
 
 

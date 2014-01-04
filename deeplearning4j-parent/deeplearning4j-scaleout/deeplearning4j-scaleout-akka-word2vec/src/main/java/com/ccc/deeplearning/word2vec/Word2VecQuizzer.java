@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
+import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
+
 
 public class Word2VecQuizzer {
 
@@ -19,8 +21,7 @@ public class Word2VecQuizzer {
 			System.err.println("Usage input file");
 		}
 		
-		Word2Vec vec = new Word2Vec();
-		vec.loadModel(new File(args[0]));
+		Word2Vec vec = Word2VecLoader.loadModel(new File(args[0]));
 		BufferedReader br = 
 				new BufferedReader(new InputStreamReader(System.in));
 
