@@ -100,25 +100,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 	@Override
 	public UpdateableSingleImpl compute() {
-		int epochs = this.preTrainEpochs;
-		log.info("Training network line search " + epochs + " times");
-		Double currError = null;
-		int numIterated = 0;
-		do {
-			network.trainTillConvergence(combinedInput, learningRate, extraParams);
-			double entropy = network.lossFunction(extraParams);
-			if(currError != null) {
-				double diff = Math.abs(currError - entropy);
-				if(diff <= 0.01) {
-					log.info("Trained line search " + numIterated + " times and converged on " + entropy);
-					break;
-				}
-
-			}
-
-			currError = entropy;
-			numIterated++;
-		}while(true);
+		network.trainTillConvergence(combinedInput, learningRate, extraParams);
 		return new UpdateableSingleImpl(network);
 	}
 

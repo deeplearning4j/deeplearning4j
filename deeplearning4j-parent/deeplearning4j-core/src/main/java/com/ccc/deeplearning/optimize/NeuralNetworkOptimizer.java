@@ -1,5 +1,6 @@
 package com.ccc.deeplearning.optimize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,7 @@ import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue {
+public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,Serializable {
 
 	public NeuralNetworkOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
 		this.network = network;
@@ -27,6 +28,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		this.extraParams = trainingParams;
 	}
 
+
+	private static final long serialVersionUID = 4455143696487934647L;
 	protected BaseNeuralNetwork network;
 	protected double lr;
 	protected Object[] extraParams;
@@ -38,34 +41,23 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	public void train(DoubleMatrix x) {
 		if(opt == null)
 			opt = new ConjugateGradient(this);
-		
+
 		boolean done = false;
 		network.train(x, lr, extraParams);
-		int numErrorsCaught = 0;
 		while(!done) {
 			try {
 				done = opt.optimize();
 			}
 			catch(InvalidOptimizableException e) {
-				network.train(x, lr, extraParams);
-				numErrorsCaught++;
-				if(numErrorsCaught >= 5) {
-					log.warn("Too many invalid line searches; breaking");
-					break;
-				}
-				log.warn("Invalid step taken; trying again. Error was ",e);
+				done = true;
+				log.info("Error on step; finishing");
 			}
 			catch(OptimizationException e2) {
-				network.train(x, lr, extraParams);
-				numErrorsCaught++;
-				if(numErrorsCaught >= 5) {
-					log.warn("Too many invalid line searches; breaking");
-					break;
-				}
-				log.warn("Invalid step taken; trying again. Error was ",e2);
+				done = true;
+				log.info("Error on step; finishing");
 
 			}
-			
+
 		}
 	}
 

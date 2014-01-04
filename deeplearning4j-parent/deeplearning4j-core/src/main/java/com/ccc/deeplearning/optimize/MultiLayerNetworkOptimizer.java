@@ -2,6 +2,8 @@ package com.ccc.deeplearning.optimize;
 
 import static com.ccc.deeplearning.util.MatrixUtil.softmax;
 
+import java.io.Serializable;
+
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +25,15 @@ import com.ccc.deeplearning.util.MatrixUtil;
  * @author Adam Gibson
  *
  */
-public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue {
+public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,Serializable {
+
+	private static final long serialVersionUID = -3012638773299331828L;
 
 	private BaseMultiLayerNetwork network;
 
 	private static Logger log = LoggerFactory.getLogger(MultiLayerNetworkOptimizer.class);
 	private double lr;
-	private Optimizer opt;
+	private transient Optimizer opt;
 
 	public MultiLayerNetworkOptimizer(BaseMultiLayerNetwork network,double lr) {
 		this.network = network;

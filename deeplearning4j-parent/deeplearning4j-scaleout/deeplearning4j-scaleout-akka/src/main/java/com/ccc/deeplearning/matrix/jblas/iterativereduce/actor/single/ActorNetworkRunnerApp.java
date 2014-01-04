@@ -54,43 +54,43 @@ import com.ccc.deeplearning.scaleout.zookeeper.ZookeeperConfigurationRetriever;
  *
  */
 public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistributed {
-	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerApp.class);
+	protected static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerApp.class);
 
 	@Option(name = "-a",usage="algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)")
-	private String algorithm;
+	protected String algorithm;
 	@Option(name = "-i",usage="number of inputs (columns in the input matrix)",handler=IntOptionHandler.class)
-	private int inputs;
+	protected int inputs;
 	@Option(name="-o",usage="number hidden units for the network",handler=IntOptionHandler.class)
-	private int outputs;
+	protected int outputs;
 	@Option(name="-pte",usage="number of epochs for pretraining (default: 100)",handler=IntOptionHandler.class)
-	private int pretrainEpochs = 1;
+	protected int pretrainEpochs = 1;
 	@Option(name="-r",usage="seed value for the random number generator (default: 123)",handler=IntOptionHandler.class)
-	private long rngSeed = 123;
+	protected long rngSeed = 123;
 	@Option(name="-k",usage="the k for rbms (default: 1)",handler=IntOptionHandler.class)
-	private int k = 1;
+	protected int k = 1;
 	@Option(name="-c",usage="corruption level (for denoising autoencoders) (default: 0.3)",handler=DoubleOptionHandler.class)
-	private double corruptionLevel = 0.3;
+	protected double corruptionLevel = 0.3;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
-	private String host = "localhost";
+	protected String host = "localhost";
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	private double pretrainLearningRate = 0.1;
+	protected double pretrainLearningRate = 0.1;
 	@Option(name="-t",usage="type of worker")
-	private String type = "master";
+	protected String type = "master";
 	@Option(name="-ad",usage="address of master worker")
-	private String address;
+	protected String address;
 	@Option(name="-sp",usage="number of inputs to split by default: 10")
-	private int split = 10;
+	protected int split = 10;
 	@Option(name="-data",usage="dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)")
-	private String dataSet;
+	protected String dataSet;
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
-	private int numExamples = -1;
+	protected int numExamples = -1;
 	@Option(name="-l2",usage="l2 regularization constant")
-	private double l2 = 0.1;
+	protected double l2 = 0.1;
 	@Option(name="-m",usage="momentum")
-	private double momentum = 0.1;
+	protected double momentum = 0.1;
 
-	private ActorNetworkRunner runner;
-	private DataSetIterator iter;
+	protected ActorNetworkRunner runner;
+	protected DataSetIterator iter;
 
 
 	public ActorNetworkRunnerApp(String[] args) {
@@ -200,7 +200,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		return dataSet;
 	}
 
-	private void getDataSet() {
+	protected void getDataSet() {
 		if(type.equals("worker"))
 			return;
 		try {
@@ -221,7 +221,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	}
 
 
-	private String getClassForAlgorithm() {
+	protected String getClassForAlgorithm() {
 		switch(algorithm) {
 		case  "da" :
 			return "com.ccc.deeplearning.sda.jblas.DenoisingAutoEncoder";
