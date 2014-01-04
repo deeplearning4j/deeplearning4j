@@ -8,14 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
+
 public class ModelReader {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws IOException {
-		Word2Vec vec = new Word2Vec();
-		vec.loadBinary(new File(args[0]));
+		Word2Vec vec = Word2VecLoader.loadBinary(new File(args[0]));
 		vec.train();
 		BufferedReader br = 
 				new BufferedReader(new InputStreamReader(System.in));

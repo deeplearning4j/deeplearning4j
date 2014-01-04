@@ -6,10 +6,31 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.jblas.SimpleBlas;
 
 public class MatrixUtil {
 
+	public static double magnitude(DoubleMatrix vec) { 
+		double sum_mag = 0; 
+		for(int i = 0; i < vec.length;i++) 
+			sum_mag = sum_mag + vec.get(i) * vec.get(i); 
 
+		return Math.sqrt(sum_mag); 
+	} 
+
+	public static double cosine(DoubleMatrix matrix) {
+		//1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
+		return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
+	}
+
+	
+	public static DoubleMatrix unitVec(DoubleMatrix toScale) {
+		double length = toScale.norm2();
+		if(length > 0)
+			return SimpleBlas.scal(1.0 / length, toScale);
+		return toScale;
+	}
+	
 	public static DoubleMatrix uniform(RandomGenerator rng,int rows,int columns) {
 
 		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1);
