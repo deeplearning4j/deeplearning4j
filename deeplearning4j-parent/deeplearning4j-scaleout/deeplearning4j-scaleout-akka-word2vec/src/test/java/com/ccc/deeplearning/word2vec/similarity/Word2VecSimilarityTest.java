@@ -1,5 +1,8 @@
 package com.ccc.deeplearning.word2vec.similarity;
 
+import static org.junit.Assert.*;
+
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -11,9 +14,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataFetcher;
+import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 
 public class Word2VecSimilarityTest {
 	private Word2VecDataFetcher fetcher;
@@ -31,30 +36,24 @@ public class Word2VecSimilarityTest {
 		String techcrunch = FileUtils.readFileToString(new File("src/test/resources/articles/techcrunch/-2013-12-02-apple-buys-topsy-for-a-reported-200m-could-use-social-signals-to-bolster-app-store-relevance-"));
 		String other = FileUtils.readFileToString(new File("src/test/resources/articles/gigaom/-2009-12-02-bing-becoming-search-in-name-only-"));
 		
-		File dir = new File("src/test/resources/articles");
-		Iterator<File> files = FileUtils.iterateFiles(dir, null, true);
-		List<String> sentences = new ArrayList<String>();
-		while(files.hasNext()) {
-			LineIterator iter2 = FileUtils.lineIterator(files.next());
-			while(iter2.hasNext()) {
-				sentences.add(iter2.nextLine());
-			}
-		}
 		
 		
-		Word2Vec vec = new Word2Vec(sentences);
-		vec.train();
+		
+		Word2Vec vec = Word2VecLoader.loadModel(new ClassPathResource("/word2vecmodel-techblogs.bin").getFile());
 		
 		log.info("Similarity " + vec.similarity("Apple", "Twitter"));
 		
+	
 		Word2VecSimilarity sim = new Word2VecSimilarity(techcrunch, venturebeat, vec);
 		sim.calc();
 		log.info(String.valueOf(sim.getDistance()));
 		Word2VecSimilarity sim2 = new Word2VecSimilarity(techcrunch, other, vec);
 		sim2.calc();
 		log.info(String.valueOf(sim2.getDistance()));
-
+		assertEquals(true,sim.getDistance() < sim2.getDistance());
 	}
+	
+	
 
 
 }
