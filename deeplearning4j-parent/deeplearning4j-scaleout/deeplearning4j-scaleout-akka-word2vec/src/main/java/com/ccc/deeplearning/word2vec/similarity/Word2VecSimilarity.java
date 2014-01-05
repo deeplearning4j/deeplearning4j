@@ -3,12 +3,14 @@ package com.ccc.deeplearning.word2vec.similarity;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.StringTokenizer;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.jblas.DoubleMatrix;
 
 import com.ccc.deeplearning.berkeley.Counter;
+import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
+import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.util.SetUtils;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 
@@ -19,7 +21,7 @@ public class Word2VecSimilarity {
 	private String words1;
 	private String words2;
 	private double distance;
-
+	private CRBM crbm;
 	public Word2VecSimilarity(String words1,String words2,Word2Vec vec) {
 		this.words1 = words1;
 		this.words2 = words2;
@@ -27,15 +29,21 @@ public class Word2VecSimilarity {
 	}
 
 	public void calc() {
+		
 		WordMetaData data = new WordMetaData(words1);
 		data.calc();
 		WordMetaData d2 = new WordMetaData(words2);
 		d2.calc();
 		List<String> vocab = new ArrayList<String>(SetUtils.union(new HashSet<String>(data.wordList), new HashSet<String>(d2.wordList)));
-		DoubleMatrix m1 = matrixFor(data,vocab);
-		DoubleMatrix m2 = matrixFor(d2,vocab);
-		distance = m1.distance1(m2);
-	}
+		DoubleMatrix m1 = MatrixUtil.unitVec(matrixFor(data,vocab));
+		DoubleMatrix m2 = MatrixUtil.unitVec(matrixFor(d2,vocab));
+		crbm = new CRBM.Builder().withRandom(new MersenneTwister(123)).numberOfVisible(m1.columns).numHidden(3).build();
+		crbm.trainTillConvergence(0.1, 1, m1);
+		DoubleMatrix reconstruct1 = crbm.reconstruct(m1);
+		DoubleMatrix reconstruct2 = crbm.reconstruct(m2);
+		
+		distance = reconstruct1.distance1(reconstruct2);
+	} 
 
 
 
@@ -67,7 +75,7 @@ public class Word2VecSimilarity {
 		}
 
 		public DoubleMatrix getVectorForWord(String word) {
-			return vec.getWordVectorMatrix(word);
+			return vec.getWordVectorMatrix(word).mul(wordCounts.getCount(word) * 100);
 		}
 
 		private void addWords(String words) {
