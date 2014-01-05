@@ -1,7 +1,5 @@
 package com.ccc.deeplearning.word2vec.similarity;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +24,6 @@ public class Word2VecSimilarity {
 	private String words2;
 	private double distance;
 	private static Logger log = LoggerFactory.getLogger(Word2VecSimilarity.class);
-	private CRBM crbm;
 	public Word2VecSimilarity(String words1,String words2,Word2Vec vec) {
 		this.words1 = words1;
 		this.words2 = words2;
@@ -45,23 +42,14 @@ public class Word2VecSimilarity {
 		data.calc();
 		WordMetaData d2 = new WordMetaData(words2);
 		d2.calc();
-		List<String> vocab = new ArrayList<String>(SetUtils.union(new HashSet<String>(data.wordList), new HashSet<String>(d2.wordList)));
-		DoubleMatrix m1 = MatrixUtil.unitVec(matrixFor(data,vocab));
-		DoubleMatrix m2 = MatrixUtil.unitVec(matrixFor(d2,vocab));
-		crbm = new CRBM.Builder().withRandom(new MersenneTwister(123)).numberOfVisible(m1.columns).numHidden(m1.columns).build();
-		DoubleMatrix c1 = matrixFor(data,vocab);
-		DoubleMatrix c2 = matrixFor(d2,vocab);
+		List<String> vocab = new ArrayList<String>(SetUtils.intersection(new HashSet<String>(data.wordList), new HashSet<String>(d2.wordList)));
+		DoubleMatrix m1 = matrixFor(data,vocab);
+		DoubleMatrix m2 = matrixFor(d2,vocab);
+		
+		distance = m1.distance1(m2);
 
-		for(int i = 0; i < 5; i++)
-			crbm.trainTillConvergence(0.1, 1, c1);
-
-		DoubleMatrix reconstruct1 = crbm.reconstruct(c1);
-		DoubleMatrix reconstruct2 = crbm.reconstruct(c2);
-
-
-		log.info("Un transformed distance " + m1.distance1(m2));
-		distance = reconstruct1.distance1(reconstruct2);
-		log.info("Reconstructed distance " + distance);
+		
+		log.info("distance " + distance);
 	} 
 
 
@@ -94,7 +82,7 @@ public class Word2VecSimilarity {
 		}
 
 		public DoubleMatrix getVectorForWord(String word) {
-			return vec.getWordVectorMatrix(word).mul(wordCounts.getCount(word) * 100);
+			return vec.getWordVectorMatrix(word).mul(wordCounts.getCount(word));
 		}
 
 		private void addWords(String words) {
