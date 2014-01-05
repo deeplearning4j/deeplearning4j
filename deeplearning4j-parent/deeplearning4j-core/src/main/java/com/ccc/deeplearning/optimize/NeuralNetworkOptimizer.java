@@ -37,7 +37,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected Optimizer opt;
+	protected transient Optimizer opt;
 	public void train(DoubleMatrix x) {
 		if(opt == null)
 			opt = new ConjugateGradient(this);
