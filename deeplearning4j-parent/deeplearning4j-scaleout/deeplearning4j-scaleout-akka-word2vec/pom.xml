@@ -6,6 +6,18 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+  <build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptors>
+						<descriptor>src/assemble/bin.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
   <dependencies>
   	<dependency>
   		<groupId>org.agibsonccc.deeplearning</groupId>

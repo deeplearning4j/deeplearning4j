@@ -44,7 +44,7 @@ public class Word2VecSimilarityTest {
 
 		Word2Vec vec = Word2VecLoader.loadModel(new ClassPathResource("/word2vecmodel-techblogs.bin").getFile());
 
-		log.info("Analogy " + vec.analogy("Facebook", "Twitter", "Google"));
+	
 
 		eval(vec,techcrunch,venturebeat,other);
 		log.info("Next test");

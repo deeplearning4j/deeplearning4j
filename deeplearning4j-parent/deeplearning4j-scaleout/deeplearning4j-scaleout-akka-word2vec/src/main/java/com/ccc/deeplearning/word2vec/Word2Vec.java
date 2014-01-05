@@ -165,7 +165,7 @@ public class Word2Vec implements Serializable {
 		this.buildVocab(sentences);
 
 		oob = new double[layerSize];
-		Arrays.fill(oob,0.0);
+		Arrays.fill(oob,1.0);
 		readStopWords();
 
 	}
