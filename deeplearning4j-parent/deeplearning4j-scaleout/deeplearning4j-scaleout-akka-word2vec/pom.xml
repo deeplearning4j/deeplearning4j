@@ -12,5 +12,10 @@
   		<artifactId>deeplearning4j-scaleout-akka</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
+  	<dependency>
+  		<groupId>org.agibsonccc.deeplearning</groupId>
+  		<artifactId>deeplearning4j-core</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
   </dependencies>
 </project>

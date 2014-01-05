@@ -59,6 +59,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		
 		vec.setMinWordFrequency(minWordFrequency);
 		Set<String> labels = new HashSet<String>();
+		int linesCount  = 0;
 		while(files.hasNext()) {
 			File next = files.next();
 			try {
@@ -69,7 +70,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 					//each window is an example
 					List<Window> windows = Windows.windows(line);
 					totalExamples += windows.size();
-					
+					linesCount++;
 					vec.addToVocab(line);
 					Matcher beginMatcher = begin.matcher(line);
 					Matcher endMatcher = end.matcher(line);
@@ -90,7 +91,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 				throw new RuntimeException(e);
 			}
 		}
-		
+		log.info("Processed " + linesCount + " lines for training");
 		vec.setup();
 		files = FileUtils.iterateFiles(new File(path), null, true);
 

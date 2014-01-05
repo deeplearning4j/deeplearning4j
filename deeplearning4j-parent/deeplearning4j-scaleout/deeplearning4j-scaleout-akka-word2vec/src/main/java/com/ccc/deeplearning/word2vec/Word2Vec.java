@@ -28,11 +28,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import scala.concurrent.Future;
 import akka.actor.ActorSystem;
@@ -63,7 +64,7 @@ public class Word2Vec implements Serializable {
 	private Map<Integer,String> indexToWord = new HashMap<Integer,String>();
 	private Random rand = new Random(1);
 	private int topNSize = 40;
-	public int EXP_TABLE_SIZE = 1000;
+	public int EXP_TABLE_SIZE = 500;
 	//matrix row of a given word
 	private Index wordIndex = new Index();
 	/* pre calculated sigmoid table */
@@ -80,7 +81,7 @@ public class Word2Vec implements Serializable {
 	private int window = 5;
 	private int trainWordsCount = 0;
 	//number of neurons per layer
-	private int layerSize = 100;
+	private int layerSize = 50;
 	private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
 	private int size = 0;
 	private int words = 0;
@@ -91,6 +92,7 @@ public class Word2Vec implements Serializable {
 	private List<String> sentences = new ArrayList<String>();
 	private int allWordsCount = 0;
 	private static ActorSystem trainingSystem;
+	private List<String> stopWords;
 	/* out of vocab */
 	private double[] oob;
 	/*
@@ -112,6 +114,15 @@ public class Word2Vec implements Serializable {
 		createExpTable();
 		oob = new double[layerSize];
 		Arrays.fill(oob,1.0);
+		readStopWords();
+	}
+
+	private void readStopWords() {
+		try {
+			stopWords = IOUtils.readLines(new ClassPathResource("/stopwords").getInputStream());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
 	}
 
@@ -123,6 +134,8 @@ public class Word2Vec implements Serializable {
 	public Word2Vec(Iterator<File> fileIterator) {
 		this();
 		this.fileIterator = fileIterator;
+		readStopWords();
+
 	}
 
 	/**
@@ -135,6 +148,8 @@ public class Word2Vec implements Serializable {
 	 */
 	public Word2Vec(Collection<String> sentences) {
 		this(sentences,5);
+		readStopWords();
+
 	}
 
 	/**
@@ -151,6 +166,8 @@ public class Word2Vec implements Serializable {
 
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
+		readStopWords();
+
 	}
 
 
@@ -219,6 +236,8 @@ public class Word2Vec implements Serializable {
 		if(trainingSystem == null)
 			trainingSystem = ActorSystem.create();
 
+		if(stopWords == null)
+			readStopWords();
 		log.info("Training word2vec multithreaded");
 
 		MapFactory<String,Double> factory = new MapFactory<String,Double>() {
@@ -271,22 +290,22 @@ public class Word2Vec implements Serializable {
 
 						}
 
-						
+
 					} catch (Exception e) {
 						throw new RuntimeException(e);
 					}
 
 				}
-				
+
 				try {
 					sentenceCounter.await();
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
-				
-				if(numLinesIterated != numLines)
-					throw new IllegalStateException("We appear to have a misynchronized data set. Perhaps the wrong iterator was passed in?");
-				
+
+				if(numLinesIterated != numLines) {
+					this.numLines = numLinesIterated;
+				}
 			}
 		}
 
@@ -557,7 +576,7 @@ public class Word2Vec implements Serializable {
 
 
 	public void buildVocab(Collection<String> sentences) {
-
+		readStopWords();
 		Queue<String> queue = new ArrayDeque<>(sentences);
 		int count = 0;
 		while(!queue.isEmpty()) {
@@ -586,7 +605,7 @@ public class Word2Vec implements Serializable {
 				//note that for purposes of word frequency, the 
 				//internal vocab and the final vocab
 				//at the class level contain the same references
-				if(word.getWordFrequency() >= minWordFrequency) {
+				if(word.getWordFrequency() >= minWordFrequency && !stopWords.contains(token)) {
 					if(!this.vocab.containsKey(token)) {
 						word.setIndex(this.vocab.size());
 						this.vocab.put(token, word);
@@ -769,13 +788,6 @@ public class Word2Vec implements Serializable {
 		DoubleMatrix d2 = MatrixUtil.unitVec(new DoubleMatrix(vector2));
 		return d1.dot(d2);
 
-	}
-
-
-
-	public static DoubleMatrix unitVec(DoubleMatrix matrix) {
-		double norm2 = matrix.norm2();
-		return SimpleBlas.scal(1 / norm2, matrix);
 	}
 
 
