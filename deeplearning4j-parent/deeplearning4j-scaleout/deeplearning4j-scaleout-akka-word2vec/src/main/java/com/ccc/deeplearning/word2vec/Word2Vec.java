@@ -284,7 +284,7 @@ public class Word2Vec implements Serializable {
 					try {
 						LineIterator lines = FileUtils.lineIterator(fileIterator.next());
 						while(lines.hasNext()) {
-							final String sentence = lines.nextLine();
+							final String sentence = lines.nextLine().replaceAll("\\p{P}", "");
 							numLinesIterated++;
 							processSentence(sentence, sentenceCounter,totalWords);
 
@@ -605,7 +605,7 @@ public class Word2Vec implements Serializable {
 				//note that for purposes of word frequency, the 
 				//internal vocab and the final vocab
 				//at the class level contain the same references
-				if(word.getWordFrequency() >= minWordFrequency && !stopWords.contains(token)) {
+				if(word.getWordFrequency() >= minWordFrequency && !matchesAnyStopWord(token)) {
 					if(!this.vocab.containsKey(token)) {
 						word.setIndex(this.vocab.size());
 						this.vocab.put(token, word);
@@ -622,6 +622,14 @@ public class Word2Vec implements Serializable {
 		setup();
 
 	}
+	
+	public boolean matchesAnyStopWord(String word) {
+		for(String s : stopWords)
+			if(s.equalsIgnoreCase(word))
+				return true;
+		return false;
+	}
+	
 
 	public void addSentence(String sentence) {
 		this.sentences.add(sentence);
@@ -786,8 +794,10 @@ public class Word2Vec implements Serializable {
 			return -1;
 		DoubleMatrix d1 = MatrixUtil.unitVec(new DoubleMatrix(vector));
 		DoubleMatrix d2 = MatrixUtil.unitVec(new DoubleMatrix(vector2));
-		return d1.dot(d2);
-
+		double ret = d1.dot(d2);
+		if(ret <  0)
+			return 0;
+		return ret;
 	}
 
 

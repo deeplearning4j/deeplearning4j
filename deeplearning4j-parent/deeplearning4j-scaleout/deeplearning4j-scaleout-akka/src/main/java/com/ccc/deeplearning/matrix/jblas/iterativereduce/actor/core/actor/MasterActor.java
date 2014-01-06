@@ -75,7 +75,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	}
 
-	
+
 
 
 	@Override
@@ -110,7 +110,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				epochsComplete++;
 				batchActor.tell(up, getSelf());
 				updates.clear();
-				
+
 				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
 					isDone = true;
 					log.info("All done; shutting down");
@@ -118,7 +118,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
 							new ShutdownMessage()), getSelf());
 					Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
-					
+
 				}
 
 			}
@@ -219,7 +219,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	@Override
 	public abstract void complete(DataOutputStream ds);
-	
+
 	@Override
 	public E getResults() {
 		return masterResults;
@@ -255,15 +255,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public boolean isDone() {
 		return isDone;
 	}
-
-
-
-
-	public static Logger getLog() {
-		return log;
-	}
-
-
 
 
 	public List<E> getUpdates() {
