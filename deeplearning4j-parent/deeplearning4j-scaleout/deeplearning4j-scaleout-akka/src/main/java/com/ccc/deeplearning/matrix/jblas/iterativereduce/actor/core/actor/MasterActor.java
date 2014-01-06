@@ -26,6 +26,7 @@ import akka.japi.Function;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
 import com.ccc.deeplearning.scaleout.conf.Conf;
@@ -51,6 +52,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	public static String BROADCAST = "broadcast";
 	public static String RESULT = "result";
+	public static String SHUTDOWN = "shutdown";
+
 	//number of batches over time
 	protected int partition = 1;
 	protected boolean isDone = false;
@@ -111,8 +114,11 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
 					isDone = true;
 					log.info("All done; shutting down");
+					//send a shutdown signal
+					mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
+							new ShutdownMessage()), getSelf());
 					Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
-
+					
 				}
 
 			}

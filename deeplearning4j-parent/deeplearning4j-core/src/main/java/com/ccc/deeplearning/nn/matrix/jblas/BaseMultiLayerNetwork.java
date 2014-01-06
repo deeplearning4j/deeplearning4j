@@ -169,6 +169,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
+		if(!x.isRowVector())
+		    x = x.transpose();
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
