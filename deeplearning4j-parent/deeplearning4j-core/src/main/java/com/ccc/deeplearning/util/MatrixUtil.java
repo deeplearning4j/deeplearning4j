@@ -18,6 +18,14 @@ public class MatrixUtil {
 		return Math.sqrt(sum_mag); 
 	} 
 
+	public static double cosineSim(DoubleMatrix d1,DoubleMatrix d2) {
+		d1 = MatrixUtil.unitVec(d1);
+		d2 = MatrixUtil.unitVec(d2);
+		double ret = d1.dot(d2);
+		return ret;
+	}
+	
+	
 	public static double cosine(DoubleMatrix matrix) {
 		//1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
 		return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
