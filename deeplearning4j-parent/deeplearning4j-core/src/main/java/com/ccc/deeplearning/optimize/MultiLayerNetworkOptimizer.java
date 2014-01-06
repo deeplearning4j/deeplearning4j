@@ -56,7 +56,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 		lr *= network.learningRateUpdate;
-		opt  = new ConjugateGradient(this);
+		opt  = new cc.mallet.optimize.LimitedMemoryBFGS(this);
 
 		boolean done = false;
 		for(int i = 0; i < epochs; i++)

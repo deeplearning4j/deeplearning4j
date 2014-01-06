@@ -4,17 +4,18 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 
-import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
-import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
-
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Creator;
+
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
+import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
+import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
 
 
 /**
@@ -37,12 +38,16 @@ public class ModelSavingActor extends UntypedActor {
 
 	{
 		mediator.tell(new DistributedPubSubMediator.Subscribe(SAVE, getSelf()), getSelf());
+		//subscribe to shutdown messages
+		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
+
 	}
 
 
 	@Override
 	public void onReceive(Object message) throws Exception {
 		if(message instanceof Updateable) {
+			@SuppressWarnings("unchecked")
 			Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
 			File save = new File(pathToSave);
 			if(save.exists()) {
@@ -55,6 +60,13 @@ public class ModelSavingActor extends UntypedActor {
 			bos.close();
 			log.info("saved model to " + pathToSave);
 		}
+		else if(message instanceof ShutdownMessage) {
+			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString() );
+			if(!context().system().isTerminated())
+				context().system().shutdown();
+		}
+		else
+			unhandled(message);
 	}
 
 
@@ -63,7 +75,7 @@ public class ModelSavingActor extends UntypedActor {
 		private static final long serialVersionUID = 6450982780084088162L;
 		private String path;
 
-		
+
 		public ModelSavingActorFactory(String path) {
 			this.path = path;
 		}

@@ -40,7 +40,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected transient Optimizer opt;
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new ConjugateGradient(this);
+			opt = new cc.mallet.optimize.LimitedMemoryBFGS(this);
 
 		boolean done = false;
 		network.train(x, lr, extraParams);
