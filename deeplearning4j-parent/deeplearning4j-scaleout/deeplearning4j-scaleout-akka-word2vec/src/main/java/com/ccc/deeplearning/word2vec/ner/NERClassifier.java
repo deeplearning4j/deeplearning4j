@@ -53,7 +53,6 @@ public class NERClassifier implements Serializable {
 	private List<double[]> trainingOutput = new ArrayList<double[]>();
 	private static Logger log = LoggerFactory.getLogger(NERClassifier.class);
 	private BaseMultiLayerNetwork prop;
-	//private SdA prop;
 	//string labels for each training example
 	private List<String> stringOutcomes = new ArrayList<String>();
 	//available labels
@@ -63,6 +62,13 @@ public class NERClassifier implements Serializable {
 	//depending if one is specified should train or not
 	private boolean trainWord2Vec;
 	private boolean trainDeepNet;
+	
+	
+	public NERClassifier(BaseMultiLayerNetwork network,Word2Vec vec,Viterbi viterbi) {
+		this.prop = network;
+		this.vec = vec;
+		this.viterbi = viterbi;
+	}
 	
 	/**
 	 * Creates a classifier
@@ -268,20 +274,22 @@ public class NERClassifier implements Serializable {
 		}
 		stats.normalize();
 		log.info(stats.toString());
+		if(trainDeepNet) {
+			DataSet d = new DataSet(inputs,outputs);
 
-		DataSet d = new DataSet(inputs,outputs);
-
-		prop = new CDBN.Builder()
-		.hiddenLayerSizes(numNodes)
-		.numberOfInputs(inputs.columns)
-		.numberOfOutPuts(outputs.columns)
-		.withRng(new MersenneTwister(123))
-		.build();
+			prop = new CDBN.Builder()
+			.hiddenLayerSizes(numNodes)
+			.numberOfInputs(inputs.columns)
+			.numberOfOutPuts(outputs.columns)
+			.withRng(new MersenneTwister(123))
+			.build();
 
 
-		DataSet train = d;
-		prop.trainNetwork(train.getFirst(), train.getSecond(), deepLearningParams);
-		initializeViterbi(d);
+			DataSet train = d;
+			prop.trainNetwork(train.getFirst(), train.getSecond(), deepLearningParams);
+			initializeViterbi(d);
+		}
+	
 
 	}
 
@@ -332,9 +340,7 @@ public class NERClassifier implements Serializable {
 		List<Window> windows = Windows.windows(new InputHomogenization(words).transform());
 		double[][] ret = new double[windows.size()][labels.size() + 1];
 
-		if(viterbi == null) {
-			
-		}
+		
 		
 		for(int i = 0; i < windows.size(); i++) {
 			Window window = windows.get(i);

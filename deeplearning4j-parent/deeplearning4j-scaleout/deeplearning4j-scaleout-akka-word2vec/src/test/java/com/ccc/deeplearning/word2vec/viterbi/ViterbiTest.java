@@ -29,7 +29,6 @@ public class ViterbiTest {
 		List<String> lines = IOUtils.readLines(new ClassPathResource("/deeplearning/ADDRESS-small.split").getInputStream());
 		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
 		
-		Word2Vec vec = Word2VecLoader.loadModel(new ClassPathResource("/word2vec-address.bin").getFile());
 		
 		for(String line : lines) {
 			if(line.isEmpty()) 

@@ -1,11 +1,20 @@
 package com.ccc.deeplearning.word2vec.viterbi;
 
-import java.io.Serializable;
-import java.util.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 
+import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
 import com.ccc.deeplearning.word2vec.util.Window;
 
 /**
@@ -13,13 +22,13 @@ import com.ccc.deeplearning.word2vec.util.Window;
  * @author Adam Gibson
  *
  */
-public class Viterbi implements Serializable {
+public class Viterbi implements Persistable {
 
 
 	private static final long serialVersionUID = 3254568492760166461L;
-	private  final Index labelIndex;
-	private  final Index featureIndex;
-	private final DoubleMatrix weights;
+	private Index labelIndex;
+	private Index featureIndex;
+	private DoubleMatrix weights;
 
 	public Viterbi(Index labelIndex, Index featureIndex, DoubleMatrix weights) {
 		this.labelIndex = labelIndex;
@@ -27,8 +36,11 @@ public class Viterbi implements Serializable {
 		this.weights = weights;
 	}
 
+	private Viterbi() {}
+
+
 	public List<Datum> decode(DoubleMatrix classified,List<String> labels,List<Window> windows) {
-		
+
 		List<String> previousLabels = new ArrayList<String>();
 
 		//discretize to max probability for individual outcomes
@@ -145,6 +157,39 @@ public class Viterbi implements Serializable {
 
 	private int numLabels() {
 		return labelIndex.size();
+	}
+
+	
+	
+	public static Viterbi load(String path) throws IOException {
+		Viterbi v = new Viterbi();
+		v.load(new BufferedInputStream(new FileInputStream(new File(path))));
+		return v;
+	}
+	
+	@Override
+	public void write(OutputStream os) {
+		try {
+			ObjectOutputStream os2 = new ObjectOutputStream(os);
+			os2.writeObject(this);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	@Override
+	public void load(InputStream is) {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(is);
+			Viterbi v = (Viterbi) ois.readObject();
+			this.featureIndex = v.featureIndex;
+			this.labelIndex = v.labelIndex;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+
 	}
 
 }
