@@ -189,6 +189,11 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			Pair<DoubleMatrix,DoubleMatrix> pair = q.poll();
 			List<DoubleMatrix> inputRows = pair.getFirst().rowsAsList();
 			List<DoubleMatrix> labelRows = pair.getSecond().rowsAsList();
+			if(inputRows.isEmpty())
+				throw new IllegalArgumentException("No input rows found");
+			if(inputRows.size() != labelRows.size())
+				throw new IllegalArgumentException("Label rows not equal to input rows");
+			
 			for(int i = 0; i < inputRows.size(); i++) {
 				list.add(new Pair<DoubleMatrix,DoubleMatrix>(inputRows.get(i),labelRows.get(i)));
 			}

@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.*;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
+
+import com.ccc.deeplearning.word2vec.util.Window;
 
 /**
  * Viterbi implementation
@@ -12,7 +15,7 @@ import org.jblas.DoubleMatrix;
  */
 public class Viterbi implements Serializable {
 
-	
+
 	private static final long serialVersionUID = 3254568492760166461L;
 	private  final Index labelIndex;
 	private  final Index featureIndex;
@@ -23,8 +26,32 @@ public class Viterbi implements Serializable {
 		this.featureIndex = featureIndex;
 		this.weights = weights;
 	}
-	
-	
+
+	public List<Datum> decode(DoubleMatrix classified,List<String> labels,List<Window> windows) {
+		
+		List<String> previousLabels = new ArrayList<String>();
+
+		//discretize to max probability for individual outcomes
+		for(DoubleMatrix row : classified.rowsAsList()) {
+			int idx = SimpleBlas.iamax(row);
+			if(idx < 1)
+				labels.add("NONE");
+			else
+				labels.add(labels.get(idx));
+		}
+		previousLabels.add("NONE");
+
+		//add the previous labels for each window
+		for(int i = 1; i < labels.size(); i++) 
+			previousLabels.add(labels.get(i - 1));
+
+		//assigns features as outcomes
+		List<Datum> datums = Datum.datums(windows, labels, previousLabels,ViterbiUtil.toFeatures(classified));
+		decode(datums, ViterbiUtil.previousLabelDatums(datums));
+		return datums;
+	}
+
+
 	/**
 	 * Classify the given sequence
 	 * @param data the data to classify
@@ -60,14 +87,14 @@ public class Viterbi implements Serializable {
 			// for each previous label 
 			for (int j = 0; j < numLabels(); j++) {
 				Datum datum = dataWithMultiplePrevLabels.get(i + j);
-				
-				
+
+
 				String previousLabel = datum.previousLabel;
-				
+
 				if(previousLabel == null)
 					throw new IllegalStateException("Datum previous word can NEVER be null");
-				
-				
+
+
 				prevLabel = labelIndex.indexOf(previousLabel);
 
 				localScores = computeScores(datum.features);
@@ -107,10 +134,10 @@ public class Viterbi implements Serializable {
 			int f = featureIndex.indexOf(feature);
 			if (f < 0) 
 				continue;
-			
+
 			for (int i = 0; i < scores.length; i++) 
 				scores.put(i,weights.get(i,f));
-			
+
 		}
 
 		return scores;

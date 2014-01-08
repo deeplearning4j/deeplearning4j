@@ -12,8 +12,8 @@ public class BaseDatasetIterator implements DataSetIterator {
 
 
 	private static final long serialVersionUID = -116636792426198949L;
-	private int batch,numExamples;
-	private DataSetFetcher fetcher;
+	protected int batch,numExamples;
+	protected DataSetFetcher fetcher;
 	
 	
 	

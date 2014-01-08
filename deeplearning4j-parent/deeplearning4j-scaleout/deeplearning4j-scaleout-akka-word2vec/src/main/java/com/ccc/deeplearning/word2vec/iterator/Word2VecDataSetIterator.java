@@ -13,6 +13,12 @@ import com.ccc.deeplearning.word2vec.Word2Vec;
  *
  */
 public class Word2VecDataSetIterator extends BaseDatasetIterator {
+	@Override
+	public boolean hasNext() {
+		return fetcher.hasMore();
+	}
+
+
 	private static final long serialVersionUID = 2397051312760991798L;
 
 	

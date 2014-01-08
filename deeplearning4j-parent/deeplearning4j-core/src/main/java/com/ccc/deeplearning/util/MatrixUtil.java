@@ -157,6 +157,7 @@ public class MatrixUtil {
 		DoubleMatrix d = new DoubleMatrix(arr.length);
 		for(int i = 0; i < arr.length; i++)
 			d.put(i,arr[i]);
+		d.reshape(1, d.length);
 		return d;
 	}
 
