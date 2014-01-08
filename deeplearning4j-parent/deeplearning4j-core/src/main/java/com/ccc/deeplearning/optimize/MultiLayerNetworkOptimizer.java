@@ -56,9 +56,10 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 		lr *= network.learningRateUpdate;
-		opt  = new cc.mallet.optimize.LimitedMemoryBFGS(this);
+		opt  = new cc.mallet.optimize.ConjugateGradient(this);
 
 		boolean done = false;
+		int numTimesFailed = 0;
 		for(int i = 0; i < epochs; i++)
 			while(!done) {
 				try {
@@ -67,7 +68,13 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 				catch(InvalidOptimizableException e) {
 					network.logLayer.input = layerInput;
 					network.logLayer.labels = labels;
-
+					numTimesFailed++;
+					if(numTimesFailed >= 5) {
+						done = true;
+						log.warn("Too many optimization errors; breaking");
+						continue;
+					}
+					
 					network.logLayer.train(layerInput, labels, lr);
 
 
@@ -78,7 +85,13 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 				catch(OptimizationException e2) {
 					network.logLayer.input = layerInput;
 					network.logLayer.labels = labels;
-
+					numTimesFailed++;
+					if(numTimesFailed >= 5) {
+						done = true;
+						log.warn("Too many optimization errors; breaking");
+						continue;
+					}
+					
 					network.logLayer.train(layerInput, labels, lr);
 
 

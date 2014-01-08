@@ -14,7 +14,10 @@ import com.ccc.deeplearning.word2vec.Word2Vec;
 /**
  * Semantic similarity score 
  * on whether 2 articles are the same.
- * The cut off number is 0.05
+ * The cut off number is going to be low.
+ * Experimentation is usually going to be required
+ * to find the right cut off point for whether an article is "similar" or not
+ * The more data you train on for word2vec the more accurate the classifier is.
  * for whether 2 articles are similar.
  * 
  * This is based on a few factors: one is 

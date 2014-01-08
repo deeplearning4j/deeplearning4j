@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.DataSetFetcher;
+import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.ccc.deeplearning.word2vec.util.WindowConverter;
@@ -30,7 +31,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	 * 
 	 */
 	private static final long serialVersionUID = 3245955804749769475L;
-	private Iterator<File> files;
+	private transient Iterator<File> files;
 	private Word2Vec vec;
 	private static Pattern begin = Pattern.compile("<[A-Z]+>");
 	private static Pattern end = Pattern.compile("</[A-Z]+>");
@@ -40,26 +41,54 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	private static Logger log = LoggerFactory.getLogger(Word2VecDataFetcher.class);
 	private int totalExamples;
 	private int minWordFrequency;
+	private boolean trainWord2Vec = false;
+	private String path;
 	
 	public Word2VecDataFetcher(String path,Word2Vec vec,List<String> labels) {
 		if(vec == null || labels == null || labels.isEmpty())
 			throw new IllegalArgumentException("Unable to initialize due to missing argument or empty label set");
 		this.vec = vec;
 		this.labels = labels;
+		this.path = path;
+		trainWord2Vec = false;
+		collectLabelsAndInitWord2Vec(path);
 	}
-	
+
 	public Word2VecDataFetcher(String path,int minWordFrequency) {
 		this.minWordFrequency = minWordFrequency;
+		trainWord2Vec = true;
+		this.path = path;
 		collectLabelsAndInitWord2Vec(path);
 	}
 
 	private void collectLabelsAndInitWord2Vec(String path) {
 		files = FileUtils.iterateFiles(new File(path), null, true);
-		vec = new Word2Vec(FileUtils.iterateFiles(new File(path), null, true));
-		
+		if(vec == null) {
+			vec = new Word2Vec(FileUtils.iterateFiles(new File(path), null, true));
+		}
 		vec.setMinWordFrequency(minWordFrequency);
 		Set<String> labels = new HashSet<String>();
 		int linesCount  = 0;
+		if(this.labels.isEmpty()) {
+			linesCount = findLabels();
+			log.info("Processed " + linesCount + " lines for training");
+			if(trainWord2Vec)
+				vec.setup();
+			files = FileUtils.iterateFiles(new File(path), null, true);
+
+			//builds vocab and other associated tools
+			if(trainWord2Vec)
+				vec.train();
+			//reset file iterator for training on files
+			files = FileUtils.iterateFiles(new File(path), null, true);
+			//unique labels only: capture everything in a list for index of operations
+			this.labels.addAll(labels);
+		}
+
+	}
+
+	private int findLabels() {
+		int linesCount = 0;
 		while(files.hasNext()) {
 			File next = files.next();
 			try {
@@ -71,7 +100,8 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 					List<Window> windows = Windows.windows(line);
 					totalExamples += windows.size();
 					linesCount++;
-					vec.addToVocab(line);
+					if(trainWord2Vec)
+						vec.addToVocab(line);
 					Matcher beginMatcher = begin.matcher(line);
 					Matcher endMatcher = end.matcher(line);
 					//found pair
@@ -91,20 +121,9 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 				throw new RuntimeException(e);
 			}
 		}
-		log.info("Processed " + linesCount + " lines for training");
-		vec.setup();
-		files = FileUtils.iterateFiles(new File(path), null, true);
-
-		//builds vocab and other associated tools
-		vec.train();
-		//reset file iterator for training on files
-		files = FileUtils.iterateFiles(new File(path), null, true);
-		//unique labels only: capture everything in a list for index of operations
-		this.labels.addAll(labels);
+		return linesCount;
 	}
 
-
-	
 
 	private DataSet fromCache() {
 		DoubleMatrix outcomes = null;
@@ -113,35 +132,44 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		outcomes = new DoubleMatrix(batch,labels.size());
 		for(int i = 0; i < batch; i++) {
 			input.putRow(i,new DoubleMatrix(WindowConverter.asExample(cache.get(i), vec)));
-			outcomes.put(i,labels.indexOf(cache.get(i).getLabel()),1.0);
+			int idx = labels.indexOf(cache.get(i).getLabel());
+			if(idx < 0)
+				idx = 0;
+			outcomes.putRow(i,MatrixUtil.toOutcomeVector(idx, labels.size()));
 		}
 		return new DataSet(input,outcomes);
-		
+
 	}
-	
+
 	@Override
 	public DataSet next() {
 		//pop from cache when possible, or when there's nothing left
 		if(cache.size() >= batch || !files.hasNext()) 
 			return fromCache();
 
-		
+
 
 		File f = files.next();
 		try {
 			LineIterator lines = FileUtils.lineIterator(f);
 			DoubleMatrix outcomes = null;
 			DoubleMatrix input = null;
-			
+
 			while(lines.hasNext()) {
 				List<Window> windows = Windows.windows(lines.nextLine());
+				if(windows.isEmpty() && lines.hasNext())
+		              continue;
 				
 				if(windows.size() < batch) {
 					input = new DoubleMatrix(windows.size(),vec.getSyn1().columns * vec.getWindow());
 					outcomes = new DoubleMatrix(batch,labels.size());
 					for(int i = 0; i < windows.size(); i++) {
 						input.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
-						outcomes.put(i,labels.indexOf(windows.get(i).getLabel()),1.0);
+						int idx = labels.indexOf(windows.get(i).getLabel());
+						if(idx < 0)
+							idx = 0;
+						DoubleMatrix outcomeRow = MatrixUtil.toOutcomeVector(idx, labels.size());
+						outcomes.putRow(i,outcomeRow);
 					}
 					return new DataSet(input,outcomes);
 
@@ -152,7 +180,11 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 					outcomes = new DoubleMatrix(batch,labels.size());
 					for(int i = 0; i < batch; i++) {
 						input.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
-						outcomes.put(i,labels.indexOf(windows.get(i).getLabel()),1.0);
+						int idx = labels.indexOf(windows.get(i).getLabel());
+						if(idx < 0)
+							idx = 0;
+						DoubleMatrix outcomeRow = MatrixUtil.toOutcomeVector(idx, labels.size());
+						outcomes.putRow(i,outcomeRow);
 					}
 					//add left over to cache; need to ensure that only batch rows are returned
 					/*
@@ -175,7 +207,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		return null;
 	}
 
-	
+
 
 	@Override
 	public int totalExamples() {
@@ -184,7 +216,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 	@Override
 	public int inputColumns() {
-		return labels.size();
+		return vec.getLayerSize() * vec.getWindow();
 	}
 
 	@Override
@@ -195,7 +227,8 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 	@Override
 	public void reset() {
-		throw new UnsupportedOperationException();
+		files = FileUtils.iterateFiles(new File(path), null, true);
+		cache.clear();
 
 	}
 
@@ -203,7 +236,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 	@Override
 	public int cursor() {
-		throw new UnsupportedOperationException();
+		return 0;
 
 	}
 
@@ -211,7 +244,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 	@Override
 	public boolean hasMore() {
-		return files.hasNext() && cache.isEmpty();
+		return files.hasNext() || !cache.isEmpty();
 	}
 
 	@Override
@@ -249,6 +282,6 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 
 
-	
+
 
 }

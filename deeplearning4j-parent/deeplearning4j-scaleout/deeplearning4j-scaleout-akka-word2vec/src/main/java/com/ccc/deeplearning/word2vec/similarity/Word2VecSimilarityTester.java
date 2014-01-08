@@ -87,8 +87,9 @@ public class Word2VecSimilarityTester {
 				double wordSim = (double) inter.size() / (double) wordList.size();
 				double finalScore  = MatrixUtil.cosineSim(a1Matrix, a2Matrix) * wordSim;
 
-				if(finalScore >= 0.05) {
-					log.info(f1.getName() + " is similar to " + f2.getName());
+				if(finalScore >= 0.035) {
+					log.info(f1.getName() + " is similar to " + f2.getName() + " with score " + finalScore);
+					
 				}
 			}
 		}

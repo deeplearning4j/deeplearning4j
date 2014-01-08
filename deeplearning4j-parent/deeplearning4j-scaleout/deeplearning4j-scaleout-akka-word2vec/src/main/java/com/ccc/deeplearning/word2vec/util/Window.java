@@ -65,12 +65,12 @@ public class Window implements Serializable {
 
 		for(String s : begin) {
 			if(s.matches(BEGIN_LABEL)) {
-				this.label = s.replaceAll("(<|>)","");
+				this.label = s.replaceAll("(<|>)","").replace("/","");
 				beginLabel = true;
 			}
 			else if(s.matches(END_LABEL)) {
 				endLabel = true;
-				this.label = s.replaceAll("(<|>|/)","");
+				this.label = s.replaceAll("(<|>|/)","").replace("/","");
 
 			}
 
@@ -119,7 +119,7 @@ public class Window implements Serializable {
 	}
 
 	public String getLabel() {
-		return label;
+		return label.replace("/","");
 	}
 
 	public int getWindowSize() {

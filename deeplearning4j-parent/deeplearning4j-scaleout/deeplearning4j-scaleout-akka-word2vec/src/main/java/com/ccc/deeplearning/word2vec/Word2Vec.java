@@ -117,6 +117,7 @@ public class Word2Vec implements Serializable {
 		readStopWords();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void readStopWords() {
 		try {
 			stopWords = IOUtils.readLines(new ClassPathResource("/stopwords").getInputStream());
