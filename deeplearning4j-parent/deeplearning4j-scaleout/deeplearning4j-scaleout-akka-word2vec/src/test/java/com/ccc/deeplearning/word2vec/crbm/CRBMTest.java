@@ -4,18 +4,22 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
+import com.ccc.deeplearning.rbm.CRBM;
+import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
+import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.ccc.deeplearning.word2vec.util.WindowConverter;
 import com.ccc.deeplearning.word2vec.util.Windows;
@@ -28,7 +32,7 @@ public class CRBMTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testTrain() throws Exception {
-		ClassPathResource model = new ClassPathResource("/word2vecmodel.bin");
+		ClassPathResource model = new ClassPathResource("/word2vec-address.bin");
 		File f = model.getFile();
 
 		Word2Vec vec = Word2VecLoader.loadModel(f);
@@ -36,52 +40,105 @@ public class CRBMTest {
 		int nIn = vec.getWindow() * vec.getSyn0().columns;
 		CRBM r = null;
 
-		File dir = new File("src/test/resources/articles");
+		File dir = new File("src/test/resources/deeplearning");
 
 		Iterator<File> files = FileUtils.iterateFiles(dir, null, true);
 		List<DoubleMatrix> trainingExamples = new ArrayList<DoubleMatrix>();
+		List<String> allLines = new ArrayList<String>();
 
 		while(files.hasNext()) {
 			File next = files.next();
 			List<String> lines = FileUtils.readLines(next);
 
 			for(String line : lines) {
+				line = new InputHomogenization(line).transform();
+				allLines.add(line);
 				List<Window> windows = Windows.windows(line);
 				for(Window window : windows) {
 					DoubleMatrix input = new DoubleMatrix(WindowConverter.asExample(window, vec)).transpose();
+					//MatrixUtil.normalize(input);
+					
 					trainingExamples.add(input);
 
 
 				}
 			}
-			DoubleMatrix input = new DoubleMatrix(trainingExamples.size(),trainingExamples.get(0).columns);
-			for(int i = 0; i < trainingExamples.size(); i++) {
-				DoubleMatrix example = trainingExamples.get(i);
-				input.putRow(i,example);
-			}
 
-			if(r == null) {
-				r = new CRBM.Builder()
-				.numberOfVisible(input.columns)
-				.numHidden(500)
-				.withL2(0.1)
-				.withMomentum(0.9)
-				.withRandom(new MersenneTwister(123))
-				.build();
 
-			}
 
-			log.info("Number of inputs " + nIn + " and number of columns " + trainingExamples.get(0).columns);
-			for(int i = 0; i < 10; i++)
-				r.trainTillConvergence(0.1, 1, input);
+
 
 
 		}
 
 
-		log.info("Final cross entropy " + r.getReConstructionCrossEntropy());
+
+		int numExamples = 20000;
+		
+		DoubleMatrix input = new DoubleMatrix(numExamples,trainingExamples.get(0).columns);
+		for(int i = 0; i < numExamples; i++) {
+			DoubleMatrix example = trainingExamples.get(i);
+			input.putRow(i,example);
+		}
+		
+
+		if(r == null) {
+			r = new CRBM.Builder()
+			.numberOfVisible(input.columns)
+			.numHidden(500)
+			.withL2(0.1)
+			.withMomentum(0.9)
+			.withRandom(new MersenneTwister(123))
+			.build();
+
+		}
+
+		log.info("Number of inputs " + nIn + " and number of columns " + trainingExamples.get(0).columns);
+		String example = allLines.get(0);
+
+		List<Window> windows = Windows.windows(example);
+		StringBuffer errors = new StringBuffer();
+
+		
+		for(int i = 0; i < 300; i++) {
 
 
+			r.contrastiveDivergence(0.01, 1, input);
+			/*StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(example).transform());
+			while(tokenizer.hasMoreTokens()) {
+				String token = tokenizer.nextToken();
+				if(vec.getVocab().containsKey(token)) {
+					DoubleMatrix curr = vec.getWordVectorMatrix(token).mul(0.0001);
+					DoubleMatrix gradient = curr.sub(vec.getWordVectorMatrix(token));
+					DoubleMatrix add = vec.getWordVectorMatrix(token).add(gradient);
+					int idx = vec.indexOf(token);
+					vec.getSyn0().putRow(idx, add);
+					log.info("Updated word " + token);
+				}
+			}
+
+			input = new DoubleMatrix(windows.size(),trainingExamples.get(0).columns);
+			for(int w = 0; w < windows.size(); w++) {
+				input.putRow(w,new DoubleMatrix(WindowConverter.asExample(windows.get(w), vec)).transpose());
+			}*/
+			double entropy = r.getReConstructionCrossEntropy();
+			errors.append(i + "," + entropy + "\n");
+			log.info("cross entropy " + entropy);
+
+		}
+		
+	
+		FileUtils.writeStringToFile(new File("/home/agibsonccc/Desktop/errors.csv"), errors.toString());
+		
+		log.info("End " + r.getReConstructionCrossEntropy());
+		
+		for(int i = 0; i < windows.size(); i++) {
+			DoubleMatrix test = new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)).transpose();
+			test = MatrixUtil.normalize(test);
+			String testWords = windows.get(i).asTokens();
+			DoubleMatrix reconstructed = MatrixUtil.normalize(r.reconstruct(test));
+			log.info("Reconstruct " + testWords  + " was " + reconstructed + " with example " + test);
+		}
 
 	}
 

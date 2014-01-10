@@ -26,6 +26,13 @@ public class MatrixUtil {
 	}
 	
 	
+	public static DoubleMatrix normalize(DoubleMatrix input) {
+		double min = input.min();
+		double max = input.max();
+		return input.subi(min).divi(max - min);
+	}
+	
+	
 	public static double cosine(DoubleMatrix matrix) {
 		//1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
 		return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());

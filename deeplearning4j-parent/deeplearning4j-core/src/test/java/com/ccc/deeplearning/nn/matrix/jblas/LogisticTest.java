@@ -16,7 +16,7 @@ import com.ccc.deeplearning.datasets.fetchers.IrisDataFetcher;
 import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.eval.Evaluation;
-import com.ccc.deeplearning.nn.matrix.jblas.LogisticRegression;
+import com.ccc.deeplearning.nn.LogisticRegression;
 
 
 public class LogisticTest {

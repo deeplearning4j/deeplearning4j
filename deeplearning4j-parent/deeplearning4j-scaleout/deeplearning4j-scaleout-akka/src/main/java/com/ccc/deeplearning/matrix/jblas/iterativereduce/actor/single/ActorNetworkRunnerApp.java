@@ -224,12 +224,12 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String getClassForAlgorithm() {
 		switch(algorithm) {
 		case  "da" :
-			return "com.ccc.deeplearning.sda.jblas.DenoisingAutoEncoder";
+			return "com.ccc.deeplearning.sda.DenoisingAutoEncoder";
 
 		case "rbm" : 
-			return "com.ccc.deeplearning.rbm.matrix.jblas.RBM";
+			return "com.ccc.deeplearning.rbm.RBM";
 		case "crbm":
-			return "com.ccc.deeplearning.rbm.matrix.jblas.CRBM";
+			return "com.ccc.deeplearning.rbm.CRBM";
 		}
 		return null;
 	}

@@ -15,7 +15,7 @@ import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.eval.Evaluation;
-import com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder;
+import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 public class MnistSdaTest extends DeepLearningTest {
 

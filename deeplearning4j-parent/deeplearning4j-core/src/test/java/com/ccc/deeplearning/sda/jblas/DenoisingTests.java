@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.sda.jblas.DenoisingAutoEncoder;
+import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 
 
 public class DenoisingTests {

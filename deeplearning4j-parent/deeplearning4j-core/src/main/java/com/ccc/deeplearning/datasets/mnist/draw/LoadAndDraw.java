@@ -8,7 +8,7 @@ import org.jblas.DoubleMatrix;
 
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
 
 public class LoadAndDraw {

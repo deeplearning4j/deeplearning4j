@@ -6,11 +6,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.datasets.mnist.draw.DrawMnistGreyScale;
-import com.ccc.deeplearning.rbm.matrix.jblas.RBM;
-import com.ccc.deeplearning.sda.jblas.DenoisingAutoEncoder;
+import com.ccc.deeplearning.rbm.RBM;
 import com.ccc.deeplearning.util.MatrixUtil;
 
 public class RBMMnistTest {

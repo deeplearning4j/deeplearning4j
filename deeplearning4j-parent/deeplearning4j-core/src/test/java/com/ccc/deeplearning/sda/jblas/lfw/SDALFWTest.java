@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
-import com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder;
+import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 public class SDALFWTest extends DeepLearningTest {
    private static Logger log = LoggerFactory.getLogger(SDALFWTest.class);

@@ -1,6 +1,5 @@
 package com.ccc.deeplearning.word2vec.viterbi;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,10 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.ccc.deeplearning.berkeley.CounterMap;
 import com.ccc.deeplearning.util.MatrixUtil;
-import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 import com.ccc.deeplearning.word2vec.util.Window;
-import com.ccc.deeplearning.word2vec.util.WindowConverter;
 import com.ccc.deeplearning.word2vec.util.Windows;
 
 public class ViterbiTest {

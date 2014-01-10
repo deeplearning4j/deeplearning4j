@@ -18,7 +18,7 @@ import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.ActorNetworkRunner;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
@@ -92,7 +92,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		conf.put(CORRUPTION_LEVEL, 0.3);
 		conf.put(SPLIT, 1);
 		conf.put(OUT, 2);
-		conf.put(CLASS, "com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder");
+		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
 		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
 				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
 
@@ -115,7 +115,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 	public void testMnist() throws Exception {
 		MnistDataSetIterator fetcher = new MnistDataSetIterator(60,600);
 		runner = new ActorNetworkRunner("master",fetcher);
-		conf.put(CLASS, "com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder");
+		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
 		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
 		conf.put(SPLIT,String.valueOf(10));
 		conf.put(PRE_TRAIN_EPOCHS, String.valueOf(1));

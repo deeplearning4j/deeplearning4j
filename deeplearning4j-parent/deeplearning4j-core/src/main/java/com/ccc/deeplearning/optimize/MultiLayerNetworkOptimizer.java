@@ -14,7 +14,7 @@ import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.OptimizationException;
 import cc.mallet.optimize.Optimizer;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
 
 
@@ -29,7 +29,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	private static final long serialVersionUID = -3012638773299331828L;
 
-	private BaseMultiLayerNetwork network;
+	protected BaseMultiLayerNetwork network;
 
 	private static Logger log = LoggerFactory.getLogger(MultiLayerNetworkOptimizer.class);
 	private double lr;
@@ -45,20 +45,18 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
-
-
-
 		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
 
-		network.logLayer.train(layerInput, labels, lr);
+		for(int i = 0; i < epochs; i++) {
+			network.logLayer.train(layerInput, labels, lr);
+			lr *= network.learningRateUpdate;
+			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
+		}
 
 
-		lr *= network.learningRateUpdate;
-		opt  = new cc.mallet.optimize.ConjugateGradient(this);
-
-		boolean done = false;
+		/*boolean done = false;
 		int numTimesFailed = 0;
 		for(int i = 0; i < epochs; i++)
 			while(!done) {
@@ -74,7 +72,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 						log.warn("Too many optimization errors; breaking");
 						continue;
 					}
-					
+
 					network.logLayer.train(layerInput, labels, lr);
 
 
@@ -91,7 +89,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 						log.warn("Too many optimization errors; breaking");
 						continue;
 					}
-					
+
 					network.logLayer.train(layerInput, labels, lr);
 
 
@@ -101,7 +99,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 				}
 
 			}
-
+		 */
 	}
 
 

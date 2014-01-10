@@ -14,7 +14,7 @@ import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.OptimizationException;
 import cc.mallet.optimize.Optimizer;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 /**
  * Performs basic beam search based on the network's loss function
  * @author Adam Gibson
@@ -42,23 +42,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		if(opt == null)
 			opt = new cc.mallet.optimize.ConjugateGradient(this);
 
-		boolean done = false;
 		network.train(x, lr, extraParams);
-		while(!done) {
-			try {
-				done = opt.optimize();
-			}
-			catch(InvalidOptimizableException e) {
-				done = true;
-				log.info("Error on step; finishing");
-			}
-			catch(OptimizationException e2) {
-				done = true;
-				log.info("Error on step; finishing");
-
-			}
-
-		}
+		
 	}
 
 

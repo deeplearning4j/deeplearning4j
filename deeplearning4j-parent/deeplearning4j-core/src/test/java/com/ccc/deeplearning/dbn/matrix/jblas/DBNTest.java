@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
-import com.ccc.deeplearning.dbn.matrix.jblas.CDBN;
-import com.ccc.deeplearning.dbn.matrix.jblas.DBN;
-import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
+import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.dbn.DBN;
+import com.ccc.deeplearning.rbm.CRBM;
 
 
 public class DBNTest  extends DeepLearningTest {

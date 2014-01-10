@@ -19,7 +19,7 @@ import akka.dispatch.OnComplete;
 import com.ccc.deeplearning.iterativereduce.akka.ComputableMasterAkka;
 import com.ccc.deeplearning.iterativereduce.akka.ComputableWorkerAkka;
 import com.ccc.deeplearning.iterativereduce.akka.DeepLearningAccumulator;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;

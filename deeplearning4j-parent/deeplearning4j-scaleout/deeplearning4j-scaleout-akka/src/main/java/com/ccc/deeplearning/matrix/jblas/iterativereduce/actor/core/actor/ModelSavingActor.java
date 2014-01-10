@@ -14,7 +14,7 @@ import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
-import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
+import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
 
 

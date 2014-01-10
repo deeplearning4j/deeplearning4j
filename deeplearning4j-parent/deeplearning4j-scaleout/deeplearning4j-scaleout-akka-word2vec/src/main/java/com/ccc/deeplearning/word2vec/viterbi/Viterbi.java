@@ -13,8 +13,10 @@ import java.util.List;
 
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.nn.matrix.jblas.Persistable;
+import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.word2vec.util.Window;
 
 /**
@@ -29,7 +31,8 @@ public class Viterbi implements Persistable {
 	private Index labelIndex;
 	private Index featureIndex;
 	private DoubleMatrix weights;
-
+	private static Logger log = LoggerFactory.getLogger(Viterbi.class);
+	
 	public Viterbi(Index labelIndex, Index featureIndex, DoubleMatrix weights) {
 		this.labelIndex = labelIndex;
 		this.featureIndex = featureIndex;
@@ -98,6 +101,9 @@ public class Viterbi implements Persistable {
 
 			// for each previous label 
 			for (int j = 0; j < numLabels(); j++) {
+				int datumToEval = i + j;
+				if(datumToEval >=  dataWithMultiplePrevLabels.size())
+					break;
 				Datum datum = dataWithMultiplePrevLabels.get(i + j);
 
 
@@ -163,6 +169,7 @@ public class Viterbi implements Persistable {
 	
 	public static Viterbi load(String path) throws IOException {
 		Viterbi v = new Viterbi();
+		log.info("Loading viterbi model...");
 		v.load(new BufferedInputStream(new FileInputStream(new File(path))));
 		return v;
 	}

@@ -5,7 +5,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.nn.matrix.jblas.HiddenLayer;
+import com.ccc.deeplearning.nn.HiddenLayer;
 
 public class HiddenLayerTest {
 

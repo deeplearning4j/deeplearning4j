@@ -4,8 +4,8 @@ import java.util.HashMap;
 
 import org.json.JSONObject;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 
 public class Conf extends HashMap<String,String> implements DeepLearningConfigurable {
 
@@ -24,7 +24,7 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		put(CORRUPTION_LEVEL, String.valueOf(0.3));
 		put(OUT,String.valueOf(1));
 		put(N_IN,String.valueOf(1));
-		put(CLASS,"com.ccc.deeplearning.sda.jblas.StackedDenoisingAutoEncoder");
+		put(CLASS,"com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
 		put(PARAM_ALGORITHM,"sda");
 		put(LAYER_SIZES, "300,300,300");
 	}
