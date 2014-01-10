@@ -44,6 +44,7 @@ import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.MapFactory;
 import com.ccc.deeplearning.berkeley.Triple;
 import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
 
 /**
@@ -113,7 +114,7 @@ public class Word2Vec implements Serializable {
 	public Word2Vec() {
 		createExpTable();
 		oob = new double[layerSize];
-		Arrays.fill(oob,1.0);
+		Arrays.fill(oob,0.0);
 		readStopWords();
 	}
 
@@ -166,7 +167,7 @@ public class Word2Vec implements Serializable {
 		this.buildVocab(sentences);
 
 		oob = new double[layerSize];
-		Arrays.fill(oob,1.0);
+		Arrays.fill(oob,0.0);
 		readStopWords();
 
 	}
@@ -174,9 +175,17 @@ public class Word2Vec implements Serializable {
 
 	public double[] getWordVector(String word) {
 		int i = this.wordIndex.indexOf(word);
-		if(i < 0)
-			return oob;
+		if(i < 0) {
+			i = wordIndex.indexOf("STOP");
+			if(i < 0)
+				return oob;
+		}
+
 		return syn0.getRow(i).toArray();
+	}
+
+	public int indexOf(String word) {
+		return wordIndex.indexOf(word);
 	}
 
 	public DoubleMatrix getWordVectorMatrix(String word) {
@@ -285,7 +294,7 @@ public class Word2Vec implements Serializable {
 					try {
 						LineIterator lines = FileUtils.lineIterator(fileIterator.next());
 						while(lines.hasNext()) {
-							final String sentence = lines.nextLine().replaceAll("\\p{P}", "");
+							final String sentence = new InputHomogenization(lines.nextLine().replaceAll("\\p{P}", "")).transform();
 							numLinesIterated++;
 							processSentence(sentence, sentenceCounter,totalWords);
 
@@ -373,6 +382,8 @@ public class Word2Vec implements Serializable {
 		List<VocabWord> sentence2 = new ArrayList<VocabWord>();
 		while(tokenizer.hasMoreTokens()) {
 			String next = tokenizer.nextToken();
+			if(stopWords.contains(next))
+				next = "STOP";
 			VocabWord word = vocab.get(next);
 			if(word == null) 
 				continue;
@@ -535,7 +546,7 @@ public class Word2Vec implements Serializable {
 		int count = 0;
 		//
 		numLines++;
-		StringTokenizer tokenizer = new StringTokenizer(words);
+		StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(words).transform());
 
 		this.allWordsCount += tokenizer.countTokens();
 		count++;
@@ -544,6 +555,8 @@ public class Word2Vec implements Serializable {
 
 		while(tokenizer.hasMoreTokens()) {
 			String token = tokenizer.nextToken();
+			if(stopWords.contains(token))
+				token = "STOP";
 			VocabWord word = rawVocab.get(token);
 
 			//this will also increment the
@@ -583,7 +596,7 @@ public class Word2Vec implements Serializable {
 		while(!queue.isEmpty()) {
 			final String words = queue.poll();
 
-			StringTokenizer tokenizer = new StringTokenizer(words);
+			StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(words).transform());
 
 			this.allWordsCount += tokenizer.countTokens();
 			count++;
@@ -592,6 +605,8 @@ public class Word2Vec implements Serializable {
 
 			while(tokenizer.hasMoreTokens()) {
 				String token = tokenizer.nextToken();
+				if(stopWords.contains(token))
+					token = "STOP";
 				VocabWord word = rawVocab.get(token);
 
 				//this will also increment the
@@ -623,14 +638,14 @@ public class Word2Vec implements Serializable {
 		setup();
 
 	}
-	
+
 	public boolean matchesAnyStopWord(String word) {
 		for(String s : stopWords)
 			if(s.equalsIgnoreCase(word))
 				return true;
 		return false;
 	}
-	
+
 
 	public void addSentence(String sentence) {
 		this.sentences.add(sentence);

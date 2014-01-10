@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.jblas.DoubleMatrix;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 
 public class SingleNetworkAccumulator {
 	private List<BaseNeuralNetwork> workers = new ArrayList<BaseNeuralNetwork>();

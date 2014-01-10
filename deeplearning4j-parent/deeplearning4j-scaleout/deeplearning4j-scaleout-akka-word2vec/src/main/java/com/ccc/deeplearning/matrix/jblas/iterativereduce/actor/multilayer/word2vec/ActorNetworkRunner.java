@@ -27,7 +27,6 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
-import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.BatchActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.ModelSavingActor;
@@ -37,7 +36,8 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.Master
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.WorkerActor;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
+import com.ccc.deeplearning.word2vec.dataset.Word2VecDataSet;
+import com.ccc.deeplearning.word2vec.updateable.Word2VecUpdateable;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -48,15 +48,15 @@ import com.typesafe.config.ConfigFactory;
  * @author Adam Gibson
  *
  */
-public class ActorNetworkRunner extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.ActorNetworkRunner  {
+public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<Word2VecUpdateable>  {
 
 
 	private static final long serialVersionUID = -4385335922485305364L;
 	private transient ActorSystem system;
 	private Integer currEpochs = 0;
 	private Integer epochs;
-	private List<Pair<DoubleMatrix,DoubleMatrix>> samples;
-	private UpdateableImpl result;
+	private List<Word2VecDataSet> samples;
+	private Word2VecUpdateable result;
 	private  ActorRef mediator;
 
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
@@ -251,7 +251,7 @@ public class ActorNetworkRunner extends com.ccc.deeplearning.matrix.jblas.iterat
 	
 	}
 	
-	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+	public void train(List<Word2VecDataSet> list) {
 		this.samples = list;
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
@@ -274,20 +274,20 @@ public class ActorNetworkRunner extends com.ccc.deeplearning.matrix.jblas.iterat
 
 
 
-	public void train(Pair<DoubleMatrix,DoubleMatrix> input) {
+	public void train(Word2VecDataSet input) {
 		train(new ArrayList<>(Arrays.asList(input)));
 
 	}
 
 
 
-	public void train(DoubleMatrix input,DoubleMatrix labels) {
-		train(new Pair<DoubleMatrix,DoubleMatrix>(input,labels));
+	public void train(List<String> input,DoubleMatrix labels) {
+		train(new Word2VecDataSet(input,labels));
 	}
 
 	
 	@Override
-	public void epochComplete(UpdateableImpl result) {
+	public void epochComplete(Word2VecUpdateable result) {
 		currEpochs++;
 		if(currEpochs < epochs) {
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
@@ -314,7 +314,7 @@ public class ActorNetworkRunner extends com.ccc.deeplearning.matrix.jblas.iterat
 
 	}
 
-	public UpdateableImpl getResult() {
+	public Word2VecUpdateable getResult() {
 		return result;
 	}
 

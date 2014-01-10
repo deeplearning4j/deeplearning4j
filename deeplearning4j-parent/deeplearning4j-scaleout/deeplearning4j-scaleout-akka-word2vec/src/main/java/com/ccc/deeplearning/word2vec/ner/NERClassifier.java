@@ -21,9 +21,10 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.berkeley.CounterMap;
 import com.ccc.deeplearning.datasets.DataSet;
-import com.ccc.deeplearning.dbn.matrix.jblas.CDBN;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.nn.multilayer.Word2VecMultiLayerNetwork;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.ccc.deeplearning.word2vec.util.WindowConverter;
 import com.ccc.deeplearning.word2vec.util.Windows;
@@ -52,7 +53,7 @@ public class NERClassifier implements Serializable {
 	//vectorized outcome (1,0), (0,1)
 	private List<double[]> trainingOutput = new ArrayList<double[]>();
 	private static Logger log = LoggerFactory.getLogger(NERClassifier.class);
-	private BaseMultiLayerNetwork prop;
+	private Word2VecMultiLayerNetwork prop;
 	//string labels for each training example
 	private List<String> stringOutcomes = new ArrayList<String>();
 	//available labels
@@ -64,10 +65,11 @@ public class NERClassifier implements Serializable {
 	private boolean trainDeepNet;
 	
 	
-	public NERClassifier(BaseMultiLayerNetwork network,Word2Vec vec,Viterbi viterbi) {
+	public NERClassifier(Word2VecMultiLayerNetwork network,Word2Vec vec,Viterbi viterbi,List<String> labels) {
 		this.prop = network;
 		this.vec = vec;
 		this.viterbi = viterbi;
+		this.labels = labels;
 	}
 	
 	/**
@@ -277,7 +279,7 @@ public class NERClassifier implements Serializable {
 		if(trainDeepNet) {
 			DataSet d = new DataSet(inputs,outputs);
 
-			prop = new CDBN.Builder()
+			prop = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec)
 			.hiddenLayerSizes(numNodes)
 			.numberOfInputs(inputs.columns)
 			.numberOfOutPuts(outputs.columns)
@@ -317,6 +319,7 @@ public class NERClassifier implements Serializable {
 	}
 	
 	public List<String>  predict(String words) {
+		words = new InputHomogenization(words).transform();
 		List<Window> windows = Windows.windows(words);
 		List<String> labels = new ArrayList<String>();
 

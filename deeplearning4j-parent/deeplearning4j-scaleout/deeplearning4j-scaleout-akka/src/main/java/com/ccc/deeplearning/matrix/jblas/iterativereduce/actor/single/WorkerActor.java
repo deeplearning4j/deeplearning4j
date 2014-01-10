@@ -17,7 +17,7 @@ import akka.japi.Creator;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.iterativereduce.single.UpdateableSingleImpl;
 /**

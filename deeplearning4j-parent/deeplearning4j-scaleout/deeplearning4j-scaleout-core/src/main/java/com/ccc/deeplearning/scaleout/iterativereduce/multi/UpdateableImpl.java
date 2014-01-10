@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
 
 public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {

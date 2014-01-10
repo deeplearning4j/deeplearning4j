@@ -12,7 +12,7 @@ import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 
 public class ModelTester {
 

@@ -6,7 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
-import com.ccc.deeplearning.nn.matrix.jblas.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.ComputableWorkerImpl;

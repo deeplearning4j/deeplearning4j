@@ -16,7 +16,7 @@ import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
-import com.ccc.deeplearning.rbm.matrix.jblas.CRBM;
+import com.ccc.deeplearning.rbm.CRBM;
 
 public class CRBMTest extends DeepLearningTest {
 

@@ -19,7 +19,7 @@ import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.eval.Evaluation;
-import com.ccc.deeplearning.rbm.matrix.jblas.RBM;
+import com.ccc.deeplearning.rbm.RBM;
 
 public class RBMTest extends DeepLearningTest {
 

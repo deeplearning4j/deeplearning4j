@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.datasets.DataSet;
-import com.ccc.deeplearning.dbn.matrix.jblas.CDBN;
+import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 import com.ccc.deeplearning.word2vec.similarity.WordMetaData;
