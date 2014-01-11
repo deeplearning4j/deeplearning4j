@@ -103,7 +103,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
+				if(epochsComplete == conf.getInt(NUM_PASSES)) {
 					isDone = true;
 					log.info("All done; shutting down");
 					context().system().shutdown();

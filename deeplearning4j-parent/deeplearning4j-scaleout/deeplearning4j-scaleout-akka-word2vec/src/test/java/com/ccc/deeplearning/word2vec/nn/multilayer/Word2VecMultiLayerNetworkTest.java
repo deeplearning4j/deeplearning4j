@@ -1,6 +1,7 @@
 package com.ccc.deeplearning.word2vec.nn.multilayer;
 
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import com.ccc.deeplearning.eval.Evaluation;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.nn.activation.HardTanh;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
@@ -37,11 +39,7 @@ public class Word2VecMultiLayerNetworkTest {
 		}
 
 		if(network == null) {
-			int inputs = vec.getLayerSize() * vec.getWindow();
-			int[] hiddenLayerSizes = {inputs * 4,inputs *2 ,inputs};
-			network = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec)
-					.withRng(new MersenneTwister(123)).numberOfInputs(inputs).withActivation(new HardTanh())
-					.numberOfOutPuts(2).hiddenLayerSizes(hiddenLayerSizes).build();
+			network = (Word2VecMultiLayerNetwork) BaseMultiLayerNetwork.loadFromFile(new BufferedInputStream(new ClassPathResource("/nn-model.bin").getInputStream()));
 		}
 
 	}
@@ -54,8 +52,7 @@ public class Word2VecMultiLayerNetworkTest {
 		@SuppressWarnings("unchecked")
 		List<String> example = IOUtils.readLines(new ClassPathResource("/deeplearning/ADDRESS.split").getInputStream());		
 		example = example.subList(0, 500);
-		network.pretrain(example, 1, 0.001,500);
-		network.finetune(0.001, 1000, example, Arrays.asList("NONE","ADDRESS"));
+		
 		Evaluation eval = new Evaluation();
 
 		for(int i = 0; i < example.size(); i++) {
