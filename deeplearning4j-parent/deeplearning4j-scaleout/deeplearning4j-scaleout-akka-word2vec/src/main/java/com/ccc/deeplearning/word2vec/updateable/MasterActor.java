@@ -18,9 +18,11 @@ import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
-import com.ccc.deeplearning.scaleout.conf.Conf;
+import com.ccc.deeplearning.word2vec.conf.Conf;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.nn.multilayer.Word2VecMultiLayerNetwork;
+import com.ccc.deeplearning.word2vec.util.Window;
+import com.google.common.collect.Lists;
 
 /**
  * Handles a set of workers and acts as a parameter server for iterative reduce
@@ -31,7 +33,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 
 	protected Word2Vec vec;
-	
+
 	/**
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
@@ -64,7 +66,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 
 	@Override
-	public void setup(Conf conf) {
+	public void setup(com.ccc.deeplearning.scaleout.conf.Conf conf) {
 		//use the rng with the given seed
 		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
 		Word2VecMultiLayerNetwork matrix = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec)
@@ -122,9 +124,9 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		else if(message instanceof List || message instanceof Pair) {
 
 			if(message instanceof List) {
-				List<Pair<DoubleMatrix,DoubleMatrix>> list = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+				List<Window> list = (List<Window>) message;
 				//each pair in the matrix pairs maybe multiple rows
-				splitListIntoRows(list);
+				//splitListIntoRows(list);
 				//delegate split to workers
 				sendToWorkers(list);
 
@@ -155,6 +157,14 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 
 
+
+	public void sendToWorkers(Collection<Window> data) {
+		//int split = conf.getInt(SPLIT);
+		List<Window> l = new ArrayList<Window>(data);
+		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+				l), getSelf());
+
+	}
 
 
 

@@ -1,5 +1,7 @@
 package com.ccc.deeplearning.word2vec.nn.multilayer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.jblas.DoubleMatrix;
@@ -39,10 +41,6 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		
 	}
 	
-	@Override
-	public void finetune(DoubleMatrix labels, double lr, int epochs) {
-		throw new UnsupportedOperationException("Please use the other method. We need to update word2vec as well");
-	}
 
 	
 	
@@ -54,17 +52,13 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		
 		for(int i = 0; i < windows.size(); i++) {
 			Window window = windows.get(i);
-			DoubleMatrix prediction = MatrixUtil.normalize(new DoubleMatrix(WindowConverter.asExample(window,vec)));
+			DoubleMatrix prediction = new DoubleMatrix(WindowConverter.asExample(window,vec));
 			DoubleMatrix toPredict = super.predict(prediction);
 			ret[i] = toPredict.toArray();
 		}
 		return new DoubleMatrix(ret);
 	}
 	
-	@Override
-	public DoubleMatrix predict(DoubleMatrix x) {
-		throw new UnsupportedOperationException("Please input words. This network will not accept arbitrary input.");
-	}
 	
 	@Override
 	protected void update(BaseMultiLayerNetwork matrix) {
@@ -101,6 +95,23 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 			Object[] otherParams) {
 		throw new UnsupportedOperationException("Please use the proper inputs");
 	}
+	
+	public void trainNetwork(Collection<Window> windows,Object[] otherParams) {
+		int columns = vec.getLayerSize() * vec.getWindow();
+		int rows = windows.size();
+		List<Window> w = new ArrayList<Window>(windows);
+		
+		DoubleMatrix ret = new DoubleMatrix(rows,columns);
+		DoubleMatrix labels = new DoubleMatrix(rows,this.labels.size());
+		for(int i = 0; i < rows; i++) {
+			Window w2 = w.get(i);
+			ret.putRow(i,new DoubleMatrix(WindowConverter.asExample(w2, vec)));
+			labels.putRow(i,MatrixUtil.toOutcomeVector(this.labels.indexOf(w.get(i).getLabel()), this.labels.size()));
+		}
+		super.trainNetwork(ret, labels, otherParams);
+	
+	}
+	
 
 	public void trainNetwork(List<String> examples,
 			Object[] otherParams) {
@@ -108,13 +119,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		super.trainNetwork(converter.toInputMatrix(), converter.toLabelMatrix(labels), otherParams);
 	}
 
-	@Override
-	public void pretrain(DoubleMatrix input, int k, double learningRate,
-			int epochs) {
-		throw new UnsupportedOperationException("Please use the proper inputs");
-
-	}
-
+	
 	
 	public void pretrain(List<String> input, int k, double learningRate,
 			int epochs) {
@@ -122,11 +127,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		super.pretrain(converter.toInputMatrix(), k, learningRate, epochs);
 
 	}
-	@Override
-	public void pretrain(int k, double learningRate, int epochs) {
-		throw new UnsupportedOperationException("Please use the proper inputs");
 
-	}
 
 
 
@@ -142,12 +143,17 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 
 	public static class Builder extends BaseMultiLayerNetwork.Builder<Word2VecMultiLayerNetwork> {
 		protected Word2Vec vec;
-		
+		protected List<String> labels;
 		public Builder() {
 			super();
 			this.clazz = Word2VecMultiLayerNetwork.class;
 		}
 		
+		
+		public Builder withLabels(List<String> labels) {
+			this.labels = labels;
+			return this;
+		}
 		
 		public Builder withWord2Vec(Word2Vec vec) {
 			this.vec = vec;
@@ -158,6 +164,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		public Word2VecMultiLayerNetwork build() {
 			Word2VecMultiLayerNetwork ret = super.build();
 			ret.vec = vec;
+			ret.labels = this.labels;
 			return ret;
 		}
 		

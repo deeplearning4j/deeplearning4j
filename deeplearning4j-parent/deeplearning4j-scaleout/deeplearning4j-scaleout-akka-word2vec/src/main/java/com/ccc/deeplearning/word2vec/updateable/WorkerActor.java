@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,27 +14,33 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.japi.Creator;
 
-import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
-import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.activation.HardTanh;
 import com.ccc.deeplearning.scaleout.conf.Conf;
-import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.nn.multilayer.Word2VecMultiLayerNetwork;
+import com.ccc.deeplearning.word2vec.util.Window;
 
+/**
+ * Trains based on a list of windows
+ * converting the inputs to matrices via word2vec
+ * @author Adam Gibson
+ *
+ */
 public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.WorkerActor<Word2VecUpdateable> {
 	private Word2VecMultiLayerNetwork network;
-	private DoubleMatrix combinedInput;
+	private List<Window> input;
 	private Word2Vec vec;
 	protected Word2VecUpdateable workerMatrix;
 	private ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-
+	private List<String> labels;
 	private static Logger log = LoggerFactory.getLogger(WorkerActor.class);
 	public final static String SYSTEM_NAME = "Workers";
 
-	public WorkerActor(Conf conf,Word2Vec vec) {
+	public WorkerActor(Conf conf,Word2Vec vec,List<String> labels) {
 		super(conf);
 		this.vec = vec;
+		this.labels = labels;
 		setup(conf);
 		
 		
@@ -47,12 +52,12 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	}
 
 
-	public static Props propsFor(ActorRef actor,Conf conf,Word2Vec vec) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf,vec));
+	public static Props propsFor(ActorRef actor,Conf conf,Word2Vec vec,List<String> labels) {
+		return Props.create(new WorkerActor.WorkerActorFactory(conf,vec,labels));
 	}
 
-	public static Props propsFor(Conf conf,Word2Vec vec) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf,vec));
+	public static Props propsFor(Conf conf,Word2Vec vec,List<String> labels) {
+		return Props.create(new WorkerActor.WorkerActorFactory(conf,vec,labels));
 	}
 
 
@@ -64,7 +69,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 			log.info("Subscribed to " + ack.toString());
 		}
 		else if(message instanceof List) {
-			List<Pair<DoubleMatrix,DoubleMatrix>> input = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+			List<Window> input = (List<Window>) message;
 			updateTraining(input);
 
 		}
@@ -77,15 +82,8 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 			unhandled(message);
 	}
 
-	private void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
-		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
-		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
-		for(int i = 0; i < list.size(); i++) {
-			newInput.putRow(i,list.get(i).getFirst());
-			newOutput.putRow(i,list.get(i).getSecond());
-		}
-		this.combinedInput = newInput;
-		this.outcomes = newOutput;
+	private void updateTraining(List<Window> windows) {
+		this.input = windows;
 		Word2VecUpdateable work = compute();
 		log.info("Updating parent actor...");
 		//update parameters in master param server
@@ -101,7 +99,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public Word2VecUpdateable compute() {
 		log.info("Training network");
-		network.trainNetwork(combinedInput, outcomes,extraParams);
+		network.trainNetwork(input, extraParams);
 		return new Word2VecUpdateable(network);
 	}
 
@@ -115,7 +113,8 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		super.setup(conf);
 		
 		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
-		network = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec)
+		network = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec).withLabels(labels)
+				.withActivation(new HardTanh())
 				.numberOfInputs(numVisible).numberOfOutPuts(numHidden)
 				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)
 				.withClazz(conf.getClazz(CLASS)).build();
@@ -142,17 +141,18 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		 */
 		private static final long serialVersionUID = 381253681712601968L;
 
-		public WorkerActorFactory(Conf conf,Word2Vec vec) {
+		public WorkerActorFactory(Conf conf,Word2Vec vec,List<String> labels) {
 			this.conf = conf;
 			this.vec = vec;
+			this.labels = labels;
 		}
 
 		private Conf conf;
 		private Word2Vec vec;
-		
+		private List<String> labels;
 		@Override
 		public WorkerActor create() throws Exception {
-			return new WorkerActor(conf,vec);
+			return new WorkerActor(conf,vec,labels);
 		}
 
 	}

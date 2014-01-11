@@ -1,4 +1,4 @@
-package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.word2vec;
+package com.ccc.deeplearning.word2vec.iterativereduce.actor.multilayer;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,17 +27,18 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
-import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
-import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.BatchActor;
+import com.ccc.deeplearning.iterativereduce.actor.BatchActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.ModelSavingActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.SimpleClusterListener;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
-import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.MasterActor;
-import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.WorkerActor;
-import com.ccc.deeplearning.scaleout.conf.Conf;
+import com.ccc.deeplearning.word2vec.updateable.MasterActor;
+import com.ccc.deeplearning.word2vec.updateable.WorkerActor;
+import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
-import com.ccc.deeplearning.word2vec.dataset.Word2VecDataSet;
+import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
 import com.ccc.deeplearning.word2vec.updateable.Word2VecUpdateable;
+import com.ccc.deeplearning.word2vec.util.Window;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -55,7 +56,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private transient ActorSystem system;
 	private Integer currEpochs = 0;
 	private Integer epochs;
-	private List<Word2VecDataSet> samples;
+	private List<Window> samples;
 	private Word2VecUpdateable result;
 	private  ActorRef mediator;
 
@@ -63,16 +64,20 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private static String systemName = "ClusterSystem";
 	private String type = "master";
 	private Address masterAddress;
-	private DataSetIterator iter;
+	private List<String> labels;
+	private Word2VecDataSetIterator iter;
+	private Word2Vec vec;
 	
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
 	 * @param iter the dataset to use
 	 */
-	public ActorNetworkRunner(String type,DataSetIterator iter) {
+	public ActorNetworkRunner(String type,Word2VecDataSetIterator iter,Word2Vec vec,List<String> labels) {
 		this.type = type;
 		this.iter = iter;
+		this.vec = vec;
+		this.labels = labels;
 	}
 
 	/**
@@ -103,7 +108,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * @param c the neural network configuration
 	 * @return the actor for this backend
 	 */
-	public static Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
+	public  Address startBackend(Address joinAddress, String role,Conf c,Word2VecDataSetIterator iter) {
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
@@ -114,12 +119,12 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		Address realJoinAddress =
 				(joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 				Cluster.get(system).join(realJoinAddress);
-				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor), "active", PoisonPill.getInstance(), "master"));
+				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor,vec), "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
 
 
-	public static void startWorker(Address contactAddress,Conf conf) {
+	public  void startWorker(Address contactAddress,Conf conf) {
 		// Override the configuration of the port
 
 		ActorSystem system = ActorSystem.create(systemName);
@@ -128,7 +133,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		initialContacts.add(system.actorSelection(contactAddress + "/user/receptionist"));
 		ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
 				"clusterClient");
-		system.actorOf(WorkerActor.propsFor(clusterClient, conf), "worker");
+		system.actorOf(WorkerActor.propsFor(clusterClient, conf,vec,labels), "worker");
 
 		try {
 			Thread.sleep(5000);
@@ -142,8 +147,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 	@Override
-	public void setup(Conf conf) {
-
+	public void setup(com.ccc.deeplearning.scaleout.conf.Conf conf) {
+		Conf casted = (Conf) conf;
 
 
 		system = ActorSystem.create(systemName);
@@ -161,7 +166,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			if(iter == null)
 				throw new IllegalStateException("Unable to initialize no dataset to train");
 			
-			masterAddress  = startBackend(null,"master",conf,iter);
+			masterAddress  = startBackend(null,"master",casted,iter);
 			
 			
 			//wait for start
@@ -179,10 +184,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			Cluster.get(system).join(masterAddress);
 
 			//join with itself
-			startBackend(masterAddress,"master",conf,iter);
+			startBackend(masterAddress,"master",casted,iter);
 
 
-			Conf c = conf.copy();
+			Conf c = casted.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
 			c.put(FINE_TUNE_EPOCHS, 1);
@@ -205,7 +210,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		else {
 
-			Conf c = conf.copy();
+			Conf c = casted.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
 			c.put(FINE_TUNE_EPOCHS, 1);
@@ -251,7 +256,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	
 	}
 	
-	public void train(List<Word2VecDataSet> list) {
+	public void train(List<Window> list) {
 		this.samples = list;
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
@@ -272,18 +277,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	}
 
 
-
-
-	public void train(Word2VecDataSet input) {
-		train(new ArrayList<>(Arrays.asList(input)));
-
+	public void train() {
+		List<Window> next = new ArrayList<Window>(iter.next());
+		train(next);
 	}
 
+	
 
 
-	public void train(List<String> input,DoubleMatrix labels) {
-		train(new Word2VecDataSet(input,labels));
-	}
 
 	
 	@Override
