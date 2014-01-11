@@ -1,38 +1,27 @@
 package com.ccc.deeplearning.word2vec.iterator;
 
+import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
 
-import com.ccc.deeplearning.datasets.iterator.BaseDatasetIterator;
-import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.util.Window;
 
-/**
- * Trains a word2vec model and iterates over a file dataset
- * containing text files with sentences such as:
- * W1 W2 <LABEL> SOME POSITIVE EXAMPLE </LABEL> W3 W4 W5
- * @author Adam Gibson
- *
- */
-public class Word2VecDataSetIterator extends BaseDatasetIterator {
-	@Override
-	public boolean hasNext() {
-		return fetcher.hasMore();
-	}
+public interface Word2VecDataSetIterator  extends Iterator<List<Window>>,Serializable {
 
-
-	private static final long serialVersionUID = 2397051312760991798L;
-
+		
+		int totalExamples();
+		
+		int inputColumns();
+		
+		int totalOutcomes();
+		
+		void reset();
+		
+		int batch();
+		
+		int cursor();
+		
+		int numExamples();
+		
 	
-	
-	public Word2VecDataSetIterator(int batch, int numExamples,String path,int  minWordFrequency) {
-		super(batch, numExamples, new Word2VecDataFetcher(path,minWordFrequency));
-	}
-	
-	
-	public Word2VecDataSetIterator(int batch, int numExamples,String path,Word2Vec vec,List<String> labels) {
-		super(batch, numExamples, new Word2VecDataFetcher(path,vec,labels));
-	}
-	
-	
-	
-
 }

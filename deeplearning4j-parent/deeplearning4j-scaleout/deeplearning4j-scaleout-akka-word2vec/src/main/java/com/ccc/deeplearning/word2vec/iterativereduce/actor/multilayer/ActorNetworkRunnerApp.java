@@ -1,15 +1,18 @@
-package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.word2vec;
+package com.ccc.deeplearning.word2vec.iterativereduce.actor.multilayer;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.kohsuke.args4j.Option;
 
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
+import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIteratorImpl;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
+import com.ccc.deeplearning.word2vec.util.Window;
 
 
 public class ActorNetworkRunnerApp extends com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer.ActorNetworkRunnerApp {
@@ -20,7 +23,12 @@ public class ActorNetworkRunnerApp extends com.ccc.deeplearning.matrix.jblas.ite
 	protected String labels;
 	@Option(name="-path",usage="path to training dataset")
 	protected String trainingPath;
-
+	
+	private ActorNetworkRunner runner;
+	
+	private Word2VecDataSetIterator iter;
+	
+	
 	public ActorNetworkRunnerApp(String[] args) {
 		super(args);
 	}
@@ -45,11 +53,28 @@ public class ActorNetworkRunnerApp extends com.ccc.deeplearning.matrix.jblas.ite
 			}
 			
 			
-			this.iter = new Word2VecDataSetIterator(split, numExamples, trainingPath, vec,labels2);
+			this.iter = new Word2VecDataSetIteratorImpl(trainingPath,labels2,split, vec);
 
 		}
 		else
 			super.getDataSet();
+	}
+
+	
+	
+	
+	
+
+	@Override
+	public void train() {
+		List<Window> data;
+		if(!iter.hasNext()) {
+			throw new IllegalStateException("Unable to train on empty dataset");
+		}
+		data = iter.next();
+		
+		runner.train(data);
+		
 	}
 
 	/**

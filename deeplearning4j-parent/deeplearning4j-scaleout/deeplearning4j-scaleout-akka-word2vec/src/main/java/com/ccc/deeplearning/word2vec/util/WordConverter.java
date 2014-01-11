@@ -25,7 +25,7 @@ public class WordConverter {
 		int rows = windows.size();
 		DoubleMatrix ret = new DoubleMatrix(rows,columns);
 		for(int i = 0; i < rows; i++) {
-			ret.putRow(i,MatrixUtil.normalize(new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec))));
+			ret.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
 		}
 		return ret;
 	}
