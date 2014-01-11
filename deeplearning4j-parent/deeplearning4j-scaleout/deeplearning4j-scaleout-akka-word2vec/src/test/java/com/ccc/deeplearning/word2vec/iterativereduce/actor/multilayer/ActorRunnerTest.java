@@ -35,7 +35,7 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 		}
 		
 		
-		this.iter = new Word2VecDataSetIteratorImpl(new ClassPathResource("/deeplearning/").getFile().getAbsolutePath(), labels,200,vec);
+		this.iter = new Word2VecDataSetIteratorImpl("/home/agibsonccc/datasets/ADDRESS", labels,200,vec);
 		if(conf == null)
 			setupConf();
 		
@@ -47,18 +47,19 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 	
 	private void setupConf() {
 		conf = new Conf();
-		int[] hiddenLayerSizes = {vec.getLayerSize(),vec.getLayerSize()};
-		int pretrainEpochs = 300;
-		int finetuneEpochs = 300;
+		int[] hiddenLayerSizes = {vec.getLayerSize() * 8,vec.getLayerSize() * 4,vec.getLayerSize() * 2};
+		int pretrainEpochs = 500;
+		int finetuneEpochs = 500;
 		long rngSeed = 123;
 		double pretrainLearningRate = 0.001;
 		double corruptionLevel = 0.3;
 		int split = 100;
-		int k = 1;
+		int k = 3;
 		double finetuneLearningRate = 0.001;
+		int numPasses = 1;
 		String algorithm = "wordcdbn";
 		
-		
+		conf.put(NUM_PASSES, String.valueOf(numPasses));
 		conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
 		conf.put(SPLIT,String.valueOf(10));
 		conf.put(N_IN, String.valueOf(iter.inputColumns()));

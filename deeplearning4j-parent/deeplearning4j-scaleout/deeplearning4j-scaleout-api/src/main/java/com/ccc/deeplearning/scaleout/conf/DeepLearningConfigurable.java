@@ -48,7 +48,8 @@ public interface DeepLearningConfigurable {
 	public final static String PARAM_FINETUNE_EPOCHS = "finetunepochs";
 	public final static String PARAM_CORRUPTION_LEVEL = "corruptionlevel";
 	public final static String PARAM_LEARNING_RATE = "lr";
-
+	/* Number of passes to do on the data set */
+	public final static String NUM_PASSES = "com.ccc.deeplearning.numpasses";
 	
     void setup(Conf conf);
 }
