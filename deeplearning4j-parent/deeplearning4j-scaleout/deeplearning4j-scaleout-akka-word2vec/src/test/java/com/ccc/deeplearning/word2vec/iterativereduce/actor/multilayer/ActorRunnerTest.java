@@ -50,7 +50,7 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 	
 	private void setupConf() {
 		conf = new Conf();
-		int[] hiddenLayerSizes = { vec.getLayerSize() * 2,vec.getLayerSize(), vec.getLayerSize()};
+		int[] hiddenLayerSizes = { vec.getLayerSize() * 2,vec.getLayerSize() * 2, vec.getLayerSize()};
 		int pretrainEpochs = 1000;
 		int finetuneEpochs = 1000;
 		long rngSeed = 123;
