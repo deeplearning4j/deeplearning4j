@@ -8,10 +8,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.word2vec.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
+import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.conf.Conf;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIteratorImpl;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
@@ -30,12 +31,14 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 
 		try {
 			vec = Word2VecLoader.loadModel(new ClassPathResource("/word2vec-address.bin").getFile());
+			vec.setSyn0(MatrixUtil.normalizeByColumnSums(vec.getSyn0()));
+			//vec.saveAsCsv(new File("/home/agibsonccc/word2vec.arff"));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		
 		
-		this.iter = new Word2VecDataSetIteratorImpl("/home/agibsonccc/datasets/ADDRESS", labels,200,vec);
+		this.iter = new Word2VecDataSetIteratorImpl("/home/agibsonccc/workspace/deeplearning4j-parent/deeplearning4j-scaleout/deeplearning4j-scaleout-akka-word2vec/src/test/resources/addresstraining", labels,200,vec);
 		if(conf == null)
 			setupConf();
 		
@@ -47,16 +50,16 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 	
 	private void setupConf() {
 		conf = new Conf();
-		int[] hiddenLayerSizes = {vec.getLayerSize() * 8,vec.getLayerSize() * 4,vec.getLayerSize() * 2};
-		int pretrainEpochs = 500;
-		int finetuneEpochs = 500;
+		int[] hiddenLayerSizes = { vec.getLayerSize() * 2,vec.getLayerSize(), vec.getLayerSize()};
+		int pretrainEpochs = 1000;
+		int finetuneEpochs = 1000;
 		long rngSeed = 123;
 		double pretrainLearningRate = 0.001;
 		double corruptionLevel = 0.3;
 		int split = 100;
-		int k = 3;
+		int k = 1;
 		double finetuneLearningRate = 0.001;
-		int numPasses = 1;
+		int numPasses = 3;
 		String algorithm = "wordcdbn";
 		
 		conf.put(NUM_PASSES, String.valueOf(numPasses));

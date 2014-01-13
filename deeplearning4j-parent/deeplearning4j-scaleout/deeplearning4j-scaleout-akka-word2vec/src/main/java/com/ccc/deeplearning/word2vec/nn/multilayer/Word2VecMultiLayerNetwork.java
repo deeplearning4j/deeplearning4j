@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
@@ -24,6 +26,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	public Word2Vec vec;
 	protected Word2VecMultiLayerOptimizer optimizer;
 	protected List<String> labels;
+	private static Logger log = LoggerFactory.getLogger(Word2VecMultiLayerNetwork.class);
 	@Override
 	public void finetune(double lr, int epochs) {
 		throw new UnsupportedOperationException("Please use the other method. We need to update word2vec as well");
@@ -72,7 +75,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	@Override
 	public void merge(BaseMultiLayerNetwork network, int batchSize) {
 		super.merge(network, batchSize);
-		Word2VecMultiLayerNetwork network2 = (Word2VecMultiLayerNetwork) network;
+		/*Word2VecMultiLayerNetwork network2 = (Word2VecMultiLayerNetwork) network;
 		DoubleMatrix curr = vec.getSyn0();
 		DoubleMatrix delta = network2.vec.getSyn0();
 		if(delta.length != curr.length)
@@ -84,7 +87,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 				DoubleMatrix gradient = delta.add(curr).div(batchSize);
 				vec.getSyn0().putRow(i,gradient);
 			}
-		}
+		}*/
 	}
 	
 	
@@ -99,6 +102,10 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	public void trainNetwork(Collection<Window> windows,Object[] otherParams) {
 		int columns = vec.getLayerSize() * vec.getWindow();
 		int rows = windows.size();
+		if(rows < 1) {
+			log.info("Unable to train on empty windows; returning");
+			return;
+		}
 		List<Window> w = new ArrayList<Window>(windows);
 		
 		DoubleMatrix ret = new DoubleMatrix(rows,columns);

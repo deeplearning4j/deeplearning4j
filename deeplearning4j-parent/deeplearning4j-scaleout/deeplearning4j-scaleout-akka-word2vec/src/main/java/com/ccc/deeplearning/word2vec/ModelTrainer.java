@@ -37,6 +37,7 @@ public class ModelTrainer {
 		log.info("Training on " + sentences.size() + " sentences");
 		
 		Word2Vec vec = new Word2Vec(sentences,1);
+		vec.setWindow(3);
 		vec.train();
 		vec.saveModel(new File(args[1]));
 		log.info("Saved to " + args[1]);

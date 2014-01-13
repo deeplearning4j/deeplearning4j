@@ -49,57 +49,57 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
 
+		DoubleMatrix w = network.logLayer.W.dup();
+		DoubleMatrix b = network.logLayer.b.dup();
+		Double currLoss = null;
+		Integer numTimesOver = null;
+
 		for(int i = 0; i < epochs; i++) {
+
 			network.logLayer.train(layerInput, labels, lr);
 			lr *= network.learningRateUpdate;
-			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
-		}
+			if(currLoss == null)
+				currLoss = network.negativeLogLikelihood();
 
-
-		/*boolean done = false;
-		int numTimesFailed = 0;
-		for(int i = 0; i < epochs; i++)
-			while(!done) {
-				try {
-					done = opt.optimize();
-				}
-				catch(InvalidOptimizableException e) {
-					network.logLayer.input = layerInput;
-					network.logLayer.labels = labels;
-					numTimesFailed++;
-					if(numTimesFailed >= 5) {
-						done = true;
-						log.warn("Too many optimization errors; breaking");
-						continue;
+			else {
+				Double loss = network.negativeLogLikelihood();
+				if(loss > currLoss) {
+					if(numTimesOver == null)
+						numTimesOver = 1;
+					else 
+						numTimesOver++;
+					if(numTimesOver >= 5) {
+						log.info("Reverting weights and exiting...");
+						network.logLayer.W = w.dup();
+						network.logLayer.b = b.dup();
+						break;
 					}
-
-					network.logLayer.train(layerInput, labels, lr);
-
-
-					lr *= network.learningRateUpdate;
-
-					log.warn("Invalid step taken; trying again. Error was ",e);
 				}
-				catch(OptimizationException e2) {
-					network.logLayer.input = layerInput;
-					network.logLayer.labels = labels;
-					numTimesFailed++;
-					if(numTimesFailed >= 5) {
-						done = true;
-						log.warn("Too many optimization errors; breaking");
-						continue;
-					}
 
-					network.logLayer.train(layerInput, labels, lr);
-
-
-					lr *= network.learningRateUpdate;
-					log.warn("Invalid step taken; trying again. Error was ",e2);
-
+				else if(loss < currLoss) {
+					w = network.logLayer.W.dup();
+					b = network.logLayer.b.dup();
+					currLoss = loss;
 				}
+
+
 
 			}
-		 */
+
+			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
+		}
+		
+		double curr = network.negativeLogLikelihood();
+		if(curr > currLoss) {
+			network.logLayer.W = w.dup();
+			network.logLayer.b = b.dup();
+			log.info("Reverting to last known good state; converged after global minimum");
+			
+		}
+		
+		
+
+		
 	}
 
 
