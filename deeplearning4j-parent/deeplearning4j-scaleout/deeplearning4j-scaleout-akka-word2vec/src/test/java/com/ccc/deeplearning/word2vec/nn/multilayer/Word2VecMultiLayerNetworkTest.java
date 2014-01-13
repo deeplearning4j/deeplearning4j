@@ -29,15 +29,11 @@ import com.ccc.deeplearning.word2vec.util.Windows;
 public class Word2VecMultiLayerNetworkTest {
 
 	private Word2VecMultiLayerNetwork network;
-	private Word2Vec vec;
 	private static Logger log = LoggerFactory.getLogger(Word2VecMultiLayerNetworkTest.class);
 
 	@Before
 	public void setup() throws Exception {
-		if(vec == null) {
-			vec = Word2VecLoader.loadModel(new ClassPathResource("/word2vec-address.bin").getFile());
-		}
-
+	
 		if(network == null) {
 			network = (Word2VecMultiLayerNetwork) BaseMultiLayerNetwork.loadFromFile(new BufferedInputStream(new ClassPathResource("/nn-model.bin").getInputStream()));
 		}
@@ -55,21 +51,27 @@ public class Word2VecMultiLayerNetworkTest {
 		
 		Evaluation eval = new Evaluation();
 
-		for(int i = 0; i < example.size(); i++) {
-			if(example.get(i).isEmpty()) {
-				continue;
-			}
-			log.info("Predicting " + example.get(i));
-			DoubleMatrix m = network.predict(example.get(i));
-			List<Window> windows = Windows.windows(example.get(i));
-			StringBuffer print = new StringBuffer();
-
-			for(int w = 0; w < windows.size(); w++) {
-				print.append("Classification for " + windows.get(w).asTokens() + " was " + m.getRow(w) + "\n");
-			}
-			log.info(print.toString());
+		/*for(int i = 0; i < example.size(); i++) {
+			printPredictFor(example.get(i));
+		}*/
+		
+		printPredictFor("sadcasdfoijasdfasdf.");
+		printPredictFor(example.get(0));
+	}
+	
+	private void printPredictFor(String example) {
+		if(example.isEmpty()) {
+			return;
 		}
+		log.info("Predicting " + example);
+		DoubleMatrix m = network.predict(example);
+		List<Window> windows = Windows.windows(example);
+		StringBuffer print = new StringBuffer();
 
+		for(int w = 0; w < windows.size(); w++) {
+			print.append("Classification for " + windows.get(w).asTokens() + " was " + m.getRow(w) + "\n");
+		}
+		log.info(print.toString());
 	}
 
 }

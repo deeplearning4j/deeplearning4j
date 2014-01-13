@@ -2,6 +2,8 @@ package com.ccc.deeplearning.word2vec.util;
 
 import java.util.List;
 
+import org.jblas.DoubleMatrix;
+
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 
@@ -27,6 +29,12 @@ public class WindowConverter {
 		return example;
 	}
 
+	
 
+	
+	
+	public static DoubleMatrix asExampleMatrix(Window window,Word2Vec vec) {
+		return new DoubleMatrix(asExample(window,vec));
+	}
 
 }

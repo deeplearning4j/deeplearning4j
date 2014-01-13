@@ -29,5 +29,10 @@
   		<artifactId>deeplearning4j-core</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
+  	<dependency>
+  		<groupId>nz.ac.waikato.cms.weka</groupId>
+  		<artifactId>weka-dev</artifactId>
+  		<version>3.7.10</version>
+  	</dependency>
   </dependencies>
 </project>

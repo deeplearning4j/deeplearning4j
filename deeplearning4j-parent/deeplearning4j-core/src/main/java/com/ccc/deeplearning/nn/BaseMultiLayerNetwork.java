@@ -188,6 +188,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 	/**
+	 * Reconstructs the input.
+	 * This is equivalent functionality to a 
+	 * deep autoencoder.
+	 * @param x the input to reconstruct
+	 * @return a reconstructed matrix
+	 * relative to the size of the last hidden layer.
+	 * This is great for data compression and visualizing
+	 * high dimensional data (or just doing dimensionality reduction).
+	 * 
+	 * This is typically of the form:
+	 * [0.5, 0.5] or some other probability distribution summing to one
+	 */
+	public DoubleMatrix reconstruct(DoubleMatrix x) {
+		if(!x.isRowVector())
+		    x = x.transpose();
+		DoubleMatrix input = x;
+		for(int i = 0; i < nLayers; i++) {
+			HiddenLayer layer = sigmoidLayers[i];
+			input = layer.outputMatrix(input);
+		}
+		return input;
+	}
+
+	/**
 	 * Serializes this to the output stream.
 	 * @param os the output stream to write to
 	 */

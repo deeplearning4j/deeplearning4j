@@ -5,15 +5,19 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +31,14 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.StringUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +52,7 @@ import akka.dispatch.OnComplete;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.MapFactory;
 import com.ccc.deeplearning.berkeley.Triple;
+import com.ccc.deeplearning.util.FileOperations;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
@@ -172,6 +182,37 @@ public class Word2Vec implements Serializable {
 
 	}
 
+
+	
+	public void saveAsCsv(File path) {
+		//change each row to a column: this allows each column to be a word
+		DoubleMatrix toSave = MatrixUtil.normalizeByRowSums(syn0.transpose());
+		ArrayList<Attribute> atts = new ArrayList<Attribute>();
+		for(int i = 0; i < wordIndex.size(); i++) {
+			atts.add(new Attribute(wordIndex.get(i).toString()));
+		}
+		
+		Instances instances = new Instances("",atts, toSave.rows);
+		
+		OutputStream os = FileOperations.createAppendingOutputStream(path);
+		try {
+
+			
+
+			for(int i = 0; i < toSave.rows; i++)  {
+				DoubleMatrix row = toSave.getRow(i);
+				instances.add(new DenseInstance(1.0, row.toArray()));
+			}
+			
+			os.write(instances.toString().getBytes());
+			os.flush();
+			os.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+
+	}
 
 	public double[] getWordVector(String word) {
 		int i = this.wordIndex.indexOf(word);
@@ -971,6 +1012,10 @@ public class Word2Vec implements Serializable {
 
 	public void setSyn1(DoubleMatrix syn1) {
 		this.syn1 = syn1;
+	}
+
+	public void setWindow(int window) {
+		this.window = window;
 	}
 
 

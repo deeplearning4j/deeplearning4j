@@ -7,9 +7,12 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MatrixUtil {
-
+	private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
+	
 	public static double magnitude(DoubleMatrix vec) { 
 		double sum_mag = 0; 
 		for(int i = 0; i < vec.length;i++) 
@@ -76,8 +79,10 @@ public class MatrixUtil {
 		    	 break;
 		     }
 		}
-		if(!found)
-			throw new IllegalStateException("Found a matrix without an outcome");
+		if(!found) {
+			log.warn("Found invalid matrix assuming; nothing which means adding a 1 to the first spot");
+			out.put(0,1.0);
+		}
 		
 	}
 	
@@ -369,6 +374,24 @@ public class MatrixUtil {
 		DoubleMatrix columnMeans = toNormalize.columnMeans();
 		toNormalize.subiRowVector(columnMeans);
 		toNormalize.diviRowVector(columnStd(toNormalize));
+	}
+	
+	
+	public static DoubleMatrix normalizeByColumnSums(DoubleMatrix m) {
+		DoubleMatrix columnSums = m.columnSums();
+		for(int i = 0; i < m.columns; i++) {
+			m.putColumn(i,m.getColumn(i).div(columnSums.get(i)));
+
+		}
+		return m;
+	}
+	
+	public static DoubleMatrix normalizeByRowSums(DoubleMatrix m) {
+		DoubleMatrix rowSums = m.rowSums();
+		for(int i = 0; i < m.rows; i++) {
+			m.putRow(i,m.getRow(i).div(rowSums.get(i)));
+		}
+		return m;
 	}
 
 }

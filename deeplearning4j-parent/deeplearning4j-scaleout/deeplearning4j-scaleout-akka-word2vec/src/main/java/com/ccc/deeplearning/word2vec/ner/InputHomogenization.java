@@ -1,6 +1,12 @@
 package com.ccc.deeplearning.word2vec.ner;
 
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+
+import bsh.StringUtil;
 
 public class InputHomogenization {
 	private String input;
@@ -27,6 +33,10 @@ public class InputHomogenization {
 				sb.append(input.charAt(i));
 
 		}
+		
+		String normalized = Normalizer.normalize(sb.toString(),Form.NFD);
+		normalized = normalized.replaceAll("[^\\p{InCombiningDiacriticalMarks}]", "");
+		normalized = normalized.replaceAll("[^\\p{ASCII}]", "");
 		return sb.toString();
 	}
 
