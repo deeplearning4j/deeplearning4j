@@ -12,8 +12,10 @@ import org.apache.commons.io.LineIterator;
 import org.jblas.DoubleMatrix;
 import org.springframework.core.io.ClassPathResource;
 
+import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.CounterMap;
 import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
 
@@ -43,6 +45,7 @@ public class TopicModeling {
 	private int numOuts;
 	private boolean classify;
 
+
 	/**
 	 * Creates a topic modeler
 	 * This can either be used for information compression or
@@ -64,12 +67,12 @@ public class TopicModeling {
 
 	}
 
-
-
-	public void train() {
+	/* initial statistics used for calculating word metadata such as word vectors to train on */
+	private void calcWordFrequencies() throws IOException {
 		for(File f : rootDir.listFiles())	 {
-			try {
-				LineIterator iter = FileUtils.lineIterator(f);
+
+			for(File doc : f.listFiles()) {
+				LineIterator iter = FileUtils.lineIterator(doc);
 				while(iter.hasNext()) {
 					String line = iter.nextLine();
 					StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(line).transform());
@@ -83,15 +86,21 @@ public class TopicModeling {
 
 					}
 
-				}
-
-
-
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+				}			
 			}
 
-		}
+
+
+
+
+		} 
+
+	}
+
+
+	public void train() throws IOException {
+
+		calcWordFrequencies();
 
 		//create a network that knows how to reconstruct the input documents
 		if(classify)
@@ -109,18 +118,59 @@ public class TopicModeling {
 		.hiddenLayerSizes(new int[]{words.keySet().size() * 2,words.keySet().size(),numOuts})
 		.build();
 
+		for(File f : rootDir.listFiles())	 {
 
-		DoubleMatrix input = toMatrix();
-		cdbn.pretrain(input,1, 0.01, 1000);
-		
-		
+			for(File doc : f.listFiles()) {
+				DoubleMatrix train = toWordCountVector(doc);
+				cdbn.pretrain(train, 1, 0.1, 100);
+				if(classify) {
+					DoubleMatrix outcome = MatrixUtil.toOutcomeVector(labels.indexOf(f.getName()), labels.size());
+					cdbn.finetune(outcome, 0.1, 100);
+				}
+			}
+		}
 
 
 	}
 
+	/* Gather word count frequencies for a particular document */
+	private DoubleMatrix toWordCountVector(File f) throws IOException {
+		LineIterator iter = FileUtils.lineIterator(f);
+		Counter<String> wordCounts = new Counter<String>();
+		DoubleMatrix ret = new DoubleMatrix(vocab.size());
+		while(iter.hasNext()) {
+			String line = iter.nextLine();
+			StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(line).transform());
+			while(tokenizer.hasMoreTokens())  {
+				String token = tokenizer.nextToken();
+				if(!stopWords.contains(token)) {
+					wordCounts.incrementCount(token,1.0);
+				}
 
+			}
+
+		}
+
+		for(String key : wordCounts.keySet()) {
+			double count = wordCounts.getCount(key);
+			int idx = vocab.indexOf(key);
+			ret.put(idx,count);
+		}
+
+		ret.divi(vocab.size());
+
+		return ret;
+	}
+
+
+	/* Compression/reconstruction */
 	public DoubleMatrix reconstruct(String document) {
 		return cdbn.reconstruct(toDocumentMatrix(document));
+	}
+	
+	public DoubleMatrix labelDocument(String document) {
+		DoubleMatrix d = toDocumentMatrix(document);
+		return cdbn.predict(d);
 	}
 
 	private DoubleMatrix toDocumentMatrix(String input) {
@@ -141,21 +191,7 @@ public class TopicModeling {
 		return ret;
 	}
 
-	private DoubleMatrix toMatrix() {
-		DoubleMatrix ret = new DoubleMatrix(vocab.size(), labels.size());
-		for(int i = 0; i < vocab.size(); i++) {
-			DoubleMatrix row = new DoubleMatrix(labels.size());
-			String word = (String) vocab.get(i);
-			for(int l = 0; l < row.length; l++) {
-				double count = words.getCount(word, labels.get(l));
-				row.put(l,count);
-			}
-		}
 
-		ret.divi(ret.rowSums());
-
-		return ret;
-	}
 
 
 	@SuppressWarnings("unchecked")
