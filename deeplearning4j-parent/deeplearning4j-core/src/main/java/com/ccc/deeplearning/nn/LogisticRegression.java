@@ -21,7 +21,7 @@ public class LogisticRegression implements Serializable {
 	public DoubleMatrix input,labels;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
-
+	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
@@ -78,13 +78,14 @@ public class LogisticRegression implements Serializable {
 	 */
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
 		ensureValidOutcomeMatrix(y);
+		if(x.rows != y.rows) {
+			throw new IllegalArgumentException("How does this happen?");
+		}
 
 		this.input = x;
 		this.labels = y;
 
-		if(x.rows != y.rows)
-			throw new IllegalArgumentException("Can't train on the 2 given inputs and labels");
-
+		
 		DoubleMatrix p_y_given_x = softmax(x.mmul(W).addRowVector(b));
 		DoubleMatrix dy = y.sub(p_y_given_x);
 

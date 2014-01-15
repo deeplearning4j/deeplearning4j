@@ -10,6 +10,7 @@ import java.io.Serializable;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,7 @@ import com.ccc.deeplearning.nn.BaseMultiLayerNetwork.Builder;
 import com.ccc.deeplearning.nn.activation.ActivationFunction;
 import com.ccc.deeplearning.nn.activation.Sigmoid;
 import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
+import com.ccc.deeplearning.util.MatrixUtil;
 
 
 /**
@@ -64,7 +66,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
 	 */
 	public NeuralNetwork[] layers;
-	
+
 	/*
 	 * The delta from the previous iteration to this iteration for
 	 * cross entropy must change >= this amount in order to continue.
@@ -160,8 +162,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param epochs the number of times to iterate
 	 */
 	public void finetune(DoubleMatrix labels,double lr, int epochs) {
+		if(labels != null)
+			this.labels = labels;
 		optimizer = new MultiLayerNetworkOptimizer(this,lr);
-		optimizer.optimize(labels, lr,epochs);
+		optimizer.optimize(this.labels, lr,epochs);
 	}
 
 
@@ -176,8 +180,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
-		if(!x.isRowVector())
-		    x = x.transpose();
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
@@ -201,14 +203,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
-		if(!x.isRowVector())
-		    x = x.transpose();
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
 			input = layer.outputMatrix(input);
 		}
-		return input;
+		return MatrixUtil.softmax(input);
 	}
 
 	/**
@@ -284,7 +284,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public double negativeLogLikelihood() {
 		return logLayer.negativeLogLikelihood();
 	}
-	
+
 	/**
 	 * Train the network running some unsupervised 
 	 * pretraining followed by SGD/finetune
@@ -341,7 +341,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			l.b = n.gethBias();
 			l.W = n.getW();
 		}
-		
+
 		logLayer.merge(network.logLayer, batchSize);
 	}
 
@@ -355,7 +355,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private RandomGenerator rng;
 		private DoubleMatrix input,labels;
 		private ActivationFunction activation;
-		
+
 		public Builder<E> withActivation(ActivationFunction activation) {
 			this.activation = activation;
 			return this;
@@ -420,17 +420,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.rng = this.rng;
 				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
 				ret.layers = ret.createNetworkLayers(ret.nLayers);
-				ret.activation = activation;
+				if(activation != null)
+					ret.activation = activation;
 				return ret;
 			} catch (InstantiationException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
-			
+
 		}
 
-	
 
-	
+
+
 
 	}
 
