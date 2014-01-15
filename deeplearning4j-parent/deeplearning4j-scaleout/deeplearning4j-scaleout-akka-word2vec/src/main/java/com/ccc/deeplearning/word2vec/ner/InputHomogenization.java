@@ -11,10 +11,16 @@ import bsh.StringUtil;
 public class InputHomogenization {
 	private String input;
 	private List<String> ignoreCharactersContaining;
-
+	private boolean preserveCase;
 	public InputHomogenization(String input) {
-		this.input = input;
+		this(input,false);
 	}
+	
+	public InputHomogenization(String input,boolean preserveCase) {
+		this.input = input;
+		this.preserveCase = preserveCase;
+	}
+	
 	public InputHomogenization(String input,List<String> ignoreCharactersContaining) {
 		this.input = input;
 		this.ignoreCharactersContaining = ignoreCharactersContaining;
@@ -26,7 +32,7 @@ public class InputHomogenization {
 				sb.append(input.charAt(i));
 			else if(Character.isDigit(input.charAt(i)))
 				sb.append("d");
-			else if(Character.isUpperCase(input.charAt(i)))
+			else if(Character.isUpperCase(input.charAt(i)) && !preserveCase)
 					sb.append(Character.toLowerCase(input.charAt(i)));
 
 			else 
@@ -35,9 +41,22 @@ public class InputHomogenization {
 		}
 		
 		String normalized = Normalizer.normalize(sb.toString(),Form.NFD);
-		normalized = normalized.replaceAll("[^\\p{InCombiningDiacriticalMarks}]", "");
-		normalized = normalized.replaceAll("[^\\p{ASCII}]", "");
-		return sb.toString();
+		normalized = normalized.replace(".","");
+		normalized = normalized.replace(",","");
+		normalized = normalized.replaceAll("\"","");
+		normalized = normalized.replace("'","");
+		normalized = normalized.replace("(","");
+		normalized = normalized.replace(")","");
+		normalized = normalized.replace("“","");
+		normalized = normalized.replace("”","");
+		normalized = normalized.replace("…","");
+		normalized = normalized.replace("|","");
+		normalized = normalized.replace("/","");
+		normalized = normalized.replace("\\", "");
+		normalized = normalized.replace("[", "");
+		normalized = normalized.replace("]", "");
+		normalized = normalized.replace("‘","");
+		return normalized;
 	}
 
 }

@@ -78,6 +78,9 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	public List<List<DataSet>> batchBy(int num) {
 		return Lists.partition(asList(),num);
 	}
+	
+	
+	
 
 	/**
 	 * Sorts the dataset by label:

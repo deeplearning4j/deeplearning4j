@@ -38,13 +38,10 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
 	protected transient Optimizer opt;
-	
-	public void train(DoubleMatrix x) {
-		if(opt == null)
-			opt = new cc.mallet.optimize.ConjugateGradient(this);
 
+	public void train(DoubleMatrix x) {
 		network.train(x, lr, extraParams);
-		
+
 	}
 
 

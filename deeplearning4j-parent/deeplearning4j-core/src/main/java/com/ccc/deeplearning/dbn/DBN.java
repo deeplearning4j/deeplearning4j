@@ -87,10 +87,14 @@ public class DBN extends BaseMultiLayerNetwork {
 	 * @param epochs the number of epochs to train
 	 */
 	public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
+
 		if(this.input == null) {
 			this.input = input;
 			initializeLayers(input);
 		}
+		else 
+			this.input = input;
+
 		DoubleMatrix layerInput = null;
 		
 		for(int i = 0; i < nLayers; i++) {
@@ -133,7 +137,16 @@ public class DBN extends BaseMultiLayerNetwork {
 					}
 					
 				}
-				
+				else if(entropy == bestLoss) {
+					if(numTimesOver == null)
+						numTimesOver = 1;
+					else
+						numTimesOver++;
+					if(numTimesOver >= 30) {
+						log.info("Breaking early; no changes for a while");
+						break;
+					}
+				}
 				else if(entropy < bestLoss){
 					w = r.W.dup();
 					hBias = r.hBias.dup();

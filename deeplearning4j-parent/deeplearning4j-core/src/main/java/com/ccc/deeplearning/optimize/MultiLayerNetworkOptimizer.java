@@ -33,7 +33,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	private static Logger log = LoggerFactory.getLogger(MultiLayerNetworkOptimizer.class);
 	private double lr;
-	private transient Optimizer opt;
 
 	public MultiLayerNetworkOptimizer(BaseMultiLayerNetwork network,double lr) {
 		this.network = network;
@@ -46,6 +45,11 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
+		if(layerInput.rows != labels.rows) {
+			log.info("Unable to train on labels; mismatching labels and rows. Did the layer input get initialized right?");
+			return;
+		}
+		
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
 
