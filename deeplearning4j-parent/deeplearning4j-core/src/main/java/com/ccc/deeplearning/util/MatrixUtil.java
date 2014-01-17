@@ -21,6 +21,7 @@ public class MatrixUtil {
 		return Math.sqrt(sum_mag); 
 	} 
 
+	
 	public static double cosineSim(DoubleMatrix d1,DoubleMatrix d2) {
 		d1 = MatrixUtil.unitVec(d1);
 		d2 = MatrixUtil.unitVec(d2);

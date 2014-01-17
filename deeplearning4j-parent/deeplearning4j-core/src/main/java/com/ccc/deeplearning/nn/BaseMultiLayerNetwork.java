@@ -1,11 +1,17 @@
 package com.ccc.deeplearning.nn;
 
+import static com.ccc.deeplearning.util.MatrixUtil.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -14,10 +20,13 @@ import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.nn.BaseMultiLayerNetwork.Builder;
+import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.nn.activation.ActivationFunction;
 import com.ccc.deeplearning.nn.activation.Sigmoid;
 import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
+import com.ccc.deeplearning.rbm.CRBM;
+import com.ccc.deeplearning.rbm.RBM;
 import com.ccc.deeplearning.util.MatrixUtil;
 
 
@@ -43,10 +52,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
 	public LogisticRegression logLayer;
 	public RandomGenerator rng;
+	public double momentum = 0.1;
 	//default training examples and associated layers
 	public DoubleMatrix input,labels;
 	public MultiLayerNetworkOptimizer optimizer;
 	public ActivationFunction activation = new Sigmoid();
+	public boolean toDecode;
+	public boolean shouldInit = true;
+
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -110,6 +123,51 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	private void dimensionCheck() {
+		for(int i = 0; i < nLayers; i++) {
+			HiddenLayer h = sigmoidLayers[i];
+			NeuralNetwork network = layers[i];
+			h.W.assertSameSize(network.getW());
+			h.b.assertSameSize(network.gethBias());
+		}
+	}
+
+	/**
+	 * Set as decoder for another neural net
+	 * designed for encoding (primary output is
+	 * encoding input)
+	 * @param network the network to decode
+	 */
+	public void asDecoder(BaseMultiLayerNetwork network) {
+
+		//need the plus 1 adjustment for handling inputs from
+		//the logistic softmax of the output layer
+		//of the encoder
+		createNetworkLayers(network.nLayers + 1);
+		this.layers = new NeuralNetwork[network.nLayers];
+		this.sigmoidLayers = new HiddenLayer[network.nLayers];
+		hiddenLayerSizes = new int[network.nLayers];
+		this.nIns = network.nOuts;
+		this.nOuts = network.nIns;
+		this.nLayers = network.nLayers;
+
+
+
+		int count = 0;
+		for(int i = network.nLayers - 1; i >= 0; i--) {
+			layers[count] = network.layers[i].clone();
+			layers[count].setRng(network.layers[i].getRng());
+			hiddenLayerSizes[count] = network.hiddenLayerSizes[i];
+
+			count++;
+		}
+		this.rng = network.rng;
+
+
+		//disable normal initialization
+		shouldInit = false;
+	}
+
 	/**
 	 * Base class for initializing the layers based on the input.
 	 * This is meant for capturing numbers such as input columns or other things.
@@ -117,35 +175,40 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	protected void initializeLayers(DoubleMatrix input) {
 		DoubleMatrix layer_input = input;
-		int input_size;
+		int inputSize;
 
 		// construct multi-layer
 		for(int i = 0; i < this.nLayers; i++) {
 			if(i == 0) 
-				input_size = this.nIns;
+				inputSize = this.nIns;
 			else 
-				input_size = this.hiddenLayerSizes[i-1];
+				inputSize = this.hiddenLayerSizes[i-1];
 
 			if(i == 0) {
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layer_input);
 				sigmoidLayers[i].activationFunction = activation;
 			}
 			else {
 				layer_input = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(input_size, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layer_input);
 				sigmoidLayers[i].activationFunction = activation;
 
 
 			}
 
 			// construct dA_layer
-			this.layers[i] = createLayer(layer_input,input_size, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
+			//if(shouldInit)
+			this.layers[i] = createLayer(layer_input,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
 		}
 
 		// layer for output using LogisticRegression
 		this.logLayer = new LogisticRegression(layer_input, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
+
+
+
+		dimensionCheck();
 
 	}
 
@@ -153,6 +216,89 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public void finetune(double lr, int epochs) {
 		finetune(this.labels,lr,epochs);
 
+	}
+
+	public List<DoubleMatrix> feedForward() {
+		List<DoubleMatrix> activations = new ArrayList<>();
+		DoubleMatrix input = this.input;
+		for(int i = 0; i < nLayers; i++) {
+			HiddenLayer layer = sigmoidLayers[i];
+			input = layer.activate(input);
+			activations.add(input);
+		}
+		activations.add(logLayer.predict(input));
+		return activations;
+	}
+
+	private List<Pair<DoubleMatrix,DoubleMatrix>> computeDeltas(List<DoubleMatrix> activations) {
+		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 1];
+		DoubleMatrix[] errors = new DoubleMatrix[nLayers + 1];
+		ActivationFunction derivative = sigmoidLayers[0].activationFunction;
+		DoubleMatrix err = labels.sub(activations.get(activations.size() - 1)).neg();
+
+
+		errors[errors.length - 1] = err;
+		
+		List<DoubleMatrix> weights = new ArrayList<>();
+		for(int j = 0; j < layers.length; j++)
+			weights.add(layers[j].getW());
+		weights.add(logLayer.W);
+		
+		List<DoubleMatrix> zs = new ArrayList<>();
+		for(int i = 0; i < layers.length; i++) {
+			zs.add(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias()));
+		}
+		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
+		
+		//errors
+		for(int i = nLayers; i >= 0; i--) {
+			if(i == nLayers) {
+				DoubleMatrix initialDelta = err.mul(derivative.applyDerivative(zs.get(zs.size() - 1)));
+				deltas[deltas.length - 1] = initialDelta;
+			}
+			else {
+				// Ix3 = np.dot(Ix_class, W[3].T) * layer2out * (1-layer2out)
+				err = errors[i + 1];
+				DoubleMatrix w = weights.get(i + 1).transpose();
+				DoubleMatrix z = zs.get(i);
+				DoubleMatrix a = activations.get(i).transpose();
+				errors[i] = err.mmul(w);
+				errors[i] = errors[i].mul(derivative.applyDerivative(z));
+				deltas[i] = a.mmul(err);
+			}
+
+		}
+		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>();
+		for(int i = 0; i < deltas.length; i++) {
+			ret.add(new Pair<>(deltas[i],errors[i]));
+		}
+		
+		
+		return ret;
+	}
+
+	public void backProp(double lr,int epochs) {
+		double errorThreshold = 0.0001;
+		for(int i = 0; i < epochs; i++) {
+			//precompute activations
+			List<DoubleMatrix> activations = feedForward();
+
+			//precompute deltas
+			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = computeDeltas(activations);
+			DoubleMatrix delta = deltas.get(deltas.size() - 1).getFirst();
+			double sse = MatrixFunctions.pow(2, delta).sum();
+			if(sse < errorThreshold)
+				break;
+			for(int l = 0; l < nLayers; l++) {
+				layers[i].getW().addi(deltas.get(i).getFirst());
+				layers[i].gethBias().addi(deltas.get(i).getSecond());
+			}
+		}
+	
+
+		
+
+		
 	}
 
 	/**
@@ -183,7 +329,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
-			input = layer.outputMatrix(input);
+			input = layer.activate(input);
 		}
 		return logLayer.predict(input);
 	}
@@ -194,6 +340,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * This is equivalent functionality to a 
 	 * deep autoencoder.
 	 * @param x the input to reconstruct
+	 * @param layerNum the layer to output for encoding
 	 * @return a reconstructed matrix
 	 * relative to the size of the last hidden layer.
 	 * This is great for data compression and visualizing
@@ -202,11 +349,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * This is typically of the form:
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
-	public DoubleMatrix reconstruct(DoubleMatrix x) {
+	public DoubleMatrix reconstruct(DoubleMatrix x,int layerNum) {
+		if(layerNum > nLayers || layerNum < 0)
+			throw new IllegalArgumentException("Layer number " + layerNum + " does not exist");
+
 		DoubleMatrix input = x;
-		for(int i = 0; i < nLayers; i++) {
+		for(int i = 0; i < layerNum; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
-			input = layer.outputMatrix(input);
+			input = layer.activate(input);
+
 		}
 		return MatrixUtil.softmax(input);
 	}
@@ -345,6 +496,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		logLayer.merge(network.logLayer, batchSize);
 	}
 
+	public void encode(BaseMultiLayerNetwork network) {
+		this.createNetworkLayers(network.nLayers);
+		this.layers = new NeuralNetwork[network.nLayers];
+		hiddenLayerSizes = new int[nLayers];
+
+		int count = 0;
+		for(int i = nLayers - 1; i > 0; i--) {
+			NeuralNetwork n = network.layers[i].clone();
+			//tied weights: must be updated at the same time
+			HiddenLayer l = network.sigmoidLayers[i].clone();
+			layers[count] = n;
+			sigmoidLayers[count] = l;
+			hiddenLayerSizes[count] = network.hiddenLayerSizes[i];
+			count++;
+		}
+
+		this.logLayer = new LogisticRegression(hiddenLayerSizes[nLayers - 1],network.input.columns);
+
+	}
+
+
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
@@ -352,9 +524,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private int[] hiddenLayerSizes;
 		private int nOuts;
 		private int nLayers;
-		private RandomGenerator rng;
+		private RandomGenerator rng = new MersenneTwister(1234);
 		private DoubleMatrix input,labels;
 		private ActivationFunction activation;
+		private boolean decode = false;
 
 		public Builder<E> withActivation(ActivationFunction activation) {
 			this.activation = activation;
@@ -364,6 +537,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		public Builder<E> numberOfInputs(int nIns) {
 			this.nIns = nIns;
+			return this;
+		}
+
+		public Builder<E> decodeNetwork(boolean decode) {
+			this.decode = decode;
 			return this;
 		}
 
@@ -412,6 +590,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		public E build() {
 			try {
 				ret = (E) clazz.newInstance();
+				ret.input = this.input;
 				ret.nOuts = this.nOuts;
 				ret.nIns = this.nIns;
 				ret.labels = this.labels;
@@ -420,6 +599,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.rng = this.rng;
 				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
 				ret.layers = ret.createNetworkLayers(ret.nLayers);
+				ret.toDecode = this.decode;
 				if(activation != null)
 					ret.activation = activation;
 				return ret;

@@ -25,6 +25,21 @@ public class HardTanh implements ActivationFunction {
 		return matrix;
 	}
 
-	
+	@Override
+	public DoubleMatrix applyDerivative(DoubleMatrix input) {
+		for(int i = 0; i < input.length; i++) {
+			double val = input.get(i);
+			if(val < -1 )
+				val = -1;
+			else if(val > 1)
+				val = 1;
+			else
+				val = 1 - Math.pow(Math.tanh(val),2);
+			input.put(i,val);
+		}
+		
+		return input;
+		
+	}
 
 }

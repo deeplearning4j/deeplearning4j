@@ -96,7 +96,7 @@ public class DBN extends BaseMultiLayerNetwork {
 			this.input = input;
 
 		DoubleMatrix layerInput = null;
-		
+
 		for(int i = 0; i < nLayers; i++) {
 			if(i == 0)
 				layerInput = this.input;
@@ -111,14 +111,14 @@ public class DBN extends BaseMultiLayerNetwork {
 			DoubleMatrix hBias = r.hBias.dup();
 			Double bestLoss = null;
 			Integer numTimesOver = null;
-			
-			
+
+
 			for(int  epoch = 0; epoch < epochs; epoch++) {
 				r.trainTillConvergence(learningRate, k, layerInput);	
 				h.W = r.W;
 				h.b = r.hBias;
 				double entropy = r.getReConstructionCrossEntropy();
-				
+
 				if(bestLoss == null)
 					bestLoss = entropy;
 				else if(entropy > bestLoss) {
@@ -133,9 +133,9 @@ public class DBN extends BaseMultiLayerNetwork {
 						h.b = hBias; 
 						log.info("Went over too many times....reverting to last known good state");
 						break;
-						
+
 					}
-					
+
 				}
 				else if(entropy == bestLoss) {
 					if(numTimesOver == null)
@@ -152,19 +152,19 @@ public class DBN extends BaseMultiLayerNetwork {
 					hBias = r.hBias.dup();
 					bestLoss = entropy;
 				}
-				
+
 				debug.append(epoch + "," + entropy + "\n");
 				log.info("Cross entropy for layer " + (i + 1) + " on epoch " + epoch + " is " + entropy);
 			}
-			
+
 			double curr = r.getReConstructionCrossEntropy();
 			if(curr > bestLoss) {
 				log.info("Converged past global minimum; reverting");
 				r.W = w.dup();
 				r.hBias = hBias.dup();
 			}
-			
-			
+
+
 			try {
 				FileUtils.writeStringToFile(new File("/home/agibsonccc/Desktop/layer-" + i + ".csv"), debug.toString());
 			} catch (IOException e) {

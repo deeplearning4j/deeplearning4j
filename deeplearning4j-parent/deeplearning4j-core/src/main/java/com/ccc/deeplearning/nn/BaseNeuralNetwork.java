@@ -136,6 +136,45 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			this.vBias = vbias;
 	}
 
+
+	@Override
+	public NeuralNetwork transpose() {
+		try {
+			NeuralNetwork ret = getClass().newInstance();
+			ret.sethBias(hBias.dup());
+			ret.setvBias(vBias.dup());
+			ret.setnHidden(getnVisible());
+			ret.setnVisible(getnHidden());
+			ret.setW(W.transpose());
+			ret.setRng(getRng());
+			
+			return ret;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} 
+		
+		
+	}
+	
+	@Override
+	public NeuralNetwork clone() {
+		try {
+			NeuralNetwork ret = getClass().newInstance();
+			ret.sethBias(hBias.dup());
+			ret.setvBias(vBias.dup());
+			ret.setnHidden(getnHidden());
+			ret.setnVisible(getnVisible());
+			ret.setW(W.dup());
+			ret.setRng(getRng());
+			
+			return ret;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} 
+		
+		
+	}
+	
 	@Override
 	public void merge(NeuralNetwork network,int batchSize) {
 		W.addi(network.getW().mini(W).div(batchSize));

@@ -1,6 +1,9 @@
 package com.ccc.deeplearning.dbn.matrix.jblas;
 
+import static org.junit.Assert.*;
+
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -46,7 +49,7 @@ public class DBNTest  extends DeepLearningTest {
 		int preTrainEpochs = 1000;
 		int k = 1;
 		int nIns = 6,nOuts = 2;
-		int[] hiddenLayerSizes = new int[] {3,3};
+		int[] hiddenLayerSizes = new int[] {3,6,3};
 		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 200;
 
@@ -65,9 +68,35 @@ public class DBNTest  extends DeepLearningTest {
 
 		DoubleMatrix predict = dbn.predict(testX);
 		log.info(predict.toString());
+		
+		dbn.backProp(fineTuneLr,1000);
+		
+		DBN decoder = new DBN.Builder().buildEmpty();
+		decoder.asDecoder(dbn);
+		assertEquals(dbn.nOuts,decoder.nIns);
+		assertEquals(dbn.nIns,decoder.nOuts);
+		assertEquals(decoder.nLayers,dbn.nLayers);
+		boolean e = Arrays.equals(new int[]{6,3},decoder.hiddenLayerSizes);
+		
+		assertEquals(true,e);
+	/*	assertEquals(decoder.layers[0].getnHidden(),dbn.layers[dbn.layers.length - 1].getnVisible());
+		assertEquals(decoder.layers[0].getnVisible(),dbn.layers[dbn.layers.length - 1].getnHidden());
+		assertEquals(decoder.sigmoidLayers[0].n_in,dbn.sigmoidLayers[dbn.layers.length - 1].n_out);
+		assertEquals(decoder.sigmoidLayers[0].n_out,dbn.sigmoidLayers[dbn.layers.length - 1].n_in);
+
+		
+		assertEquals(decoder.layers[1].getnHidden(),dbn.layers[dbn.layers.length - 2].getnVisible());
+		assertEquals(decoder.layers[1].getnVisible(),dbn.layers[dbn.layers.length - 2].getnHidden());
+		assertEquals(decoder.sigmoidLayers[1].n_in,dbn.sigmoidLayers[dbn.layers.length - 2].n_out);
+		assertEquals(decoder.sigmoidLayers[1].n_out,dbn.sigmoidLayers[dbn.layers.length - 2].n_in);*/
+
+		decoder.pretrain(predict, 1, 0.1, 1000);
+		decoder.finetune(testX, 0.1, 1000);
+		
 	}
 
 	@Test
+	@Ignore
 	public void testCDBN() {
 		DoubleMatrix x = new DoubleMatrix( new double[][] 
 				{{0.4, 0.5, 0.5, 0.,  0.,  0.},
