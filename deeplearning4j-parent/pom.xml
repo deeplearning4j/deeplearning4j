@@ -8,6 +8,7 @@
 	<name>DeepLearning4j</name>
 	<properties>
 		<slf4j.version>1.7.5</slf4j.version>
+		<junit.version>4.11</junit.version>
 	</properties>
 
 	<scm>
@@ -55,6 +56,13 @@
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
 				<version>15.0</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>${junit.version}</version>
+				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

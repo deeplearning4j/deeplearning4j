@@ -5,7 +5,7 @@ import java.io.Serializable;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
-public interface NeuralNetwork extends Serializable {
+public interface NeuralNetwork extends Serializable,Cloneable {
 
 	public abstract int getnVisible();
 
@@ -44,6 +44,12 @@ public interface NeuralNetwork extends Serializable {
 	public double getMomentum();
 	public void setMomentum(double momentum);
 	
+
+	public NeuralNetwork transpose();
+	public  NeuralNetwork clone();
+
+	
+	
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
 	/**
 	 * Performs a network merge in the form of
@@ -56,5 +62,6 @@ public interface NeuralNetwork extends Serializable {
 	 * to average by
 	 */
 	void merge(NeuralNetwork network,int batchSize);
+
 
 }

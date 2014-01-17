@@ -1,0 +1,55 @@
+by frossmann
+Some background:
+Iceland has had restrictive capital controls in place since the Icelandic banks failed in 2008. This means people cannot move capital out of the country, buy or hold foreign currencies such as dollars, or even invest in foreign assets. ( http://redd.it/1t8zf3 )
+The Icelandic Central Bank (has an equivalent role to the Fed) has previously stated that it is illegal in its view to trade bitcoins.
+The following is correspondence between me and legal counsel at the Central Bank [translated from Icelandic].
+It basically boils down to this:
+Icelanders are not allowed to accept payment in bitcoin for goods or services provided.
+The Central Bank has not taken a position on whether Bitcoin is considered a currency according to the Foreign Exchange Act no. 87/1992.
+The Central Bank does however not consider Bitcoin to be e-money [EU legal term] in the meaning of Act no. 17/2013.
+The Central Bank does not yet have a position on whether domestic parties can trade in bitcoin among themselves.
+Questions relating to Bitcoin are actively being examined within the bank. So Icelanders trading in bitcoin with foreigners, or accepting bitcoin as payment, are subject to fines or up to two years’ imprisonment according to law.
+Correspondence with the Icelandic Central Bank:
+Good day,
+I read a news article in Morgunblaðið the other day about bitcoin trading.
+A few questions popped to my mind:
+What article banning capital movements and foreign exchange trading does the bank think applies to bitcoin trading?
+Does the bank consider bitcoin to be a foreign currency according to law?
+Does the bank consider bitcoin to be subject to mandatory submission to a financial institution, for example if goods or services are sold from a domestic entity to a foreign entity in exchange for bitcoin? [See Article 13 l below for clarification.]
+Regards,
+Friðrik Rossmann
+Hello Friðrik.
+According to the Icelandic Foreign Exchange Act general restrictions apply on foreign exchange trading and capital movements between countries. It does not appear that the provisions of the Act that exempt goods and services from the aforementioned restrictions can be applied to trading in Bitcoin or that other exemptions from restrictions of the Act apply to such transactions. In other words, it is the position of the Central Bank of Iceland that there is no authorization in place for buying foreign currency from a financial institution in this country or for the movement of foreign currency between countries, in relation to Bitcoin trading.
+To my knowledge the Central Bank of Iceland has not taken an official or public position on whether BitCoin can be classified as a currency or e-money according to Act no. 17/2013. However it is the position of the Department of financial infrastructure at the bank that Bitcoin is likely not e-money according to that Act. According to temporary provision II of the FX Act payments for the exporting of goods and services shall be made in foreign currency. It is the view of the Central Bank of Iceland that the mandatory submission rule of Article 13 l is breached if the proceeds of goods or services sold are received in Bitcoin.
+Regards, [CB lawyer]
+Hello again.
+In addition to what I previously stated I should add that restrictions on capital movements are to be found in > Article 13 b and restrictions on foreign exchange trade in Article 13 c.
+Regards, [CB lawyer]
+Hello.
+Thank you for the reply.
+Am I wrong in thinking that temporary provision II of the FX Act only states in what currency trade in goods and services shall be made? I.e. domestic currency or foreign currency?
+The purpose of the provision seems to have been to ban trade in Icelandic krónur, cf. the commentary in the legislative bill:
+“The weakening of the exchange rate indicates that some exporters get paid for goods domestically with Icelandic krónur and that the buyer pays, either directly or through a proxy, in foreign currency to an entity outside of the country. Thus the effect of the foreign exchange rules are severely diminished.”
+“About para. 1.
+In this paragraph it is proposed that until November 30th 2010 transactions should be denominated in foreign currency on the export declaration. Up to now, people have had the discretion of what currency they do business. When listing the currency denominating the trade in the export declaration, the currency listed on the exporters’ bill of sale should be used although trade may not be denominated in Icelandic krónur. The article also stipulates that if it is not clear from the bill of sale which is the currency of the export transaction or if the transaction is conducted in local currency transaction shall be recorded in euros or U.S. dollars in the export declaration.”
+Since bitcoin is not a currency according to law, how can this provision apply to it? You could hardly denominate the export price in bitcoins on the export declaration? Is it the position of the bank that bartering is prohibited? For example if I sell Icelandic belts in exchange for Danish suspenders?
+I am also curious in which rules govern bitcoin trading between domestic parties. Are domestic parties free to trade in bitcoin between themselves? I would like to draw attention to the fact that bitcoin can “come into existence” domestically and actually do so, there is for example a significant bitcoin “mining” operation in Reykjanesbær. The purpose of mining is to lend the computational power of computers to the bitcoin network in order to secure it and process transactions in exchange for “new” bitcoins and transaction fees from the bitcoin network.
+Regards,
+Friðrik Rossmann
+Hello Friðrik.
+In case of goods or services being exported the transaction shall be denominated in a foreign currency, cf. temporary provision II.
+Currently the Central Bank has not taken a position on whether Bitcoin is considered a currency according to the Foreign Exchange Act no. 87/1992. The Central Bank does however not consider Bitcoin to be e-money in the meaning of Act no. 17/2013.
+In other respects I can answer that questions relating to Bitcoin are still under review within the bank.
+Regards, [CB lawyer]
+Hello,
+Thank you for the reply. It would be interesting to hear about the domestic parties, whether they can trade between themselves in bitcoin.
+Am I to understand that I am prohibited from providing internet related services from Iceland to foreign parties in exchange for Bitcoin (as Greenqloud think of doing)? Is there no way for me to do it and also meet the mandatory submission of foreign currency or the goals that you have with these restrictions?
+Regards, Friðrik
+Hello Friðrik.
+I am unfortunately unable to answer your question since the Central Bank has not yet taken a position on whether or not Bitcoin is considered a currency according to the Foreign Exchange Act.
+Questions relating to Bitcoin are still being examined within the bank but you are welcome to contact us again later this month and check the status then.
+Regards, [CB lawyer]
+Article 13 l
+All foreign currency acquired by residents, either for goods and services sold or acquired in another manner, shall be submitted to a deposit account held by the resident in a domestic financial undertaking]1) in Iceland within three weeks from the time the foreign currency was acquired or could have been acquired by the owner or his representative. The obligation to submit foreign currency according to the first sentence is fulfilled by depositing the foreign currency to a foreign currency account with a financial undertaking in Iceland.
+This requirement does not apply to residents who are living abroad for purposes of work or study.
+II. Notwithstanding the provisions of Art 2, payments for the exporting of goods and services shall be made in foreign currency.  …

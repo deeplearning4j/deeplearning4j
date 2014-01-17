@@ -34,5 +34,9 @@
   		<artifactId>weka-dev</artifactId>
   		<version>3.7.10</version>
   	</dependency>
+  	<dependency>
+  		<groupId>junit</groupId>
+  		<artifactId>junit</artifactId>
+  	</dependency>
   </dependencies>
 </project>

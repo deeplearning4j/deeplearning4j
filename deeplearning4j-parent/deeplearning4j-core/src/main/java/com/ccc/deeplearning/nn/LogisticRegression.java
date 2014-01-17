@@ -37,6 +37,9 @@ public class LogisticRegression implements Serializable {
 		this(input,null,nIn,nOut);
 	}
 
+	public LogisticRegression(int nIn, int nOut) {
+		this(null,null,nIn,nOut);
+	}
 
 	public void train(double lr) {
 		train(input,labels,lr);

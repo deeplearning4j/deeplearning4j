@@ -1,0 +1,11 @@
+11
+Reddit users can now use the site’s bitcointip bot to offer a financial thumbs-up to fellow redditors on any subreddit.
+Previously, the feature worked only on the Bitcoin subreddit. However, now redditors anywhere on the site can use the mention feature to tip other users for an insightful comment, payment or worthy cause.
+Here’s how it works:
+Redditors can sign up for the service and find a quick-start guide at the Bitcointip subreddit .
+Signing up creates a bitcoin address for each user, which can then be funded by sending bitcoins to that address.
+Redditors with bitcoins in their accounts can then easily send funds to others as a reward for a tip-worthy comment by typing “+/u/bitcointip @Username (amount)” in the comments thread. (The amount can be expressed either in dollar or bitcoin form. For example, either “+/u/bitcointip @NerdfighterSean $1″ or “+/u/bitcointip @NerdfighterSean 0.01 btc” will work.)
+Tips can also be given using a person’s bitcoin address, or by simply typing “+/u/bitcointip $1″ in a direct response to the person being tipped.
+Previously, tips using the mention feature could be given only on the Bitcointip subreddit and other specifically enabled subreddits, as the bot had to analyze every comment on the appropriate subreddit. With a change in syntax put into place by reddit’s NerdfighterSean , though, the revised mention system enables tipping across the entire site.
+Tips not accepted or spent within 21 days will be returned to the sender. And redditors are expected to always include a comment along with their tip, not just a tip alone.
+“You created the best form of btc marketing in existence,” commented redditor TheSelfGoverned following the announcement, adding a tip of 25 mbtc (0.025 bitcoin) to user allthefoxes, who posted the news.

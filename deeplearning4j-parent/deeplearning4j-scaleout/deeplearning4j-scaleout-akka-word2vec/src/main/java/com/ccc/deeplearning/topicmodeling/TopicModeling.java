@@ -19,10 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import com.ccc.deeplearning.autoencoder.DeepAutoEncoder;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.CounterMap;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.nn.activation.HardTanh;
 import com.ccc.deeplearning.util.MathUtils;
@@ -48,14 +50,15 @@ import com.ccc.deeplearning.word2vec.viterbi.Index;
 public class TopicModeling {
 
 	private List<String> labels;
-	private CDBN cdbn,discriminatory;
-	private CounterMap<String,String> words = new CounterMap<String,String>();
+	private CDBN cdbn;
+	private DeepAutoEncoder autoEncoder;
 	private Index vocab = new Index();
 	private List<String> stopWords;
 	private File rootDir;
 	private int numOuts;
-	private boolean classify;
 	private DataSet trained;
+	private VocabCreator vocabCreator;
+	
 	private static Logger log = LoggerFactory.getLogger(TopicModeling.class);
 
 	/**
@@ -67,10 +70,9 @@ public class TopicModeling {
 	 * or input in to the subsequent layers for classification
 	 * @param classify whether to classify or compress
 	 */
-	public TopicModeling(File rootDir,int numOuts,boolean classify) {
+	public TopicModeling(File rootDir,int numOuts) {
 		this.numOuts = numOuts;
 		this.rootDir = rootDir;
-		this.classify = classify;
 		File[] subs = rootDir.listFiles();
 
 		labels = new ArrayList<String>(subs.length);
@@ -81,79 +83,22 @@ public class TopicModeling {
 
 	}
 
-	/* initial statistics used for calculating word metadata such as word vectors to train on */
-	private void calcWordFrequencies() throws IOException {
-		Counter<String> tf = new Counter<String>();
-		Counter<String> idf = new Counter<String>();
-		for(File f : rootDir.listFiles())	 {
+	
 
-			for(File doc : f.listFiles()) {
-				Set<String> encountered = new HashSet<String>();
-				LineIterator iter = FileUtils.lineIterator(doc);
-				while(iter.hasNext()) {
-					String line = iter.nextLine();
-					StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(line).transform());
-					while(tokenizer.hasMoreTokens())  {
-						String token = tokenizer.nextToken();
-						if(!stopWords.contains(token)) {
-							words.incrementCount(token,f.getName(), 1.0);
-							tf.incrementCount(token, 1.0);
-							if(!encountered.contains(token)) {
-								idf.incrementCount(token, 1.0);
-								encountered.add(token);
-							}
-						}
-
-					}
-
-				}			
-			}
-		} 
-
-
-		Counter<String> tfidf = new Counter<String>();
-		//term frequency has every word
-		for(String key : tf.keySet()) {
-			double tfVal = tf.getCount(key);
-			double idfVal = idf.getCount(key);
-			double tfidfVal = MathUtils.tdidf(tfVal, idfVal);
-			tfidf.setCount(key, tfidfVal);
-		}
-
-		tfidf.keepTopNKeys(200);
-		log.info("Tfidf keys " + tfidf + " got rid of " + (Math.abs(tfidf.size() - words.size())) + " words");
-
-		for(String key : tfidf.getSortedKeys())
-			vocab.add(key);
-
-
-	}
+	
 
 
 	public void train() throws IOException {
-
-		calcWordFrequencies();
+		this.vocabCreator = new VocabCreator(stopWords,rootDir);
+		vocab = vocabCreator.createVocab();
+		
 		int size = vocab.size();
 		//create a network that knows how to reconstruct the input documents
-		if(classify) {
-			cdbn = new TopicModelingCDBN.Builder()
-			.numberOfInputs(size)
-			.numberOfOutPuts(labels.size()).withActivation(new HardTanh())
-			.hiddenLayerSizes(new int[]{size / 4,size / 8 ,numOuts})
-			.build();
-			discriminatory = new TopicModelingCDBN.Builder()
-			.numberOfInputs(numOuts).withActivation(new HardTanh())
-			.numberOfOutPuts(labels.size())
-			.hiddenLayerSizes(new int[]{numOuts,size / 4,size / 4,size})
-			.build();
-		}
 
-		//create a network that knows how to compress documents
-		else
-			cdbn = new TopicModelingCDBN.Builder()
-		.numberOfInputs(vocab.size()).withActivation(new HardTanh())
+		cdbn = new TopicModelingCDBN.Builder()
+		.numberOfInputs(size)
 		.numberOfOutPuts(labels.size())
-		.hiddenLayerSizes( new int[]{size / 4,size / 8,numOuts})
+		.hiddenLayerSizes( new int[]{ size / 4,size / 8,size / 12 })
 		.build();
 
 
@@ -176,30 +121,13 @@ public class TopicModeling {
 		DoubleMatrix first = data.getFirst();
 		//log.info("First " + first.toString("%.5f", "[","]", ",", "\n\n"));
 		DoubleMatrix second = data.getSecond();
-		cdbn.pretrain(first,1, 0.01, 1000);
+		autoEncoder = new DeepAutoEncoder(cdbn,new Object[]{1,0.1,1000});
+		autoEncoder.train(first, second, 0.1);
+		
 		//cdbn.finetune(second, 0.1, 1000);
-		trained = new DataSet(cdbn.reconstruct(first),second);
-
-
-		if(classify) {
-			DoubleMatrix reconstructed = cdbn.reconstruct(first);
-			reconstructed = MatrixUtil.normalizeByRowSums(reconstructed);
-			discriminatory.pretrain(reconstructed,1, 0.1, 1000);
-			discriminatory.finetune(second, 0.01, 1000);
-			eval.eval(second, discriminatory.predict(reconstructed));
-			log.info("F - score so far " + eval.f1());
-		}
-
-
-
+		eval.eval(second, cdbn.predict(first));
 		log.info("Final stats " + eval.stats());
 
-		eval = new Evaluation();
-
-		if(classify) {
-			eval.eval(data.getSecond(), cdbn.predict(data.getFirst()));
-			log.info("F - score for batch   after train is " + eval.f1());
-		}
 
 
 
@@ -261,16 +189,21 @@ public class TopicModeling {
 			}
 		}
 
-
+	/*	for(int i = 0; i < ret.length; i++) {
+			if(ret.get(i) > 0)
+				ret.put(i,0.5);
+		}
+		*/
+		
 		ret.divi(nonStopWords);
-
+		double sum = ret.sum();
 		return ret;
 	}
 
 
 	/* Compression/reconstruction */
-	public DoubleMatrix reconstruct(String document) {
-		return cdbn.reconstruct(toDocumentMatrix(document));
+	public DoubleMatrix reconstruct(String document,int layer) {
+		return cdbn.reconstruct(toDocumentMatrix(document),layer);
 	}
 
 	public DoubleMatrix labelDocument(String document) {
@@ -286,7 +219,7 @@ public class TopicModeling {
 			if(!stopWords.contains(token)) {
 				int idx = vocab.indexOf(token);
 				if(idx >= 0) {
-					ret.put(idx,words.getCounter(token).totalCount());
+					ret.put(idx, vocabCreator.getCountForWord(token));
 				}
 			}
 

@@ -28,7 +28,7 @@ public class HiddenLayer implements Serializable {
 	public ActivationFunction activationFunction = new Sigmoid();
 
 
-
+	private HiddenLayer() {}
 
 	public HiddenLayer(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
 		this.n_in = n_in;
@@ -97,15 +97,37 @@ public class HiddenLayer implements Serializable {
 		else 
 			this.b = b;
 	}
+	
+	@Override
+	public HiddenLayer clone() {
+		HiddenLayer layer = new HiddenLayer();
+		layer.b = b.dup();
+		layer.W = W.dup();
+		layer.input = input.dup();
+		layer.activationFunction = activationFunction;
+		layer.n_out = n_out;
+		layer.n_in = n_in;
+		return layer;
+	}
+	
+	
+	public HiddenLayer transpose() {
+		HiddenLayer layer = new HiddenLayer();
+		layer.b = b.dup();
+		layer.W = W.transpose();
+		layer.input = input.transpose();
+		layer.activationFunction = activationFunction;
+		layer.n_out = n_in;
+		layer.n_in = n_out;
+		return layer;
+	}
 
 	/**
 	 * Trigger an activation with the last specified input
 	 * @return the activation of the last specified input
 	 */
-	public DoubleMatrix outputMatrix() {
-		DoubleMatrix mult = this.input.mmul(W);
-		mult = mult.addRowVector(b);
-		return activationFunction.apply(mult);
+	public DoubleMatrix activate() {
+		return activationFunction.apply(this.input.mmul(W).addRowVector(b));
 	}
 
 	/**
@@ -115,9 +137,9 @@ public class HiddenLayer implements Serializable {
 	 * @param input the input to use
 	 * @return
 	 */
-	public DoubleMatrix outputMatrix(DoubleMatrix input) {
+	public DoubleMatrix activate(DoubleMatrix input) {
 		this.input = input;
-		return outputMatrix();
+		return activate();
 	}
 
 	/**
@@ -129,7 +151,7 @@ public class HiddenLayer implements Serializable {
 	 */
 	public DoubleMatrix sampleHGivenV(DoubleMatrix input) {
 		this.input = input;
-		DoubleMatrix ret = MatrixUtil.binomial(outputMatrix(), 1, rng);
+		DoubleMatrix ret = MatrixUtil.binomial(activate(), 1, rng);
 		return ret;
 	}
 
@@ -139,9 +161,65 @@ public class HiddenLayer implements Serializable {
 	 * the previous input
 	 */
 	public DoubleMatrix sample_h_given_v() {
-		DoubleMatrix output = outputMatrix();
+		DoubleMatrix output = activate();
 		//reset the seed to ensure consistent generation of data
 		DoubleMatrix ret = MatrixUtil.binomial(output, 1, rng);
 		return ret;
 	}
+	
+	
+	
+	public static class Builder {
+		private int n_in;
+		private int n_out;
+		private DoubleMatrix W;
+		private DoubleMatrix b;
+		private RandomGenerator rng;
+		private DoubleMatrix input;
+		private ActivationFunction activationFunction = new Sigmoid();
+		
+		
+		public Builder nIn(int nIn) {
+			this.n_in = nIn;
+			return this;
+		}
+		
+		public Builder nOut(int nOut) {
+			this.n_out = nOut;
+			return this;
+		}
+		
+		public Builder withWeights(DoubleMatrix W) {
+			this.W = W;
+			return this;
+		}
+		
+		public Builder withRng(RandomGenerator gen) {
+			this.rng = gen;
+			return this;
+		}
+		
+		public Builder withActivation(ActivationFunction function) {
+			this.activationFunction = function;
+			return this;
+		}
+		
+		public Builder withBias(DoubleMatrix b) {
+			this.b = b;
+			return this;
+		}
+		
+		public Builder withInput(DoubleMatrix input) {
+			this.input = input;
+			return this;
+		}
+		
+		public HiddenLayer build() {
+			HiddenLayer ret =  new HiddenLayer(n_in,n_out,W,b,rng,input); 
+			ret.activationFunction = activationFunction;
+			return ret;
+		}
+		
+	}
+	
 }
