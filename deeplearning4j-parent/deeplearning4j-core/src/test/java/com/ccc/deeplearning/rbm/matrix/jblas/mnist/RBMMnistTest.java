@@ -21,16 +21,14 @@ public class RBMMnistTest {
 		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
 		MersenneTwister rand = new MersenneTwister(123);
 
-		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(500).withRandom(rand)
+		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(1000).withRandom(rand)
 				.withMomentum(0.1).build();
 
 
 		DataSet first = fetcher.next();
 		for(int i = 0; i < 1000; i++)
 			da.trainTillConvergence(0.1,1,first.getFirst());
-		first = fetcher.next();
-		while(da.lossFunction() > 1)
-			da.trainTillConvergence(0.1,1,first.getFirst());
+		
 
 
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());

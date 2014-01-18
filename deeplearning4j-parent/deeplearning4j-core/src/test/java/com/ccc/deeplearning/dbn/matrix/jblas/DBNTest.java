@@ -75,7 +75,7 @@ public class DBNTest  extends DeepLearningTest {
 		assertEquals(dbn.nOuts,decoder.nIns);
 		assertEquals(dbn.nIns,decoder.nOuts);
 		assertEquals(decoder.nLayers,dbn.nLayers);
-		boolean e = Arrays.equals(new int[]{6,3},decoder.hiddenLayerSizes);
+		boolean e = Arrays.equals(new int[]{9,7,4},decoder.hiddenLayerSizes);
 		
 		assertEquals(true,e);
 	/*	assertEquals(decoder.layers[0].getnHidden(),dbn.layers[dbn.layers.length - 1].getnVisible());
