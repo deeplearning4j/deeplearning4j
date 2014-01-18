@@ -18,7 +18,7 @@ public class RBMMnistTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(20,10);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
 		MersenneTwister rand = new MersenneTwister(123);
 
 		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(500).withRandom(rand)
@@ -26,9 +26,8 @@ public class RBMMnistTest {
 
 
 		DataSet first = fetcher.next();
-		do {
+		for(int i = 0; i < 1000; i++)
 			da.trainTillConvergence(0.1,1,first.getFirst());
-		}while(da.lossFunction() > 1);
 		first = fetcher.next();
 		while(da.lossFunction() > 1)
 			da.trainTillConvergence(0.1,1,first.getFirst());
