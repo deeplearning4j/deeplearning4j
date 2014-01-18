@@ -33,12 +33,11 @@ public class DBNTest  extends DeepLearningTest {
 				{1,1,1,0,0,0},
 				{0,0,1,1,1,0},
 				{0,0,1,1,0,0},
-				{0,0,1,1,1,0}});
+				});
 		DoubleMatrix   y = new DoubleMatrix(new double[][]  
 				{{1, 0},
 				{1, 0},
 				{1, 0},
-				{0, 1},
 				{0, 1},
 				{0, 1}});
 
@@ -49,7 +48,7 @@ public class DBNTest  extends DeepLearningTest {
 		int preTrainEpochs = 1000;
 		int k = 1;
 		int nIns = 6,nOuts = 2;
-		int[] hiddenLayerSizes = new int[] {3,6,3};
+		int[] hiddenLayerSizes = new int[] {4,7,9};
 		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 200;
 

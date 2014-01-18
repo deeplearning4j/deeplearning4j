@@ -124,12 +124,28 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 	private void dimensionCheck() {
+
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer h = sigmoidLayers[i];
 			NeuralNetwork network = layers[i];
 			h.W.assertSameSize(network.getW());
 			h.b.assertSameSize(network.gethBias());
+		
+			if(i < nLayers - 1) {
+				HiddenLayer h1 = sigmoidLayers[i + 1];
+				NeuralNetwork network1 = layers[i + 1];
+				if(h1.n_in != h.n_out)
+					throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
+				if(network.getnHidden() != network1.getnVisible())
+					throw new IllegalStateException("Invalid structure: network hidden for " + (i + 1) + " not equal to number of visible " + i);
+
+			}
 		}
+		
+		if(sigmoidLayers[sigmoidLayers.length - 1].n_out != logLayer.nIn)
+			throw new IllegalStateException("Number of outputs for final hidden layer not equal to the number of logistic input units for output layer");
+		
+		
 	}
 
 	/**
@@ -221,59 +237,79 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public List<DoubleMatrix> feedForward() {
 		List<DoubleMatrix> activations = new ArrayList<>();
 		DoubleMatrix input = this.input;
+		activations.add(input);
+		
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
 			input = layer.activate(input);
 			activations.add(input);
 		}
+		
 		activations.add(logLayer.predict(input));
 		return activations;
 	}
 
 	private List<Pair<DoubleMatrix,DoubleMatrix>> computeDeltas(List<DoubleMatrix> activations) {
-		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 1];
-		DoubleMatrix[] errors = new DoubleMatrix[nLayers + 1];
+		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
+		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
 		ActivationFunction derivative = sigmoidLayers[0].activationFunction;
-		DoubleMatrix err = labels.sub(activations.get(activations.size() - 1)).neg();
+		//- y - h
+		DoubleMatrix delta = null;
 
-
-		errors[errors.length - 1] = err;
 		
+		/*
+		 * Precompute activations and z's (pre activation network outputs)
+		 */
 		List<DoubleMatrix> weights = new ArrayList<>();
 		for(int j = 0; j < layers.length; j++)
 			weights.add(layers[j].getW());
 		weights.add(logLayer.W);
-		
+
 		List<DoubleMatrix> zs = new ArrayList<>();
+		zs.add(input);
 		for(int i = 0; i < layers.length; i++) {
 			zs.add(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias()));
 		}
 		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
-		
+
 		//errors
-		for(int i = nLayers; i >= 0; i--) {
-			if(i == nLayers) {
-				DoubleMatrix initialDelta = err.mul(derivative.applyDerivative(zs.get(zs.size() - 1)));
-				deltas[deltas.length - 1] = initialDelta;
+		for(int i = nLayers + 1; i >= 0; i--) {
+			if(i >= nLayers + 1) {
+				DoubleMatrix z = zs.get(i);
+				//- y - h
+				delta = labels.sub(activations.get(i)).neg();
+				
+				//(- y - h) .* f'(z^l) where l is the output layer
+				DoubleMatrix initialDelta = delta.mul(derivative.applyDerivative(z));
+				deltas[i] = initialDelta;
+				
 			}
 			else {
-				// Ix3 = np.dot(Ix_class, W[3].T) * layer2out * (1-layer2out)
-				err = errors[i + 1];
-				DoubleMatrix w = weights.get(i + 1).transpose();
+				delta = deltas[i + 1];
+				DoubleMatrix w = weights.get(i).transpose();
 				DoubleMatrix z = zs.get(i);
-				DoubleMatrix a = activations.get(i).transpose();
-				errors[i] = err.mmul(w);
-				errors[i] = errors[i].mul(derivative.applyDerivative(z));
-				deltas[i] = a.mmul(err);
+				DoubleMatrix a = activations.get(i + 1);
+				//W^t * error^l + 1
+				
+				DoubleMatrix error = delta.mmul(w);
+				deltas[i] = error;
+				
+				error = error.mul(derivative.applyDerivative(z));
+				
+				deltas[i] = error;
+				gradients[i] = a.transpose().mmul(error).transpose();
 			}
 
 		}
+		
+		
+		
 		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>();
-		for(int i = 0; i < deltas.length; i++) {
-			ret.add(new Pair<>(deltas[i],errors[i]));
+		for(int i = 0; i < gradients.length; i++) {
+			ret.add(new Pair<>(gradients[i],deltas[i]));
 		}
-		
-		
+
+
 		return ret;
 	}
 
@@ -285,20 +321,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			//precompute deltas
 			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = computeDeltas(activations);
-			DoubleMatrix delta = deltas.get(deltas.size() - 1).getFirst();
+			DoubleMatrix delta = deltas.get(deltas.size() - 2).getFirst();
 			double sse = MatrixFunctions.pow(2, delta).sum();
 			if(sse < errorThreshold)
 				break;
 			for(int l = 0; l < nLayers; l++) {
-				layers[i].getW().addi(deltas.get(i).getFirst());
-				layers[i].gethBias().addi(deltas.get(i).getSecond());
+				DoubleMatrix add = deltas.get(l).getFirst();
+				DoubleMatrix w = layers[l].getW();
+				w.addi(add);
+				//layers[i].gethBias().addi(deltas.get(i).getSecond());
 			}
 		}
-	
 
-		
 
-		
+
+
+
 	}
 
 	/**
