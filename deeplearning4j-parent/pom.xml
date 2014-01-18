@@ -20,7 +20,6 @@
 	<modules>
 		<module>deeplearning4j-core</module>
 		<module>deeplearning4j-scaleout</module>
-		<module>deeplearning4j-plot</module>
 	</modules>
 
 	<build>

@@ -130,7 +130,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			NeuralNetwork network = layers[i];
 			h.W.assertSameSize(network.getW());
 			h.b.assertSameSize(network.gethBias());
-		
+
 			if(i < nLayers - 1) {
 				HiddenLayer h1 = sigmoidLayers[i + 1];
 				NeuralNetwork network1 = layers[i + 1];
@@ -141,11 +141,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			}
 		}
-		
+
 		if(sigmoidLayers[sigmoidLayers.length - 1].n_out != logLayer.nIn)
 			throw new IllegalStateException("Number of outputs for final hidden layer not equal to the number of logistic input units for output layer");
-		
-		
+
+
 	}
 
 	/**
@@ -238,25 +238,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		List<DoubleMatrix> activations = new ArrayList<>();
 		DoubleMatrix input = this.input;
 		activations.add(input);
-		
+
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
 			input = layer.activate(input);
 			activations.add(input);
 		}
-		
+
 		activations.add(logLayer.predict(input));
 		return activations;
 	}
 
-	private List<Pair<DoubleMatrix,DoubleMatrix>> computeDeltas(List<DoubleMatrix> activations) {
+	private void computeDeltas(List<DoubleMatrix> activations,List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
 		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
 		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
 		ActivationFunction derivative = sigmoidLayers[0].activationFunction;
 		//- y - h
 		DoubleMatrix delta = null;
 
-		
+
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
@@ -278,11 +278,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				DoubleMatrix z = zs.get(i);
 				//- y - h
 				delta = labels.sub(activations.get(i)).neg();
-				
+
 				//(- y - h) .* f'(z^l) where l is the output layer
 				DoubleMatrix initialDelta = delta.mul(derivative.applyDerivative(z));
 				deltas[i] = initialDelta;
-				
+
 			}
 			else {
 				delta = deltas[i + 1];
@@ -290,29 +290,44 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				DoubleMatrix z = zs.get(i);
 				DoubleMatrix a = activations.get(i + 1);
 				//W^t * error^l + 1
-				
+
 				DoubleMatrix error = delta.mmul(w);
 				deltas[i] = error;
-				
+
 				error = error.mul(derivative.applyDerivative(z));
-				
+
 				deltas[i] = error;
 				gradients[i] = a.transpose().mmul(error).transpose();
 			}
 
 		}
-		
-		
-		
-		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>();
-		for(int i = 0; i < gradients.length; i++) {
-			ret.add(new Pair<>(gradients[i],deltas[i]));
+
+
+
+		if(deltaRet.isEmpty()) {
+			for(int i = 0; i < gradients.length; i++) {
+				deltaRet.add(new Pair<>(gradients[i],deltas[i]));
+			}
+		}
+		else {
+			for(int i = 0; i < gradients.length; i++) {
+				if(deltaRet.get(i).getFirst() != null)
+					deltaRet.get(i).getFirst().addi(gradients[i]);
+				if(deltaRet.get(i).getSecond() != null)
+					deltaRet.get(i).getSecond().addi(deltas[i]);
+			}
 		}
 
 
-		return ret;
+
+
 	}
 
+	/**
+	 * Backpropagation of errors for weights
+	 * @param lr the learning rate to use
+	 * @param epochs  the number of epochs to iterate (this is already called in finetune)
+	 */
 	public void backProp(double lr,int epochs) {
 		double errorThreshold = 0.0001;
 		for(int i = 0; i < epochs; i++) {
@@ -320,17 +335,28 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			List<DoubleMatrix> activations = feedForward();
 
 			//precompute deltas
-			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = computeDeltas(activations);
+			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+			computeDeltas(activations, deltas);
 			DoubleMatrix delta = deltas.get(deltas.size() - 2).getFirst();
 			double sse = MatrixFunctions.pow(2, delta).sum();
 			if(sse < errorThreshold)
 				break;
+			if(i % 1000 == 0 || i == 0) {
+
+				log.info("SSE on epoch " + i + " is  " + sse);
+				log.info("Negative log likelihood is " + this.negativeLogLikelihood());
+			}
+
 			for(int l = 0; l < nLayers; l++) {
 				DoubleMatrix add = deltas.get(l).getFirst();
-				DoubleMatrix w = layers[l].getW();
-				w.addi(add);
-				//layers[i].gethBias().addi(deltas.get(i).getSecond());
+				layers[l].setW(layers[l].getW().sub(add));
+				sigmoidLayers[l].W = layers[l].getW();
+			
 			}
+
+			logLayer.W.subi(deltas.get(nLayers).getFirst());
+
+
 		}
 
 

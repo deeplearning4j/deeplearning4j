@@ -102,7 +102,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		}
 		
 		
-		network.backProp(lr, epochs);
+		network.backProp(lr, 10000);
 
 		
 	}
