@@ -1,0 +1,24 @@
+From: haberj@Informatik.TU-Muenchen.DE (Haber Joerg)
+Subject: ray tracing spline surfaces
+Keywords: ray tracing, splines
+Originator: haberj@sunbulirsch4.mathematik.tu-muenchen.de
+Organization: Technische Universitaet Muenchen, Germany
+Lines: 17
+
+
+Hi net!
+Due to further investigation I would like to study the following article:
+	Peterson, "Ray tracing general B-Splines",
+	Proc. ACM Mountain Regional Conference, April 1986
+Unfortunately I didn't find it in any library's register.
+If there is anyone having access to this paper or knowing about a
+library containing those proceedings (preferrably in Germany), please 
+let me know! Any help would be appreciated! 
+
+Thanks a lot, 
+Joerg Haber
+
+--
+  Joerg Haber                	haberj@mathematik.tu-muenchen.de
+  Mathematisches Institut
+  TU Muenchen

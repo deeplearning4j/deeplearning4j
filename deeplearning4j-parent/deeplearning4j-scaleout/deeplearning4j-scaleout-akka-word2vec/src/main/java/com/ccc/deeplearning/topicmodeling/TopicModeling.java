@@ -95,7 +95,7 @@ public class TopicModeling {
 		cdbn = (TopicModelingCDBN) new TopicModelingCDBN.Builder()
 		.numberOfInputs(size)
 		.numberOfOutPuts(labels.size())
-		.hiddenLayerSizes( new int[]{200,150,100})
+		.hiddenLayerSizes( new int[]{size,size,size / 2})
 		.build();
 
 
@@ -109,7 +109,7 @@ public class TopicModeling {
 
 				DoubleMatrix outcome = MatrixUtil.toOutcomeVector(labels.indexOf(f.getName()), labels.size());
 				//DoubleMatrix outcome = DoubleMatrix.scalar(labels.indexOf(f.getName()));
-				for(int i = 0; i < 30;i++)
+				for(int i = 0; i < 100;i++)
 					list.add(new DataSet(train,outcome));
 
 
@@ -125,19 +125,19 @@ public class TopicModeling {
 		DoubleMatrix first = data.getFirst();
 		//log.info("First " + first.toString("%.5f", "[","]", ",", "\n\n"));
 		DoubleMatrix second = data.getSecond();
-		autoEncoder = new DeepAutoEncoder(cdbn,new Object[]{1,0.1,1000});
+		/*	autoEncoder = new DeepAutoEncoder(cdbn,new Object[]{1,0.1,1000});
 		autoEncoder.train(first, second, 0.1);
-		 
-		log.info("Predicting " + first + "\n" + " with labels " + second);
 
+		log.info("Predicting " + first + "\n" + " with labels " + second);
+		 */
 		//cdbn.pretrain(first,0.01, 0.5, 1000);
 		cdbn.pretrain(first, 1,0.1,1000);
 		cdbn.finetune(second, 0.1, 1000);
 		DoubleMatrix predicted = cdbn.predict(first);
 		//cdbn.finetune(second, 0.1, 1000);
 		DoubleMatrix outcomes2 = MatrixUtil.outcomes(predicted);
-		log.info("Predicted was " + outcomes2);
-		log.info("Actual was " + second);
+		//log.info("Predicted was " + outcomes2);
+		//log.info("Actual was " + second);
 
 		eval.eval(second,predicted);
 		log.info("Final stats for first " + eval.stats());
@@ -205,13 +205,13 @@ public class TopicModeling {
 			}
 		}
 
-		for(int i = 0; i < ret.length; i++) {
+	/*	for(int i = 0; i < ret.length; i++) {
 			if(ret.get(i) > 0)
 				ret.put(i,1);
-		}
+		}*/
 
 
-		//	ret.divi(nonStopWords);
+		ret.divi(nonStopWords);
 		double sum = ret.sum();
 		return ret;
 	}
@@ -241,12 +241,12 @@ public class TopicModeling {
 
 		}
 		//normalize the word counts by the number of words
-		//ret.divi(ret.length);
+		ret.divi(ret.length);
 
-		for(int i = 0; i < ret.length; i++) {
+		/*for(int i = 0; i < ret.length; i++) {
 			if(ret.get(i) > 0)
 				ret.put(i,1);
-		}
+		}*/
 
 
 		return ret;

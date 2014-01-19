@@ -1,0 +1,41 @@
+From: tiang@midway.ecn.uoknor.edu (Tiang)
+Subject: Re: A Book I found... graphics
+Nntp-Posting-Host: midway.ecn.uoknor.edu
+Organization: Engineering Computer Network, University of Oklahoma, Norman, OK, USA
+Lines: 35
+
+covlir@crockett1c.its.rpi.edu (Locks) writes:
+Hello,
+
+>I happened to spot an excellent book in a bookstore about 4 days ago,
+>though!!!!!!  It is in C++ and assembly.  It teaches you the assembly
+>as it goes along --so if you're like me and have no assembler experience,
+>don't worry.  It has almost everything that I wanted to know and has
+>-----WORKING----- code.
+
+>--Rod Covlin--
+
+	I just bought a copy.  I can't disagree that it is a very good
+book.  But unfortunately I was looking for the same graphics feature
+described in this book but _NOT_ in 640x480x16 or 320x200x256 mode. It
+is easy to accomodate all the pixel "descriptor" (or color attributes)
+in those modes into A0000-AFFFFF, but not in 640x480x256(which is what
+I am interested in).  I haven't finish the book but I affraid the
+author didn't talk much about this mode(or other SVGA modes).  If
+anyone out there know any good book dealing with fast SVGA graphics
+manupulation(scrolling, repainting, all other good stuff..) please
+send me mail.  Programming guide to SVGA card is also welcome.
+
+	Thanks in advance.
+
+
+ 
+************************************************************************
+*                         Tiang   T.    Foo                            *
+*		      tiang@uokmax.ecn.uoknor.edu 		       *
+************************************************************************    
+-- 
+************************************************************************
+*                         Tiang   T.    Foo                            *
+*		      tiang@uokmax.ecn.uoknor.edu 		       *
+************************************************************************    

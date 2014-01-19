@@ -1,0 +1,29 @@
+From: s127@ii.uib.no (Torgeir Veimo)
+Subject: Re: sources for shading wanted
+Organization: Institutt for Informatikk UIB Norway
+Lines: 24
+
+In article <1r3ih5INNldi@irau40.ira.uka.de>, S_BRAUN@IRAV19.ira.uka.de 
+(Thomas Braun) writes:
+|> I'm looking for shading methods and algorithms.
+|> Please let me know if you know where to get source codes for that.
+
+'Illumination and Color in Computer Generated Imagery' by Roy Hall contains c
+source for several famous illumination models, including Bouknight, Phong,
+Blinn, Whitted, and Hall illumination models. If you want an introduction to
+shading you might look through the book 'Writing a Raytracer' edited by
+Glassner. Also, the book 'Procedural elements for Computer Graphics' by Rogers
+is a good reference. Source for code in these book are available on the net i 
+believe, you might check out nic.funet.fi or some site closer to you carrying 
+graphics related stuff. 
+
+Hope this is what you were asking for.
+-- 
+Torgeir Veimo
+
+Studying at the University of Bergen
+
+"...I'm gona wave my freak flag high!" (Jimi Hendrix)
+
+"...and it would be okay on any other day!" (The Police)
+

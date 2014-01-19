@@ -187,7 +187,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	protected void initializeLayers(DoubleMatrix input) {
 		if(input == null)
 			throw new IllegalArgumentException("Unable to initialize layers with empty input");
-		
+
 		this.input = input.dup();
 		DoubleMatrix layer_input = input;
 		int inputSize;
@@ -338,12 +338,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		NeuralNetwork[] copies = new NeuralNetwork[this.layers.length];
 		LogisticRegression reg = this.logLayer;
 		double numMistakes = 0;
-		
+
 		for(int i = 0; i < copies.length; i++) {
 			copies[i] = layers[i].clone();
 		}
+
+
+
+
+
+
 		for(int i = 0; i < epochs; i++) {
-			//precompute activations
 			List<DoubleMatrix> activations = feedForward();
 
 			//precompute deltas
@@ -369,11 +374,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 					log.info("Entropy went up; restoring from last good state");
 					break;
 				}
-			
 
-			
+
+
 			}
-			
+
 			if(sse < errorThreshold )
 				break;
 			if(i % 10 == 0 || i == 0) {

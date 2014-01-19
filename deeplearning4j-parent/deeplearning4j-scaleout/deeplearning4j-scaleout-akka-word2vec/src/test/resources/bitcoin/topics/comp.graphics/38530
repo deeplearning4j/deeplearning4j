@@ -1,0 +1,28 @@
+From: dingebre@imp.sim.es.com (David Ingebretsen)
+Subject: Re: images of earth
+Organization: Evans & Sutherland Computer Corp., Salt Lake City, UT
+Lines: 20
+Distribution: world
+Reply-To: dingebre@imp.sim.es.com (David Ingebretsen)
+NNTP-Posting-Host: imp.sim.es.com
+
+I downloaded an image of the earth re-constructed from elevation data taken
+at 1/2 degree increments. The author (not me) wrote some c-code (included)
+that read in the data file and generated b&w and pseudo color images. They
+work very well and are not incumbered by copyright. They are at an aminet
+site near you called earth.lha in the amiga/pix/misc area...
+
+I refer you to the included docs for the details on how the author (sorry, I
+forget his name) created these images. The raw data is not included.
+
+-- 
+	David
+
+	David M. Ingebretsen
+	Evans & Sutherland Computer Corp.
+	dingebre@thunder.sim.es.com
+
+	Disclaimer: The content of this message in no way reflects the
+	            opinions of my employer, nor are my actions
+		    encouraged, supported, or acknowledged by my
+		    employer.

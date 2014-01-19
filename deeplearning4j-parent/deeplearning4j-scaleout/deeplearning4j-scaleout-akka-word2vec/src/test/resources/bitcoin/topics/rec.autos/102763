@@ -1,0 +1,277 @@
+From: welty@cabot.balltown.cma.COM (richard welty)
+Subject: rec.autos: Welcome to to the new reader
+Keywords: Monthly Posting
+Reply-To: welty@balltown.cma.com
+Organization: New York State Institute for Sebastian Cabot Studies
+Expires: Thu, 20 May 1993 04:00:05 GMT
+Lines: 269
+
+Archive-name: rec-autos/part1
+
+[most recent changes, 15 March 1993: addition of alt.autos.karting -- rpw]
+
+               === Welcome to Rec.Autos.* ===
+
+This article is sent out automatically each month, and contains a general
+description of the purpose of each of the automotive newsgroups, and
+some suggested guidelines for discussions.  The keywords `Monthly Posting'
+will always appear to make killing this article easy for users of
+newsreaders with kill facilities.  This article is posted to all autos
+groups, but followups are directed only to rec.autos.  If you don't
+understand what this means, ask your system administrator for help, or at
+least for copies of the newuser documentation.  Failing that, please
+subscribe to the newsgroup news.announce.newusers and read the
+documentation provided there.
+
+Introduction to the Rec.Autos newsgroup hierarchy:
+
+rec.autos.tech
+
+is intended for technical discussions of automobiles, their design,
+construction, diagnosis, and service.  Other discussions are largely
+inappropriate, especially For Sale ads.
+
+rec.autos.sport
+
+is intended for discussion of legal, organized competition involving
+automobiles.  Technical discussions are appropriate insofar as they apply
+to competition vehicles.  Discussion from either of two viewpoints,
+spectator and participant, is encouraged.  Arguments about sports cars are
+largely inappropriate, as are most other discussions.  For Sale ads are
+inappropriate unless they are for competition vehicles and/or equipment.
+Discussions of illegal events are marginal; one should probably avoid
+advocating breaking the law.  (remember, the FBI reads Usenet!)
+
+rec.autos.driving
+
+is intended for discussions related to the driving of automobiles.
+Also, if you must discuss 55 vs. 65, or radar detectors, or <insert
+your pet driving peeve> boneheads, do it here.
+
+rec.autos.vw
+
+is intended for discussion of issues related to the use and ownership
+of automobiles manufactured by Volkswagen (this includes VWs, Audis,
+Seats, etc.)  It was created on the grounds that the info-vw mailing
+list was very successful.  It should not be presumed from the existence
+of this group that it is appropriate to create many groups to cover many
+different marques; groups specific to individual marques should only be
+created on demonstration of sufficient interest, via some avenue such as
+a mailing list.
+
+rec.audio.car
+
+is not properly part of the rec.autos.* hierarchy.  it is, however,
+the correct place for discussion of automotive audio equipment, and
+so is mentioned here.
+
+rec.autos.antique
+
+is intended for the discussion of older cars (usually more than 25 years
+old, although this is not a hard-and-fast rule.)
+
+alt.hotrod
+
+is not part of the hierarchy, but also of potential interest to the
+rec.autos reader.  it is gatewayed to the moderated hotrod mailing
+list, and is for serious discussion of modifying and developing
+performance vehicles.
+
+alt.autos.rod-n-custom
+
+also not part of the `official' hierarchy; devoted to that peculiar
+American hobby of customizing older cars.
+
+alt.autos.karting
+
+for the discussion of the popular motorsport and hobby, karting.
+
+rec.autos
+
+is intended to capture discussion on all other automotive topics.
+
+
+Crossposting:
+
+Crossposting occurs when more than one newsgroup name is included on
+the Newsgroups: line in the article header; such articles will appear
+in all of the newsgroups listed.
+
+Crossposting is one of the most misunderstood and misused facilities on
+Usenet.  You should only post to a group because you feel an article is
+appropriate; you should NEVER crosspost just to reach a particular
+audience.  This distinction is subtle, but important.  Radar Detector
+articles, for example, are more-or-less appropriate in rec.autos.  They are
+almost never appropriate in sci.electronics or rec.ham-radio, and the fact
+that you might want to reach the audience in sci.electronics or
+rec.ham-radio is NOT adequate justification for posting to either group.
+
+Crossposting between any or all of the rec.autos.* groups is usually
+inappropriate; if you find yourself doing so, consider whether or not it is
+truly advisable, before sending your article.  Consider setting Followup-To:
+to point to only one newsgroup if you feel you must crosspost.
+
+Crossposting between rec.autos.* and misc.consumers is chancy at best; in
+particular flame wars over the speed limit in the US and/or the use of
+radar detectors should NEVER be crossposted between any of these groups.
+
+Most readers of sci.electronics and rec.radio.* couldn't care less about
+the police radar and radar detector arguments that go on endlessly in
+rec.autos.
+
+It is an excellent idea to check the Newsgroups: and Followup-to:  lines of
+articles before posting a followup.  In particular, be wary of posting to
+misc.test, rec.arts.startrek.*, or talk.bizarre, or any combination of these
+three.  The life you save may be your own.
+
+Distribution:
+
+There is a field in the header of any news article which allows you to
+(partially) control where the article goes; it is called the Distribution
+field.  It may be very useful for many reasons; it should also serve
+as a reminder that news is a very large and widespread system.
+
+The distribution of rec.autos.* is fairly extensive.  As of this writing, 
+the Automotive newsgroups are known to reach most of Europe, Australia,
+New Zealand, and some locations in Japan.  With this in mind, I offer the
+following hints about use of the Distribution: field in your article
+headers, and on article content.
+
+1) Please take care not to send for-sale ads about clapped out Ford
+Mavericks in New Jersey to France or California; i doubt that anyone in
+either place will care, except for my girlfriend, who for some strange
+reason likes Mavericks (but only 4-door Mavericks, at that.)
+
+2) When posting technical questions, please include the market for which
+your car was manufactured.  For example, there are a number of differences
+between a European-market Ford Escort and a US-market Escort.  Likewise,
+all 1750cc and early 2000cc Alfa Romeos reached the US with Spica Fuel
+injection; European market cars usually got carbs (often Webers).  These
+differences can be important to your readers; make your situation clear.
+Failure to do so can lead to pointless flame wars and a significant
+spread of misinformation.
+
+3) Be careful about your capacities and specifications when posting;
+in the US we get a mix of Metric and English system values, whereas
+Europe is almost entirely on the Metric system.  A future edition
+of this monthly posting will contain a list of commonly-used
+abbreviations that may not be known in some places that rec.autos
+reaches; this cuts both ways so let us not be parochial about it.
+
+4) Use the Distribution: field to limit where your article goes, when
+possible.  Within North America, the values na (north america), can
+(canada), and usa may be used.  in addition, the two-letter state
+abbreviations of the US are supported in some cases; e.g. if i wanted
+to send an article only to New York and New Jersey, i could put
+"ny,nj" in a Distribution field.  note that multiple, comma-separated
+values are legal.  these distribution fields vary widely, however, so
+you should check with your local sysadmin to find out what is likely
+to be supported in your area.
+
+The Dangers of Overgeneralization:
+
+To amplify a warning from the distribution section of this article:
+Be wary of making foolish assumptions about all cars, tires, etc.  What is
+true for a 1973 Buick with a 455cid engine may be quite utterly wrong for a
+1976 Honda with a 1200cc engine.  Headlight laws in Sweden are decidedly
+different from those in Idaho.
+
+The Need for Adequate Specification:
+
+When you ask a question, please give a reasonable amount of information;
+e.g., if you have a question about your Honda, please specify year,
+model, engine size, etc.  Otherwise, most answers to your question may be
+quite useless.
+
+
+Concerning Lemons:
+
+At one time or another, every auto manufacturer has manufactured a lemon or
+two; even Honda admits to this.  Please don't waste everyone's time by
+announcing to the world that your `brand x' automobile is terrible, so all
+`brand x' automobiles are terrible, so no one should ever buy a car from
+the `brand x' company.  Such articles are worse than useless, because they
+cause substantial wasted bandwidth while carrying little or no useful
+information.
+
+
+Concerning Flames:
+
+As much as we might wish it, a flame-free newsgroup is something that most
+likely will never occur.  Here are some guidelines for flames and how
+to deal with them (a list of flame-prone topics follows in the next section
+of this posting):
+
+If you post something truly obnoxious and inflammatory, don't imagine for a
+minute that including the words `No Flames' will work.  It won't, and
+you'll get exactly what you deserve.
+
+If you're going to flame, you're more likely to get away with it if you can
+cite a fact or maybe a well-known reference.  No one is likely to believe
+bald, unsupported assertions.
+
+Be careful about who you choose to insult.  Consider not insulting anyone.
+
+
+Asking the Question:
+
+It is a bad idea to post a question and end it with a phrase like `Please
+send email, I don't read this group'.  It is a much better idea to
+end the question with `Please send email, if there is sufficient interest
+I'll summarize the results in a later posting.  I may miss posted responses
+to this request'.
+
+Answering the Question:
+
+If someone wants to hop up their Yugo, don't tell them to get a Mustang.
+Either be silent, or give them useful advice.  If someone wants advice on
+defending a speeding ticket, don't tell them to obey the law next time --
+it's offensive, presumes guilt which is not proven, and doesn't directly
+address the original question.  In general, don't post in order to see
+your words in print, and don't post in order to enjoy feeling smug and
+self-righteous.
+
+
+Stale and/or Inflammatory Topics:
+
+Certain topics are considered stale by `old timers'; while discussion of
+them is certainly ok, and new, factual information is welcome, ravings
+about them are extremely tiresome, and may get the person who posts them
+ignored altogether.  Some topics are naturally inflammatory; it is
+difficult if not impossible to have meaningful discussion of them.  Some
+of these topics include the following:
+
+1)  the 55mph speed limit in the US: Pro and Con
+
+2)  discussions about the morality and legality of the sale and usage of
+    radar detectors.
+
+3)  discussions over which radar detector is best.
+
+4)  discussions over what is a sports car (this is one reason why
+    rec.autos.sport is not a `sports car' group -- everyone would argue
+    about what constitutes a `sports car'.)
+
+5)  disputes over whether or not US Federal law protects the driver's
+    right to own and operate a radar detector
+
+6)  `Buy American' discussions
+
+7)  `clever' bumper stickers and personalized license plates
+
+8)  <insert nationality here> cars are terrible
+
+9)  What kind of car did Maxwell Smart drive?
+      [when I have a complete, accurate answer it will be added to the
+          commonly-asked questions article which is also posted monthly.
+          Until then, please don't waste bandwidth on this topic. -- rpw]
+
+
+
+Please direct comments and suggestions about this article to:
+
+     welty@cabot.balltown.cma.com
+-- 
+richard welty        518-393-7228       welty@cabot.balltown.cma.com
+``Nothing good has ever been reported about the full rotation of
+  a race car about either its pitch or roll axis''  -- Carroll Smith

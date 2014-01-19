@@ -1,0 +1,38 @@
+From: squeegee@world.std.com (Stephen C. Gilardi)
+Subject: Need PostScript strokeadjust info
+Summary: Seeking algorithm for endpoint "snapping"
+Keywords: postscript emulation adjust stroke strokeadjust
+Organization: SQ Software via The World Public Access UNIX, Brookline, MA
+Lines: 31
+
+I need information on the Display PostScript strokeadjust feature.
+This feature adjusts the endpoints of lines so that the displayed line
+looks better on low resolution devices.
+
+The PostScript literature explains the process to some extent.  They
+also give an example of how to "emulate" strokeadjust in PostScript
+environments where it is absent.
+
+The suggested emulation is to modify the coordinates of the endpoints
+of a line using the following formula for each coordinate:
+
+	new_coord = (round (old_coord - 0.25)) + 0.25
+	
+Doing this we end up with all coordinates ending in ".25".  From
+reading I thought that what they might actually do is:
+
+	new_coord = ((trunc (old_coord * 2)) / 2) + 0.25
+	
+This results in all the coordinates ending in either "0.25" or "0.75" 
+whichever is closer.
+
+By doing some actual comparisons with Display PostScript, I find that
+neither of these is what DPS really uses.  Since I like how the DPS
+result looks better than how my stuff looks, I'd like to know if
+anyone who knows how DPS does it is willing/able to tell me.
+
+Thanks,
+
+--Steve
+squeegee@world.std.com
+

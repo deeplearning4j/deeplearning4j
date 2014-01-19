@@ -1,0 +1,18 @@
+From: tristant@syma.sussex.ac.uk (Tristan Tarrant)
+Subject: Paradise VGA
+Organization: University of Sussex
+Lines: 13
+
+I have a Paradise SVGA with 1Mb, the 90c030 chip (1D). The docs say that
+I can display the following modes : 640x480x32k colours and 800x600x32k cols
+if I have the RAMDAC HiColor Chip. I have checked the board and I do have
+such a chip. Now, the problem is that I can't get this mode to work !
+Graphics Workshop 6.1 claims that it can display 24 bit images dithered
+down to 15 bit colour with my board, but it doesn't work. I have tried
+writing some assembler code to get the modes working and I have found out
+that each pixel is addressed by a word ( 16 bit ), but only the lower 8 bits
+are considered ( this happens in 800x600 mode, the 640x480 mode refuses to
+work i.e. remains in text mode ).
+Could someone please help me.
+
+Tristan

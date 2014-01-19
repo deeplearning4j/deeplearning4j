@@ -1,0 +1,19 @@
+From: bryanw@rahul.net (Bryan Woodworth)
+Subject: Re: CView answers
+Organization: a2i network
+Lines: 13
+Nntp-Posting-Host: bolero
+
+In <1993Apr17.113223.12092@imag.fr> schaefer@imag.imag.fr (Arno Schaefer) writes:
+
+>Sorry, Bryan, this is not quite correct. Remember the VGALIB package that comes
+>with Linux/SLS? It will switch to VGA 320x200x256 mode *without* Xwindows.
+>So at least it is *possible* to write a GIF viewer under Linux. However I don't
+>think that there exists a similar SVGA package, and viewing GIFs in 320x200 is
+>not very nice.
+
+No, VGALIB?  Amazing..  I guess it was lost in all those subdirs :-)
+Thanks for correcting me.  It doesn't sound very appealing though, only
+320x200?  I'm glad it wasn't something major I missed.
+
+Thanks,

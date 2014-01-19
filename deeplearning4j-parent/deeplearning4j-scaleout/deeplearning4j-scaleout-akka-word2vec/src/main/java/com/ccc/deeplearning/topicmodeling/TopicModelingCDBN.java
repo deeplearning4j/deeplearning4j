@@ -42,7 +42,7 @@ public class TopicModelingCDBN extends DBN {
 			DoubleMatrix vBias, RandomGenerator rng, int index) {
 		NeuralNetwork ret =  super.createLayer(input, nVisible, nHidden, W, hBias, vBias, rng, index);
 		if(index == 0) {
-			//ret.getvBias().muli(input.columns);
+			ret.getvBias().muli(input.columns);
 			log.info("Augmented weights of first layer by " + input.columns);
 		}
 		return ret;

@@ -1,0 +1,25 @@
+From: zyeh@caspian.usc.edu (zhenghao yeh)
+Subject: Ellipse from Its Offset
+Organization: University of Southern California, Los Angeles, CA
+Lines: 17
+Distribution: world
+NNTP-Posting-Host: caspian.usc.edu
+Keywords: ellipse
+
+
+Hi! Everyone,
+
+Since some people quickly solved the problem of determining a sphere from
+4 points, I suddenly recalled a problem which is how to find the ellipse
+from its offset. For example, given 5 points on the offset, can you find
+the original ellipse analytically?
+
+I spent two months solving this problem by using analytical method last year,
+but I failed. Under the pressure, I had to use other method - nonlinear
+programming technique to deal with this problem approximately.
+
+Any ideas will be greatly appreciated. Please post here, let the others
+share our interests.
+
+Yeh
+USC

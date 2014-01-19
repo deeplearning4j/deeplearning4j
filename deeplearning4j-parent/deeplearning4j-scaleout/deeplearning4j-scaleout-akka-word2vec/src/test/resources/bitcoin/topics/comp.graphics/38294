@@ -1,0 +1,33 @@
+From: Peter.vanderveen@visser.el.wau.nl  (Peter van der Veen)
+Subject: Re: Fonts in POV??
+Lines: 30
+Organization: Wageningen Agricultural University
+X-Newsreader: FTPNuz (DOS) v1.0
+
+In Article <1qg9fc$et9@wampyr.cc.uow.edu.au> "g9134255@wampyr.cc.uow.edu.au (Coronado Emmanuel Abad)" says:
+> 
+> 
+> 	I have seen several ray-traced scenes (from MTV or was it 
+> RayShade??) with stroked fonts appearing as objects in the image.
+> The fonts/chars had color, depth and even textures associated with
+> them.  Now I was wondering, is it possible to do the same in POV??
+> 
+> 
+> Thanks,
+> 
+> Noel
+> 
+Yes, there are serveral programs which can convert font files (eq the Borland
+fonts) to objects consisting of spheres, cones etc. 
+I've used a program (forgot its name/place, but i can look for it) which
+converted these Borland fonts to three different raytracers. Vivid, POV and
+Polyray (which i like more (more flexibel/faster/use of expressions etc).
+The program has a lot nice features.
+So if interested give me a mail.
+
+ /*---------*\*/*-------------------------------------------*\
+ *|  ____/|  *|*    PETER.VANDERVEEN@VISSER.EL.WAU.NL       |*
+ *|  \ o.O|  *|*    Department of Genetics                  |*
+ *|   =(_)=  *|*    Agricultural University                 |*
+ *|     U    *|*    Wageningen, The Netherlands             |*
+ \*---------*/*\*-------------------------------------------*/
