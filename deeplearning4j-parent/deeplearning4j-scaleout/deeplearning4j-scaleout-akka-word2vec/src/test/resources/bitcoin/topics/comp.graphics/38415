@@ -1,0 +1,46 @@
+From: edimg@willard.atl.ga.us (Ed pimentel)
+Subject: HELP! Need JPEG / MPEG encod-decode 
+Organization: Willard's House BBS, Atlanta, GA -- +1 (404) 664 8814
+Lines: 41
+
+I am involve in a Distant Learning project and am in need
+of Jpeg and Mpeg encode/decode source and object code.
+This is a NOT-FOR PROFIT project that once completed I
+hope to release to other educational and institutional
+learning centers.
+This project requires that TRUE photographic images be sent
+over plain telephone lines. In addition if there is a REAL Good
+GUI lib with 3D objects and all types of menu classes that can
+be use at both end of the transaction (Server and Terminal End)
+I would like to hear about it.
+ 
+We recently posted an RFD announcing the OTG (Open Telematic Group)
+that will concern itself with the developement of such application
+and that it would incorporate NAPLPS, JPEG, MPEG, Voice, IVR, FAX
+Sprites, Animation(fli, flc, etc...).
+At present only DOS and UNIX environment is being worked on and it
+our hope that we can generate enough interest where all the major
+platform can be accomodated via a plaform independent API/TOOLKIT/SDK
+We are of the mind that it is about time that such project and group
+be form to deal with these issues.
+We want to setup a repository where these files may be access such as
+Simte20 and start putting together a OTG FAQ.
+If you have some or any information that in your opinion would be 
+of interest to the OTG community and you like to see included in our
+first FAQ please send it email to the address below.
+ 
+Thanks in Advance
+ 
+Ed
+P.O. box 95901
+Atlanta Ga. 30347-0901
+(404)985-1198 zyxel 14.4
+epimntl@world.std.com 
+ed.pimentel@gisatl.fidonet.org
+
+
+-- 
+edimg@willard.atl.ga.us (Ed pimentel)
+gatech!kd4nc!vdbsan!willard!edimg
+emory!uumind!willard!edimg
+Willard's House BBS, Atlanta, GA -- +1 (404) 664 8814

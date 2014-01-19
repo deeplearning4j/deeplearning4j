@@ -1,0 +1,17 @@
+From: dr_bobo@ponton.hanse.de (Boris Pruessmann)
+Subject: RE: VGA-Scrolling ?
+Organization: Ponton European Media Art Lab, Hamburg
+Lines: 12
+
+Hi !
+
+If you want to have Soft-Scrolling on your VGA, you have to change some 
+intern registers of the CRTC. But it is a little bit difficult to explain, 
+so I would suggest, you take a look at "The Programming of the 
+EGA/VGA-Adapter" by Addison-Wesley. You will find all useful descriptions 
+for every available VGA-Register.
+
+-Boris
+
+---
+dr_bobo@ponton.hanse.de                 ---> Boris Pruessmann

@@ -1,0 +1,33 @@
+From: weber@sipi.usc.edu (Allan G. Weber)
+Subject: Need help with Mitsubishi P78U image printer
+Organization: University of Southern California, Los Angeles, CA
+Lines: 26
+Distribution: na
+NNTP-Posting-Host: sipi.usc.edu
+
+Our group recently bought a Mitsubishi P78U video printer and I could use some
+help with it.  We bought this thing because it (1) has a parallel data input in
+addition to the usual video signal inputs and (2) claimed to print 256 gray
+level images.  However, the manual that came with it only describes how to
+format the parallel data to print 1 and 4 bit/pixel images.  After some initial
+problems with the parallel interface I now have this thing running from a
+parallel port of an Hewlett-Packard workstation and I can print 1 and 4
+bit/pixel images just fine.  I called the Mitsubishi people and asked about the
+256 level claim and they said that was only available when used with the video
+signal inputs.  This was not mentioned in the sales literature.  However they
+did say the P78U can do 6 bit/pixel (64 level) images in parallel mode, but
+they didn't have any information about how to program it to do so, and they
+would call Japan, etc.
+
+Frankly, I find it hard to believe that if this thing can do 8 bit/pixel images
+from the video source, it can't store 8 bits/pixel in the memory.  It's not
+like memory is that expensive any more.  If anybody has any information on
+getting 6 bit/pixel (or even 8 bit/pixel) images out of this thing, I would
+greatly appreciate your sending it to me.
+
+Thanks.
+
+Allan Weber
+Signal & Image Processing Institute
+University of Southern California
+weber@sipi.usc.edu

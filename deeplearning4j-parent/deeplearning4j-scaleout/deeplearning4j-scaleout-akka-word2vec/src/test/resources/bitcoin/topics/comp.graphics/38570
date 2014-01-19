@@ -1,0 +1,45 @@
+From: freemant@dcs.glasgow.ac.uk (Toby Freeman,TJF,G151,3344813,OCT95, )
+Subject: Re: CorelDraw Bitmap to SCODAL
+Nntp-Posting-Host: speedwell
+Reply-To: freemant@dcs.glasgow.ac.uk
+Organization: Dept. of Computing Science, Glasgow University, Glasgow.
+Lines: 38
+
+>Does anyone know of software that will allow
+>you to convert CorelDraw (.CDR) files
+>containing bitmaps to SCODAL, as this is the
+>only format our bureau's filmrecorder recognises.
+>
+>Jeff Lyall
+
+I used this combination for a while - A QCR-Z recorder,
+I think - and as far as I remember Corel can EXPORT in
+SCODAL (.scd) format.  Just select 'EXPORT' on the main
+file menu.  This may not be implemented in earlier versions,
+of course, in which case you're on your own!!!
+
+Also, I seem to think that the s/w for the QCR-Z (at the time)
+did strange (and very undesirable) things if ANY part of the
+pic was outside the screen area on Corel.  I once spent an
+afternoon painfully discovering that ONE pixel had somehow
+strayed off-screen, causing my whole slide to be blank!!!
+
+The QCR-Z also couldn't handle grad-fill over grad-fill -
+so if you use a graduated colour background, if you then
+grad-fill an object on top of this, the fill appears on the
+final slide as a circle (I think) and TOTALLY IGNORES the
+shape of the object being filled!!!
+
+Of course, if the recorder isn't a QCR, you can ignore all
+this and feel suitably :-)
+
+Cheers, Toby.
+____________________________________._.____._.__________._.__________._.______
+____________________________________!  \__/  !__________!_!__________! !______
+___!                            !___! . \/ . !___.__.___._.___.___._.! !__.___
+___! Toby Freeman               !___! !\  /! !__/ __ \__! !__/ .__!_!. .__!___
+___! Glasgow University         !___! !_\/_! !_! !__! !_! !_! <__.___! !______
+___! freemant@uk.ac.glasgow.dcs !___! !____! !_! !__! !_! !__\___ \__! !______
+___!____________________________!___! !____! !_! !__! !_! !_.____> !_! !__.___
+____________________________________!_!____!_!__\____/__!_!_!_____/___\___!___
+

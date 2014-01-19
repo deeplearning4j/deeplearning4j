@@ -1,0 +1,195 @@
+From: robert@cpuserver.acsc.com (Robert Grant)
+Subject: Virtual Reality for X on the CHEAP!
+Organization: USCACSC, Los Angeles
+Lines: 187
+Distribution: world
+Reply-To: robert@cpuserver.acsc.com (Robert Grant)
+NNTP-Posting-Host: cpuserver.acsc.com
+
+Hi everyone,
+
+I thought that some people may be interested in my VR
+software on these groups:
+
+*******Announcing the release of Multiverse-1.0.2*******
+
+Multiverse is a multi-user, non-immersive, X-Windows based Virtual Reality
+system, primarily focused on entertainment/research.
+
+Features:
+
+   Client-Server based model, using Berkeley Sockets.
+   No limit to the number of users (apart from performance).
+   Generic clients.
+   Customizable servers.
+   Hierachical Objects (allowing attachment of cameras and light sources).
+   Multiple light sources (ambient, point and spot).
+   Objects can have extension code, to handle unique functionality, easily
+        attached.
+
+Functionality:
+
+  Client:
+   The client is built around a 'fast' render loop. Basically it changes things
+   when told to by the server and then renders an image from the user's
+   viewpoint. It also provides the server with information about the user's
+   actions - which can then be communicated to other clients and therefore to
+   other users.
+
+   The client is designed to be generic - in other words you don't need to
+   develop a new client when you want to enter a new world. This means that
+   resources can be spent on enhancing the client software rather than adapting
+   it. The adaptations, as will be explained in a moment, occur in the servers.
+
+   This release of the client software supports the following functionality:
+
+    o Hierarchical Objects (with associated addressing)
+
+    o Multiple Light Sources and Types (Ambient, Point and Spot)
+
+    o User Interface Panels
+
+    o Colour Polygonal Rendering with Phong Shading (optional wireframe for
+	faster frame rates)
+
+    o Mouse and Keyboard Input
+
+   (Some people may be disappointed that this software doesn't support the
+   PowerGlove as an input device - this is not because it can't, but because
+   I don't have one! This will, however, be one of the first enhancements!)
+
+  Server(s):
+   This is where customization can take place. The following basic support is
+   provided in this release for potential world server developers:
+
+    o Transparent Client Management
+
+    o Client Message Handling
+
+   This may not sound like much, but it takes away the headache of
+accepting and
+   terminating clients and receiving messages from them - the
+application writer
+   can work with the assumption that things are happening locally.
+
+   Things get more interesting in the object extension functionality. This is
+   what is provided to allow you to animate your objects:
+
+    o Server Selectable Extension Installation:
+        What this means is that you can decide which objects have extended
+        functionality in your world. Basically you call the extension
+        initialisers you want.
+
+    o Event Handler Registration:
+        When you develop extensions for an object you basically write callback
+        functions for the events that you want the object to respond to.
+        (Current events supported: INIT, MOVE, CHANGE, COLLIDE & TERMINATE)
+
+    o Collision Detection Registration:
+        If you want your object to respond to collision events just provide
+        some basic information to the collision detection management software.
+        Your callback will be activated when a collision occurs.
+
+    This software is kept separate from the worldServer applications because
+    the application developer wants to build a library of extended objects
+    from which to choose.
+
+    The following is all you need to make a World Server application:
+
+    o Provide an initWorld function:
+        This is where you choose what object extensions will be supported, plus
+        any initialization you want to do.
+
+    o Provide a positionObject function:
+        This is where you determine where to place a new client.
+
+    o Provide an installWorldObjects function:
+        This is where you load the world (.wld) file for a new client.
+
+    o Provide a getWorldType function:
+        This is where you tell a new client what persona they should have.
+
+    o Provide an animateWorld function:
+        This is where you can go wild! At a minimum you should let the objects
+        move (by calling a move function) and let the server sleep for a bit
+        (to avoid outrunning the clients).
+
+    That's all there is to it! And to prove it here are the line counts for the
+    three world servers I've provided:
+
+        generic - 81 lines
+        dactyl - 270 lines (more complicated collision detection due to the
+                           stairs! Will probably be improved with future
+                           versions)
+        dogfight - 72 lines
+
+Location:
+
+   This software is located at the following site:
+   ftp.u.washington.edu
+
+   Directory:
+   pub/virtual-worlds
+
+   File:
+   multiverse-1.0.2.tar.Z
+
+Futures:
+
+   Client:
+
+    o Texture mapping.
+
+    o More realistic rendering: i.e. Z-Buffering (or similar), Gouraud shading
+
+    o HMD support.
+
+    o Etc, etc....
+
+   Server:
+
+    o Physical Modelling (gravity, friction etc).
+
+    o Enhanced Object Management/Interaction
+
+    o Etc, etc....
+
+   Both:
+
+    o Improved Comms!!!
+
+I hope this provides people with a good understanding of the Multiverse
+software,
+unfortunately it comes with practically zero documentation, and I'm not sure
+whether that will ever be able to be rectified! :-(
+
+I hope people enjoy this software and that it is useful in our explorations of
+the Virtual Universe - I've certainly found fascinating developing it, and I
+would *LOVE* to add support for the PowerGlove...and an HMD :-)!!
+
+Finally one major disclaimer:
+
+This is totally amateur code. By that I mean there is no support for this code
+other than what I, out the kindness of my heart, or you, out of pure
+desperation, provide. I cannot be held responsible for anything good or bad
+that may happen through the use of this code - USE IT AT YOUR OWN RISK!
+
+Disclaimer over!
+
+Of course if you love it, I would like to here from you. And anyone with
+POSITIVE contributions/criticisms is also encouraged to contact me. Anyone who
+hates it: > /dev/null!
+
+************************************************************************
+*********
+And if anyone wants to let me do this for a living: you know where to
+write :-)!
+************************************************************************
+*********
+
+Thanks,
+
+Robert.
+
+robert@acsc.com
+^^^^^^^^^^^^^^^

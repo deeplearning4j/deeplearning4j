@@ -1,0 +1,233 @@
+From: ed@cwis.unomaha.edu (Ed Stastny)
+Subject: The OTIS Project (FTP sites for original art and images)
+Keywords: Mr.Owl, how many licks...
+Organization: University of Nebraska at Omaha
+Lines: 227
+
+
+	-------------------------------------
+	+ ............The OTIS Project '93  +      
+	+ "The Operative Term Is STIMULATE" + 
+	-------------------------------------
+	---this file last updated..4-21-93---
+
+
+WHAT IS OTIS?
+
+OTIS is here for the purpose of distributing original artwork
+and photographs over the network for public perusal, scrutiny,    
+and distribution.  Digital immortality.
+
+The basic idea behind "digital immortality" is that computer networks   
+are here to stay and that anything interesting you deposit on them
+will be around near-forever.  The GIFs and JPGs of today will be the
+artifacts of a digital future.  Perhaps they'll be put in different
+formats, perhaps only surviving on backup tapes....but they'll be
+there...and someone will dig them up.  
+ 
+If that doesn't interest you... OTIS also offers a forum for critique
+and exhibition of your works....a virtual art gallery that never closes
+and exists in an information dimension where your submissions will hang
+as wallpaper on thousands of glowing monitors.  Suddenly, life is 
+breathed into your work...and by merit of it's stimulus, it will 
+travel the globe on pulses of light and electrons.
+ 
+Spectators are welcome also, feel free to browse the gallery and 
+let the artists know what you think of their efforts.  Keep your own
+copies of the images to look at when you've got the gumption...
+that's what they're here for.
+
+---------------------------------------------------------------
+
+WHERE?             
+
+OTIS currently (as of 4/21/93) has two FTP sites.  
+ 
+ 	141.214.4.135 (projects/otis), the UWI site
+		
+	sunsite.unc.edu (/pub/multimedia/pictures/OTIS), the SUNsite 
+	(you can also GOPHER to this site for OTIS as well)
+
+Merely "anonymous FTP" to either site on Internet and change to the
+appropriate directory.  Don't forget to get busy and use the "bin"
+command to make sure you're in binary.
+
+OTIS has also been spreading to some dial-up BBS systems around North
+America....the following systems have a substancial supply of
+OTIStuff...
+	Underground Cafe (Omaha) (402.339.0179) 2 lines
+	CyberDen (SanFran?) (415.472.5527)  Usenet Waffle-iron
+
+--------------------------------------------------------------
+ 
+HOW DO YOU CONTRIBUTE?
+              
+What happens is...you draw a pretty picture or take a lovely   
+photo, get it scanned into an image file, then either FTP-put
+it in the CONTRIB/Incoming directory or use UUENCODE to send it to me
+(email addresses at eof) in email.  After the image is received,
+it will be put into the correct directory.  Computer originated works
+are also welcome.
+
+OTIS' directories house two types of image files, GIF and JPG.  
+GIF and JPG files require, oddly enough, a GIF or JPG viewer to 
+see.  These viewers are available for all types of computers at 
+most large FTP sites around Internet.  JPG viewers are a bit
+tougher to find.  If you can't find one, but do have a GIF viewer,  
+you can obtain a JPG-to-GIF conversion program which will change    
+JPG files to a standard GIF format. 
+
+OTIS also accepts animation files.      
+
+When you submit image files, please send me email at the same time
+stating information about what you uploaded and whether it is to be
+used (in publications or other projects) or if it is merely for people
+to view.  Also, include some biographical information on yourself, we'll
+be having info-files on each contributing artist and their works.  You 
+can also just upload a text-file of info about yourself (instead of 
+emailing).
+
+If you have pictures, but no scanner, there is hope.  Merely send
+copies to:
+
+The OTIS Project
+c/o Ed Stastny
+PO BX 241113
+Omaha, NE 68124-1113
+
+I will either scan them myself or get them to someone who will  
+scan them.  Include an ample SASE if you want your stuff back.  
+Also include information on each image, preferably a 1-3 line 
+description of the image that we can include in the infofile in the
+directory where it's finally put.  If you have preferences as to what
+the images are to be named, include those as well.  
+ 
+Conversely, if you have a scanner and would like to help out, please
+contact me and we'll arrange things.
+
+If you want to submit your works by disk, peachy.  Merely send a 3.5"
+disk to the above address (Omaha) and a SASE if you want your disk back.
+This is good for people who don't have direct access to encoders or FTP,
+but do have access to a scanner.  We accept disks in either Mac or IBM
+compatible format.  If possible, please submit image files as GIF or
+JPG.  If you can't...we can convert from most formats...we'd just rather
+not have to.
+
+At senders request, we can also fill disks with as much OTIS as they
+can stand.  Even if you don't have stuff to contribute, you can send
+a blank disk and an SASE (or $2.50 for disk, postage and packing) to 
+get a slab-o-OTIS.
+
+As of 04/21/93, we're at about 18 megabytes of files, and growing.  
+Email me for current archive size and directory.
+
+--------------------------------------------------------------------
+
+DISTRIBUTION?
+
+The images distributed by the OTIS project may be distributed freely   
+on the condition that the original filename is kept and that it is
+not altered in any way (save to convert from one image format to
+another).  In fact, we encourage files to be distributed to local 
+bulletin boards and such.  If you could, please transport the
+appropriate text files along with the images.  
+ 
+It would also be nice if you'd send me a note when you did post images
+from OTIS to your local bbs.  I just want to keep track of them so
+participants can have some idea how widespread their stuff is.
+
+It's the purpose of OTIS to get these images spread out as much as
+possible.  If you have the time, please upload a few to your favorite
+BBS system....or even just post this "info-file" there.  It would be
+keen of you.
+
+--------------------------------------------------------------------
+
+USE?
+
+If you want to use any of the works you find on the OTIS directory,
+you'll have to check to see if permission has been granted and the 
+stipulations of the permission (such as free copy of publication, or
+full address credit).  You will either find this in the ".rm" file for    
+the image or series of images...or in the "Artists" directory under the 
+Artists name.  If permission isn't explicitly given, then you'll have 
+to contact the artist to ask for it.  If no info is available, email
+me (ed@cwis.unomaha.edu), and I'll get in contact with the artist for 
+you, or give you their contact information.
+ 
+When you DO use permitted work, it's always courteous to let the artist
+know about it, perhaps even send them a free copy or some such
+compensation for their files.
+
+---------------------------------------------------------------------
+
+NAMING IMAGES?
+
+Please keep the names of your files in "dos" format.  That means, keep
+the filename (before .jpg or .gif) to eight characters or less.  The way
+I usually do it is to use the initials of the artist, plus a three or
+four digit "code" for the series of images, plus the series number.
+Thus, Leonardo DeVinci's fifth mechanical drawing would be something
+like:
+ 
+	ldmek5.gif     OR    ldmek5.jpg    OR    ldmech5.gif   ETC
+
+Keeping the names under 8 characters assures that the filename will
+remain intact on all systems.  
+
+
+---------------------------------------------------------------------- 
+
+CREATING IMAGE FILES?
+
+When creating image files, be sure to at least include your name
+somewhere on or below the picture.  This gives people a reference in
+case they'd like to contact you.  You may also want to include a title,
+address or other information you'd like people to know.
+
+-----------------------------------------------------------------------
+
+HMMM?!
+
+That's about it for now.  More "guidelines" will be added as needed.
+Your input is expected.
+
+-----------------------------------------------------------------------
+
+DISCLAIMER:  The OTIS Project has no connection to the Church of OTIS  
+ 	     (a sumerian deity) or it's followers, be they pope, priest,
+	     or ezine administrator.  We do take sacrifices and donations
+	     however.
+
+-----------------------------------------------------------------------
+
+DISCLAIMER:  The OTIS Project is here for the distribution of original 
+ 	     image files.  The files will go to the public at large.  
+	     It's possible, as with any form of mass-media, that someone
+	     could unscrupulously use your images for financial gain.  
+    	     Unless you've given permission for that, it's illegal.  OTIS
+	     takes no responsibility for this.  In simple terms, all rights
+	     revert to the author/artist.  To leave an image on OTIS is to 
+	     give permission for it to be viewed, copied and distributed 
+	     electronically.  If you don't want your images distributed     
+	     all-over, don't upload them.  To leave an image on OTIS is
+	     NOT giving permission to have it used in any publication or
+	     broadcast that incurs profit (this includes, but is not 
+	     limited to, magazines, newsletters, clip-art software,        
+	     screen-printed clothing, etc).  You must give specific
+	     permission for this sort of usage.  
+
+-----------------------------------------------------------------------
+
+Remember, the operative term is "stimulate".  If you know of people
+that'd be interested in this sort of thing...get them involved...kick'm
+in the booty....offer them free food...whatever...
+
+....e  (ed@cwis.unomaha.edu)
+       (ed@sunsite.unc.edu)
+
+--
+Ed Stastny           | OTIS Project, END PROCESS, SOUND News and Arts 
+PO BX 241113	     | FTP: sunsite.unc.edu (/pub/multimedia/pictures/OTIS)
+Omaha, NE 68124-1113 |      141.214.4.135 (projects/otis)
+---------------------- EMail: ed@cwis.unomaha.edu, ed@sunsite.unc.edu

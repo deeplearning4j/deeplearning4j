@@ -1,0 +1,33 @@
+From: ani@ms.uky.edu (Aniruddha B. Deglurkar)
+Subject: help: Splitting a trimming region along a mesh 
+Organization: University Of Kentucky, Dept. of Math Sciences
+Lines: 28
+
+
+
+	Hi,
+
+	I have a problem, I hope some of the 'gurus' can help me solve.
+
+	Background of the problem:
+	I have a rectangular mesh in the uv domain, i.e  the mesh is a 
+	mapping of a 3d Bezier patch into 2d. The area in this domain
+	which is inside a trimming loop had to be rendered. The trimming
+	loop is a set of 2d Bezier curve segments.
+	For the sake of notation: the mesh is made up of cells.
+
+	My problem is this :
+	The trimming area has to be split up into individual smaller
+	cells bounded by the trimming curve segments. If a cell
+	is wholly inside the area...then it is output as a whole ,
+	else it is trivially rejected. 
+
+	Does any body know how thiss can be done, or is there any algo. 
+	somewhere for doing this.
+
+	Any help would be appreciated.
+
+	Thanks, 
+	Ani.
+-- 
+To get irritated is human, to stay cool, divine.

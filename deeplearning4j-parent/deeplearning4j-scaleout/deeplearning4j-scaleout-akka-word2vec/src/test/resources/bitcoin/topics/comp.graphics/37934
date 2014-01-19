@@ -1,0 +1,16 @@
+From: renouar@amertume.ufr-info-p7.ibp.fr (Renouard Olivier)
+Subject: Re: POV previewer
+Nntp-Posting-Host: amertume.ufr-info-p7.ibp.fr
+Organization: Universite PARIS 7 - UFR d'Informatique
+Lines: 10
+
+Actually I am trying to write something like this but I encounter some
+problems, amongst them:
+
+- drawing a 3d wireframe view of a quadric/quartic requires that you have
+the explicit equation of the quadric/quartic (x, y, z functions of some
+parameters). How to convert the implicit equation used by PoV to an
+explicit one? Is it mathematically always possible?
+
+I don't have enough math to find out by myself, has anybody heard about
+useful books on the subject?

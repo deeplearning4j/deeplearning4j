@@ -21,6 +21,15 @@ public class MatrixUtil {
 		return Math.sqrt(sum_mag); 
 	} 
 
+	
+	public static DoubleMatrix unroll(DoubleMatrix d) {
+		DoubleMatrix ret = new DoubleMatrix(1,d.length);
+		for(int i = 0; i < d.length; i++)
+			ret.put(i,d.get(i));
+		return ret;
+	}
+	
+	
 	public static DoubleMatrix outcomes(DoubleMatrix d) {
 		DoubleMatrix ret = new DoubleMatrix(d.rows,1);
 		for(int i = 0; i < d.rows; i++)
