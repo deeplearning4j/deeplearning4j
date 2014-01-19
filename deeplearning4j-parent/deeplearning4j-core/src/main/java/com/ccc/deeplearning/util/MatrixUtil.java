@@ -21,6 +21,12 @@ public class MatrixUtil {
 		return Math.sqrt(sum_mag); 
 	} 
 
+	public static DoubleMatrix outcomes(DoubleMatrix d) {
+		DoubleMatrix ret = new DoubleMatrix(d.rows,1);
+		for(int i = 0; i < d.rows; i++)
+			ret.put(i,SimpleBlas.iamax(d.getRow(i)));
+		return ret;
+	}
 	
 	public static double cosineSim(DoubleMatrix d1,DoubleMatrix d2) {
 		d1 = MatrixUtil.unitVec(d1);

@@ -261,8 +261,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				input.mul(log(sigV))
 				.add(oneMinus(input)
 						.mul(log(oneMinus(sigV))));
-		
-		return - inner.rowSums().mean();
+		double l = inner.length;
+		return - inner.rowSums().mean() / l;
 	}
 
 

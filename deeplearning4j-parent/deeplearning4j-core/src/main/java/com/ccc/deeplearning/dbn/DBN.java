@@ -105,7 +105,6 @@ public class DBN extends BaseMultiLayerNetwork {
 			log.info("Training on layer " + (i + 1));
 			RBM r = (RBM) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
-			StringBuffer debug = new StringBuffer();
 
 			DoubleMatrix w = r.W.dup();
 			DoubleMatrix hBias = r.hBias.dup();
@@ -121,6 +120,14 @@ public class DBN extends BaseMultiLayerNetwork {
 
 				if(bestLoss == null)
 					bestLoss = entropy;
+				else if(Double.isNaN(entropy) || Double.isInfinite(entropy) || entropy < 0.01) {
+					r.W = w.dup();
+					r.hBias = hBias.dup();
+					h.W = r.W;
+					h.b = hBias; 
+					log.info("Went over too many times....reverting to last known good state");
+					break;
+				}
 				else if(entropy > bestLoss) {
 					if(numTimesOver == null)
 						numTimesOver = 1;
@@ -153,7 +160,6 @@ public class DBN extends BaseMultiLayerNetwork {
 					bestLoss = entropy;
 				}
 
-				debug.append(epoch + "," + entropy + "\n");
 				log.info("Cross entropy for layer " + (i + 1) + " on epoch " + epoch + " is " + entropy);
 			}
 
@@ -162,13 +168,6 @@ public class DBN extends BaseMultiLayerNetwork {
 				log.info("Converged past global minimum; reverting");
 				r.W = w.dup();
 				r.hBias = hBias.dup();
-			}
-
-
-			try {
-				FileUtils.writeStringToFile(new File("/home/agibsonccc/Desktop/layer-" + i + ".csv"), debug.toString());
-			} catch (IOException e) {
-				throw new RuntimeException(e);
 			}
 
 		}

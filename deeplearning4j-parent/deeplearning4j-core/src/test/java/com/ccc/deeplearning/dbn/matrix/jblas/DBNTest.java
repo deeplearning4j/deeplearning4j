@@ -17,6 +17,7 @@ import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.dbn.DBN;
+import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.rbm.CRBM;
 
 
@@ -64,11 +65,20 @@ public class DBNTest  extends DeepLearningTest {
 				{0, 0, 0, 1, 1, 0},
 				{1, 1, 1, 1, 1, 0}});
 
+		
+		DoubleMatrix testY = new DoubleMatrix(new double[][] {
+				{1,0},
+				{1,0},
+				{0,1}
+		});
 
 		DoubleMatrix predict = dbn.predict(testX);
 		log.info(predict.toString());
 		
-		dbn.backProp(fineTuneLr,1000);
+		Evaluation eval = new Evaluation();
+		eval.eval(testY, predict);
+		log.info(eval.stats());
+		
 		
 		DBN decoder = new DBN.Builder().buildEmpty();
 		decoder.asDecoder(dbn);
@@ -91,6 +101,7 @@ public class DBNTest  extends DeepLearningTest {
 
 		decoder.pretrain(predict, 1, 0.1, 1000);
 		decoder.finetune(testX, 0.1, 1000);
+	
 		
 	}
 

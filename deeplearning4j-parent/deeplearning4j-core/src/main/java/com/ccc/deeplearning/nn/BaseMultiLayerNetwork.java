@@ -1,7 +1,5 @@
 package com.ccc.deeplearning.nn;
 
-import static com.ccc.deeplearning.util.MatrixUtil.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -9,14 +7,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,8 +92,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng,DoubleMatrix input,DoubleMatrix labels) {
 		this.nIns = n_ins;
 		this.hiddenLayerSizes = hidden_layer_sizes;
-		this.input = input;
-		this.labels = labels;
+		this.input = input.dup();
+		this.labels = labels.dup();
 
 		if(hidden_layer_sizes.length != n_layers)
 			throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + n_layers);
@@ -190,6 +185,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param input the input matrix for training
 	 */
 	protected void initializeLayers(DoubleMatrix input) {
+		if(input == null)
+			throw new IllegalArgumentException("Unable to initialize layers with empty input");
+		
+		this.input = input.dup();
 		DoubleMatrix layer_input = input;
 		int inputSize;
 
@@ -235,12 +234,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 	public List<DoubleMatrix> feedForward() {
+		if(this.input == null)
+			throw new IllegalStateException("Unable to perform feed forward; no input found");
 		List<DoubleMatrix> activations = new ArrayList<>();
 		DoubleMatrix input = this.input;
 		activations.add(input);
 
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer layer = sigmoidLayers[i];
+			layers[i].setInput(input);
 			input = layer.activate(input);
 			activations.add(input);
 		}
@@ -268,6 +270,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		List<DoubleMatrix> zs = new ArrayList<>();
 		zs.add(input);
 		for(int i = 0; i < layers.length; i++) {
+			if(layers[i].getInput() == null && i == 0) {
+				layers[i].setInput(input);
+			}
+			else if(layers[i].getInput() == null){
+				this.feedForward();
+				if(layers[i].getInput() == null)	
+					throw new IllegalStateException("WTF IS THIS");
+			}
+
 			zs.add(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias()));
 		}
 		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
@@ -304,19 +315,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-		if(deltaRet.isEmpty()) {
-			for(int i = 0; i < gradients.length; i++) {
-				deltaRet.add(new Pair<>(gradients[i],deltas[i]));
-			}
+
+		for(int i = 0; i < gradients.length; i++) {
+			deltaRet.add(new Pair<>(gradients[i],deltas[i]));
 		}
-		else {
-			for(int i = 0; i < gradients.length; i++) {
-				if(deltaRet.get(i).getFirst() != null)
-					deltaRet.get(i).getFirst().addi(gradients[i]);
-				if(deltaRet.get(i).getSecond() != null)
-					deltaRet.get(i).getSecond().addi(deltas[i]);
-			}
-		}
+
+
 
 
 
@@ -330,6 +334,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public void backProp(double lr,int epochs) {
 		double errorThreshold = 0.0001;
+		Double lastEntropy = null;
+		NeuralNetwork[] copies = new NeuralNetwork[this.layers.length];
+		LogisticRegression reg = this.logLayer;
+		double numMistakes = 0;
+		
+		for(int i = 0; i < copies.length; i++) {
+			copies[i] = layers[i].clone();
+		}
 		for(int i = 0; i < epochs; i++) {
 			//precompute activations
 			List<DoubleMatrix> activations = feedForward();
@@ -337,24 +349,49 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			//precompute deltas
 			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
 			computeDeltas(activations, deltas);
-			DoubleMatrix delta = deltas.get(deltas.size() - 2).getFirst();
-			double sse = MatrixFunctions.pow(2, delta).sum();
-			if(sse < errorThreshold)
-				break;
-			if(i % 1000 == 0 || i == 0) {
+			double sse = this.negativeLogLikelihood();
+			if(lastEntropy == null)
+				lastEntropy = sse;
+			else if(sse < lastEntropy) {
+				lastEntropy = sse;
+				copies = new NeuralNetwork[this.layers.length];
+				reg = this.logLayer;
+				for(int j = 0; j < copies.length; j++) {
+					copies[j] = layers[j].clone();
+				}
 
+			}
+			else if(sse > lastEntropy || sse == lastEntropy || Double.isNaN(sse) || Double.isInfinite(sse)) {
+				numMistakes++;
+				if(numMistakes >= 30) {
+					this.logLayer = reg;
+					this.layers = copies;
+					log.info("Entropy went up; restoring from last good state");
+					break;
+				}
+			
+
+			
+			}
+			
+			if(sse < errorThreshold )
+				break;
+			if(i % 10 == 0 || i == 0) {
 				log.info("SSE on epoch " + i + " is  " + sse);
 				log.info("Negative log likelihood is " + this.negativeLogLikelihood());
 			}
 
 			for(int l = 0; l < nLayers; l++) {
-				DoubleMatrix add = deltas.get(l).getFirst();
+				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
 				layers[l].setW(layers[l].getW().sub(add));
 				sigmoidLayers[l].W = layers[l].getW();
-			
+				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+				layers[l].gethBias().subi(deltaColumnSums);
+				sigmoidLayers[l].b = layers[l].gethBias();
 			}
 
-			logLayer.W.subi(deltas.get(nLayers).getFirst());
+
+			logLayer.W.addi(deltas.get(nLayers).getFirst());
 
 
 		}
@@ -395,7 +432,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			HiddenLayer layer = sigmoidLayers[i];
 			input = layer.activate(input);
 		}
-		return logLayer.predict(input);
+		return (logLayer.predict(input));
 	}
 
 

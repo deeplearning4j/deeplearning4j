@@ -2,6 +2,8 @@ package com.ccc.deeplearning.sda;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
@@ -18,7 +20,7 @@ import com.ccc.deeplearning.nn.NeuralNetwork;
 public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 	private static final long serialVersionUID = 1448581794985193009L;
-
+	private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
 
 	public StackedDenoisingAutoEncoder() {}
 
@@ -62,6 +64,73 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
 			DenoisingAutoEncoder da = (DenoisingAutoEncoder) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
+
+			DoubleMatrix w = da.W.dup();
+			DoubleMatrix hBias = da.hBias.dup();
+			Double bestLoss = null;
+			Integer numTimesOver = null;
+
+
+			for(int  epoch = 0; epoch < epochs; epoch++) {
+				da.trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel});
+				h.W = da.W;
+				h.b = da.hBias;
+				double entropy = da.getReConstructionCrossEntropy();
+
+				if(bestLoss == null)
+					bestLoss = entropy;
+				else if(Double.isNaN(entropy) || Double.isInfinite(entropy) || entropy < 0.01) {
+					da.W = w.dup();
+					da.hBias = hBias.dup();
+					h.W = da.W;
+					h.b = da.hBias; 
+					log.info("Went over too many times....reverting to last known good state");
+					break;
+				}
+				else if(entropy > bestLoss) {
+					if(numTimesOver == null)
+						numTimesOver = 1;
+					else
+						numTimesOver++;
+					if(numTimesOver >= 30) {
+						da.W = w.dup();
+						da.hBias = hBias.dup();
+						h.W = da.W;
+						h.b = hBias; 
+						log.info("Went over too many times....reverting to last known good state");
+						break;
+
+					}
+
+				}
+				else if(entropy == bestLoss) {
+					if(numTimesOver == null)
+						numTimesOver = 1;
+					else
+						numTimesOver++;
+					if(numTimesOver >= 30) {
+						log.info("Breaking early; no changes for a while");
+						break;
+					}
+				}
+				else if(entropy < bestLoss){
+					w = da.W.dup();
+					hBias = da.hBias.dup();
+					bestLoss = entropy;
+				}
+
+				log.info("Cross entropy for layer " + (i + 1) + " on epoch " + epoch + " is " + entropy);
+			}
+
+			double curr = da.getReConstructionCrossEntropy();
+			if(curr > bestLoss) {
+				log.info("Converged past global minimum; reverting");
+				da.W = w.dup();
+				da.hBias = hBias.dup();
+			}
+
+
+
 			for(int l = 0; l < epochs; l++) {
 				da.trainTillConverge(layerInput, lr, corruptionLevel);
 				if(h.W != (da.W))
@@ -69,7 +138,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				if(h.b != da.hBias)
 					h.b = da.hBias;
 			}
-			
+
 		}	
 
 
