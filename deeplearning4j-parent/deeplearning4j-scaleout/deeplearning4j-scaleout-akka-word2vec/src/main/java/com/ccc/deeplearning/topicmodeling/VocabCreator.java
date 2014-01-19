@@ -86,16 +86,18 @@ public class VocabCreator {
 
 
 
-		aggregate.keepTopNKeys(500);
+		aggregate.keepTopNKeys(2000);
 
-		log.info(tfidf.toString());
+		log.info(tf.toString());
 
-		for(String word : aggregate.keySet()) {
+	/*	for(String word : aggregate.keySet()) {
 			if(vocab.indexOf(word) < 0)
 				vocab.add(word);
-		}
-
-
+		}*/
+		String[] vocab2 = new String[]{"funding","venture","round","accept","accepting","investor","investors","partners","partnering","raising","capital"};
+		for(String s : vocab2)
+			vocab.add(s);
+		
 		return vocab;
 	}
 

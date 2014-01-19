@@ -20,7 +20,11 @@ import com.ccc.deeplearning.autoencoder.DeepAutoEncoder;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.eval.Evaluation;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.nn.activation.HardTanh;
+import com.ccc.deeplearning.nn.activation.Tanh;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
@@ -43,7 +47,7 @@ import com.ccc.deeplearning.word2vec.viterbi.Index;
 public class TopicModeling {
 
 	private List<String> labels;
-	private CDBN cdbn;
+	private TopicModelingCDBN cdbn;
 	private DeepAutoEncoder autoEncoder;
 	private Index vocab = new Index();
 	private List<String> stopWords;
@@ -51,7 +55,7 @@ public class TopicModeling {
 	private int numOuts;
 	private DataSet trained;
 	private VocabCreator vocabCreator;
-	
+
 	private static Logger log = LoggerFactory.getLogger(TopicModeling.class);
 
 	/**
@@ -76,37 +80,44 @@ public class TopicModeling {
 
 	}
 
-	
 
-	
+
+
 
 
 	public void train() throws IOException {
 		this.vocabCreator = new VocabCreator(stopWords,rootDir);
 		vocab = vocabCreator.createVocab();
-		
+
 		int size = vocab.size();
 		//create a network that knows how to reconstruct the input documents
 
-		cdbn = new TopicModelingCDBN.Builder()
+		cdbn = (TopicModelingCDBN) new TopicModelingCDBN.Builder()
 		.numberOfInputs(size)
 		.numberOfOutPuts(labels.size())
-		.hiddenLayerSizes( new int[]{ size / 4,size / 8,size / 12 })
+		.hiddenLayerSizes( new int[]{200,150,100})
 		.build();
 
 
 		List<DataSet> list = new ArrayList<DataSet>();
+		File[] dirs =  rootDir.listFiles();
 
-		for(File f : rootDir.listFiles())	 {
+		for(File f : dirs)	 {
 
 			for(File doc : f.listFiles()) {
 				DoubleMatrix train = toWordCountVector(doc).transpose();
 
 				DoubleMatrix outcome = MatrixUtil.toOutcomeVector(labels.indexOf(f.getName()), labels.size());
-				list.add(new DataSet(train,outcome));
+				//DoubleMatrix outcome = DoubleMatrix.scalar(labels.indexOf(f.getName()));
+				for(int i = 0; i < 30;i++)
+					list.add(new DataSet(train,outcome));
+
+
 
 			}
 		}
+
+
 
 		DataSet data = DataSet.merge(list);
 		Evaluation eval = new Evaluation();
@@ -116,13 +127,25 @@ public class TopicModeling {
 		DoubleMatrix second = data.getSecond();
 		autoEncoder = new DeepAutoEncoder(cdbn,new Object[]{1,0.1,1000});
 		autoEncoder.train(first, second, 0.1);
-		
+		 
+		log.info("Predicting " + first + "\n" + " with labels " + second);
+
+		//cdbn.pretrain(first,0.01, 0.5, 1000);
+		cdbn.pretrain(first, 1,0.1,1000);
+		cdbn.finetune(second, 0.1, 1000);
+		DoubleMatrix predicted = cdbn.predict(first);
 		//cdbn.finetune(second, 0.1, 1000);
-		eval.eval(second, cdbn.predict(first));
-		log.info("Final stats " + eval.stats());
+		DoubleMatrix outcomes2 = MatrixUtil.outcomes(predicted);
+		log.info("Predicted was " + outcomes2);
+		log.info("Actual was " + second);
 
+		eval.eval(second,predicted);
+		log.info("Final stats for first " + eval.stats());
+		/*
 
-
+		DoubleMatrix searched = autoEncoder.encode(first);
+		Evaluation eval2 = new Evaluation();
+		 */
 
 
 	}
@@ -182,13 +205,13 @@ public class TopicModeling {
 			}
 		}
 
-	/*	for(int i = 0; i < ret.length; i++) {
+		for(int i = 0; i < ret.length; i++) {
 			if(ret.get(i) > 0)
-				ret.put(i,0.5);
+				ret.put(i,1);
 		}
-		*/
-		
-		ret.divi(nonStopWords);
+
+
+		//	ret.divi(nonStopWords);
 		double sum = ret.sum();
 		return ret;
 	}
@@ -218,7 +241,14 @@ public class TopicModeling {
 
 		}
 		//normalize the word counts by the number of words
-		ret.divi(ret.length);
+		//ret.divi(ret.length);
+
+		for(int i = 0; i < ret.length; i++) {
+			if(ret.get(i) > 0)
+				ret.put(i,1);
+		}
+
+
 		return ret;
 	}
 

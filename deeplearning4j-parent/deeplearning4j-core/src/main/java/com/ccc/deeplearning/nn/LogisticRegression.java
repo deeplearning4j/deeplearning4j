@@ -89,11 +89,11 @@ public class LogisticRegression implements Serializable {
 		this.labels = y;
 
 		
-		DoubleMatrix p_y_given_x = softmax(x.mmul(W).addRowVector(b));
+		DoubleMatrix p_y_given_x = sigmoid(x.mmul(W).addRowVector(b));
 		DoubleMatrix dy = y.sub(p_y_given_x);
 
-		W = W.add(x.transpose().mmul(dy).mul(lr));
-		b = b.add(dy.columnMeans().mul(lr));
+		W.addi(x.transpose().mmul(dy).mul(lr));
+		b.addi(dy.columnMeans().mul(lr));
 
 	}
 
@@ -110,7 +110,7 @@ public class LogisticRegression implements Serializable {
 	 * @return a probability distribution for each row
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
-		return softmax(x.mmul(W).addRowVector(b));
+		return sigmoid(x.mmul(W).addRowVector(b));
 	}	
 
 

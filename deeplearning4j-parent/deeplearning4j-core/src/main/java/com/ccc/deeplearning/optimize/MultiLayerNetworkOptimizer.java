@@ -62,12 +62,15 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 			network.logLayer.train(layerInput, labels, lr);
 			lr *= network.learningRateUpdate;
+
+			
 			if(currLoss == null)
 				currLoss = network.negativeLogLikelihood();
 
+
 			else {
 				Double loss = network.negativeLogLikelihood();
-				if(loss > currLoss) {
+				if(loss > currLoss || loss <= 0.01) {
 					if(numTimesOver == null)
 						numTimesOver = 1;
 					else 
@@ -90,8 +93,13 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 			}
 
+			
+
+			
 			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
 		}
+		
+
 		
 		double curr = network.negativeLogLikelihood();
 		if(curr > currLoss) {
@@ -101,8 +109,9 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 			
 		}
 		
+		network.backProp(lr, epochs);
+
 		
-		network.backProp(lr, 10000);
 
 		
 	}

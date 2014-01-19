@@ -9,7 +9,7 @@ public class TopicModelingTest {
 
 	@Test
 	public void testTopicModeling() throws IOException {
-		TopicModeling modeling = new TopicModeling(new File("/home/agibsonccc/Downloads/20news-bydate-train"), 2);
+		TopicModeling modeling = new TopicModeling(new File("/home/agibsonccc/workspace/deeplearning4j-parent/deeplearning4j-scaleout/deeplearning4j-scaleout-akka-word2vec/src/test/resources/bitcoin/topics"), 2);
 		modeling.train();
 		//modeling.dump("/home/agibsonccc/bitcoin/thisiswhatitlookslike");
 	}

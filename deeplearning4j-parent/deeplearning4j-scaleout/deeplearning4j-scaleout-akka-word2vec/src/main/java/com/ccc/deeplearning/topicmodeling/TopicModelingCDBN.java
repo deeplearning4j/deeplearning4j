@@ -6,9 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.dbn.CDBN;
+import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.nn.NeuralNetwork;
+import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
-public class TopicModelingCDBN extends CDBN {
+public class TopicModelingCDBN extends DBN {
 
 	/**
 	 * 
@@ -40,19 +42,30 @@ public class TopicModelingCDBN extends CDBN {
 			DoubleMatrix vBias, RandomGenerator rng, int index) {
 		NeuralNetwork ret =  super.createLayer(input, nVisible, nHidden, W, hBias, vBias, rng, index);
 		if(index == 0) {
-			ret.getW().muli(input.columns);
+			//ret.getvBias().muli(input.columns);
 			log.info("Augmented weights of first layer by " + input.columns);
 		}
 		return ret;
 	}
 
 
-	public static class Builder extends CDBN.Builder {
+	public static class Builder extends DBN.Builder {
 
 		public Builder() {
 			super();
 			this.clazz = TopicModelingCDBN.class;
 		}
+
+		@Override
+		public TopicModelingCDBN buildEmpty() {
+			return (TopicModelingCDBN) super.buildEmpty();
+		}
+
+		@Override
+		public TopicModelingCDBN build() {
+			return (TopicModelingCDBN) super.build();
+		}
+		
 		
 	}
 
