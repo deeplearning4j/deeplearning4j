@@ -16,6 +16,7 @@ import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 
+import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.iterativereduce.akka.ComputableMasterAkka;
 import com.ccc.deeplearning.iterativereduce.akka.ComputableWorkerAkka;
 import com.ccc.deeplearning.iterativereduce.akka.DeepLearningAccumulator;
@@ -100,7 +101,7 @@ public class NetworkRunner implements DeepLearningConfigurable {
 			final CountDownLatch latch = new CountDownLatch(workers.size());
 			final int epoch = i + 1;
 			for(final ComputableWorkerAkka worker : workers) {
-				
+
 				Future<UpdateableImpl> future = Futures.future(new Callable<UpdateableImpl>() {
 
 					@Override
@@ -142,15 +143,18 @@ public class NetworkRunner implements DeepLearningConfigurable {
 
 
 			output = masterResult.get();
+			Evaluation eval = new Evaluation();
+			eval.eval(labels, output.predict(input));
+			log.info(eval.stats());
 			acc.accumulate(output);
 		}
 		return output;
 	}
-	
+
 	public BaseMultiLayerNetwork result()  {
 		return acc.averaged();
 	}
-	
+
 
 	public DoubleMatrix getInput() {
 		return input;

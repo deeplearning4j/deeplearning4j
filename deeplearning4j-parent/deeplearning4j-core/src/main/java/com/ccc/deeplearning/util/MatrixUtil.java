@@ -194,21 +194,10 @@ public class MatrixUtil {
 	}
 
 	public static DoubleMatrix softmax(DoubleMatrix input) {
-		 double max = input.max();
-         double sum = 0.0;
-         
-         
-         for(int i = 0; i < input.length; i++) {
-                 input.put(i,Math.exp(input.get(i) - max));                
-                
-         }
-         sum += input.sum();
-         
-         for(int i = 0; i< input.length; i++) {
-        	 input.put(i,input.get(i) / sum);
-         }
-         
-         return input;
+		DoubleMatrix max = input.rowMaxs();
+        MatrixFunctions.expi(input.subiColumnVector(max));
+        DoubleMatrix sum = input.rowSums();
+        return input.diviColumnVector(sum);
 	}
 	public static DoubleMatrix mean(DoubleMatrix input,int axis) {
 		DoubleMatrix ret = new DoubleMatrix(input.rows,1);

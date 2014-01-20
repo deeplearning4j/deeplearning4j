@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.ccc.deeplearning.base.IrisUtils;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 public class SdaTest {
@@ -88,7 +89,12 @@ public class SdaTest {
 		train_Y_matrix = new DoubleMatrix(train_Y_arr);
 
 
-		test_Y_arr = new double[test_N][n_outs];
+		test_Y_arr = new double[][]{
+				{0.0,1.0},
+				{0.0,1.0},
+				{1.0,0.0},
+				{1.0,0.0}
+		};
 
 
 		test_X_matrix = new DoubleMatrix(test_X_arr);
@@ -107,9 +113,10 @@ public class SdaTest {
 		sda.finetune(finetune_lr, finetune_epochs);
 		log.info("OUTPUT TEST");
 		DoubleMatrix predicted = sda.predict(train_X_matrix);
-		for(int i = 0; i < predicted.rows; i++) {
-			assertEquals(SimpleBlas.iamax(predicted.getRow(i)),SimpleBlas.iamax(train_Y_matrix));
-		}
+		
+		Evaluation eval = new Evaluation();
+		eval.eval(train_Y_matrix, predicted);
+		log.info(eval.stats());
 	
 
 	}

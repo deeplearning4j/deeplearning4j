@@ -275,11 +275,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 			else if(layers[i].getInput() == null){
 				this.feedForward();
-				if(layers[i].getInput() == null)	
-					throw new IllegalStateException("WTF IS THIS");
 			}
 
-			zs.add(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias()));
+			zs.add(MatrixUtil.sigmoid(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias())));
 		}
 		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
 
@@ -308,7 +306,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				error = error.mul(derivative.applyDerivative(z));
 
 				deltas[i] = error;
-				gradients[i] = a.transpose().mmul(error).transpose();
+				gradients[i] = a.transpose().mmul(error).transpose().div(input.rows);
 			}
 
 		}
@@ -388,10 +386,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			for(int l = 0; l < nLayers; l++) {
 				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
-				layers[l].setW(layers[l].getW().sub(add));
+				layers[l].setW(layers[l].getW().sub(add.mul(lr)));
 				sigmoidLayers[l].W = layers[l].getW();
 				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
-				layers[l].gethBias().subi(deltaColumnSums);
+				layers[l].gethBias().subi(deltaColumnSums.mul(lr));
 				sigmoidLayers[l].b = layers[l].gethBias();
 			}
 
@@ -433,10 +431,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
 		DoubleMatrix input = x;
-		for(int i = 0; i < nLayers; i++) {
-			HiddenLayer layer = sigmoidLayers[i];
-			input = layer.activate(input);
-		}
+		for(int i = 0; i < nLayers; i++) 
+			input = sigmoidLayers[i].activate(input);
+		
 		return (logLayer.predict(input));
 	}
 

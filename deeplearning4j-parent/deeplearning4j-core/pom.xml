@@ -11,10 +11,15 @@
 		<logback.version>1.0.6</logback.version>
 
 	</properties>
-	
+
 
 
 	<dependencies>
+		<dependency>
+			<groupId>org.zeroturnaround</groupId>
+			<artifactId>zt-exec</artifactId>
+			<version>1.5</version>
+		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>

@@ -1,5 +1,6 @@
 package com.ccc.deeplearning.da;
 
+import static com.ccc.deeplearning.util.MathUtils.binomial;
 import static com.ccc.deeplearning.util.MatrixUtil.log;
 import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
 import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
@@ -10,10 +11,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
-import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 import com.ccc.deeplearning.sda.DenoisingAutoEncoderOptimizer;
-
-import static com.ccc.deeplearning.util.MathUtils.*;
 
 /**
  * Denoising Autoencoder.
@@ -132,14 +130,14 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		
 		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
 		
-		this.W.addi(L_W).mul(momentum);
+		this.W.addi(L_W).mul(lr).mul(0.01);
 		
 		
 		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
 		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
 	
-		this.hBias.addi(L_hbias_mean);
-		this.vBias.addi(L_vbias_mean);
+		this.hBias.addi(L_hbias_mean.mul(lr));
+		this.vBias.addi(L_vbias_mean.mul(lr));
 
 	}
 
