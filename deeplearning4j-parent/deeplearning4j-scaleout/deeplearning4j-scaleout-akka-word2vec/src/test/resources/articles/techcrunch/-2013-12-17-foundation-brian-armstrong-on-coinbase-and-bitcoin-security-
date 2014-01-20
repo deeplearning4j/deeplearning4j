@@ -1,6 +1,0 @@
-LinkedIn
-Coinbase Founder Brian Armstrong On Bitcoin Security | Foundation
-In this episode of my Foundation video series, I sit down for a chat with Coinbase founder Brian Armstrong. We chat about Bitcoin, his first Android wallet project, and the insane security he uses to protect your coins.
-Brian on security:
-“We have over 200 tests that run against the code before every deploy…we keep the vast majority of customer funds offline…we split the keys with redundancy and geographically split them all over the world so that each of the pieces is in a safe deposit box geographically.”
-Kevin Rose is a general partner at Google Ventures. You can watch Kevin’s prior Foundation episode, an interview with Matt Galligan of Circa, here .
