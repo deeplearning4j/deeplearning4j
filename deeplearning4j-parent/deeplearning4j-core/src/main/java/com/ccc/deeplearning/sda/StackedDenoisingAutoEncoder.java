@@ -2,6 +2,8 @@ package com.ccc.deeplearning.sda;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
@@ -17,7 +19,10 @@ import com.ccc.deeplearning.nn.NeuralNetwork;
 public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 	private static final long serialVersionUID = 1448581794985193009L;
-
+	private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
+	
+	
+	
 	public StackedDenoisingAutoEncoder() {}
 
 	public StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
@@ -58,10 +63,18 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = input;
 			else
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
-			
+			Integer numTimesOver = 1;
+			Double bestLoss = layers[i].getReConstructionCrossEntropy();
+			for(int  epoch = 0; epoch < epochs; epoch++)  {
+				boolean trainedProperly = this.trainNetwork(this.layers[i], this.sigmoidLayers[i], epoch, layerInput, lr, bestLoss, new Object[]{corruptionLevel});
 
-			for(int  epoch = 0; epoch < epochs; epoch++) 
-				this.trainNetwork(this.layers[i], this.sigmoidLayers[i], epoch, layerInput, lr, new Object[]{corruptionLevel});
+				if(!trainedProperly)
+					numTimesOver++;
+				if(numTimesOver >= 30) {
+					log.info("Breaking early; " + numTimesOver);
+				}
+			}
+
 			
 		}	
 	}
