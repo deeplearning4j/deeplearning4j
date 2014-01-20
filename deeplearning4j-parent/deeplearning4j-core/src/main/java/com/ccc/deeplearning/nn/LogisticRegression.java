@@ -3,8 +3,11 @@ package com.ccc.deeplearning.nn;
 import java.io.Serializable;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ccc.deeplearning.util.MatrixUtil;
 
 import static com.ccc.deeplearning.util.MatrixUtil.*;
 
@@ -21,6 +24,7 @@ public class LogisticRegression implements Serializable {
 	public DoubleMatrix input,labels;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
+	public double regTerm = 0.01;
 	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 
@@ -62,12 +66,12 @@ public class LogisticRegression implements Serializable {
 	 */
 	public double negativeLogLikelihood() {
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
-		
+		double reg = (2 / regTerm) * MatrixFunctions.pow(this.W,2).sum();
 		return - labels.mul(log(sigAct)).add(
 				oneMinus(labels).mul(
 						log(oneMinus(sigAct))
 				))
-				.columnSums().mean();
+				.columnSums().mean() + reg;
 	}
 
 	/**
@@ -88,7 +92,7 @@ public class LogisticRegression implements Serializable {
 		this.input = x;
 		this.labels = y;
 
-		
+		DoubleMatrix regularized = W.transpose().mul(regTerm);
 		DoubleMatrix p_y_given_x = sigmoid(x.mmul(W).addRowVector(b));
 		DoubleMatrix dy = y.sub(p_y_given_x);
 
@@ -110,7 +114,7 @@ public class LogisticRegression implements Serializable {
 	 * @return a probability distribution for each row
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
-		return sigmoid(x.mmul(W).addRowVector(b));
+		return softmax(x.mmul(W).addRowVector(b));
 	}	
 
 

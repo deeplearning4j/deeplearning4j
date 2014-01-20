@@ -59,6 +59,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	/* L2 Regularization constant */
 	public double l2 = 0.1;
 	public transient NeuralNetworkOptimizer optimizer;
+	public int renderWeightsEveryNumEpochs = -1;
 	
 
 	public BaseNeuralNetwork() {}
@@ -137,6 +138,44 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	public void regularize() {
+		this.W.addi(W.mul(0.01));
+		this.W.divi(this.momentum);
+		
+	}
+	
+	public void jostleWeighMatrix() {
+		double a = 1.0 / (double) nVisible;
+		/*
+		 * Initialize based on the number of visible units..
+		 * The lower bound is called the fan in
+		 * The outer bound is called the fan out.
+		 * 
+		 * Below's advice works for Denoising AutoEncoders and other 
+		 * neural networks you will use due to the same baseline guiding principles for
+		 * both RBMs and Denoising Autoencoders.
+		 * 
+		 * Hinton's Guide to practical RBMs:
+		 * The weights are typically initialized to small random values chosen from a zero-mean Gaussian with
+		 * a standard deviation of about 0.01. Using larger random values can speed the initial learning, but
+		 * it may lead to a slightly worse final model. Care should be taken to ensure that the initial weight
+		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
+		 * as this significantly slows the learning.
+		 */
+		UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
+
+		DoubleMatrix W = DoubleMatrix.zeros(nVisible,nHidden);
+
+		for(int i = 0; i < this.W.rows; i++) {
+			for(int j = 0; j < this.W.columns; j++) 
+				W.put(i,j,u.sample());
+
+		}
+		
+		this.W.subi(W);
+		
+	}
+	
 	@Override
 	public NeuralNetwork transpose() {
 		try {
@@ -451,17 +490,24 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private DoubleMatrix hBias;
 		private int numVisible;
 		private int numHidden;
-		private RandomGenerator gen;
+		private RandomGenerator gen = new MersenneTwister(123);
 		private DoubleMatrix input;
 		private double sparsity = 0.01;
 		private double l2 = 0.01;
 		private double momentum = 0.1;
+		private int renderWeightsEveryNumEpochs = -1;
+		
 		
 		public Builder<E> withL2(double l2) {
 			this.l2 = l2;
 			return this;
 		}
 		
+		
+		public Builder<E> renderWeights(int numEpochs) {
+			this.renderWeightsEveryNumEpochs = numEpochs;
+			return this;
+		}
 		
 		@SuppressWarnings("unchecked")
 		public E buildEmpty() {
@@ -471,6 +517,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				throw new RuntimeException(e);
 			}
 		}
+		
+		
 		
 		public Builder<E> withClazz(Class<? extends BaseNeuralNetwork> clazz) {
 			this.clazz = clazz;

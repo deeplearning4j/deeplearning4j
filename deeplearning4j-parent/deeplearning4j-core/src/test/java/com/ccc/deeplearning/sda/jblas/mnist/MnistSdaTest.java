@@ -28,28 +28,15 @@ public class MnistSdaTest extends DeepLearningTest {
 
 
 		DataSet first = iter.next();
-		List<DataSet> twos = new ArrayList<DataSet>();
-		for(int i = 0; i < first.numExamples(); i++) {
-			if(first.get(i).outcome() == 1)
-				twos.add(first.get(i));
-		}
 
 
-		while(iter.hasNext()) {
-			first = iter.next();
-			for(int i = 0; i < first.numExamples(); i++) {
-				if(first.get(i).outcome() == 1)
-					twos.add(first.get(i));
-			}
-		}
 
-		DataSet twosData = DataSet.merge(twos);
 
 
 
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {500,500,2000};
+		int[] layerSizes = {numIns,numIns,numIns};
 
 
 		double lr = 0.1;
@@ -59,23 +46,28 @@ public class MnistSdaTest extends DeepLearningTest {
 				.numberOfOutPuts(numLabels).withRng(rng)
 				.hiddenLayerSizes(layerSizes).build();
 
+		DoubleMatrix data1 = first.getFirst().dup();
+		DoubleMatrix outcomes = first.getSecond().dup();
+		do {
+			sda.pretrain(first.getFirst(), lr, 0.3, 1000);
+			sda.finetune(outcomes, lr,100);
 
-		sda.pretrain(twosData.getFirst(), lr, 0.6, 100);
-		sda.finetune(twosData.getSecond(), lr,50);
+			Evaluation eval = new Evaluation();
+			log.info("BEGIN EVAL ON " + first.numExamples());
+			//	while(iter.hasNext()) {
 
-		
+			DoubleMatrix predicted = sda.predict(data1);
+			log.info("Predicted\n " + predicted.toString().replaceAll(";","\n"));
 
-		Evaluation eval = new Evaluation();
-		log.info("BEGIN EVAL ON " + first.numExamples());
-		//	while(iter.hasNext()) {
+			eval.eval(first.getSecond(), predicted);
+			log.info(eval.stats());
+			log.info("Loss is " + sda.negativeLogLikelihood());
+			if(iter.hasNext())
+				first = iter.next();
+		}while(iter.hasNext());
 
-		DoubleMatrix predicted = sda.predict(twosData.getFirst());
-		log.info("Predicting\n " + predicted.toString().replaceAll(";","\n"));
 
-		eval.eval(twosData.getSecond(), predicted);
-		log.info(eval.stats());
-		log.info("Loss is " + sda.negativeLogLikelihood());
-		
+
 
 
 

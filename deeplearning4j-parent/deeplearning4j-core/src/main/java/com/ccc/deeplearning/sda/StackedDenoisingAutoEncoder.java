@@ -9,6 +9,7 @@ import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.nn.HiddenLayer;
 import com.ccc.deeplearning.nn.NeuralNetwork;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 
 
 /**
@@ -52,7 +53,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	 */
 	public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
 		if(this.input == null)
-			initializeLayers(input);
+			initializeLayers(input.dup());
 
 		DoubleMatrix layerInput = null;
 
@@ -72,9 +73,28 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 
 			for(int  epoch = 0; epoch < epochs; epoch++) {
+				if(da.renderWeightsEveryNumEpochs > 0) {
+					if(epoch % da.renderWeightsEveryNumEpochs == 0) {
+						NeuralNetPlotter plotter = new NeuralNetPlotter();
+						plotter.plotWeights(da);
+					}
+				}
+				
 				da.trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel});
+
+				
+				if(da.renderWeightsEveryNumEpochs > 0) {
+					if(epoch % da.renderWeightsEveryNumEpochs == 0) {
+						NeuralNetPlotter plotter = new NeuralNetPlotter();
+						plotter.plotWeights(da);
+					}
+				}
+				
 				h.W = da.W;
 				h.b = da.hBias;
+				
+				
+				
 				double entropy = da.getReConstructionCrossEntropy();
 
 				if(bestLoss == null)
@@ -92,6 +112,10 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 						numTimesOver = 1;
 					else
 						numTimesOver++;
+					
+				
+
+					
 					if(numTimesOver >= 30) {
 						da.W = w.dup();
 						da.hBias = hBias.dup();
@@ -127,16 +151,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				log.info("Converged past global minimum; reverting");
 				da.W = w.dup();
 				da.hBias = hBias.dup();
-			}
-
-
-
-			for(int l = 0; l < epochs; l++) {
-				da.trainTillConverge(layerInput, lr, corruptionLevel);
-				if(h.W != (da.W))
-					h.W = da.W;
-				if(h.b != da.hBias)
-					h.b = da.hBias;
 			}
 
 		}	

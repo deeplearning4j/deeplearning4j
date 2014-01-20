@@ -113,12 +113,12 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 	@Test
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(60000);
+		fetcher.fetch(600);
 		Pair<DoubleMatrix,DoubleMatrix> first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
 		int[] layerSizes = new int[3];
-		Arrays.fill(layerSizes,100);
+		Arrays.fill(layerSizes,1000);
 		runner = new NetworkRunner();
 		conf.put(SPLIT, String.valueOf(600));
 		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");

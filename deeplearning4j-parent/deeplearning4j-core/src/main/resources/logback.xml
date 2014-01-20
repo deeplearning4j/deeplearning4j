@@ -3,7 +3,7 @@
 	
 
 	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
-		<file>${application.home}/logs/application.log</file>
+		<file>logs/application.log</file>
 		<encoder>
 			<pattern>%date - [%level] - from %logger in %thread
 				%n%message%n%xException%n</pattern>
@@ -12,11 +12,10 @@
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
-			<pattern>%coloredLevel %logger{15} - %message%n%xException{5}
+			<pattern> %logger{15} - %message%n%xException{5}
 			</pattern>
 		</encoder>
 	</appender>
-		<logger name="com.github.jmkgreen.morphia.annotations" level="DEBUG" />
     <logger name="org.apache.catalina.core" level="DEBUG" />
 	<logger name="org.springframework" level="DEBUG" />
 	<logger name="com.ccc" level="DEBUG" />

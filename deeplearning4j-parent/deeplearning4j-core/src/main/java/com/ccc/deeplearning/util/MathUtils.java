@@ -79,19 +79,16 @@ public class MathUtils  {
 	 * @return
 	 */
 	public static int binomial(RandomGenerator rng,int n, double p) {
-	if(p < 0 || p > 1)
-		return 0;
-		
-		int c = 0;
-		double r;
-		
-		for(int i=0; i < n; i++) {
-			r = rng.nextDouble();
-			if (r < p) 
-				c++;
-		}
-		
-		return c;
+		 if ((p < 0) || (p > 1)) {
+	            return 0;
+	        }
+	        int c = 0;
+	        for (int i = 0; i < n; i++) {
+	            if (rng.nextDouble() < p) {
+	                c++;
+	            }
+	        }
+	        return c;
 	}
 	
 	/**

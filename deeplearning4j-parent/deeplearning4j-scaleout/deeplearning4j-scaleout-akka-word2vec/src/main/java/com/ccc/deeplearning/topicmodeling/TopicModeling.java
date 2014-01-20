@@ -95,7 +95,7 @@ public class TopicModeling {
 		cdbn = (TopicModelingCDBN) new TopicModelingCDBN.Builder()
 		.numberOfInputs(size)
 		.numberOfOutPuts(labels.size())
-		.hiddenLayerSizes( new int[]{size,size,size / 2})
+		.hiddenLayerSizes( new int[]{size, size, size})
 		.build();
 
 
