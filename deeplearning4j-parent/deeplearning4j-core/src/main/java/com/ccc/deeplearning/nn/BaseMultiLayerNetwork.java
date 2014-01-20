@@ -6,7 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,15 +122,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
-	protected void trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,DoubleMatrix input,double lr,Object[] params) {
+	protected boolean trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,DoubleMatrix input,double lr,Double bestLoss,Object[] params) {
 
-		Double bestLoss = null;
-		Integer numTimesOver = null;
+
 
 		DoubleMatrix w = network.getW();
 		DoubleMatrix hBias = network.gethBias();
 
-		
+
 		network.trainTillConvergence(input, lr, params);
 
 		if(network.getRenderEpochs() > 0) {
@@ -145,42 +143,26 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		h.b = network.gethBias();
 		double entropy = network.getReConstructionCrossEntropy();
 
-		bestLoss = entropy;
-		
+
 		if(Double.isNaN(entropy) || Double.isInfinite(entropy)) {
 			network.setW(w.dup());
 			network.sethBias(hBias.dup());
 			h.W = network.getW();
 			h.b = hBias; 
 			log.info("Went over too many times....reverting to last known good state");
-			
-		}
-		else if(entropy > bestLoss) {
-			if(numTimesOver == null)
-				numTimesOver = 1;
-			else
-				numTimesOver++;
-			if(numTimesOver >= 30) {
-				network.setW(w.dup());
-				network.sethBias(hBias.dup());
-				h.W = network.getW();
-				h.b = hBias; 
-				log.info("Went over too many times....reverting to last known good state");
-				
-
-			}
 
 		}
-		else if(entropy == bestLoss) {
-			if(numTimesOver == null)
-				numTimesOver = 1;
-			else
-				numTimesOver++;
-			if(numTimesOver >= 30) {
-				log.info("Breaking early; no changes for a while");
-				
-			}
+		else if(entropy > bestLoss || entropy == bestLoss) {
+
+			network.setW(w.dup());
+			network.sethBias(hBias.dup());
+			h.W = network.getW();
+			h.b = hBias; 
+			log.info("Went over too many times....reverting to last known good state");
+
+			return false;
 		}
+
 		else if(entropy < bestLoss){
 			w = network.getW().dup();
 			hBias = network.gethBias().dup();
@@ -195,8 +177,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			log.info("Converged past global minimum; reverting");
 			network.setW(w.dup());
 			network.sethBias(hBias.dup());
+			return false;
 		}
-
+		return true;
 	}
 
 

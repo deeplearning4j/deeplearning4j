@@ -99,11 +99,17 @@ public class DBN extends BaseMultiLayerNetwork {
 			else 
 				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
 			log.info("Training on layer " + (i + 1));
-			RBM r = (RBM) this.layers[i];
-			HiddenLayer h = this.sigmoidLayers[i];
-
-			for(int  epoch = 0; epoch < epochs; epoch++) 
-				this.trainNetwork(r, h, epoch, layerInput, learningRate, new Object[]{k});
+			
+			Integer numTimesOver = 1;
+			Double bestLoss = layers[i].getReConstructionCrossEntropy();
+			for(int  epoch = 0; epoch < epochs; epoch++)  {
+				boolean trainedProperly = this.trainNetwork(layers[i],sigmoidLayers[i], epoch, layerInput, learningRate,bestLoss,new Object[]{k});
+				if(!trainedProperly)
+					numTimesOver++;
+				if(numTimesOver >= 30) {
+					log.info("Breaking early; " + numTimesOver);
+				}
+			}
 
 		}
 	}
