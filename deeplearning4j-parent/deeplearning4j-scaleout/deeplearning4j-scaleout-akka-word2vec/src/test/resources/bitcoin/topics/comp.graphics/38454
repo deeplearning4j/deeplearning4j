@@ -1,0 +1,52 @@
+From: boebert@sctc.com (Earl Boebert)
+Subject: Removing Distortion From Bitmapped Drawings?
+Organization: SCTC
+Lines: 47
+
+Let's say you have a scanned image of a line drawing; in this case a
+boat, but it could be anything.  On the drawing you have a set of
+reference points whose true x,y positions are known.  
+
+Now you digitize the drawing manually (in this case, using Yaron
+Danon's excellent Digitize program).  That is, you use a program which
+converts cursor positions to x,y and saves those values when you click
+the mouse.
+
+Upon digitizing you notice that the reference point values that come
+out of the digitizing process differ in small but significant ways
+from the known true values.  This is understandable because the
+scanned drawing is a reproduction of the original and there are
+successive sources of distortion such as differential expansion and
+contraction of paper, errors introduced in the printing process,
+scanner errors and what have you.
+
+The errors are not uniform over the entire drawing, so "global"
+adjustments such as stretching/contracting uniformly over x or y, or
+rotating the whole drawing, are not satisfactory.
+
+So the question is: does any kind soul know of an algorithm for
+removing such distortion?  In particular, if I have three sets of
+points 
+
+Reference(x,y) (the known true values)
+
+DistortedReference(x,y) (the same points, with known errors)
+
+DistortedData(x,y) (other points, with unknown errors)
+
+what function of Reference and Distorted could I apply to
+DistortedData to remove the errors.
+
+I suspect the problem could be solved by treating the distorted
+reference points as resulting from the projection of a "bumpy" 3d
+surface, solving for the surface and then "flattening" it to remove
+the errors in the other data points.
+
+Any kind and informed soul out there have any ideas, or better yet,
+pointers to treatments of the same or similar problems?
+
+Thanks,
+
+Earl
+
+

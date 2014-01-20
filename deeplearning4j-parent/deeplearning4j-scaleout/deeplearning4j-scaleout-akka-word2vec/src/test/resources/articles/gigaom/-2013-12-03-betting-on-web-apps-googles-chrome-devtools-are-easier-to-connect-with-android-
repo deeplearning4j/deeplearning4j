@@ -1,0 +1,11 @@
+A
+Summary:
+Developers wanting to build mobile web apps won’t have to jump through as many hoops: The latest Chrome DevTools includes the ability to emulate an Android device or even connect one to the browser for a screen cast.
+Google added more features on Tuesday to its web-based Chrome Developer Tools for developers to build mobile web apps. Using the latest Chrome beta programmers can simulate an Android device in their browser for app development or easily connect an actual Android phone or tablet and screen cast their app.
+Here’s a look at what developers can do with the latest updates to Chrome DevTools:
+DevTools itself has long been a part of Chrome and Chrome OS. If you use either, you can see it by clicking Ctrl + Shift + I on your Chromebook or Windows device running Chrome; for Mac users running Chrome the keystroke is Cmd + Opt + I. At that point, you can inspect elements on a web page, check JavaScript performance and more.
+What’s new here are the direct ties to an Android device. There’s no longer a need to install the Android SDK — something you can’t do on a Chromebook in any case — or use ADB terminal commands to connect to an external device. And this speaks volumes to Google’s future vision: Web apps will still have a place beside native apps or could one day be the more prominent method for mobile apps.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

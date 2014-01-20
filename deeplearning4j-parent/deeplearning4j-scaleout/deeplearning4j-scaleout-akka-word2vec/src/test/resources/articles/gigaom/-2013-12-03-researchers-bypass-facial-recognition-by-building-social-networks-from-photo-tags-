@@ -1,0 +1,15 @@
+photo: University of Toronto
+Summary:
+A new algorithm from University of Toronto researchers can predict the identity of untagged photo subjects by analyzing the relationships of the other people (or things) in the photo.
+photo: University of Toronto
+University of Toronto researchers have developed an algorithm for predicting the identity of untagged people in photos by analyzing their relationships to other people in the photos. The process is kind of like creating a social network for tags, a process the creators claim could minimize the need for running computationally intensive facial-recognition algorithms to auto-tags photos.
+So, the algorithm might predict, for example, that the third person in a photo of me and my wife is our daughter — assuming she has been tagged before and there’s a sufficient volume of tagged images of everyone involved to allow the algorithm to accurately weigh the strengths of our relationships in any given group. That’s why although this is an interesting concept, it might be of limited utility in commercial applications.
+Source: University of Toronto
+ 
+In academia, researchers are more likely to thoroughly tag photos in order to ensure the accuracy of their work. In the consumer world, relying on people to tag everyone in their photos is probably not a plan for success. We take too many, often on smartphones, and then dump them into Facebook, Google+, iPhoto or elsewhere without much thought around tagging.
+That’s why Facebook has put so much effort into its facial recognition capabilities and why there’s such excitement around advances in computer vision for automatically recognizing faces and objects with little supervision on the user’s part. The less work that users have to do in order to make their photo stockpiles more searchable, the better. If I can tag someone once or twice and the application can do the rest, that’s the kind of algorithm I can’t get behind.
+Perhaps the real value of this research, then, is the ability to create those social graphs from photos. They might provide a more day-to-day view of our social networks than do our thousands of online connections, because even in a digital world we’re probably still the closet to the people we actually hang out with.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,33 @@
+From: khan0095@nova.gmi.edu (Mohammad Razi Khan)
+Subject: manipulating a hexagonal grid
+Organization: GMI Engineering&Management Institute, Flint, MI
+Lines: 28
+
+Ok, lets say youve got a grid of hexagons
+
+that go in a        10
+                     9
+                    10
+                     9
+                    etc..
+
+for a total of 15 rows down
+
+that means there are 10 hexagons in the 1st line,
+9 lined up underneath in the second line
+10 lined up underneath in the third line
+9 lined up under neath in the fourht...
+
+
+
+the problem is  given the center of any arbritrary hexagon, and a line with
+and arbritrary slope, Which hexagons does that line cross through 
+(The line doesn't necessarily have to cross through the center of other hexagon,it can even be a tangent and count).  Any helpers, my friend was baffeled
+when trying to figure this.
+:w
+
+--
+Mohammad R. Khan                /    khan0095@nova.gmi.edu
+After July '93, please send mail to  mkhan@nyx.cs.du.edu
+
+

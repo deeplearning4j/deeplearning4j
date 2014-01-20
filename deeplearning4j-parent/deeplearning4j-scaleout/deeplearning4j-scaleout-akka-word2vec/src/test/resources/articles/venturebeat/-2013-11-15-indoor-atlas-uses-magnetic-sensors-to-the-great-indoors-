@@ -1,0 +1,11 @@
+Disclosure: The organizers of the Slush event paid for my trip to Helsinki. Our coverage remains objective. 
+Dean Takahashi
+Indoor Atlas founder Jaane Harverninen
+HELSINKI – One of the last great frontiers for navigation isn’t in the wilderness. It’s inside buildings. Global positioning satellite navigation doesn’t work indoors, so startups like Helsinki’s Indoor Atlas are racing to map the interiors of buildings so we don’t get lost inside giant buildings like Las Vegas hotels.
+Janne Harverninen, the chief executive of Indoor Atlas, said during a briefing ahead of this week’s Slush tech conference in Helsinki that the company was inspired by the scientific research that shows that turtles and lobsters migrate across the oceans using the natural magnetic fields of the world for navigation.
+“We use the magnetic fields to map the indoors,” Harverninen said. “Animals may have maps encoded in their genes. We have magnetometers in our smartphones.”
+Harverninen said that his company’s methods are scalable and can work for precise indoor positioning. The company uses the magnetometers (these are already in your smartphone) to detect anomalies in a magnetic field that come from such things as steel beams in buildings. Each building has its own unique magnetic signature. As a result, it doesn’t have to install hardware sensors inside structures at all. The technology works from mines underground to high-rise buildings.
+“The distribution of a magnetic field is different in every floor,” Harverninen said.
+But it will take some work to get indoor locations mapped. Charting a store may take up to two hours the first time it happens. Once that’s done, others can take advantage of that information.
+The company has 15 patents filed and has raised €600,000 in funding, including money from the Finnish government’s Tekes funding agency.
+Rivals include WifiSLAM, Google, Qualcomm, CSR, Nokia, and Samsung. WifiSLAM uses a combination of Wi-Fi and Bluetooth to determine your position. The only problem so far, according to Harverninen, is, “It doesn’t work in a wooden house.”

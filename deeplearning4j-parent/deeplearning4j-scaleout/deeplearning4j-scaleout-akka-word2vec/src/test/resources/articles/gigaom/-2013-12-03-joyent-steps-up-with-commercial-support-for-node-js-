@@ -1,0 +1,11 @@
+Summary:
+Joyent adds commercial support to the popular Node.js server-side scripting language where it will compete with Strongloop.
+Joyent, the company that helped develop and nurture Node.js, will now offer commercial support for the popular server-side JavaScript language.
+If you’re a cynic you might wonder if this is one reason a spat erupted last week between Joyent and Strongloop , a company founded specifically to offer commercial support for Node.js. Whatever. In any case, San Francisco-based Joyent announced the plan Tuesday and the support will be available starting January 2014.
+Core support will cost $990 per month for most Linux OSes, Solaris, OmniOS and SmartOS shops whether they are self-hosted or run in the public cloud.
+The subscription price includes access to Joyent support people for “severity one” issues, a subscription to Joyent Cloud and 10GB of Joyent Manta Object Storage as well as Node.js debugging tools.
+Strongloop support options include one for $199 per developer per month or $35 per process per month. Strongloop offers support across Linux variants, MacOS and Windows.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

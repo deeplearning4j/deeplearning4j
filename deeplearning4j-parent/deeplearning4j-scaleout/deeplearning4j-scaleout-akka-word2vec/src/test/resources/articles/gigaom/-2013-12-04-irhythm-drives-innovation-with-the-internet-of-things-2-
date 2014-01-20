@@ -1,0 +1,10 @@
+Dec. 4, 2013 - 5:55 AM PST
+Dec. 4, 2013 - 5:55 AM PST
+A
+Summary:
+Connected devices and the internet of things are dramatically improving patient well-being. Learn how iRhythm, the creator of the ZIO XT Patch that monitors heart arrhythmia, is using Splunk to analyze medical device data to track service life cycles and patient usage while also monitoring its business processes.
+Health care, connected devices and the internet of things represent a significant opportunity area. New data analytics capabilities enable device manufacturers to monitor medical device usage, quality, location, even battery life to improve patient care.
+IRhythm, a medical device and service company, is the creator of the Zio® XT Patch, a single-use adhesive patch for cardiac monitoring. The company needed an efficient way to measure quality of service and data integrity to support its low-cost, high-competency model for cardiac data analysis. IRhythm required a solution that could support business processes, track product performance and ensure HIPAA compliance.
+IRhythm initially deployed Splunk Enterprise for “needle in the haystack” analysis of highly variable and complex machine data. The company soon realized that Splunk Enterprise’s ability to index and analyze nearly any data allowed it to load data from individual patches to track every stage of the service life cycle, including device manufacturing, shipment, registration and post-use return to iRhythm.
+When a device is returned, iRhythm uses Splunk software to analyze and report on patient use, determine whether the device ran as expected, then certify HIPAA compliance. This has allowed the company to achieve new efficiencies, validate business processes, measure KPIs and monitor product performance.
+Today, iRhythm is using Splunk software to track efficiency levels, monitor output and productivity, and ensure that manufacturing and service operations are running in tandem and as smoothly as possible.

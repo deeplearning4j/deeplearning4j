@@ -1,0 +1,50 @@
+Fixing HealthCare.gov
+This story is part of our series on the "tech surge" to fix HealthCare.gov. Read the rest of the series .
+Over the weekend, the U.S. Department of Health and Human Services promised it would recruit the ”best and brightest” to fix HealthCare.gov , the federal government’s online insurance marketplace that’s part of the Affordable Care Act (aka Obamacare), which has been plagued by technical defects. On Monday, President Barack Obama promised a “tech surge” to fix the problems.
+It’s not going to happen.
+HealthCare.gov is not going to get help from “the best and brightest” nor a “surge,” neither of which it can easily afford. In reality, the government’s options are limited, sources tell VentureBeat.
+But there might yet be hope from the private sector — just not in the way you might think.
+‘Best and Brightest’ doesn’t set the proper tone
+Journalist/historian coined the term “best and brightest” David Halberstam to describe the so-called experts who bungled the Vietnam War. It’s an unfortunate choice of phrase, particularly at a time of intense partisan conflict.
+“It’s a terrible metaphor,” said Marc Sandalow, a political analyst with KCBS Radio (and formerly the longtime Washington D.C. bureau chief for the San Francisco Chronicle). ”The government should have had the best and brightest working on this website three years ago, but as it turns out, bureaucracy is complicated.”
+Obama attempted to reassure the nation  by delivering a speech in the Rose Garden on Monday, where he owned up to the flaws with the online exchange. He said his administration will recruit top tech experts from the private sector, calling it a “tech surge” — another military metaphor, echoing the “surge” of troops into the Iraq war in 2007.
+“Nobody’s madder than me about the fact that the website isn’t working as well as it should, which means it’s going to get fixed,” Obama said.
+Too many cooks
+But the government has remained fairly tight lipped about how this rescue mission will unfold.
+The White House’s chief technology officer, Todd Park, has not revealed the exact nature of his plans to the press. Despite repeated requests for comment, the Department of Health and Human Services would not share specifics on how it will recruit — and pay — for help from the private sector.
+Fixing HealthCare.gov is an enormous, potentially career-making task for any computer programmer. Since it launched almost three weeks ago, HealthCare.gov has stymied millions of Americans, who have struggled to log in and shop for health insurance they may be eligible for under the Affordable Care Act.
+Recent reports suggest that the website cost approximately $400 million to develop (although the total amount is in dispute), and the government issued over two dozen contracts with legacy IT providers, like Montreal-based CGI Federal. This made it nearly impossible to assign blame to any one group: The site suffered from a classic case of too many cooks in the kitchen.
+However, in recent weeks, government tech experts have critiqued the feds  for failing to recruit engineers from Silicon Valley tech companies who know how to build an online consumer marketplace. Why weren’t the “best and brightest” working on the site from the beginning?
+According to Aneesh Chopra, the former White House chief technology officer, it’s not as simple as that. Chopra stepped down from the CTO job in January 2012. Park, his replacement, was an health IT executive. It was a fairly seamless transition, given their mutual appreciation for the “Lean Startup”  trend, cloud computing, and open-gov initiatives.
+Despite his fondness for modern technologies, Chopra points out that the government is grappling with highly secure data, which complicates matters. For example, the feds didn’t deem that cloud giant  Amazon Web Services (AWS) was secure enough  for government business until March of this year — by that time, it would have been too late for the initial purchase orders.
+Since he left office, Chopra stresses that there has been steady progress in “opening up government.”
+Quick fix volunteers not welcome
+But this doesn’t mean that outside coders can and should rush to sign up to serve their country.
+University of Washington
+Bob Kocher sits to the right of President Barack Obama at a meeting in the White House.
+“There is no easy way for helpful volunteers to fix this,” said Dr. Bob Kocher, a health-focused investor with  Venrock Capital  who helped write the Affordable Care Act.
+The government can’t accept free services from companies, so HHS would need to find additional budget to pay for help.
+Another challenge is that CGI, Quality Software Solutions, Booz Allen, and the rest of the contractors would need to agree to open up their code. It’s a huge project — the New York Times quotes one specialist  who said that 5 million lines of code would need to be rewritten before the website can function properly.
+“That’s the problem here. Even if the government recruits talented engineers from consumer tech companies, whoever builds this site has to take care of it,” said Kocher. “I don’t see this ‘best and brightest’ idea working in practice.”
+And the problems with the exchange might not be obvious to a smart Silicon Valley programmer from an Apple or Google. This kind of a project is complex and requires deep domain expertise. As John Engates, the chief technology officer for cloud company Rackspace , put it, “I think the downfall of HealthCare.gov is that they need to integrate with numerous legacy databases: IRS, DHS, Social Security, and myriad state agencies. Any one of those running slow could be the bottleneck.”
+Kocher believes the most pragmatic approach is for HHS to find the budget to hire a small team of health care and programming experts, who would relocate to Washington D.C. Their task: Build a second version of the site that function without a hitch by early 2014 (and beyond).
+This isn’t the “best and brightest” volunteers, making small amendments to the code. It’s more a focused “ Seal Team 6 ” instead of a full-blown surge.
+Silicon Valley to the rescue?
+“I don’t believe that some technology superhero with a cape will fly in to save the day,” said Chopra.
+Wikimedia
+Former White House chief technology officer Aneesh Chopra.
+He was part of a trio of government workers, referred to  by the press  as Obama’s “IT SWAT team.” They helped put out fires, like delays in GI Bill payments and the Cash for Clunkers program.
+“I’ve seen this movie before,” Chopra told me.
+If he were in Park’s shoes, Chopra said he would call on the Presidential Innovation Fellows for help. The program pairs top innovators from the private sector with government innovators to work on longer-term civic projects.
+Chopra isn’t the  only one  to suggest that the fellows are a potential resource, particularly given their extensive network in open source computing circles. The Presidential Innovation Fellows are an affordable resource because it already has funding. That’s especially important because HHS may already be suffering from a lack of budget to spend on hiring help, Kocher suggests.
+“Government will want to recruit folks, without expanding the budget,” said Chopra.
+The rescue team will gain a boost from the consulting firms that developed HealthCare.gov. Chopra predicts that firms like CGI Global will hire talented Silicon Valley engineers, who understand how to build and manage modern, cloud-based technology.
+“My assumption is that these companies are rethinking who they would put in the project,” he said.
+The real private-sector solution
+It’s not all bad news for the Obama administration. In the next two or three weeks, Chopra expects that a number of web-based entities will emerge in the private sector — both startups and established companies — to offer online alternatives for consumers to shop for health insurance.
+“You’ll see a vibrant and competitive marketplace,” said Chopra. “HealthCare.gov is just one part of the platform — it will no longer monopolize the exchange.”
+These sites are not yet live, and will be developed by eHealthInsurance.com and GetInsured , which is already integrated into California and New Mexico’s state-run health insurance portal, among others.
+These services will help consumers find the best deal on health insurance, potentially even making Netflix -style personalized recommendations.
+In fact, the Affordable Care Act has engendered a business model for these companies: broker commissions. HealthCare.gov’s woes may even be a boon to these new sources of marketplace innovation.
+“I still believe that the HealthCare.gov site is a good news story that has been drowned out by the bad glitches,” Chopra concluded.
+VentureBeat is creating an index of the  top online health services for consumers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index in the weeks to come, and for those who fill out they survey, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

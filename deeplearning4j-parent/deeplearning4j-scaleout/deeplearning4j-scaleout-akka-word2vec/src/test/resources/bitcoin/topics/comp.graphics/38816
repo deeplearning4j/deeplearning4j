@@ -1,0 +1,25 @@
+From: rych@festival.ed.ac.uk (R Hawkes)
+Subject: 3DS: Where did all the texture rules go?
+Lines: 21
+
+Hi,
+
+I've noticed that if you only save a model (with all your mapping planes
+positioned carefully) to a .3DS file that when you reload it after restarting
+3DS, they are given a default position and orientation.  But if you save
+to a .PRJ file their positions/orientation are preserved.  Does anyone
+know why this information is not stored in the .3DS file?  Nothing is
+explicitly said in the manual about saving texture rules in the .PRJ file. 
+I'd like to be able to read the texture rule information, does anyone have 
+the format for the .PRJ file?
+
+Is the .CEL file format available from somewhere?
+
+Rych
+
+======================================================================
+Rycharde Hawkes				email: rych@festival.ed.ac.uk
+Virtual Environment Laboratory
+Dept. of Psychology			Tel  : +44 31 650 3426
+Univ. of Edinburgh			Fax  : +44 31 667 0150
+======================================================================

@@ -1,0 +1,12 @@
+A
+Summary:
+Tech enthusiasts and developers no longer need to decide between running Android or Ubuntu on a smartphone or tablet. Thanks to Canonical, you can have both through a dual-boot solution.
+Just in time for the holiday season, Canonical has a technical preview available for people to run both Ubuntu Touch and Android on a mobile device , easily switching between the two. The build is aimed at developers and tech enthusiasts of course, but it gives a glimpse into a future where modular computing could be the norm: Run Ubuntu on a phone or tablet connected to a monitor, keyboard and mouse, then cut the cord and boot into Android for on-the-go use.
+The adventurous will need a Nexus 4 smartphone according to Canonical’s instructions , although the build should work on other Nexus devices; Canonical only tested it with the Nexus 4. You’ll also need Android 4.2 or better and a fully unlocked bootloader. If that sounds like Greek to you, you’re not the target audience to give this a try.
+Once the install is complete, Canonical says you’ll have an icon in both operating systems to boot into the other one. Here’s the Ubuntu instance that boots back into Android, for example:
+The version of Ubuntu you want to install is actually up to you, which is impressive. Using the Android app, you can choose an Ubuntu channel and have the desktop platform installed right from the phone or tablet.
+Since I don’t have a Nexus 4, I haven’t taken this dual-boot method for a spin yet. I’m curious though if Ubuntu has yet added a key feature I’m interested in: The ability to run in a full desktop mode. When Ubuntu Touch officially arrived in October, that function wasn’t available. Looks like I’ve got some homework over the holidays to find out.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

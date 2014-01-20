@@ -1,0 +1,12 @@
+0
+A week ago, Yahoo got into hot water for offering T-shirts to security researchers who discovered serious holes in its network. Yesterday, Microsoft awarded $100,000 to a vulnerability researcher with Context Information Security  who found a new way to bypass Windows 8.1 security.
+Not bad for white-hat hacking.
+Of course, the Yahoo program was a personal initiative  and was in the process of being replaced with cash rewards of between $150 and $15,000 even as “T-shirt-gate” hit. But $100K is a very, very significant award, and it states very loudly — without Microsoft having to say a word — that the company is deadly serious about security.
+The recipient is James Forshaw, who has already found other bugs in Microsoft technology and now completely dominates Microsoft’s new bug bounty program. Microsoft has paid out over $128,000 in the program, the company says, and Forshaw has pocketed a cool $109,400 of that.
+Clearly, this hacker didn’t learn to share in CompSci classes.
+The actual vulnerability is something Microsoft is referring to as a “mitigation bypass technique,” and the company cannot go into detail about the hack, since it is still, basically, a zero-day exploit. Microsoft will likely release more details about it when it patches the hole and issues software updates.
+Why so big a payday? Essentially, the sheer creativity of Forshaw’s technique:
+“The reason we pay so much more for a new attack technique versus for an individual bug is that learning about new mitigation bypass techniques helps us develop defenses against entire classes of attack,” Microsoft senior security strategist Katie Moussouris said. “This knowledge helps us make individual vulnerabilities less useful when attackers try to use them against customers. When we strengthen the platform-wide mitigations, we make it harder to exploit bugs in all software that runs on our platform, not just Microsoft applications.”
+Microsoft’s bounty program runs on, with payments of up to $100,000 possible, plus bonuses of up to $50,000 extra for “defense submissions.”
+If you’re interested in acquiring some of the Redmond company’s cash, you need to be at least 14, you need to report a vulnerability via Microsoft’s bounty program , and for the big money, you’ll need to find a serious, reliable, and novel attack methodology that works in user mode, not just administrator.
+Oh, and you’ll have to be freakishly brilliant.

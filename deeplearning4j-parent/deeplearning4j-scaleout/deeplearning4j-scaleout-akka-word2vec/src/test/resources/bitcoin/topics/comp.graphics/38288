@@ -1,0 +1,25 @@
+From: sts@mfltd.co.uk (Steve Sherwood (x5543))
+Subject: Re: Virtual Reality for X on the CHEAP!
+Reply-To: sts@mfltd.co.uk
+Organization: Micro Focus Ltd, Newbury, England
+Lines: 19
+
+Has anyone got multiverse to work ?
+
+I have built it on 486 svr4, mips svr4s and Sun SparcStation.
+
+There seems to be many bugs in it.  The 'dogfight' and 'dactyl' simply do nothing
+(After fixing a bug where a variable is defined twice in two different modules - One needed
+setting to static - else the client core-dumped)
+
+Steve
+-- 
+
+         Extn 5543, sts@mfltd.co.uk, !uunet!mfocus!sts
++-----------------------------------+------------------------+ Micro Focus
+| Just like Pariah, I have no name, |    rm -rf *            | 26 West Street
+| Living in a blaze of obscurity,   |      "rum ruff splat"  | Newbury
+| Need courage to survive the day.  |                        | Berkshire
++-----------------------------------+------------------------+ England
+         (A)bort (R)etry (I)nfluence with large hammer
+

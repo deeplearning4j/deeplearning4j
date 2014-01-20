@@ -1,0 +1,31 @@
+In a giant “game of thrones,” Google, ad networks, internet service providers, browser manufacturers, and mobile operating system vendors are engaged in a massive — and mostly secret — battle for control of the future of the Internet.
+Or, at least, the part of it that makes money.
+Advertising makes the Internet go round and round, and digital advertising is the first form of advertising with a realistic chance of rendering marketing pioneer John Wanamaker’s famous complaint obsolete: “Half the money I spend on advertising is wasted; the trouble is I don’t know which half.”
+The solution, of course, is tracking.
+Right now, that’s largely done via cookies — small tracers saved to your browser that follow your activity online. It’s also done via referrer notifications that tell a site where its traffic is coming from. And it’s done with smaller efforts like Apple Advertising ID. But cookies require permission in Europe and have serious privacy issues everywhere. Referrers are getting hard to trace as search engines like Google are encrypting search results.
+And the biggest problem of all: The web is moving to mobile. On mobile, nothing is consistent.
+So the industry is looking for something different. Something better. And if one company could provide it — and control it — the resulting flood of data would be a never-played-out gold mine of data and dollars.
+“Mobile doesn’t have a functioning third-party cookie world,” Omar Tawakol, CEO of marketing data management company BlueKai , told me. “In a world where you have inconsistent browser treatment of cookies, and third-parties cookies have instabilities, we need a solution. I’ve told my company that within 12 months we are going to be completely prepared for a cookieless world everywhere.”
+Those are scary words for advertisers, who are spending billions of dollars and have gotten used to knowing, with some degree of certainty, what those dollars are doing and how they’re driving bottom line growth and top line profitability. All that knowledge will go away if they can’t track your Internet search to your friend’s recommendations to your online research to your eventual purchase of a brand-new flat-screen TV.
+Or diapers. Or soap. Or toothpaste.
+So that’s the battle. Google has a plan for its own ad-tracking technology , as does the advertising industry, as do multiple other players. Google’s plan has been at least nine months in the making, as the company has been gently floating ideas past key industry figures over that length of time.
+But there’s a problem with Google owning the ad-tracking system for the Internet: The company is already too powerful for many other players’ taste.
+“We’re really playing a game of thrones here, with multiple players looking to dominate,” Tawakol said. “Imagine you could own USPS and be an ecommerce company … imagine if someone had made cookies monetizable right from the beginning!”
+There are at least four layers of the entire industry that could make some kind of tracking solution:
+the operating system layer for both desktop and mobile (Google, Apple, Microsoft)
+the browser layer (Google, Microsoft, Apple, Firefox, Opera)
+the ISP layer, where Internet service providers can insert identifiers in traffic headers
+the social layer (Facebook, Twitter, Google), the search layer (Google, Microsoft, maybe Yahoo), and the ad exchange layer (DoubleClick, Google, Facebook, Microsoft, Right Media, Quantcast, and many, many more)
+Notice how often Google pops up?
+Google has the world’s most popular mobile operating system. The world’s most popular search engine. One of the world’s most popular social networks, in Google+. The biggest ad exchange in the world. And, yes, the world’s most popular browser.
+Imagine, for instance, if Google introduced an Ad ID, a la Apple’s solution, for every Android device. And then included it in Chrome. And then extended it to the Google.com searches, and Google+ social networking.
+When ad exchanges and major advertisers see all that, they get worried that putting control of ad tracking into Google’s hands — which of course supplies all the data about ad effectiveness — would be just too much power, too concentrated.
+It’s not that the industry doesn’t trust Google. As BlueKai CEO Tawakol says, “Google has shown that they understand the balance between privacy and ad effectiveness. Consumers need privacy; advertisers need information. And Google fundamentally understands that trade-off.”
+But, no, the industry as a whole doesn’t trust Google.
+“Google is in control of a serious portion of the traffic of the internet,” Tawakol said. “When a single company gets to make decisions that control the industry … it behooves the industry to have other solutions that are not controlled by that company.”
+And guess what: There’s also traffic outside of Google, shockingly.
+There’s Facebook, there’s Yahoo, there’s MSN, WordPress, Tumblr, and many other massive, important sites. So one technology from one company is probably not going to cut it anyway.
+Which essentially means that tomorrow will be very much like today, whether cookies survive or not. And mostly likely, we’re not going to fix this problem of tracking versus privacy, but the industry struggles will essentially rearrange the balance of power somewhat.
+Game of thrones, indeed.
+When I asked Google for a comment on the report that the company is working on a replacement for cookies, a representative simply stated:
+“We believe that technological enhancements can improve users’ security while ensuring the web remains economically viable. We and others have a number of concepts in this area, but they’re all at very early stages.”

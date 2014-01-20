@@ -1,0 +1,18 @@
+0
+Today, database platform startup FoundationDB is announcing the general availability of its ACID-compliant, NoSQL database.
+But that’s not even the exciting part of the news: The company’s founders have decided to make free and low-cost options that drastically undercut the competition while maintaining the highest possible product quality.
+Think of it as the Target philosophy (“Great design doesn’t have to cost a fortune”) applied to developer tools.
+“Commercial databases are infamous for obfuscating how pricing works and being difficult to deal with,” said cofounder Nick Lavezzo in a recent conversation with VentureBeat.
+Editor’s note: Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, is a hands-on developer event packed with master classes, presentations, Q&As, and hackathons, all aimed at boosting your skillset in code, security, hardware, and career development. Register today!
+“It costs $3,600 per year for three servers running FoundationDB. Oracle charges $252,000 per year to run three Oracle rack servers clustered together.”
+Lavezzo says he compares FoundationDB to Oracle because the latter company is the only other database to offer features similar to FoundationDB’s.
+“The pricing for existing NoSQL solutions is comparable; but they don’t provide ACID transactions. They don’t have the same guarantees or expose different data models,” he said. The nearest competitor to what we built is Oracle.”
+In addition to this “disruptive pricing” model, Lavezzo emphasized the flexibility of the company’s community license.
+“This is very useful. A lot of commercial software vendors will offer a free license … but they’ve limited all the features. Our software is exactly the same for the community users. They have access to all the headline features of FoundationDB.”
+For non-commercial use cases, Community License users will get unlimited processes free of charge and without having to notify or work directly with FoundationDB.
+“We want to be extremely friendly to people who want to get their hands on it and check it out and even run a moderately sized application on it,” said Lavezzo.
+Lavezzo said his previous company (he was an early employee), Visual Sciences, made one of the most expensive products in its vertical. “The average person never got to experience what we built and got stuck using an inferior product,” he said. “With this company, we wanted to go for high adoption and really change the way the database industry works.”
+Lavezzo believes that a free or cheap but truly excellent product will ultimately triumph over pricey or inferior offerings.
+“We want to make the world better, but even from a business perspective, this industry is going to end up with a winner,” he said.
+“There’s going to be a technology that serves as the foundation for modern distributed systems. It can’t be one that’s out of reach of a majority of people. If the industry’s going to consolidate around one technology, its got to be accessible to everybody.”
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

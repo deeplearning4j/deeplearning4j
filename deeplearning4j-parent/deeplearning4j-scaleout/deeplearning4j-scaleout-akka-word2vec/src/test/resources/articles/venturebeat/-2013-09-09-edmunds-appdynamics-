@@ -1,0 +1,17 @@
+0
+SAN FRANCISCO — Popular car-information site Edmunds.com began a major project last year, shifting its code from servers running in its own data center to code running on Amazon Web Services.
+“It was pretty much a straight forklift of the code,” said John Martin, the senior director of production for Edmunds.com.
+A lot was at stake: Edmunds.com attracts more than 650,000 unique visitors each day — 18 million per month — and the company generates about half a billion dollars in revenue annually. Moving to the cloud was a high-stakes maneuver.
+However, the company struggled to identify all of the bottlenecks and dependencies that its complex new architecture created. Enter AppDynamics , which helps Edmunds.com monitor what’s going on with the site, including both its remaining on-premise servers as well as its AWS resources.
+Martin and his team are projecting hundreds of thousands of dollars in additional revenue through their streamlined workflows, and they’re testing and deploying new features onsite in days rather than months.
+“As you move into a public cloud or a hybrid cloud infrastructure, how do you manage it? That’s where AppDynamics comes in,” said Jyoti Bansal, the chief executive of AppDynamics. In addition to Edmunds.com, Netflix, Expedia, Priceline, J.D. Edwards, Fidelity, and others use AppDynamics.
+Bansal explained that AppDynamics can help identify performance bottlenecks by inserting probes into many different aspects of your application in order to monitor everything from response time to user clicks, to the overall time required to complete a full transaction.
+The new environment imposed a few new constraints — for instance, Edmunds never had put any caps on data transfers between servers, as that’s an unmetered resource in a private data center. But on AWS, data transfers are metered and can generate very large costs if unchecked.
+To ensure that the new caps wouldn’t affect the performance of the site for the company’s customers, it did extensive simulated load testing using AppDynamics.
+“Our private side infrastructure is rather static. A host is provisioned, and it lives for as long as it’s going to live. That is radically different in Amazon Web Services, because hosts appear and disappear rapidly,” Martin said. That has produced some tension, because the company’s development tools and some of its code are predicated on the existence of more permanent servers. Careful monitoring and management has helped smooth over bumps in the transition.
+“The transition from a data center to a private cloud or public cloud doesn’t happen overnight,” Bansal said. Edmunds, Netflix, and other prominent — and high-revenue — companies that have moved to the cloud still retain some code in private data centers, even after several years, he said.
+“People are looking for a single pane of glass across everything,” Bansal said. The company’s clients are looking for the capability to monitor — and ideally automate — their computing resources from a single console, whether those resources live on an in-house server or a public cloud.
+“Our success in our first steps with AWS are because we bridged those two together,” Martin said, agreeing.
+Ultimately, Martin said, all the technical advantages in the world are moot if you can’t ensure a good customer experience. As a result, he and his team are consistently focused on that experience as the benchmark of ultimate success.
+Martin’s mantra: “Never endanger the user experience.”
+Related articles

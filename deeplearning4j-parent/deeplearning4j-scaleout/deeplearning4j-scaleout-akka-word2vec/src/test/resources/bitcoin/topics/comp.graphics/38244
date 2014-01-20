@@ -1,0 +1,51 @@
+From: clipper@mccarthy.csd.uwo.ca (Khun Yee Fung)
+Subject: Re: looking for circle algorithm faster than Bresenhams
+Organization: Department of Computer Science, The University of Western
+	Ontario, London, Ontario, Canada
+In-Reply-To: graeme@labtam.labtam.oz.au's message of Wed, 14 Apr 1993 04:49:46 GMT
+	<1993Apr13.025240.8884@nwnexus.WA.COM>
+	<1993Apr14.044946.12144@labtam.labtam.oz.au>
+Nntp-Posting-Host: mccarthy.csd.uwo.ca
+Lines: 41
+
+>>>>> On Wed, 14 Apr 1993 04:49:46 GMT, graeme@labtam.labtam.oz.au (Graeme Gill) said:
+
+Graeme> 	Yes, that's known as "Bresenhams Run Length Slice Algorithm for
+Graeme> Incremental lines". See Fundamental Algorithms for Computer Graphics,
+Graeme> Springer-Verlag, Berlin Heidelberg 1985.
+
+> I have tried to extrapolate this to circles but I can't figure out
+> how to determine the length of the slices. Any ideas?
+
+Graeme> 	Hmm. I don't think I can help you with this, but you might
+Graeme> take a look at the following:
+
+Graeme> 	"Double-Step Incremental Generation of Lines and Circles",
+Graeme> X. Wu and J. G. Rokne, Computer Graphics and Image processing,
+Graeme> Vol 37, No. 4, Mar. 1987, pp. 331-334
+
+Graeme> 	"Double-Step Generation of Ellipses", X. Wu and J. G. Rokne,
+Graeme> IEEE Computer Graphics & Applications, May 1989, pp. 56-69
+
+Another paper you might want to consider is:
+
+@article{fungdraw,
+  title="A Run-Length Slice Line Drawing Algorithm without Division Operations",
+  author="Khun Yee Fung and Tina M. Nicholl and A. K. Dewdney",
+  journal="Computer Graphics Forum",
+  year=1992,
+  volume=11,
+  number=3,
+  pages="C-267--C-277"
+}
+
+Khun Yee
+--
+Khun Yee Fung    clipper@csd.uwo.ca
+Department of Computer Science
+Middlesex College
+University of Western Ontario
+London, Ontario
+Canada N6A 5B7
+Tel: (519) 661-6889
+Fax: (519) 661-3515
