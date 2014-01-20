@@ -44,11 +44,17 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	public double getMomentum();
 	public void setMomentum(double momentum);
 	
+	public void setRenderEpochs(int renderEpochs);
+	public int getRenderEpochs();
 
 	public NeuralNetwork transpose();
 	public  NeuralNetwork clone();
 
+	public double fanIn();
+	public void setFanIn(double fanIn);
 	
+	
+	public double getReConstructionCrossEntropy();
 	
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
 	/**

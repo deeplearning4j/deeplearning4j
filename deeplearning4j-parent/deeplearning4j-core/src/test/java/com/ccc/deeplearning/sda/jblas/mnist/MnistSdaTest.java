@@ -43,8 +43,8 @@ public class MnistSdaTest extends DeepLearningTest {
 
 
 		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder().numberOfInputs(numIns)
-				.numberOfOutPuts(numLabels).withRng(rng)
-				.hiddenLayerSizes(layerSizes).build();
+				.numberOfOutPuts(numLabels).withRng(rng).
+				hiddenLayerSizes(layerSizes).build();
 
 		DoubleMatrix data1 = first.getFirst().dup();
 		DoubleMatrix outcomes = first.getSecond().dup();
