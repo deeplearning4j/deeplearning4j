@@ -10,6 +10,7 @@ import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
 import com.ccc.deeplearning.datasets.mnist.draw.DrawMnistGreyScale;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 import com.ccc.deeplearning.rbm.RBM;
 import com.ccc.deeplearning.util.MatrixUtil;
 
@@ -21,11 +22,24 @@ public class RBMMnistTest {
 		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
 		MersenneTwister rand = new MersenneTwister(123);
 
+		DoubleMatrix w = new DoubleMatrix(784,1000);
+		w.addi(0.4);
+		DataSet first = fetcher.next();
+
 		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(1000).withRandom(rand)
+				.fanIn(0.2).withInput(first.getFirst())
 				.withMomentum(0.1).build();
 
-
-		DataSet first = fetcher.next();
+		
+		
+		
+		
+		da.input = first.getFirst();
+		
+		NeuralNetPlotter plotter = new NeuralNetPlotter();
+		plotter.plot(da);
+		
+		
 		for(int i = 0; i < 1000; i++)
 			da.trainTillConvergence(0.1,1,first.getFirst());
 		

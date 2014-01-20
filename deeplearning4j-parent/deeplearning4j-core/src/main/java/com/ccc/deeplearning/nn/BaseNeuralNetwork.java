@@ -1,5 +1,10 @@
 package com.ccc.deeplearning.nn;
 
+import static com.ccc.deeplearning.util.MatrixUtil.binomial;
+import static com.ccc.deeplearning.util.MatrixUtil.log;
+import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
+import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -12,10 +17,9 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
+import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
-
-import static com.ccc.deeplearning.util.MatrixUtil.*;
 
 /**
  * Baseline class for any Neural Network used
@@ -75,46 +79,45 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public BaseNeuralNetwork(int nVisible, int nHidden, 
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+		this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn);
+
+	}
+
+	/**
+	 * 
+	 * @param input the input examples
+	 * @param nVisible the number of outbound nodes
+	 * @param nHidden the number of nodes in the hidden layer
+	 * @param W the weights for this vector, maybe null, if so this will
+	 * create a matrix with nHidden x nVisible dimensions.
+	 * @param hBias the hidden bias
+	 * @param vBias the visible bias (usually b for the output layer)
+	 * @param rng the rng, if not a seed of 1234 is used.
+	 */
+	public BaseNeuralNetwork(DoubleMatrix input, int nVisible, int nHidden, 
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
 		this.nVisible = nVisible;
 		this.nHidden = nHidden;
 		this.fanIn = fanIn;
-		
+		this.input = input;
 		if(rng == null)	
 			this.rng = new MersenneTwister(1234);
 
 		else 
 			this.rng = rng;
+		this.W = W;
+		this.vBias = vbias;
+		this.hBias = hbias;
 
-		if(this.W == null) 
-			initWeights();
-
-
-		
-		else	
-			this.W = W;
+		initWeights();	
 
 
-		if(hbias == null) 
-			this.hBias = DoubleMatrix.zeros(nHidden);
-
-		else if(hbias.length != nHidden)
-			throw new IllegalArgumentException("Hidden bias must have a length of " + nHidden + " length was " + hbias.length);
-
-		else
-			this.hBias = hbias;
-
-		if(vbias == null) 
-			this.vBias = DoubleMatrix.zeros(nVisible);
-
-		else if(vbias.length != nVisible) 
-			throw new IllegalArgumentException("Visible bias must have a length of " + nVisible + " but length was " + vbias.length);
-
-		else 
-			this.vBias = vbias;
 	}
 
 
+
 	protected void initWeights()  {
+
 		double a = fanIn();
 		/*
 		 * Initialize based on the number of visible units..
@@ -132,12 +135,66 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
 		 * as this significantly slows the learning.
 		 */
-		UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
+		if(this.W == null) {
+			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
-		this.W = DoubleMatrix.zeros(nVisible,nHidden);
+			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
-		for(int i = 0; i < this.W.rows; i++) 
-			this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+			for(int i = 0; i < this.W.rows; i++) 
+				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+
+		}
+
+		if(this.hBias == null) {
+			this.hBias = DoubleMatrix.zeros(nHidden);
+			/*
+			 * Encourage sparsity.
+			 * See Hinton's Practical guide to RBMs
+			 */
+			this.hBias.subi(4);
+		}
+
+		if(this.vBias == null) {
+			if(this.input != null) {
+				Counter<Integer> c = new Counter<Integer>();
+				DoubleMatrix hMeans = binomial(sigmoid(input.mmul(W).addRowVector(hBias)),1,rng);
+
+
+				/*
+				 * Count number of activations (numbers == 1)
+				 * Sigmoid produces a probability which is then
+				 * used by binomial sampling to determine
+				 * whether an activation happens
+				 */
+				for(int i = 0; i < hMeans.rows; i++) {
+					DoubleMatrix row = hMeans.getRow(i);
+					for(int j = 0; j < row.columns; j++) {
+						if(row.get(j) > 0)
+							c.incrementCount(j,1.0);
+					}
+				}
+
+				this.vBias = DoubleMatrix.zeros(nVisible);
+
+				/*
+				 * See Hinton's guide on Practical RBM training.
+				 * Initialize vbias to log (p / 1 - p)
+				 * to ensure more than hidden units are used in 
+				 * early training for activations
+				 */
+				for(int i = 0; i < vBias.length; i++) {
+					double prob = c.getProbability(i);
+					double num = Math.log(prob / (1 - prob));
+					this.vBias.put(i, num);
+				}
+
+
+			}
+			else
+				this.vBias = DoubleMatrix.zeros(nVisible);
+		}
+
+
 
 	}
 
@@ -256,22 +313,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.W = W.div(batchSize).mul(1 - momentum).add(W.min(W.mul(l2)));
 	}
 
-	/**
-	 * 
-	 * @param input the input examples
-	 * @param nVisible the number of outbound nodes
-	 * @param nHidden the number of nodes in the hidden layer
-	 * @param W the weights for this vector, maybe null, if so this will
-	 * create a matrix with nHidden x nVisible dimensions.
-	 * @param hBias the hidden bias
-	 * @param vBias the visible bias (usually b for the output layer)
-	 * @param rng the rng, if not a seed of 1234 is used.
-	 */
-	public BaseNeuralNetwork(DoubleMatrix input, int n_visible, int n_hidden, 
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		this(n_visible,n_hidden,W,hbias,vbias,rng,fanIn);
-		this.input = input;
-	}
 
 
 	/**
@@ -517,7 +558,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double l2 = 0.01;
 		private double momentum = 0.1;
 		private int renderWeightsEveryNumEpochs = -1;
-		private double fanIn;
+		private double fanIn = 0.1;
 
 
 		public Builder<E> fanIn(double fanIn) {
