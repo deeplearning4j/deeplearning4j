@@ -36,9 +36,15 @@ public class CDBN extends DBN {
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		if(index == 0)
-			return new CRBM(input, nVisible, nHidden, W, hBias, vBias, rng);
+			return new CRBM.Builder()
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden)
+		.withInput(input).withL2(0.1).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
+		.withRandom(rng).withWeights(W).build();
 		else
-			return new RBM(input,nVisible,nHidden,W,hBias,vBias,rng);
+			return new RBM.Builder()
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden)
+		.withInput(input).withL2(0.1).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
+		.withRandom(rng).withWeights(W).build();
 	}
 
 	@Override

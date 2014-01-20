@@ -74,44 +74,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param rng the rng, if not a seed of 1234 is used.
 	 */
 	public BaseNeuralNetwork(int nVisible, int nHidden, 
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
 		this.nVisible = nVisible;
 		this.nHidden = nHidden;
-
+		this.fanIn = fanIn;
+		
 		if(rng == null)	
 			this.rng = new MersenneTwister(1234);
 
 		else 
 			this.rng = rng;
 
-		if(W == null) {
-			double a = fanIn();
-			/*
-			 * Initialize based on the number of visible units..
-			 * The lower bound is called the fan in
-			 * The outer bound is called the fan out.
-			 * 
-			 * Below's advice works for Denoising AutoEncoders and other 
-			 * neural networks you will use due to the same baseline guiding principles for
-			 * both RBMs and Denoising Autoencoders.
-			 * 
-			 * Hinton's Guide to practical RBMs:
-			 * The weights are typically initialized to small random values chosen from a zero-mean Gaussian with
-			 * a standard deviation of about 0.01. Using larger random values can speed the initial learning, but
-			 * it may lead to a slightly worse final model. Care should be taken to ensure that the initial weight
-			 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
-			 * as this significantly slows the learning.
-			 */
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
-
-			this.W = DoubleMatrix.zeros(nVisible,nHidden);
-
-			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+		if(this.W == null) 
+			initWeights();
 
 
-
-		}
+		
 		else	
 			this.W = W;
 
@@ -136,6 +114,32 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	protected void initWeights()  {
+		double a = fanIn();
+		/*
+		 * Initialize based on the number of visible units..
+		 * The lower bound is called the fan in
+		 * The outer bound is called the fan out.
+		 * 
+		 * Below's advice works for Denoising AutoEncoders and other 
+		 * neural networks you will use due to the same baseline guiding principles for
+		 * both RBMs and Denoising Autoencoders.
+		 * 
+		 * Hinton's Guide to practical RBMs:
+		 * The weights are typically initialized to small random values chosen from a zero-mean Gaussian with
+		 * a standard deviation of about 0.01. Using larger random values can speed the initial learning, but
+		 * it may lead to a slightly worse final model. Care should be taken to ensure that the initial weight
+		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
+		 * as this significantly slows the learning.
+		 */
+		UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
+
+		this.W = DoubleMatrix.zeros(nVisible,nHidden);
+
+		for(int i = 0; i < this.W.rows; i++) 
+			this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+
+	}
 
 
 	@Override
@@ -264,8 +268,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param rng the rng, if not a seed of 1234 is used.
 	 */
 	public BaseNeuralNetwork(DoubleMatrix input, int n_visible, int n_hidden, 
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
-		this(n_visible,n_hidden,W,hbias,vbias,rng);
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+		this(n_visible,n_hidden,W,hbias,vbias,rng,fanIn);
 		this.input = input;
 	}
 
