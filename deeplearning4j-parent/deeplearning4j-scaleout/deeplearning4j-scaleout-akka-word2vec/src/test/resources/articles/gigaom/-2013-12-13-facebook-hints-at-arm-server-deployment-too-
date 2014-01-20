@@ -1,6 +1,0 @@
-First it was rumors of Google building ARM-based servers , and now a post on the blog dedicated to Facebook’s HipHop Virtual Machine for PHP
-code notes how its translation engine plays a “crucial in our efforts to get hhvm running on ARM processors.” Indeed if Facebook wants to implement ARM-based cores it will have to ensure its hhvm code runs on top of them. Facebook has floated the idea of other architectures for years, testing Tilera chips and also deploying a board design that makes it easy to swap out processors . It’s really only a matter of time before we see a lot of ARM in places only x86 used to be.
-Related research
-Subscriber Content
-?
-Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.
