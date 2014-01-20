@@ -1,0 +1,28 @@
+From: srlnjal@grace.cri.nz
+Subject: CorelDraw BITMAP to SCODAL (2)
+Organization: Industrial Research Ltd., New Zealand.
+Lines: 22
+NNTP-Posting-Host: grv.grace.cri.nz
+
+
+Yes I am aware CorelDraw exports in SCODAL.
+Version 2 did it quite well, apart from a
+few hassles with radial fills. Version 3 RevB
+is better but if you try to export in SCODAL
+with a bitmap image included in the drawing
+it will say something like "cannot export
+SCODAL with bitmap"- at least it does on my
+version.
+ If anyone out there knows a way around this
+I am all ears.
+ Temporal images make a product called Filmpak
+which converts Autocad plots to SCODAL, postscript
+to SCODAL and now GIF to SCODAL but it costs $650
+and I was just wondering if there was anything out
+there that just did the bitmap to SCODAL part a tad
+cheaper.
+
+Jeff Lyall
+Inst.Geo.&.Nuc.Sci.Ltd
+Lower Hutt New Zealand
+

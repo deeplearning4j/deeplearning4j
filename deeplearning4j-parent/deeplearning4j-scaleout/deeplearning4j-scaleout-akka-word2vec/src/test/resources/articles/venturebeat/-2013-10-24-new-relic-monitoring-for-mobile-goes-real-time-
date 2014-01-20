@@ -1,0 +1,14 @@
+0
+SAN FRANCISCO — At its first-ever developer conference, FutureStack, New Relic will reveal a new version of its mobile app-monitoring product.
+Version 2 for native Android and iOS apps moves beyond API analytics/device analytics and looks at everything from the backend to code running on an individual device. The data gathered include memory and network requests, page load times, and more, all in live production instances all around the world.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+With the new version, you, the developer, can look at specific users opening and using apps. You can see an Android-using individual in Mumbai experiencing a 16-second load time, for example. And you’ll be able to see exactly why and when this is happening, allowing you to better tweak your app.
+“We expect to go to market this quarter,” said New Relic CEO Lew Cirne in an interview with VentureBeat.
+“Version 1 is already on 100 million devices. This is going to increase our market penetration dramatically.”
+Keep in mind, version 1 only rolled out in March .
+We’ve got lots more news coming today from FutureStack, so stay tuned.

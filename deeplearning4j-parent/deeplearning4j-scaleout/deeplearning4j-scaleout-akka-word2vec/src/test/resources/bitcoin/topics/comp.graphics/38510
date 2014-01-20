@@ -1,0 +1,90 @@
+From: cgcad@bart.inescn.pt (Comp. Graphics/CAD)
+Subject: RTrace 8.2.0
+Keywords: ray tracing
+Nntp-Posting-Host: bart
+Organization: INESC-Porto, Portugal
+Lines: 83
+
+There is a new version of the RTrace ray-tracing package (8.2.0) at
+asterix.inescn.pt [192.35.246.17] in directory pub/RTrace.
+Check the README file.
+
+RTrace now can use the SUIT toolkit to have a nice user interface.
+Compile it with -DSUIT or modify the Makefile.
+SUIT is available at suit@uvacs.cs.virginia.edu
+I have binaries of RTrace with SUIT for SUN Sparc, SGI Indigo
+and DOS/GO32.
+Please contact me if interested.
+
+****************************************
+
+The MAC RTrace 1.0 port is in directory pub/RTrace/Macintosh
+Thanks to Reid Judd (reid.judd@east.sun.com) and
+Greg Ferrar (gregt@function.mps.ohio-state.edu).
+
+****************************************
+
+Small changes were done since version 8.1.0, mainly:
+
+1. Now it is possible to discard backface polygons and triangles
+   for fast preview...
+
+2. The support program scn2sff has been reworked to use temp files.
+
+****************************************
+
+Here goes a short description of current converters from
+CAD/molecular/chemistry packages to the SCN format.
+
+The package programs are related as below (those marked with * have been
+modified)
+
+	       irit2scn
+     IRIT ----------------|
+                          |               NFF (nffclean, nffp2pp)
+	        sol2scn   |                |
+    ACAD11 ---------------|                | nff2sff
+                          |                |
+	        mol2scn	  v    scn2sff*    v	rtrace*
+   ALCHEMY  -----------> SCN -----------> SFF ----------> PIC or PPM
+			  ^      cpp                           |
+	        pdb2scn   |                                 picmix
+     PDB -----------------|                                 picblend
+			  |                                 ppmmix*
+	       chem2scn   |                                 ppmblend*
+   CHEMICAL --------------|
+                          |
+                3ds2scn*  |
+  3D STUDIO --------------|
+                          |
+                iv2scn*   |
+ IRIS Inventor -----------|
+
+****************************************
+
+The DOS port of RTrace is in pub/RTrace/PC-386 (rtrac820.arj,
+utils820.arj and image820.arj). See the README file there.
+Requires DJGPP GO32 DOS extender (version 1.09 included), which can be
+found in directory pub/PC/djgpp (and in many sites around netland).
+There are also demo scenes, manuals and all the source code...
+
+****************************************
+
+Please feel free to get it and use it.
+Hope you like it.
+
+Regards,
+Antonio Costa.
+.........................................................................
+     O     O
+    /     /                        I N E S C
+   | O   |        Antonio Costa        | E-Mail   acc@asterix.inescn.pt
+   | |\  |   O                         |
+   | | \ |  /  O  Comp. Graphics & CAD | DECnet   porto::acosta
+   | |  \| /  /                        |
+   | |  /  | |    Largo Mompilher 22   | UUCP     {mcvax,...}!...
+   O | |-O | |    4100 Porto PORTUGAL  | Bell     +351+02+321006
+    /   \ /   \
+   O     O     O          "Let the good times roll..."
+
+

@@ -1,0 +1,11 @@
+photo: (c) 2013 Pinar Ozger pinar@pinarozger.com
+Summary:
+SaltStack wants you to use its config tool to deploy cloud applications easily and Google wants more applications to run in its cloud. Hence a partnership is born.
+photo: (c) 2013 Pinar Ozger pinar@pinarozger.com
+Google wants to attract more developers to its now-generally-available  Google Cloud Platform  so it can make headway, vis-a-vis Amazon Web Services.  SaltStack wants to make headway against configuration management tools like Chef and Puppet. So, it makes sense that the two companies would parlay this into a partnership and a PR opportunity.
+And so they have, SaltStack and its Python-oriented configuration- and systems-management tool supports the Google Compute Engine, so developers can put their code into production on that cloud quickly, and then manage and run it there.
+Salt Lake City-based SaltStack, which won  Gigaom’s Structure Launchpad contest last year, is giving some of those more established configuration management tools a run for their money of late. It makes sense for it to support all the major clouds and Google wants as many on ramps to its public cloud as possible.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,77 @@
+From: alan@saturn.cs.swin.OZ.AU (Alan Christiansen)
+Subject: Re: Sphere from 4 points?
+Organization: Swinburne University of Technology
+Lines: 71
+NNTP-Posting-Host: saturn.cs.swin.oz.au
+
+spworley@netcom.com (Steve Worley) writes:
+
+>bolson@carson.u.washington.edu (Edward Bolson) writes:
+
+>>Boy, this will be embarassing if it is trivial or an FAQ:
+
+>>Given 4 points (non coplanar), how does one find the sphere, that is,
+>>center and radius, exactly fitting those points?  I know how to do it
+>>for a circle (from 3 points), but do not immediately see a 
+>>straightforward way to do it in 3-D.  I have checked some
+>>geometry books, Graphics Gems, and Farin, but am still at a loss?
+>>Please have mercy on me and provide the solution?  
+
+>It's not a bad question: I don't have any refs that list this algorithm
+>either. But thinking about it a bit, it shouldn't be too hard.
+
+>1) Take three of the points and find the plane they define as well as
+>the circle that they lie on (you say you have this algorithm already)
+
+>2) Find the center  of this circle. The line passing through this center
+>perpendicular to the plane of the three points passes through the center of
+>the sphere.
+
+>3) Repeat with the unused point and two of the original points. This
+>gives you two different lines that both pass through the sphere's
+>origin. Their interection is the center of the sphere.
+
+>4) the radius is easy to compute, it's just the distance from the center to
+>any of the original points.
+
+>I'll leave the math to you, but this is a workable algorithm. :-)
+
+Good I had a bad feeling about this problem because of a special case
+with no solution that worried me.
+
+Four coplanar points in the shape of a square have no unique sphere 
+that they are on the surface of.
+Similarly 4 colinear point have no finite sized sphere that they are on the
+surface of.
+
+These algorithms being geometrical designed rather than algebraically design
+meet these problems neatly.
+
+When determining which plane the 3 points are on if they are colinear
+the algorithm should afil or return infinite R.
+When intersecting the two lines there are 2 possibilities
+they are the same line  (the 4 points were on a planar circle)
+they are different lines but parallel. There is a sphere of in radius.
+
+This last case can be achieved with 3 colinier points and any 4th point
+by taking the 4th point and pairs of the first 3 parallel lines will be produced
+
+it can also be achieved by
+
+If all 4 points are coplanar but are not on one circle. 
+
+It seems to me that the algorithm only fails when the 4 points are coplanar.
+The algorithm always fails when the points are coplanar.
+(4 points being colinear => coplanar)
+
+Testing if the 4th point is coplanar when the plane of the first 3 points
+has been found is trivial.
+
+
+>An alternate method would be to take pairs of points: the plane formed
+>by the perpendicular bisector of each line segment pair also contains the
+>center of the sphere. Three pairs will form three planes, intersecting
+>at a point. This might be easier to implement.
+
+>-Steve
+>spworley@netcom.com

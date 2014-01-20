@@ -1,0 +1,86 @@
+From: amann@iam.unibe.ch (Stephan Amann)
+Subject: Re: more on radiosity
+Reply-To: amann@iam.unibe.ch
+Organization: University of Berne, Institute of Computer Science and Applied Mathematics, Special Interest Group Computer Graphics
+Lines: 80
+
+In article 66319@yuma.ACNS.ColoState.EDU, xz775327@longs.LANCE.ColoState.Edu (Xia Zhao) writes:
+>
+>
+>In article <1993Apr19.131239.11670@aragorn.unibe.ch>, you write:
+>|>
+>|>
+>|> Let's be serious... I'm working on a radiosity package, written in C++.
+>|> I would like to make it public domain.  I'll announce it in c.g. the minute
+>|> I finished it.
+>|>
+>|> That were the good news. The bad news: It'll take another 2 months (at least)
+>|> to finish it.
+>
+>
+> Are you using the traditional radiosity method, progressive refinement, or
+>  something else in your package?
+>
+
+My package is based on several articles about non-standard radiosity and
+some unpublished methods.
+
+The main articles are:
+
+-  Cohen, Chen, Wallace, Greenberg : 
+    A Progressive Refinement Approach to fast Radiosity Image Generation
+     Computer Graphics (SIGGRAPH), V. 22(No. 4), pp 75-84, August 1988
+
+-  Silion, Puech
+    A General Two-Pass Method Integrating Specular and Diffuse Reflection
+    Computer Graphics (SIGGRAPH), V23(No. 3), pp335-344, July 1989 
+
+> If you need to project patches on the hemi-cube surfaces, what technique are
+>  you using?  Do you have hardware to facilitate the projection?
+>
+
+I do not use hemi-cubes. I have no special hardware (SUN SPARCstation).
+
+>
+>|>
+>|> In the meantime you may have a look at the file
+>|>   Radiosity_code.tar.Z
+>|> located at
+>|>   compute1.cc.ncsu.edu
+>
+>
+>  What are the guest username and password for this ftp site?
+>
+
+Use anonymous as username and your e-mail address as password.
+
+>
+>|>
+>|> (there are some other locations; have a look at archie to get the nearest)
+>|>
+>|> Hope that'll help.
+>|>
+>|> Yours
+>|>
+>|> Stephan
+>|>
+>
+>
+>   Thanks, Stephan.
+>
+>
+>    Josephine
+
+
+Stephan.
+
+
+----------------------------------------------------------------------------
+
+ Stephan Amann     SIG Computer Graphics, University of Berne, Switzerland
+           amann@iam.unibe.ch
+	   Tel +41 31 65 46 79	   Fax +41 31 65 39 65
+
+ Projects: Radiosity, Raytracing, Computer Graphics
+
+----------------------------------------------------------------------------

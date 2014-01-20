@@ -1,0 +1,29 @@
+From: rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter)
+Subject: Re: Please Recommend 3D Graphics Library For Mac.
+Organization: Boeing
+Lines: 24
+
+In article <John_Shepardson.esh-210493100336@moose.slac.stanford.edu> John_Shepardson.esh@qmail.slac.stanford.edu (John Shepardson) writes:
+>> Can you please offer some recommendations? (3d graphics)
+>
+>
+>There has been a fantastic 3d programmers package for some years that has
+>been little advertised, and apparently nobody knows about, called 3d
+>Graphic Tools written by Mark Owen of Micro System Options in Seattle WA. 
+>I reviewed it a year or so ago and was really awed by it's capabilities. 
+>It also includes tons of code for many aspects of Mac programming
+>(including offscreen graphics).  It does Zbuffering, 24 bit graphics, has a
+>database for representing graphical objects, and more.
+>It is very well written (MPW C, Think C, and HyperCard) and the code is
+>highly reusable.  Last time I checked the price was around $150 - WELL
+>worth it.
+>
+>Their # is (206) 868-5418.
+
+  I've talked with Mark and he faxed some literature, though it wasn't very helpful-
+  just a list of routine names: _BSplineSurface, _DrawString3D... 241 names.
+  There was a Product Info sheet that explained some of the package capabilities.
+  I also found a review in April/May '92 MacTutor.
+
+  It does look like a good package. The current price is $295 US.
+

@@ -1,0 +1,38 @@
+Aaron Contorer created FP Complete , a commercial Haskell IDE and deployment platform.
+Software drives the innovation economy, from big data and software-defined networks to mobile applications and social media.
+Yet literally billions of dollars are wasted due to excess project failures, bug fixes, and maintenance nightmares.  Surveys and studies have consistently shown that 50 to 75 percent of software projects are consumed by bug fixes and maintenance.  One underlying root cause of this significant problem is the use of traditional imperative languages (Java, C family, Python, Ruby etc.), whose manual, low-level approach is very error-prone and generates spaghetti code that eats up the backend costs.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+This problem is relatively unknown and perpetuated because the vast majority of programmers, reporters, and managers do not know of a viable alternative and just accept  that this is the way things always are. They try to improve around the edges with better tools, Agile Development, better requirement definitions etc. These aren’t root solutions; they are workarounds.
+The Haskell alternative
+The solution is Haskell, the purest functional language that has been in development for over 20 years. Haskell’s approach is fundamentally different from the imperative languages dominant today.  Haskell programs are a series of high-level generalizable functions that define what the program is intended to do.  A strong type safety and inference system produces code with little side effects.  The programmer focuses on the objective, the best design and correct logic to meet a specific desired outcome.  The compiler produces clean, concise and correct code from the outset.  Haskell produces many technical benefits:
+Cuts code size by 50 to 80 percent
+Dramatically cuts errors
+Significantly reduces time for finding and fixing errors at compile time, not run-time
+Easy code maintenance and rework without introducing new errors (no more spaghetti code)
+Much more secure, many fewer holes to exploit
+Built-in concurrency and parallel processing boosts performance
+These features generate the following game-changing strategic benefits:
+Accelerates time to market by 30 to 50 percent
+Lowers cost by 25 percent or more
+Increases programmer productivity by 30 percent or more
+Improves product quality
+Haskell applied
+While Haskell is a general-purpose language that can be applied everywhere, it is only beginning to be used commercially. Two commercial applications Haskell is ideal for stand out:
+Enhancing existing software environments such as Ruby and Python.
+Proprietary business logic and data analysis.
+Enhancing existing software environments such as Ruby and Python
+Ruby and Python are popular because they enable quick prototyping, especially in web apps. But they sow the seeds for major future problems in performance, reliability, scalability, and dependency making maintenance a nightmare. The problems are well-known and there is ample evidence that Haskell can solve them:
+After experiencing high failure rates with Ruby, Janrain began using Haskell and was able to cut 75 percent of the time they spent on bug fixes . They switched their backend from Ruby to an entirely Haskell-based platform.  Phillip Weaver, senior engineer: “We didn’t have to worry about breaking our Haskell code. We try not to touch Ruby very much, out of fear of crashing the API.”
+For Bump, Haskell easily enabled them to grow their application from one based on 6 to 8 cores to more than 250 cores over 70 to 100 machines . Bump started out on Python, but switched to Haskell after experiencing high errors and spaghetti code running amok. Jamie Turner, lead developer: “The Haskell compiler provides multiyear life of the code other solutions like Python couldn’t offer, while scaling up to support millions of users.”
+Proprietary business logic and data analysis
+This domain fits Haskell’s algebraic and logical foundations perfectly. You’ll see it being increasingly adopted in enterprises, especially in data-intensive industries and domains such as financial services, Big Data apps, Big Pharma and biotech, oil and gas, and consumer data. Barclays’ “Functional Payout Framework” is written in Haskell . One large bank rewrote a large Java application in Haskell and reduced the code from 5 million to 1 million lines.
+It’s all about speed — get to market in half the time
+Another noteworthy Haskell benefit is performance. Silk credits Haskell for getting them to market in less than half the time it would have taken otherwise. Haskell allowed them to concentrate more on innovation and actual programming, and much less on repetitive testing and debugging. If an early-stage startup has a $100,000 per month burn rate, this acceleration could be the difference between life and death.
+The New York Times recently ran a blog post on how they used Haskell to present fashion week , which is a very processing-intensive app given the massive amounts of images and analysis involved. Erik Hinton the developer wrote, “We chose Haskell because we anticipated doing a large amount of fine-tuning to get the analysis to work well.” Compared to the Ruby prototype, the Haskell code ran considerably faster, in part because “the mathematical assurances made by Haskell’s type system meant they could automatically parallelize the operation over multiple CPU-cores without changing a single line of code.” Bottom line: Haskell enabled this intense data analysis app to crank through hundreds of full-resolution photos a minute, doing a considerable amount of statistical analysis on each.
+Haskell is changing how we think about software development
+Haskell is the new way to make software that changes the economics of software development. Very recently Dr. Dobb’s editor-in-chief Andrew Binstock tweeted “I’ve noticed several times when someone says, ‘X really changed the way I think about programming,’ frequently X=Haskell.” He’s not alone. Karthikeyan Mani, Cofounder of Byteally in India told us “This is the natural way to program. It’s the first time I am at peace when I code. With Ruby, it’s always headaches and nervous times.  We are moving away from all traditional programming.”

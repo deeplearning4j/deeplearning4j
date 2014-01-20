@@ -1,0 +1,23 @@
+From: ednobles@sacam.OREN.ORTN.EDU (Edward d Nobles)
+Subject: POV .TGA's and SpeedStar 24
+Organization: Oak Ridge National Laboratory
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 17
+
+
+I finally got a 24 bit viewer for my POVRAY generated .TGA files.
+
+It was written in C by Sean Malloy and he kindly sent me a copy.  He
+wrote it for the same purpose, to view .TGA files using his SpeedStar 24.
+
+It ONLY works with the SpeedStar 24 and I cannot send copies since it is
+not my program.  I believe the author may release a version at a future
+time when the program is more developed.   He may or may not comment on
+this, as he pleases.
+
+Thanks to all who were helpful.
+
+Regards,
+
+Jim Nobles
+

@@ -1,0 +1,32 @@
+Intel chief executive Brian Krzanich announced today that the world’s biggest chip manufacturer will collaborate with open-source hardware platform Arduino . Together, they will work to foster innovation in the “ maker ” and educational communities.
+Intel
+Intel’s Mike Bell
+Krzanich, speaking at the Maker Faire in Rome, Italy, also introduced the Galileo development board that will become the foundation of open source hardware platforms. Intel is donating 50,000 of the Arduino-compatible Intel Galileo boards to more than 1,000 universities worldwide over the next 18 months. The exploding “maker” community is a do-it-yourself technology movement.
+“In the past, innovation happened in Silicon Valley garages,” said Mike Bell, vice president and general manager of new devices at Intel, in an interview with VentureBeat. “These days, there is a lot of innovation happening in the maker community. This is a great way to expand our reach” and aid in the democratization of hardware.
+The board can be used for do-it-yourself projects, from light displays to life-size robots. Arduino is an open source electronics prototyping platform based on flexible, easy-to-use hardware and software. Artists, designers, and other do-it-yourself enthusiasts can use the platform to create interactive objects or environments easily. The point of Arduino is that you don’t have to have a technical background in order to use the platform for your own projects.
+Intel and Arduino will work on future products that use Intel technology and advance the platform for makers.
+“Through our ongoing efforts in education, we know that hands-on learning inspires interest in science, technology, engineering and math,” said Krzanich. “I’ve been a ‘maker’ for many years and am passionate about the exciting possibilities of technology and what can be created with it. We look forward to a productive collaboration with Arduino and to providing this community with some incredible Intel products that will help push the boundaries of our imaginations.”
+Intel is working with 17 universities to develop curriculum based on the new Intel Galileo board.
+“Our intent for open-source hardware is to make the source code available and to support the community,” Bell said. “Open source software is very successful. We are looking for the hardware analogue of that. It’s a democratizing approach.”
+“We’re thrilled to be working with Intel and to having the performance of Intel technology for the first time in our development boards,” said Massimo Banzi, founder of the Arduino community. “I look forward to our collaboration and believe that our work together will produce some fantastic development vehicles that help foster some very exciting innovations.”
+The board can run Windows, Mac OS, or Linux. It supports existing software libraries and the Arduino software integrated development environment, and it is software-compatible with the Arduino UNO shield ecosystem. It supports 3.3 volt or 5 volt shields. The board uses the Intel Quark SoC X1000, the first product in the Intel low-power, low-cost chip family for the “Internet of things” and wearable computers. The 32-bit, single-core, single-thread processor runs at 400 megahertz.
+“The agreement signed between Intel and Sapienza University of Rome will give Intel access to the research excellence of Europe’s largest university, and they offer us the ability of a dedicated knowledge transfer structure gained from working alongside the technology industry,” said Stephen Trueman, Director, Sapienza Innovation Center.
+The Intel development board comes standard with several computing industry standard input-output interfaces, including ACPI, PCI Express, 10/100Mb Ethernet, SD, USB 2.0 device and EHCI/OHCI USB host ports, high-speed UART, RS-232 serial port, programmable 8MB NOR flash, and a JTAG port for easy debug. Intel has invested $1 billion in education to date.
+The participating schools are:
+University of Melbourne, Melbourne, Australia
+University of São Paulo (USP), Sao Paulo, Brazil
+Tsinghua University, Beijing, China
+Zhejiang University (ZJU), Hangzhou, China
+Karlsruhe Institute of Technology (KIT), Karlsruhe, Germany
+Indian Institute of Science (IISc), Bangalore, India
+Trinity College, Dublin, Ireland
+University College Cork (UCC), Cork, Ireland
+Sapienza University of Rome (Sapienza), Rome, Italy
+Universiti Sains Malaysia (USM), Penang, Malaysia
+National Autonomous University of Mexico (UNAM), Mexico City, Mexico
+University Politehnica of Bucharest, Bucharest, Romania
+University of Cape Town (UCT), Cape Town, South Africa
+University of Johannesburg (UJ), Johannesburg, South Africa
+National Chiao Tung University (NCTU), Hsinchu City, Taiwan
+Georgia Institute of Technology, Atlanta, USA
+University of Pennsylvania (Penn), Philadelphia, USA

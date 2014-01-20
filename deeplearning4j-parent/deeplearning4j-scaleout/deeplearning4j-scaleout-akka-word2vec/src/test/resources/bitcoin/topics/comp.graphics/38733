@@ -1,0 +1,128 @@
+From: danj@welchgate.welch.jhu.edu (Dan Jacobson)
+Subject: Re: Is there an FTP achive for USGS terrain data
+Organization: Johns Hopkins Univ. Welch Medical Library
+Lines: 123
+
+
+diablo.UUCP!cboesel (Charles Boesel) writes:
+
+>Is there an FTP archive for United States Geological Services (USGS)
+>terrain data? If so, where?
+
+Point your gopher client at merlot.welch.jhu.edu
+
+and select the following directories:
+
+ -->  13. Search and Retrieve Software/
+
+   -->  8.  Search and Retrieve Graphics Software and Data/
+
+
+And you'll see -
+
+
+
+
+ -->  1.  Graphics Online Bibliography (ACM SIGGRAPH)/
+      2.  Graphics Software and Data Archives (ftp sites)/
+      3.  Search All Graphics Information <?>
+      4.  Search Comp.graphics FAQ <?>
+      5.  Search Graphics Resources (Software and Data) <?>
+      6.  Search Pictures Utilities FAQ <?>
+
+
+          1.  Graphics Online Bibliography (ACM SIGGRAPH)/
+
+              Searches and archives of bibliographic database that covers
+              graphics literature for over a hundred years (served
+              by a gopher hole in Austria).
+
+
+          2.  Graphics Software and Data Archives (ftp sites)/ 
+
+              Has links to over 70 sites around the world which
+              have software and/or data for computer graphics.
+              This can be used on its own or as a companion to the
+              searches found in this directory which will point you
+              toward software and data at various places.  
+              
+
+          3.  Search All Graphics Information <?>
+          4.  Search Comp.graphics FAQ <?>
+          5.  Search Graphics Resources (Software and Data) <?>
+          6.  Search Pictures Utilities FAQ <?>
+           
+
+              These searches contain a wealth of information about
+              computer graphics, data, software, techniques etc...
+
+              3.  Search All Graphics Information <?> 
+
+                  Will simply search all of the information contained
+                  in searches 4, 5, and 6.
+
+              4.  Search Comp.graphics FAQ <?>
+
+                  Lets you search the FAQ (Frequently Asked Questions)
+                  from the Comp.graphics newsgroup compiled by John
+                  Grieggs at the JPL.
+
+              5.  Search Graphics Resources (Software and Data) <?>
+
+                  Lets you search the Grpahics Resource Listing of
+                  software and data provided by Nick Fotis at the
+                  National Technical Univ. of Athens.
+
+              6.  Search Pictures Utilities FAQ <?>
+
+                  Lets you search the FAQ (Frequently Asked Questions)
+                  from the Alt.binaries.pixutils newsgroup compiled by
+                  Jim Howard at Cadence.
+
+
+Select:
+
+ -->  3.  Search All Graphics Information <?>
+
+And search for:
+
+usgs
+
+
+And you'll find out some information about USGS data availability.
+
+Now select:
+
+   -->  2.  Graphics Software and Data Archives (ftp sites)/
+
+and you might find the following interesting:
+
+   -->  12. Cartographic data - USGS data (Xerox)/
+
+   -->  42. Mapgen/Plotgen and more (USGS)/
+
+   -->  68. USGS Weekly Seismicity Reports (including maps - GIF)/
+
+   -->  68. USGS Earth Science Data Directory/
+             (This actually is a database of available data - search
+              it for terrain - could prove quite useful.)
+
+One other place to look is only available by anonymous ftp at
+the moment - 
+
+US Geological Survey Maps  -  isdres.er.usgs.gov (130.11.48.2).
+
+
+If you've never heard of gopher don't worry it's free and on the net,
+write me a note if you'd like information on how to get started.
+
+
+Best of luck,
+
+Dan Jacobson
+
+danj@welchgate.welch.jhu.edu
+
+Johns Hopkins University
+
+

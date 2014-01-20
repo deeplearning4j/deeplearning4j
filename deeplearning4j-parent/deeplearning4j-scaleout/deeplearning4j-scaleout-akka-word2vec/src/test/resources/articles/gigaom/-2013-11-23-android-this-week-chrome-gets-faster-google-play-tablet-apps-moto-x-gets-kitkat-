@@ -1,0 +1,12 @@
+A
+Summary:
+Motorola is quick on the draw, pushing out Android 4.4 to its Moto X on three U.S. carriers within just a few days. Google is highlighting tablet-optimized apps now and speeding up its Chrome browser for Android phones and tablets.
+If you don’t mind using a beta browser, you can surf the web a wee bit faster on Android. Google announced its Chrome 32 Beta for Android this week and among the features is more speed. How Google did that though may not go over well with all Android users:
+“Starting this release, responsive mobile websites will get a performance boost in Chrome for Android because  we’ve disabled double-tap zoom . Previously, to support double-tap zoom, Chrome had to delay every touch event sent to the webpage by 300ms to allow the user to tap a second time. Now mobile-friendly sites that are already formatted to automatically fit in the page width will receive click events instantly and can respond to user input more quickly. “
+The removal of double-tap zoom appears to be only for responsive websites, i.e.: those that dynamically adjust their layout based on the device type and screen size. Since every millisecond counts, I like the approach Google is taking here.
+I’m also happy to see Google Play highlighting tablet apps in the store . Google announced this change prior, but implemented it this week: You can now see a “Designed for tablets” section if you browse the Play Store on a slate. Hopefully, this will push more developers to optimize their Android apps for larger screened devices. I suspect it will also give Apple more fodder to point out how its iTunes App Store has far more tablet apps.
+Google-owned Motorola has been on the move to get KitKat, or Android 4.4, out to devices of late and this week saw the fruits of that labor. Moto X devices first on Verizon, then on T-Mobile and finally AT&T all have KitKat waiting for them. Aside from the native improvements in Android 4.4, are new camera focus and exposure controls ; either can be adjusted with a simple finger swipe.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

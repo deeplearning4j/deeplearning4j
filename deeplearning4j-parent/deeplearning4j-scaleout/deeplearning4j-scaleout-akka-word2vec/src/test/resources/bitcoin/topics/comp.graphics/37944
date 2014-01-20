@@ -1,0 +1,49 @@
+From: egerter@gaul.csd.uwo.ca (Barry Egerter)
+Subject: Re: Graphics Library Package
+Organization: Computer Science Dept., Univ. of Western Ontario, London, Canada
+Nntp-Posting-Host: obelix.gaul.csd.uwo.ca
+Lines: 43
+
+
+	WGT is the WordUp Graphics Toolkit, designed by yours truly and my
+co-programmer (and brother) Chris Egerter. It is a Turbo/Borland C++ graphics
+library for programming in 320*200*256 VGA. We are currently producing it as
+shareware, but in a few years it may be a commercial product (excuse typos,
+there's no backspace on this terminal). Features include:
+
+- loading and saving bit-images (called blocks from herein)
+- flipping, resizing and warping blocks
+- loading and saving palette, fading, several in memory at once
+- graphics primitives such as line, circle, bar, rectangle
+- region fill (not the usually useless floodfill)
+- sprites (animated bitmaps), up to 200 onscreen at once
+- joystick/mouse support
+- SB support (VOC and CMF)
+- tile-based game creation using 16*16 pixel tiles to create
+  a 320*200 tile map (or game world) like in Duke Nuke 'Em
+- number of sprites increased to 1000
+- Professional Sprite Creator utility and Map Maker
+-  routines to simplify scrolling games using maps, etc
+- FLI playing routines, sprites can be animated over the FLI while playing
+- PCX support, soon GIF
+- EMS/XMS coming soon as well
+
+Leave E-mail to Barry Egerter at    egerter@obelix.gaul.csd.uwo.ca
+
+Files available on:      (use  mget wgt*.zip)
+
+SIMTEL20 and mirrors                pd1:<msdos.turbo-c>
+
+nic.funet.fi                        pub/msdos/games/programming
+
+Some sites may not have recent files, contact me for info regarding the up-to-
+date information.
+
+
+
+
+
+
+
+
+

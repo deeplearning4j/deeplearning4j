@@ -1,0 +1,16 @@
+2
+Lyft’s new VP of data science has experience working on the space shuttle and nuclear reactors.
+The popular ride-sharing startup announced today that it has hired Chris Pouliot to lead and build its data science team, which will help Lyft maintain a competitive edge as the startup transportation wars heat up.
+“I am really excited about the problems Lyft is solving,” Pouliot said in an exclusive interview with VentureBeat. “What they are doing with peer-to-peer ridesharing is changing the behavior of how people use transportation. The geospatial element of all its data is really intriguing, and there is this big economic problem of trying to match supply and demand.”
+Pouliot spent the past five years leading the data-science team at Netflix. He has masters degrees from MIT and Stanford; spent six years in the U.S. Navy ,where he was responsible for a large nuclear reactor aboard the USS Nimitz aircraft carrier; spent a couple of years as a statistician at Google; and currently serves on the boards of multiple e-commerce startups.
+LinkedIn ranked him as one of the top data scientists out there.
+He is know bringing this wealth of experience to Lyft where he said he is excited about solving new problems.
+Lyft’s mobile apps connect passengers with drivers who can give them a ride. Its service is an alternative to taxi cabs, but one that employs regular people (not professional cab drivers). The startup’s tagline is “your friend with a car,” and its signature is a silly pink plush mustaches that adorn all Lyft vehicles.
+Lyft raised $60 million earlier this year to fuel its geographic expansion and build out a data science team.
+Part of Lyft’s value to customers — other than the sense of community — is convenience. Like Uber, Lyft arose out of frustration with the cab industry and how difficult it can be to get a ride when you needed one. The streets are now flooded with cab alternatives like Lyft, Uber, SideCar, InstaCab, and RelayRides.
+Dispatching cars efficiently and cost effectively is a key part of attracting and retaining customers. People don’t want to wait a long time for their rides, and with all the options out there, they could easily defect to another service.
+This is where Pouliot and his data science team come in.
+“We can use data to provide more accurate ETAs when a passenger requests a ride, to set high expectations and provide a better user experience,” he said. “The success or failure of the business is highly correlated to how the company it uses data.”
+For example, two or three cars may be about five minutes away from a passenger. While sending the closet car seems like the simplest solution,  Pouliot said at our DataBeat/Data Science Summit yesterday  that he is developing an algorithm to determine the likelihood that another customer will call a car in the next three or four minutes. This means Lyft won’t just send the nearest car — it will send a car that is nearby and unlikely to be in near the next passenger who may call for a car.
+Pouliot also has ideas for how Lyft can make use of Facebook Connect.
+“Lyft isn’t doing anything interesting with all its social data,” he said. “But imagine if in the dispatch process, you saw that the driver and passenger have a common interest and use that when making the connection decision, showing them that there are common interests.”

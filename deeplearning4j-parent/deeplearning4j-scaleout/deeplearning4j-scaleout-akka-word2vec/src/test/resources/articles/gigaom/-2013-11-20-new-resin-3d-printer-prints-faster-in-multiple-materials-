@@ -1,0 +1,15 @@
+photo: USC Viterbi School of Engineering
+Summary:
+Instead of melted plastic, resin printers rely on a pool of liquid that can be cured quickly by a laser.
+photo: USC Viterbi School of Engineering
+A major drawback for 3D printers is how slow they print. A medium-sized cup can take hours, potentially making it faster and more convenient to just run out to the store.
+A research team at the University of Southern California said they have taken a previous breakthrough that cut print time down to minute and applied it to printing in multiple materials , an emerging area of 3D printing that could dramatically increase what you can print.
+Their work utilizes a resin printer, which doesn’t lay down melted plastic like most consumer printers do. Instead, it relies on a pool of liquid resin. Generally, a laser shines on one layer of the liquid at a time, causing it to harden. The finished object slowly rises out of the pool of resin.
+The USC team sped up this process by projecting a 2D laser image of the entirety of each layer, which is much faster than having a single beam of light go back and forth to cover the entirety of the layer. They also developed a better system to replace the resin after each slice is completed. As a result, it takes minutes instead of hours to print an object.
+Now, the team has figured out how to apply the same process to print jobs that include different materials. Different materials harden at different rates, so the laser needs to be applied for differing amounts of time. The team was able to program the printer to do so. The researchers now want to work on automating the process, which would make it more accessible to the average 3D printer user.
+Printing in multiple materials is appealing because it can give objects multiple qualities, such as ranging from soft to hard. Tweezers, for example, can be printed by giving the hinge area softer qualities than the tips.
+The team will present their findings today at an American Society of Chemical Engineers conference in San Diego.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

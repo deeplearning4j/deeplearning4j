@@ -1,0 +1,11 @@
+A
+Summary:
+Google voice search and Google Now functionality are on their way to Chrome and Chrome OS. The latest developer channel of Chrome OS has the feature in an experimental state and although it’s limited, I see great potential here.
+Google voice search combined with Google Now is quietly becoming a killer feature on both Android and, more recently, iOS devices . It’s a safe bet that it will be just as important on Chrome: Google’s platform to transform traditional computing with the web as your desktop and the cloud replacing local storage. If you have a Chromebook or Chromebox, you can get an early glimpse of how saying “OK Google” to your computer will aid in that transition.
+Google evangelist  François Beaufort noted on his Google+ page that people running the developer channel of Chrome OS can enable the “OK Google” function. But be forewarned, it’s pretty limited for now. To activate the feature, type chrome://flags in the browser address bar of your Chrome OS device running the developer channel. Next, look for the enable-app-launcher-start-page flag and choose to enable it. Restart Chrome OS and you’re all set.
+Once the device reboots, you can say “OK Google” from the Apps launcher. It may take a few seconds, but the Apps launcher search should show “OK Google”. I was able to say “OK Google what’s on my calendar” to bring up that phrase; hitting the Enter keyboard button brought up a browser tab with my agenda as well. It’s not perfect though; the results have been hit or miss on my Chromebook Pixel.
+Clearly, this is just in the early stages. In fact, the Chromium Code Review page for this feature is dubbed “Embeds offline voice recognizer plugin and its manager to app-list start page” so this is just the first of many steps before I can “OK Google, what’s on my calendar?” to Chrome or Chrome OS and have the information pop-up without any additional keystrokes or input.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

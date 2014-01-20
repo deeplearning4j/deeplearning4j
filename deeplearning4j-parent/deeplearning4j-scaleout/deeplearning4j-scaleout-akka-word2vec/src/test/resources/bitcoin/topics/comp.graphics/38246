@@ -1,0 +1,22 @@
+From: spl@ivem.ucsd.edu (Steve Lamont)
+Subject: Re: Point within a polygon
+Organization: University of Calif., San Diego/Microscopy and Imaging Resource
+Lines: 15
+NNTP-Posting-Host: ivem.ucsd.edu
+Keywords: point, polygon
+
+In article <1993Apr14.102007.20664@uk03.bull.co.uk> scrowe@hemel.bull.co.uk (Simon Crowe) writes:
+>I am looking for an algorithm to determine if a given point is bound by a 
+>polygon. Does anyone have any such code or a reference to book containing
+>information on the subject ?
+
+See the article "An Efficient Ray-Polygon Intersection," p. 390 in
+Graphics Gems (ISBN 0-12-286165-5).  The second step, intersecting the
+polygon, does what you want.  There is sample code in the book.
+
+							spl
+-- 
+Steve Lamont, SciViGuy -- (619) 534-7968 -- spl@szechuan.ucsd.edu
+San Diego Microscopy and Imaging Resource/UC San Diego/La Jolla, CA 92093-0608
+"They are not Bolsheviks,
+        just bullshitviks."  - Yevgeny Yevtechenko, "Again a meeting..."

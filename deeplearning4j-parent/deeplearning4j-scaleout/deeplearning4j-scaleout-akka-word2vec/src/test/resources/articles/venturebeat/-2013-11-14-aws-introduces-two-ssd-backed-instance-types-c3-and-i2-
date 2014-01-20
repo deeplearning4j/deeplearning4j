@@ -1,0 +1,7 @@
+0
+Amazon Web Services (AWS) today announced two fancy new instance types to bolster its already massive collection of instances. (If we’ve already lost you, think of cloud “instances” as virtual servers that can run applications.)
+For compute-intensive workloads on Amazon’s Elastic Compute Cloud (EC2), Amazon introduced C3 instances. The SSD-backed instance type offers double the memory per virtual CPU than the C1 instance, making it ideal for tasks involving batch data processing, high-performance scientific computing, and 3D rendering. C3′s per-core performance bests any other EC2 instance, according to Amazon.
+The other new instance type, I2, is designed for apps that needs high I/O performance. This type works well with transactional systems and NoSQL databases like MongoDB and Cassandra, according to Amazon. The I2 instances will come in a number of different sizes, but all of them rely on SSD storage.
+Additionally, Amazon’s Relational Database Service (RDS) today received support for PostgreSQL, an open source object-relational database system. Amazon added support for Oracle Database in 2011 and Windows SQL Server last year.
+Amazon made these announcements at its AWS re:Invent conference in Las Vegas. The major conference news came yesterday, when Amazon revealed its WorkSpaces and AppStream services. Both represent a huge threat to Citrix, which took a beating in the market following the unveiling of the two Amazon services.
+Related articles

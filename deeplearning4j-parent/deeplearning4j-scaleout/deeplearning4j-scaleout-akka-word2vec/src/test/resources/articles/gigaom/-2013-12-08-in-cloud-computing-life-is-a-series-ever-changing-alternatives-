@@ -1,0 +1,18 @@
+The Structure Show RSS Feed
+Saying ‘No, thank you’ to colocation
+“Basically, there’s no good reason anymore, at least not from a price-performance standpoint that I can find, to run your own data center,” Montalenti said. Even though, he acknowledged later, “When you walk through the equations, there might be some ways that you can find running your own colo will save some money on some metrics.”
+In fact, he recently advised another startup CTO concerned that his company’s cloud costs had hit $20,000 a month that squeezing more savings out of the cloud provider (via Amazon Web Services reserved instances, for example) is a better option than putting servers in a colocation space. Economies of scale are there if you’re running a “robo data center,” he said, but probably not when you’re running a few dozen servers.
+“You’re not going to actually save money today if you bring it in-house, you just think you are,” Montalenti told his peer. ( Not everyone agrees with this sentiment , however.)
+The colo servers Parse.ly is trying to do away with.
+Keeping tabs on cloud prices
+“[H]onestly, this ecosystem has gotten so complicated that any startup that’s running any system at scale really needs to have someone who’s monitoring the ecosystem to really understand where we can get the best bang for our buck over time,” Montalenti said.
+To solve this problem at Parse.ly, he hired a “devops guy” who is tasked with keeping tabs on what’s available where, and for how much. Parse.ly, for example, is most concerned with the price per gigabyte of RAM per month, something that used to cost about $40 with Rackspace and now costs around $33, he said. It’s about $10 with AWS and $13 with Google Compute Engine.
+“[T]he prices are dropping so fast, and the question is, ‘Have we already hit a price-drop plateau, or are they going to continue to drop?’” he said. “And the truth is that prices aren’t really dropping for running your own data center.”
+Cloud computing is great, lock-in isn’t
+“I basically hate lock-in with a passion. So as a result, all the Amazon services that are highly Amazon-specific, I tend to shy away from,” Montalenti explained. “If it’s not built on open source technology, I’ll tend to say that it’s sort of off limits for us to use, at least in production.”
+The one exception he noted is Elastic MapReduce, one of AWS’s big data services. Building and maintaining Hadoop clusters is hard, he said, but “using EMR is just so damn easy.”
+Parse.ly used an open source service called Libcloud to move workloads between Rackspace data centers earlier this year, he noted, and is going to rely on it again when the company ports a large portion of its Rackspace workloads to AWS. Although services like Amazon DynamoDB might work great, Montalenti said, “You don’t want to couple your tools to any one provider.”
+ 
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

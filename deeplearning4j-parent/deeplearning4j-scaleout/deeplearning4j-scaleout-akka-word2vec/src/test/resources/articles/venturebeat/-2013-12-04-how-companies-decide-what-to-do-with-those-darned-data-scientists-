@@ -1,0 +1,15 @@
+2
+REDWOOD CITY, Calif. — Sometimes it makes sense for data scientists to work in their own centralized department. At other times, that structure doesn’t make sense.
+Executives dealing with data science at large companies went back and forth on the best uses of data scientists today at VentureBeat’s 2013 DataBeat/Data Science Summit event.
+When it comes to getting data ready to use in multiple parts of LinkedIn, that’s when a central team can work well, said Jim Baer, the social network’s senior director of data science. They can categorize data and put it in digestible chunks before disseminating it to multiple teams.
+“All of our products leverage the same base of data,” Baer said.
+But that doesn’t mean it’s a good idea for data scientists to toil alone at all times. They should also work with product teams at certain points.
+“If they’re not there as part of the discussion with product, the opportunities to leverage that (data don’t) really come up,” Baer said.
+GE has been firm about setting up an official hub of data scientists. Anil Varma, head of the data science center of excellence at GE Software, showed how it makes sense for GE specifically.
+“The decision at GE was not taken lightly to set up a 600-person organization in San Ramon,” Varma said. “I think in our case it was very much a CEO-level decision.” And that’s reasonable, given that GE wants to optimize the use of the heavy-duty infrastructure such as gas turbines and jet engines big companies buy from GE and use as part of 30-year contracts.
+At Intuit, employees in many departments see the power of data and analytics, said Vineet Singh, director of data innovation and advanced technology at the company. “We believe in cross-disciplinary collaboration,” Singh said.
+But that doesn’t mean all other companies should take the same stance. “I will say that there’s no size that fits all,” he said.
+Annika Jimenez, global head of data science services at Pivotal and moderator of the panel, asked if it makes sense for a company to have a chief data officer or chief analytics officer.
+Robert Sahadevan, vice president of consumer marketing and data analytics at Humana, answered with a qualified yes. “There’s no right or wrong,” he said. It’s just how does it fit within the organization.”
+It could be that having a central data science group is more appropriate for some industries than others. “In many other non-digital sectors, those two disciplines (data science and product) are very far removed,” Jimenez said.
+So the most accurate answer to the to-centralize-or-not-to-centralize question might just be that it depends.

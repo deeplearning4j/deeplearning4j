@@ -1,0 +1,12 @@
+Summary:
+4.6 million usernames and phone numbers have been scraped from Snapchat’s database and dumped online.
+Three days ago, ephemeral communication app Snapchat released a statement on its website responding to a group of security professionals at Gibson Security who posted what they claimed to be numerous exploits of the app’s API . The hot startup waved those claims away in the post:
+Theoretically, if someone were able to upload a huge set of phone numbers, like every number in an area code, or every possible number in the U.S., they could create a database of the results and match usernames to phone numbers that way. Over the past year we’ve implemented various safeguards to make it more difficult to do.
+But apparently those safeguards weren’t secure enough, as a team of hackers posted 4.6 million usernames and phone numbers of Snapchat users as  a downloadable database  just before midnight on Tuesday.
+Right now, the database is censored, blurring the last two digits of each user’s phone number. But the hackers, who are currently anonymous, hinted that they might be willing to turn over the raw data to the right party.
+“The company was too reluctant at patching the exploit until they knew it was too late and companies that we trust with our information should be more careful when dealing with it,” the website says.
+That’s an inauspicious start to 2014 for one of 2013′s hottest apps.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

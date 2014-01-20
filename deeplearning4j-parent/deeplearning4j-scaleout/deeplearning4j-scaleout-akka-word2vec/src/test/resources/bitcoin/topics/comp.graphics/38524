@@ -1,0 +1,20 @@
+From: lmp8913@rigel.tamu.edu (PRESTON, LISA M)
+Subject: Another CVIEW question (was CView answers)
+Organization: Texas A&M University, Academic Computing Services
+Lines: 12
+Distribution: world
+NNTP-Posting-Host: rigel.tamu.edu
+News-Software: VAX/VMS VNEWS 1.41    
+
+
+	Has anybody gotten CVIEW to work in 32k or 64k color mode on a Trident
+8900c hi-color card? At best the colors come out screwed up, and at worst the 
+program hangs. I loaded the VESA driver, and the same thing happens on 2 
+different machines.
+
+	If it doesn't work on the Trident, does anybody know of a viewer that 
+does?
+
+Thanx!
+LISA 
+
