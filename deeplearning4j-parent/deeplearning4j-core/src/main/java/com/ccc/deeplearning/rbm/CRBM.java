@@ -31,15 +31,15 @@ public class CRBM extends RBM {
 
 
 	public CRBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
-			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng) {
-		super(input, nVisible, nHidden, W, hBias, vBias, rng);
+			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng,double fanIn) {
+		super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn);
 	}
 
 
 
 	public CRBM(int n_visible, int n_hidden, DoubleMatrix W,
-			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
-		super(n_visible, n_hidden, W, hbias, vbias, rng);
+			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+		super(n_visible, n_hidden, W, hbias, vbias, rng,fanIn);
 	}
 
 

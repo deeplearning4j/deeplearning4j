@@ -38,14 +38,14 @@ public class RBM extends BaseNeuralNetwork {
 	public RBM() {}
 
 	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-			DoubleMatrix vbias, RandomGenerator rng) {
-		super(nVisible, nHidden, W, hbias, vbias, rng);
+			DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+		super(nVisible, nHidden, W, hbias, vbias, rng,fanIn);
 	}
 
 
 	public RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
-			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng) {
-		super(input, n_visible, n_hidden, W, hbias, vbias, rng);
+			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+		super(input, n_visible, n_hidden, W, hbias, vbias, rng,fanIn);
 	}
 
 	/**

@@ -33,7 +33,7 @@ public class MnistDbnTest extends DeepLearningTest {
 		int[] layerSizes = {1000,1000,1000};
 		double lr = 0.1;
 		
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(100.0)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(0.1)
 				.renderWeights(100)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();

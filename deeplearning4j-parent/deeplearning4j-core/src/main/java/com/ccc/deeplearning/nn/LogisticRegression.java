@@ -1,15 +1,17 @@
 package com.ccc.deeplearning.nn;
 
+import static com.ccc.deeplearning.util.MatrixUtil.ensureValidOutcomeMatrix;
+import static com.ccc.deeplearning.util.MatrixUtil.log;
+import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
+import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
+import static com.ccc.deeplearning.util.MatrixUtil.softmax;
+
 import java.io.Serializable;
 
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ccc.deeplearning.util.MatrixUtil;
-
-import static com.ccc.deeplearning.util.MatrixUtil.*;
 
 /**
  * Logistic regression implementation with jblas.
@@ -92,7 +94,7 @@ public class LogisticRegression implements Serializable {
 		this.input = x;
 		this.labels = y;
 
-		DoubleMatrix regularized = W.transpose().mul(regTerm);
+		//DoubleMatrix regularized = W.transpose().mul(regTerm);
 		DoubleMatrix p_y_given_x = sigmoid(x.mmul(W).addRowVector(b));
 		DoubleMatrix dy = y.sub(p_y_given_x);
 

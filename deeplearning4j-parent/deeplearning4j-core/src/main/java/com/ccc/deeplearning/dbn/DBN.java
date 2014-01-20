@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
-import com.ccc.deeplearning.nn.HiddenLayer;
 import com.ccc.deeplearning.nn.NeuralNetwork;
 import com.ccc.deeplearning.rbm.RBM;
 
@@ -123,8 +122,11 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		RBM ret =  new RBM(input, nVisible, nHidden, W, hBias, vBias, rng);
-		super.initializeNetwork(ret);
+		RBM ret = new RBM.Builder()
+		.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
+		.withInput(input).withVisibleBias(vBias).withHBias(hBias)
+		.withRandom(rng).renderWeights(renderWeightsEveryNEpochs)
+		.fanIn(fanIn).build();
 		return ret;
 	}
 
