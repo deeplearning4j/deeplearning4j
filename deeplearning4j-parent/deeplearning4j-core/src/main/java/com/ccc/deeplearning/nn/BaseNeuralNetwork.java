@@ -620,7 +620,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				if(classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen);
+								W, hBias,vBias, gen,fanIn);
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						return ret;
 					}catch(Exception e) {
@@ -642,12 +642,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				//input matrix found
 				if(classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
 					try {
-						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen);
+						ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn);
 						ret.sparsity = this.sparsity;
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.l2 = this.l2;
-						ret.fanIn = this.fanIn;
 						ret.momentum = this.momentum;
 						return ret;
 					}catch(Exception e) {
