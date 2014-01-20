@@ -1,9 +1,5 @@
 package com.ccc.deeplearning.dbn;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -106,69 +102,8 @@ public class DBN extends BaseMultiLayerNetwork {
 			RBM r = (RBM) this.layers[i];
 			HiddenLayer h = this.sigmoidLayers[i];
 
-			DoubleMatrix w = r.W.dup();
-			DoubleMatrix hBias = r.hBias.dup();
-			Double bestLoss = null;
-			Integer numTimesOver = null;
-
-
-			for(int  epoch = 0; epoch < epochs; epoch++) {
-				r.trainTillConvergence(learningRate, k, layerInput);	
-				h.W = r.W;
-				h.b = r.hBias;
-				double entropy = r.getReConstructionCrossEntropy();
-
-				if(bestLoss == null)
-					bestLoss = entropy;
-				else if(Double.isNaN(entropy) || Double.isInfinite(entropy) || entropy < 0.01) {
-					r.W = w.dup();
-					r.hBias = hBias.dup();
-					h.W = r.W;
-					h.b = hBias; 
-					log.info("Went over too many times....reverting to last known good state");
-					break;
-				}
-				else if(entropy > bestLoss) {
-					if(numTimesOver == null)
-						numTimesOver = 1;
-					else
-						numTimesOver++;
-					if(numTimesOver >= 30) {
-						r.W = w.dup();
-						r.hBias = hBias.dup();
-						h.W = r.W;
-						h.b = hBias; 
-						log.info("Went over too many times....reverting to last known good state");
-						break;
-
-					}
-
-				}
-				else if(entropy == bestLoss) {
-					if(numTimesOver == null)
-						numTimesOver = 1;
-					else
-						numTimesOver++;
-					if(numTimesOver >= 30) {
-						log.info("Breaking early; no changes for a while");
-						break;
-					}
-				}
-				else if(entropy < bestLoss){
-					w = r.W.dup();
-					hBias = r.hBias.dup();
-					bestLoss = entropy;
-				}
-
-				log.info("Cross entropy for layer " + (i + 1) + " on epoch " + epoch + " is " + entropy);
-			}
-
-			double curr = r.getReConstructionCrossEntropy();
-			if(curr > bestLoss) {
-				log.info("Converged past global minimum; reverting");
-				r.W = w.dup();
-				r.hBias = hBias.dup();
-			}
+			for(int  epoch = 0; epoch < epochs; epoch++) 
+				this.trainNetwork(r, h, epoch, layerInput, learningRate, new Object[]{k});
 
 		}
 	}
@@ -182,7 +117,9 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		return new RBM(input, nVisible, nHidden, W, hBias, vBias, rng);
+		RBM ret =  new RBM(input, nVisible, nHidden, W, hBias, vBias, rng);
+		super.initializeNetwork(ret);
+		return ret;
 	}
 
 	@Override

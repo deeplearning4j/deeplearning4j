@@ -35,6 +35,12 @@ public class NeuralNetPlotter {
 		loadIntoTmp();
 	}
 
+	
+	public void plot(NeuralNetwork network) {
+		plotWeights(network);
+		plotHbias(network);
+	}
+	
 	public void plotWeights(NeuralNetwork network) {
 		try {
 
@@ -95,12 +101,17 @@ public class NeuralNetPlotter {
 
 			bos.close();
 			Process is = Runtime.getRuntime().exec("python /tmp/plot.py hbias " + filePath);
+			
+			Thread.sleep(10000);
+			is.destroy();
+			
+			
 			log.info("Rendering hbias " + filePath);
 			log.error(IOUtils.readLines(is.getErrorStream()).toString());
 
 			write.deleteOnExit();
 		}catch(Exception e) {
-			throw new IllegalStateException(e);
+			log.warn("Image closed");
 
 		}
 	}

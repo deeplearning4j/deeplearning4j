@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.channels.NetworkChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +21,7 @@ import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.nn.activation.ActivationFunction;
 import com.ccc.deeplearning.nn.activation.Sigmoid;
 import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 import com.ccc.deeplearning.rbm.CRBM;
 import com.ccc.deeplearning.rbm.RBM;
 import com.ccc.deeplearning.util.MatrixUtil;
@@ -54,6 +56,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public ActivationFunction activation = new Sigmoid();
 	public boolean toDecode;
 	public boolean shouldInit = true;
+	public double fanIn = -1;
+	public int renderWeightsEveryNEpochs = -1;
 
 	/*
 	 * Hinton's Practical guide to RBMS:
@@ -89,20 +93,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
-	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng,DoubleMatrix input,DoubleMatrix labels) {
-		this.nIns = n_ins;
-		this.hiddenLayerSizes = hidden_layer_sizes;
+	public BaseMultiLayerNetwork(int nIn, int[] hiddenLayerSizes, int nOuts
+			, int nLayers, RandomGenerator rng,DoubleMatrix input,DoubleMatrix labels) {
+		this.nIns = nIn;
+		this.hiddenLayerSizes = hiddenLayerSizes;
 		this.input = input.dup();
 		this.labels = labels.dup();
 
-		if(hidden_layer_sizes.length != n_layers)
-			throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + n_layers);
+		if(hiddenLayerSizes.length != nLayers)
+			throw new IllegalArgumentException("The number of hidden layer sizes must be equivalent to the nLayers argument which is a value of " + nLayers);
 
-		this.nOuts = n_outs;
-		this.nLayers = n_layers;
+		this.nOuts = nOuts;
+		this.nLayers = nLayers;
 
-		this.sigmoidLayers = new HiddenLayer[n_layers];
-		this.layers = createNetworkLayers(n_layers);
+		this.sigmoidLayers = new HiddenLayer[nLayers];
+		this.layers = createNetworkLayers(nLayers);
 
 		if(rng == null)   
 			this.rng = new MersenneTwister(123);
@@ -116,6 +121,96 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			initializeLayers(input);
 
 
+	}
+
+	protected void trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,DoubleMatrix input,double lr,Object[] params) {
+
+		Double bestLoss = null;
+		Integer numTimesOver = null;
+
+		DoubleMatrix w = network.getW();
+		DoubleMatrix hBias = network.gethBias();
+
+		
+		network.trainTillConvergence(input, lr, params);
+
+		if(network.getRenderEpochs() > 0) {
+			if(epoch % network.getRenderEpochs() == 0) {
+				NeuralNetPlotter plotter = new NeuralNetPlotter();
+				plotter.plot(network);
+			}
+		}
+
+		h.W = network.getW();
+		h.b = network.gethBias();
+		double entropy = network.getReConstructionCrossEntropy();
+
+		bestLoss = entropy;
+		
+		if(Double.isNaN(entropy) || Double.isInfinite(entropy)) {
+			network.setW(w.dup());
+			network.sethBias(hBias.dup());
+			h.W = network.getW();
+			h.b = hBias; 
+			log.info("Went over too many times....reverting to last known good state");
+			
+		}
+		else if(entropy > bestLoss) {
+			if(numTimesOver == null)
+				numTimesOver = 1;
+			else
+				numTimesOver++;
+			if(numTimesOver >= 30) {
+				network.setW(w.dup());
+				network.sethBias(hBias.dup());
+				h.W = network.getW();
+				h.b = hBias; 
+				log.info("Went over too many times....reverting to last known good state");
+				
+
+			}
+
+		}
+		else if(entropy == bestLoss) {
+			if(numTimesOver == null)
+				numTimesOver = 1;
+			else
+				numTimesOver++;
+			if(numTimesOver >= 30) {
+				log.info("Breaking early; no changes for a while");
+				
+			}
+		}
+		else if(entropy < bestLoss){
+			w = network.getW().dup();
+			hBias = network.gethBias().dup();
+			bestLoss = entropy;
+		}
+
+		log.info("Cross entropy for layer " + (epoch + 1) + " on epoch " + epoch + " is " + entropy);
+
+
+		double curr = network.getReConstructionCrossEntropy();
+		if(curr > bestLoss) {
+			log.info("Converged past global minimum; reverting");
+			network.setW(w.dup());
+			network.sethBias(hBias.dup());
+		}
+
+	}
+
+
+	/**
+	 * Returns the -fanIn to fanIn
+	 * coefficient used for initializing the
+	 * weights.
+	 * The default is 1 / nIns
+	 * @return the fan in coefficient
+	 */
+	public double fanIn() {
+		if(this.fanIn < 0)
+			return 1.0 / nIns;
+		return fanIn;
 	}
 
 	private void dimensionCheck() {
@@ -225,6 +320,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		dimensionCheck();
 
+	}
+
+
+	protected void initializeNetwork(NeuralNetwork network) {
+		network.setFanIn(fanIn);
+		network.setRenderEpochs(this.renderWeightsEveryNEpochs);
 	}
 
 
@@ -433,7 +534,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) 
 			input = sigmoidLayers[i].activate(input);
-		
+
 		return (logLayer.predict(input));
 	}
 
@@ -552,7 +653,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	/**
 	 * Creates a layer depending on the index.
 	 * The main reason this matters is for continuous variations such as the {@link CDBN}
-	 * where the first layer needs to be an {@link CRBM} for continuous inputs
+	 * where the first layer needs to be an {@link CRBM} for continuous inputs.
+	 * 
+	 * Please be sure to call super.initializeNetwork
+	 * 
+	 * to handle the passing of baseline parameters such as fanin
+	 * and rendering.
+	 * 
 	 * @param input the input to the layer
 	 * @param nVisible the number of visible inputs
 	 * @param nHidden the number of hidden units
@@ -631,6 +738,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private DoubleMatrix input,labels;
 		private ActivationFunction activation;
 		private boolean decode = false;
+		private double fanIn = -1;
+		private int renderWeithsEveryNEpochs = -1;
+
+		public Builder<E> renderWeights(int everyN) {
+			this.renderWeithsEveryNEpochs = everyN;
+			return this;
+		}
+
+		public Builder<E> withFanIn(Double fanIn) {
+			this.fanIn = fanIn;
+			return this;
+		}
+
 
 		public Builder<E> withActivation(ActivationFunction activation) {
 			this.activation = activation;
@@ -703,6 +823,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
 				ret.layers = ret.createNetworkLayers(ret.nLayers);
 				ret.toDecode = this.decode;
+				ret.input = this.input;
+				ret.labels = this.labels;
+				ret.fanIn = this.fanIn;
+				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
 				if(activation != null)
 					ret.activation = activation;
 				return ret;

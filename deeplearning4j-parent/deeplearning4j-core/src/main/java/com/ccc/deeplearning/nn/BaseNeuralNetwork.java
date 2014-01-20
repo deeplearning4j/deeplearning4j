@@ -60,7 +60,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double l2 = 0.1;
 	public transient NeuralNetworkOptimizer optimizer;
 	public int renderWeightsEveryNumEpochs = -1;
-	
+	public double fanIn = -1;
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -85,7 +85,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			this.rng = rng;
 
 		if(W == null) {
-			double a = 1.0 / (double) nVisible;
+			double a = fanIn();
 			/*
 			 * Initialize based on the number of visible units..
 			 * The lower bound is called the fan in
@@ -106,11 +106,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
-			for(int i = 0; i < this.W.rows; i++) {
-				for(int j = 0; j < this.W.columns; j++) 
-					this.W.put(i,j,u.sample());
+			for(int i = 0; i < this.W.rows; i++) 
+				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
 
-			}
 
 
 		}
@@ -138,14 +136,36 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+
+
+	@Override
+	public void setRenderEpochs(int renderEpochs) {
+		this.renderWeightsEveryNumEpochs = renderEpochs;
+
+	}
+	@Override
+	public int getRenderEpochs() {
+		return renderWeightsEveryNumEpochs;
+	}
+
+	@Override
+	public double fanIn() {
+		return fanIn < 0 ? 1 / nVisible : fanIn;
+	}
+
+	@Override
+	public void setFanIn(double fanIn) {
+		this.fanIn = fanIn;
+	}
+
 	public void regularize() {
 		this.W.addi(W.mul(0.01));
 		this.W.divi(this.momentum);
-		
+
 	}
-	
+
 	public void jostleWeighMatrix() {
-		double a = 1.0 / (double) nVisible;
+		double a = fanIn();
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in
@@ -165,17 +185,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
 
 		DoubleMatrix W = DoubleMatrix.zeros(nVisible,nHidden);
+		for(int i = 0; i < this.W.rows; i++) 
+			W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
 
-		for(int i = 0; i < this.W.rows; i++) {
-			for(int j = 0; j < this.W.columns; j++) 
-				W.put(i,j,u.sample());
 
-		}
-		
-		this.W.subi(W);
-		
+
+
 	}
-	
+
 	@Override
 	public NeuralNetwork transpose() {
 		try {
@@ -186,15 +203,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnHidden());
 			ret.setW(W.transpose());
 			ret.setRng(getRng());
-			
+
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} 
-		
-		
+
+
 	}
-	
+
 	@Override
 	public NeuralNetwork clone() {
 		try {
@@ -205,15 +222,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnVisible());
 			ret.setW(W.dup());
 			ret.setRng(getRng());
-			
+
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} 
-		
-		
+
+
 	}
-	
+
 	@Override
 	public void merge(NeuralNetwork network,int batchSize) {
 		W.addi(network.getW().mini(W).div(batchSize));
@@ -234,7 +251,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			throw new IllegalArgumentException("Batch size must be at least 1");
 		this.W = W.div(batchSize).mul(1 - momentum).add(W.min(W.mul(l2)));
 	}
-	
+
 	/**
 	 * 
 	 * @param input the input examples
@@ -269,7 +286,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.rng = n.rng;
 		this.sparsity = n.sparsity;
 	}
-	
+
 	/**
 	 * Load (using {@link ObjectInputStream}
 	 * @param is the input stream to load from (usually a file)
@@ -285,7 +302,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
-	
+
 	/**
 	 * Reconstruction error.
 	 * @return reconstruction error
@@ -436,7 +453,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public void setL2(double l2) {
 		this.l2 = l2;
 	}
-	
+
 	/**
 	 * Write this to an object output stream
 	 * @param os the output stream to write to
@@ -449,7 +466,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
 	 * All neural networks are based on this idea of 
 	 * minimizing reconstruction error.
@@ -460,7 +477,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @return the reconstructed input
 	 */
 	public abstract DoubleMatrix reconstruct(DoubleMatrix x);
-	
+
 	/**
 	 * The loss function (cross entropy, reconstruction error,...)
 	 * @return the loss function
@@ -470,7 +487,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double lossFunction() {
 		return lossFunction(null);
 	}
-	
+
 	/**
 	 * Train one iteration of the network
 	 * @param input the input to train on
@@ -478,8 +495,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param params the extra params (k, corruption level,...)
 	 */
 	public abstract void train(DoubleMatrix input,double lr,Object[] params);
-	
-	
+
+
 
 
 	public static class Builder<E extends BaseNeuralNetwork> {
@@ -496,19 +513,25 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double l2 = 0.01;
 		private double momentum = 0.1;
 		private int renderWeightsEveryNumEpochs = -1;
-		
-		
+		private double fanIn;
+
+
+		public Builder<E> fanIn(double fanIn) {
+			this.fanIn = fanIn;
+			return this;
+		}
+
 		public Builder<E> withL2(double l2) {
 			this.l2 = l2;
 			return this;
 		}
-		
-		
+
+
 		public Builder<E> renderWeights(int numEpochs) {
 			this.renderWeightsEveryNumEpochs = numEpochs;
 			return this;
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		public E buildEmpty() {
 			try {
@@ -517,14 +540,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				throw new RuntimeException(e);
 			}
 		}
-		
-		
-		
+
+
+
 		public Builder<E> withClazz(Class<? extends BaseNeuralNetwork> clazz) {
 			this.clazz = clazz;
 			return this;
 		}
-		
+
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
 			return this;
@@ -533,7 +556,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			this.momentum = momentum;
 			return this;
 		}
-		
+
 		public Builder<E> withInput(DoubleMatrix input) {
 			this.input = input;
 			return this;
@@ -594,6 +617,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);
+						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
@@ -617,7 +641,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen);
 						ret.sparsity = this.sparsity;
+						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.l2 = this.l2;
+						ret.fanIn = this.fanIn;
 						ret.momentum = this.momentum;
 						return ret;
 					}catch(Exception e) {

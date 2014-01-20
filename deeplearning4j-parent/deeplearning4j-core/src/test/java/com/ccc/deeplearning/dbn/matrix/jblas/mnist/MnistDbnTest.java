@@ -26,19 +26,20 @@ public class MnistDbnTest extends DeepLearningTest {
 	@Test
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(8000);
+		fetcher.fetch(100);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {1000,1000,2000};
+		int[] layerSizes = {1000,1000,1000};
 		double lr = 0.1;
 		
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(100.0)
+				.renderWeights(100)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 	
-		dbn.pretrain(first.getFirst(),1, lr, 50);
-		dbn.finetune(first.getSecond(),lr, 50);
+		dbn.pretrain(first.getFirst(),1, lr, 1000);
+		dbn.finetune(first.getSecond(),lr, 1000);
 		
 		
 		DoubleMatrix predicted = dbn.predict(first.getFirst());
