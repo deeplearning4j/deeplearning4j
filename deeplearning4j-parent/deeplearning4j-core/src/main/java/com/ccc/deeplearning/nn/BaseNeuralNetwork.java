@@ -30,6 +30,9 @@ import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
  */
 public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
+	
+
+
 	private static final long serialVersionUID = -7074102204433996574L;
 	/* Number of visible inputs */
 	public int nVisible;
@@ -66,7 +69,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public transient NeuralNetworkOptimizer optimizer;
 	public int renderWeightsEveryNumEpochs = -1;
 	public double fanIn = -1;
-
+	public boolean useRegularization = true;
+	
 	public BaseNeuralNetwork() {}
 	/**
 	 * 
@@ -372,7 +376,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				.add(oneMinus(input)
 						.mul(log(oneMinus(sigV))));
 		double l = inner.length;
-		return - (inner.rowSums().mean() / l + l2RegularizedCoefficient());
+		if(this.useRegularization) {
+			double normalized = l + l2RegularizedCoefficient();
+			return - inner.rowSums().mean() / normalized;
+		}
+		
+		return - inner.rowSums().mean();
 	}
 
 
@@ -538,6 +547,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public abstract double lossFunction(Object[] params);
 
+	
 	public double lossFunction() {
 		return lossFunction(null);
 	}
@@ -550,6 +560,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public abstract void train(DoubleMatrix input,double lr,Object[] params);
 
+	@Override
+	public double squaredLoss() {
+		DoubleMatrix reconstructed = reconstruct(input);
+		double loss = MatrixFunctions.powi(reconstructed.sub(input), 2).sum() / input.rows;
+		if(this.useRegularization) {
+			loss += 0.5 * l2 * MatrixFunctions.pow(W,2).sum();
+		}
+		
+		return -loss;
+	}
 
 
 
@@ -568,7 +588,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double momentum = 0.1;
 		private int renderWeightsEveryNumEpochs = -1;
 		private double fanIn = 0.1;
-
+		private boolean useRegularization = true;
+		
+		
+		public Builder<E> useRegularization(boolean useRegularization) {
+			this.useRegularization = useRegularization;
+			return this;
+		}
 
 		public Builder<E> fanIn(double fanIn) {
 			this.fanIn = fanIn;
@@ -672,6 +698,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen,fanIn);
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
+						ret.useRegularization = this.useRegularization;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
@@ -697,6 +724,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.l2 = this.l2;
 						ret.momentum = this.momentum;
+						ret.useRegularization = this.useRegularization;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
