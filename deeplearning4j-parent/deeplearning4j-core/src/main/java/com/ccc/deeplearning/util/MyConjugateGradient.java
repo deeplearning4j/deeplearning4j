@@ -55,6 +55,8 @@ public class MyConjugateGradient implements Optimizer {
 		this.initialStepSize = initialStepSize;
 		this.optimizable = function;
 		this.lineMaximizer = new BackTrackLineSearch(function);
+		BackTrackLineSearch l = (BackTrackLineSearch) this.lineMaximizer;
+		l.setAbsTolx(eps);
 		// Alternative:
 		//this.lineMaximizer = new GradientBracketLineOptimizer (function);
 

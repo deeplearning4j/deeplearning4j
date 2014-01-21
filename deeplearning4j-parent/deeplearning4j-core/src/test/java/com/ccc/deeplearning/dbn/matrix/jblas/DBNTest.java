@@ -18,6 +18,7 @@ import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.eval.Evaluation;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 import com.ccc.deeplearning.rbm.CRBM;
 
 
@@ -53,39 +54,47 @@ public class DBNTest  extends DeepLearningTest {
 		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 200;
 
-		DBN dbn = new DBN.Builder()
-		.hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
-		.numberOfOutPuts(nOuts).withRng(rng).build();
-		
+		DBN dbn = new DBN.Builder().useRegularization(true).renderWeights(1)
+				.hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
+				.numberOfOutPuts(nOuts).withRng(rng).build();
+		NeuralNetPlotter plotter = new NeuralNetPlotter();
+		//plotter.plot(dbn.layers[0]);
+
 		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
+
+		plotter.plot(dbn.layers[0]);
+
 		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
+
+
 
 		DoubleMatrix testX = new DoubleMatrix(new double[][]
 				{{1, 1, 0, 0, 0, 0},
 				{0, 0, 0, 1, 1, 0},
 				{1, 1, 1, 1, 1, 0}});
 
-		
+
 		DoubleMatrix testY = new DoubleMatrix(new double[][] {
 				{1,0},
 				{1,0},
 				{0,1}
 		});
 
-		DoubleMatrix predict = dbn.predict(testX);
+		DoubleMatrix predict = dbn.predict(x);
 		log.info(predict.toString());
-		
+
 		Evaluation eval = new Evaluation();
-		eval.eval(testY, predict);
+		eval.eval(y, predict);
 		log.info(eval.stats());
-		
-		
-	
-	
-		
+
+
+
+
+
 	}
 
 	@Test
+	@Ignore
 	public void testCDBN() {
 		DoubleMatrix x = new DoubleMatrix( new double[][] 
 				{{0.4, 0.5, 0.5, 0.,  0.,  0.},
@@ -105,28 +114,28 @@ public class DBNTest  extends DeepLearningTest {
 
 		RandomGenerator rng = new MersenneTwister(123);
 
-		double preTrainLr = 0.1;
+		double preTrainLr = 0.01;
 		int preTrainEpochs = 1000;
 		int k = 1;
 		int nIns = 6,nOuts = 2;
 		int[] hiddenLayerSizes = new int[] {5,5};
-		double fineTuneLr = 0.1;
+		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 200;
 
 		CDBN dbn = new CDBN(nIns, hiddenLayerSizes, nOuts, 2, rng, x, y);
 		dbn.pretrain(k, preTrainLr, preTrainEpochs);
 		dbn.finetune(fineTuneLr, fineTuneEpochs);
 
-		
+
 		DoubleMatrix testX = new DoubleMatrix(new double[][]
-                {{0.5, 0.5, 0., 0., 0., 0.},
-                {0., 0., 0., 0.5, 0.5, 0.},
-                {0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
-		
+				{{0.5, 0.5, 0., 0., 0., 0.},
+				{0., 0., 0., 0.5, 0.5, 0.},
+				{0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
+
 		log.info(dbn.predict(testX).toString());
 
 	}
-	
 
-	
+
+
 }

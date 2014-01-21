@@ -99,34 +99,8 @@ public class DBN extends BaseMultiLayerNetwork {
 				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
 			log.info("Training on layer " + (i + 1));
 			
-			Integer numTimesOver = 1;
-			Double bestLoss = Double.POSITIVE_INFINITY;
-			
-			DoubleMatrix bestWeights = layers[i].getW();
-			DoubleMatrix bestHBias = layers[i].gethBias();
-			DoubleMatrix bestVbias = layers[i].getvBias();
-			
-			for(int  epoch = 0; epoch < epochs; epoch++)  {
-				boolean trainedProperly = this.trainNetwork(layers[i],sigmoidLayers[i], epoch, i, layerInput, learningRate,bestLoss,new Object[]{k});
-				
-				if(!trainedProperly)
-					numTimesOver++;
-				else {
-					bestLoss = layers[i].getReConstructionCrossEntropy();
-					bestWeights = layers[i].getW();
-					bestHBias = layers[i].gethBias();
-					bestVbias = layers[i].getvBias();
-					
-				}
-				
-				if(numTimesOver >= 30) {
-					log.info("Breaking early; " + numTimesOver);
-					layers[i].setW(bestWeights);
-					layers[i].sethBias(bestHBias);
-					layers[i].setvBias(bestVbias);
-					break;
-				}
-			}
+			layers[i].trainTillConvergence(layerInput, learningRate, new Object[]{k});
+
 
 		}
 	}
@@ -141,10 +115,10 @@ public class DBN extends BaseMultiLayerNetwork {
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		RBM ret = new RBM.Builder().useRegularization(useRegularization)
-		.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
-		.withInput(input).withVisibleBias(vBias).withHBias(hBias)
-		.withRandom(rng).renderWeights(renderWeightsEveryNEpochs)
-		.fanIn(fanIn).build();
+				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
+				.withInput(input).withVisibleBias(vBias).withHBias(hBias)
+				.withRandom(rng).renderWeights(renderWeightsEveryNEpochs)
+				.fanIn(fanIn).build();
 		return ret;
 	}
 

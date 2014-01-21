@@ -65,6 +65,8 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	
 	public double getReConstructionCrossEntropy();
 	
+	public void train(DoubleMatrix input,double lr,Object[] params);
+	
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
 	/**
 	 * Performs a network merge in the form of
