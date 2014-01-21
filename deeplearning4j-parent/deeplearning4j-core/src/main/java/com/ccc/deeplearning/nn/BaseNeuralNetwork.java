@@ -122,7 +122,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return (MatrixFunctions.pow(getW(),2).sum()/ 2.0)  * l2;
 	}
 	protected void initWeights()  {
-
+		
+		if(this.nVisible < 1)
+			throw new IllegalStateException("Number of visible can not be less than 1");
+		if(this.nHidden < 1)
+			throw new IllegalStateException("Number of hidden can not be less than 1");
+		
+		
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in

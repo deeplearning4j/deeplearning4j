@@ -49,7 +49,7 @@ public class MnistSdaTest extends DeepLearningTest {
 		DoubleMatrix data1 = first.getFirst().dup();
 		DoubleMatrix outcomes = first.getSecond().dup();
 		do {
-			sda.pretrain(first.getFirst(), lr, 0.3, 1000);
+			sda.pretrain(data1, lr, 0.3, 1000);
 			sda.finetune(outcomes, lr,100);
 
 			Evaluation eval = new Evaluation();

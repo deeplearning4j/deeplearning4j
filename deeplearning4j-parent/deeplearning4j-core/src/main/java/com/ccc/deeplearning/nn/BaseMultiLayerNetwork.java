@@ -269,7 +269,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
 		this.input = input.dup();
-		DoubleMatrix layer_input = input;
+		DoubleMatrix layerInput = input;
 		int inputSize;
 
 		// construct multi-layer
@@ -281,13 +281,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			if(i == 0) {
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
 				sigmoidLayers[i].activationFunction = activation;
 			}
 			else {
-				layer_input = sigmoidLayers[i - 1].sample_h_given_v();
+				layerInput = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layer_input);
+				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
 				sigmoidLayers[i].activationFunction = activation;
 
 
@@ -295,11 +295,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			// construct dA_layer
 			//if(shouldInit)
-			this.layers[i] = createLayer(layer_input,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
+			this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
 		}
 
 		// layer for output using LogisticRegression
-		this.logLayer = new LogisticRegression(layer_input, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
+		this.logLayer = new LogisticRegression(layerInput, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
 
 
 
