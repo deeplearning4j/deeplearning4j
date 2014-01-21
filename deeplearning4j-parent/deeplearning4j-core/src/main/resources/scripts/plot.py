@@ -22,7 +22,18 @@ def render_hbias(path):
     print hMean
     image = Image.fromarray(hMean * 256).show()
     
-
+def render_filter(path):
+    matrix = from_file(path)
+    # Initialize background to dark gray
+    tiled = ones((11*10, 11*10), dtype='ieruint8') * 51
+    for row in xrange(nRows):
+         for col in xrange(nCols):
+            patch = X[row*nCols + col].reshape((10,10))
+            normPatch = ((patch - patch.min()) /
+            (patch.max()-patch.min()+1e-6))
+            tiled[row*11:row*11+10, col*11:col*11+10] = \
+            normPatch * 255
+    Image.fromarray(tiled).show()
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:

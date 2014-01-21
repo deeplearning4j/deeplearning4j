@@ -100,13 +100,31 @@ public class DBN extends BaseMultiLayerNetwork {
 			log.info("Training on layer " + (i + 1));
 			
 			Integer numTimesOver = 1;
-			Double bestLoss = layers[i].getReConstructionCrossEntropy();
+			Double bestLoss = Double.POSITIVE_INFINITY;
+			
+			DoubleMatrix bestWeights = layers[i].getW();
+			DoubleMatrix bestHBias = layers[i].gethBias();
+			DoubleMatrix bestVbias = layers[i].getvBias();
+			
 			for(int  epoch = 0; epoch < epochs; epoch++)  {
-				boolean trainedProperly = this.trainNetwork(layers[i],sigmoidLayers[i], epoch, layerInput, learningRate,bestLoss,new Object[]{k});
+				boolean trainedProperly = this.trainNetwork(layers[i],sigmoidLayers[i], epoch, i, layerInput, learningRate,bestLoss,new Object[]{k});
+				
 				if(!trainedProperly)
 					numTimesOver++;
+				else {
+					bestLoss = layers[i].getReConstructionCrossEntropy();
+					bestWeights = layers[i].getW();
+					bestHBias = layers[i].gethBias();
+					bestVbias = layers[i].getvBias();
+					
+				}
+				
 				if(numTimesOver >= 30) {
 					log.info("Breaking early; " + numTimesOver);
+					layers[i].setW(bestWeights);
+					layers[i].sethBias(bestHBias);
+					layers[i].setvBias(bestVbias);
+					break;
 				}
 			}
 

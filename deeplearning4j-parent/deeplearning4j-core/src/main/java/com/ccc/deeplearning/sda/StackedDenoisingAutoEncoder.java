@@ -66,7 +66,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 			Integer numTimesOver = 1;
 			Double bestLoss = layers[i].getReConstructionCrossEntropy();
 			for(int  epoch = 0; epoch < epochs; epoch++)  {
-				boolean trainedProperly = this.trainNetwork(this.layers[i], this.sigmoidLayers[i], epoch, layerInput, lr, bestLoss, new Object[]{corruptionLevel});
+				boolean trainedProperly = this.trainNetwork(this.layers[i], this.sigmoidLayers[i], epoch, i,layerInput, lr, bestLoss, new Object[]{corruptionLevel});
 
 				if(!trainedProperly)
 					numTimesOver++;

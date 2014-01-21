@@ -9,6 +9,7 @@ import java.io.Serializable;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.sda.DenoisingAutoEncoderOptimizer;
@@ -77,9 +78,11 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix corrupted = getCorruptedInput(input, corruptionLevel);
 		DoubleMatrix y = getHiddenValues(corrupted);
 		DoubleMatrix z = getReconstructedInput(y);
+		double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
 		return - input.mul(log(z)).add(
 				oneMinus(input).mul(log(oneMinus(z)))).
-	    columnSums().mean();
+	    columnSums().mean() + reg;
 	}
 
 
@@ -129,8 +132,9 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias = L_h1;
 		
 		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
-		
-		this.W.addi(L_W).mul(lr).mul(0.01);
+		L_W.subi(W.muli(l2));
+
+		this.W.addi(L_W).mul(lr);
 		
 		
 		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
