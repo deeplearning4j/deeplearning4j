@@ -8,10 +8,12 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
+import com.ccc.deeplearning.util.MyConjugateGradient;
 /**
  * Performs basic beam search based on the network's loss function
  * @author Adam Gibson
@@ -30,21 +32,18 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected BaseNeuralNetwork network;
 	protected double lr;
 	protected Object[] extraParams;
-	protected double tolerance = 0.000001;
+	protected double tolerance = 0.00000001;
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient Optimizer opt;
+	protected transient MyConjugateGradient opt;
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new com.ccc.deeplearning.util.MyConjugateGradient(this);
-	        
-	        try {
-	            opt.optimize();
-	        } catch (Throwable e) {
-	            log.error("", e);
-	        }
+			opt = new MyConjugateGradient(this);
+		opt.setTolerance(tolerance);
+		opt.optimize();
+
 
 	}
 
@@ -67,14 +66,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		 * as a solid line for the optimizer, we get the following:
 		 * 
 		 */
-
-		int idx = 0;
-		for(int i = 0; i < network.W.length; i++)
-			buffer[idx++] = network.W.get(i);
-		for(int i = 0; i < network.vBias.length; i++)
-			buffer[idx++] = network.vBias.get(i);
-		for(int i =0; i < network.hBias.length; i++)
-			buffer[idx++] = network.hBias.get(i);
+		for(int i = 0; i < buffer.length; i++)
+			buffer[i] = getParameter(i);
 	}
 
 
@@ -82,15 +75,19 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	public double getParameter(int index) {
 		//beyond weight matrix
 		if(index >= network.W.length) {
+			int i = getAdjustedIndex(index);
 			//beyond visible bias
-			if(index >= network.vBias.length) {
-				return network.hBias.get(index);
+			if(index >= network.vBias.length + network.W.length) {
+				return network.hBias.get(i);
 			}
 			else
-				return network.vBias.get(index);
+				return network.vBias.get(i);
 
 		}
-		return network.W.get(index);
+		else 
+			return network.W.get(index);
+
+
 
 	}
 
@@ -102,14 +99,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		 * as a solid line for the optimizer, we get the following:
 		 * 
 		 */
-
-		int idx = 0;
-		for(int i = 0; i < network.W.length; i++)
-			network.W.put(i,params[idx++]);
-		for(int i = 0; i < network.vBias.length; i++)
-			network.vBias.put(i,params[idx++]);
-		for(int i =0; i < network.hBias.length; i++)
-			network.hBias.put(i,params[idx++]);
+		for(int i = 0; i < params.length; i++)
+			setParameter(i,params[i]);
 
 	}
 
@@ -119,18 +110,36 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		//beyond weight matrix
 		if(index >= network.W.length) {
 			//beyond visible bias
-			if(index >= network.vBias.length) {
-				int i = index - network.hBias.length;
+			if(index >= network.vBias.length + network.W.length)  {
+				int i = getAdjustedIndex(index);
 				network.hBias.put(i, value);
 			}
 			else {
-				int i = index - network.vBias.length;
+				int i = getAdjustedIndex(index);
 				network.vBias.put(i,value);
 
 			}
 
 		}
-		network.W.put(index, value);
+		else {
+			network.W.put(index,value);
+		}
+	}
+
+
+	private int getAdjustedIndex(int index) {
+		int wLength = network.W.length;
+		int vBiasLength = network.vBias.length;
+		if(index < wLength)
+			return index;
+		else if(index >= wLength + vBiasLength) {
+			int hIndex = index - wLength - vBiasLength;
+			return hIndex;
+		}
+		else {
+			int vIndex = index - wLength;
+			return vIndex;
+		}
 	}
 
 
@@ -140,7 +149,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return network.squaredLoss();
+		return -network.getReConstructionCrossEntropy();
 	}
 
 

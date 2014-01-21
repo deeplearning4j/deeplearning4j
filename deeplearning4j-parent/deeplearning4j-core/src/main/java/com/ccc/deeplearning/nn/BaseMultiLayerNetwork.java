@@ -524,7 +524,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(int i = 0; i < nLayers; i++) 
 			input = sigmoidLayers[i].activate(input);
 
-		return (logLayer.predict(input));
+		return logLayer.predict(input);
 	}
 
 

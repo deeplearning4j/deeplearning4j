@@ -16,6 +16,7 @@ import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.util.MyConjugateGradient;
 
 
 /**
@@ -45,26 +46,13 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
-		if(layerInput.rows != labels.rows) {
-			log.info("Unable to train on labels; mismatching labels and rows. Did the layer input get initialized right?");
-			return;
-		}
-
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
-
-		DoubleMatrix w = network.logLayer.W.dup();
-		DoubleMatrix b = network.logLayer.b.dup();
-		Double currLoss = null;
-		Integer numTimesOver = null;
-
-		for(int i = 0; i < epochs; i++) {
-
-			network.logLayer.train(layerInput, labels, lr);
-			lr *= network.learningRateUpdate;
-			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
-
-		}
+		
+		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
+		MyConjugateGradient g = new MyConjugateGradient(opt);
+		g.optimize();
+		
 		network.backProp(lr, epochs);
 
 

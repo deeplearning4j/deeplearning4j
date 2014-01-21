@@ -54,7 +54,7 @@ public class LogisticRegressionGradient implements Serializable {
 		this.wGradient = wGradient;
 	}
 	public DoubleMatrix getbGradient() {
-		return bGradient;
+		return bGradient.columnMeans();
 	}
 	public void setbGradient(DoubleMatrix bGradient) {
 		this.bGradient = bGradient;

@@ -558,6 +558,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param lr the learning rate to train at
 	 * @param params the extra params (k, corruption level,...)
 	 */
+	@Override
 	public abstract void train(DoubleMatrix input,double lr,Object[] params);
 
 	@Override

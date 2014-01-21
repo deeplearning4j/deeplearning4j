@@ -37,11 +37,29 @@ public class RBMMnistTest {
 		da.input = first.getFirst();
 
 		NeuralNetPlotter plotter = new NeuralNetPlotter();
+		da.trainTillConvergence(first.getFirst(), 0.01, new Object[]{1});
+		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
+		plotter.plot(da);
+		for(int j = 0; j < first.numExamples(); j++) {
+			DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
+			DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+			DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
 
+			DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+			d.title = "REAL";
+			d.draw();
+			DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
+			d2.title = "TEST";
+			d2.draw();
+			Thread.sleep(1000);
+			d.frame.dispose();
+			d2.frame.dispose();
 
+		}
+		
 		for(int i = 0; i < 3000; i++) {
 			if(i% 500 == 0 || i == 0) {
-				DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
+				reconstruct = da.reconstruct(first.getFirst());
 				plotter.plot(da);
 				if(i > 0)
 					for(int j = 0; j < first.numExamples(); j++) {
@@ -61,7 +79,7 @@ public class RBMMnistTest {
 
 					}
 			}
-			da.trainTillConvergence(0.01,1,first.getFirst());
+			da.train(first.getFirst(), 0.01, new Object[]{1});
 			log.info("Negative log likelihood " + da.getReConstructionCrossEntropy());
 
 
