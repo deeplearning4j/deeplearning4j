@@ -1,8 +1,6 @@
 package com.ccc.deeplearning.sda.jblas.mnist;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -36,7 +34,7 @@ public class MnistSdaTest extends DeepLearningTest {
 
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {numIns,numIns,numIns};
+		int[] layerSizes = {500,500,500};
 
 
 		double lr = 0.1;
@@ -49,7 +47,7 @@ public class MnistSdaTest extends DeepLearningTest {
 		DoubleMatrix data1 = first.getFirst().dup();
 		DoubleMatrix outcomes = first.getSecond().dup();
 		do {
-			sda.pretrain(data1, lr, 0.3, 1000);
+			sda.pretrain(data1, lr, 0.3, 100);
 			sda.finetune(outcomes, lr,100);
 
 			Evaluation eval = new Evaluation();

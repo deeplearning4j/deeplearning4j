@@ -134,7 +134,7 @@ public class RBM extends BaseNeuralNetwork {
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate).mul(momentum);
 		wGradient.subi(W.muli(l2));
-		
+		wGradient.divi(input.rows);
 		//update rule
 		W.addi(wGradient);
 
