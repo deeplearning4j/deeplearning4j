@@ -38,6 +38,7 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	public double getSparsity();
 	public abstract void setSparsity(double sparsity);
 	
+	
 	public double getL2();
 	public void setL2(double l2);
 	
@@ -53,6 +54,8 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	public double fanIn();
 	public void setFanIn(double fanIn);
 	
+	
+	public double l2RegularizedCoefficient();
 	
 	public double getReConstructionCrossEntropy();
 	

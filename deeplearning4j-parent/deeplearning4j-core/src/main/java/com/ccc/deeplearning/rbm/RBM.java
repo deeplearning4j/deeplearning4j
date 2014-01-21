@@ -28,6 +28,7 @@ import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
  * @author Adam Gibson
  *
  */
+@SuppressWarnings("unused")
 public class RBM extends BaseNeuralNetwork {
 
 	/**
@@ -98,7 +99,6 @@ public class RBM extends BaseNeuralNetwork {
 		 */
 		Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
 		//negative visible means or expected values
-		@SuppressWarnings("unused")
 		DoubleMatrix nvMeans = null;
 		//negative value samples
 		DoubleMatrix nvSamples = null;
@@ -133,6 +133,8 @@ public class RBM extends BaseNeuralNetwork {
 		 * Update gradient parameters
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate).mul(momentum);
+		wGradient.subi(W.muli(l2));
+		
 		//update rule
 		W.addi(wGradient);
 

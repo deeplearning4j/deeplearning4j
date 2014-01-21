@@ -17,18 +17,42 @@ public class DAMnistTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(500,500);
 		MersenneTwister rand = new MersenneTwister(123);
 
 		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(784).numHidden(500).withRandom(rand)
-				.withMomentum(0.9).build();
+				.fanIn(0.5).renderWeights(100).withMomentum(0.9).build();
 
 
 		DataSet first = fetcher.next();
-		//for(int i = 0; i < 1000; i++)
-
-
-		da.trainTillConverge(first.getFirst(), 0.1, 0.8);
+		double error = Double.POSITIVE_INFINITY;
+		
+		DoubleMatrix curr = da.getW();
+		DoubleMatrix hiddenBias = da.gethBias();
+		DoubleMatrix vBias = da.getvBias();
+		int numMistakes = 0;
+		
+		for(int i = 0; i < 3000; i++) {
+			da.trainTillConverge(first.getFirst(), 0.1, 0.6);
+			if(da.negativeLoglikelihood(0.6) < error) {
+				error = da.negativeLoglikelihood(0.6);
+				log.info("New entropy " + error);
+				curr = da.W.dup();
+				hiddenBias = da.hBias.dup();
+				vBias = da.vBias.dup();
+			}
+			else {
+				numMistakes++;
+				if(numMistakes >= 200) {
+					da.W = curr;
+					da.hBias = hiddenBias;
+					da.vBias = vBias;
+					break;
+				}
+				
+			}
+		}
+		
 		log.info(String.valueOf(da.optimizer.getErrors()));
 
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
@@ -44,7 +68,7 @@ public class DAMnistTest {
 			DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
 			d2.title = "TEST";
 			d2.draw();
-			Thread.sleep(10000);
+			Thread.sleep(1000);
 			d.frame.dispose();
 			d2.frame.dispose();
 

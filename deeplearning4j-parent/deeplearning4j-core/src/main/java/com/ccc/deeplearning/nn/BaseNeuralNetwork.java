@@ -12,10 +12,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 
-import org.apache.commons.math3.distribution.UniformRealDistribution;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.dbn.DBN;
@@ -116,9 +117,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
+	@Override
+	public double l2RegularizedCoefficient() {
+		return (MatrixFunctions.pow(getW(),2).sum()/ 2.0)  * l2;
+	}
 	protected void initWeights()  {
 
-		double a = fanIn();
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in
@@ -136,7 +140,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * as this significantly slows the learning.
 		 */
 		if(this.W == null) {
-			UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
+			NormalDistribution u = new NormalDistribution(rng,0,.01,fanIn());
 
 			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
@@ -151,7 +155,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			 * Encourage sparsity.
 			 * See Hinton's Practical guide to RBMs
 			 */
-			this.hBias.subi(4);
+			//this.hBias.subi(4);
 		}
 
 		if(this.vBias == null) {
@@ -226,7 +230,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 	public void jostleWeighMatrix() {
-		double a = fanIn();
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in
@@ -243,7 +246,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
 		 * as this significantly slows the learning.
 		 */
-		UniformRealDistribution u = new UniformRealDistribution(rng,-a,a);
+		NormalDistribution u = new NormalDistribution(rng,0,.01,fanIn());
 
 		DoubleMatrix W = DoubleMatrix.zeros(nVisible,nHidden);
 		for(int i = 0; i < this.W.rows; i++) 
@@ -363,7 +366,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				.add(oneMinus(input)
 						.mul(log(oneMinus(sigV))));
 		double l = inner.length;
-		return - inner.rowSums().mean() / l;
+		return - (inner.rowSums().mean() / l + l2RegularizedCoefficient());
 	}
 
 

@@ -12,6 +12,7 @@ import java.util.List;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public MultiLayerNetworkOptimizer optimizer;
 	public ActivationFunction activation = new Sigmoid();
 	public boolean toDecode;
+	public double l2 = 0.01;
 	public boolean shouldInit = true;
 	public double fanIn = -1;
 	public int renderWeightsEveryNEpochs = -1;
@@ -122,7 +124,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
-	protected boolean trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,DoubleMatrix input,double lr,Double bestLoss,Object[] params) {
+	protected boolean trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,int layer,DoubleMatrix input,double lr,Double bestLoss,Object[] params) {
 
 
 
@@ -169,7 +171,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			bestLoss = entropy;
 		}
 
-		log.info("Cross entropy for layer " + (epoch + 1) + " on epoch " + epoch + " is " + entropy);
+		log.info("Cross entropy for layer " + (layer + 1) + " on epoch " + epoch + " is " + entropy);
 
 
 		double curr = network.getReConstructionCrossEntropy();
@@ -401,13 +403,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(int i = 0; i < gradients.length; i++) {
 			deltaRet.add(new Pair<>(gradients[i],deltas[i]));
 		}
-
-
-
-
-
-
 	}
+
 
 	/**
 	 * Backpropagation of errors for weights
@@ -620,7 +617,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @return the negative log likelihood of the model
 	 */
 	public double negativeLogLikelihood() {
-		return logLayer.negativeLogLikelihood();
+		double ret  = 0.0;
+		for(int i = 0; i < nLayers; i++) {
+			ret += (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0)  * l2;
+		}
+		ret += (MatrixFunctions.pow(logLayer.W,2).sum()/ 2.0)  * l2;
+
+		return ret;
 	}
 
 	/**
@@ -723,7 +726,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private boolean decode = false;
 		private double fanIn = -1;
 		private int renderWeithsEveryNEpochs = -1;
+		private double l2 = 0.01;
 
+
+		public Builder<E> withL2(double l2) {
+			this.l2 = l2;
+			return this;
+		}
 		public Builder<E> renderWeights(int everyN) {
 			this.renderWeithsEveryNEpochs = everyN;
 			return this;
@@ -810,6 +819,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.labels = this.labels;
 				ret.fanIn = this.fanIn;
 				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
+				ret.l2 = l2;
 				if(activation != null)
 					ret.activation = activation;
 				return ret;

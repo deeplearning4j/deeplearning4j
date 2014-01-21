@@ -1,15 +1,17 @@
 package com.ccc.deeplearning.sda;
 
-import static com.ccc.deeplearning.util.MatrixUtil.*;
+import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
 
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
 import com.ccc.deeplearning.da.DenoisingAutoEncoder;
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 
 public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
+
+	
+	private static final long serialVersionUID = 1815627091142129009L;
 
 	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network, double lr,
 			Object[] trainingParams) {
