@@ -49,7 +49,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 			log.info("Unable to train on labels; mismatching labels and rows. Did the layer input get initialized right?");
 			return;
 		}
-		
+
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
 
@@ -62,59 +62,20 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 			network.logLayer.train(layerInput, labels, lr);
 			lr *= network.learningRateUpdate;
-
-			
-			if(currLoss == null)
-				currLoss = network.negativeLogLikelihood();
-
-
-			else {
-				Double loss = network.negativeLogLikelihood();
-				if(loss > currLoss || loss <= 0.01) {
-					if(numTimesOver == null)
-						numTimesOver = 1;
-					else 
-						numTimesOver++;
-					if(numTimesOver >= 5) {
-						log.info("Reverting weights and exiting...");
-						network.logLayer.W = w.dup();
-						network.logLayer.b = b.dup();
-						break;
-					}
-				}
-
-				else if(loss < currLoss) {
-					w = network.logLayer.W.dup();
-					b = network.logLayer.b.dup();
-					currLoss = loss;
-				}
-
-
-
-			}
-
-			
-
-			
 			log.info("Negative log likelihood on epoch " + i + " " + network.negativeLogLikelihood());
-		}
-		
 
-		
-		double curr = network.negativeLogLikelihood();
-		if(curr > currLoss) {
-			network.logLayer.W = w.dup();
-			network.logLayer.b = b.dup();
-			log.info("Reverting to last known good state; converged after global minimum");
-			
 		}
-		
 		network.backProp(lr, epochs);
 
-		
 
-		
+
 	}
+
+
+
+
+
+
 
 
 	@Override

@@ -26,7 +26,8 @@ public class LogisticRegression implements Serializable {
 	public DoubleMatrix input,labels;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
-	public double regTerm = 0.01;
+	public double l2 = 0.01;
+	public boolean useRegularization = true;
 	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 
@@ -56,7 +57,7 @@ public class LogisticRegression implements Serializable {
 		train(x,labels,lr);
 
 	}
-	
+
 	public void merge(LogisticRegression l,int batchSize) {
 		W.addi(l.W.subi(W).div(batchSize));
 		b.addi(l.b.subi(b).div(batchSize));
@@ -68,12 +69,20 @@ public class LogisticRegression implements Serializable {
 	 */
 	public double negativeLogLikelihood() {
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
-		double reg = (2 / regTerm) * MatrixFunctions.pow(this.W,2).sum();
+		if(useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+			return - labels.mul(log(sigAct)).add(
+					oneMinus(labels).mul(
+							log(oneMinus(sigAct))
+							))
+							.columnSums().mean() + reg;
+		}
 		return - labels.mul(log(sigAct)).add(
 				oneMinus(labels).mul(
 						log(oneMinus(sigAct))
-				))
-				.columnSums().mean() + reg;
+						))
+						.columnSums().mean();
+
 	}
 
 	/**
@@ -94,16 +103,26 @@ public class LogisticRegression implements Serializable {
 		this.input = x;
 		this.labels = y;
 
-		//DoubleMatrix regularized = W.transpose().mul(regTerm);
-		DoubleMatrix p_y_given_x = sigmoid(x.mmul(W).addRowVector(b));
-		DoubleMatrix dy = y.sub(p_y_given_x);
+		//DoubleMatrix regularized = W.transpose().mul(l2);
+		LogisticRegressionGradient gradient = getGradient(lr);
 
-		W.addi(x.transpose().mmul(dy).mul(lr));
-		b.addi(dy.columnMeans().mul(lr));
+		W.addi(gradient.getwGradient());
+		b.addi(gradient.getbGradient());
 
 	}
 
 
+	public LogisticRegressionGradient getGradient(double lr) {
+		DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
+		DoubleMatrix dy = labels.sub(p_y_given_x);
+		if(useRegularization)
+			dy.divi(input.rows);
+		DoubleMatrix wGradient = input.transpose().mmul(dy).mul(lr);
+		DoubleMatrix bGradient = dy;
+		return new LogisticRegressionGradient(wGradient,bGradient);
+		
+		
+	}
 
 
 
@@ -152,6 +171,8 @@ public class LogisticRegression implements Serializable {
 
 		public LogisticRegression build() {
 			ret = new LogisticRegression(input, nIn, nOut);
+			ret.W = W;
+			ret.b = b;
 			return ret;
 		}
 

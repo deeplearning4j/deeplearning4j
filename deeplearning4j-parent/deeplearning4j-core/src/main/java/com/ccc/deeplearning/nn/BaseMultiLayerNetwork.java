@@ -59,7 +59,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public boolean shouldInit = true;
 	public double fanIn = -1;
 	public int renderWeightsEveryNEpochs = -1;
-
+	public boolean useRegularization = true;
+	
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -300,7 +301,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		// layer for output using LogisticRegression
 		this.logLayer = new LogisticRegression(layerInput, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
-
+		this.logLayer.useRegularization = this.useRegularization;
+		this.logLayer.l2 = this.l2;
 
 
 		dimensionCheck();
@@ -458,8 +460,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			}
 
-			if(sse < errorThreshold )
-				break;
+
 			if(i % 10 == 0 || i == 0) {
 				log.info("SSE on epoch " + i + " is  " + sse);
 				log.info("Negative log likelihood is " + this.negativeLogLikelihood());
@@ -467,9 +468,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			for(int l = 0; l < nLayers; l++) {
 				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
+				add.divi(input.rows);
+				if(useRegularization) {
+					add.muli(layers[l].getW().mul(l2));
+				}
+				
+				
 				layers[l].setW(layers[l].getW().sub(add.mul(lr)));
 				sigmoidLayers[l].W = layers[l].getW();
 				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+				deltaColumnSums.divi(input.rows);
+				
 				layers[l].gethBias().subi(deltaColumnSums.mul(lr));
 				sigmoidLayers[l].b = layers[l].gethBias();
 			}
@@ -727,7 +736,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private double fanIn = -1;
 		private int renderWeithsEveryNEpochs = -1;
 		private double l2 = 0.01;
-
+		private boolean useRegularization = true;
+		
+		public Builder<E> useRegularization(boolean useRegularization) {
+			this.useRegularization = useRegularization;
+			return this;
+		}
 
 		public Builder<E> withL2(double l2) {
 			this.l2 = l2;
@@ -820,6 +834,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.fanIn = this.fanIn;
 				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
 				ret.l2 = l2;
+				ret.useRegularization = useRegularization;
 				if(activation != null)
 					ret.activation = activation;
 				return ret;

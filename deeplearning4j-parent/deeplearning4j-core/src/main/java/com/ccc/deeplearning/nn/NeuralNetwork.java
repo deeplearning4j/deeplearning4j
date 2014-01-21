@@ -35,9 +35,15 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 
 	public abstract void setInput(DoubleMatrix input);
 	
+	
+	public double squaredLoss();
+	
+	
 	public double getSparsity();
 	public abstract void setSparsity(double sparsity);
 	
+	
+	public NeuralNetworkGradient getGradient(Object[] params);
 	
 	public double getL2();
 	public void setL2(double l2);

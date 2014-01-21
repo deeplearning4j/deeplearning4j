@@ -10,6 +10,7 @@ import org.jblas.DoubleMatrix;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.NeuralNetworkGradient;
 import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 
 
@@ -80,7 +81,18 @@ public class RBM extends BaseNeuralNetwork {
 	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
+		NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate});
+		W.addi(gradient.getwGradient());
+		hBias.addi(gradient.gethBiasGradient());
+		vBias.addi(gradient.getvBiasGradient());
+		
+	}
 
+
+	@Override
+	public NeuralNetworkGradient getGradient(Object[] params) {
+		int k = (int) params[0];
+		double learningRate = (double) params[1];
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
@@ -133,23 +145,20 @@ public class RBM extends BaseNeuralNetwork {
 		 * Update gradient parameters
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate).mul(momentum);
-		wGradient.subi(W.muli(l2));
+		if(useRegularization) 
+			wGradient.subi(W.muli(l2));
+		
+		
 		wGradient.divi(input.rows);
-		//update rule
-		W.addi(wGradient);
 
-		regularizeWeights(input.rows, learningRate);
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0).mul(learningRate);
-		vBias.addi(vBiasGradient);
 
 
 		//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
 		DoubleMatrix hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
-		hBias.addi(hBiasGradient);
+		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 	}
-
-
 
 
 
@@ -245,5 +254,6 @@ public class RBM extends BaseNeuralNetwork {
 		contrastiveDivergence(lr, k, input);
 	}
 
+	
 
 }

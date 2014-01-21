@@ -8,10 +8,7 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.ConjugateGradient;
-import cc.mallet.optimize.InvalidOptimizableException;
 import cc.mallet.optimize.Optimizable;
-import cc.mallet.optimize.OptimizationException;
 import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
@@ -40,7 +37,14 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected transient Optimizer opt;
 
 	public void train(DoubleMatrix x) {
-		network.train(x, lr, extraParams);
+		if(opt == null)
+			opt = new com.ccc.deeplearning.util.MyConjugateGradient(this);
+	        
+	        try {
+	            opt.optimize();
+	        } catch (Throwable e) {
+	            log.error("", e);
+	        }
 
 	}
 
@@ -136,7 +140,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return network.lossFunction(extraParams);
+		return network.squaredLoss();
 	}
 
 
