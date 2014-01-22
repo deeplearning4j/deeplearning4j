@@ -8,18 +8,20 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.LimitedMemoryBFGS;
 import cc.mallet.optimize.Optimizable;
-import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 import com.ccc.deeplearning.util.MyConjugateGradient;
 /**
  * Performs basic beam search based on the network's loss function
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,Serializable {
+public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,Serializable,NeuralNetEpochListener {
+
+	
+
 
 	public NeuralNetworkOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
 		this.network = network;
@@ -40,13 +42,21 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new MyConjugateGradient(this);
+			opt = new MyConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
-		opt.optimize();
+		opt.setMaxIterations(10000);
+		opt.optimize(100);
 
 
 	}
-
+	@Override
+	public void epochDone(int epoch) {
+		int plotEpochs = network.getRenderEpochs();
+		if(epoch % plotEpochs == 0 || epoch == 0) {
+			NeuralNetPlotter plotter = new NeuralNetPlotter();
+			plotter.plot(network);
+		}
+	}
 
 	public List<Double> getErrors() {
 		return errors;

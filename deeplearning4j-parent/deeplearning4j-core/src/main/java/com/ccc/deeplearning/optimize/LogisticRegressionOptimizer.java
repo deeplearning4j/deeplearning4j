@@ -9,6 +9,10 @@ import cc.mallet.optimize.Optimizable;
 
 public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5229426347154854746L;
 	private LogisticRegression logReg;
 	private double lr;
 	
@@ -71,7 +75,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public double getValue() {
-		return logReg.negativeLogLikelihood();
+		return -logReg.negativeLogLikelihood();
 	}
 
 

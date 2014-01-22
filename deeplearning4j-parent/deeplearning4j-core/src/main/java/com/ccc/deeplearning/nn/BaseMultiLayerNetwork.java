@@ -60,7 +60,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public double fanIn = -1;
 	public int renderWeightsEveryNEpochs = -1;
 	public boolean useRegularization = true;
-	
+
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -294,9 +294,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			}
 
-			// construct dA_layer
-			//if(shouldInit)
 			this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
+			
 		}
 
 		// layer for output using LogisticRegression
@@ -414,57 +413,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param epochs  the number of epochs to iterate (this is already called in finetune)
 	 */
 	public void backProp(double lr,int epochs) {
-		double errorThreshold = 0.0001;
-		Double lastEntropy = null;
-		NeuralNetwork[] copies = new NeuralNetwork[this.layers.length];
-		LogisticRegression reg = this.logLayer;
-		double numMistakes = 0;
-
-		for(int i = 0; i < copies.length; i++) {
-			copies[i] = layers[i].clone();
-		}
-
-
-
-
-
-
 		for(int i = 0; i < epochs; i++) {
 			List<DoubleMatrix> activations = feedForward();
 
 			//precompute deltas
 			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
 			computeDeltas(activations, deltas);
-			double sse = this.negativeLogLikelihood();
-			if(lastEntropy == null)
-				lastEntropy = sse;
-			else if(sse < lastEntropy) {
-				lastEntropy = sse;
-				copies = new NeuralNetwork[this.layers.length];
-				reg = this.logLayer;
-				for(int j = 0; j < copies.length; j++) {
-					copies[j] = layers[j].clone();
-				}
 
-			}
-			else if(sse > lastEntropy || sse == lastEntropy || Double.isNaN(sse) || Double.isInfinite(sse)) {
-				numMistakes++;
-				if(numMistakes >= 30) {
-					this.logLayer = reg;
-					this.layers = copies;
-					log.info("Entropy went up; restoring from last good state");
-					break;
-				}
-
-
-
-			}
-
-
-			if(i % 10 == 0 || i == 0) {
-				log.info("SSE on epoch " + i + " is  " + sse);
-				log.info("Negative log likelihood is " + this.negativeLogLikelihood());
-			}
 
 			for(int l = 0; l < nLayers; l++) {
 				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
@@ -472,13 +427,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				if(useRegularization) {
 					add.muli(layers[l].getW().mul(l2));
 				}
-				
-				
+
+
 				layers[l].setW(layers[l].getW().sub(add.mul(lr)));
 				sigmoidLayers[l].W = layers[l].getW();
 				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
 				deltaColumnSums.divi(input.rows);
-				
+
 				layers[l].gethBias().subi(deltaColumnSums.mul(lr));
 				sigmoidLayers[l].b = layers[l].gethBias();
 			}
@@ -737,7 +692,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private int renderWeithsEveryNEpochs = -1;
 		private double l2 = 0.01;
 		private boolean useRegularization = true;
-		
+
 		public Builder<E> useRegularization(boolean useRegularization) {
 			this.useRegularization = useRegularization;
 			return this;
