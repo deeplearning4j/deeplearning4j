@@ -23,18 +23,18 @@ public class MnistDbnTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException, InterruptedException {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(4,4);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {400,400,400};
-		double lr = 0.01;
+		int[] layerSizes = {600,600,600};
+		double lr = 0.001;
 
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(0.022)
-				.renderWeights(100)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(0.1)
+				.renderWeights(1000)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
-
+		
 		do  {
 			dbn.pretrain(first.getFirst(),1, lr, 2000);
 			dbn.finetune(first.getSecond(),lr, 2000);

@@ -13,6 +13,8 @@ package com.ccc.deeplearning.util;
 
 import java.util.logging.*;
 
+import com.ccc.deeplearning.optimize.NeuralNetEpochListener;
+
 import cc.mallet.optimize.BackTrackLineSearch;
 import cc.mallet.optimize.GradientBracketLineOptimizer;
 import cc.mallet.optimize.LineOptimizer;
@@ -45,6 +47,7 @@ public class MyConjugateGradient implements Optimizer {
 	double gradientTolerance = 0.001;
 	int maxIterations = 1000;
 	private String myName = "";
+	private NeuralNetEpochListener listener;
 
 	// "eps" is a small number to recitify the special case of converging
 	// to exactly zero function value
@@ -62,9 +65,23 @@ public class MyConjugateGradient implements Optimizer {
 
 	}
 
+	public MyConjugateGradient(Optimizable.ByGradientValue function,NeuralNetEpochListener listener) {
+		this(function, 0.01);
+		this.listener = listener;
+
+	}
+
+	public MyConjugateGradient(Optimizable.ByGradientValue function, double initialStepSize,NeuralNetEpochListener listener) {
+		this(function,initialStepSize);
+		this.listener = listener;
+
+
+	}
+
 	public MyConjugateGradient(Optimizable.ByGradientValue function) {
 		this(function, 0.01);
 	}
+
 
 	public Optimizable getOptimizable() {
 		return this.optimizable;
@@ -128,6 +145,9 @@ public class MyConjugateGradient implements Optimizer {
 		long curr = 0;
 		for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 			curr = System.currentTimeMillis();
+			if(listener != null)
+				listener.epochDone(iterationCount);
+
 			logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
 					+ (curr - last));
 			last = curr;
@@ -202,5 +222,13 @@ public class MyConjugateGradient implements Optimizer {
 
 	public void reset() {
 		xi = null;
+	}
+
+	public int getMaxIterations() {
+		return maxIterations;
+	}
+
+	public void setMaxIterations(int maxIterations) {
+		this.maxIterations = maxIterations;
 	}
 }

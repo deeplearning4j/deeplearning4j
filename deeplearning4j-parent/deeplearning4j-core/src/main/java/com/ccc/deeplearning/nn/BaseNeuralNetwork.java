@@ -150,7 +150,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * as this significantly slows the learning.
 		 */
 		if(this.W == null) {
-			NormalDistribution u = new NormalDistribution(rng,0,.01,fanIn());
+			NormalDistribution u = new NormalDistribution(rng,0,.01,0.99);
 
 			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
@@ -170,37 +170,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		if(this.vBias == null) {
 			if(this.input != null) {
-				Counter<Integer> c = new Counter<Integer>();
-				DoubleMatrix hMeans = binomial(sigmoid(input.mmul(W).addRowVector(hBias)),1,rng);
-
-
-				/*
-				 * Count number of activations (numbers == 1)
-				 * Sigmoid produces a probability which is then
-				 * used by binomial sampling to determine
-				 * whether an activation happens
-				 */
-				for(int i = 0; i < hMeans.rows; i++) {
-					DoubleMatrix row = hMeans.getRow(i);
-					for(int j = 0; j < row.columns; j++) {
-						if(row.get(j) > 0)
-							c.incrementCount(j,1.0);
-					}
-				}
-
+		
 				this.vBias = DoubleMatrix.zeros(nVisible);
-
-				/*
-				 * See Hinton's guide on Practical RBM training.
-				 * Initialize vbias to log (p / 1 - p)
-				 * to ensure more than hidden units are used in 
-				 * early training for activations
-				 */
-				for(int i = 0; i < vBias.length; i++) {
-					double prob = c.getProbability(i);
-					double num = Math.log(prob / (1 - prob));
-					this.vBias.put(i, num);
-				}
 
 
 			}
