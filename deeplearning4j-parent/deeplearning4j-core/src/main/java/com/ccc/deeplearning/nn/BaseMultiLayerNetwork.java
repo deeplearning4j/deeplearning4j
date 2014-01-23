@@ -135,12 +135,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		network.trainTillConvergence(input, lr, params);
 
-		if(network.getRenderEpochs() > 0) {
-			if(epoch % network.getRenderEpochs() == 0) {
-				NeuralNetPlotter plotter = new NeuralNetPlotter();
-				plotter.plot(network);
-			}
-		}
+		
 
 		h.W = network.getW();
 		h.b = network.gethBias();

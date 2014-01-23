@@ -53,7 +53,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		MyConjugateGradient g = new MyConjugateGradient(opt);
 		g.optimize();
 		
-		network.backProp(lr, epochs);
+		 network.backProp(lr, epochs);
 
 
 

@@ -24,7 +24,6 @@ public class DAMnistTest {
 				.useRegularization(false)
 				.fanIn(0.5).renderWeights(100).withMomentum(0.9).build();
 
-
 		DataSet first = fetcher.next();
 		double error = Double.POSITIVE_INFINITY;
 

@@ -5,6 +5,7 @@ import org.jblas.DoubleMatrix;
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.nn.NeuralNetworkGradient;
 import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
+import com.ccc.deeplearning.plot.NeuralNetPlotter;
 
 public class RBMOptimizer extends NeuralNetworkOptimizer {
 
@@ -37,6 +38,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 		
 		k = this.k;
 		NeuralNetworkGradient gradient = network.getGradient(new Object[]{k,lr});
+	
 		DoubleMatrix wAdd = gradient.getwGradient();
 		DoubleMatrix vBiasAdd = gradient.getvBiasGradient();
 		DoubleMatrix hBiasAdd = gradient.gethBiasGradient();
