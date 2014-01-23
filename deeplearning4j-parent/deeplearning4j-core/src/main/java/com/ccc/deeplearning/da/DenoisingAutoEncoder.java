@@ -197,6 +197,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 			L_W.subi(W.muli(l2));
 		}
 
+		if(momentum != 0)
+			L_W.muli(1 - momentum);
 		L_W.divi(input.rows);
 
 
@@ -210,5 +212,5 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-	
+
 }

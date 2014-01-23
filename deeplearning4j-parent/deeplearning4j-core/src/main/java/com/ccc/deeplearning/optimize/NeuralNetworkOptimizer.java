@@ -45,7 +45,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 			opt = new MyConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
 		opt.setMaxIterations(10000);
-		opt.optimize(100);
+		opt.optimize(500);
 
 
 	}
@@ -54,7 +54,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		int plotEpochs = network.getRenderEpochs();
 		if(epoch % plotEpochs == 0 || epoch == 0) {
 			NeuralNetPlotter plotter = new NeuralNetPlotter();
-			plotter.plot(network);
+			plotter.plotNetworkGradient(network,network.getGradient(extraParams));
 		}
 	}
 

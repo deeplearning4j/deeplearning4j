@@ -1,6 +1,5 @@
 package com.ccc.deeplearning.nn;
 
-import static com.ccc.deeplearning.util.MatrixUtil.binomial;
 import static com.ccc.deeplearning.util.MatrixUtil.log;
 import static com.ccc.deeplearning.util.MatrixUtil.oneMinus;
 import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
@@ -18,7 +17,6 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
-import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.dbn.DBN;
 import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
 
@@ -150,7 +148,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * as this significantly slows the learning.
 		 */
 		if(this.W == null) {
-			NormalDistribution u = new NormalDistribution(rng,0,.01,0.99);
+			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
 			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 

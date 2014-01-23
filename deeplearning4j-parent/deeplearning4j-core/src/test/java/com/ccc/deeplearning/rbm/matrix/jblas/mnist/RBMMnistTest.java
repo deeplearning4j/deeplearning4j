@@ -19,27 +19,24 @@ public class RBMMnistTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(50,50);
 		MersenneTwister rand = new MersenneTwister(123);
 
-		DoubleMatrix w = new DoubleMatrix(784,1000);
-		w.addi(0.4);
+		
 		DataSet first = fetcher.next();
 
-		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(1000).withRandom(rand)
-				.fanIn(0.5).withInput(first.getFirst())
-				.withMomentum(0.1).build();
-
+		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand).renderWeights(100)
+				.useRegularization(false)
+				.withMomentum(0).build();
 
 
 
 
 		da.input = first.getFirst();
 
-		NeuralNetPlotter plotter = new NeuralNetPlotter();
 		da.trainTillConvergence(first.getFirst(), 0.01, new Object[]{1});
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
-		plotter.plot(da);
+
 		for(int j = 0; j < first.numExamples(); j++) {
 			DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
 			DoubleMatrix reconstructed2 = reconstruct.getRow(j);
@@ -60,7 +57,6 @@ public class RBMMnistTest {
 		for(int i = 0; i < 3000; i++) {
 			if(i% 500 == 0 || i == 0) {
 				reconstruct = da.reconstruct(first.getFirst());
-				plotter.plot(da);
 				if(i > 0)
 					for(int j = 0; j < first.numExamples(); j++) {
 						DoubleMatrix draw1 = first.get(j).getFirst().mul(255);

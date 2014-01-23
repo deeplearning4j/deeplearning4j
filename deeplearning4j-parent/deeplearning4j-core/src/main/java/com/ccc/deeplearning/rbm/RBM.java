@@ -59,7 +59,7 @@ public class RBM extends BaseNeuralNetwork {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k});
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate});
 		optimizer.train(input);
 	}
 
@@ -85,7 +85,7 @@ public class RBM extends BaseNeuralNetwork {
 		W.addi(gradient.getwGradient());
 		hBias.addi(gradient.gethBiasGradient());
 		vBias.addi(gradient.getvBiasGradient());
-		
+
 	}
 
 
@@ -144,11 +144,14 @@ public class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate).mul(momentum);
+		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
+		
+		
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
-		
-		
+		if(momentum != 0)
+			wGradient.muli( 1 - momentum);
+
 		wGradient.divi(input.rows);
 
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
@@ -254,6 +257,6 @@ public class RBM extends BaseNeuralNetwork {
 		contrastiveDivergence(lr, k, input);
 	}
 
-	
+
 
 }

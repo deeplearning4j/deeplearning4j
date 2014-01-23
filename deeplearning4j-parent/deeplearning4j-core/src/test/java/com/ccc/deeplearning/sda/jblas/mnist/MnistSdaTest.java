@@ -22,7 +22,7 @@ public class MnistSdaTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException {
-		MnistDataSetIterator iter = new MnistDataSetIterator(2,2);
+		MnistDataSetIterator iter = new MnistDataSetIterator(50,50);
 		RandomGenerator rng = new MersenneTwister(123);
 
 
@@ -35,22 +35,23 @@ public class MnistSdaTest extends DeepLearningTest {
 
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {1000,500,500};
+		int[] layerSizes = {600,600,600};
 
 
 		double lr = 0.01;
 
 
 		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder().
-				numberOfInputs(numIns).useRegularization(false)
+				numberOfInputs(numIns).renderWeights(500)
 				.numberOfOutPuts(numLabels).withRng(rng).
 				hiddenLayerSizes(layerSizes).build();
 
-		DoubleMatrix data1 = MatrixUtil.normalizeByRowSums(first.getFirst()).dup();
+		
+		DoubleMatrix data1 = first.getFirst().dup();
 		DoubleMatrix outcomes = first.getSecond().dup();
 		do {
-			sda.pretrain(data1, lr, 0.3, 500);
-			sda.finetune(outcomes, lr,500);
+			sda.pretrain(data1, lr, 0.3, 1000);
+			sda.finetune(outcomes, lr,1000);
 
 			Evaluation eval = new Evaluation();
 			log.info("BEGIN EVAL ON " + first.numExamples());

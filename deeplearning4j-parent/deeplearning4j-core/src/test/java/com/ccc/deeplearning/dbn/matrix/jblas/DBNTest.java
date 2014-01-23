@@ -62,7 +62,7 @@ public class DBNTest  extends DeepLearningTest {
 
 		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
 
-		plotter.plot(dbn.layers[0]);
+		plotter.plotNetworkGradient(dbn.layers[0],dbn.layers[0].getGradient(new Object[]{k,preTrainLr}));
 
 		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
