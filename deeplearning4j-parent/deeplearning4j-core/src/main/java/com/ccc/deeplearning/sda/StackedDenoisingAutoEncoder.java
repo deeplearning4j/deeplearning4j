@@ -118,7 +118,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 		.withHBias(hbias).withInput(input).withWeights(W)
 		.withRandom(rng).withMomentum(momentum).withVisibleBias(vBias)
 		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(dist)
-		.withSparsity(0.01).renderWeights(renderWeightsEveryNEpochs).fanIn(fanIn)
+		.withSparsity(sparsity).renderWeights(renderWeightsEveryNEpochs).fanIn(fanIn)
 		.build();
 
 		return ret;

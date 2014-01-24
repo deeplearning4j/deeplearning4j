@@ -70,6 +70,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	protected boolean shouldBackProp = true;
 	protected boolean forceNumEpochs = false;
+	//don't use sparsity by default
+	public double sparsity = 0;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -442,63 +444,81 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		//worse after an iteration
 		BaseMultiLayerNetwork revert = clone();
 
-		for(int i = 0; i < epochs; i++) {
-			//feedforward to compute activations
-			List<DoubleMatrix> activations = feedForward();
-			//initial error
-			double error = this.negativeLogLikelihood();
-			if(lastEntropy == null) {
-				lastEntropy = error;
+		if(forceNumEpochs) {
+			for(int i = 0; i < epochs; i++) {
+				backPropStep(lastEntropy,revert,lr,i);
+				lastEntropy = negativeLogLikelihood();
 			}
-			else if(error > lastEntropy) {
-				log.info("Error greater than previous; found global minima; converging");
-				update(revert);
-				break;
-			}
-			else if(error < lastEntropy ) {
-				lastEntropy = error;
-				revert = clone();
-				log.info("Found better error on epoch " + i + " " + lastEntropy);
-			}
-
-			//precompute deltas
-			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
-			//compute derivatives and gradients given activations
-			computeDeltas(activations, deltas);
-
-
-			for(int l = 0; l < nLayers; l++) {
-				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
-				add.divi(input.rows);
-				//l2
-				if(useRegularization) {
-					add.muli(layers[l].getW().mul(l2));
-				}
-
-				//update W
-				layers[l].setW(layers[l].getW().add(add.mul(lr)));
-				sigmoidLayers[l].W = layers[l].getW();
-
-
-				//update hidden bias
-				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
-				deltaColumnSums.divi(input.rows);
-
-				layers[l].gethBias().addi(deltaColumnSums.mul(lr));
-				sigmoidLayers[l].b = layers[l].gethBias();
-			}
-
-
-			logLayer.W.addi(deltas.get(nLayers).getFirst());
-
-
 		}
+		
+		else {
+			int count = 0;
+			while(backPropStep(lastEntropy,revert,lr,count)) {
+				count++;
+				lastEntropy = this.negativeLogLikelihood();
+			}
+		}
+		
+		
 
 
 
 
 
 	}
+	
+	protected boolean backPropStep(Double lastEntropy,BaseMultiLayerNetwork revert,double lr,int epoch) {
+		//feedforward to compute activations
+		List<DoubleMatrix> activations = feedForward();
+		//initial error
+		double error = this.negativeLogLikelihood();
+		if(lastEntropy == null) {
+			lastEntropy = error;
+		}
+		else if(error > lastEntropy) {
+			log.info("Error greater than previous; found global minima; converging");
+			update(revert);
+			return false;
+		}
+		else if(error < lastEntropy ) {
+			lastEntropy = error;
+			revert = clone();
+			log.info("Found better error on epoch " + epoch + " " + lastEntropy);
+		}
+
+		//precompute deltas
+		List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+		//compute derivatives and gradients given activations
+		computeDeltas(activations, deltas);
+
+
+		for(int l = 0; l < nLayers; l++) {
+			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
+			add.divi(input.rows);
+			//l2
+			if(useRegularization) {
+				add.muli(layers[l].getW().mul(l2));
+			}
+
+			//update W
+			layers[l].setW(layers[l].getW().add(add.mul(lr)));
+			sigmoidLayers[l].W = layers[l].getW();
+
+
+			//update hidden bias
+			DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+			deltaColumnSums.divi(input.rows);
+
+			layers[l].gethBias().addi(deltaColumnSums.mul(lr));
+			sigmoidLayers[l].b = layers[l].gethBias();
+		}
+
+
+		logLayer.W.addi(deltas.get(nLayers).getFirst());
+		return true;
+
+	}
+	
 
 	/**
 	 * Run SGD based on the given labels
@@ -780,7 +800,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 		protected boolean backProp = true;
 		protected boolean shouldForceEpochs = false;
-
+		private double sparsity = 0;
+		
+		
+		public Builder<E> withSparsity(double sparsity) {
+			this.sparsity = sparsity;
+			return this;
+		}
+		
 		/**
 		 * Forces use of number of epochs for training
 		 * SGD style rather than conjugate gradient
@@ -963,6 +990,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.momentum = this.momentum;
 				ret.labels = this.labels;
 				ret.fanIn = this.fanIn;
+				ret.sparsity = this.sparsity;
 				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
 				ret.l2 = l2;
 				ret.forceNumEpochs = shouldForceEpochs;

@@ -37,12 +37,12 @@ public class CDBN extends DBN {
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		if(index == 0)
 			return new CRBM.Builder().useRegularization(useRegularization)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden)
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(sparsity)
 		.withInput(input).withL2(l2).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
 		.withRandom(rng).withWeights(W).build();
 		else
 			return new RBM.Builder().useRegularization(useRegularization)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden)
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(sparsity)
 		.withInput(input).withL2(l2).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
 		.withRandom(rng).withWeights(W).build();
 	}
