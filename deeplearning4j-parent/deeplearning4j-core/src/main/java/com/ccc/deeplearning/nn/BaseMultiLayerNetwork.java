@@ -475,6 +475,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(lastEntropy == null) {
 			lastEntropy = error;
 		}
+		else if(error == lastEntropy) {
+			log.info("Converged; no more stepping appears to do anything");
+			return false;
+		}
+		
 		else if(error > lastEntropy) {
 			log.info("Error greater than previous; found global minima; converging");
 			update(revert);

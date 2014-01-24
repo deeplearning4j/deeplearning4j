@@ -23,14 +23,14 @@ public class MnistDbnTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException, InterruptedException {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10000);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {600,400,400};
+		int[] layerSizes = {600,500,400};
 		double lr = 0.1;
 
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withSparsity(0.05)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
 				.renderWeights(0).withMomentum(0.9).useRegularization(false)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
@@ -67,6 +67,10 @@ public class MnistDbnTest extends DeepLearningTest {
 			if(fetcher.hasNext())
 				first = fetcher.next();
 		} while(fetcher.hasNext());
+		DoubleMatrix predicted = dbn.predict(first.getFirst());
+
+		Evaluation eval = new Evaluation();
+		eval.eval(first.getSecond(), predicted);
 
 	}
 
