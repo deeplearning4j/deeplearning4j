@@ -2,6 +2,7 @@ package com.ccc.deeplearning.nn;
 
 import java.io.Serializable;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
@@ -41,6 +42,9 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	
 	public double getSparsity();
 	public abstract void setSparsity(double sparsity);
+	
+	public void setDist(RealDistribution dist);
+	public RealDistribution getDist();
 	
 	
 	public NeuralNetworkGradient getGradient(Object[] params);

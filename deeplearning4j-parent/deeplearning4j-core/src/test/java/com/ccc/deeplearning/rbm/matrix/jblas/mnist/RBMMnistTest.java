@@ -19,13 +19,13 @@ public class RBMMnistTest {
 
 	@Test
 	public void testMnist() throws Exception {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(50,50);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(100,100);
 		MersenneTwister rand = new MersenneTwister(123);
 
 		
 		DataSet first = fetcher.next();
 
-		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand).renderWeights(100)
+		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand).renderWeights(1000)
 				.useRegularization(false)
 				.withMomentum(0).build();
 

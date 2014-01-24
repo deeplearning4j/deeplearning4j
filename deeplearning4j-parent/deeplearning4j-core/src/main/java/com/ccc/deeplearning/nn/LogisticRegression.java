@@ -30,6 +30,7 @@ public class LogisticRegression implements Serializable {
 	public boolean useRegularization = true;
 	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
+	private LogisticRegression() {}
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
 		this.input = input;
@@ -111,6 +112,23 @@ public class LogisticRegression implements Serializable {
 
 	}
 
+	
+	
+	
+
+	@Override
+	protected LogisticRegression clone()  {
+		LogisticRegression reg = new LogisticRegression();
+		reg.b = b.dup();
+		reg.W = W.dup();
+		reg.l2 = this.l2;
+		reg.labels = this.labels.dup();
+		reg.nIn = this.nIn;
+		reg.nOut = this.nOut;
+		reg.useRegularization = this.useRegularization;
+		reg.input = this.input.dup();
+		return reg;
+	}
 
 	public LogisticRegressionGradient getGradient(double lr) {
 		DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));

@@ -23,22 +23,22 @@ public class MnistDbnTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException, InterruptedException {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(300,300);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {600,600,600};
+		int[] layerSizes = {1000,500,250};
 		double lr = 0.001;
 
-		DBN dbn = new DBN.Builder().numberOfInputs(numIns).withFanIn(0.1)
-				.renderWeights(1000)
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
+				.renderWeights(2000).withMomentum(0).useRegularization(false)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
 		
 		do  {
 			dbn.pretrain(first.getFirst(),1, lr, 2000);
 			dbn.finetune(first.getSecond(),lr, 2000);
-			RBM r = (RBM) dbn.layers[0];
+			/*RBM r = (RBM) dbn.layers[0];
 			DoubleMatrix reconstruct = r.reconstruct(first.getFirst());
 			
 			for(int j = 0; j < first.numExamples(); j++) {
@@ -56,10 +56,10 @@ public class MnistDbnTest extends DeepLearningTest {
 				d.frame.dispose();
 				d2.frame.dispose();
 
-			}
+			}*/
 
 			DoubleMatrix predicted = dbn.predict(first.getFirst());
-			//log.info("Predicting\n " + first.getFirst().toString().replaceAll(";","\n"));
+			log.info("Predicting\n " + first.getSecond().toString().replaceAll(";","\n"));
 
 			Evaluation eval = new Evaluation();
 			eval.eval(first.getSecond(), predicted);

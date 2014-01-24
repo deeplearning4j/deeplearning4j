@@ -7,6 +7,7 @@ import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
 
 import java.io.Serializable;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -44,8 +45,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 	public DenoisingAutoEncoder(DoubleMatrix input, int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
-			RandomGenerator rng,double fanIn) {
-		super(input, nVisible, nHidden, W, hbias, vbias, rng,fanIn);
+			RandomGenerator rng,double fanIn,RealDistribution dist) {
+		super(input, nVisible, nHidden, W, hbias, vbias, rng,fanIn,dist);
 	}
 
 	/**
@@ -79,11 +80,17 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix corrupted = getCorruptedInput(input, corruptionLevel);
 		DoubleMatrix y = getHiddenValues(corrupted);
 		DoubleMatrix z = getReconstructedInput(y);
-		double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+		if(this.useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
+			return - input.mul(log(z)).add(
+					oneMinus(input).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
+		}
 
 		return - input.mul(log(z)).add(
 				oneMinus(input).mul(log(oneMinus(z)))).
-				columnSums().mean() + reg;
+				columnSums().mean();
 	}
 
 
@@ -108,7 +115,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public void trainTillConverge(DoubleMatrix x, double lr,double corruptionLevel) {
 		if(x != null)
 			this.input = x;
-		optimizer = new DenoisingAutoEncoderOptimizer(this, lr, new Object[]{corruptionLevel});
+		optimizer = new DenoisingAutoEncoderOptimizer(this, lr, new Object[]{corruptionLevel,lr});
 		optimizer.train(x);
 	}
 

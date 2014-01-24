@@ -7,6 +7,7 @@ import static com.ccc.deeplearning.util.MatrixUtil.uniform;
 
 import static org.jblas.MatrixFunctions.exp;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
@@ -31,15 +32,15 @@ public class CRBM extends RBM {
 
 
 	public CRBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
-			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng,double fanIn) {
-		super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn);
+			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+		super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn,dist);
 	}
 
 
 
 	public CRBM(int n_visible, int n_hidden, DoubleMatrix W,
 			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		super(n_visible, n_hidden, W, hbias, vbias, rng,fanIn);
+		super(n_visible, n_hidden, W, hbias, vbias, rng,fanIn,null);
 	}
 
 

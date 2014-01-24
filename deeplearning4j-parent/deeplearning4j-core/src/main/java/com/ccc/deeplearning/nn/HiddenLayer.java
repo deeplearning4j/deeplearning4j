@@ -2,6 +2,7 @@ package com.ccc.deeplearning.nn;
 
 import java.io.Serializable;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -19,8 +20,8 @@ import com.ccc.deeplearning.util.MatrixUtil;
 public class HiddenLayer implements Serializable {
 
 	private static final long serialVersionUID = 915783367350830495L;
-	public int n_in;
-	public int n_out;
+	public int nIn;
+	public int nOut;
 	public DoubleMatrix W;
 	public DoubleMatrix b;
 	public RandomGenerator rng;
@@ -30,9 +31,9 @@ public class HiddenLayer implements Serializable {
 
 	private HiddenLayer() {}
 
-	public HiddenLayer(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
-		this.n_in = n_in;
-		this.n_out = n_out;
+	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
+		this.nIn = nIn;
+		this.nOut = nOut;
 		this.input = input;
 		this.activationFunction = activationFunction;
 		
@@ -43,15 +44,13 @@ public class HiddenLayer implements Serializable {
 			this.rng = rng;
 
 		if(W == null) {
-			double a = 1.0 / (double) n_in;
 
-			UniformRealDistribution u = new UniformRealDistribution(this.rng,-a,a);
+			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
-			this.W = DoubleMatrix.zeros(n_in,n_out);
+			this.W = DoubleMatrix.zeros(nIn,nOut);
 
 			for(int i = 0; i < this.W.rows; i++) 
-				for(int j = 0; j < this.W.columns; j++) 
-					this.W.put(i,j,u.sample());
+				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
 		}
 
 		else 
@@ -59,15 +58,15 @@ public class HiddenLayer implements Serializable {
 
 
 		if(b == null) 
-			this.b = DoubleMatrix.zeros(n_out);
+			this.b = DoubleMatrix.zeros(nOut);
 		else 
 			this.b = b;
 	}
 
 
-	public HiddenLayer(int n_in, int n_out, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
-		this.n_in = n_in;
-		this.n_out = n_out;
+	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
+		this.nIn = nIn;
+		this.nOut = nOut;
 		this.input = input;
 
 		if(rng == null) {
@@ -77,15 +76,12 @@ public class HiddenLayer implements Serializable {
 			this.rng = rng;
 
 		if(W == null) {
-			double a = 1.0 / (double) n_in;
+			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
-			UniformRealDistribution u = new UniformRealDistribution(this.rng,-a,a);
-
-			this.W = DoubleMatrix.zeros(n_in,n_out);
+			this.W = DoubleMatrix.zeros(nIn,nOut);
 
 			for(int i = 0; i < this.W.rows; i++) 
-				for(int j = 0; j < this.W.columns; j++) 
-					this.W.put(i,j,u.sample());
+				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
 		}
 
 		else 
@@ -93,7 +89,7 @@ public class HiddenLayer implements Serializable {
 
 
 		if(b == null) 
-			this.b = DoubleMatrix.zeros(n_out);
+			this.b = DoubleMatrix.zeros(nOut);
 		else 
 			this.b = b;
 	}
@@ -105,8 +101,9 @@ public class HiddenLayer implements Serializable {
 		layer.W = W.dup();
 		layer.input = input.dup();
 		layer.activationFunction = activationFunction;
-		layer.n_out = n_out;
-		layer.n_in = n_in;
+		layer.nOut = nOut;
+		layer.nIn = nIn;
+		layer.rng = rng;
 		return layer;
 	}
 	
@@ -117,8 +114,9 @@ public class HiddenLayer implements Serializable {
 		layer.W = W.transpose();
 		layer.input = input.transpose();
 		layer.activationFunction = activationFunction;
-		layer.n_out = n_in;
-		layer.n_in = n_out;
+		layer.nOut = nIn;
+		layer.nIn = nOut;
+		layer.rng = rng;
 		return layer;
 	}
 

@@ -18,12 +18,13 @@ import com.ccc.deeplearning.base.IrisUtils;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.eval.Evaluation;
+import com.ccc.deeplearning.nn.activation.HardTanh;
 import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 public class SdaTest {
 
 	double pretrain_lr = 0.1;
-	double corruption_level = 0.3;
+	double corruption_level = 0.8;
 	int pretraining_epochs = 1000;
 	double finetune_lr = 0.1;
 	int finetune_epochs = 500;
@@ -33,7 +34,7 @@ public class SdaTest {
 	int train_N = 10;
 	int n_ins = 20;
 	int n_outs = 2;
-	int[] hidden_layer_sizes_arr = {15, 15};
+	int[] hidden_layer_sizes_arr = {15, 15,10};
 	int n_layers = hidden_layer_sizes_arr.length;
 
 	int seed = 123;
@@ -107,10 +108,14 @@ public class SdaTest {
 
 	@Test
 	public void testOutput() {
-		StackedDenoisingAutoEncoder sda = sdamatrix();
-		sda.pretrain( pretrain_lr, corruption_level, pretraining_epochs);
+		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder()
+		.withActivation(new HardTanh()).hiddenLayerSizes(hidden_layer_sizes_arr)
+		.numberOfInputs(n_ins).numberOfOutPuts(n_outs).renderWeights(10)
+		.useRegularization(true).withMomentum(0).withRng(rng).build();		
+		sda.pretrain(train_X_matrix,pretrain_lr, corruption_level, pretraining_epochs);
 		// finetune
-		sda.finetune(finetune_lr, finetune_epochs);
+		
+		sda.finetune(this.train_Y_matrix,finetune_lr, finetune_epochs);
 		log.info("OUTPUT TEST");
 		DoubleMatrix predicted = sda.predict(train_X_matrix);
 		
@@ -122,11 +127,6 @@ public class SdaTest {
 	}
 
 
-	public StackedDenoisingAutoEncoder sdamatrix() {
-		// construct SdA
-		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder( n_ins, hidden_layer_sizes_arr, n_outs, n_layers, rng,train_X_matrix,train_Y_matrix);
-		return sda;
-	}
 
 	
 

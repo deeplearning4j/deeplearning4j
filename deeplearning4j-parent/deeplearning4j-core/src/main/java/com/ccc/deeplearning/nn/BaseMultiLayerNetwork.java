@@ -7,8 +7,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
@@ -21,9 +24,9 @@ import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.nn.activation.ActivationFunction;
 import com.ccc.deeplearning.nn.activation.Sigmoid;
 import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
-import com.ccc.deeplearning.plot.NeuralNetPlotter;
 import com.ccc.deeplearning.rbm.CRBM;
 import com.ccc.deeplearning.rbm.RBM;
+import com.ccc.deeplearning.transformation.MatrixTransform;
 import com.ccc.deeplearning.util.MatrixUtil;
 
 
@@ -34,6 +37,8 @@ import com.ccc.deeplearning.util.MatrixUtil;
  *
  */
 public abstract class BaseMultiLayerNetwork implements Serializable,Persistable {
+
+
 
 	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 	private static final long serialVersionUID = -5029161847383716484L;
@@ -49,6 +54,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
 	public LogisticRegression logLayer;
 	public RandomGenerator rng;
+	/* probability distribution for generation of weights */
+	public RealDistribution dist;
 	public double momentum = 0.1;
 	//default training examples and associated layers
 	public DoubleMatrix input,labels;
@@ -60,7 +67,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public double fanIn = -1;
 	public int renderWeightsEveryNEpochs = -1;
 	public boolean useRegularization = true;
-
+	protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+	protected boolean shouldBackProp = true;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -135,7 +143,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		network.trainTillConvergence(input, lr, params);
 
-		
+
 
 		h.W = network.getW();
 		h.b = network.gethBias();
@@ -205,7 +213,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			if(i < nLayers - 1) {
 				HiddenLayer h1 = sigmoidLayers[i + 1];
 				NeuralNetwork network1 = layers[i + 1];
-				if(h1.n_in != h.n_out)
+				if(h1.nIn != h.nOut)
 					throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
 				if(network.getnHidden() != network1.getnVisible())
 					throw new IllegalStateException("Invalid structure: network hidden for " + (i + 1) + " not equal to number of visible " + i);
@@ -213,7 +221,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 		}
 
-		if(sigmoidLayers[sigmoidLayers.length - 1].n_out != logLayer.nIn)
+		if(sigmoidLayers[sigmoidLayers.length - 1].nOut != logLayer.nIn)
 			throw new IllegalStateException("Number of outputs for final hidden layer not equal to the number of logistic input units for output layer");
 
 
@@ -237,7 +245,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.nIns = network.nOuts;
 		this.nOuts = network.nIns;
 		this.nLayers = network.nLayers;
-
+		this.dist = network.dist;
 
 
 		int count = 0;
@@ -290,7 +298,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 
 			this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
-			
+
 		}
 
 		// layer for output using LogisticRegression
@@ -300,7 +308,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		dimensionCheck();
-
+		applyTransforms();
 	}
 
 
@@ -379,7 +387,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				delta = deltas[i + 1];
 				DoubleMatrix w = weights.get(i).transpose();
 				DoubleMatrix z = zs.get(i);
-				DoubleMatrix a = activations.get(i + 1);
+				DoubleMatrix a = activations.get(i);
 				//W^t * error^l + 1
 
 				DoubleMatrix error = delta.mmul(w);
@@ -388,7 +396,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				error = error.mul(derivative.applyDerivative(z));
 
 				deltas[i] = error;
-				gradients[i] = a.transpose().mmul(error).transpose().div(input.rows);
+
+				DoubleMatrix lastLayerDelta = deltas[i + 1].transpose();
+				DoubleMatrix newGradient = lastLayerDelta.mmul(a);
+
+				gradients[i] = newGradient.div(input.rows);
 			}
 
 		}
@@ -402,15 +414,44 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
+
+
+	@Override
+	protected BaseMultiLayerNetwork clone() {
+		@SuppressWarnings("unchecked")
+		BaseMultiLayerNetwork ret = new Builder().withClazz(getClass()).buildEmpty();
+		ret.update(this);
+		return ret;
+	}
+
 	/**
 	 * Backpropagation of errors for weights
 	 * @param lr the learning rate to use
 	 * @param epochs  the number of epochs to iterate (this is already called in finetune)
 	 */
 	public void backProp(double lr,int epochs) {
+
+		Double lastEntropy = null;
+		BaseMultiLayerNetwork revert = clone();
+
 		for(int i = 0; i < epochs; i++) {
 			List<DoubleMatrix> activations = feedForward();
+			double error = this.negativeLogLikelihood();
+			if(lastEntropy == null) {
+				lastEntropy = error;
+			}
+			else if(error > lastEntropy) {
+				log.info("Error greater than previous; found global minima; converging");
+				update(revert);
+				break;
+			}
+			else if(error < lastEntropy ) {
+				lastEntropy = error;
+				revert = clone();
+				log.info("Found better error on epoch " + i + " " + lastEntropy);
+			}
 
+			log.info("Error for epoch " + epochs + " is " + error);
 			//precompute deltas
 			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
 			computeDeltas(activations, deltas);
@@ -424,12 +465,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				}
 
 
-				layers[l].setW(layers[l].getW().sub(add.mul(lr)));
+				layers[l].setW(layers[l].getW().add(add.mul(lr)));
 				sigmoidLayers[l].W = layers[l].getW();
 				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
 				deltaColumnSums.divi(input.rows);
 
-				layers[l].gethBias().subi(deltaColumnSums.mul(lr));
+				layers[l].gethBias().addi(deltaColumnSums.mul(lr));
 				sigmoidLayers[l].b = layers[l].gethBias();
 			}
 
@@ -557,17 +598,24 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	/**
 	 * Assigns the parameters of this model to the ones specified by this
 	 * network. This is used in loading from input streams, factory methods, etc
-	 * @param matrix the network to get parameters from
+	 * @param network the network to get parameters from
 	 */
-	protected void update(BaseMultiLayerNetwork matrix) {
-		this.layers = matrix.layers;
-		this.hiddenLayerSizes = matrix.hiddenLayerSizes;
-		this.logLayer = matrix.logLayer;
-		this.nIns = matrix.nIns;
-		this.nLayers = matrix.nLayers;
-		this.nOuts = matrix.nOuts;
-		this.rng = matrix.rng;
-		this.sigmoidLayers = matrix.sigmoidLayers;
+	protected void update(BaseMultiLayerNetwork network) {
+		this.layers = new NeuralNetwork[network.layers.length];
+		for(int i = 0; i < layers.length; i++) {
+			this.layers[i] = network.layers[i].clone();
+		}
+		this.hiddenLayerSizes = network.hiddenLayerSizes;
+		this.logLayer = network.logLayer.clone();
+		this.nIns = network.nIns;
+		this.nLayers = network.nLayers;
+		this.nOuts = network.nOuts;
+		this.rng = network.rng;
+		this.dist = network.dist;
+		this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
+		for(int i = 0; i < sigmoidLayers.length; i++)
+			this.sigmoidLayers[i] = network.sigmoidLayers[i].clone();
+
 
 	}
 
@@ -595,6 +643,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
+	protected void applyTransforms() {
+		if(layers == null || layers.length < 1) {
+			throw new IllegalStateException("Layers not initialized");
+		}
+		
+		for(int i = 0; i < layers.length; i++) {
+			if(weightTransforms.containsKey(i)) 
+				layers[i].setW(weightTransforms.get(i).apply(layers[i].getW()));
+		}
+	}
+	
+
+	public boolean isShouldBackProp() {
+		return shouldBackProp;
+	}
+	
 	/**
 	 * Creates a layer depending on the index.
 	 * The main reason this matters is for continuous variations such as the {@link CDBN}
@@ -687,6 +751,37 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private int renderWeithsEveryNEpochs = -1;
 		private double l2 = 0.01;
 		private boolean useRegularization = true;
+		private double momentum;
+		private RealDistribution dist;
+		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+		protected boolean backProp = true;
+		
+		
+		public Builder<E> disableBackProp() {
+			backProp = false;
+			return this;
+		}
+		
+		public Builder<E> transformWeightsAt(int layer,MatrixTransform transform) {
+			weightTransforms.put(layer,transform);
+			return this;
+		}
+		
+		public Builder<E> transformWeightsAt(Map<Integer,MatrixTransform> transforms) {
+			weightTransforms.putAll(transforms);
+			return this;
+		}
+		
+		
+		public Builder<E> withDist(RealDistribution dist) {
+			this.dist = dist;
+			return this;
+		}
+		
+		public Builder<E> withMomentum(double momentum) {
+			this.momentum = momentum;
+			return this;
+		}
 
 		public Builder<E> useRegularization(boolean useRegularization) {
 			this.useRegularization = useRegularization;
@@ -776,10 +871,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.hiddenLayerSizes = this.hiddenLayerSizes;
 				ret.nLayers = this.nLayers;
 				ret.rng = this.rng;
+				ret.shouldBackProp = this.backProp;
 				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
 				ret.layers = ret.createNetworkLayers(ret.nLayers);
 				ret.toDecode = this.decode;
 				ret.input = this.input;
+				ret.momentum = this.momentum;
 				ret.labels = this.labels;
 				ret.fanIn = this.fanIn;
 				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
@@ -787,6 +884,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.useRegularization = useRegularization;
 				if(activation != null)
 					ret.activation = activation;
+				if(dist != null)
+					ret.dist = dist;
+				ret.weightTransforms.putAll(weightTransforms);
+				
+				
 				return ret;
 			} catch (InstantiationException | IllegalAccessException e) {
 				throw new RuntimeException(e);
