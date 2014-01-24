@@ -1,5 +1,6 @@
 package com.ccc.deeplearning.util;
 
+import org.apache.commons.lang3.Range;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
@@ -10,8 +11,56 @@ import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ccc.deeplearning.datasets.DataSet;
+
 public class MatrixUtil {
 	private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
+	
+	
+	public static DataSet xorData(int n) {
+		
+		DoubleMatrix x = DoubleMatrix.rand(n,2);
+		x = x.gti(0.5);
+		
+		DoubleMatrix y = DoubleMatrix.zeros(n,2);
+		for(int i = 0; i < x.rows; i++) {
+			if(x.get(i,0) == x.get(i,1))
+				y.put(i,0,1);
+			else 
+				y.put(i,1,1);
+		}
+		
+		return new DataSet(x,y);
+	
+	}
+	
+	public static DataSet xorData(int n, int columns) {
+		
+		DoubleMatrix x = DoubleMatrix.rand(n,columns);
+		x = x.gti(0.5);
+		
+		DoubleMatrix x2 = DoubleMatrix.rand(n,columns);
+		x2 = x2.gti(0.5);
+		
+		DoubleMatrix eq = x.eq(x2).eq(DoubleMatrix.zeros(n,columns));
+	
+		
+		int median = columns / 2;
+		
+		DoubleMatrix outcomes = new DoubleMatrix(n,2);
+		for(int i = 0; i < outcomes.rows; i++) {
+			DoubleMatrix left = eq.get(i,new org.jblas.ranges.IntervalRange(0,median));
+			DoubleMatrix right = eq.get(i,new org.jblas.ranges.IntervalRange(median,columns));
+			if(left.sum() > right.sum())
+				outcomes.put(i,0,1);
+			else
+				outcomes.put(i,1,1);
+		}
+		
+		
+		return new DataSet(eq,outcomes);
+	
+	}
 	
 	public static double magnitude(DoubleMatrix vec) { 
 		double sum_mag = 0; 

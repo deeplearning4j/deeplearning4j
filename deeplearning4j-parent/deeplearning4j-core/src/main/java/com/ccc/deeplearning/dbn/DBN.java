@@ -98,8 +98,15 @@ public class DBN extends BaseMultiLayerNetwork {
 			else 
 				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
 			log.info("Training on layer " + (i + 1));
-			
-			layers[i].trainTillConvergence(layerInput, learningRate, new Object[]{k});
+			if(forceNumEpochs) {
+				for(int epoch = 0; epoch < epochs; epoch++) {
+					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
+					layers[i].train(layerInput, learningRate,new Object[]{k,learningRate});
+
+				}
+			}
+			else
+				layers[i].trainTillConvergence(layerInput, learningRate, new Object[]{k});
 
 
 		}

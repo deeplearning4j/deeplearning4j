@@ -20,9 +20,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 	private static final long serialVersionUID = 1448581794985193009L;
 	private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
-	
-	
-	
+
+
+
 	public StackedDenoisingAutoEncoder() {}
 
 	public StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
@@ -63,9 +63,16 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = input;
 			else
 				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
-			layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr});
+			if(forceNumEpochs) {
+				for(int epoch = 0; epoch < epochs; epoch++) {
+					layers[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
+					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
+				}
+			}
+			else
+				layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr});
 
-			
+
 		}	
 	}
 

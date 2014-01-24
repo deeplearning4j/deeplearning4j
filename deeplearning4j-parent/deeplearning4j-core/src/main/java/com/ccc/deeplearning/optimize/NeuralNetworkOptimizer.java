@@ -45,7 +45,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 			opt = new MyConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
 		opt.setMaxIterations(10000);
-		opt.optimize(500);
+		opt.optimize();
 
 
 	}
