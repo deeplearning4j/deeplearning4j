@@ -360,6 +360,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		List<DoubleMatrix> zs = new ArrayList<>();
 		zs.add(input);
+		/*
+		 * activations for each layer
+		 */
 		for(int i = 0; i < layers.length; i++) {
 			if(layers[i].getInput() == null && i == 0) {
 				layers[i].setInput(input);
@@ -370,10 +373,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			zs.add(MatrixUtil.sigmoid(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias())));
 		}
+
+		//account for final activation of log layer as well
 		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
 
 		//errors
 		for(int i = nLayers + 1; i >= 0; i--) {
+			//output layer
 			if(i >= nLayers + 1) {
 				DoubleMatrix z = zs.get(i);
 				//- y - h
@@ -385,6 +391,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			}
 			else {
+				//derivative i + 1; aka gradient for bias
 				delta = deltas[i + 1];
 				DoubleMatrix w = weights.get(i).transpose();
 				DoubleMatrix z = zs.get(i);
@@ -398,6 +405,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 				deltas[i] = error;
 
+				//calculate gradient for layer
 				DoubleMatrix lastLayerDelta = deltas[i + 1].transpose();
 				DoubleMatrix newGradient = lastLayerDelta.mmul(a);
 
@@ -406,12 +414,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		}
 
-
-
-
-		for(int i = 0; i < gradients.length; i++) {
+		for(int i = 0; i < gradients.length; i++) 
 			deltaRet.add(new Pair<>(gradients[i],deltas[i]));
-		}
+
 	}
 
 
@@ -420,7 +425,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	@Override
 	protected BaseMultiLayerNetwork clone() {
 		@SuppressWarnings("unchecked")
-		BaseMultiLayerNetwork ret = new Builder().withClazz(getClass()).buildEmpty();
+		BaseMultiLayerNetwork ret = new Builder<>().withClazz(getClass()).buildEmpty();
 		ret.update(this);
 		return ret;
 	}
@@ -433,10 +438,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public void backProp(double lr,int epochs) {
 
 		Double lastEntropy = null;
+		//store a copy of the network for when binary cross entropy gets
+		//worse after an iteration
 		BaseMultiLayerNetwork revert = clone();
 
 		for(int i = 0; i < epochs; i++) {
+			//feedforward to compute activations
 			List<DoubleMatrix> activations = feedForward();
+			//initial error
 			double error = this.negativeLogLikelihood();
 			if(lastEntropy == null) {
 				lastEntropy = error;
@@ -452,22 +461,26 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				log.info("Found better error on epoch " + i + " " + lastEntropy);
 			}
 
-			log.info("Error for epoch " + epochs + " is " + error);
 			//precompute deltas
 			List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+			//compute derivatives and gradients given activations
 			computeDeltas(activations, deltas);
 
 
 			for(int l = 0; l < nLayers; l++) {
 				DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
 				add.divi(input.rows);
+				//l2
 				if(useRegularization) {
 					add.muli(layers[l].getW().mul(l2));
 				}
 
-
+				//update W
 				layers[l].setW(layers[l].getW().add(add.mul(lr)));
 				sigmoidLayers[l].W = layers[l].getW();
+
+
+				//update hidden bias
 				DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
 				deltaColumnSums.divi(input.rows);
 
@@ -648,18 +661,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(layers == null || layers.length < 1) {
 			throw new IllegalStateException("Layers not initialized");
 		}
-		
+
 		for(int i = 0; i < layers.length; i++) {
 			if(weightTransforms.containsKey(i)) 
 				layers[i].setW(weightTransforms.get(i).apply(layers[i].getW()));
 		}
 	}
-	
+
 
 	public boolean isShouldBackProp() {
 		return shouldBackProp;
 	}
-	
+
 	/**
 	 * Creates a layer depending on the index.
 	 * The main reason this matters is for continuous variations such as the {@link CDBN}
@@ -716,6 +729,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		logLayer.merge(network.logLayer, batchSize);
 	}
 
+	/**
+	 * Transposes this network to turn it in to 
+	 * ad ecoder for the given auto encoder networkk
+	 * @param network the network to decode
+	 */
 	public void encode(BaseMultiLayerNetwork network) {
 		this.createNetworkLayers(network.nLayers);
 		this.layers = new NeuralNetwork[network.nLayers];
@@ -762,47 +780,93 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 		protected boolean backProp = true;
 		protected boolean shouldForceEpochs = false;
-		
+
+		/**
+		 * Forces use of number of epochs for training
+		 * SGD style rather than conjugate gradient
+		 * @return
+		 */
 		public Builder<E> forceEpochs() {
 			shouldForceEpochs = true;
 			return this;
 		}
-		
+
+		/**
+		 * Disables back propagation
+		 * @return
+		 */
 		public Builder<E> disableBackProp() {
 			backProp = false;
 			return this;
 		}
-		
+
+		/**
+		 * Transform the weights at the given layer
+		 * @param layer the layer to transform
+		 * @param transform the function used for transformation
+		 * @return
+		 */
 		public Builder<E> transformWeightsAt(int layer,MatrixTransform transform) {
 			weightTransforms.put(layer,transform);
 			return this;
 		}
-		
+
+		/**
+		 * A map of transformations for transforming
+		 * the given layers
+		 * @param transforms
+		 * @return
+		 */
 		public Builder<E> transformWeightsAt(Map<Integer,MatrixTransform> transforms) {
 			weightTransforms.putAll(transforms);
 			return this;
 		}
-		
-		
+
+		/**
+		 * Probability distribution for generating weights
+		 * @param dist
+		 * @return
+		 */
 		public Builder<E> withDist(RealDistribution dist) {
 			this.dist = dist;
 			return this;
 		}
-		
+
+		/**
+		 * Specify momentum
+		 * @param momentum
+		 * @return
+		 */
 		public Builder<E> withMomentum(double momentum) {
 			this.momentum = momentum;
 			return this;
 		}
 
+		/**
+		 * Use l2 reg
+		 * @param useRegularization
+		 * @return
+		 */
 		public Builder<E> useRegularization(boolean useRegularization) {
 			this.useRegularization = useRegularization;
 			return this;
 		}
 
+		/**
+		 * L2 coefficient
+		 * @param l2
+		 * @return
+		 */
 		public Builder<E> withL2(double l2) {
 			this.l2 = l2;
 			return this;
 		}
+
+		/**
+		 * Whether to plot weights or not
+		 * @param everyN
+		 * @return
+		 */
 		public Builder<E> renderWeights(int everyN) {
 			this.renderWeithsEveryNEpochs = everyN;
 			return this;
@@ -813,7 +877,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			return this;
 		}
 
-
+		/**
+		 * Pick an activation function, default is sigmoid
+		 * @param activation
+		 * @return
+		 */
 		public Builder<E> withActivation(ActivationFunction activation) {
 			this.activation = activation;
 			return this;
@@ -825,6 +893,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			return this;
 		}
 
+		/**
+		 * Whether the network is a decoder for an auto encoder
+		 * @param decode
+		 * @return
+		 */
 		public Builder<E> decodeNetwork(boolean decode) {
 			this.decode = decode;
 			return this;
@@ -899,18 +972,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				if(dist != null)
 					ret.dist = dist;
 				ret.weightTransforms.putAll(weightTransforms);
-				
-				
+
+
 				return ret;
 			} catch (InstantiationException | IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
 
 		}
-
-
-
-
 
 	}
 
