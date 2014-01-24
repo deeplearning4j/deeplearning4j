@@ -5,6 +5,7 @@ import static com.ccc.deeplearning.util.MatrixUtil.binomial;
 import static com.ccc.deeplearning.util.MatrixUtil.mean;
 import static com.ccc.deeplearning.util.MatrixUtil.sigmoid;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 
@@ -40,14 +41,14 @@ public class RBM extends BaseNeuralNetwork {
 	public RBM() {}
 
 	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-			DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+			DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
 		super(nVisible, nHidden, W, hbias, vbias, rng,fanIn);
 	}
 
 
 	public RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
-			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		super(input, n_visible, n_hidden, W, hbias, vbias, rng,fanIn);
+			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+		super(input, n_visible, n_hidden, W, hbias, vbias, rng,fanIn,dist);
 	}
 
 	/**

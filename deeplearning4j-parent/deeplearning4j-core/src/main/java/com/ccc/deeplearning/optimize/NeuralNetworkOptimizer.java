@@ -52,6 +52,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	@Override
 	public void epochDone(int epoch) {
 		int plotEpochs = network.getRenderEpochs();
+		if(plotEpochs <= 0)
+			return;
 		if(epoch % plotEpochs == 0 || epoch == 0) {
 			NeuralNetPlotter plotter = new NeuralNetPlotter();
 			plotter.plotNetworkGradient(network,network.getGradient(extraParams));

@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
@@ -28,7 +29,7 @@ import com.ccc.deeplearning.optimize.NeuralNetworkOptimizer;
  */
 public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
-	
+
 
 
 	private static final long serialVersionUID = -7074102204433996574L;
@@ -62,13 +63,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double sparsity = 0.01;
 	/* momentum for learning */
 	public double momentum = 0.1;
+	/* Probability distribution for weights */
+	public RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 	/* L2 Regularization constant */
 	public double l2 = 0.1;
 	public transient NeuralNetworkOptimizer optimizer;
 	public int renderWeightsEveryNumEpochs = -1;
 	public double fanIn = -1;
 	public boolean useRegularization = true;
-	
+
 	public BaseNeuralNetwork() {}
 	/**
 	 * 
@@ -82,7 +85,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public BaseNeuralNetwork(int nVisible, int nHidden, 
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn);
+		this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn,null);
 
 	}
 
@@ -98,8 +101,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param rng the rng, if not a seed of 1234 is used.
 	 */
 	public BaseNeuralNetwork(DoubleMatrix input, int nVisible, int nHidden, 
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
 		this.nVisible = nVisible;
+		if(dist != null)
+			this.dist = dist;
 		this.nHidden = nHidden;
 		this.fanIn = fanIn;
 		this.input = input;
@@ -124,13 +129,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return (MatrixFunctions.pow(getW(),2).sum()/ 2.0)  * l2;
 	}
 	protected void initWeights()  {
-		
+
 		if(this.nVisible < 1)
 			throw new IllegalStateException("Number of visible can not be less than 1");
 		if(this.nHidden < 1)
 			throw new IllegalStateException("Number of hidden can not be less than 1");
-		
-		
+
+
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in
@@ -148,12 +153,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * as this significantly slows the learning.
 		 */
 		if(this.W == null) {
-			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
 			this.W = DoubleMatrix.zeros(nVisible,nHidden);
 
 			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+				this.W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
 
 		}
 
@@ -168,7 +172,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		if(this.vBias == null) {
 			if(this.input != null) {
-		
+
 				this.vBias = DoubleMatrix.zeros(nVisible);
 
 
@@ -225,11 +229,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
 		 * as this significantly slows the learning.
 		 */
-		NormalDistribution u = new NormalDistribution(rng,0,.01,fanIn());
 
 		DoubleMatrix W = DoubleMatrix.zeros(nVisible,nHidden);
 		for(int i = 0; i < this.W.rows; i++) 
-			W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+			W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
 
 
 
@@ -246,7 +249,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnHidden());
 			ret.setW(W.transpose());
 			ret.setRng(getRng());
-
+			ret.setDist(getDist());
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -265,7 +268,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnVisible());
 			ret.setW(W.dup());
 			ret.setRng(getRng());
-
+			ret.setDist(getDist());
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -273,7 +276,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	}
-
+	
+	@Override
+	public RealDistribution getDist() {
+		return dist;
+	}
+	
+	@Override
+	public void setDist(RealDistribution dist) {
+		this.dist = dist;
+	}
+	
 	@Override
 	public void merge(NeuralNetwork network,int batchSize) {
 		W.addi(network.getW().mini(W).div(batchSize));
@@ -349,7 +362,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			double normalized = l + l2RegularizedCoefficient();
 			return - inner.rowSums().mean() / normalized;
 		}
-		
+
 		return - inner.rowSums().mean();
 	}
 
@@ -516,7 +529,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public abstract double lossFunction(Object[] params);
 
-	
+
 	public double lossFunction() {
 		return lossFunction(null);
 	}
@@ -537,7 +550,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		if(this.useRegularization) {
 			loss += 0.5 * l2 * MatrixFunctions.pow(W,2).sum();
 		}
-		
+
 		return -loss;
 	}
 
@@ -559,8 +572,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private int renderWeightsEveryNumEpochs = -1;
 		private double fanIn = 0.1;
 		private boolean useRegularization = true;
-		
-		
+		private RealDistribution dist;
+
+
+		public Builder<E> withDistribution(RealDistribution dist) {
+			this.dist = dist;
+			return this;
+		}
+
 		public Builder<E> useRegularization(boolean useRegularization) {
 			this.useRegularization = useRegularization;
 			return this;
@@ -666,7 +685,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				if(classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen,fanIn);
+								W, hBias,vBias, gen,fanIn,dist);
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.useRegularization = this.useRegularization;
 						return ret;
@@ -689,7 +708,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				//input matrix found
 				if(classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
 					try {
-						ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn);
+						ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
 						ret.sparsity = this.sparsity;
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.l2 = this.l2;
