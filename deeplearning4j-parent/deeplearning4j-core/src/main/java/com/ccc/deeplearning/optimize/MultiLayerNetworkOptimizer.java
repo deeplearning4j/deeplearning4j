@@ -48,7 +48,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
-		if(network.isForceNumEpochs()) {
+		if(!network.isForceNumEpochs()) {
 			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
 			MyConjugateGradient g = new MyConjugateGradient(opt);
 			g.optimize();
