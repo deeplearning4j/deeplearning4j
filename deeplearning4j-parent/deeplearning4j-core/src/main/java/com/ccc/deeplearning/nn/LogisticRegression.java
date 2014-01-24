@@ -97,9 +97,7 @@ public class LogisticRegression implements Serializable {
 	 */
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
 		ensureValidOutcomeMatrix(y);
-		if(x.rows != y.rows) {
-			throw new IllegalArgumentException("How does this happen?");
-		}
+		
 
 		this.input = x;
 		this.labels = y;

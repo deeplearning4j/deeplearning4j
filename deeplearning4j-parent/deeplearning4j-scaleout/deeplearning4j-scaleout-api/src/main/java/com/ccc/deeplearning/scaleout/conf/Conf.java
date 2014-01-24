@@ -6,6 +6,10 @@ import org.json.JSONObject;
 
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
+import com.ccc.deeplearning.nn.activation.ActivationFunction;
+import com.ccc.deeplearning.nn.activation.HardTanh;
+import com.ccc.deeplearning.nn.activation.Sigmoid;
+import com.ccc.deeplearning.nn.activation.Tanh;
 
 public class Conf extends HashMap<String,String> implements DeepLearningConfigurable {
 
@@ -15,7 +19,20 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 	
 	
 	
-	
+	/**
+	 * Initializes conf with the following values:
+	 * Seed : 123
+	 * K : 1
+	 * Finetune learning rate : 0.1
+	 * finetune epochs : 100
+	 * corruption level : 0.3
+	 * out 1
+	 * number in 1
+	 * activation sigmoid
+	 * class com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder
+	 * param algorithm sda
+	 * layer sizes 300,300,300
+	 */
 	public Conf() {
 		put(SEED,String.valueOf(123));
 		put(PARAM_K,String.valueOf(1));
@@ -24,6 +41,7 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		put(CORRUPTION_LEVEL, String.valueOf(0.3));
 		put(OUT,String.valueOf(1));
 		put(N_IN,String.valueOf(1));
+		put(ACTIVATION,"sigmoid");
 		put(CLASS,"com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
 		put(PARAM_ALGORITHM,"sda");
 		put(LAYER_SIZES, "300,300,300");
@@ -100,6 +118,17 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 	}
 
 
+	public ActivationFunction getFunction(String function) {
+		String val = get(ACTIVATION);
+		if(val.equals("hardtanh")) 
+			return new HardTanh();
+		else if(val.equals("sigmoid"))
+			return new Sigmoid();
+		else if(val.equals("tanh"))
+			return new Tanh();
+		throw new IllegalArgumentException("Function does not exist;");
+	}
+	
 	@SuppressWarnings("unchecked")
 	public Class<? extends BaseMultiLayerNetwork> getClazz(String key) {
 		try {
@@ -122,6 +151,11 @@ public class Conf extends HashMap<String,String> implements DeepLearningConfigur
 		put(key,String.valueOf(val));
 	}
 
+	public Boolean getBoolean(String key) {
+		String ret = get(key);
+		return ret != null ? Boolean.parseBoolean(key) : null;
+	}
+	
 	public Long getLong(String key) {
 		String ret = get(key);
 		return ret != null ? Long.parseLong(ret) : null;

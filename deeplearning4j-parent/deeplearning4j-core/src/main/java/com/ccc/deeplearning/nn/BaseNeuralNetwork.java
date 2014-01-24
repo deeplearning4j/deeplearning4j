@@ -128,6 +128,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double l2RegularizedCoefficient() {
 		return (MatrixFunctions.pow(getW(),2).sum()/ 2.0)  * l2;
 	}
+
+	/**
+	 * Initialize weights.
+	 * This includes steps for doing a random initialization of W
+	 * as well as the vbias and hbias
+	 */
 	protected void initWeights()  {
 
 		if(this.nVisible < 1)
@@ -206,11 +212,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.fanIn = fanIn;
 	}
 
-	public void regularize() {
-		this.W.addi(W.mul(0.01));
-		this.W.divi(this.momentum);
-
-	}
 
 	public void jostleWeighMatrix() {
 		/*
@@ -276,17 +277,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	}
-	
+
 	@Override
 	public RealDistribution getDist() {
 		return dist;
 	}
-	
+
 	@Override
 	public void setDist(RealDistribution dist) {
 		this.dist = dist;
 	}
-	
+
 	@Override
 	public void merge(NeuralNetwork network,int batchSize) {
 		W.addi(network.getW().mini(W).div(batchSize));
@@ -295,21 +296,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
-	/**
-	 * Regularize weights or weight averaging.
-	 * This accounts for momentum, sparsity target,
-	 * and batch size
-	 * @param batchSize the batch size of the recent training set
-	 * @param lr the learning rate
-	 */
-	public void regularizeWeights(int batchSize,double lr) {
-		if(batchSize < 1)
-			throw new IllegalArgumentException("Batch size must be at least 1");
-		this.W = W.div(batchSize).mul(1 - momentum).add(W.min(W.mul(l2)));
-	}
-
-
-
+	
 	/**
 	 * Copies params from the passed in network
 	 * to this one
@@ -344,7 +331,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	/**
-	 * Reconstruction error.
+	 * Reconstruction entropy.
+	 * This compares the similarity of two probability
+	 * distributions, in this case that would be the input
+	 * and the reconstructed input with gaussian noise.
+	 * This will account for either regularization or none
+	 * depending on the configuration.
 	 * @return reconstruction error
 	 */
 	public double getReConstructionCrossEntropy() {

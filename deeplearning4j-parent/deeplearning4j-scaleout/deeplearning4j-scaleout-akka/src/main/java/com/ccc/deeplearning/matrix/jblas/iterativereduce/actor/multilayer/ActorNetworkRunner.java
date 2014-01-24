@@ -55,7 +55,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private Integer epochs;
 	private List<Pair<DoubleMatrix,DoubleMatrix>> samples;
 	private UpdateableImpl result;
-	private  ActorRef mediator;
+	private ActorRef mediator;
 
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
 	private static String systemName = "ClusterSystem";
