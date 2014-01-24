@@ -69,6 +69,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public boolean useRegularization = true;
 	protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	protected boolean shouldBackProp = true;
+	protected boolean forceNumEpochs = false;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -736,6 +737,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
+	public boolean isForceNumEpochs() {
+		return forceNumEpochs;
+	}
+
+
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
@@ -755,7 +761,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private RealDistribution dist;
 		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 		protected boolean backProp = true;
+		protected boolean shouldForceEpochs = false;
 		
+		public Builder<E> forceEpochs() {
+			shouldForceEpochs = true;
+			return this;
+		}
 		
 		public Builder<E> disableBackProp() {
 			backProp = false;
@@ -881,6 +892,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.fanIn = this.fanIn;
 				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
 				ret.l2 = l2;
+				ret.forceNumEpochs = shouldForceEpochs;
 				ret.useRegularization = useRegularization;
 				if(activation != null)
 					ret.activation = activation;
