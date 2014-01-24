@@ -122,7 +122,7 @@ public class DBN extends BaseMultiLayerNetwork {
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		RBM ret = new RBM.Builder().useRegularization(useRegularization)
-				.withMomentum(momentum)
+				.withMomentum(momentum).withSparsity(sparsity)
 				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
 				.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(dist)
 				.withRandom(rng).renderWeights(renderWeightsEveryNEpochs)

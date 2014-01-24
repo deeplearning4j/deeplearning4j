@@ -146,8 +146,8 @@ public class RBM extends BaseNeuralNetwork {
 		 * Update gradient parameters
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
-		
-		
+
+
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
 		if(momentum != 0)
@@ -155,12 +155,21 @@ public class RBM extends BaseNeuralNetwork {
 
 		wGradient.divi(input.rows);
 
+		DoubleMatrix hBiasGradient = null;
+
+		if(this.sparsity != 0) {
+			//all hidden units must stay around this number
+			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0).mul(learningRate);
+		}
+		else {
+			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
+			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
+		}
+
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0).mul(learningRate);
 
 
-		//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-		DoubleMatrix hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
 		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 	}
 
