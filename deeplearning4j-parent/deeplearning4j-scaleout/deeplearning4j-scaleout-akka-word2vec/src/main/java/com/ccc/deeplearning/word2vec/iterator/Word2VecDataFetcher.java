@@ -81,7 +81,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 				vec.train();
 			//reset file iterator for training on files
 			files = FileUtils.iterateFiles(new File(path), null, true);
-			//unique labels only: capture everything in a list for index of operations
+			//unique labelStrings only: capture everything in a list for index of operations
 			this.labels.addAll(labels);
 		}
 

@@ -37,7 +37,7 @@ import com.ccc.deeplearning.word2vec.viterbi.ViterbiUtil;
 /**
  * Trains a named entity recognition classifier
  * based on word2vec. Training examples are read
- * by files and labels are in plain text files
+ * by files and labelStrings are in plain text files
  * with the form: <LABEL> positive example </LABEL>
  * @author Adam Gibson
  *
@@ -54,9 +54,9 @@ public class NERClassifier implements Serializable {
 	private List<double[]> trainingOutput = new ArrayList<double[]>();
 	private static Logger log = LoggerFactory.getLogger(NERClassifier.class);
 	private Word2VecMultiLayerNetwork prop;
-	//string labels for each training example
+	//string labelStrings for each training example
 	private List<String> stringOutcomes = new ArrayList<String>();
-	//available labels
+	//available labelStrings
 	private List<String> labels;
 	private Viterbi viterbi;
 	private Object[] deepLearningParams;
@@ -76,7 +76,7 @@ public class NERClassifier implements Serializable {
 	 * Creates a classifier
 	 * This will also train a word2vec model based on the 
 	 * training examples
-	 * @param labels the possible outcomes
+	 * @param labelStrings the possible outcomes
 	 */
 	public NERClassifier(List<String> labels) {
 		this(labels,null);
@@ -86,7 +86,7 @@ public class NERClassifier implements Serializable {
 	 * Creates a classifier
 	 * This will also train a word2vec model based on the 
 	 * training examples
-	 * @param labels the possible outcomes
+	 * @param labelStrings the possible outcomes
 	 */
 	public NERClassifier(List<String> labels,Object[] deepLearningParams) {
 		this.vec = new Word2Vec();
@@ -107,7 +107,7 @@ public class NERClassifier implements Serializable {
 	}
 	/**
 	 * Creates a classifier with the specified word2vec as training examples
-	 * @param labels
+	 * @param labelStrings
 	 * @param vec
 	 */
 	public NERClassifier(List<String> labels,Word2Vec vec,Object[] deepLearningParams) {
@@ -314,7 +314,7 @@ public class NERClassifier implements Serializable {
 		for(int i = 0 ; i < labels.size(); i++)
 			labelIndex.add(labels.get(i));
 
-		//the output single labels are input to the sequence classifier for viterbi
+		//the output single labelStrings are input to the sequence classifier for viterbi
 		viterbi = new Viterbi(labelIndex,ViterbiUtil.featureIndexFromLabelIndex(labelIndex),transitionProbabilities2);
 	}
 	

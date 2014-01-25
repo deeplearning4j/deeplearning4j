@@ -32,7 +32,7 @@ public class ViterbiUtil {
 	/**
 	 * Creates an index from the label index.
 	 * This is meant to represent an index list of
-	 * labels.
+	 * labelStrings.
 	 *  
 	 * @param labelIndex the index to convert
 	 * @return an index where each label is a number
@@ -61,7 +61,7 @@ public class ViterbiUtil {
 			}
 		}
 
-		// compute features for all possible previous labels in advance for
+		// compute features for all possible previous labelStrings in advance for
 		// Viterbi algorithm
 		for (int i = 0; i < data.size(); i++) {
 			Datum datum = data.get(i);

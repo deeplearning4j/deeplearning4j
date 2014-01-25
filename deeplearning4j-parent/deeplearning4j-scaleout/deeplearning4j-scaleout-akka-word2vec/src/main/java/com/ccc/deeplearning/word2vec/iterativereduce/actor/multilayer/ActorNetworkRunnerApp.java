@@ -19,7 +19,7 @@ public class ActorNetworkRunnerApp extends com.ccc.deeplearning.matrix.jblas.ite
 
 	@Option(name = "-w2vpath",usage="path to the root directory for word2vec to train on")
 	protected String word2VecPath;
-	@Option(name="-labels",usage="comma separated list of labels to use for labeling sequences of text")
+	@Option(name="-labelStrings",usage="comma separated list of labelStrings to use for labeling sequences of text")
 	protected String labels;
 	@Option(name="-path",usage="path to training dataset")
 	protected String trainingPath;

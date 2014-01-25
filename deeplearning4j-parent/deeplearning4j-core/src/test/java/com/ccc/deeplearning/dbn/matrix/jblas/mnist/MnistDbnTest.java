@@ -23,54 +23,53 @@ public class MnistDbnTest extends DeepLearningTest {
 
 	@Test
 	public void testMnist() throws IOException, InterruptedException {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(10,10000);
+		MnistDataSetIterator fetcher = new MnistDataSetIterator(50,2000);
 		DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
 		int numLabels = first.getSecond().columns;
-		int[] layerSizes = {600,500,400};
+		int[] layerSizes = {500,500,500};
 		double lr = 0.1;
 
 		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
 				.renderWeights(0).withMomentum(0.9).useRegularization(false)
 				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
 				.hiddenLayerSizes(layerSizes).build();
-		
+
 		do  {
 			dbn.pretrain(first.getFirst(),1, lr, 300);
+
+			if(fetcher.hasNext())
+				first = fetcher.next();
+		} while(fetcher.hasNext());
+
+		fetcher.reset();
+		first = fetcher.next();
+		
+		do {
 			dbn.finetune(first.getSecond(),lr, 300);
-			/*RBM r = (RBM) dbn.layers[0];
-			DoubleMatrix reconstruct = r.reconstruct(first.getFirst());
 			
-			for(int j = 0; j < first.numExamples(); j++) {
-				DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+			if(fetcher.hasNext())
+				first = fetcher.next();
+		}while(fetcher.hasNext());
 
-				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
-				d.title = "REAL";
-				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
-				d2.title = "TEST";
-				d2.draw();
-				Thread.sleep(1000);
-				d.frame.dispose();
-				d2.frame.dispose();
+		fetcher.reset();
+		first = fetcher.next();
+		Evaluation eval = new Evaluation();
 
-			}*/
+		do {
+
 
 			DoubleMatrix predicted = dbn.predict(first.getFirst());
 			log.info("Predicting\n " + first.getSecond().toString().replaceAll(";","\n"));
 			log.info("Prediction was " + predicted.toString().replaceAll(";","\n"));
-			Evaluation eval = new Evaluation();
 			eval.eval(first.getSecond(), predicted);
-			log.info(eval.stats());
 			if(fetcher.hasNext())
 				first = fetcher.next();
-		} while(fetcher.hasNext());
-		DoubleMatrix predicted = dbn.predict(first.getFirst());
+		}while(fetcher.hasNext());
+		
 
-		Evaluation eval = new Evaluation();
-		eval.eval(first.getSecond(), predicted);
+		log.info(eval.stats());
+
 
 	}
 

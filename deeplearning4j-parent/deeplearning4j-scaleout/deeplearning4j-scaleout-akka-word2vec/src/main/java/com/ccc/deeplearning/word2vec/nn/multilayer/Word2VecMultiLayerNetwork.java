@@ -12,6 +12,7 @@ import com.ccc.deeplearning.dbn.CDBN;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.optimizer.Word2VecMultiLayerOptimizer;
 import com.ccc.deeplearning.word2vec.util.Window;
@@ -25,7 +26,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	private static final long serialVersionUID = -289194661963198148L;
 	public Word2Vec vec;
 	protected Word2VecMultiLayerOptimizer optimizer;
-	protected List<String> labels;
+	protected List<String> labelStrings;
 	private static Logger log = LoggerFactory.getLogger(Word2VecMultiLayerNetwork.class);
 	@Override
 	public void finetune(double lr, int epochs) {
@@ -34,8 +35,8 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	
 	
 	public void finetune(double lr, int epochs,List<String> words,List<String> labels) {
-		if(this.labels == null)
-			this.labels = labels;
+		if(this.labelStrings == null)
+			this.labelStrings = labels;
 		
 		if(optimizer == null)
 			optimizer = new Word2VecMultiLayerOptimizer(this, lr,vec);
@@ -44,18 +45,33 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		
 	}
 	
-
+	public void finetune(double lr, int epochs,Word2VecDataSetIterator iter,List<String> labels) {
+		iter.reset();
+		if(this.labelStrings == null)
+			this.labelStrings = labels;
+		
+		if(optimizer == null)
+			optimizer = new Word2VecMultiLayerOptimizer(this, lr,vec);
+		
+		optimizer.optimize(lr, epochs, iter, labels);
+		
+	}
 	
 	
 	public DoubleMatrix predict(String words) {
 		List<Window> windows = Windows.windows(new InputHomogenization(words).transform());
-		double[][] ret = new double[windows.size()][labels.size()];
+		return predict(windows);
+	}
+	
+	
+	public DoubleMatrix predict(List<Window> windows) {
+		double[][] ret = new double[windows.size()][labelStrings.size()];
 
 		
 		
 		for(int i = 0; i < windows.size(); i++) {
 			Window window = windows.get(i);
-			DoubleMatrix prediction = new DoubleMatrix(WindowConverter.asExample(window,vec));
+			DoubleMatrix prediction = MatrixUtil.normalizeByColumnSums(new DoubleMatrix(WindowConverter.asExample(window,vec))).transpose();
 			DoubleMatrix toPredict = super.predict(prediction);
 			ret[i] = toPredict.toArray();
 		}
@@ -109,11 +125,11 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		List<Window> w = new ArrayList<Window>(windows);
 		
 		DoubleMatrix ret = new DoubleMatrix(rows,columns);
-		DoubleMatrix labels = new DoubleMatrix(rows,this.labels.size());
+		DoubleMatrix labels = new DoubleMatrix(rows,this.labelStrings.size());
 		for(int i = 0; i < rows; i++) {
 			Window w2 = w.get(i);
 			ret.putRow(i,new DoubleMatrix(WindowConverter.asExample(w2, vec)));
-			labels.putRow(i,MatrixUtil.toOutcomeVector(this.labels.indexOf(w.get(i).getLabel()), this.labels.size()));
+			labels.putRow(i,MatrixUtil.toOutcomeVector(this.labelStrings.indexOf(w.get(i).getLabel()), this.labelStrings.size()));
 		}
 		super.trainNetwork(ret, labels, otherParams);
 	
@@ -123,7 +139,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	public void trainNetwork(List<String> examples,
 			Object[] otherParams) {
 		WordConverter converter = new WordConverter(examples,vec);
-		super.trainNetwork(converter.toInputMatrix(), converter.toLabelMatrix(labels), otherParams);
+		super.trainNetwork(converter.toInputMatrix(), converter.toLabelMatrix(labelStrings), otherParams);
 	}
 
 	
@@ -136,14 +152,20 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 	}
 
 
+	
+	public void pretrain(Word2VecDataSetIterator iter, int k, double learningRate,
+			int epochs) {
+		iter.reset();
+		while(iter.hasNext()) {
+			List<Window> window = iter.next();
+			DoubleMatrix input = MatrixUtil.normalizeByColumnSums(WordConverter.toInputMatrix(window, vec));
+			super.pretrain(input, k, learningRate, epochs);
+		}
+		
 
-
-
-	@Override
-	protected void initializeLayers(DoubleMatrix input) {
-		super.initializeLayers(input);
-		//this.layers[0].getW().mul(vec.getVocab().size());
 	}
+
+
 
 
 
@@ -171,7 +193,7 @@ public class Word2VecMultiLayerNetwork extends CDBN {
 		public Word2VecMultiLayerNetwork build() {
 			Word2VecMultiLayerNetwork ret = super.build();
 			ret.vec = vec;
-			ret.labels = this.labels;
+			ret.labelStrings = this.labels;
 			return ret;
 		}
 		
