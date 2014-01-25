@@ -10,7 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.base.DeepLearningTest;
 import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.datasets.DataSet;
+import com.ccc.deeplearning.datasets.iterator.impl.LFWDataSetIterator;
+import com.ccc.deeplearning.eval.Evaluation;
 import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
+import com.ccc.deeplearning.util.MatrixUtil;
 
 public class SDALFWTest extends DeepLearningTest {
    private static Logger log = LoggerFactory.getLogger(SDALFWTest.class);
@@ -18,17 +22,37 @@ public class SDALFWTest extends DeepLearningTest {
 	
 	@Test
 	public void testLfW() throws Exception {
-		List<Pair<DoubleMatrix,DoubleMatrix>> lfw = this.getFirstFaces(100);
+		List<Pair<DoubleMatrix,DoubleMatrix>> lfw = getFirstFaces(1);
+		LFWDataSetIterator iter = new LFWDataSetIterator(10,100);
 		int numColumns = lfw.get(0).getFirst().columns;
 		int outcomes = lfw.get(0).getSecond().columns;
-		int[] layerSizes = new int[]{200,200,200};
-		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder().hiddenLayerSizes(layerSizes).numberOfInputs(numColumns).numberOfOutPuts(outcomes).withRng(new MersenneTwister(123)).build();
-		for(int i = 0; i < 1; i++) {
-			sda.pretrain(lfw.get(i).getFirst(), 0.1, 0.3, 200);
-			sda.finetune(lfw.get(i).getSecond(), 0.1, 500);
+		int[] layerSizes = new int[]{1000,1000,1000};
+		
+		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder()
+		.hiddenLayerSizes(layerSizes).numberOfInputs(numColumns).useRegularization(false)
+		.numberOfOutPuts(outcomes).withRng(new MersenneTwister(123)).build();
+
+		
+		while(iter.hasNext()) {
+			DataSet next = iter.next();
+			DoubleMatrix normalized = MatrixUtil.normalizeByColumnSums(next.getFirst());
+			sda.pretrain(normalized, 0.1, 0.6, 2000);
+			sda.finetune(next.getSecond(), 0.1, 500);
 		}
 		
-		log.info(sda.predict(lfw.get(0).getFirst()).toString());
+		
+		iter.reset();
+		
+		Evaluation eval = new Evaluation();
+		
+		while(iter.hasNext()) {
+			DataSet next = iter.next();
+			DoubleMatrix normalized = MatrixUtil.normalizeByColumnSums(next.getFirst());
+
+			eval.eval(next.getSecond(), sda.predict(normalized));
+		}
+		
+		log.info(eval.stats());
 		
 	}
 

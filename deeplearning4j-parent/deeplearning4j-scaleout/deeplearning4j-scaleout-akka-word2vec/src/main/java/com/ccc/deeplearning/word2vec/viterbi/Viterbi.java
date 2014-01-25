@@ -56,7 +56,7 @@ public class Viterbi implements Persistable {
 		}
 		previousLabels.add("NONE");
 
-		//add the previous labels for each window
+		//add the previous labelStrings for each window
 		for(int i = 1; i < labels.size(); i++) 
 			previousLabels.add(labels.get(i - 1));
 

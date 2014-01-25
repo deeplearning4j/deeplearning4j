@@ -19,8 +19,7 @@ public class WordConverter {
 		this.vec = vec;
 	}
 
-	public DoubleMatrix toInputMatrix() {
-		List<Window> windows = allWindowsForAllSentences();
+	public static DoubleMatrix toInputMatrix(List<Window> windows,Word2Vec vec) {
 		int columns = vec.getLayerSize() * vec.getWindow();
 		int rows = windows.size();
 		DoubleMatrix ret = new DoubleMatrix(rows,columns);
@@ -29,15 +28,27 @@ public class WordConverter {
 		}
 		return ret;
 	}
-
-	public DoubleMatrix toLabelMatrix(List<String> labels) {
-		int columns = labels.size();
+	
+	
+	public DoubleMatrix toInputMatrix() {
 		List<Window> windows = allWindowsForAllSentences();
+		return toInputMatrix(windows,vec);
+	}
+
+	
+
+	public static DoubleMatrix toLabelMatrix(List<String> labels,List<Window> windows) {
+		int columns = labels.size();
 		DoubleMatrix ret = new DoubleMatrix(windows.size(),columns);
 		for(int i = 0; i < ret.rows; i++) {
 			ret.putRow(i,MatrixUtil.toOutcomeVector(labels.indexOf(windows.get(i).getLabel()), labels.size()));
 		}
 		return ret;
+	}
+	
+	public DoubleMatrix toLabelMatrix(List<String> labels) {
+		List<Window> windows = allWindowsForAllSentences();
+		return toLabelMatrix(labels,windows);
 	}
 
 	private List<Window> allWindowsForAllSentences() {
