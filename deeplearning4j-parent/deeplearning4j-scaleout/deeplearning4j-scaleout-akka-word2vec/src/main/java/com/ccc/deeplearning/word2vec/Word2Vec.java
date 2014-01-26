@@ -1,44 +1,23 @@
 package com.ccc.deeplearning.word2vec;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.Instances;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang3.StringUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +31,13 @@ import akka.dispatch.OnComplete;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.MapFactory;
 import com.ccc.deeplearning.berkeley.Triple;
-import com.ccc.deeplearning.util.FileOperations;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
+import com.ccc.deeplearning.word2vec.sentenceiterator.CollectionSentenceIterator;
+import com.ccc.deeplearning.word2vec.sentenceiterator.SentenceIterator;
+import com.ccc.deeplearning.word2vec.tokenizer.DefaultTokenizerFactory;
+import com.ccc.deeplearning.word2vec.tokenizer.Tokenizer;
+import com.ccc.deeplearning.word2vec.tokenizer.TokenizerFactory;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
 
 /**
@@ -71,8 +54,9 @@ public class Word2Vec implements Serializable {
 	private Map<String,VocabWord> vocab = new HashMap<String,VocabWord>();
 	/* all words; including those not in the actual ending index */
 	private Map<String,VocabWord> rawVocab = new HashMap<String,VocabWord>();
-
 	private Map<Integer,String> indexToWord = new HashMap<Integer,String>();
+	private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+	private SentenceIterator sentenceIter;
 	private Random rand = new Random(1);
 	private int topNSize = 40;
 	public int EXP_TABLE_SIZE = 500;
@@ -100,19 +84,15 @@ public class Word2Vec implements Serializable {
 	private DoubleMatrix syn0;
 	//hidden layer
 	private DoubleMatrix syn1;
-	private List<String> sentences = new ArrayList<String>();
 	private int allWordsCount = 0;
+	private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
 	private static ActorSystem trainingSystem;
 	private List<String> stopWords;
 	/* out of vocab */
 	private double[] oob;
-	/*
-	 * Used as a pair for when
-	 * the number of sentences is not known
-	 */
-	private Iterator<File> fileIterator;
-	private int numLines;
 
+	public Word2Vec() {}
+	
 	/**
 	 * Mainly meant for use with
 	 * static loading methods.
@@ -121,34 +101,38 @@ public class Word2Vec implements Serializable {
 	 * or         {@link #Word2Vec(Collection)}
 	 * or         {@link #Word2Vec(Collection, int)}
 	 */
-	public Word2Vec() {
+	public Word2Vec(SentenceIterator sentenceIter) {
 		createExpTable();
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
 		readStopWords();
+		this.sentenceIter = sentenceIter;
 	}
-
-	@SuppressWarnings("unchecked")
-	private void readStopWords() {
-		try {
-			stopWords = IOUtils.readLines(new ClassPathResource("/stopwords").getInputStream());
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
+	
+	
 	/**
-	 * This is meant for streaming a dataset
-	 * alongside with add {@link #addToVocab(String)}
-	 * @param fileIterator the iterator over the dataset
+	 * Mainly meant for use with
+	 * static loading methods.
+	 * Please consider one of the other constructors
+	 * That being {@link #Word2Vec(Iterator)} (streaming dataset)
+	 * or         {@link #Word2Vec(Collection)}
+	 * or         {@link #Word2Vec(Collection, int)}
 	 */
-	public Word2Vec(Iterator<File> fileIterator) {
-		this();
-		this.fileIterator = fileIterator;
+	public Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
+		createExpTable();
+		oob = new double[layerSize];
+		Arrays.fill(oob,0.0);
 		readStopWords();
-
+		this.sentenceIter = sentenceIter;
+		this.minWordFrequency = minWordFrequency;
 	}
+	
+
+	public Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter) {
+		this(sentenceIter);
+		this.tokenizerFactory = factory;
+	}
+
 
 	/**
 	 * Assumes whole dataset is passed in. 
@@ -164,6 +148,11 @@ public class Word2Vec implements Serializable {
 
 	}
 
+	public Word2Vec(Collection<String> sentences,TokenizerFactory factory) {
+		this(sentences);
+		this.tokenizerFactory = factory;
+	}
+
 	/**
 	 * Initializes based on assumption of whole data set being passed in.
 	 * @param sentences the sentences to be used for training
@@ -173,8 +162,9 @@ public class Word2Vec implements Serializable {
 	public Word2Vec(Collection<String> sentences,int minWordFrequency) {
 		createExpTable();
 		this.minWordFrequency = minWordFrequency;
-		this.sentences = new ArrayList<String>(sentences);
-		this.buildVocab(sentences);
+		this.sentenceIter = new CollectionSentenceIterator(sentences);
+
+		this.buildVocab();
 
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
@@ -183,36 +173,13 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	
-	public void saveAsCsv(File path) {
-		//change each row to a column: this allows each column to be a word
-		DoubleMatrix toSave = MatrixUtil.normalizeByRowSums(syn0.transpose());
-		ArrayList<Attribute> atts = new ArrayList<Attribute>();
-		for(int i = 0; i < wordIndex.size(); i++) {
-			atts.add(new Attribute(wordIndex.get(i).toString()));
-		}
-		
-		Instances instances = new Instances("",atts, toSave.rows);
-		
-		OutputStream os = FileOperations.createAppendingOutputStream(path);
-		try {
-
-			
-
-			for(int i = 0; i < toSave.rows; i++)  {
-				DoubleMatrix row = toSave.getRow(i);
-				instances.add(new DenseInstance(1.0, row.toArray()));
-			}
-			
-			os.write(instances.toString().getBytes());
-			os.flush();
-			os.close();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
-
+	public Word2Vec(Collection<String> sentences,int minWordFrequency,TokenizerFactory factory) {
+		this(sentences,minWordFrequency);
+		this.tokenizerFactory = factory;
 	}
+
+
+
 
 	public double[] getWordVector(String word) {
 		int i = this.wordIndex.indexOf(word);
@@ -305,77 +272,28 @@ public class Word2Vec implements Serializable {
 		final Counter<String> totalWords = new Counter<String>(factory);
 
 
-		//came in through empty constructor, build vocab.
-		//the other scenario is being initialized through a file iterator
-		//this means that vocab should have already been trained
-		//but not the vectors
-		if(syn0 == null && !sentences.isEmpty()) {
-			this.buildVocab(sentences);
-		}
 
 
 		if(syn0.rows != this.vocab.size())
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
-		if(sentences.isEmpty()) {
-			//no sentences or file iterator defined
-			if(fileIterator == null)
-				throw new IllegalStateException("Unable to train sentences, no iterator or sentences defined");
-
-			else {
-
-				if(!fileIterator.hasNext()) 
-					throw new IllegalStateException("File iterator does not appear to have any files to train on");
-				/*
-				 * Count the number of lines
-				 */
-				final CountDownLatch sentenceCounter = new CountDownLatch(numLines);
-				int numLinesIterated = 0;
-				while(fileIterator.hasNext()) {
-					try {
-						LineIterator lines = FileUtils.lineIterator(fileIterator.next());
-						while(lines.hasNext()) {
-							final String sentence = new InputHomogenization(lines.nextLine().replaceAll("\\p{P}", "")).transform();
-							numLinesIterated++;
-							processSentence(sentence, sentenceCounter,totalWords);
-
-						}
 
 
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
+		while(sentenceIter.hasNext()) {
+			String sentence = sentenceIter.nextSentence();
+			processSentence(sentence,totalWords);
+			numSentencesProcessed.incrementAndGet();
 
-				}
-
-				try {
-					sentenceCounter.await();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-
-				if(numLinesIterated != numLines) {
-					this.numLines = numLinesIterated;
-				}
-			}
 		}
 
-
-		else {
-
-			final CountDownLatch sentenceCounter = new CountDownLatch(sentences.size());
-
-
-			for(final String sentence : sentences) 
-				processSentence(sentence, sentenceCounter,totalWords);
-
-
+		while(sentenceIter.hasNext()) {
 			try {
-				sentenceCounter.await();
+				Thread.sleep(150000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
+
 
 
 		if(trainingSystem != null)
@@ -383,7 +301,7 @@ public class Word2Vec implements Serializable {
 
 	}
 
-	private void processSentence(final String sentence,final CountDownLatch sentenceCounter,final Counter<String> totalWords) {
+	private void processSentence(final String sentence,final Counter<String> totalWords) {
 		Future<Void> future = Futures.future(new Callable<Void>() {
 
 			@Override
@@ -403,11 +321,10 @@ public class Word2Vec implements Serializable {
 			public void onComplete(Throwable arg0, Void arg1)
 					throws Throwable {
 
-				sentenceCounter.countDown();
 
-				if(sentenceCounter.getCount() % 10000 == 0) {
+				if(numSentencesProcessed.get() % 10000 == 0) {
 					alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
-					log.info("Alpha updated " + alpha + " progress " + sentenceCounter.getCount() + " sentence size " + sentences.size());
+					log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed.get());
 				}
 
 			}
@@ -419,7 +336,7 @@ public class Word2Vec implements Serializable {
 
 
 	public List<VocabWord> trainSentence(String sentence,Counter<String> totalWords) {
-		StringTokenizer tokenizer = new StringTokenizer(sentence);
+		Tokenizer tokenizer = tokenizerFactory.create(sentence);
 		List<VocabWord> sentence2 = new ArrayList<VocabWord>();
 		while(tokenizer.hasMoreTokens()) {
 			String next = tokenizer.nextToken();
@@ -436,77 +353,6 @@ public class Word2Vec implements Serializable {
 		trainSentence(sentence2);
 		return sentence2;
 	}
-
-
-
-
-
-	/**
-	 * The format for saving the word2vec model is as follows.
-	 * 
-	 * @param file
-	 * @throws IOException
-	 */
-	public void saveModel(File file) throws IOException {
-
-		if(file.exists())
-			file.delete();
-
-		try (DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(
-				new FileOutputStream(file)))) {
-			dataOutputStream.writeInt(vocab.size());
-			dataOutputStream.writeInt(layerSize);
-
-			for(int i = 0; i < vocab.size(); i++) {
-				String word = this.wordIndex.get(i).toString();
-				dataOutputStream.writeUTF(word);
-				vocab.get(word).write(dataOutputStream);
-
-			}
-
-			syn0.out(dataOutputStream);
-			syn1.out(dataOutputStream);
-
-
-
-			dataOutputStream.flush();
-			dataOutputStream.close();
-
-		} catch (IOException e) {
-			log.error("Unable to save model",e);
-		}
-
-	}
-
-	public void loadModel(InputStream is) throws Exception {
-		try(DataInputStream dis = new DataInputStream(new BufferedInputStream(is))) {
-			int vocabSize = dis.readInt();
-			int layerSize = dis.readInt();
-			setLayerSize(layerSize);
-			for(int i = 0; i < vocabSize; i++) {
-				String word = dis.readUTF();
-				wordIndex.add(word);
-				vocab.put(word,new VocabWord().read(dis, layerSize));
-
-			}
-
-			syn0.in(dis);
-			syn1.in(dis);
-
-			dis.close();
-
-		}
-		catch(IOException e) {
-			log.error("Unable to read file for loading model",e);
-		}
-	}
-
-
-
-
-
-
-
 
 
 	/**
@@ -567,59 +413,6 @@ public class Word2Vec implements Serializable {
 		return new TreeSet<VocabWord>(wordEntrys);
 	}
 
-	/**
-	 * Meant for streaming methods of 
-	 * adding to the vocabulary.
-	 * House keeping related to the 
-	 * file iterator that will be needed
-	 * when training the word vectors later on
-	 * (assumed to be passed in)
-	 * is also done within this method.
-	 * 
-	 * Note that an IllegalStateException is also
-	 * thrown when sentences is not empty and this method is called.
-	 * This ensures a consistent state.
-	 * @param words the words to be added
-	 */
-	public void addToVocab(String words) {
-		if(!sentences.isEmpty())
-			throw new IllegalStateException("Only one method (complete sentences passed in) or streaming is allowed. Please clear sentences and pass in a file iterator to use the other method");
-		int count = 0;
-		//
-		numLines++;
-		StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(words).transform());
-
-		this.allWordsCount += tokenizer.countTokens();
-		count++;
-		if(count % 10000 == 0)
-			log.info("Processed  sentence " + count + " current word count " + allWordsCount);
-
-		while(tokenizer.hasMoreTokens()) {
-			String token = tokenizer.nextToken();
-			if(stopWords.contains(token))
-				token = "STOP";
-			VocabWord word = rawVocab.get(token);
-
-			//this will also increment the
-			//vocab word at the final level
-			//due to the reference being the same
-			if(word != null)
-				word.increment();
-			else {
-				word = new VocabWord(1.0,layerSize);
-				rawVocab.put(token,word);
-			}
-
-
-			if(word.getWordFrequency() >= minWordFrequency) {
-				word.setIndex(wordIndex.size());
-				wordIndex.add(token);
-				this.vocab.put(token, word);
-			}
-
-		}
-
-	}
 
 	public void setup() {
 
@@ -630,14 +423,14 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	public void buildVocab(Collection<String> sentences) {
+	public void buildVocab() {
 		readStopWords();
-		Queue<String> queue = new ArrayDeque<>(sentences);
 		int count = 0;
-		while(!queue.isEmpty()) {
-			final String words = queue.poll();
+		while(sentenceIter.hasNext()) {
+			final String words = sentenceIter.nextSentence();
 
-			StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(words).transform());
+			Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
+
 
 			this.allWordsCount += tokenizer.countTokens();
 			count++;
@@ -674,8 +467,12 @@ public class Word2Vec implements Serializable {
 				}
 
 			}
+			numSentencesProcessed.incrementAndGet();
+
 
 		}
+
+
 		setup();
 
 	}
@@ -688,9 +485,7 @@ public class Word2Vec implements Serializable {
 	}
 
 
-	public void addSentence(String sentence) {
-		this.sentences.add(sentence);
-	}
+
 
 	public void trainSentence(List<VocabWord> sentence) {
 		long nextRandom = 5;
@@ -822,6 +617,7 @@ public class Word2Vec implements Serializable {
 		return copy;
 	}
 
+
 	/* reinit weights */
 	private void resetWeights() {
 		syn1 = DoubleMatrix.zeros(vocab.size(), layerSize);
@@ -855,6 +651,19 @@ public class Word2Vec implements Serializable {
 		if(ret <  0)
 			return 0;
 		return ret;
+	}
+
+
+
+
+	@SuppressWarnings("unchecked")
+	private void readStopWords() {
+		try {
+			stopWords = IOUtils.readLines(new ClassPathResource("/stopwords").getInputStream());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 
@@ -990,9 +799,7 @@ public class Word2Vec implements Serializable {
 		return words;
 	}
 
-	public List<String> getSentences() {
-		return sentences;
-	}
+
 
 	public int getAllWordsCount() {
 		return allWordsCount;
@@ -1002,10 +809,7 @@ public class Word2Vec implements Serializable {
 		return trainingSystem;
 	}
 
-	public Iterator<File> getFileIterator() {
-		return fileIterator;
-	}
-
+	
 	public void setSyn0(DoubleMatrix syn0) {
 		this.syn0 = syn0;
 	}

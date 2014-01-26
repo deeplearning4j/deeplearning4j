@@ -10,6 +10,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ccc.deeplearning.word2vec.loader.Word2VecSaver;
+
 public class ModelTrainer {
 
 	private static Logger log = LoggerFactory.getLogger(ModelTrainer.class);
@@ -39,7 +41,7 @@ public class ModelTrainer {
 		Word2Vec vec = new Word2Vec(sentences,1);
 		vec.setWindow(3);
 		vec.train();
-		vec.saveModel(new File(args[1]));
+		Word2VecSaver.saveModel(vec,new File(args[1]));
 		log.info("Saved to " + args[1]);
 	}
 

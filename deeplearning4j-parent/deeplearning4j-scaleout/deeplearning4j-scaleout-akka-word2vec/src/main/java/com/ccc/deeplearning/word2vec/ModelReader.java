@@ -15,8 +15,8 @@ public class ModelReader {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) throws IOException {
-		Word2Vec vec = Word2VecLoader.loadBinary(new File(args[0]));
+	public static void main(String[] args) throws Exception {
+		Word2Vec vec = Word2VecLoader.loadModel(new File(args[0]));
 		vec.train();
 		BufferedReader br = 
 				new BufferedReader(new InputStreamReader(System.in));
