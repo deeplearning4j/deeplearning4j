@@ -3,16 +3,26 @@ package com.ccc.deeplearning.word2vec.iterator;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 
+import java.io.File;
+import java.util.Arrays;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ccc.deeplearning.word2vec.Word2Vec;
+import com.ccc.deeplearning.word2vec.sentenceiterator.FileSentenceIterator;
+import com.ccc.deeplearning.word2vec.sentenceiterator.SentenceIterator;
 
 public class DataFetcherTest {
 
 	private static Logger log = LoggerFactory.getLogger(DataFetcherTest.class);
 	@Test
 	public void testIterateArticles() {
-		Word2VecDataFetcher fetcher = new Word2VecDataFetcher("src/test/resources/articles",1);
+		Word2Vec vec = new Word2Vec(new FileSentenceIterator(new File("src/test/resources/articles")),1);
+		
+		
+		Word2VecDataFetcher fetcher = new Word2VecDataFetcher("src/test/resources/articles",vec,Arrays.asList("NONE","ADDRESS"));
 		fetcher.fetch(10);
 		assertEquals(10,fetcher.getBatch());
 		assumeNotNull(fetcher.getVec());

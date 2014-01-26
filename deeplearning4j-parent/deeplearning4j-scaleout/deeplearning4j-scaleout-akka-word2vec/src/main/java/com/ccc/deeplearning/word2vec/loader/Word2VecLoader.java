@@ -53,53 +53,6 @@ public class Word2VecLoader {
 
 
 
-	public static Word2Vec loadTextModel(File file) throws IOException {
-		@SuppressWarnings("unchecked")
-		List<String> list = FileUtils.readLines(file);
-		Word2Vec vec = new Word2Vec();
-		vec.buildVocab(list);
-		for(String sentence : list)
-			vec.addSentence(sentence);
-		vec.train();
-		return vec;
-
-	}
-
-	public static Word2Vec loadBinary(File file) throws IOException {
-		Word2Vec vec = new Word2Vec();
-		try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(
-				file)))) {
-			int words = dis.readInt();
-			int size = dis.readInt();
-			vec.setLayerSize(size);
-			double len = 0;
-			double vector = 0;
-			vec.setSyn0(DoubleMatrix.zeros(words, size));
-			vec.setSyn1(DoubleMatrix.zeros(words,size));
-
-			String key = null;
-			double[] value = null;
-			for (int i = 0; i < words; i++) {
-				key = dis.readUTF();
-				value = new double[size];
-				for (int j = 0; j < size; j++) {
-					vector = dis.readDouble();
-					len += vector * vector;
-					value[j] = vector;
-				}
-
-				len = Math.sqrt(len);
-
-				for (int j = 0; j < size; j++) 
-					value[j] /= len;
-				vec.getWordIndex().add(key);
-				vec.getSyn0().putRow(i,new DoubleMatrix(value));
-
-			}
-
-		}
-		return vec;
-	}
 
 	private static Word2Vec loadGoogleVocab(Word2Vec vec,String path) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(new File(path)));

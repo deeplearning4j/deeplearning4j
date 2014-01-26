@@ -21,8 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.berkeley.CounterMap;
 import com.ccc.deeplearning.datasets.DataSet;
-import com.ccc.deeplearning.dbn.CDBN;
-import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.nn.multilayer.Word2VecMultiLayerNetwork;
 import com.ccc.deeplearning.word2vec.util.Window;
@@ -154,36 +152,6 @@ public class NERClassifier implements Serializable {
 		return ret;
 	}
 
-	public void addExample(String training) {
-		if(training == null || training.isEmpty())
-			return;
-		List<String> words = new ArrayList<String>();
-		StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(training).transform());
-		while(tokenizer.hasMoreTokens()) {
-			String token = tokenizer.nextToken();
-			//training label
-			if(token.charAt(0) == '<' && token.endsWith(">"))
-				token = token.toUpperCase();
-			words.add(token);
-		}
-		String currLabel = "NONE";
-
-		List<Window> windows = Windows.windows(words,vec.getWindow());
-
-		for(Window window : windows) {
-			if(window.isBeginLabel())
-				currLabel = window.getLabel();
-			else if(window.isEndLabel())
-				currLabel = "NONE";
-			exampleString.add(window);
-			if(trainWord2Vec)
-				vec.addSentence(window.asTokens());
-			trainingOutput.add(outcome(currLabel));
-			stringOutcomes.add(currLabel);
-		}
-
-
-	}
 
 	public double[] outcome(String label) {
 		//always count the none label

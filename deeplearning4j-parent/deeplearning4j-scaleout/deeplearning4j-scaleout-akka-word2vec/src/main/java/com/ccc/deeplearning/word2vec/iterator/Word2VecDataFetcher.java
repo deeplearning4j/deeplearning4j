@@ -3,11 +3,8 @@ package com.ccc.deeplearning.word2vec.iterator;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -40,8 +37,6 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	private List<Window> cache = new ArrayList<Window>();
 	private static Logger log = LoggerFactory.getLogger(Word2VecDataFetcher.class);
 	private int totalExamples;
-	private int minWordFrequency;
-	private boolean trainWord2Vec = false;
 	private String path;
 	
 	public Word2VecDataFetcher(String path,Word2Vec vec,List<String> labels) {
@@ -50,79 +45,8 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		this.vec = vec;
 		this.labels = labels;
 		this.path = path;
-		trainWord2Vec = false;
-		collectLabelsAndInitWord2Vec(path);
 	}
 
-	public Word2VecDataFetcher(String path,int minWordFrequency) {
-		this.minWordFrequency = minWordFrequency;
-		trainWord2Vec = true;
-		this.path = path;
-		collectLabelsAndInitWord2Vec(path);
-	}
-
-	private void collectLabelsAndInitWord2Vec(String path) {
-		files = FileUtils.iterateFiles(new File(path), null, true);
-		if(vec == null) {
-			vec = new Word2Vec(FileUtils.iterateFiles(new File(path), null, true));
-		}
-		vec.setMinWordFrequency(minWordFrequency);
-		Set<String> labels = new HashSet<String>();
-		int linesCount  = 0;
-		if(this.labels.isEmpty()) {
-			linesCount = findLabels();
-			log.info("Processed " + linesCount + " lines for training");
-			if(trainWord2Vec)
-				vec.setup();
-			files = FileUtils.iterateFiles(new File(path), null, true);
-
-			//builds vocab and other associated tools
-			if(trainWord2Vec)
-				vec.train();
-			//reset file iterator for training on files
-			files = FileUtils.iterateFiles(new File(path), null, true);
-			//unique labelStrings only: capture everything in a list for index of operations
-			this.labels.addAll(labels);
-		}
-
-	}
-
-	private int findLabels() {
-		int linesCount = 0;
-		while(files.hasNext()) {
-			File next = files.next();
-			try {
-				LineIterator lines = FileUtils.lineIterator(next);
-				if(!lines.hasNext())
-					continue;
-				for(String line = lines.nextLine(); lines.hasNext();line = lines.nextLine()) {
-					//each window is an example
-					List<Window> windows = Windows.windows(line);
-					totalExamples += windows.size();
-					linesCount++;
-					if(trainWord2Vec)
-						vec.addToVocab(line);
-					Matcher beginMatcher = begin.matcher(line);
-					Matcher endMatcher = end.matcher(line);
-					//found pair
-					while(beginMatcher.find() && endMatcher.find()) {
-						//validate equal: add this as a label if it doesn't exist
-						String beginGroup = beginMatcher.group();
-						String endGroup = endMatcher.group();
-						beginGroup = beginGroup.replace("<","").replace(">","");
-						endGroup = endGroup.replace("<","").replace(">","");
-						if(beginGroup.equals(endGroup)) {
-							labels.add(beginGroup);
-						}
-
-					}
-				}
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return linesCount;
-	}
 
 
 	private DataSet fromCache() {
