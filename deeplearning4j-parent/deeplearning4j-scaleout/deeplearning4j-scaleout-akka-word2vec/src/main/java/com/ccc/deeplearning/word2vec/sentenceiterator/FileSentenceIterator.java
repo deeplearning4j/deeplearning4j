@@ -7,6 +7,7 @@ import java.util.Iterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
+@SuppressWarnings("unchecked")
 public class FileSentenceIterator implements SentenceIterator {
 
 	/*
@@ -15,10 +16,10 @@ public class FileSentenceIterator implements SentenceIterator {
 	 */
 	private Iterator<File> fileIterator;
 	private LineIterator currLineIterator;
+	private File dir;
 	
-	
-	@SuppressWarnings("unchecked")
 	public FileSentenceIterator(File dir) {
+		this.dir = dir;
 		fileIterator = FileUtils.iterateFiles(dir, null, true);
 		
 	}
@@ -61,6 +62,14 @@ public class FileSentenceIterator implements SentenceIterator {
 	@Override
 	public boolean hasNext() {
 		return currLineIterator != null && currLineIterator.hasNext() && fileIterator.hasNext();
+	}
+
+
+	@Override
+	public void reset() {
+		fileIterator = FileUtils.iterateFiles(dir, null, true);
+
+		
 	}
 
 	

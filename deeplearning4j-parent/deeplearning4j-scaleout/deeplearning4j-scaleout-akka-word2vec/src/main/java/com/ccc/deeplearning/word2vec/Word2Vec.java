@@ -107,6 +107,7 @@ public class Word2Vec implements Serializable {
 		Arrays.fill(oob,0.0);
 		readStopWords();
 		this.sentenceIter = sentenceIter;
+		buildVocab();
 	}
 	
 	
@@ -278,11 +279,22 @@ public class Word2Vec implements Serializable {
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
 
-
+		sentenceIter.reset();
+		
 		while(sentenceIter.hasNext()) {
-			String sentence = sentenceIter.nextSentence();
-			processSentence(sentence,totalWords);
-			numSentencesProcessed.incrementAndGet();
+			final String sentence = sentenceIter.nextSentence();
+			Futures.future(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					processSentence(sentence,totalWords);
+					numSentencesProcessed.incrementAndGet();
+					return null;
+				}
+				
+			}, trainingSystem.dispatcher());
+			
+		
 
 		}
 
@@ -428,7 +440,10 @@ public class Word2Vec implements Serializable {
 		int count = 0;
 		while(sentenceIter.hasNext()) {
 			final String words = sentenceIter.nextSentence();
-
+			if(words == null) {
+				break;
+			}
+			
 			Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
 
 

@@ -4,6 +4,6 @@ public interface SentenceIterator {
 
 	String nextSentence();
 	boolean hasNext();
-	
+	void reset();
 	
 }
