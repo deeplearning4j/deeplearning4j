@@ -65,6 +65,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		return new DataSet(in,out);
 	}
 
+	public void validate() {
+		if(getFirst().rows != getSecond().rows)
+			throw new IllegalStateException("Invalid dataset");
+	}
+	
 	public int outcome() {
 		if(this.numExamples() > 1)
 			throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");

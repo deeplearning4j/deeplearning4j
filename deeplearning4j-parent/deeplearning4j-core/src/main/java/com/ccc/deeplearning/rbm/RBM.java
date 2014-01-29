@@ -147,7 +147,7 @@ public class RBM extends BaseNeuralNetwork {
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans)).mul(learningRate);
 
-
+		//weight decay via l2 regularization
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
 		if(momentum != 0)

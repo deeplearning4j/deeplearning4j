@@ -10,8 +10,6 @@ import java.io.Serializable;
 
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Logistic regression implementation with jblas.
@@ -21,14 +19,19 @@ import org.slf4j.LoggerFactory;
 public class LogisticRegression implements Serializable {
 
 	private static final long serialVersionUID = -7065564817460914364L;
+	//number of inputs from final hidden layer
 	public int nIn;
+	//number of outputs for labeling
 	public int nOut;
+	//current input and label matrices
 	public DoubleMatrix input,labels;
+	//weight matrix
 	public DoubleMatrix W;
+	//bias
 	public DoubleMatrix b;
+	//weight decay; l2 regularization
 	public double l2 = 0.01;
 	public boolean useRegularization = true;
-	private static Logger log = LoggerFactory.getLogger(LogisticRegression.class);
 
 	private LogisticRegression() {}
 
@@ -49,16 +52,33 @@ public class LogisticRegression implements Serializable {
 		this(null,null,nIn,nOut);
 	}
 
+	/**
+	 * Train with current input and labels 
+	 * with the given learning rate
+	 * @param lr the learning rate to use
+	 */
 	public void train(double lr) {
 		train(input,labels,lr);
 	}
 
 
+	/**
+	 * Train with the given input
+	 * and the currently set labels
+	 * @param x the input to use
+	 * @param lr the learning rate to use
+	 */
 	public void train(DoubleMatrix x,double lr) {
 		train(x,labels,lr);
 
 	}
 
+	/**
+	 * Averages the given logistic regression 
+	 * from a mini batch in to this one
+	 * @param l the logistic regression to average in to this one
+	 * @param batchSize  the batch size
+	 */
 	public void merge(LogisticRegression l,int batchSize) {
 		W.addi(l.W.subi(W).div(batchSize));
 		b.addi(l.b.subi(b).div(batchSize));
@@ -70,6 +90,7 @@ public class LogisticRegression implements Serializable {
 	 */
 	public double negativeLogLikelihood() {
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
+		//weight decay
 		if(useRegularization) {
 			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
 			return - labels.mul(log(sigAct)).add(
@@ -78,6 +99,11 @@ public class LogisticRegression implements Serializable {
 							))
 							.columnSums().mean() + reg;
 		}
+		if(sigAct.length != labels.length) {
+			System.err.println("REALLY?");
+		}
+		
+		
 		return - labels.mul(log(sigAct)).add(
 				oneMinus(labels).mul(
 						log(oneMinus(sigAct))
@@ -128,9 +154,17 @@ public class LogisticRegression implements Serializable {
 		return reg;
 	}
 
+	/**
+	 * Gets the gradient from one training iteration
+	 * @param lr the learning rate to use for training
+	 * @return the gradient (bias and weight matrix)
+	 */
 	public LogisticRegressionGradient getGradient(double lr) {
+		//input activation
 		DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
+		//difference of outputs
 		DoubleMatrix dy = labels.sub(p_y_given_x);
+		//weight decay
 		if(useRegularization)
 			dy.divi(input.rows);
 		DoubleMatrix wGradient = input.transpose().mmul(dy).mul(lr);

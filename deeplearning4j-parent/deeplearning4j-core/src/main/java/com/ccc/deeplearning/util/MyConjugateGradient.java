@@ -11,18 +11,17 @@
 
 package com.ccc.deeplearning.util;
 
-import java.util.logging.*;
-
-import com.ccc.deeplearning.optimize.NeuralNetEpochListener;
+import java.util.logging.Logger;
 
 import cc.mallet.optimize.BackTrackLineSearch;
-import cc.mallet.optimize.GradientBracketLineOptimizer;
 import cc.mallet.optimize.LineOptimizer;
 import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.Optimizer;
 import cc.mallet.optimize.OptimizerEvaluator;
 import cc.mallet.types.MatrixOps;
 import cc.mallet.util.MalletLogger;
+
+import com.ccc.deeplearning.optimize.NeuralNetEpochListener;
 
 /**
  * Modified based on cc.mallet.optimize.ConjugateGradient <p/>
