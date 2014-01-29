@@ -1,7 +1,12 @@
 package com.ccc.deeplearning.word2vec;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +36,7 @@ import akka.dispatch.OnComplete;
 import com.ccc.deeplearning.berkeley.Counter;
 import com.ccc.deeplearning.berkeley.MapFactory;
 import com.ccc.deeplearning.berkeley.Triple;
+import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
 import com.ccc.deeplearning.word2vec.sentenceiterator.CollectionSentenceIterator;
@@ -47,7 +53,7 @@ import com.ccc.deeplearning.word2vec.viterbi.Index;
  * @author Adam Gibson
  *
  */
-public class Word2Vec implements Serializable {
+public class Word2Vec implements Persistable {
 
 
 	private static final long serialVersionUID = -2367495638286018038L;
@@ -92,7 +98,7 @@ public class Word2Vec implements Serializable {
 	private double[] oob;
 
 	public Word2Vec() {}
-	
+
 	/**
 	 * Mainly meant for use with
 	 * static loading methods.
@@ -109,8 +115,8 @@ public class Word2Vec implements Serializable {
 		this.sentenceIter = sentenceIter;
 		buildVocab();
 	}
-	
-	
+
+
 	/**
 	 * Mainly meant for use with
 	 * static loading methods.
@@ -127,7 +133,7 @@ public class Word2Vec implements Serializable {
 		this.sentenceIter = sentenceIter;
 		this.minWordFrequency = minWordFrequency;
 	}
-	
+
 
 	public Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter) {
 		this(sentenceIter);
@@ -280,7 +286,7 @@ public class Word2Vec implements Serializable {
 
 
 		sentenceIter.reset();
-		
+
 		while(sentenceIter.hasNext()) {
 			final String sentence = sentenceIter.nextSentence();
 			Futures.future(new Callable<Void>() {
@@ -291,10 +297,10 @@ public class Word2Vec implements Serializable {
 					numSentencesProcessed.incrementAndGet();
 					return null;
 				}
-				
+
 			}, trainingSystem.dispatcher());
-			
-		
+
+
 
 		}
 
@@ -443,7 +449,7 @@ public class Word2Vec implements Serializable {
 			if(words == null) {
 				break;
 			}
-			
+
 			Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
 
 
@@ -824,7 +830,7 @@ public class Word2Vec implements Serializable {
 		return trainingSystem;
 	}
 
-	
+
 	public void setSyn0(DoubleMatrix syn0) {
 		this.syn0 = syn0;
 	}
@@ -835,6 +841,47 @@ public class Word2Vec implements Serializable {
 
 	public void setWindow(int window) {
 		this.window = window;
+	}
+
+	@Override
+	public void write(OutputStream os) {
+		DataOutputStream dos = new DataOutputStream(os);
+		try {
+			syn0.out(dos);
+			syn1.out(dos);
+			dos.writeInt(window);
+			dos.writeInt(layerSize);
+
+			ObjectOutputStream oos = new ObjectOutputStream(os);
+			oos.writeObject(indexToWord);
+			oos.writeObject(vocab);
+
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	@Override
+	public void load(InputStream is) {
+		try {
+			DataInputStream dis = new DataInputStream(is);
+			ObjectInputStream ois = new ObjectInputStream(is);
+			syn0.in(dis);
+			syn1.in(dis);
+			this.window = dis.readInt();
+			this.layerSize = dis.readInt();
+
+			indexToWord = (Map<Integer, String>) ois.readObject();
+			vocab = (Map<String, VocabWord>) ois.readObject();
+
+		}catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+
+
+
 	}
 
 

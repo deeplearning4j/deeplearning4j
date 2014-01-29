@@ -48,6 +48,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public int[] hiddenLayerSizes;
 	//the number of outputs/labels for logistic regression
 	public int nOuts;
+	//number of layers
 	public int nLayers;
 	//the hidden layers
 	public HiddenLayer[] sigmoidLayers;
@@ -60,15 +61,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	//default training examples and associated layers
 	public DoubleMatrix input,labels;
 	public MultiLayerNetworkOptimizer optimizer;
+	//activation function for each hidden layer
 	public ActivationFunction activation = new Sigmoid();
 	public boolean toDecode;
+	//l2 regularization constant for weight decay
 	public double l2 = 0.01;
+	//whether to initialize layers
 	public boolean shouldInit = true;
+	//fan in for uniform distributions
 	public double fanIn = -1;
+	//whether to render weights or not; anything <=0 will not render the weights
 	public int renderWeightsEveryNEpochs = -1;
 	public boolean useRegularization = true;
+	//sometimes we may need to transform weights; this allows a 
+	//weight transform upon layer setup
 	protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	protected boolean shouldBackProp = true;
+	//whether to only train a certain number of epochs
 	protected boolean forceNumEpochs = false;
 	//don't use sparsity by default
 	public double sparsity = 0;
@@ -136,62 +145,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
-	protected boolean trainNetwork(NeuralNetwork network,HiddenLayer h,int epoch,int layer,DoubleMatrix input,double lr,Double bestLoss,Object[] params) {
-
-
-
-		DoubleMatrix w = network.getW();
-		DoubleMatrix hBias = network.gethBias();
-
-
-		network.trainTillConvergence(input, lr, params);
-
-
-
-		h.W = network.getW();
-		h.b = network.gethBias();
-		double entropy = network.getReConstructionCrossEntropy();
-
-
-		if(Double.isNaN(entropy) || Double.isInfinite(entropy)) {
-			network.setW(w.dup());
-			network.sethBias(hBias.dup());
-			h.W = network.getW();
-			h.b = hBias; 
-			log.info("Went over too many times....reverting to last known good state");
-
-		}
-		else if(entropy > bestLoss || entropy == bestLoss) {
-
-			network.setW(w.dup());
-			network.sethBias(hBias.dup());
-			h.W = network.getW();
-			h.b = hBias; 
-			log.info("Went over too many times....reverting to last known good state");
-
-			return false;
-		}
-
-		else if(entropy < bestLoss){
-			w = network.getW().dup();
-			hBias = network.gethBias().dup();
-			bestLoss = entropy;
-		}
-
-		log.info("Cross entropy for layer " + (layer + 1) + " on epoch " + epoch + " is " + entropy);
-
-
-		double curr = network.getReConstructionCrossEntropy();
-		if(curr > bestLoss) {
-			log.info("Converged past global minimum; reverting");
-			network.setW(w.dup());
-			network.sethBias(hBias.dup());
-			return false;
-		}
-		return true;
-	}
-
-
 	/**
 	 * Returns the -fanIn to fanIn
 	 * coefficient used for initializing the
@@ -205,6 +158,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return fanIn;
 	}
 
+	/* sanity check for hidden layer and inter layer dimensions */
 	private void dimensionCheck() {
 
 		for(int i = 0; i < nLayers; i++) {
@@ -271,7 +225,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * This is meant for capturing numbers such as input columns or other things.
 	 * @param input the input matrix for training
 	 */
-	protected void initializeLayers(DoubleMatrix input) {
+	public void initializeLayers(DoubleMatrix input) {
 		if(input == null)
 			throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
@@ -326,6 +280,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	/**
+	 * Conpute activations from input to output of the output layer
+	 * @return the list of activations for each layer
+	 */
 	public List<DoubleMatrix> feedForward() {
 		if(this.input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
@@ -443,30 +401,36 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		//store a copy of the network for when binary cross entropy gets
 		//worse after an iteration
 		BaseMultiLayerNetwork revert = clone();
-
+		//sgd style; only train a certain number of epochs
 		if(forceNumEpochs) {
 			for(int i = 0; i < epochs; i++) {
 				backPropStep(lastEntropy,revert,lr,i);
 				lastEntropy = negativeLogLikelihood();
 			}
 		}
-		
+
 		else {
+			//train till back prop converges
 			int count = 0;
 			while(backPropStep(lastEntropy,revert,lr,count)) {
 				count++;
 				lastEntropy = this.negativeLogLikelihood();
 			}
 		}
-		
-		
-
-
-
-
-
 	}
-	
+
+
+	/**
+	 * Do a back prop iteration.
+	 * This involves computing the activations, tracking the last layers weights
+	 * to revert to in case of convergence, the learning rate being used to train 
+	 * and the current epoch
+	 * @param lastEntropy the last error to be had on the previous epoch
+	 * @param revert the best network so far
+	 * @param lr the learning rate to use for training
+	 * @param epoch the epoch to use
+	 * @return whether the training should converge or not
+	 */
 	protected boolean backPropStep(Double lastEntropy,BaseMultiLayerNetwork revert,double lr,int epoch) {
 		//feedforward to compute activations
 		List<DoubleMatrix> activations = feedForward();
@@ -479,7 +443,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			log.info("Converged; no more stepping appears to do anything");
 			return false;
 		}
-		
+
 		else if(error > lastEntropy) {
 			log.info("Error greater than previous; found global minima; converging");
 			update(revert);
@@ -523,7 +487,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return true;
 
 	}
-	
+
 
 	/**
 	 * Run SGD based on the given labels
@@ -550,6 +514,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
+		if(this.input == null) {
+			this.initializeLayers(x);
+		}
+		
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) 
 			input = sigmoidLayers[i].activate(input);
@@ -806,13 +774,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		protected boolean backProp = true;
 		protected boolean shouldForceEpochs = false;
 		private double sparsity = 0;
-		
-		
+
+
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
 			return this;
 		}
-		
+
 		/**
 		 * Forces use of number of epochs for training
 		 * SGD style rather than conjugate gradient

@@ -39,6 +39,12 @@ public class Viterbi implements Persistable {
 		this.weights = weights;
 	}
 
+	public Viterbi(Index labelIndex, DoubleMatrix weights) {
+		this.labelIndex = labelIndex;
+		this.featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
+		this.weights = weights;
+	}
+	
 	private Viterbi() {}
 
 

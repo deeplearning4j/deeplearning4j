@@ -6,12 +6,71 @@ import java.util.List;
 import java.util.Map;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
+
+import com.ccc.deeplearning.berkeley.CounterMap;
+import com.ccc.deeplearning.datasets.DataSet;
+import com.ccc.deeplearning.util.MatrixUtil;
+import com.ccc.deeplearning.word2vec.util.Window;
 /**
  * 
  * @author Adam Gibson
  *
  */
 public class ViterbiUtil {
+
+
+	public static DoubleMatrix fromWindows(List<Window> window,List<String> index) {
+		Index labelIndex = fromLabels(index);
+		return fromWindows(window,labelIndex);
+	}
+	
+	
+	public static DoubleMatrix fromWindows(List<Window> window,Index labelIndex) {
+		DoubleMatrix ret = new DoubleMatrix(window.size(),labelIndex.size());
+		for(int i = 0; i < ret.rows; i++) {
+			ret.putRow(i, MatrixUtil.toOutcomeVector(labelIndex.indexOf(window.get(i).getLabel()), labelIndex.size()));
+		}
+		return ret;
+	}
+	
+	
+	public static Index fromLabels(List<String> labels) {
+		Index labelIndex = new Index();
+		labelIndex.add("NONE");
+		for(int i = 0 ; i < labels.size(); i++)
+			labelIndex.add(labels.get(i));
+		return labelIndex;
+	}
+	
+	public static void incrementTransitionProbabilities(CounterMap<Integer,Integer> counter,DoubleMatrix d) {
+		for(int i = 1; i < d.rows; i++) {
+			counter.incrementCount(SimpleBlas.iamax(d.getRow(i - 1)),SimpleBlas.iamax(d.getRow(i)), 1.0);
+		}
+
+	}
+	
+
+	public static Viterbi initializeOnData(Index labels,DataSet d) {
+		CounterMap<Integer,Integer> transitionProbabilities = new CounterMap<>();
+
+
+		incrementTransitionProbabilities(transitionProbabilities,d.getSecond());
+
+
+
+
+		DoubleMatrix transitionProbabilities2 = CounterUtil.convert(transitionProbabilities);
+
+		Index labelIndex = new Index();
+		labelIndex.add("NONE");
+		for(int i = 0 ; i < labels.size(); i++)
+			labelIndex.add(labels.get(i));
+
+		//the output single labelStrings are input to the sequence classifier for viterbi
+		return new Viterbi(labelIndex,ViterbiUtil.featureIndexFromLabelIndex(labelIndex),transitionProbabilities2);
+	}
+	
 	/**
 	 * Converts a double matrix of outcomes to a 2d list of strings
 	 * @param matrix the matrix of outcomes to convert

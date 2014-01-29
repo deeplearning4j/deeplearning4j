@@ -8,11 +8,7 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.ConjugateGradient;
-import cc.mallet.optimize.InvalidOptimizableException;
 import cc.mallet.optimize.Optimizable;
-import cc.mallet.optimize.OptimizationException;
-import cc.mallet.optimize.Optimizer;
 
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
@@ -44,10 +40,18 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
+		//ensure network input is synced to the passed in labels
+		network.feedForward();
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
 		network.logLayer.input = layerInput;
 		network.logLayer.labels = labels;
+		
+		if(layerInput.rows != labels.rows) {
+			throw new IllegalStateException("Labels not equal to input");
+		}
+		
+		
 		if(!network.isForceNumEpochs()) {
 			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
 			MyConjugateGradient g = new MyConjugateGradient(opt);
