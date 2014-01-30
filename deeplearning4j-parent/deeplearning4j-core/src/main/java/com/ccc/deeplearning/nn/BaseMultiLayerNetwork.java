@@ -229,6 +229,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(input == null)
 			throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
+		if(input.columns != nIns)
+			throw new IllegalArgumentException("Unable to train on number of inputs; columns should be equal to number of inputs");
+		
+		
 		this.input = input.dup();
 		DoubleMatrix layerInput = input;
 		int inputSize;
