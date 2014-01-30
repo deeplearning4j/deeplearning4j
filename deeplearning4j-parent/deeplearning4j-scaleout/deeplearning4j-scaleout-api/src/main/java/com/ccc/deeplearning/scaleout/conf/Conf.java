@@ -182,7 +182,7 @@ public class Conf implements Serializable,Cloneable {
 	 * @return
 	 */
 	public static Object[] getDefaultDenoisingAutoEncoderParams() {
-		return new Object[]{0.3,0.01};
+		return new Object[]{0.3,0.01,1000};
 	}
 	/**
 	 * K of 1 and learning rate of 0.01
@@ -190,7 +190,7 @@ public class Conf implements Serializable,Cloneable {
 	 * and DBNs
 	 */
 	public static Object[] getDefaultRbmParams() {
-		return new Object[]{1,0.01};
+		return new Object[]{1,0.01,1000};
 	}
 
 }

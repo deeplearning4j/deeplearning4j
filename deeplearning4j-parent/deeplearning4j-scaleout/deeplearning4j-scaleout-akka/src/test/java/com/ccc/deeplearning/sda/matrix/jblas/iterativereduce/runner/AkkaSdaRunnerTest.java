@@ -113,13 +113,13 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		conf.setSplit(10);
 		conf.setFinetuneEpochs(100);
 		conf.setLayerSizes(hidden_layer_sizes_arr);
-		conf.setnIn(n_ins);
+		conf.setnIn(784);
 		conf.setSplit(1);
 		conf.setFinetuneEpochs(finetune_epochs);
 		conf.setFinetuneLearningRate(finetune_lr);
-		conf.setnOut(2);
+		conf.setnOut(10);
 		conf.setMultiLayerClazz(StackedDenoisingAutoEncoder.class);
-
+		conf.setDeepLearningParams(Conf.getDefaultDenoisingAutoEncoderParams());
 		
 		runner.setup(conf);
 		Thread.sleep(10000);
@@ -131,6 +131,8 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		DataSet first = fetcher.next();
 
 		runner.train(first.getFirst(), first.getSecond());  
+		while(true)
+			Thread.sleep(10000);
 		/*
 		BaseMultiLayerNetwork trained = runner.getResult().get();
 		Evaluation eval = new Evaluation();
