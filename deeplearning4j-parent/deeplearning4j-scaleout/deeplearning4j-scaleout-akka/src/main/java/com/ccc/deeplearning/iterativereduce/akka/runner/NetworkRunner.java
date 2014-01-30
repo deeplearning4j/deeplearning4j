@@ -52,15 +52,14 @@ public class NetworkRunner implements DeepLearningConfigurable {
 	}
 
 	private void doSetup(Conf conf) {
-		split = conf.getInt(SPLIT);
+		split = conf.getSplit();
 		system = ActorSystem.create();
-		conf.put(N_IN, String.valueOf(input.columns));
-		conf.put(OUT, String.valueOf(outcomes.columns));
-		epochs = conf.getInt(FINE_TUNE_EPOCHS);
+		conf.setnIn(input.columns);
+		conf.setnOut(outcomes.columns);
+		epochs = conf.getFinetuneEpochs();
 		master = new ComputableMasterAkka();
 		master.setup(this.conf);
-		if(conf.get(SEED) != null)
-			org.jblas.util.Random.seed(Integer.parseInt(conf.get(SEED)));
+		org.jblas.util.Random.seed(conf.getSeed());
 
 
 		List<Integer> rows2 = new ArrayList<>();
@@ -84,7 +83,6 @@ public class NetworkRunner implements DeepLearningConfigurable {
 	private ComputableWorkerAkka fromMatrices(int[] rows) {
 		ComputableWorkerAkka ret =  new ComputableWorkerAkka(input,outcomes, rows);
 		Conf c = conf.copy();
-		c.put(ROWS, rows.length);
 		ret.setup(c);
 		return ret;
 	}

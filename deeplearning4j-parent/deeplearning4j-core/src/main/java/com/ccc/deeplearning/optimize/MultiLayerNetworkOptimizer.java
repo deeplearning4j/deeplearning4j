@@ -55,7 +55,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		if(!network.isForceNumEpochs()) {
 			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
 			MyConjugateGradient g = new MyConjugateGradient(opt);
-			g.optimize();
+			g.optimize(epochs);
 		}
 		else {
 			log.info("Training for " + epochs + " epochs");

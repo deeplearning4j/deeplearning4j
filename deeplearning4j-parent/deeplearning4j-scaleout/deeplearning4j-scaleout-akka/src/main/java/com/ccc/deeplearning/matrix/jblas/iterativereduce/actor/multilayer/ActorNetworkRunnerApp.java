@@ -16,6 +16,7 @@ import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.IrisDataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.LFWDataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
 import com.ccc.deeplearning.scaleout.core.conf.DeepLearningConfigurableDistributed;
@@ -78,7 +79,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	protected String host = "localhost";
 	@Option(name="-ftl",usage="the starter fine tune learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	protected double finetineLearningRate = 0.1;
+	protected double finetuneLearningRate = 0.1;
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
 	protected double pretrainLearningRate = 0.1;
 	@Option(name="-hl",usage="hidden layer sizes (comma separated list)")
@@ -129,7 +130,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			log.info("Initializing conf from zookeeper at " + host);
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
 			Conf conf = retriever.retreive();
-			String address = conf.get(MASTER_URL);
+			String address = conf.getMasterUrl();
 			runner = new ActorNetworkRunner(type,address);
 			runner.setup(conf);
 			retriever.close();
@@ -140,28 +141,29 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 			getDataSet();
-			conf.put(CLASS, getClassForAlgorithm());
-			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
-			conf.put(SPLIT,String.valueOf(10));
-			conf.put(N_IN, String.valueOf(iter.inputColumns()));
-			conf.put(OUT, String.valueOf(iter.totalOutcomes()));
-			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
-			conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
-			conf.put(SEED, String.valueOf(rngSeed));
-			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
+			conf.setMultiLayerClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(getClassForAlgorithm()));
+			conf.setLayerSizes(hiddenLayerSizes);
+			conf.setSplit(10);
+			conf.setnIn(iter.inputColumns());
+			conf.setnOut(iter.totalOutcomes());
+			conf.setPretrainEpochs(pretrainEpochs);
+			conf.setFinetuneEpochs(finetuneEpochs);
+			conf.setSeed(rngSeed);
+			conf.setPretrainLearningRate(pretrainLearningRate);
 
-			conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
-			conf.put(CORRUPTION_LEVEL,corruptionLevel);
-			conf.put(SPLIT, String.valueOf(split));
-			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
-					.k(k)
-					.finetuneLearningRate(finetineLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
-
+			conf.setCorruptionLevel(corruptionLevel);
+			conf.setSplit(split);
+			conf.setK(k);
+			conf.setFinetuneLearningRate(finetuneLearningRate);
+			conf.setPretrainEpochs(pretrainEpochs);
+			conf.setPretrainLearningRate(pretrainLearningRate);
+			
+			
 			//run the master
 			runner = new ActorNetworkRunner("master",iter);
 			runner.setup(conf);
 			//store it in zookeeper for service discovery
-			conf.put(MASTER_URL, runner.getMasterAddress().toString());
+			conf.setMasterUrl(runner.getMasterAddress().toString());
 
 			//register the configuration to zookeeper
 			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master",host,2181);
@@ -307,7 +309,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 	public double getFinetineLearningRate() {
-		return finetineLearningRate;
+		return finetuneLearningRate;
 	}
 
 

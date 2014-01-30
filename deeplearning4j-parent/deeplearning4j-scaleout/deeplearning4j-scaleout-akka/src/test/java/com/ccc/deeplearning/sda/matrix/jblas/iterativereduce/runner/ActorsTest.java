@@ -53,7 +53,7 @@ public class ActorsTest {
 		final TestActorRef<BatchActor> ref1 = TestActorRef.create(system, Props.create(new BatchActor.BatchActorFactory(new MnistDataSetIterator(1,1))), "testC");
 		BatchActor ref2 = ref1.underlyingActor();
 		Conf c = new Conf();
-		c.put(Conf.PRE_TRAIN_EPOCHS, 1);
+		c.setPretrainEpochs(1);
 		final TestActorRef<MasterActor> ref = TestActorRef.create(system, Props.create(new MasterActor.MasterActorFactory(c, ref1)), "testB");
 		MasterActor master = ref.underlyingActor();
 		assertEquals(c,master.getConf());

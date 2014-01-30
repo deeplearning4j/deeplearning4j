@@ -45,7 +45,7 @@ public class Viterbi implements Persistable {
 		this.weights = weights;
 	}
 	
-	private Viterbi() {}
+	public Viterbi() {}
 
 
 	public List<Datum> decode(DoubleMatrix classified,List<String> labels,List<Window> windows) {

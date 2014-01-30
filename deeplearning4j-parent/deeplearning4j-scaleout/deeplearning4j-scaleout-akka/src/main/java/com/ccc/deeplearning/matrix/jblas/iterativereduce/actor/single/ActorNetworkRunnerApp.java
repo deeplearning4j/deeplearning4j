@@ -14,6 +14,7 @@ import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.IrisDataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.LFWDataSetIterator;
 import com.ccc.deeplearning.datasets.iterator.impl.MnistDataSetIterator;
+import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
 import com.ccc.deeplearning.scaleout.core.conf.DeepLearningConfigurableDistributed;
@@ -117,7 +118,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			log.info("Initializing conf from zookeeper at " + host);
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
 			Conf conf = retriever.retreive();
-			String address = conf.get(MASTER_URL);
+			String address = conf.getMasterUrl();
 			runner = new ActorNetworkRunner(type,address);
 			runner.setup(conf);
 			retriever.close();
@@ -128,32 +129,30 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 			getDataSet();
-			conf.put(CLASS, getClassForAlgorithm());
-			conf.put(SPLIT,String.valueOf(10));
+			conf.setMultiLayerClazz((Class<? extends BaseMultiLayerNetwork>) Class.forName(getClassForAlgorithm()));
+			conf.setSplit(10);
 			if(inputs < 1)
-				conf.put(N_IN, String.valueOf(iter.inputColumns()));
+				conf.setnIn(iter.inputColumns());
 			else
-				conf.put(N_IN,String.valueOf(inputs));
+				conf.setnIn(inputs);
 			if(outputs < 1)
-				conf.put(OUT, String.valueOf(iter.totalOutcomes()));
+				conf.setnOut(iter.totalOutcomes());
 			else
-				conf.put(OUT,String.valueOf(outputs));
-			conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
-			conf.put(SEED, String.valueOf(rngSeed));
-			conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
-			conf.put(L2,String.valueOf(l2));
-			conf.put(MOMENTUM,String.valueOf(momentum));
-			conf.put(CORRUPTION_LEVEL,corruptionLevel);
-			conf.put(SPLIT, String.valueOf(split));
-			conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel)
-					.k(k)
-					.learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
-
+				conf.setnOut(outputs);
+			conf.setPretrainEpochs(pretrainEpochs);
+			conf.setSeed(rngSeed);
+			conf.setPretrainLearningRate(pretrainLearningRate);
+			conf.setL2(l2);
+			conf.setMomentum(momentum);
+			conf.setCorruptionLevel(corruptionLevel);
+			conf.setSplit(split);
+			conf.setK(k);
+			
 			//run the master
 			runner = new ActorNetworkRunner("master",iter);
 			runner.setup(conf);
 			//store it in zookeeper for service discovery
-			conf.put(MASTER_URL, runner.getMasterAddress().toString());
+			conf.setMasterUrl(runner.getMasterAddress().toString());
 
 			//register the configuration to zookeeper
 			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master",host,2181);

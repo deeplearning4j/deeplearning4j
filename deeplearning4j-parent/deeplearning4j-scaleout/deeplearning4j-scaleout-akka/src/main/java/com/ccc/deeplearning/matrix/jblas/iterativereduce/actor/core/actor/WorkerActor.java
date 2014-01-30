@@ -116,17 +116,17 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 	@Override
 	public void setup(Conf conf) {
-		hiddenLayerSizes = conf.getIntsWithSeparator(LAYER_SIZES, ",");
-		numHidden = conf.getInt(OUT);
-		numVisible = conf.getInt(N_IN);
-		numHiddenNeurons = conf.getIntsWithSeparator(LAYER_SIZES, ",").length;
-		seed = conf.getLong(SEED);
+		hiddenLayerSizes = conf.getLayerSizes();
+		numHidden = conf.getnOut();
+		numVisible = conf.getnIn();
+		numHiddenNeurons = hiddenLayerSizes.length;
+		seed = conf.getSeed();
 
-		learningRate = conf.getDouble(LEARNING_RATE);
-		preTrainEpochs = conf.getInt(PRE_TRAIN_EPOCHS);
-		fineTuneEpochs = conf.getInt(FINE_TUNE_EPOCHS);
-		corruptionLevel = conf.getDouble(CORRUPTION_LEVEL);
-		extraParams = conf.loadParams(PARAMS);
+		learningRate = conf.getPretrainLearningRate();
+		preTrainEpochs = conf.getPretrainEpochs();
+		fineTuneEpochs = conf.getFinetuneEpochs();
+		corruptionLevel = conf.getCorruptionLevel();
+		extraParams = conf.getDeepLearningParams();
 	}
 
 

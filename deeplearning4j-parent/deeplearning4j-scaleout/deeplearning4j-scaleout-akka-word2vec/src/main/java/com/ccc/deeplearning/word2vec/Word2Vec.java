@@ -845,16 +845,10 @@ public class Word2Vec implements Persistable {
 
 	@Override
 	public void write(OutputStream os) {
-		DataOutputStream dos = new DataOutputStream(os);
 		try {
-			syn0.out(dos);
-			syn1.out(dos);
-			dos.writeInt(window);
-			dos.writeInt(layerSize);
+			ObjectOutputStream dos = new ObjectOutputStream(os);
 
-			ObjectOutputStream oos = new ObjectOutputStream(os);
-			oos.writeObject(indexToWord);
-			oos.writeObject(vocab);
+			dos.writeObject(this);
 
 
 		} catch (IOException e) {
@@ -866,16 +860,27 @@ public class Word2Vec implements Persistable {
 	@Override
 	public void load(InputStream is) {
 		try {
-			DataInputStream dis = new DataInputStream(is);
 			ObjectInputStream ois = new ObjectInputStream(is);
-			syn0.in(dis);
-			syn1.in(dis);
-			this.window = dis.readInt();
-			this.layerSize = dis.readInt();
-
-			indexToWord = (Map<Integer, String>) ois.readObject();
-			vocab = (Map<String, VocabWord>) ois.readObject();
-
+			Word2Vec vec = (Word2Vec) ois.readObject();
+			this.allWordsCount = vec.allWordsCount;
+			this.alpha = vec.alpha;
+			this.expTable  = vec.expTable;
+			this.minWordFrequency = vec.minWordFrequency;
+			this.numSentencesProcessed = vec.numSentencesProcessed;
+			this.oob = vec.oob;
+			this.rand = vec.rand;
+			this.rawVocab = vec.rawVocab;
+			this.sample = vec.sample;
+			this.size = vec.size;
+			this.wordIndex = vec.wordIndex;
+			this.indexToWord = vec.indexToWord;
+			this.stopWords = vec.stopWords;
+			this.syn0 = vec.syn0;
+			this.syn1 = vec.syn1;
+			this.topNSize = vec.topNSize;
+			this.trainWordsCount = vec.trainWordsCount;
+			this.window = vec.window;
+			
 		}catch(Exception e) {
 			throw new RuntimeException(e);
 		}

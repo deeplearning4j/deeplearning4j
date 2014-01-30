@@ -153,7 +153,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
-		epochs = conf.getInt(PRE_TRAIN_EPOCHS);
+		epochs = conf.getPretrainEpochs();
 		if(type.equals("master")) {
 
 			if(iter == null)
@@ -183,8 +183,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			Conf c = conf.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
-			c.put(FINE_TUNE_EPOCHS, 1);
-			c.put(PRE_TRAIN_EPOCHS,1);
+			c.setFinetuneEpochs(1);
+			c.setPretrainEpochs(1);
 
 			//Wait for backend to be up
 			try {
@@ -206,8 +206,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			Conf c = conf.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
-			c.put(FINE_TUNE_EPOCHS, 1);
-			c.put(PRE_TRAIN_EPOCHS,1);
+			c.setFinetuneEpochs(1);
+			c.setPretrainEpochs(1);
 
 
 			startWorker(masterAddress,c);

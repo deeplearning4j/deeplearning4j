@@ -8,11 +8,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
+import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.conf.Conf;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIteratorImpl;
 import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
@@ -57,29 +57,18 @@ public class ActorRunnerTest implements DeepLearningConfigurable {
 		double pretrainLearningRate = 0.001;
 		double corruptionLevel = 0.3;
 		int split = 100;
-		int k = 1;
 		double finetuneLearningRate = 0.001;
 		int numPasses = 3;
-		String algorithm = "wordcdbn";
 		
-		conf.put(NUM_PASSES, String.valueOf(numPasses));
-		conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
-		conf.put(SPLIT,String.valueOf(10));
-		conf.put(N_IN, String.valueOf(iter.inputColumns()));
-		conf.put(OUT, String.valueOf(iter.totalOutcomes()));
-		conf.put(PRE_TRAIN_EPOCHS, String.valueOf(pretrainEpochs));
-		conf.put(FINE_TUNE_EPOCHS, String.valueOf(finetuneEpochs));
-		conf.put(SEED, String.valueOf(rngSeed));
-		conf.put(LEARNING_RATE,String.valueOf(pretrainLearningRate));
-
-		conf.put(LAYER_SIZES, Arrays.toString(hiddenLayerSizes).replace("[","").replace("]","").replace(" ",""));
-		conf.put(CORRUPTION_LEVEL,corruptionLevel);
-		conf.put(SPLIT, String.valueOf(split));
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(algorithm).corruptionlevel(corruptionLevel).finetuneEpochs(finetuneEpochs)
-				.k(k)
-				.finetuneLearningRate(finetuneLearningRate).learningRate(pretrainLearningRate).epochs(pretrainEpochs).build());
-
-		
+		conf.setLayerSizes(hiddenLayerSizes);
+		conf.setNumPasses(numPasses);
+		conf.setFinetuneEpochs(finetuneEpochs);
+		conf.setSeed(rngSeed);
+		conf.setCorruptionLevel(corruptionLevel);
+		conf.setSplit(split);
+		conf.setPretrainLearningRate(pretrainLearningRate);
+		conf.setPretrainEpochs(pretrainEpochs);
+		conf.setFinetuneLearningRate(finetuneLearningRate);
 		
 		runner = new ActorNetworkRunner("master",iter,vec,labels);
 		runner.setup(conf);

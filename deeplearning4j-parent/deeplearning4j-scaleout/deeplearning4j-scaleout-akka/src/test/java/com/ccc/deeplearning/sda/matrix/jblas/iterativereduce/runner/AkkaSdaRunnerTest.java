@@ -22,6 +22,7 @@ import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
+import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningConfigurable {
 	private static Logger log = LoggerFactory.getLogger(AkkaSdaRunnerTest.class);
@@ -78,23 +79,15 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		train_Y_matrix = new DoubleMatrix(train_Y_arr);
 
 
-
-
-		conf.put(PRE_TRAIN_EPOCHS, 100);
-		conf.put(FINE_TUNE_EPOCHS, 100);
-
-		conf.put(ROWS,train_X_arr.length);
-		conf.put(LAYER_SIZES, hidden_layer_sizes_arr);
-		conf.put(LEARNING_RATE, 0.1);
-		conf.put(N_IN, n_ins);
-		conf.put(SEED, 1);
-		conf.put(LAYER_SIZES, StringUtils.join(hidden_layer_sizes_arr,","));
-		conf.put(CORRUPTION_LEVEL, 0.3);
-		conf.put(SPLIT, 1);
-		conf.put(OUT, 2);
-		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
+		conf.setPretrainEpochs(100);
+		conf.setFinetuneEpochs(100);
+		conf.setLayerSizes(hidden_layer_sizes_arr);
+		conf.setnIn(n_ins);
+		conf.setSplit(1);
+		conf.setFinetuneEpochs(finetune_epochs);
+		conf.setFinetuneLearningRate(finetune_lr);
+		conf.setnOut(2);
+		conf.setMultiLayerClazz(StackedDenoisingAutoEncoder.class);
 
 
 
@@ -115,15 +108,19 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 	public void testMnist() throws Exception {
 		MnistDataSetIterator fetcher = new MnistDataSetIterator(60,600);
 		runner = new ActorNetworkRunner("master",fetcher);
-		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
-		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
-		conf.put(SPLIT,String.valueOf(10));
-		conf.put(PRE_TRAIN_EPOCHS, String.valueOf(1));
-		conf.put(FINE_TUNE_EPOCHS, String.valueOf(1));
 
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
+		conf.setPretrainEpochs(100);
+		conf.setSplit(10);
+		conf.setFinetuneEpochs(100);
+		conf.setLayerSizes(hidden_layer_sizes_arr);
+		conf.setnIn(n_ins);
+		conf.setSplit(1);
+		conf.setFinetuneEpochs(finetune_epochs);
+		conf.setFinetuneLearningRate(finetune_lr);
+		conf.setnOut(2);
+		conf.setMultiLayerClazz(StackedDenoisingAutoEncoder.class);
 
+		
 		runner.setup(conf);
 		Thread.sleep(10000);
 
@@ -134,7 +131,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		DataSet first = fetcher.next();
 
 		runner.train(first.getFirst(), first.getSecond());  
-/*
+		/*
 		BaseMultiLayerNetwork trained = runner.getResult().get();
 		Evaluation eval = new Evaluation();
 		DoubleMatrix predicted = trained.predict(first.getFirst());

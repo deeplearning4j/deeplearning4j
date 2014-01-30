@@ -33,10 +33,10 @@ public class ComputableMasterAkka extends ComputableMasterImpl implements DeepLe
 
 	@Override
 	public void setup(Conf conf) {
-		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
 		BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
-		.numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
-		.hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+		.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+		.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 		.build();
 		masterMatrix = new UpdateableImpl(matrix);
 

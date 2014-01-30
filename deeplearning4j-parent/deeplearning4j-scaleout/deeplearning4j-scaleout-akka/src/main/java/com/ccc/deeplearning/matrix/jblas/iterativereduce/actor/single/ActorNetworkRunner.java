@@ -154,7 +154,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
-		epochs = conf.getInt(PRE_TRAIN_EPOCHS);
+		epochs = conf.getPretrainEpochs();
 		if(type.equals("master")) {
 
 			if(iter == null)
