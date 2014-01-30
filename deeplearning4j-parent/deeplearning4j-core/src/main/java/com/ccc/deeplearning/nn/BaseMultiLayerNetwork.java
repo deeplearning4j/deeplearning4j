@@ -517,7 +517,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(this.input == null) {
 			this.initializeLayers(x);
 		}
-		
+
 		DoubleMatrix input = x;
 		for(int i = 0; i < nLayers; i++) 
 			input = sigmoidLayers[i].activate(input);
@@ -550,9 +550,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			input = layer.activate(input);
 
 		}
-		return MatrixUtil.softmax(input);
+		return input;
 	}
 
+	public DoubleMatrix reconstruct(DoubleMatrix x) {
+		return reconstruct(x,sigmoidLayers.length);
+	}
+	
+	
 	/**
 	 * Serializes this to the output stream.
 	 * @param os the output stream to write to

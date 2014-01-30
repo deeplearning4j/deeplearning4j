@@ -34,7 +34,7 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDon
 import com.ccc.deeplearning.word2vec.updateable.MasterActor;
 import com.ccc.deeplearning.word2vec.updateable.WorkerActor;
 import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.conf.Conf;
+import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
 import com.ccc.deeplearning.word2vec.updateable.Word2VecUpdateable;
@@ -147,8 +147,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 	@Override
-	public void setup(com.ccc.deeplearning.scaleout.conf.Conf conf) {
-		Conf casted = (Conf) conf;
+	public void setup(Conf conf) {
 
 
 		system = ActorSystem.create(systemName);
@@ -160,13 +159,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
-		epochs = conf.getInt(PRE_TRAIN_EPOCHS);
+		epochs = conf.getPretrainEpochs();
 		if(type.equals("master")) {
 
 			if(iter == null)
 				throw new IllegalStateException("Unable to initialize no dataset to train");
 			
-			masterAddress  = startBackend(null,"master",casted,iter);
+			masterAddress  = startBackend(null,"master",conf,iter);
 			
 			
 			//wait for start
@@ -184,14 +183,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			Cluster.get(system).join(masterAddress);
 
 			//join with itself
-			startBackend(masterAddress,"master",casted,iter);
+			startBackend(masterAddress,"master",conf,iter);
 
 
-			Conf c = casted.copy();
+			Conf c = conf.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
-			c.put(FINE_TUNE_EPOCHS, 1);
-			c.put(PRE_TRAIN_EPOCHS,1);
+			c.setFinetuneEpochs(1);
+			c.setPretrainEpochs(1);
 
 			//Wait for backend to be up
 			try {
@@ -210,12 +209,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		else {
 
-			Conf c = casted.copy();
+			Conf c = conf.copy();
 			//only one iteration per worker; this events out to number of epochs iterated
 			//TODO: make this tunable
-			c.put(FINE_TUNE_EPOCHS, 1);
-			c.put(PRE_TRAIN_EPOCHS,1);
-
+			c.setFinetuneEpochs(1);
+			c.setPretrainEpochs(1);
 
 			startWorker(masterAddress,c);
 			//Wait for backend to be up

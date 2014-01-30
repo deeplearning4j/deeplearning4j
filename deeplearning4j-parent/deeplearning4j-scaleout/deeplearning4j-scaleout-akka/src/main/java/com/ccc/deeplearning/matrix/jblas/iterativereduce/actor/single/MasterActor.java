@@ -65,13 +65,13 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public void setup(Conf conf) {
 		//use the rng with the given seed
-		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
 		BaseNeuralNetwork matrix = new BaseNeuralNetwork.Builder<>()
-				.withClazz(conf.getClazzSingle(CLASS))
-				.withRandom(rng).withL2(conf.getDouble(L2))
-				.withMomentum(conf.getDouble(MOMENTUM))
-				.numberOfVisible(conf.getInt(N_IN))
-				.numHidden(conf.getInt(OUT))
+				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
+				.withRandom(rng).withL2(conf.getL2())
+				.withMomentum(conf.getMomentum())
+				.numberOfVisible(conf.getnIn())
+				.numHidden(conf.getnOut())
 				.build();
 		masterResults = new UpdateableSingleImpl(matrix);
 
@@ -99,7 +99,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 					listener.epochComplete(masterResults);
 				//reset the dataset
 
-				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
+				if(epochsComplete == conf.getPretrainEpochs()) {
 					isDone = true;
 					batchActor.tell(up, getSelf());
 					updates.clear();

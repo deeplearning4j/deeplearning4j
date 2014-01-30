@@ -65,10 +65,10 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public void setup(Conf conf) {
 		//use the rng with the given seed
-		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
 		BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
-				.numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
-				.hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+				.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 				.build();
 		masterResults = new UpdateableImpl(matrix);
 
@@ -100,7 +100,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
+				if(epochsComplete == conf.getPretrainEpochs()) {
 					isDone = true;
 					log.info("All done; shutting down");
 					context().system().shutdown();

@@ -20,6 +20,7 @@ import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.conf.ExtraParamsBuilder;
+import com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder;
 
 
 public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfigurable {
@@ -80,22 +81,15 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 
 
 		runner = new NetworkRunner();
-		conf.put(PRE_TRAIN_EPOCHS, 100);
-		conf.put(FINE_TUNE_EPOCHS, 100);
+		conf.setPretrainEpochs(100);
+		conf.setFinetuneEpochs(100);
 
-		conf.put(ROWS,train_X_arr.length);
-		conf.put(LAYER_SIZES, hidden_layer_sizes_arr);
-		conf.put(LEARNING_RATE, 0.1);
-		conf.put(N_IN, n_ins);
-		conf.put(SEED, 1);
-		conf.put(LAYER_SIZES, StringUtils.join(hidden_layer_sizes_arr,","));
-		conf.put(CORRUPTION_LEVEL, 0.3);
-		conf.put(SPLIT, 1);
-		conf.put(OUT, 2);
-		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.3).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(10).build());
-				
+		conf.setnIn(n_ins);
+		conf.setLayerSizes(hidden_layer_sizes_arr);
+		conf.setSplit(1);
+		conf.setnOut(2);
+		conf.setMultiLayerClazz(StackedDenoisingAutoEncoder.class);
+			
 		
 		
 		
@@ -120,12 +114,15 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 		int[] layerSizes = new int[3];
 		Arrays.fill(layerSizes,1000);
 		runner = new NetworkRunner();
-		conf.put(SPLIT, String.valueOf(600));
-		conf.put(CLASS, "com.ccc.deeplearning.sda.StackedDenoisingAutoEncoder");
-		conf.put(LAYER_SIZES, Arrays.toString(hidden_layer_sizes_arr).replace("[","").replace("]","").replace(" ",""));
+		conf.setSplit(600);
+		conf.setPretrainEpochs(100);
+		conf.setFinetuneEpochs(100);
 
-		conf.put(PARAMS, new ExtraParamsBuilder().algorithm(PARAM_SDA).corruptionlevel(0.5).finetuneEpochs(finetune_epochs)
-				.finetuneLearningRate(finetune_lr).learningRate(pretrain_lr).epochs(pretraining_epochs).build());
+		conf.setnIn(numIns);
+		conf.setLayerSizes(hidden_layer_sizes_arr);
+		conf.setnOut(numLabels);
+		conf.setMultiLayerClazz(StackedDenoisingAutoEncoder.class);
+			
 			
         runner.setup(conf);
     	runner.train(first.getFirst(), first.getSecond());

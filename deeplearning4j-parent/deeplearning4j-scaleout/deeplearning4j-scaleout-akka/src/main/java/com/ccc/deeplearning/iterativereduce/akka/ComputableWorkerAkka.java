@@ -34,13 +34,13 @@ public class ComputableWorkerAkka extends ComputableWorkerImpl implements DeepLe
 	private int currEpoch;
 	private DoubleMatrix outcomes;
 	Object[] extraParams;
-	
+
 	public ComputableWorkerAkka(DoubleMatrix whole,DoubleMatrix outcomes,int[] rows) {
 		combinedInput = whole.getRows(rows);
 		this.rows = rows;
 		this.outcomes = outcomes.getRows(rows);
 	}
-	
+
 	@Override
 	public UpdateableImpl compute(List<UpdateableImpl> records) {
 		return compute();
@@ -60,32 +60,29 @@ public class ComputableWorkerAkka extends ComputableWorkerImpl implements DeepLe
 
 	@Override
 	public void setup(Conf conf) {
-		hiddenLayerSizes = conf.getIntsWithSeparator(LAYER_SIZES, ",");
-		numOuts = conf.getInt(OUT);
-		numIns = conf.getInt(N_IN);
-		numHiddenNeurons = conf.getIntsWithSeparator(LAYER_SIZES, ",").length;
-		seed = conf.getLong(SEED);
-		if(conf.containsKey(USE_REGULARIZATION))
-			this.useRegularization = conf.getBoolean(USE_REGULARIZATION);
-		if(conf.containsKey(MOMENTUM))
-			momentum = conf.getDouble(MOMENTUM);
-		if(conf.containsKey(ACTIVATION))
-		   this.activation = conf.getFunction(ACTIVATION);
-		
-		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
+		hiddenLayerSizes = conf.getLayerSizes();
+		numOuts = conf.getnOut();
+		numIns = conf.getnIn();
+		numHiddenNeurons = hiddenLayerSizes.length;
+		seed = conf.getSeed();
+		this.useRegularization = conf.isUseRegularization();
+		momentum = conf.getMomentum();
+		this.activation = conf.getFunction();
+
+		RandomGenerator rng = new MersenneTwister(conf.getSeed());
 		network = new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(numIns).numberOfOutPuts(numOuts)
 				.withActivation(activation)
 				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)
 				.useRegularization(useRegularization).withMomentum(momentum)
-				.withClazz(conf.getClazz(CLASS)).build();
-		
-		
-		learningRate = conf.getDouble(LEARNING_RATE);
-		preTrainEpochs = conf.getInt(PRE_TRAIN_EPOCHS);
-		fineTuneEpochs = conf.getInt(FINE_TUNE_EPOCHS);
-		corruptionLevel = conf.getDouble(CORRUPTION_LEVEL);
-		extraParams = conf.loadParams(PARAMS);
+				.withClazz(conf.getMultiLayerClazz()).build();
+
+
+		learningRate = conf.getPretrainLearningRate();
+		preTrainEpochs = conf.getPretrainEpochs();
+		fineTuneEpochs = conf.getFinetuneEpochs();
+		corruptionLevel = conf.getCorruptionLevel();
+		extraParams = conf.getDeepLearningParams();
 	}
 
 

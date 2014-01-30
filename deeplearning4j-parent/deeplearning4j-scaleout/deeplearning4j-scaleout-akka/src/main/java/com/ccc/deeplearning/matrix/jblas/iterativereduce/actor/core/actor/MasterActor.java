@@ -111,7 +111,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getInt(PRE_TRAIN_EPOCHS)) {
+				if(epochsComplete == conf.getPretrainEpochs()) {
 					isDone = true;
 					log.info("All done; shutting down");
 					//send a shutdown signal
@@ -169,7 +169,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 	protected void sendToWorkers(List<Pair<DoubleMatrix,DoubleMatrix>> pairs) {
-		int split = conf.getInt(SPLIT);
+		int split = conf.getSplit();
 		List<List<Pair<DoubleMatrix,DoubleMatrix>>> splitList = Lists.partition(pairs, split);
 		partition = splitList.size();
 

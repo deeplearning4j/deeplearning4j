@@ -18,7 +18,7 @@ import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
-import com.ccc.deeplearning.word2vec.conf.Conf;
+import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.nn.multilayer.Word2VecMultiLayerNetwork;
 import com.ccc.deeplearning.word2vec.util.Window;
@@ -68,10 +68,10 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public void setup(com.ccc.deeplearning.scaleout.conf.Conf conf) {
 		//use the rng with the given seed
-		RandomGenerator rng =  new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
 		Word2VecMultiLayerNetwork matrix = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec)
-				.numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
-				.hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+				.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 				.build();
 		masterResults = new Word2VecUpdateable(matrix);
 
@@ -103,7 +103,7 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getInt(NUM_PASSES)) {
+				if(epochsComplete == conf.getNumPasses()) {
 					isDone = true;
 					log.info("All done; shutting down");
 					context().system().shutdown();

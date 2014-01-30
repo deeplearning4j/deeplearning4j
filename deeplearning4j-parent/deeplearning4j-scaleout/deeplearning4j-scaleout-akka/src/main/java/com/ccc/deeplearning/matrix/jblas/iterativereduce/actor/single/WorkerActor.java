@@ -113,11 +113,11 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	public void setup(Conf conf) {
 		super.setup(conf);
 
-		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng = new MersenneTwister(conf.getSeed());
 		network = new BaseNeuralNetwork.Builder<>()
 				.numberOfVisible(numVisible).numHidden(numHidden)
 				.withRandom(rng)
-				.withClazz(conf.getClazzSingle(CLASS)).build();
+				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz()).build();
 
 	}
 

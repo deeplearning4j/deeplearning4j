@@ -112,12 +112,12 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	public void setup(Conf conf) {
 		super.setup(conf);
 		
-		RandomGenerator rng = new MersenneTwister(conf.getLong(SEED));
+		RandomGenerator rng = new MersenneTwister(conf.getSeed());
 		network = new Word2VecMultiLayerNetwork.Builder().withWord2Vec(vec).withLabels(labels)
 				.withActivation(new HardTanh())
 				.numberOfInputs(numVisible).numberOfOutPuts(numHidden)
 				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)
-				.withClazz(conf.getClazz(CLASS)).build();
+				.withClazz(conf.getMultiLayerClazz()).build();
 		
 	}
 
