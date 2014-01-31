@@ -1,0 +1,344 @@
+From: leech@cs.unc.edu (Jon Leech)
+Subject: Space FAQ 04/15 - Calculations
+Supersedes: <math_730956451@cs.unc.edu>
+Organization: University of North Carolina, Chapel Hill
+Lines: 334
+Distribution: world
+Expires: 6 May 1993 19:56:03 GMT
+NNTP-Posting-Host: mahler.cs.unc.edu
+Keywords: Frequently Asked Questions
+
+Archive-name: space/math
+Last-modified: $Date: 93/04/01 14:39:12 $
+
+PERFORMING CALCULATIONS AND INTERPRETING DATA FORMATS
+
+    COMPUTING SPACECRAFT ORBITS AND TRAJECTORIES
+
+    References that have been frequently recommended on the net are:
+
+    "Fundamentals of Astrodynamics" Roger Bate, Donald Mueller, Jerry White
+    1971, Dover Press, 455pp $8.95 (US) (paperback). ISBN 0-486-60061-0
+
+    NASA Spaceflight handbooks (dating from the 1960s)
+	SP-33 Orbital Flight Handbook (3 parts)
+	SP-34 Lunar Flight Handbook   (3 parts)
+	SP-35 Planetary Flight Handbook (9 parts)
+
+	These might be found in university aeronautics libraries or ordered
+	through the US Govt. Printing Office (GPO), although more
+	information would probably be needed to order them.
+
+    M. A. Minovitch, _The Determination and Characteristics of Ballistic
+    Interplanetary Trajectories Under the Influence of Multiple Planetary
+    Attractions_, Technical Report 32-464, Jet Propulsion Laboratory,
+    Pasadena, Calif., Oct, 1963.
+
+	The title says all. Starts of with the basics and works its way up.
+	Very good. It has a companion article:
+
+    M. Minovitch, _Utilizing Large Planetary Perubations for the Design of
+    Deep-Space Solar-Probe and Out of Ecliptic Trajectories_, Technical
+    Report 32-849, JPL, Pasadena, Calif., 1965.
+
+	You need to read the first one first to realy understand this one.
+	It does include a _short_ summary if you can only find the second.
+
+	Contact JPL for availability of these reports.
+
+    "Spacecraft Attitude Dynamics", Peter C. Hughes 1986, John Wiley and
+	Sons.
+
+    "Celestial Mechanics: a computational guide for the practitioner",
+    Lawrence G. Taff, (Wiley-Interscience, New York, 1985).
+
+	Starts with the basics (2-body problem, coordinates) and works up to
+	orbit determinations, perturbations, and differential corrections.
+	Taff also briefly discusses stellar dynamics including a short
+	discussion of n-body problems.
+
+
+    COMPUTING PLANETARY POSITIONS
+
+    More net references:
+
+    Van Flandern & Pullinen, _Low-Precision Formulae for Planetary
+    Positions_, Astrophysical J. Supp Series, 41:391-411, 1979. Look in an
+    astronomy or physics library for this; also said to be available from
+    Willmann-Bell.
+
+	Gives series to compute positions accurate to 1 arc minute for a
+	period + or - 300 years from now. Pluto is included but stated to
+	have an accuracy of only about 15 arc minutes.
+
+    _Multiyear Interactive Computer Almanac_ (MICA), produced by the US
+    Naval Observatory. Valid for years 1990-1999. $55 ($80 outside US).
+    Available for IBM (order #PB93-500163HDV) or Macintosh (order
+    #PB93-500155HDV). From the NTIS sales desk, (703)-487-4650. I believe
+    this is intended to replace the USNO's Interactive Computer Ephemeris.
+
+    _Interactive Computer Ephemeris_ (from the US Naval Observatory)
+    distributed on IBM-PC floppy disks, $35 (Willmann-Bell). Covers dates
+    1800-2049.
+
+    "Planetary Programs and Tables from -4000 to +2800", Bretagnon & Simon
+    1986, Willmann-Bell.
+
+	Floppy disks available separately.
+
+    "Fundamentals of Celestial Mechanics" (2nd ed), J.M.A. Danby 1988,
+    Willmann-Bell.
+
+	A good fundamental text. Includes BASIC programs; a companion set of
+	floppy disks is available separately.
+
+    "Astronomical Formulae for Calculators" (4th ed.), J. Meeus 1988,
+    Willmann-Bell.
+
+    "Astronomical Algorithms", J. Meeus 1991, Willmann-Bell.
+
+	If you actively use one of the editions of "Astronomical Formulae
+	for Calculators", you will want to replace it with "Astronomical
+	Algorithms". This new book is more oriented towards computers than
+	calculators and contains formulae for planetary motion based on
+	modern work by the Jet Propulsion Laboratory, the U.S. Naval
+	Observatory, and the Bureau des Longitudes. The previous books were
+	all based on formulae mostly developed in the last century.
+
+	Algorithms available separately on diskette.
+
+    "Practical Astronomy with your Calculator" (3rd ed.), P. Duffett-Smith
+    1988, Cambridge University Press.
+
+    "Orbits for Amateurs with a Microcomputer", D. Tattersfield 1984,
+    Stanley Thornes, Ltd.
+
+	Includes example programs in BASIC.
+
+    "Orbits for Amateurs II", D. Tattersfield 1987, John Wiley & Sons.
+
+    "Astronomy / Scientific Software" - catalog of shareware, public domain,
+    and commercial software for IBM and other PCs. Astronomy software
+    includes planetarium simulations, ephemeris generators, astronomical
+    databases, solar system simulations, satellite tracking programs,
+    celestial mechanics simulators, and more.
+
+	Andromeda Software, Inc.
+	P.O. Box 605
+	Amherst, NY 14226-0605
+
+
+    COMPUTING CRATER DIAMETERS FROM EARTH-IMPACTING ASTEROIDS
+
+    Astrogeologist Gene Shoemaker proposes the following formula, based on
+    studies of cratering caused by nuclear tests.
+
+		     (1/3.4)
+    D = S  S  c  K  W	    : crater diameter in km
+	 g  p  f  n
+
+	       (1/6)
+    S = (g /g )		    : gravity correction factor for bodies other than
+     g	  e  t		      Earth, where g = 9.8 m/s^2 and g	is the surface
+					    e		      t
+			      gravity of the target body. This scaling is
+			      cited for lunar craters and may hold true for
+			      other bodies.
+
+		(1/3.4)
+    S = (p / p )	    : correction factor for target density p  ,
+     p	  a   t							    t
+			      p  = 1.8 g/cm^3 for alluvium at the Jangle U
+			       a
+			      crater site, p = 2.6 g/cm^3 for average
+			      rock on the continental shields.
+
+    C			    : crater collapse factor, 1 for craters <= 3 km
+			      in diameter, 1.3 for larger craters (on Earth).
+
+							    (1/3.4)
+    K			    : .074 km / (kT TNT equivalent)
+     n			      empirically determined from the Jangle U
+			      nuclear test crater.
+
+	      3		   2		       19
+    W = pi * d	* delta * V  / (12 * 4.185 * 10  )
+			    : projectile kinetic energy in kT TNT equivalent
+			      given diameter d, velocity v, and projectile
+			      density delta in CGS units. delta of around 3
+			      g/cm^3 is fairly good for an asteroid.
+
+    An RMS velocity of V = 20 km/sec may be used for Earth-crossing
+    asteroids.
+
+    Under these assumptions, the body which created the Barringer Meteor
+    Crater in Arizona (1.13 km diameter) would have been about 40 meters in
+    diameter.
+
+    More generally, one can use (after Gehrels, 1985):
+
+    Asteroid	    Number of objects  Impact probability  Impact energy
+    diameter (km)		       (impacts/year)	   (* 5*10^20 ergs)
+
+     10			    10		     10^-8		10^9
+      1			 1 000		     10^-6		10^6
+      0.1	       100 000		     10^-4		10^3
+
+    assuming simple scaling laws. Note that 5*10^20 ergs = 13 000 tons TNT
+    equivalent, or the energy released by the Hiroshima A-bomb.
+
+    References:
+
+    Gehrels, T. 1985 Asteroids and comets. _Physics Today_ 38, 32-41. [an
+	excellent general overview of the subject for the layman]
+
+    Shoemaker, E.M. 1983 Asteroid and comet bombardment of the earth. _Ann.
+	Rev. Earth Planet. Sci._ 11, 461-494. [very long and fairly
+	technical but a comprehensive examination of the
+	 subject]
+
+    Shoemaker, E.M., J.G. Williams, E.F. Helin & R.F. Wolfe 1979
+	Earth-crossing asteroids: Orbital classes, collision rates with
+	Earth, and origin. In _Asteroids_, T. Gehrels, ed., pp. 253-282,
+	University of Arizona Press, Tucson.
+
+    Cunningham, C.J. 1988 _Introduction to Asteroids: The Next Frontier_
+	(Richmond: Willman-Bell, Inc.) [covers all aspects of asteroid
+	studies and is an excellent introduction to the subject for people
+	of all experience levels. It also has a very extensive reference
+	list covering essentially all of the reference material in the
+	field.]
+
+
+    MAP PROJECTIONS AND SPHERICAL TRIGNOMETRY
+
+    Two easy-to-find sources of map projections are the "Encyclopaedia
+    Brittanica", (particularly the older volumes) and a tutorial appearing
+    in _Graphics Gems_ (Academic Press, 1990). The latter was written with
+    simplicity of exposition and suitability of digital computation in mind
+    (spherical trig formulae also appear, as do digitally-plotted examples).
+
+    More than you ever cared to know about map projections is in John
+    Snyder's USGS publication "Map Projections--A Working Manual", USGS
+    Professional Paper 1395. This contains detailed descriptions of 32
+    projections, with history, features, projection formulas (for both
+    spherical earth and ellipsoidal earth), and numerical test cases. It's a
+    neat book, all 382 pages worth. This one's $20.
+
+    You might also want the companion volume, by Snyder and Philip Voxland,
+    "An Album of Map Projections", USGS Professional Paper 1453. This
+    contains less detail on about 130 projections and variants. Formulas are
+    in the back, example plots in the front. $14, 250 pages.
+
+    You can order these 2 ways. The cheap, slow way is direct from USGS:
+    Earth Science Information Center, US Geological Survey, 507 National
+    Center, Reston, VA 22092. (800)-USA-MAPS. They can quote you a price and
+    tell you where to send your money. Expect a 6-8 week turnaround time.
+
+    A much faster way (about 1 week) is through Timely Discount Topos,
+    (303)-469-5022, 9769 W. 119th Drive, Suite 9, Broomfield, CO 80021. Call
+    them and tell them what you want. They'll quote a price, you send a
+    check, and then they go to USGS Customer Service Counter and pick it up
+    for you. Add about a $3-4 service charge, plus shipping.
+
+    A (perhaps more accessible) mapping article is:
+
+	R. Miller and F. Reddy, "Mapping the World in Pascal",
+	Byte V12 #14, December 1987
+
+	Contains Turbo Pascal procedures for five common map projections. A
+	demo program, CARTOG.PAS, and a small (6,000 point) coastline data
+	is available on CompuServe, GEnie, and many BBSs.
+
+    Some references for spherical trignometry are:
+
+	_Spherical Astronomy_, W.M. Smart, Cambridge U. Press, 1931.
+
+	_A Compendium of Spherical Astronomy_, S. Newcomb, Dover, 1960.
+
+	_Spherical Astronomy_, R.M. Green, Cambridge U. Press., 1985 (update
+	of Smart).
+
+	_Spherical Astronomy_, E Woolard and G.Clemence, Academic
+	Press, 1966.
+
+
+    PERFORMING N-BODY SIMULATIONS EFFICIENTLY
+
+	"Computer Simulation Using Particles"
+	R. W. Hockney and J. W. Eastwood
+	(Adam Hilger; Bristol and Philadelphia; 1988)
+
+	"The rapid evaluation of potential fields in particle systems",
+	L. Greengard
+	MIT Press, 1988.
+
+	    A breakthrough O(N) simulation method. Has been parallelized.
+
+	L. Greengard and V. Rokhlin, "A fast algorithm for particle
+	simulations," Journal of Computational Physics, 73:325-348, 1987.
+
+	"An O(N) Algorithm for Three-dimensional N-body Simulations", MSEE
+	thesis, Feng Zhao, MIT AILab Technical Report 995, 1987
+
+	"Galactic Dynamics"
+	J. Binney & S. Tremaine
+	(Princeton U. Press; Princeton; 1987)
+
+	    Includes an O(N^2) FORTRAN code written by Aarseth, a pioneer in
+	    the field.
+
+	Hierarchical (N log N) tree methods are described in these papers:
+
+	A. W. Appel, "An Efficient Program for Many-body Simulation", SIAM
+	Journal of Scientific and Statistical Computing, Vol. 6, p. 85,
+	1985.
+
+	Barnes & Hut, "A Hierarchical O(N log N) Force-Calculation
+	Algorithm", Nature, V324 # 6096, 4-10 Dec 1986.
+
+	L. Hernquist, "Hierarchical N-body Methods", Computer Physics
+	Communications, Vol. 48, p. 107, 1988.
+
+
+    INTERPRETING THE FITS IMAGE FORMAT
+
+    If you just need to examine FITS images, use the ppm package (see the
+    comp.graphics FAQ) to convert them to your preferred format. For more
+    information on the format and other software to read and write it, see
+    the sci.astro.fits FAQ.
+
+
+    SKY (UNIX EPHEMERIS PROGRAM)
+
+    The 6th Edition of the Unix operating system came with several software
+    systems not distributed because of older media capacity limitations.
+    Included were an ephmeris, a satellite track, and speech synthesis
+    software. The ephmeris, sky(6), is available within AT&T and to sites
+    possessing a Unix source code license. The program is regarded as Unix
+    source code. Sky is <0.5MB. Send proof of source code license to
+
+	E. Miya
+	MS 258-5
+	NASA Ames Research Center
+	Moffett Field, CA 94035-1000
+	eugene@orville.nas.nasa.gov
+
+
+    THREE-DIMENSIONAL STAR/GALAXY COORDINATES
+
+    To generate 3D coordinates of astronomical objects, first obtain an
+    astronomical database which specifies right ascension, declination, and
+    parallax for the objects. Convert parallax into distance using the
+    formula in part 6 of the FAQ, convert RA and declination to coordinates
+    on a unit sphere (see some of the references on planetary positions and
+    spherical trignometry earlier in this section for details on this), and
+    scale this by the distance.
+
+    Two databases useful for this purpose are the Yale Bright Star catalog
+    (sources listed in FAQ section 3) or "The Catalogue of Stars within 25
+    parsecs of the Sun" (in pub/SPACE/FAQ/stars.data and stars.doc on
+    ames.arc.nasa.gov).
+
+
+NEXT: FAQ #5/15 - References on specific areas

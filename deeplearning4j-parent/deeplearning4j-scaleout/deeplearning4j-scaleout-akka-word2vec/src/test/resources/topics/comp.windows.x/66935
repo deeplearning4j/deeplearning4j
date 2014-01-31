@@ -1,0 +1,34 @@
+From: nmm1@cus.cam.ac.uk (Nick Maclaren)
+Subject: Re: Key definitions in Emacs + X
+Organization: U of Cambridge, England
+Lines: 28
+Nntp-Posting-Host: apus.cus.cam.ac.uk
+
+In article <1993Apr16.183525.25197@midway.uchicago.edu> ajaffe@oddjob.uchicago.edu (Andrew Jaffe) writes:
+>I use Emacs and I want to customize my keyboard better.
+>When I set up stuff in my .emacs with a keymap and define-keys,
+>I can only access certain of the keys on my X-Terminal's
+>keyboard. I can't get e.g. F10, Home, End, PgUp, PgDn; they all
+>seem to have either the same or no keycode. I have a feeling
+>this can't be fixed in emacs itself, but that I need to do some
+>xmodmap stuff. Can someone help me?
+
+It is actually worse than you think.  I have the same problem, and have
+given up.  Emacs has an internal table (somewhere!) which defines what
+keys it will accept, and this table is system-dependent.  I use a Sun
+from my HP, and cannot get 'shift PageUp' to work - xmodmap is not
+sufficient, or at least I haven't worked out how to make it work.
+However, I CAN get ordinary 'PageUp' and 'shift CursorRight' to work,
+and I do some customised things with them.
+
+Note that the Emacs on my HP has no problem, and I am using exactly
+the same xmodmap and Emacs configuration.
+
+
+Nick Maclaren
+University of Cambridge Computer Laboratory,
+New Museums Site, Pembroke Street,
+Cambridge CB2 3QG, England.
+Email:  nmm1@cus.cam.ac.uk
+Tel.:   +44 223 334761
+Fax:    +44 223 334679

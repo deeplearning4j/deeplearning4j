@@ -1,0 +1,35 @@
+From: dave@einstein.andi.org (David Scheck)
+Subject: imake (X11R4) cpp problems on AIX
+Keywords: imake X11R4 AIX
+Nntp-Posting-Host: einstein.andi.org
+Organization: Association of NeXTSTEP Developers International
+Lines: 28
+
+I am trying to build and use imake (X11R4) on an IBM RS/6000 running AIX V3.2.
+I am having the following 2 problems.
+
+(1) Many of my Imakefile's have contructs like
+                /**/#This is a makefile
+        at the start of lines to pass Makefile comments thru the C
+        preprocessor and into the Makefile.  Most of the C preprocessors that
+        I have used will not treat such a # as appearing at the start of the
+        line.  Thus the C preprocessor does not treat the hash symbol as the
+        start of a directive. 
+
+        However the IBM cpp strips the comment and treats the hash symbol
+        as the start of a directive.  The cpp fails when it determines
+        that "This" is not a known directive.  I have temporarily hacked my
+        imake to handle this situation but would like to come up with a better
+        fix.
+
+(2) Several Imakefiles use /**/ as a parameter to a macro when a particular
+        use of the macro does not need a value for the parameter.  The AIX cpp
+        gives warnings about these situations but continues to work OK.
+
+If you are familiar with these problems and have solutions, I would appreciate
+information about on your solutions.  (Perhaps, this is solved in a later
+version of imake that I have not reviewed.)  Also, do you know of other cpp's
+that behave similarly?
+
+Since I do not have easy access to News, a response to
+'white_billy@po.gis.prc.com' would be appreciated.

@@ -1,0 +1,47 @@
+From: richk@grebyn.com (Richard Krehbiel)
+Subject: Re: IDE vs SCSI
+In-Reply-To: wlsmith@valve.heart.rri.uwo.ca's message of Thu, 15 Apr 1993 23:55:09 GMT
+Lines: 38
+Organization: Grebyn Timesharing, Inc.
+
+In article <1993Apr15.235509.29818@julian.uwo.ca> wlsmith@valve.heart.rri.uwo.ca (Wayne Smith) writes:
+
+>   In article <1qk7kvINNndk@dns1.NMSU.Edu> bgrubb@dante.nmsu.edu (GRUBB) writes:
+>   >>point of view, why does SCSI have an advantage when it comes to multi-
+>   >>tasking?  Data is data, and it could be anywhere on the drive.  Can
+>   >>SCSI find it faster?  can it get it off the drive and into the computer
+>   >>faster?  Does it have a better cache system?  I thought SCSI was good at
+>   >>managing a data bus when multiple devices are attached.  If we are
+>   >>only talking about a single drive, explain why SCSI is inherently
+>   >>faster at managing data from a hard drive.
+
+The Adaptec 1540-series use bus mastering.  This means that the CPU
+doesn't sit waiting for data bytes, it can go off and do other
+computing - if you have an advanced multi-tasking OS, that is.  DOS
+just sits and waits anyway.
+
+>
+>   >IDE:  Integrated Device Electronics 
+>   > currently the most common standard, and is mainly used for
+>   > medium sized drives. Can have more than one hard drive.
+>   > Asynchronous Transfer: ~5MB/s max.
+>
+>   Why don't you start with the spec-sheet of the ISA bus first?
+>   You can quote SCSI specs till you're blue in the face, but if they
+>   exceed the ISA bus capability, then what's the point?
+>
+>   Who says IDE is limited to 5 megs/sec?  What about VLB-IDE?  Does anyone
+>   know how they perform?
+
+Why don't you start with the spec-sheet of the ISA bus first? :-) IDE
+was designed to plug into ISA virtually unaided - in essence, IDE *is*
+ISA, on a ribbon cable.  Therefore it's specs are the same as ISA -
+8MHz clock, 16 bit width, 5MB/sec.
+
+This is why I've concluded that IDE on VL-bus is a waste of a fast
+slot.  The card's job would to slow the VL-bus transactions to ISA
+speed.  Heck, that's what ISA slots do - I'll just use one of those
+instead.
+-- 
+Richard Krehbiel                                 richk@grebyn.com
+OS/2 2.0 will do for me until AmigaDOS for the 386 comes along...

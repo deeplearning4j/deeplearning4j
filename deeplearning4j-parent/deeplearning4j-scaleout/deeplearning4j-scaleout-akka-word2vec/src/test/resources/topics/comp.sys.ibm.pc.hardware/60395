@@ -1,0 +1,30 @@
+From: michael@jester.GUN.de (Michael Gerhards)
+Distribution: world
+Subject: Re: com ports /modem/ mouse conflict -REALLY?
+X-Newsreader: TIN [version 1.1 PL8]
+Organization: private COHERENT system
+Lines: 20
+
+Phil Hunt (phil@howtek.MV.COM) wrote:
+> I'm kind of new at the pc stuff.  My machine has 4 serial ports.  Com 1 and3
+> and 2 &4 share same IRQs.  You mean I can't plug a mouse into Com1 and a modem
+> into com3 and expect both to work?
+
+No, but some OS's ( COHERENT , etc ) are able to drive one of the ports in
+polled mode without using the IRQ. In your example, after accessing the
+modem, the mouse won't work until you reboot, because the IRQ is used by
+the modem.
+
+> If Answer is NO, should I change IRQ's for com ports to be different?  And,
+> does it really matter which IRQ I set the ports too?
+
+Yes, you can change the IRQ's for com3/4, but it depends on your other
+hardware. com1 uses IRQ4, com2 IRQ3.  If you have only one printerport 
+( IRQ7 ), you can change com3 to IRQ5 ( normally 2nd printer ). For com4,
+you can assign IRQ2, if its free. As far as I know, no other IRQ can be
+used until your I/O-card is 16bit and caould access IRQ's > 8.
+
+Michael
+--
+*  michael@jester.gun.de  *   Michael Gerhards   *   Preussenstrasse 59  *
+                          *  Germany 4040 Neuss  *  Voice: 49 2131 82238 *

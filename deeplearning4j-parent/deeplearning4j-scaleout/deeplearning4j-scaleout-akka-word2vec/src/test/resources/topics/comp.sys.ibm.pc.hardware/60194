@@ -1,0 +1,50 @@
+From: phil@howtek.MV.COM (Phil Hunt)
+Subject: Re: com ports /modem/ mouse conflict -REALLY?
+Organization: Howtek, Inc.
+Reply-To: phil@howtek.MV.COM (Phil Hunt)
+X-Mailer: uAccess - Macintosh Release: 1.6v2
+Lines: 43
+
+
+In article <1993Apr11.120848.493@wnbbs.nbg.sub.org> (comp.sys.ibm.pc.hardware,alt.msdos.programmer,comp.sys.ibm.pc.misc,uw.pc.general,uw.pc.ibm,misc.forsale.computers.d,comp.dcom.modems,), oli@wnbbs.nbg.sub.org (Oliver Duesel) writes:
+] Hi there,
+] 
+] yuri@windy.Berkeley.EDU (Yuri Yulaev) writes:
+] 
+] : 	I have 1s/1p/1g  I/O card in my 386/40 PC. 
+] : When I plug in wang modem at com4,it works. If I change
+] : it to com1- it doesn't. 
+] : Program "chkport" gives diagnostics like "possible com /irq
+] : conflict at com1" (with mouse driver in memory).
+] 
+] Since your IO-card only has one serial port - this should default to COM1 ? 
+] Under MS-DOS, you can't share IRQ's - so you'll have to set either your modem
+] or your mouse to COM2 ... using different adresses and IRQ's.
+] When you set two 'devices' onto the same IRQ - like COM1 and COM3 (or 2 and 4)
+] - the 'latter' one will always win, i.e. if you have your mouse on COM1 and
+] start using your modem on COM3, your modem should work - but your mouse will
+] stop doing so, until reboot.
+] 
+] It should be no problem, setting your modem to COM2 ? (you didn't write 
+] anything about other peripherals ...)
+] 
+] I hope, it helped a bit ....					By(t)e, Oli.
+] 
+] 
+
+Hi,
+
+I'm kind of new at the pc stuff.  My machine has 4 serial ports.  Com 1 and3
+and 2 &4 share same IRQs.  You mean I can't plug a mouse into Com1 and a modem
+into com3 and expect both to work?
+
+If Answer is NO, should I change IRQ's for com ports to be different?  And,
+does it really matter which IRQ I set the ports too?
+
+Phil
+
+--------------------------------------------------------------------
+Phil Hunt                          "Wherever you go, there you are!"
+Howtek, Inc.		                   
+
+Internet: phil@howtek.MV.COM   uucp: {decvax|harvard}!mv!howtek!phil

@@ -1,0 +1,28 @@
+From: thinman@netcom.com (Technically Sweet)
+Subject: What is reverse or negative video?
+Organization: International Foundation for Internal Freedom
+Lines: 23
+
+I'm interested in simulating reverse (or negative) color video
+mathematically.  What is the transform?  Is it a simple
+reversal of the hue value in the HSV color space?  Is it
+a manipulation in the YUV color space?  How is it related
+to solarization?
+
+If you want to see something truly wild, turn on the
+reverse video effect on a camcorder so equipped,
+and point it at the monitor.  This creates a chaotic
+dynamical system whose phase space is continuous along
+rotation, zoom, focus, etc.  Very very surprising and 
+lovely.  I'd like to write a simulation of this effect
+without analog grunge.  Thanks for any info you may have.
+
+Please e-mail any info to me.  I'll post a summary.
+
+Thanks,
+
+-- 
+
+Lance Norskog
+thinman@netcom.com
+Data is not information is not knowledge is not wisdom.

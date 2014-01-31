@@ -1,0 +1,19 @@
+From: C445585@mizzou1.missouri.edu (John Kelsey)
+Subject: Clipper chip and key exchange methods
+Nntp-Posting-Host: mizzou1.missouri.edu
+Organization: University of Missouri
+Lines: 13
+
+   I was wanting to ask the same question Dan Bernstein asked--how does the
+Clipper chip exchange keys?  If the public key is only 80 or 160 bits long,
+does anyone know of any public-key schemes that are secure with that key
+size?  (Diffie-Hellman or maybe El Gamal, with p set to a constant value?)
+   Presumably, the real scheme is something like:
+ 
+   1.  Exchange/verify public keys.
+   2.  Send encrypted (randomly-generated) session key.
+   3.  Encrypt / Decrypt voice trafic with some sort of fast stream cipher.
+ 
+   Can anyone elaborate on this, or show me what I'm missing here?
+ 
+   --John Kelsey, c445585@mizzou1.missouri.edu

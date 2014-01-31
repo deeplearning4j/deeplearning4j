@@ -1,0 +1,34 @@
+From: skelley@umiacs.umd.edu (Stephen Kelley)
+Subject: Expose/Configure event handling (R4 vs R5)
+Organization: UMIACS, University of Maryland, College Park, MD 20742
+Lines: 29
+
+I have two questions (well probably more...) about how Expose & Configure
+events are handled.
+
+I have an appl. which uses 1 window to draw in.  Since I give the user the
+capability of scaling and zooming as well as allowing the window to be
+resized, I made a translation table for the Expose & Configure events.
+The Expose event calls my redraw method while the Configure event
+calls my rescale method.  The rescale method invokes a "fake" Expose
+event (actually just calls the redraw w/ an appropriate Expose struct)
+to draw the data.
+
+Quest 1.
+When the appl. is compiled/linked w/ R4 (running in either R4 or R5 env.)
+I get multiple (>4) redraws when the window gets uncovered or the size
+is changed.  I assume I'm getting cascading events.  Is that right?
+Any suggestions as to how to handle/trap events in a better way?
+
+Quest 2.
+When the appl. is compiled/linked w/ R5 I get no Expose events
+whatsoever.  Do events and/or translation tables act differently in R5?
+
+Thanks in advance
+
+Steve
+-- 
+==========================================================================================
+
+Steve Kelley	UMCP CS/UMIACS			Captain, I protest!
+Internet:	skelley@umiacs.umd.edu		I am *NOT* a merry man! - Worf

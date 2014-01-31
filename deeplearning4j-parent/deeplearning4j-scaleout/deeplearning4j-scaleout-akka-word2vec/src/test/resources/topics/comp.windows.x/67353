@@ -1,0 +1,27 @@
+From: barnettj@pookie.crd.ge.com (Janet A Barnett)
+Subject: Input Focus to a Window Other Than Where the Pointer Is
+Nntp-Posting-Host: pookie.crd.ge.com
+Organization: GE Corp. Research & Development, Schenectady, NY
+Lines: 21
+
+
+I have noticed in FrameMaker 3.1X on both the SGI and SUN platforms
+that certain dialogs, such as "Column Layout..." for example, respond
+to keyboard traversal even though the pointer is NOT in the dialog
+window and even though the window manager keyboard focus policy is
+POINTER.
+
+How is this done?
+
+I would like to emulate this behavior in my application. It seems a
+reasonable behavior since when a dialog is popped up from a keyboard
+action, the dialog is not guaranteed to be under the pointer and the
+user should not have to reach for the mouse just to move the focus.
+
+Alternatively, I'm open to any suggestions as to what is the "right"
+way to insure that popups get the focus when they appear, particularly
+when they are invoked from the keyboard and one's keyboard focus
+policy is pointer.
+
+Allen Barnett
+(whose wife graciously allowed to use her account)

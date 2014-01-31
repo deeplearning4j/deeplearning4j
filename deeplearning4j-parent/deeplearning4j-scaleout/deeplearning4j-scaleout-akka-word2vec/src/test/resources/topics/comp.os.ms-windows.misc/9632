@@ -1,0 +1,36 @@
+From: ccastco@prism.gatech.EDU (Constantinos Malamas)
+Subject: Re: More Cool BMP files??
+Organization: Georgia Institute of Technology
+Lines: 31
+
+>In article <1993Apr17.023017.17301@gmuvax2.gmu.edu> rwang@gmuvax2.gmu.edu writes:
+> > Hi, everybody:
+> >     I guess my subject has said it all.  It is getting boring
+> > looking at those same old bmp files that came with Windows.  So,
+> > I am wondering if there is any body has some beautiful bmp file
+> > I can share.  Or maybe somebody can tell me some ftp site for
+> > some bmp files, like some scenery files, some animals files,
+> > etc....  I used to have some, unfortunately i delete them all.
+>Eric
+
+	Hmmm, let's see: I could upload some .BMP files (I have around 15
+b/w and color ones), but I'd rather give you the fishing pole instead of the
+fish:Here it goes:  
+      Begginers guide to the coolest Windows backgrounds:
+Step 1: ftp to cica (ftp.cica.indiana.edu user:anonymous passwd: guest)
+cd to pub/pc/win3/(util?desktop?) and get one of these : wingif14.zip,
+pspro??.zip gws?????.zip . They will scale, dither and convert GIFs to BMPs.
+get the index file from the win3 subdir too for future reference...
+Step 2: ftp to wuarchive.wustl.edu or plaza.aarnet.edu.au or archive.orst.edu
+and cd to graphics/gif GET THE INDEX FILE... Now GigaBytes of pictures
+are waiting to become your desktop... 
+Advice: If you have a slow computer (<486DX w/4MB RAM), make your bg b/w
+by selecting b/w dither in any of the abovementioned apps..
+Hope it helps...
+
+
+-- 
+Costas Malamas ____________________________________________________________
+Georgia Institute of Technology 
+OIT UA -- Opinions expressed are not necessarily OIT's... 
+Internet: ccastco@prism.gatech.edu

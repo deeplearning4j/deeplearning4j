@@ -1,0 +1,49 @@
+From: bet@sbi.com (Bennett Todd @ Salomon Brothers Inc., NY )
+Subject: Re: Source of random bits on a Unix workstation
+Lines: 44
+Nntp-Posting-Host: sandstorm
+
+>>For your application, what you can do is to encrypt the real-time clock
+>>value with a secret key.
+
+Well, almost.... If I only had to solve the problem for myself, and were
+willing to have to type in a second password (the secret key) whenever I
+logged in, it could work. However, I'm trying to create a solution that
+anyone can use, and which, once installed, is just as effortless to start up
+as the non-solution of just using xhost(1) to control access. I've got
+religeous problems with storing secret keys on multiuser computers.
+
+>For a good discussion of cryptographically "good" random number
+>generators, check out the draft-ietf-security-randomness-00.txt
+>Internet Draft, available at your local friendly internet drafts
+>repository.
+
+Thanks for the pointer! It was good reading, and I liked the idea of using
+several unrelated sources with a strong mixing function. However, unless I
+missed something, the only source they suggested (aside from a hardware RNG)
+that seems available, and unguessable by an intruder, when a Unix is
+fresh-booted, is I/O buffers related to network traffic. I believe my
+solution basically uses that strategy, without requiring me to reach into
+the kernel.
+
+>A reasonably source of randomness is the output of a cryptographic
+>hash function (e.g., MD5), when fed with a large amount of
+>more-or-less random data. For example, running MD5 on /dev/mem is a
+>slow, but random enough, source of random bits; there are bound to be
+>128 bits of entropy in the tens (or hundreds) of megabytes of data in
+>a modern workstation's memory, as a fair amount of them are system
+>timers, i/o buffers, etc.
+
+I heard about this solution, and it sounded good. Then I heard that folks
+were experiencing times of 30-60 seconds to run this, on
+reasonably-configured workstations. I'm not willing to add that much delay
+to someone's login process. My approach (etherfind|compress, skip 10K) takes
+a second or two to run. I'm considering writing the be-all and end-all of
+solutions, that launches the MD5, and simultaneously tries to suck bits off
+the net, and if the net should be sitting __SO__ idle that it can't get 10K
+after compression before MD5 finishes, use the MD5. This way I could have
+guaranteed good bits, and a deterministic upper bound on login time, and
+still have the common case of login take only a couple of extra seconds.
+
+-Bennett
+bet@sbi.com

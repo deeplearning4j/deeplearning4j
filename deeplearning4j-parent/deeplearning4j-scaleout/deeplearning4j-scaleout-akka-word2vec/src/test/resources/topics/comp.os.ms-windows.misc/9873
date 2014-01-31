@@ -1,0 +1,28 @@
+From: paladin@world.std.com (Thomas G Schlatter)
+Subject: Re: Tidying up after removing an OLE server
+Keywords: OLE, SPSS
+Organization: The World Public Access UNIX, Brookline, MA
+Lines: 22
+
+In article <C5y121.Kz3@liverpool.ac.uk> qq43@liverpool.ac.uk (Chris Wooff) writes:
+>A while ago I installed SPSS for Windows as part of an evaluation. Once
+>the evaluation was complete I duly deleted the software from my PC.
+>
+>Unfortunately there is still a "ghost" of SPSS left: when I run
+>something like "Write" and go to embed an object then "SPSS Chart"
+>appears on the list of objects I'm offered. I looked around all
+>the obvious "INI" files without success. The next thing I tried
+>was looking for the string "SPSS Chart" in every file in the 
+>Windows directory. It turned up in a file called REQ.DAT (or
+>REG.DAT). Unfortunately the file was binary and so I didn't feel
+>inclined to edit it.
+>
+>I'd welcome a solution for removing SPSS from the list of OLE servers.
+ I think you can do this with REGEDIT, which can make changes
+to the OLE registration database.  From Program Manager (or 
+File Manager) choose RUN and type REGEDIT.  You do have it-
+its included with Windows, but not well documented.
+
+Tom
+paladin@world.std.com
+

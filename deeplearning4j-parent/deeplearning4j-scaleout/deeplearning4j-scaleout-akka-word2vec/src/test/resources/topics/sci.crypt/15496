@@ -1,0 +1,19 @@
+From: rja14@cl.cam.ac.uk (Ross Anderson)
+Subject: Re: Clipper chip -- technical details
+Nntp-Posting-Host: ely.cl.cam.ac.uk
+Organization: U of Cambridge Computer Lab, UK
+Lines: 13
+
+In article <1993Apr19.052005.20665@ulysses.att.com> smb@research.att.com (Steven 
+Bellovin) writes:
+
+> Nothing was said about where K_P comes from.
+
+If you've got a secure device, you don't need public keys.
+
+If the secret key which all chips share is SK, you can just use KP = 
+E{(myname, yourname, date) ; SK}.
+
+Maybe that's why Jim Bidzos was reported as being cheesed off.
+
+Ross

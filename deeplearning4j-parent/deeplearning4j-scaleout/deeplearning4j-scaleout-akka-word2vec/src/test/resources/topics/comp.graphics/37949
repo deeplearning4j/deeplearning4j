@@ -1,0 +1,44 @@
+From: gavin@krypton.asd.sgi.com (Gavin Bell)
+Subject: Re: Surface normal orientations
+Organization: Silicon Graphics, Inc.  Mountain View, CA
+Lines: 38
+NNTP-Posting-Host: krypton.asd.sgi.com
+
+In <1pscti$aqe@travis.csd.harris.com> srp@travis.csd.harris.com (Stephen Pietrowicz) writes:
+>How do you go about orienting all normals in the same direction, given a 
+>set of points, edges and faces?
+
+This algorithm works well for me:
+
+Algorithm to attempt to find outward-facing normals:
+---------------------------------------------------
+First, mark all faces as UNKNOWN.
+
+Then create an edge dictionary that allows you to find all of the
+faces sharing a given edge (where an edge is two integers representing
+the two shared vertices).
+
+Pick an arbitrary face and mark it COUNTER_CLOCKWISE.  Using the edge
+dictionary, orient all surrounding faces based on the orientation of
+this face.  And recurse for all surrounding faces, consistently
+orienting the entire surface.
+
+Find the average of the vertices in this surface.  Using that point,
+calculate a volume measurement, taking into account the face's
+orientation.  If the volume turns out to be positive, assume the faces
+are oriented correctly.  If it is negative, reverse their orientations
+(mark them CLOCKWISE).
+
+If any faces are still UNKNOWN after this, choose another face
+and go through the algorithm again.
+
+At the end, faces marked CLOCKWISE must have their indices reversed
+before facet normals are found.
+
+(Note: if you are running on Silicon Graphics machines and buy the
+IRIS Inventor 3D toolkit developers package you have the source to
+this algorithm-- see /usr/src/Inventor/tools/ivnorm/.  If you're
+not... sorry, I can't give out the source, and even if I could it
+relies heavily on Inventor).
+--
+--gavin     (gavin@sgi.com,  (415)390-1024)

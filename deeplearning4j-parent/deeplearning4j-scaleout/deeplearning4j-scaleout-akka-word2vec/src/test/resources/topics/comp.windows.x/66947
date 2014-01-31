@@ -1,0 +1,28 @@
+Subject: Re: Trouble compiling X11R5 on SunOS_4.1.3
+From: nemo@aguirre.dia.fi.upm.es (Francisco J. Ballesteros)
+Organization: Computer Science, CLIP lab, UPM Madrid, Spain.
+Nntp-Posting-Host: aguirre.dia.fi.upm.es
+In-reply-to: dmm@head-cfa.harvard.edu's message of 2 Apr 93 21:24:05 GMT
+Lines: 21
+
+In article <1993Apr2.212405.5213@head-cfa.harvard.edu> dmm@head-cfa.harvard.edu (David Meleedy) writes:
+
+>   	   I've been trying to compile X11R5 patchlevel 23 on a Sun Sparc
+>      IPX using SunOS_4.1.3, and gcc 2.3.3.
+>   
+>   	   The problem occurs during the initial "make World".  When
+>      it gets up to compiling the standard X clients, it can't seem to find
+>      some of the libraries.  Right now we highly suspect the program "ld"
+>      which was updated for 4_1_3.
+>   
+
+    Yip, we had the same problem; the only fix we found was to link static
+some of the clients, ( btw, we used cc). :-(.
+
+--
+/+=========================================++================================+\
+||Francisco J. Ballesteros [a.k.a. Nemo]   ||  email: nemo@clip.dia.fi.upm.es||
+||org:  Computer Science, CLIP lab.        ||  phone: +34 1 336-7448         ||
+||      Campus Montegancedo s.n. U.P.M.    ||  ___         ___               ||
+||      Boadilla del Monte, Madrid, Spain. ||  \\   \\   o \\_)  \   _ \__   ||
+\+=========================================++== \\__ \\__\\ \\ == \_(_\_\_) =+/

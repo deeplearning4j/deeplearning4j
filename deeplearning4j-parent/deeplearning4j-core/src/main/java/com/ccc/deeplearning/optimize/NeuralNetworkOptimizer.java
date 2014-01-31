@@ -12,7 +12,7 @@ import cc.mallet.optimize.Optimizable;
 
 import com.ccc.deeplearning.nn.BaseNeuralNetwork;
 import com.ccc.deeplearning.plot.NeuralNetPlotter;
-import com.ccc.deeplearning.util.MyConjugateGradient;
+import com.ccc.deeplearning.util.NonZeroStoppingConjugateGradient;
 /**
  * Performs basic beam search based on the network's loss function
  * @author Adam Gibson
@@ -38,11 +38,11 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient MyConjugateGradient opt;
+	protected transient NonZeroStoppingConjugateGradient opt;
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new MyConjugateGradient(this,this);
+			opt = new NonZeroStoppingConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
 		opt.setMaxIterations(10000);
 		opt.optimize(1500);

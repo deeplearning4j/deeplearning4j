@@ -1,0 +1,116 @@
+From: thomsonal@cpva.saic.com
+Subject: What counntries do space surveillance?
+Organization: Science Applications Int'l Corp./San Diego
+Lines: 111
+
+      Ethnocentric USian that I am, I've assumed that we and the
+xUSSR were the only countries with significant capabilities to track
+non-cooperative objects in low Earth orbit. Grazing in a couple of 
+databases recently,  I found that Japan has some optical capabilities
+along this line, and also uses a radar designed for other purposes
+for orbital debris surveys (it isn't clear whether the radar can 
+determine orbital elements for the objects it detects). Abstracts of 
+the articles are appended. 
+
+
+    This leads to the more general question: do yet other people than 
+the US, Russia, and Japan do space surveillance, and if so, how and 
+why? 
+
+Allen Thomson              SAIC                        McLean, VA, USA
+-----------------------------------------------------------------------
+                         ABSTRACTS
+
+Optical tracking of the experimental geodetic satellite (EGS)
+TAKABE, MASAO; ITABE, TOSHIKAZU; ARUGA, TADASHI
+Radio Research Laboratory, Review (ISSN 0033-801X), vol. 34,
+March 1988, p. 23-34. In Japanese, with abstract in English.
+     This paper reports the optical tracking results of EGS
+(experimental geodetic satellite) which was launched on August 13,
+1986, by NASDA. The EGS optical tracking experiment process and an
+outline of the Radio Research Laboratory (RRL) optical ground       <----
+station are discussed. A star tracking technique for optical
+equipment calibration and satellite tracking technique for orbit
+prediction improvement are also described. The accuracy of EGS
+tracking data obtained by RRL at the request of NASDA is also
+discussed. In addition, it is briefly demonstrated that the
+position of the Japanese amateur satellite (JAS-1) which was
+launched with the EGS, was accurately determined by means of a      <----
+satellite tracking video. It is clear from this experiment that     <----
+optical observation data (i.e., satellite direction data) are very  <----
+useful for satellite orbit determination during initial launch      <----
+stages. Furthermore, the results confirm the effectivenes of these  <----
+two satellite optical tracking techniques.                          <----
+
+
+MU radar measurements of orbital debris
+SATO, TORU; KAYAMA, HIDETOSHI; FURUSAWA, AKIRA; KIMURA, IWANE
+(Kyoto University, Japan)
+AIAA, NASA, and DOD, Orbital Debris Conference: Technical Issues and 
+Future Directions, Baltimore, MD, Apr. 16-19, 1990. 10 p. 
+RPN: AIAA PAPER 90-1343
+     Distributions of orbital debris versus height and scattering cross 
+section are determined from a series of observations made with a high-
+power VHF Doppler radar (MU radar) of Japan. An automated data 
+processing algorithm has been developed to discriminate echoes of 
+orbiting objects from those of undesired signals such as meteor trail 
+echoes or lightning atmospherics. Although the results are preliminary, 
+they showed good agreement with those from NORAD tracking radar      <----
+observations using a much higher frequency. It is found that the     <----
+collision frequency of a Space Station of 1 km x 1 km size at an 
+altitude of 500 km with orbiting debris is expected to be as high as 
+once per two years. 
+
+
+Monitoring of the MU radar antenna pattern by Satellite Ohzora (EXOS-C)
+SATO, T.; INOOKA, Y.; FUKAO, S. (Kyoto Univ., Japan); KATO, S.
+Kyoto Univ., Uji (Japan). Radio Atmospheric Science Center.
+In International Council of Scientific Unions, Middle Atmosphere Program.
+Handbook for MAP, Vol. 20 5 p
+Publication Date: Jun. 1986
+      As the first attempt among MST (mesosphere stratosphere 
+troposphere) type radars, the MU (middle and upper atmosphere) radar 
+features an active phased array system. Unlike the conventional large 
+VHF radars, in which output power of a large vacuum tube is distributed 
+to individual antenna elements, each of 475 solid state power amplifier 
+feeds each antenna element. This system configuration enables very fast 
+beam steering as well as various flexible operations by dividing the 
+antenna into independent subarrays, because phase shift and signal 
+division/combination are performed at a low signal level using 
+electronic devices under control of a computer network. The antenna 
+beam can be switched within 10 microsec to any direction within the 
+zenith angle of 30 deg. Since a precise phase alignment of each element 
+is crucial to realize the excellent performance of this system, careful 
+calibration of the output phase of each power amplifier and antenna 
+element was carried out. Among various aircraft which may be used for 
+this purpose artificial satellites have an advantage of being able to 
+make a long term monitoring with the same system. An antenna pattern 
+monitoring system for the MU radar was developed using the scientific 
+satellite OHZORA (EXOS-C). A receiver named MUM (MU radar antenna 
+Monitor) on board the satellite measures a CW signal of 100 to 400 
+watts transmitted from the MU radar. The principle of the measurement 
+and results are discussed.
+
+
+Equatorial radar system
+FUKAO, SHOICHIRO;  TSUDA, TOSHITAKA; SATO, TORU; KATO, SUSUMU
+(Kyoto University, Uji, Japan)
+(COSPAR, IAGA, SCOSTEP, et al., Plenary Meeting, 27th,
+Workshops and Symposium on the Earth's Middle Atmosphere,
+Espoo, Finland, July 18-29, 1988) Advances in Space Research
+(ISSN 0273-1177), vol. 10, no. 10, 1990, p. 151-154.
+     A large clear air radar with the sensitivity of an incoherent 
+scatter radar for observing the whole equatorial atmosphere up to 1000 
+km altitude is now being designed in Japan. The radar will be built in 
+Pontianak, West Kalimantan, Indonesia (0.03 deg N, 109.29 deg E). The 
+system is a 47-MHz monostatic Doppler radar with an active phased array 
+configuration similar to that of the MU radar in Japan, which has been 
+in successful operation since 1983. It will have a PA product of about 
+3 x 10 to the 9th W sq m (P = average transmitter power, A = effective 
+antenna aperture) with a sensitivity of approximately 10 times that of 
+the MU radar. This system configuration enables pulse-to-pulse beam 
+steering within 20 deg from the zenith. As is the case of the MU radar, 
+a variety of operations will be made feasible under the supervision of 
+the radar controller. A brief description of the system configuration 
+is presented. 
+

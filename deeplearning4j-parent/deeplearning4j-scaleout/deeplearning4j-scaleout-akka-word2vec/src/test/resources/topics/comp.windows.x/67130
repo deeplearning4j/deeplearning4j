@@ -1,0 +1,29 @@
+From: etxmesa@eos.ericsson.se (Michael Salmon)
+Subject: Re: Title for XTerm
+Keywords: XTerm
+Nntp-Posting-Host: eos6c02.ericsson.se
+Reply-To: etxmesa@eos.ericsson.se (Michael Salmon)
+Organization: Ericsson Telecom AB
+Lines: 21
+
+In article <1r3fe2INN10d@fbi-news.Informatik.Uni-Dortmund.DE>
+markhof@ls12r.informatik.uni-dortmund.de (Ingolf Markhof) writes:
+[...]
+|> I have an
+|> 
+|> 	alias precmd echo -n '^[]2\;${HOST}:$cwd^G'
+|> 
+|> in my ~/.tcshrc. This is a special alias for tvtwm. 
+
+I presume that you meant to say tcsh here ------^^^^^
+
+-- 
+
+Michael Salmon
+
+#include	<standard.disclaimer>
+#include	<witty.saying>
+#include	<fancy.pseudo.graphics>
+
+Ericsson Telecom AB
+Stockholm

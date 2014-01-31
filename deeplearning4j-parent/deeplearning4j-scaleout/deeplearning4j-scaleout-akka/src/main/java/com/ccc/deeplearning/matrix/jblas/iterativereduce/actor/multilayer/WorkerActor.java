@@ -1,6 +1,7 @@
 package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.multilayer;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -8,15 +9,25 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+
 import akka.actor.ActorRef;
+import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
+import akka.actor.SupervisorStrategy.Directive;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
+import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
 import akka.japi.Creator;
+import akka.japi.Function;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.MasterActor;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
@@ -81,11 +92,35 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		}
 		this.combinedInput = newInput;
 		this.outcomes = newOutput;
-		UpdateableImpl work = compute();
-		log.info("Updating parent actor...");
-		//update parameters in master param server
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
-				work), getSelf());
+		
+		Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
+
+			@Override
+			public UpdateableImpl call() throws Exception {
+			
+				UpdateableImpl work = compute();
+				
+				return work;
+			}
+			
+		}, getContext().dispatcher());
+		
+		f.onComplete(new OnComplete<UpdateableImpl>() {
+
+			@Override
+			public void onComplete(Throwable arg0, UpdateableImpl work) throws Throwable {
+				if(arg0 != null)
+					throw arg0;
+				
+				log.info("Updating parent actor...");
+				//update parameters in master param server
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						work), getSelf());				
+			}
+			
+		}, context().dispatcher());
+		
+	
 	}
 
 	@Override
@@ -118,7 +153,18 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	}
 
 
+	@Override
+	public SupervisorStrategy supervisorStrategy() {
+		return new OneForOneStrategy(0, Duration.Zero(),
+				new Function<Throwable, Directive>() {
+			public Directive apply(Throwable cause) {
+				log.error("Problem with processing",cause);
+				return SupervisorStrategy.stop();
+			}
+		});
+	}
 
+	
 	@Override
 	public UpdateableImpl getResults() {
 		return workerMatrix;

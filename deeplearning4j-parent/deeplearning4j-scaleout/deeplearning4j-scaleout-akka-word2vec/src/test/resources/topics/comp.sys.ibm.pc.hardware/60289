@@ -1,0 +1,29 @@
+From: nigel@cnw01.storesys.coles.oz.au (Nigel Harwood)
+Subject: Adaptec ASW-410 and Sony CDU-641
+Organization: Coles Supermarkets
+Lines: 24
+
+About two months ago I purchased the Adaptec ASW-410 driver for use with a
+CD-ROM drive.  At the time this seemed the thing to do as the documentation I
+had with my Adaptec SCSI controller said that this is the driver to be used with
+CD-ROM drives.  Since then I have learn that this driver is out of date in a
+major way and that Adaptec have an upgrade deal for going to the next driver
+(I think it's called EZI-SCSI or something).  I wasn't too fussed about this
+until I upgraded by CD-ROM drive from a Sony CDU-541 to a Sony CDU-641.  I now
+find that the audio-mode will not work.  I assume it is not being handled
+correctly by the ASW-410 driver.
+
+So, should I chase Adaptec for an upgrade?  If so does anyone know their
+FAX number?
+
+Any assistance appreciated.
+
+Regards
+
+BTW: everything else works fine, certainly seems that Sony have caught up with
+     the rest with the 641.
+-- 
+<<<<<<<<<<<<<<<<<<<<<<<<<  Nigel Harwood  >>>>>>>>>>>>>>>>>>>>>>>>>>>
+<< Post:  Coles Supermarkets, PO Box 480 Glen Iris 3146, Australia >>
+<< Phone: +61 3 829 6090  E-mail: nigel@cnw01.storesys.coles.oz.au >>
+<<   FAX: +61 3 829 6886                                           >>

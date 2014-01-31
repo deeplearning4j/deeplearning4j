@@ -47,7 +47,7 @@ public class BatchActor extends UntypedActor implements Serializable {
 		}
 		else if(iter.hasNext()) {
 			//start the pipeline
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					iter.next()), mediator);
 
 		}

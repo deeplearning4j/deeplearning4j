@@ -1,0 +1,190 @@
+From: wmiler@nyx.cs.du.edu (Wyatt Miler)
+Subject: Diaspar Virtual Reality Network Announcement
+Organization: Nyx, Public Access Unix @ U. of Denver Math/CS dept.
+Lines: 185
+
+
+Posted to the Internet by wmiler@nyx.cs.du.edu
+ 
+000062David42      041493003715
+ 
+             The Lunar Tele-operation Model One (LTM1)
+             =========================================
+                        By David H. Mitchell
+                          March 23, 1993
+ 
+INTRODUCTION:
+ 
+In order to increase public interest in space-based and lunar operations, a
+real miniature lunar-like environment is being constructed on which to test
+tele-operated models. These models are remotely-controlled by individuals
+located world-wide using their personal computers, for EduTainment
+purposes.
+Not only does this provide a test-bed for simple tele-operation and
+tele-presence activities but it also provides for the sharing of
+information
+on methods of operating in space, including, but not limited to, layout of
+a
+lunar colony, tele-operating machines for work and play, disseminating
+educational information, providing contests and awards for creativity and
+achievement and provides a new way for students worldwide to participate in
+Twenty-First century remote learning methods.
+ 
+Because of the nature of the LTM1 project, people of all ages, interests
+and
+skills can contribute scenery and murals, models and structures,
+interfacing
+and electronics, software and graphics. In operation LTM1 is an evolving
+playground and laboratory that can be used by children, students and
+professionals worldwide. Using a personal computer at home or a terminal at
+a participating institution a user is able to tele-operate real models at
+the
+LTM1 base for experimental or recreational purposes. Because a real
+facility
+exists, ample opportunity is provided for media coverage of the
+construction
+of the lunar model, its operation and new features to be added as suggested
+by the users themselves.
+ 
+This has broad inherent interest for a wide range of groups:
+ - tele-operations and virtual reality research
+ - radio control, model railroad and ham radio operation
+ - astronomy and space planetariums and science centers
+ - art and theater
+ - bbs and online network users
+ - software and game developers
+ - manufacturers and retailers of model rockets, cars and trains
+ - children
+ - the child in all of us
+ 
+LTM1 OVERALL DESIGN:
+ 
+A room 14 feet by 8 feet contains the base lunar layout. The walls are used
+for murals of distant moon mountains, star fields and a view of the earth.
+The "floor" is the simulated lunar surface. A global call for contributions
+is hereby made for material for the lunar surface, and for the design and
+creation of scale models of lunar colony elements, scenery, and
+machine-lets.
+ 
+ The LTM1 initial design has 3 tele-operated machinelets:
+ 1. An SSTO scale model which will be able to lift off, hover and land;
+ 2. A bulldozerlet which will be able to move about in a quarry area; and
+ 3. A moon-train which will traverse most of the simulated lunar surface.
+ 
+ Each machinelet has a small TV camera utilizing a CCD TV chip mounted on
+ it. A personal computer digitizes the image (including reducing picture
+ content and doing data-compression to allow for minimal images to be sent
+ to the operator for control purposes) and also return control signals.
+ 
+The first machinelet to be set up will be the moon-train since model trains
+with TV cameras built in are almost off-the-shelf items and control
+electronics for starting and stopping a train are minimal. The user will
+receive an image once every 1 to 4 seconds depending on the speed of their
+data link to LTM1.
+ 
+Next, an SSTO scale model with a CCD TV chip will be suspended from a
+servo-motor operated wire frame mounted on the ceiling allowing for the
+SSTO
+to be controlled by the operator to take off, hover over the entire lunar
+landscape and land.
+ 
+Finally, some tank models will be modified to be CCD TV chip equipped
+bulldozerlets. The entire initial LTM1 will allow remote operators
+worldwide
+to receive minimal images while actually operating models for landing and
+takeoff, traveling and doing work. The entire system is based on
+commercially
+available items and parts that can be easily obtained except for the
+interface electronics which is well within the capability of many advanced
+ham radio operator and computer hardware/software developers.
+ 
+By taking a graphically oriented communications program (Dmodem) and adding
+a tele-operations screen and controls, the necessary user interface can be
+provided in under 80 man hours.
+ 
+PLAN OF ACTION:
+ 
+The Diaspar Virtual Reality Network has agreed to sponsor this project by
+providing a host computer network and Internet access to that network.
+Diaspar is providing the 14 foot by 8 foot facility for actual construction
+of the lunar model. Diaspar has, in stock, the electronic tanks that can be
+modified and one CCD TV chip. Diaspar also agrees to provide "rail stock"
+for the lunar train model. Diaspar will make available the Dmodem graphical
+communications package and modify it for control of the machines-lets.
+An initial "ground breaking" with miniature shovels will be performed for
+a live photo-session and news conference on April 30, 1993. The initial
+models will be put in place. A time-lapse record will be started for
+historical purposes. It is not expected that this event will be completely
+serious or solemn. The lunar colony will be declared open for additional
+building, operations and experiments. A photographer will be present and
+the photographs taken will be converted to .gif images for distribution
+world-wide to major online networks and bbs's. A press release will be
+issued
+calling for contributions of ideas, time, talent, materials and scale
+models
+for the simulated lunar colony.
+ 
+A contest for new designs and techniques for working on the moon will then
+be
+announced. Universities will be invited to participate, the goal being to
+find instructors who wish to have class participation in various aspects of
+the lunar colony model. Field trips to LTM1 can be arranged and at that
+time
+the results of the class work will be added to the model. Contributors will
+then be able to tele-operate any contributed machine-lets once they return
+to
+their campus.
+ 
+A monthly LTM1 newsletter will be issued both electronically online and via
+conventional means to the media. Any major new tele-operated equipment
+addition will be marked with an invitation to the television news media.
+Having a large, real model space colony will be a very attractive photo
+opportunity for the television community. Especially since the "action"
+will
+be controlled by people all over the world. Science fiction writers will be
+invited to issue "challenges" to engineering and human factors students at
+universities to build and operate the tele-operated equipment to perform
+lunar tasks. Using counter-weight and pulley systems, 1/6 gravity may be
+simulated to some extent to try various traction challenges.
+ 
+The long term goal is creating world-wide interest, education,
+experimentation
+and remote operation of a lunar colony. LTM1 has the potential of being a
+long
+term global EduTainment method for space activities and may be the generic
+example of how to teach and explore in many other subject areas not limited
+to space EduTainment. All of this facilitates the kind of spirit which can
+lead to a generation of people who are ready for the leap to the stars!
+ 
+CONCLUSION:
+ 
+EduTainment is the blending of education and entertainment. Anyone who has
+ever enjoyed seeing miniatures will probably see the potential impact of a
+globally available layout for recreation, education and experimentation
+purposes. By creating a tele-operated model lunar colony we not only create
+world-wide publicity, but also a method of trying new ideas that require
+real
+(not virtual) skills and open a new method for putting people's minds in
+space.
+ 
+ 
+MOONLIGHTERS:
+ 
+"Illuminating the path of knowledge about space and lunar development."
+The following people are already engaged in various parts of this work:
+David42, Rob47, Dash, Hyson, Jzer0, Vril, Wyatt, The Dark One, Tiggertoo,
+The Mad Hatter, Sir Robin, Jogden.
+ 
+Come join the discussion any Friday night from 10:30 to midnight PST in
+ 
+Diaspar Virtual Reality Network. Ideas welcome!
+ 
+Internet telnet to: 192.215.11.1 or diaspar.com
+ 
+(voice)  714-376-1776
+(2400bd) 714-376-1200
+(9600bd) 714-376-1234
+ 
+Email inquiries to LTM1 project leader Jzer@Hydra.unm.edu
+or directly to Jzer0 on Diaspar.
+

@@ -1,0 +1,38 @@
+From: manu@oas.olivetti.com (Manu Das)
+Subject: overlapped window without a title bar
+Organization: Olivetti ATC; Cupertino CA, USA
+Lines: 31
+Distribution: usa
+NNTP-Posting-Host: todi.oas.olivetti.com
+
+
+Hi, 
+
+I have a simple question. Is it possible to create a OVERLAPPED THICKFRAME
+window without a title bar; ie
+
+	(WS_OVERLAPPED | WS_THICKFRAME) & ~WS_CAPTION 
+
+
+I don't seem to be able to get rid off the title bar.
+
+I have another question:
+
+I have a overlapped window(say V) which has few child windows (a,b,c, etc)
+The window shows up with all it's children fine. Now, I create another 
+child(t) with a WS_THICKFRAME style and placed on top of one or more of
+it's siblings. Style WS_THICKFRAME is used so that I can resize it. How do
+I make sure that the child 't' will always be at the top of it's siblings.
+I used SetWindowPos() and BringWindowToTop() without success. What's happening
+is that while I am resizing 't' it shows up but as soon as I let go, it goes
+behild it's siblings.
+
+Any help would be greatly appreciated.
+
+Manu 
+
+Please mail me at manu@oas.olivetti.com
+
+
+
+

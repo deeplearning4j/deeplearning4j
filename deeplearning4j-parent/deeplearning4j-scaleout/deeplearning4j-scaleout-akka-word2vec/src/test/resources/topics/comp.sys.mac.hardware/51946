@@ -1,0 +1,70 @@
+From: newton@cs.utexas.edu (Peter Newton)
+Subject: Re: Cache card for IIsi
+Organization: CS Dept, University of Texas at Austin
+Lines: 64
+NNTP-Posting-Host: mohawk.cs.utexas.edu
+
+> Can some people with cache cards PLEASE post speedometer numbers they
+> get with the cards. I have only one report, which seems to indicate
+> that a 32K cache card gives you only about a 1% speedup!! 
+
+Ok.  I have a record that shows a IIsi with and without a 64KB cache.
+It's small enough that I will attach it.
+
+I have also measured some real programs with and without the 64 KB
+cache.  The speedup varies a lot from app to app, ranging from 0% to
+40%.  I think an average of 20%-25% is about right.  The subjective
+difference is not great, but is sometimes noticable.  A simple cache
+card certainly does not transform a IIsi into something enormously
+better.  I do not have an FPU.
+
+The conventional wisdom says that cache cards from all of the makers
+offer about the same speedup and that there is not much difference
+between 32K and 64K caches.  I bought mine from Third Wave for well
+under $150.  I have had absolutely no problems at all with it.
+
+If you get *complete* speedometer runs for a 32K cache, I'd like to
+see them.  Let's check the conventional wisdom!  The so called
+"Performance Rating" numbers by themselves are of no interest. 
+
+Cheers.
+
+(This file must be converted with BinHex 4.0)
+:#@0KBfKP,Q0`G!"338083e"$9!!!!!!'A!!!!!$qK3%"a+!!!!BGJ&CfGiGfH(H
+)GhQ!QSQBUC!!@SQUU(QSCfPhGhL(H+HCL&KjQTU)LDH)HBL*UCUCJ!U@GQ9hGiK
+hCAKR9SPiJ)QRQ)QUJ+N(J!UCLD#U#S!!S!QUUTQC#U#DL3J)#3LT#UU)QUUBUT!
+!S!L3!!UU#!QJS+UT!!QJS*UD#TUUQCQ3!*!!UCFJ!!%c4ACSL'D)L)D!#!!)#!!
+!!!!!!!!)!!!!!!!!J!B8*%9@9L0A"i!!G`!!G`B!!(J)"i###B!P[US),B")21Z
+-1I"k-cQFM-VXMHhA!irdjPcVr,lUCVSZ2SI8j@,-l,jPI`F#lZq0A"AL8XRHjf,
+6[LJ09"aZ2TV6l!$9lN@eAP@Rei8(VIpIQkfDK$-ZV[b+9[T5lkC0XZ6LGhf(Ik&
+a$Lkh*Q6-qhh2MIlc*Q2Iq$p([GeSp(ejN!"bHMdHll$&Qh'lR`E26C2(QBqSrMM
+pa-k()jPGXqcpR2rYR9eYd0,*Mh0,h1rj1*hA%pcLHRSG6PF2eIYmc4rIS60EFp+
+CGE@Vr$[TRAFA(QkA`pG8JkS[@fe1mcBikFQC(,(9K[U&h""0rr"BDDT(i%XP3Z$
+V04L8D82FeU01V4K-9U#JaD@1*fZa`EZr3-eGTYkNXH49SjF2Ei[G*5el3[VZ'j[
+Vf($bTBHjlEX3Pe0KJ8,ZKH!9Cc3+fJ%kHGZC*BHhNV9+DC6Xd$[S58DFD"pJ%ei
+q#CXHkEL`@d%&PYYY"1f0rG`jm0rJTCYMi4B1KbB'pUBQ)PU9'q"*m1miHG#YR`b
+eUNG1'mSAP#mR`i-1*K`l[DiNq'MQjZA(,4bq"$*Mimq(KC9@@(-Mc'"f88e9U&0
+F'Y4U5eXb("+6T8D@6(R3ae+10Padk"CAK!*Ea6SThLiA9HF!H&&Da@[,[2bA2!p
+2VIr&TI)!6V`%S!*eJ#GS!Q!!QqD#2P!*M49m9IdHhm2frUq2Ek))G3e"Vi)+rQJ
+C[`%m#+E&0jf"YI2ql`VI&0qHH!R[339`'9hY46)TR+ZkXI!pQRQKCU3%ed9R&Cr
+!QCiUk+ZmEf)IYI&bqMEffkT5bB`JhYl2K[0PXVe0B@@2*@Uam121D`A`h+cC)Xl
+IEjf8S+#9`a6[P8p0ZC&6H0ajcY1BR"JDM3`F%lJ1&5bI+SC2Jh([qeTfVK961rR
+ZVIq[+Rb-TH3'B3f0r$h''cP%"UY1'jU53jY@5P(RCdPAXAfrl"Xrhf#Y"dmV1i$
+9%Dm@T+f4NMlP5jd-XN0(K5C91'R@)4Qb9C5Ke1h%V-kiaRA-NTa`b9(YYL5TM5*
+F2#bUFFLGJ%,D8QA*9R`eUQ29Sj!!p0b'"c5LEFR4@%9KpDGj1,bijhNaDH,6mrm
+(3qpJITeraM0+0RHJ*aJ%f`#HJ!R4JJXDK22e!Cab5DK)jkRq0r[IcrC`[c!Krd(
+$m1VrbJCX!NR)3FrcHYPk(r1CHJjiJ#Hk%'J84pq+#+$a2&r&bZ,Ff1V,-KG6qG9
+MbmUPG9XkUeX$2Gl!Gl!Gl!GE!k5hrX(F4IX4IRNYkb"M%rSbN4`8m8qPq2rAd[j
+FhRC#4(PeI2RFhY0+j-GH'!P*S)h!#HN!R6JJXb5f'b!clJkfb121qGm2MclEe,S
+mHpf12b4arQ$Q%%PLK"q(8@I8[qRmmS5[l`"2fP!"4CpjY0,DDAp2AlE#eIPBD0c
+rL1,PeXj39[%9k`HF4Z,ZKGN4h9A+b-T23l)RDf'a13X"'-#VbKJ[!9ME*!Tlp2-
+QckRpM@J2e5BN*f&jHN*[Vp-#f+F(J)PQXJNlYRLpQ3C,%`Cm0l3E[MP"cXZ6`)B
+mpVS0)P3Y@XTB5F5qaSr"XrmrZf1iLXSV,pPVjICFMRrekXdDI`0FHmT[Q!4VL`T
+aalM336chGUr@"Me6YarIDI&Y2LpE9HPaI#fhNFmq$qLchVC(dUajJ%eb%(6NdIH
+p#jqEd#X1cGDTVmDY965+@Pi,Mr1JeR&pq`q@"AacVkC[0lZi3-Z-5PZk8%f$Vrd
+HfR&1mci,3&Nqh9r"e%"j5Ve$0rN`AbfB"Qqlk$C`3@LKQRh0(-MKhNYA+UC&Qhq
+5kajHR1eFqR,2H5b8Z!SLfG3!!2TPmiF!!3!+58PcD5eMB@0SC3%!!!!)6@0S9(0
+3C$1R$)JJT`b+33%!ADmicJ!#!!!4a3!!!!!!!!B9!!!!!,AP!!!:
+-- 
+ ----
+Peter Newton (newton@cs.utexas.edu)

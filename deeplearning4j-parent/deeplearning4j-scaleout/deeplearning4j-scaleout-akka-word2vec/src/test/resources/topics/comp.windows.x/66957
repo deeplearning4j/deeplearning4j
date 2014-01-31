@@ -1,0 +1,17 @@
+From: maf@dtek.chalmers.se (Martin Forssen)
+Subject: Re: german keyboard, X11R5 and Sparc
+Nntp-Posting-Host: hacket.dtek.chalmers.se
+Organization: Chalmers University of Technology, Gothenburg Sweden
+Lines: 11
+
+claes@polaris (Heinz-Josef Claes) writes:
+>I have a Sparc[12] with a german type 4 keyboard.
+>Has anybody a Patch for X11R5?
+
+ export.lcs.mit.edu:/pub/sunkbd..930314.tar.Z
+
+	/MaF
+
+--
+Martin Forssen: maf@dtek.chalmers.se or maf@math.chalmers.se
+System administrator at math and dtek at Chalmers univ. of technology 

@@ -1,0 +1,31 @@
+From: im14u2c@camelot.bradley.edu (Joe Zbiciak)
+Subject: Re: Booting from B drive
+Nntp-Posting-Host: camelot.bradley.edu
+Organization: Happy Campers USA
+Lines: 25
+
+In <C5nvvx.ns@mts.mivj.ca.us> rpao@mts.mivj.ca.us (Roger C. Pao) writes:
+[much discussion about switching 5.25" and 3.5" drives removed]
+
+Another (albeit strange) option is using a program like 800 II
+(available via anonymous FTP at many major sites), or FDFORMAT
+(also available via anonymous FTP), that allows you to format
+5.25HD disks to 1.44Meg, or 3.5"HD disks to 1.2Meg (along with
+many MANY other formats!) so you can DISKCOPY (yes, the broken
+MeSsy-DOS DISKCOPY!) the 5.25" disks onto 3.5" disks or vice
+versa...  I use this techniques with "NON-DOS" self-booting 
+game disks on my old Tandy 1000, and it works...  Another program
+named Teledisk (shareware--available on many major BBS's) will
+also make the weird format disks, provided you have 800 II
+or FDFormat installed....  Some disks that won't DISKCOPY
+properly can be readily Teledisk'd into the proper format...
+At least this is a software solution for a hardware/BIOS 
+deficiency, eh? 
+
+
+--
+Joseph Zbiciak                         im14u2c@camelot.bradley.edu
+[====Disclaimer--If you believe any of this, check your head!====]
+------------------------------------------------------------------
+
+Nuke the Whales!

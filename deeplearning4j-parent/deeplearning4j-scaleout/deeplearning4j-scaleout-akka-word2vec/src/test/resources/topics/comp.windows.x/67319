@@ -1,0 +1,34 @@
+From: rlee@ssdc.SSDC.Sterling.COM (Richard Lee)
+Subject: Re: Pulldown menu periodically hangs application on OpenWindows 3.0
+Organization: Sterling Software IMD. (Vienna,Va)
+Lines: 26
+Distribution: inet
+NNTP-Posting-Host: ssdc.ssdc.sterling.com
+X-Newsreader: TIN [version 1.1 PL6]
+
+Skip Koppenhaver (skip@eco.twg.com) wrote:
+: 
+: Has anyone found a fix for the following problem?
+: 
+: Client Software:	SunOs 4.1.1, X11R5
+: Server Hardware:	Sun IPC
+: Server Software:	SunOs 4.1.1, Open Windows 3.0 (w/ patch 100444-37)
+: 
+: A Motif 1.2.2 application will periodically hang when run against the
+: OpenWindows 3.0 server (xnews). The pulldown is displayed but then no
+: button actions have any effect. Sometimes pressing <Return> will
+: unstick the application but not usually. It looks like the pulldown is
+: grabbing the focus and never letting go. Other windows on the display
+: continue to get updated so the server isn't hanging. If I log in from
+: another terminal and kill the Motif application then everything gets
+: back to normal. The same application when run against other X servers
+: (including MIT X11R5 Xsun, DecWindows, Tektronix X terminal) has no
+: problems. This is obviously a OpenWindows problem but I need a
+: work-around since most of our customers are OpenWindows users.
+
+I have seen the same problem using a SPARCStation 10, Solaris 2.1, OW 3.1.
+In my case, it happens far more often than "periodically".
+
+Help?
+
+

@@ -1,0 +1,21 @@
+From: Alexander Samuel McDiarmid <am2o+@andrew.cmu.edu>
+Subject: Re: SE Serial Port Speed????
+Organization: Sophomore, Mechanical Engineering, Carnegie Mellon, Pittsburgh, PA
+Lines: 14
+NNTP-Posting-Host: po4.andrew.cmu.edu
+In-Reply-To: <QfkD=X200WBK0_Ca0n@andrew.cmu.edu>
+
+Excerpts from cmu.comp.sys.mac: 5-Apr-93 Re: SE Serial Port Speed???? by
+Samuel John Kass@andrew. 
+>  
+> Sorry, I got a bit technical.  To answer your question, your Mac SE will
+> have no problem whatsoever communicating with any modem that is 57,600
+> bps or less, and since modems THAT fast don't exist yet (in a
+> standardized form), there's no need to worry.
+>  
+actually a 14.4 kbps modem using standard compression (v3.2 v4.2.bis?)
+cna reach 57,600 bps, however I have not seen any server modems that
+have hardware compression.  I have been told the annex modems here break
+up at ~36k, but I have never seen faster than 14.4kbps.
+
+                                                                _A.

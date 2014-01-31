@@ -1,0 +1,19 @@
+From: hsteve@carina.unm.edu ()
+Subject: XTranslateCoord. Problem
+Organization: University of New Mexico, Albuquerque
+Lines: 13
+NNTP-Posting-Host: carina.unm.edu
+
+It seems like XTranslateCoord. doesn't work the way I expecting it.  Right
+after performs a XMoveWindow, I want to know the absolute window position
+with respect to the root window.  To get this info. I do a XTranslateCoordinates
+but the abs_x, and abs_y aren't right?  Does anybody know of a way to find 
+out this information?
+
+Thanks, please e-mail to hsteve@carina.unm.edu if it's possible
+
+-- 
+    _---_     Steve  
+   / o o \    hsteve@hydra.unm.edu, hsteve@carina.unm.edu
+  | \___/ |   
+              Just say NO to VMS!!

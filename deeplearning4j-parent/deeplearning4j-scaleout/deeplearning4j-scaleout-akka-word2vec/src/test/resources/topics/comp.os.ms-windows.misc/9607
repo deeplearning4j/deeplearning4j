@@ -1,0 +1,36 @@
+From: clintp@world.std.com (Clinton a Pierce)
+Subject: Need help setting PIF for games
+Summary: Can't seem to get the settings right for a few things
+Keywords: WINDOWS PIF
+Organization: VERSYSS Incorporated, Westwood MA
+Lines: 29
+
+HI there!  I have a few games that I'd like to run under Windows 3.1 and can't
+get the PIFS adjusted right.   For example Wing Commander.  In my DOS Prompt, I
+have more than 620K available for programs.  This is enough to run WC.
+So I build a PIF giving WC a couple of megs of extended memory etc.. and run 
+it.  WC prompts: "Loading Wing Commander..." and then a message about 
+"Using extended memory..." etc... and then my screen goes black (just before
+the opening scene-the orchestra-would have appeared.)
+
+I also have a pool game that does almost the same thing.  It opens up and
+prompts me for what kind of video driver I have.  (CGA, EGA, etc...)  I
+respond EGA and the screen goes black.   
+
+On both of these a ctrl-alt-del getss me back to Windows.  
+
+Has ANYONE run Wing Commander under Windows?  Or has had the problems I
+describe and fixed them?   HEre's the rest of my setup:
+
+	400MB Disk Free
+          8MB memory   ~5 free during WIN session
+        386DX-25
+       
+Respond here or on E-Mail.   If anyone else needs this info, send me mail in
+a couple of days, and I'll forward the replies to you.
+
+-- 
+-----------------------------------------------------------------------------
+ Clinton A. Pierce   | Cartesian Bear = Polar Bear after coordinate transform
+clintp@world.std.com |
+------------------------------------------------------------------------------

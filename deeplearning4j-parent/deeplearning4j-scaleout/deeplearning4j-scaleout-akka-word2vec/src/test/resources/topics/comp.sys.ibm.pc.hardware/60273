@@ -1,0 +1,23 @@
+From: s106275@ee.tut.fi (Anssi Saari)
+Subject: Re: Soundblaster IRQ and Port settings
+Organization: Tampere University of Technology, Computing Centre
+Lines: 16
+Distribution: inet
+NNTP-Posting-Host: ee.tut.fi
+
+In <1993Apr16.105809.22218@walter.cray.com> huot@cray.com (Tom Huot) writes:
+
+>I would also like an explanation of this. If anyone can explain
+>why the SB Pro and LPT 1 can share an IRQ, please do so.
+
+I think it's simply because DOS doesn't use the IRQ for anything. OS/2 does,
+so with that you can't share the IRQ.
+
+Anssi
+
+
+-- 
+Anssi Saari s106275@ee.tut.fi                
+Tampere University of Technology 
+Finland, Europe                  
+

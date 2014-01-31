@@ -99,9 +99,7 @@ public class LogisticRegression implements Serializable {
 							))
 							.columnSums().mean() + reg;
 		}
-		if(sigAct.length != labels.length) {
-			System.err.println("REALLY?");
-		}
+		
 		
 		
 		return - labels.mul(log(sigAct)).add(

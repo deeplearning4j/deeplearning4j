@@ -1,0 +1,299 @@
+From: rjn@teal.csn.org (Robert J. Niland)
+Subject: Re: Procomm Plus for windows problems....
+Nntp-Posting-Host: teal.csn.org
+Organization: Colorado SuperNet, Inc.
+X-Newsreader: Tin 1.1 PL4
+Lines: 292
+
+kentiler@matt.ksu.ksu.edu (Kent P. Iler) writes:
+
+:   I have normal procomm plus for dos, but I've been considering buying
+: the windows version....it got really great reviews in computer shopper.
+: I have a friend who connects to the mainframe and unix machines here
+: using it, but the screen seems to have a problem keeping up with the
+: modem....he has a 14,400 modem on a 486 50 Mhz machine.  I can't
+: see it having trouble keeping up.  His pcplus for dos works great,
+
+re: What to do after the high speed modem arrives.       Edition 01 Apr 93
+
+This article applies only to Windows 3.0 and 3.1, and not to NT, OS/2
+or DOS apps not running under Windows.
+
+One of the unadvertised limitations of most current Windows PCs is that
+their RS-232C (serial, COM) performance is seriously deficient.  Almost
+everyone who purchases a high-speed modem (V.32bis, V.32, PEP or HST)
+discovers the problem the first time they try to download a file or accept
+an incoming FAX (at 9600+) after upgrading the modem.  Overrun and retry
+errors abound, even when the only active application is the datacomm or
+FAX program.  If the transfer completes at all, it may take even longer
+than with the old 2400bps modem.
+
+
+There are three reasons for the problem:
+
+1. The Universal Asynchronous Receiver/Transmitters (UARTs) used in most
+   PCs are primitive Ns8250 devices with single-byte FIFO buffers.  If the
+   operating system/driver cannot read and flush each character at high
+   interrupt rates, the next incoming character overwrites the FIFO and
+   the previous one is lost.  DOS, being a fairly single-minded
+   environment during datacomm, can usually keep up. Windows can't.
+
+2. Windows has more operating system overhead than plain DOS, and
+   interrupts often take longer to service.  Overruns are much more likely
+   than under DOS.  As soon as you report to your PC/modem vendor that you
+   are losing data, you may be advised that "you need to upgrade to a
+   16550". More likely, since there seems to be a conspiracy of ignorance
+   about this issue,  you'll get no useful advice at all.  Most of the
+   store-front and mail-order sources I spoke with in attempting to solve
+   my own problem had never heard the term "16550" and many didn't even
+   know what a UART was.
+
+3. Even your PC has Ns16550A UARTs (and PS/2's do), or if you can upgrade
+   your mother/COM board or add a new COM board, you may STILL experience
+   errors and overruns because the standard MicroSoft Windows COM drivers
+   don't take full advantage of the 16550.  Windows 3.1 is improved in this
+   regard over 3.0, but I still recommend a driver upgrade.  Applications
+   like ProComm+/Win (which is what I use) cannot get around this problem
+   by themselves.
+
+If you have a modem CARD, you may not have a problem, as the modem part of
+the card can be designed to be aware of the state of the UART, and avoid
+overrunning it; however, I wouldn't want to bet that the card designers
+were that clever, and will insist on a 16550 UART if I ever buy a modem
+card.  Some modem cards don't even have conventional UARTs, but if they
+are to work with standard Windows drivers, they need to simulate one.
+Use MSD.EXE (below) to see what the modem card is, or is pretending to be.
+
+
+The Hardware Situation.
+
+The UARTs on most PC COM ports are based on National Semiconductor Ns8250
+or Ns16450 chips (or megacells inside VLSI chips where you can't replace
+them).  You can ID the UART type on your system by running the MicroSoft
+diagnostic program \WINDOWS\MSD.EXE.  Be sure to run it in DOS *before*
+bringing up Windows.   The Windows serial API may prevent MSD from
+accurately identifying a 16550 if you run it from a Windows DOS prompt.
+
+The Ns16550 UART has separate 16-byte transmit and receive FIFOs with
+configurable trigger levels, and can run reliably at clock rates up to
+460,800 bps, although with current modem technology, there's no point in
+pushing your luck by going over 115,200 bps. The 16550 has shorted access
+cycle times than the 16450 or 8250.  The 16550 also has DMA capability, but
+it is not clear that any PC drivers ever use this.  For more technical info,
+see National Semiconductor Application Note AN-491.
+
+So, what UART component do you have?
+
+Try to locate the UART on your mother board, multi-function I/O card, COM
+board or ISA/MCA modem card.  If you can't find a socketed component with
+the numbers "8250" or "16450", your COM ports are probably buried in VLSI,
+and you won't be able to perform a chip replacement.  If you can DISABLE
+your VLSI COM ports (as I chose to do), you can at least add an aftermarket
+COM board.
+
+If you have one or more socketed 8250 or 16450 chips, you can buy plug-in
+Ns16550AFN or PC16C550CN (low power CMOS version) ICs from several
+suppliers typically for $9 to $15 each.  The "N" chip is the normal 40-pin
+dual-in-line package.  Other styles are available, but avoid any Ns16550
+chips without the "A" (the 16C550C are presumably all OK).
+
+Early Ns chips have bugs, although National will reportedly exchange those
+of their own manufacture for free.  Clone chips are available from various
+IC makers other than National.  The manual for the TurboCom drivers states
+support for the following (apparently equivalent) chips:
+National Semiconductor: 16550A, 16551, 16552
+Chips&Technology:       82C607
+Texas Instruments:      t16c550a
+Silicon Systems:        73M550
+VLSI                    16C550
+TurboCom warns about the pre-"A" Ns16550 and Western Digital 16C550,
+says that problems have been reported with early IBM PS/2 55SX and 70
+systems (IBM reportedly will upgrade them).
+
+If you DON'T have socketed 8250/16450 chips, you'll need to buy an after-
+market COM or multi-function board. If this is a modem card situation, you
+may be hosed. To add a new COM or multi-function card, you'll need to
+either disable the COM1/2 port(s) you are replacing, or re-assign them to
+COM3/4 (although watch out for IRQ conflicts without TurboCom).
+
+Although cheaper cards are available, in the interest of getting the
+problem solved quickly I elected buy the Modular Circuit Technology
+MCT-AIO+ card from:
+
+JDR Microdevices
+2233 Samaritan Drive
+San Jose  CA  95124
+(800) 538-5000 voice US
+(408) 559-1200 voice other
+(800) 538-5005 FAX US
+
+The MCT-AIO+ (and the "+" is important) sells for $89.95.  It is an 8-bit
+ISA card providing:
+
+Port Type  Connector  Address and IRQ        Comments
+COM        DB9M       COM 1,2,3 IRQ 2,3,4,5  Ns16550AFN in socket
+COM        ribbon     COM 2,3,4 IRQ 2,3,4,5  Ns16550AFN in socket
+Parallel   DB25F      LPT1,2,3  IRQ 5,7
+Game       ribbon
+
+The kit includes a ribbon cable and DB25F connector for the secondary COM
+port, a ribbon cable/connector for the game port, two bulkhead plates for
+the ribbon-based connectors and a 9F-to-25F adaptor cable.  Each port can
+be individually disabled, and the COM ports have TX, RX, RTS, CTS, DTR,
+DCD, and DSR jumpers.
+
+JDR also sells a Super-I/O m-f card that also has IDE.
+
+I have heard from several people about less expensive m-f I/O cards
+with 16550s:
+
+TSD Systems
+(407) 331-9130
+$19.95 for the card, plus $9.95 per 16550.
+
+Greenfield Trading and Distributors
+(518) 271-2473 (voice), (518) 271-7811(FAX).
+Their card is $33 w/one 16550, $45 w/2, and they sell 16550AFNs for $13.
+
+R&S DATA SYSTEMS, INC.
+820 East Highway 434
+Longwood, FL  32750
+PHONE: (407) 331-1424
+FAX: (407) 331-8606
+2COM/LPT/Game card w/2 16550s for $39
+
+I have no personal experience with any of the firms except JDR.
+
+Meanwhile, back at the MCT card from JDR... I only needed two serial ports,
+and am running out of IRQs on my PC, so I disabled my built-in VLSI-based
+8250 ports. However, with the TurboCom driver (below), I could have set
+the internals as COM3 and 4, using IRQ sharing.
+
+
+The Software Situation
+
+Simply upgrading to 16550 UARTs will not completely solve common overrun
+problems.  The standard MS serial drivers don't take full advantage of the
+16550. The Windows 3.0 drivers are even less capable, and the Windows 3.1
+drivers have the following limitations:
+ - They enable only the receive FIFO, and only at rates above 2400 bps.
+ - They never enable the transmit FIFO, which  results in an interrupt
+   rate of 10x during uploads.
+ - They set the trigger level at 14 bytes (too high - it's easy for 2
+   more bytes to arrive before the driver can read the FIFO).
+ - The Ports menu of the Control Panel only allows speeds up to 19200.
+   With a V.32bis modem,  sparse data and text can easily compress 3:1
+   or more, suggesting that a host DTE connect rate of 57,600 bps would
+   be effective.
+ - The API won't accept rates above "CBR_128000".
+ - The API won't let DOS programs know there is a 16550 there, and even
+   if it did, DOS programs that aren't 16550-aware get little benefit
+   from a 16550 port with the standard drivers.
+ - They don't allow IRQ sharing for COM3,4.
+ - The BIOS doesn't initialize COM3,4 properly in many systems.
+ - Windows provides no workaround for apps that don't provide port
+   speed options above 19200 bps.
+
+These problems are reportedly NOT solved in Windows NT or DOS 6.0, and may
+or may not be addressed in any Windows releases after 3.1 (but before 4.0).
+Rumors suggest they "may" be solved in Windows "4.0".
+
+You can get replacement drivers that solve all of those problems by buying
+a copy of "TurboCom", current version 1.2, from:
+
+Bio-Engineering Research
+Pacific CommWare Division
+180 Beacon Hill Lane
+Ashland  OR   97520-9701
+(503) 482-2744 voice
+(503) 482-2627 FAX
+(503) 482-2633 BBS
+MCImail:    344-5374
+CompuServe: 71521,760
+
+Price was around $50 as I recall.  Bio-Eng is not set up to accept credit
+cards, so I had to send a check.  Egghead and 1-800-Software list TurboCom
+but as far as I know, they don't stock it.  Bio is not a software company
+per se.  They apparently needed reliable hi-speed serial connections for
+an in-house instrument application, wrote their own driver, discovered a
+market for it, revised it to be a general purpose COM driver suite. They
+recently upgraded it for Windows 3.1.  It is run-time licensed.
+
+I now have my host (DTE) connect rate set to 57,600 bps most of  my
+datacomm apps, and I am having ZERO problems with downloads. I routinely
+see transfer rates that exceed 2,000 bps. I am also using 115,200 bps
+when linking an HP95LX to my PC, with lossless bi-directional I/O.
+Uploads to various remote systems are another matter, because many hosts
+are still using antique UARTs and drivers.
+
+Note that 19200 is still the highest rate that the Windows 3.1 Port menu
+in Control Panel will allow in configuring a COM port.  TurboCom gets
+around this by allowing you to specify, on each port, a factor that will
+set the real UART rate to a multiple of the rate passed through the
+Windows APIs and dialog boxes.
+
+I also have CTS/RTS hardware flow control enabled, and I suggest that you
+do the same.  Even if you only ever transfer 7-bit ASCII data, Xon/XOff is
+not a sufficiently reliable method of flow control.  The informal (DEC)
+standard for Xon/Xoff hysteresis is that the sender may transmit another
+16 (yes, sixteen) bytes after receipt of the Xoff from the receiving
+system or device.  The 16 byte FIFO in the 16550 is clearly not big enough
+to let us rely exclusively on Xon/Xoff.  A well-respected datacomm
+engineer has informed me that the 16550's can't really do CTS/RTS all
+by itself in the DOS/Windows environment, so using data rates above
+115,200 may still be risky.
+
+Even with hardware flow control, a 16550 with TurboCom can still
+experience overruns in very busy systems, with lots of apps running and
+serious swapping in progress. If this is your situation, you may need to
+buy a co-processed COM board, but this will cost you more than a
+16550/TurboCom upgrade.  A review of two such boards, and a review of
+TurboCom, can be found in the Feb'93 issue of "Windows Sources" magazine.
+I suggest trying a 16550/TurboCom upgrade first, and experiment with
+process priorities and time slices if you are a "power user" whose
+thrashing system still runs into comm problems.
+
+
+Closing Soapbox Comments
+
+The state of RS-232C serial datacomm support is an embarrassment across
+the computer industry.  Because it is the oldest standard I/O interface,
+the job of designing hardware and writing software often seems to be
+assigned to the least senior or lowest ranked engineers at computer
+companies.  The design of the average serial port is at least ten years
+behind the state of the art. In my last job, with a major workstation
+vendor, I lobbied for improved serial ports when they were doing the
+initial designs of a new system.  That family of machines was
+subsequently introduced with 16550 ports.  However, this is the
+exception.  Few computer companies seem to have any champions for decent
+I/O.
+
+You may as well learn what you can about serial I/O, because this
+situation shows no sign of improving soon.  When V.FAST arrives, I expect
+cries of outrage from Windows users world-wide whose 8250 PCs "sort of"
+work today with V.32, but will fail miserably with V.FAST.  Without a
+hardware-buffered UART (like the 16550) and without software drivers that
+use that UART to best advantage, a V.FAST modem will be a waste of money.
+
+Regards,                                          1001-A East Harmony Road
+Bob Niland                                        Suite 503
+Internet:  rjn@csn.org                            Fort Collins CO 80525
+CompuServe: 71044,2124                            (303) 223-5209
+
+                     Copyright 1993 Robert J. Niland
+                           All Rights Reserved
+
+  Permission is granted for automatic redistribution of this article, via
+  electronic, magnetic and optical media, in an unedited form, through any
+  Usenet newsgroup where the article is posted by the author.  Permission
+  is granted for each CompuServe and Usenet reader subscriber and each
+  person who received this article from Compuserve, an ftp site authorized
+  by the author or via electronic mail from the author, to retain one
+  electronic copy and to make hardcopy reproductions of this edition of
+  this article for personal non-commercial use, provided that no material
+  changes are made to the article or this copyright statement. All other
+  copying, storage, reproduction or redistribution of this article, in
+  any form, is prohibited without the express written consent of the
+  author,  Robert J. Niland.
+
+EOF

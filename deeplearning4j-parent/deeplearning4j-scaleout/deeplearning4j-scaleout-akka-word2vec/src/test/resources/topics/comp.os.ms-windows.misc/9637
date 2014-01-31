@@ -1,0 +1,58 @@
+From: dsiegel@optima.cs.arizona.edu (Seagull)
+Subject: Re: WP-PCF, Linux, RISC?
+Lines: 54
+
+
+>>  The RISC means "reduced instruction set computer". The RISC usually has 
+>>small instruction set so as to reduce the circuit complex and can increase 
+>>the clock rate to have a high performance. You can read some books about
+>>computer architecture for more information about RISC.
+> hmm... not that I am an authority on RISC ;-) but I clearly remember
+> reading that the instruction set on RISC CPUs is rather large.
+> The difference is in addressing modes - RISC instruction sets are not
+> as orthogonal is CISC.
+
+There are some things you might be interested to know about today's RISC
+processors.  It is true that there are fewer instructions, but what is 
+not commonly known is that this causes the size of your executables to
+swell, so that in some cases performance is similar for larger applications.
+As a compromise, many RISC processors today are actually a cross between
+a Reduced Instructions Set, and a Complex one.
+
+This is not to say that there is no future in CISC processors, Intel has 
+certainly proved that.
+
+What I want to know, is what does this have to do with this group?
+
+-dave
+
+
+
+Subject: Re: WP-PCF, Linux, RISC?
+Newsgroups: comp.unix.dos-under-unix,comp.sys.ibm.pc.misc,comp.sys.ibm.pc.net,comp.os.ms-windows.apps,comp.os.ms-windows.misc,alt.uu.comp.os.linux.questions,comp.apps.spreadsheets,comp.misc,alt.os.linux,comp.os.linux,man.linux
+References: <1qu8ud$2hd@sunb.ocs.mq.edu.au>
+
+From article <1qu8ud$2hd@sunb.ocs.mq.edu.au>, by eugene@mpce.mq.edu.au:
+> In article <C5o1yq.M34@csie.nctu.edu.tw> ghhwang@csie.nctu.edu.tw (ghhwang) writes:
+>>
+>>Dear friend,
+>>  The RISC means "reduced instruction set computer". The RISC usually has 
+>>small instruction set so as to reduce the circuit complex and can increase 
+>>the clock rate to have a high performance. You can read some books about
+>>computer architecture for more information about RISC.
+> 
+> hmm... not that I am an authority on RISC ;-) but I clearly remember
+> reading that the instruction set on RISC CPUs is rather large.
+> The difference is in addressing modes - RISC instruction sets are not
+> as orthogonal is CISC.
+> 
+> -- 
+> +-----------------------------------------------------------------------------+
+> |            Some people say it's fun, but I think it's very serious.         |
+> |                         eugene@macadam.mpce.mq.edu.au                       |
+> +-----------------------------------------------------------------------------+
+--
+Dave Siegel         (DS4)
+President, RTD Systems and Networking, Inc.
+President, UofAz Hardware And Computing Knowledge Society (HACKS)
+dsiegel@cs.arizona.edu **** dsiegel@hacks.arizona.edu **** dsiegel@rtd.com

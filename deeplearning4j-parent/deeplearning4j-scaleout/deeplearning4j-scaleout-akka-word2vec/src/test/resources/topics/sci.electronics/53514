@@ -1,0 +1,23 @@
+From: cab@col.hp.com (Chris Best)
+Subject: Re: Uninterruptible Power Supply
+Organization: your service
+Lines: 17
+NNTP-Posting-Host: hpctdkz.col.hp.com
+
+I'm no expert at UPS's, but you said something that made it sound like
+you didn't realize something.  On a typical UPS (well, on ours, anyway),
+there is NO switchover from AC to DC.  All the protected equipment is
+ALWAYS running from the batteries (via an inverter), with the usual 
+condition of also having them on charge.  If the power fails, big deal - 
+the computers never see it (until the batteries start to droop, but 
+there's something like 60 car-sized batteries in that cabinet, so it 
+takes a while).
+
+If you were gonna run the guts on straight DC instead of an inverter,
+why not do it all the time?  Then there'd be no switchover to screw
+things up, and no having to sense the failure fast.  Just keep the DC
+on charge when the power is on, and it'll be there in zero time when
+you "need" it.
+
+Just some ideas.  Can't guarantee what'll work or not, but hope at least
+SOME of this helped.

@@ -1,0 +1,21 @@
+From: brad@clarinet.com (Brad Templeton)
+Subject: Re: How to detect use of an illegal cipher?
+Organization: ClariNet Communications Corp.
+Lines: 16
+
+In article <C5nMB1.CoF@news.claremont.edu> ebrandt@jarthur.claremont.edu (Eli Brandt) writes:
+>get their copy of your key.  Any criminal who's going to use
+>encryption will do it under cover of Clipper.  The only way to avoid
+>this will be to try to prohibit strong encryption.
+
+This isn't true.  Today's criminals regularly use all sorts of unsafe
+methods, from cordless phones to cellular phones to plain old copper
+wire analog phones that you can put alligator clips on to plan and
+execute their crimes.
+
+It is amazing how stupid they are, which is why the FBI was so keen on
+the digital telphony law, and its successor the clipper chip.  They're
+hoping here that most crooks will remain stupid, feel safe using clipper
+chip phones and get caught.
+-- 
+Brad Templeton, ClariNet Communications Corp. -- Sunnyvale, CA 408/296-0366

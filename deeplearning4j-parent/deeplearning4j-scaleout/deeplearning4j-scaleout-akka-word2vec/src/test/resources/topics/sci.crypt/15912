@@ -1,0 +1,16 @@
+From: gtoal@gtoal.com (Graham Toal)
+Subject: Re: Clipper considered harmful
+Lines: 12
+
+	From: pmetzger@snark.shearson.com (Perry E. Metzger)
+
+	You obviously haven't read the information about the system. The chips
+	put out serial number infomation into the cypher stream to allow
+	themselves to be identified. The system does not rely on registering
+	people as owning particular phone units.
+
+And probably as a back door to allow re-generation of the secret key.
+
+Have we determined yet that S1 and S2 don't ever change?
+
+G

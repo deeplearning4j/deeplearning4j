@@ -1,0 +1,29 @@
+From: rcrispin@watarts.uwaterloo.ca (Richard Crispin)
+Subject: Quantum Q250 hard disk
+Organization: University of Waterloo
+Lines: 24
+
+I recently aquired a Quantum Q250 harddisk. It is a 50 meg 5.25"
+mechanism. It is SCSI. I have a few questions and a few problems. First
+there seems to be an extra connector socket on the back that I can't
+figure out what it is for. The address is set by some jumpers on the
+bottom so I don't think it is for that. Any ideas?
+
+Second, it would be nice to get a hardware manual for the drive. There are
+a lot of jumpers on it that we don't know what they are for.
+
+Third, I have got the drive to format. It took a while to get things to
+work and most of it is fine for now. The formating initialy was
+troublesome but seems to be ok. The main problem is if you do a reset on
+the MacPlus the drive disappears. If I shut the mac off and then back on
+agian then the drive comes up fine. Any ideas.
+
+Please reply to one of the email addresses below.
+
+Thanks
+
+Richard Crispin
+Department of Psychology    email:rcrispin@watarts.uwaterloo.ca
+University of Waterloo            psych@watserv1.uwaterloo.ca
+Waterloo, Ontario           phone:(519)888-4781  or 885-1211 ext. 4781
+Canada   N2L 3G1            fax:(519)746-8631

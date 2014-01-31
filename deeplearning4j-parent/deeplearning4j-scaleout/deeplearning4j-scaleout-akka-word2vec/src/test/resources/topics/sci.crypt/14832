@@ -1,0 +1,175 @@
+From: mvanheyn@cs.indiana.edu (Marc VanHeyningen)
+Subject: RIPEM Frequently Noted Vulnerabilities
+Article-I.D.: usenet.C4qoH8.CHE
+Expires: Thu, 20 May 1993 00:00:00 GMT
+Organization: Computer Science, Indiana University
+Lines: 163
+Content-Type: text/x-usenet-FAQ; version=1.0; title="RIPEM Attacks"
+Originator: mvanheyn@silver.ucs.indiana.edu
+Supersedes: <C3JvK9.Ey1@usenet.ucs.indiana.edu>
+Nntp-Posting-Host: silver.ucs.indiana.edu
+Mime-Version: 1.0
+
+Archive-name: ripem/attacks
+Last-update: 31 Mar 93 21:00:00 -0500
+
+SOME POSSIBLE ATTACKS ON RIPEM
+------------------------------
+
+This is a living list of potential weaknesses to keep your eyes open
+for when using RIPEM for secure electronic mail.  It does not go into
+great detail, and is almost certainly not exhaustive.  Obviously, many
+of the weaknesses are weaknesses of cryptographically secured mail in
+general, and will pertain to secure mail programs other than RIPEM.
+It is maintained by Marc VanHeyningen <mvanheyn@cs.indiana.edu>.  It
+is posted monthly to a variety of news groups; followups pertaining
+specifically to RIPEM should go to alt.security.ripem.
+
+CRYPTANALYSIS ATTACKS
+---------------------
+
+- Breaking RSA would allow an attacker to find out your private key,
+  in which case he could read any mail encrypted to you and sign
+  messages with your private key.
+
+  RSA is generally believed to be resistant to all standard
+  cryptanalytic techniques.  Even a standard key (about 516 bits with
+  RIPEM) is long enough to render this impractical, barring a
+  huge investment in hardware or a breakthrough in factoring.
+
+- Breaking DES would allow an attacker to read any given message,
+  since the message itself is encrypted with DES.  It would not allow
+  an attacker to claim to be you.
+
+  DES has only 56 bits in its key, and thus could conceivably be
+  compromised by brute force with sufficient hardware, but few agencies
+  have such money to devote to simply read one message.  Since each
+  message has a different DES key, the work for each message would
+  remain high.
+
+KEY MANAGEMENT ATTACKS
+----------------------
+
+- Stealing your private key would allow the same benefits as breaking
+  RSA.  To safeguard it, it is encrypted with a DES key which is derived
+  from a passphrase you type in.  However, if an attacker can get a copy
+  of your private keyfile and your passphrase (by snooping network
+  packets, tapping lines, or whatever) he could break the whole scheme.
+
+  The main risk is that of transferring either the passphrase or the
+  private key file across an untrusted link.  So don't do that.  Run 
+  RIPEM on a trusted machine, preferably one sitting right in front of
+  you.  Ideally, your own machine in your own home (or maybe office)
+  which nobody else has physical access to.
+
+- Fooling you into accepting a bogus public key for someone else could 
+  allow an opponent to deceive you into sending secret messages to him
+  rather than to the real recipient.  If the enemy can fool your
+  intended recipient as well, he could re-encrypt the messages with
+  the other bogus public key and pass them along.
+
+  It is important to get the proper public keys of other people.
+  The most common mechanism for this is finger; assuming the opponent
+  has not compromised routers or daemons or such, finger can be 
+  given a fair amount of trust.  The strongest method of key
+  authentication is to exchange keys in person; however, this is
+  not always practical.  Having other people "vouch for you" by
+  signing a statement containing your key is possible, although 
+  RIPEM doesn't have features for doing this as automatically as
+  PGP.  RIPEM does generate and check MD5 fingerprints of public keys
+  in the key files; they may be exchanged via a separate channel for
+  authentication.
+
+PLAYBACK ATTACKS
+----------------
+
+- Even if an opponent cannot break the cryptography, an opponent could
+  still cause difficulties.  For example, suppose you send a message
+  with MIC-ONLY (a PEM mode which does not provide disclosure protection)
+  to Alice which says "OK, let's do that." Your opponent intercepts
+  it, and now resends it to Bob, who now has a message which is
+  authenticated as from you telling him to do that.  Of course, he may
+  interpret it in an entirely different context.  Or your opponent
+  could transmit the same message to the same recipient much later,
+  figuring it would be seen differently at a later time.  Or the
+  opponent could change the Originator-Name: to himself, register 
+  your public key as his, and send a message hoping the recipient
+  will send him return mail indicating (perhaps even quoting!) the
+  unknown message.
+
+  To defeat playback attacks, the plaintext of each message should 
+  include some indication of the sender and recipient, and a unique
+  identifier (typically the date).  A good front-end script for RIPEM
+  should do this automatically (IMHO).  As a recipient, you should be
+  sure that the Originator-Name: header and the sender indicated within
+  the plaintext are the same, that you really are a recipient, and that
+  the message is not an old one.  Some this also can and should be
+  automated.  The author of this FAQ has made a modest attempt at
+  automating the process of generating and checking encapsulated
+  headers; the programs are included in the standard distribution in
+  the utils directory.
+
+LOCAL ATTACKS
+-------------
+
+- Clearly, the security of RIPEM cannot be greater than the security of
+  the machine where the encryption is performed.  For example, under
+  UNIX, a super-user could manage to get at your encrypted mail,
+  although it would take some planning and effort to do something like
+  replace the RIPEM executable with a Trojan horse or to get a copy of
+  the plaintext, depending how it's stored.
+
+  In addition, the link between you and the machine running RIPEM is
+  an extension of that.  If you decrypt with RIPEM on a remote machine
+  which you are connected to via network (or, worse yet, modem), an
+  eavesdropper could see the plaintext (and probably also your
+  passphrase.)
+
+  RIPEM should only be executed on systems you trust, obviously.  In
+  the extreme case, RIPEM should only be used on your own machine,
+  which you have total control over and which nobody else has access
+  to, which has only carefully examined software known to be free of
+  viruses, and so on.  However, there's a very real trade-off between
+  convenience and security here.
+
+  A more moderately cautious user might use RIPEM on a UNIX workstation
+  where other people have access (even root access), but increase
+  security by keeping private keys and the (statically linked, of
+  course) executable on a floppy disk.
+
+  Some people will keep RIPEM on a multi-user system, but when dialing
+  in over an insecure line, they will download the message to their
+  own system and perform the RIPEM decryption there.  However, the
+  security provided by such a mechanism is somewhat illusory; since
+  you presumably type your cleartext password to log in, you've just
+  given away the store, since the attacker can now log in as you and
+  install traps in your account to steal your private key next time
+  you use it from a less insecure line.  This will likely remain the
+  situation as long as most systems use the rather quaint mechanism of
+  cleartext password authentication.
+
+  I find it nice to put a brief statement of how carefully I manage my
+  security arrangement in my .plan next to my public key, so that
+  potential correspondents can be aware what level of precautions are
+  in place.  Some people use two keys, a short one which is not
+  carefully managed for ordinary use and a longer one which is treated
+  with greater care for critical correspondence.
+
+UNTRUSTED PARTNER ATTACKS
+-------------------------
+
+- RIPEM's encryption will ensure that only a person with the private key
+  corresponding to the public key used to encrypt the data may read the
+  traffic.  However, once someone with that key gets the message, she
+  may always make whatever kind of transformations she wishes.  There 
+  exist no cryptographic barriers to a recipient, say, taking an
+  ENCRYPTED message and converting it to a MIC-ONLY message, signed by
+  you and readable by anyone, although RIPEM does not provide this
+  functionality.  Indeed, the latest PEM draft I have seen specifically
+  states that such transformations should be possible to allow
+  forwarding functions to work.
+ 
+  Including the recipients in the plaintext, as mentioned above, will
+  make it possible for recipients of a redistributed message to be aware
+  of its original nature.  Naturally, the security of the cryptography
+  can never be greater than the security of the people using it.

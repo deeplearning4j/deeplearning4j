@@ -1,0 +1,34 @@
+From: wtm@uhura.neoucom.edu (Bill Mayhew)
+Subject: Re: Laser vs Bubblejet?
+Organization: Northeastern Ohio Universities College of Medicine
+Lines: 29
+
+FYI:  The actual horizontal dot placement resoution of an HP
+deskjet is 1/600th inch.  The electronics and dynamics of the ink
+cartridge, however, limit you to generating dots at 300 per inch.
+On almost any paper, the ink wicks more than 1/300th inch anyway.
+
+The method of depositing and fusing toner of a laster printer
+results in much less spread than ink drop technology.
+
+It doesn't take much investigation to see that the mechanical and
+electronic complement of a laser printer is more complex than
+inexpensive ink jet printers.  Recall also that laser printers
+offer a much higher throughput:  10 ppm for a laser versus about 1
+ppm for an ink jet printer.
+
+Something else to think about is the cost of consumables over the
+life of the printer.  A 3000 page yield toner cartridge is about
+$US 75-80 at discount while HP high capacity (~500-1000 page yield)
+cartridges are about $US 22 at discount.  It could be that over the
+life cycle of the printer that consumables for laser printers are
+less than ink jet printers.  It is getting progressively closer
+between the two technologies.  Laser printers are usually desinged
+for higher duty cycles in pages per month and longer product
+replacement cycles.
+
+
+-- 
+Bill Mayhew      NEOUCOM Computer Services Department
+Rootstown, OH  44272-9995  USA    phone: 216-325-2511
+wtm@uhura.neoucom.edu (140.220.1.1)    146.580: N8WED

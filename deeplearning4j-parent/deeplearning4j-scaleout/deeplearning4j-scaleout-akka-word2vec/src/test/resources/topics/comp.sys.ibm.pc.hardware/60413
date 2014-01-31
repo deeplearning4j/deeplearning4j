@@ -1,0 +1,27 @@
+From: vg@volkmar.Stollmann.DE (Volkmar Grote)
+Subject: IBM PS/1 vs TEAC FD
+Distribution: world
+Organization: Me? Organized?
+Lines: 21
+
+Hello,
+
+I already tried our national news group without success.
+
+I tried to replace a friend's original IBM floppy disk in his PS/1-PC
+with a normal TEAC drive.
+I already identified the power supply on pins 3 (5V) and 6 (12V), shorted
+pin 6 (5.25"/3.5" switch) and inserted pullup resistors (2K2) on pins
+8, 26, 28, 30, and 34.
+The computer doesn't complain about a missing FD, but the FD's light
+stays on all the time. The drive spins up o.k. when I insert a disk,
+but I can't access it.
+The TEAC works fine in a normal PC.
+
+Are there any points I missed?
+
+Thank you.
+	Volkmar
+
+---
+Volkmar.Grote@Stollmann.DE

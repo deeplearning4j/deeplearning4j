@@ -1,0 +1,39 @@
+From: C445585@mizzou1.missouri.edu (John Kelsey)
+Subject: The wiretap chip, clones, and secure key-exchange
+Nntp-Posting-Host: mizzou1.missouri.edu
+Organization: University of Missouri
+Lines: 33
+
+U23590@uicvm.uic.edu writes:
+>The cryptographic algorythm MUST be kept secret, or
+>private individuals could make ClipperClones with
+>which they could transmit messages which the feds would not have
+>ready access to.
+ 
+   Not necessarily.  I've been thinking about this, and if this chip/scheme
+is to provide any real security, there must be some sort of key exchange,
+either using a public-key encryption scheme, or using a key exchange scheme
+like Diffie-Hellman.  If there's an out-of-band transmission of a shared
+session key, then what protects that band from eavesdropping?  If the phone
+company or some other online central authority generates a session key and
+sends it to both users, then what's the point of going to the trouble of
+having some complicated key-depositories?  Just ask the phone company for
+a copy of the session key for each call.
+ 
+   Now, it's probably not practical for each user to keep an online copy of
+every public key used by anyone anywhere, right?  So, probably, there will
+be some way of getting these keys verified.  This might be a digitally-
+signed (by the chip manufacturer) copy of the public key in this unit,
+stored by this unit.  It might also be an online directory with access to
+everyone's public keys.  (This would introduce another weakness to the
+security of the scheme, of course.)  Presumably, if you don't use your
+designated key, you can't get a verified connection to other standard chips.
+ 
+   It might be useful to have a modified chip, which would allow you to
+use either the original public/private key pair, or some other key pair
+and verification scheme.  Unfortunately, this would not allow you to call
+most people and establish secure communications....
+ 
+   --John Kelsey
+>I hope somebody starts doing this soon after the first
+>ones are released...

@@ -1,0 +1,13 @@
+From: ethan@cs.columbia.edu (Ethan Solomita)
+Subject: Re: X protocol packet type
+Article-I.D.: cs.C52I2q.IFJ
+Organization: Columbia University Department of Computer Science
+Lines: 7
+
+In article <93091.144124DEP@SLACVM.SLAC.STANFORD.EDU> <DEP@SLACVM.SLAC.STANFORD.EDU> writes:
+>Is there a way to identify an X-protocol packet under DECNET? Under
+>TCP/IP?
+>
+	The information in the packets isn't necessarily
+distinctive -- you need to know that it is an X11 connection.
+	-- Ethan

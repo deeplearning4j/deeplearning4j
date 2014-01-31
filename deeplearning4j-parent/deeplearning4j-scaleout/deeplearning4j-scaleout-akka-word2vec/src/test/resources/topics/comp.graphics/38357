@@ -1,0 +1,52 @@
+From: schultz@schultz.kgn.ibm.com (Karl Schultz)
+Subject: Re: VESA standard VGA/SVGA programming???
+Reply-To: schultz@vnet.ibm.com
+Organization: IBM AWS Graphics Systems
+Keywords: vga
+Lines: 45
+
+|> 1. How VESA standard works?  Any documentation for VESA standard?
+
+	The VESA standard can be requested from VESA:
+	VESA
+	2150 North First Street, Suite 440
+	San Jose, CA 95131-2029
+
+	Ask for the VESA VBE and Super VGA Programming starndards.  VESA
+	also defines local bus and other standards.
+
+	The VESA standard only addresses ways in which an application
+	can find out info and capabilities of a specific super VGA
+	implementation and to control the video mode selection
+	and video memory access.
+
+	You still have to set your own pixels.
+
+|> 2. At a higher resolution than 320x200x256 or 640x480x16 VGA mode,
+|>    where the video memory A0000-AFFFF is no longer sufficient to hold
+|>    all info, what is the trick to do fast image manipulation?  I
+|>    heard about memory mapping or video memory bank switching but know
+|>    nothing on how it is implemented.   Any advice, anyone?  
+
+	VESA defines a "window" that is used to access video memory.
+	This window is anchored at the spot where you want to write,
+	and then you can write as far as the window takes you (usually
+	64K).  Windows have granularities, so you can't just anchor 
+	them anywhere.  Also, some implementations allow two windows.
+
+|> 3. My interest is in 640x480x256 mode.  Should this mode be called
+|>    SVGA mode?  What is the technique for fast image scrolling for the
+|>    above mode?  How to deal with different SVGA cards?
+
+	This is VESA mode 101h.  There is a Set Display Start function
+	that might be useful for scrolling.
+
+|>   Your guidance to books or any other sources to the above questions
+|> would be greatly appreciated.  Please send me mail.
+
+	Your best bet is to write VESA for the info.  There have also
+	been announcements on this group of VESA software.
+
+-- 
+Karl Schultz                             schultz@vnet.ibm.com
+These statements or opinions are not necessarily those of IBM

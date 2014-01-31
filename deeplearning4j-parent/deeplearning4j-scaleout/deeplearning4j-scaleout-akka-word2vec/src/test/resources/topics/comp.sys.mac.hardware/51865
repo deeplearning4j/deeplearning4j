@@ -1,0 +1,32 @@
+From: d88-jwa@hemul.nada.kth.se (Jon Wätte)
+Subject: Re: Whither QuickDraw Performance (across product line)
+Nntp-Posting-Host: hemul.nada.kth.se
+Organization: Royal Institute of Technology, Stockholm, Sweden
+Lines: 26
+
+In <daves-190493121505@129.228.20.182> daves@xetron.com (Dave Steele) writes:
+
+>The fastest QuickDraw color performing computer Apple makes is the
+>(drumroll please) LCIII.  And the Color Classic ranks right up there with
+>the Quadra line.  The Centris line pales in comparison.
+
+>Does anybody know the differences in these computers that explains the
+>disparity in graphics/processor performance?
+
+I think you are suffering from some alignment or color
+table or <whatever> problems, if a Color Classic is as fast
+as a Quadra rendering to screen.
+
+What screen card you use does of course matter much (built-in
+video is almost always faster than NuBus)
+
+Or you measured "scroll entire screen" where the Color Classic
+had a VRAM 10" screen in 4-bit color and the Quadra had a
+21" 24-bit screen on NuBus :-)
+
+Cheers,
+
+						/ h+
+-- 
+ -- Jon W{tte, h+@nada.kth.se, Mac Hacker Deluxe --
+   This sig less than 3 lines: Improve the UseNet S/N ratio!

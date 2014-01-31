@@ -1,0 +1,149 @@
+From: lusardi@cs.buffalo.edu (Christopher Lusardi)
+Subject: Program Included: 2 Edge Detection Algorithms!
+Article-I.D.: acsu.C5JqM6.HLG
+Organization: State University of New York at Buffalo/Comp Sci
+Lines: 142
+Nntp-Posting-Host: hadar.cs.buffalo.edu
+
+/*
+
+This program doesn't detect edges with compass operators and a laplacian
+operator. It should output 2 raw grey-scale images with edges. The output
+doesn't look like edges at all.
+
+In novicee terms, how do I correct the errors? Any improvements are welcome.
+(I'll even accept your corrected code.)
+
+(If I convolve the INPUT.IMAGE with a digital gaussian [7 by 7] to remove
+noise, will I get an improvement with the laplacian.)
+
+--------------------------2 types of edge detection-------------------------*/
+#include <stdio.h> 
+#include <math.h> 
+
+#define IMAGEWIDTH 300
+#define IMAGEHEIGHT 300
+
+unsigned char Input_Image [IMAGEHEIGHT][IMAGEWIDTH];
+
+unsigned char Angles_Wanted [IMAGEHEIGHT][IMAGEWIDTH];
+unsigned char Magnitude_Image [IMAGEHEIGHT][IMAGEWIDTH];
+
+int Laplace_Op1 [3][3] = { 0,-1, 0, -1,4,-1,  0,-1, 0};
+
+int Compass_Op1 [3][3] = { 1, 1, 1,  0,0, 0, -1,-1,-1};
+int Compass_Op2 [3][3] = { 1, 1, 0,  1,0,-1,  0,-1,-1};
+int Compass_Op3 [3][3] = { 1, 0,-1,  1,0,-1,  1, 0,-1};
+int Compass_Op4 [3][3] = { 0,-1,-1,  1,0,-1,  1, 1, 0};
+int Compass_Op5 [3][3] = {-1,-1,-1,  0,0, 0,  1, 1, 1};
+int Compass_Op6 [3][3] = {-1,-1, 0, -1,0, 1,  0, 1, 1};
+int Compass_Op7 [3][3] = {-1, 0, 1, -1,0, 1, -1, 0, 1};
+int Compass_Op8 [3][3] = { 0, 1, 1, -1,0, 1, -1,-1, 0};
+
+void Compass (row,col)
+int row,col;
+{
+  int value;
+  int op_rows, op_cols;
+  int Compass1,Compass2,Compass3,Compass4;
+  int Compass5,Compass6,Compass7,Compass8;
+  
+  Compass1 = Compass2 = Compass3 = Compass4 = 0;
+  Compass5 = Compass6 = Compass7 = Compass8 = 0;
+  
+  for (op_rows = -1; op_rows < 2; op_rows++)
+    for (op_cols = -1; op_cols < 2; op_cols++)
+      {
+	if (((row + op_rows) >= 0) && ((col + op_cols) >= 0))
+	  {
+	    
+	    Compass1 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op1 [op_rows + 1][op_cols + 1];
+	    Compass2 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op2 [op_rows + 1][op_cols + 1];
+	    Compass3 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op3 [op_rows + 1][op_cols + 1];
+	    Compass4 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op4 [op_rows + 1][op_cols + 1];
+	    Compass5 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op5 [op_rows + 1][op_cols + 1];
+	    Compass6 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op6 [op_rows + 1][op_cols + 1];
+	    Compass7 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op7 [op_rows + 1][op_cols + 1];
+	    Compass8 += ((int) Input_Image [row + op_rows][col + op_cols]) * 
+	                       Compass_Op8 [op_rows + 1][op_cols + 1];
+	    
+	  }
+      }
+  if (Compass1 < Compass2)
+    value = Compass2;
+  else 
+    value = Compass1;      
+  if (value < Compass3)
+    value = Compass3;
+  if (value < Compass4)
+    value = Compass4;
+  if (value < Compass5)
+    value = Compass5;
+  if (value < Compass6)
+    value = Compass6;
+  if (value < Compass7)
+    value = Compass7;
+  if (value < Compass8)
+    value = Compass8;
+
+  Magnitude_Image [row][col] = (char) value;
+}
+
+void Laplace1 (row,col)
+int row,col;
+{
+  int op_rows, op_cols;
+
+  Magnitude_Image [row][col] = 0;
+  for (op_rows = -1; op_rows < 2; op_rows++)
+    for (op_cols = -1; op_cols < 2; op_cols++)
+      if (((row + op_rows) >= 0) && ((col + op_cols) >= 0))
+	Magnitude_Image [row][col] = 
+	  (char) ((int)Magnitude_Image [row][col] +
+		  ((int) Input_Image [row + op_rows][col + op_cols] * 
+		   Laplace_Op1 [op_rows + 1][op_cols + 1]));
+}
+
+main  ()
+{
+  FILE *Original_Image_fp;
+  FILE *Laplace1_mag_fp,*Laplace2_mag_fp,*Laplace3_mag_fp;
+  FILE *Compass_mag_fp;
+
+  int row, col, Algo_Count;
+
+  Original_Image_fp = fopen ("INPUT.IMAGE","rb");
+
+  Laplace1_mag_fp = fopen ("Laplace1_Magnitude","wb");
+  Compass_mag_fp = fopen ("Compass_Magnitude","wb");
+
+  fread ((unsigned char *) Input_Image,sizeof(unsigned char),IMAGEHEIGHT * IMAGEWIDTH,Original_Image_fp);
+  for (Algo_Count = 0; Algo_Count < 2;Algo_Count ++)
+    {
+      for (row = 0; row < IMAGEHEIGHT; row++) 
+	for (col = 0; col < IMAGEWIDTH; col++) 
+	  if (!Algo_Count)
+	    Laplace1 (row,col);
+	  else 
+	    Compass (row,col);
+      
+      if (!Algo_Count)
+	fwrite(Magnitude_Image,sizeof(char),IMAGEHEIGHT * IMAGEWIDTH,Laplace1_mag_fp);
+      else 
+	fwrite(Magnitude_Image,sizeof(char),IMAGEHEIGHT * IMAGEWIDTH,Compass_mag_fp);
+    }
+}
+
+  
+-- 
+|  .-,                ###|For a lot of .au music: ftp sounds.sdsu.edu
+| /   /   __  ,  _    ###|then cat file.au > /dev/audio
+| \_>/ >_/ (_/\_/<>_     |UB library catalog:telnet bison.acsu.buffalo.edu
+|_                14261 _|(When in doubt ask: xarchie, xgopher, or xwais.)

@@ -1,0 +1,20 @@
+From: klee@synoptics.com (Ken Lee)
+Subject: Re: Circular Motif Widgets
+Reply-To: klee@synoptics.com
+Organization: SynOptics Communications, Santa Clara CA
+Lines: 13
+Nntp-Posting-Host: bugsbunny.synoptics.com
+
+In article bjg@acsc.com, dev@hollywood.acsc.com () writes:
+>
+>Will there be any support for round or circular widgets in Motif's next
+>release?. I'd love to have a circular knob widget which could be used
+>instead of a slider.
+
+How much support do you need?  I don't think there's anything
+that prohibits you from implementing such a widget, though you
+will have to write your own versions of the functions that draw
+the 3D shadow and traversal highlighting.
+
+---
+Ken Lee, klee@synoptics.com

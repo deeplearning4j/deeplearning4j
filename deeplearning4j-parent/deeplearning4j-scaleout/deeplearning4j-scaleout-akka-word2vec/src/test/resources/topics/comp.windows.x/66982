@@ -1,0 +1,50 @@
+From: gpatapis@boyd.tansu.com.au (George Patapis)
+Subject: Re: DESQview/X on a PC?
+Organization: AOTC - CSSC
+Lines: 42
+Distribution: world
+Reply-To: gpatapis@boyd.tansu.com.au
+NNTP-Posting-Host: boyd.cssc-syd.tansu.com.au
+
+In article 14595639@wl.aecl.ca, harrisp@wl.aecl.ca () writes:
+>I use DESQview/X and I think it is great. Where it really shines (IMHO) is
+>to let unix users log into a pc and run dos and windows applications with
+>the display going to their screens.
+>You'll need to get:
+>DESQview/X v 1.1
+>DESQview/X v 1.1                           $275 suggested retail
+>DESQview/X to Other X Systems v 1.1        $200 suggested retail
+>
+>You also must be running a supported network (FTP softwares PCTCP,
+>Novell Lan workplace for dos, Sun Microsystems PC-NFS, Beame and WHiteside,
+>Wollongong pathway TCPIp or HP Microsoft Lan Manager)
+>
+>if you don't have any of this network stuff, Quarterdeck will give you a
+>copy of Novell TCPIP transprot for dos with the Network manager.
+>
+>You can get more info by sending email to (appropriately) info@qdeck.com.
+>
+>In my opinion, if you want to have other people logging in and running
+>applications at your pc, you'll want to have a 486 33 with 16 Megs of RAM.
+>Also, the Xwindows software in DESQviewX really seems to like an ET 4000
+>(TSENG Labs chipset) based graphics card. Personally, I found that things
+>ran better with a SCSI drive in the pc than with ESDI drives, but that is
+>my experience only
+>
+>                                Good Luck and Best Wishes
+>                                                Phil
+
+What sort of traffic is generated with the X-calls?  I am curious to find
+out the required bandwidth that a link must have  if one machine running
+DV/X is supporting multiple users (clients) and we require adequate response
+time.  Anyone have any ideas ??  
+
+
+
+---
+__/ __/ George Patapis ---------------------PAN METRON ARISTON---------- __/ __/
+__/ __/ C.S.S.C Lane Cove-----------email:gpatapis@cssc-syd.tansu.com.au __/ __/
+__/ __/ P.O.Box A792 Sydney South --fax  :(02) 911 3 199---------------- __/ __/
+__/ __/ NSW, 2000, Australia.-------voice:(02) 911 3 121---------------- __/ __/
+
+

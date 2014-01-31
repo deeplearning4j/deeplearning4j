@@ -1,0 +1,31 @@
+From: erik@cheshire.oxy.edu (Erik Adams)
+Subject: Can I remove the 68000 under my daughterboard upgrade?
+Organization: Occidental College, Los Angeles, CA 90041 USA.
+Lines: 26
+
+The subject says what I would like to do, here are the details:
+
+I have a 512ke with the MacRescue upgrade board that makes it the
+equivalent of a Plus (System 7 and MacEnvy both identify it as such).
+
+The MacRescue board clips onto the 68000 on the MB.  It also has
+a 68000 itself.  Periodically I have to remove the clip (not an
+entirely easy thing to do) and clean the "legs" of the 68000.
+Larry Pina's book asserts that this is occasionally a problem with
+snap on upgrades:  the 68000's "legs" will oxidize, causing 
+unusual system errors.
+
+Well, that's me.
+
+So, I would like to do something permanent, and I think it would be
+fairly easy to put a socket in where the 68000 currently is, and
+modify the MacRescue board to plug in.  What I'm not 100% sure of
+is whether it will work.  It seems to me that the two 68000s aren't
+acting independently; so removing one shouldn't have any effect on
+the performance of my Mac.  I'm about 97% sure.
+
+Will someone provide the extra 3%?
+
+Erik
+erik@cheshire.oxy.edu
+

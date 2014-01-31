@@ -191,9 +191,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 
 			startWorker(masterAddress,c);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					this), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					epochs), mediator);
 			log.info("Setup master with epochs " + epochs);
 		}
@@ -253,10 +253,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		}
 
 		//ensure the trainer is known so the next iteration can happen
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				this), mediator);
 		//start the pipeline
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);
 
 
@@ -293,7 +293,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 			log.info("Starting next epoch");
 
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					samples), mediator);
 
 		}

@@ -1,0 +1,31 @@
+From: rainer@sun3.eeam.elin.co.at (Rainer Hochreiter)
+Subject: X-server multi screen
+Organization: ELIN Energeanwendung Ges.m.b.H
+Lines: 24
+NNTP-Posting-Host: sun3.eeam.elin.co.at
+X-Newsreader: TIN [version 1.1 PL9]
+
+Hi Xperts, some simple questions for you:
+
+I've seen a lot of different terms, which seem to mean the same thing.
+Who can give an exact definition what these terms mean:
+
+	-) multi-screen
+	-) multi-headed
+	-) multi-display
+	-) X-Server zaphod mode
+
+Is there a limit how many screens/displays a single server can handle
+(in an articel a read something about an upper limit of 12) ?
+
+How is the capability called, if I want to move the cursor from one
+screen/display to another.
+
+Any hints welcome.
+
+Thanks, rainer.
+-- 
+Rainer Hochreiter                | Telephone: +43 (1) 89100 / 3961
+ELIN-Energieanwendung GesmbH     | Telefax  : +43 (1) 89100 / 3387
+Penzingerstr. 76                 |
+A-1141 Wien, Austria/Europe      | E-mail   : rainer@elin.co.at

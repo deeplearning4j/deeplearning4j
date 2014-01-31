@@ -1,0 +1,33 @@
+From: bauer@informatik.uni-ulm.de (Christian Bauer)
+Subject: Re: MacPlus freezes after ~1 hour use, fails to boot
+Nntp-Posting-Host: christian.informatik.uni-ulm.de
+Organization: University of Ulm
+Lines: 27
+
+In article <1osu69INN11r@tamsun.tamu.edu>, mclean@math.tamu.edu (Robert
+Mclean) wrote:
+> 
+> My MacPlus is having problems which seem temperature related. After using
+> it for a while it freezes. The when I turn off then on, the screen doesn't
+> show the disk icon, and then goes dark. I consulted Larry Pina's Book and 
+> could not find these symptoms. Has anybody else seen such symptoms?
+> Suggestions?
+
+Shure it is temperature dependent, but this does not clean all your
+problems.
+Based on some exp. I must say that the connections between the power supply
+and the Monitor and Main Board are usable to this failure, Ram simms can be
+badly connected due to some corrosion and the powersupply can be in the
+last
+phase (lower Voltage).
+
+So you can do following if you are used to such technical terms.
+1) Clean all mentioned contacts with contact spray
+2) readjust the 5 Volt level of your powersupply
+3) use a calm fan and think of preventing dust blowin‘ through the floppy!
+   (a fixed piece of paper can prevent this)
+if you don't know how to do it beg a friendly technician!
+
+Christian Bauer
+
+bauer@informatik.uni-ulm.de

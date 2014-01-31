@@ -1,0 +1,36 @@
+From: davesimp@soda.berkeley.edu (David Simpson)
+Subject: Trying to find papers by Rosenthal
+Article-I.D.: agate.1r7k7o$feh
+Organization: UC Berkeley, CS Undergraduate Association
+Lines: 29
+NNTP-Posting-Host: soda.berkeley.edu
+
+I have the March/April version of the X Journal open in front of me.
+
+I'll be working on programming x-clients this summer, and since I don't have
+much experience with programming X, I thought this issue might be helpful
+as it has a section on debugging, and a section on the 40 most common errors
+in programming X.
+
+At the end of the errors section, there are the following references for
+tutorials on X programming style.  They are:
+
+Rosenthal, David -   A simple X11 client program
+  Proceedings of the Winter 1988 Usenix Conference, 1988.
+
+Lemke, D., and Rosenthal, D. -  Visualizing X11 clients
+  Proceedings of the Winter 1989 Usenix Conference, 1989.
+
+
+Does anyone know where I could find these in printed or (preferably)
+electronic form?
+
+Or can you suggest any net resources devoted to the introduction to
+programming X (I'll be looking at the bookstore for books, so I am really
+only asking about what I can find on the net.)
+
+Thanks,
+
+David Simpson
+
+davesimp@soda.berkeley.edu

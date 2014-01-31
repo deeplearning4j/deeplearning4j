@@ -1,0 +1,24 @@
+From: jbickers@templar.actrix.gen.nz (John Bickers)
+Subject: Re: HELP!!! GRASP
+Organization: TAP
+Lines: 19
+
+Quoted from <1993Apr20.125147.10665@genes.icgeb.trieste.it> by oberto@genes.icgeb.trieste.it (Jacques Oberto):
+
+> file, check in the 'graphics' directories under *grasp.  The problem 
+> is that the .clp files you generate cannot be decoded by any of 
+> the many pd format converters I have used. Any hint welcome!
+
+    The gl2p1.lzh stuff under gfx/show on the Aminet sites includes a
+    utility called pic2hl, that is a filter for HamLab that can handle
+    the most commonly used kinds of .PIC and .CLP files.
+
+    The biggest problem is that the .CLP files don't usually contain a
+    palette, so you need to convert a .PIC with the right palette
+    first (which creates a "ram:picpal" file), and then convert the
+    .CLP files.
+
+> Jacques Oberto  <oberto@genes.icgeb.trieste.it>
+--
+*** John Bickers, TAP.                   jbickers@templar.actrix.gen.nz ***
+***    "Radioactivity - It's in the air, for you and me" - Kraftwerk    ***

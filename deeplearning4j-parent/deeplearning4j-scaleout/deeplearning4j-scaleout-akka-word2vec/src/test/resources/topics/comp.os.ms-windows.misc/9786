@@ -1,0 +1,49 @@
+From: sat@eng.tridom.com (Stephen Thomas)
+Subject: Re: How can I use the mouse in NON-Windows applications under MS-WINDOWS ?
+Nntp-Posting-Host: nut.eng.tridom.com
+Reply-To: sat@eng.tridom.com
+Organization: AT&T Tridom
+Lines: 42
+
+In article 12328@ucsu.Colorado.EDU, gonzaled@ucsu.Colorado.EDU (LGV/MC) writes:
+>kasajian@netcom.com (Kenneth Kasajian) writes:
+>
+>>wnkretz@ikesg1.energietechnik.uni-stuttgart.de (Oliver Kretzschmar) writes:
+>
+>
+>
+>>>   Hey,
+>
+>>>   could somebody tell me, how it is possible to work with the mouse
+>>>   in a NON-Windows application, which runs in an window. We use
+>>>   MS-WINDOWS 3.1 and have CLIPPER applications. Exists there any
+>>>   routines or something else ? Please mail me your informations.
+>
+>>>   Thanks for your efforts,
+>
+>>>     Oliver
+>>>-- 
+>>> NAME : O.Kretzschmar                      Inst.IKE / University Stuttgart
+>>> PHONE: +49 711 685 2130                           Pfaffenwaldring 31
+>>> FAX  : +49 711 685 2010                            7000 Stuttgart 80
+>>> EMAIL: wnkretz@ikesg1.energietechnik.uni-stuttgart.de
+>
+>>Very simple.  You have to have the MOUSE.COM or MOUSE.SYS loaded in DOS
+>>before you run Windows.  Note that you don't need to have these files loaded
+>>to use the mouse in Windows.
+>
+>One addition to this... I don't know if it applies to everybody.  For my
+>(Microsoft 400dpi) mouse to work with windowed DOS apps, I had to use the
+>driver that came with Windows (Version 8.20).  8.1 didn't allow me to do
+>it for some reason.
+>
+
+I could never find the Microsoft mouse driver on my Windows 3.1 installation
+disks, but DOS 6.0 also has version 8.20 of MOUSE.COM.
+
+
+---
+
+Stephen Thomas   AT&T Tridom   (404-514-3522)
+email: sat@eng.tridom.com, attmail!tridom!sat
+

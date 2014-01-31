@@ -89,7 +89,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		UpdateableSingleImpl work = compute();
 		log.info("Updating parent actor...");
 		//update parameters in master param server
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				work), getSelf());
 	}
 

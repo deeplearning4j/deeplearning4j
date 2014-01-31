@@ -1,0 +1,30 @@
+From: wes1574@zeus.tamu.edu (Bill Scrivener)
+Subject: In need of help....
+Organization: Texas A&M University, Academic Computing Services
+Lines: 22
+Distribution: world
+NNTP-Posting-Host: zeus.tamu.edu
+News-Software: VAX/VMS VNEWS 1.41    
+
+Ok, I have a problem that I thought you guys/gals might know about....
+
+I'm running a 286dx-25 with a 85mb hdd.  I also have windows 3.1, but
+hardly any dos application will run out it.  Also, when I do a "mem"
+command, it says that I have used up 58kb out of 640kb of conventional
+memory, zero from upper level memory, and all 385kb of my ems memory.
+And to top it off, I can't load any device drivers into upper memory.
+Do I just need more memory?  Also, why would it use up ems memory instead
+of upper memory?
+
+Please reply by e-mail only to :  wes1574@tamvenus.tamu.edu
+
+
+
+
+---------------------------------------------------------------------------
+Bill Scrivener                    |    "It's not the first time that you
+Texas A&M University              |     sleep with a woman that matters,
+College Station, Texas            |     but the first time
+email: wes1574@tamvenus.tamu.edu  |     you wake up with her."
+---------------------------------------------------------------------------
+

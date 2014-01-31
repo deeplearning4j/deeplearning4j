@@ -1,0 +1,16 @@
+From: edb9140@tamsun.tamu.edu (E.B.)
+Subject: POV problems with tga outputs
+Organization: Texas A&M University, College Station, TX
+Lines: 9
+Distribution: world
+NNTP-Posting-Host: tamsun.tamu.edu
+
+I can't fiqure this out.  I have properly compiled pov on a unix machine
+running SunOS 4.1.3  The problem is that when I run the sample .pov files and
+use the EXACT same parameters when compiling different .tga outputs.  Some
+of the .tga's are okay, and other's are unrecognizable by any software.
+
+Help!
+ed
+edb9140@tamsun.tamu.edu
+

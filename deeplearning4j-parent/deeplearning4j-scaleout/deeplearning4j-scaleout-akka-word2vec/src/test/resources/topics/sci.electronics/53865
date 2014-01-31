@@ -1,0 +1,59 @@
+From: elliott@optilink.COM (Paul Elliott)
+Subject: Re: Analog switches/Balanced Demodulators
+Distribution: na
+Organization: DSC/Optilink Access Products
+Lines: 53
+
+In article <msf.734832494@skaro> msf@skaro.as.arizona.edu (Michael Fulbright) writes:
+>I am trying to build a synchronous demodulator and I've hit a snag.
+>In my application I want to be able to change the gain of an
+>op amp amplifier from 1 to -1, controlable via a digital input.
+>The most obvious way I've come up with is to use analog switches
+>to adjust the gain of the op amp. The only analog switch I have
+>experience with it the 4066. Unfortunately I want to switch an
+>AC signal which goes from about -5V to 5V, and the 4066 is only
+>for positive signals.
+>[...]
+> I have a carrier signal which varies between 0V and +5V. I want
+>to demodulate an input signal by feeding the input signal thru a
+>amp with a gain of 1 when the carrier is at +5V, and thru a amp
+>with a gain of -1 when the carrier is 0V. The output is then
+>low pass filtered. I believe this is called lock in detection as well
+>as synchronous demodulation.
+
+Look at the 4053.  This is a triple 2-to-1 transmission-gate analog
+multiplexer, with positive and negative power supplies (can be run
+from a single-ended supply as well).  With dual supplies, the logic
+inputs still range from ground (0 Volts) to VDD.
+
+This is a neat (well, I think so) design for a switchable-polarity
+amplifier:
+
+                 +-----/\/\/\-------+
+                 |                  |
+                 |    /--------\    |
+INPUT -+-/\/\/\--+----| -      |    |
+       |              |  opamp |----+------- OUTPUT
+       +-/\/\/\--+----| +      |
+                 |    \--------/
+                 |
+CONTROL	---------X (analog switch)
+                 |
+                 |
+                ---
+                GND
+
+All resistors are equal-value.  When the analog switch is closed,
+the amp is inverting-gain-of-one.  With the switch open, it is
+non-inverting-gain-of-one.  You can clean up the circuit to trim
+out input offset current if this hurts the balance (this would show
+up as carrier feed-through).
+
+For high frequencies, the slew-rate of the opamp might cause problems,
+especially if it isn't symmetrical (and it usually isn't).
+
+-- 
+--------     Paul Elliott - DSC Optilink - Petaluma, CA USA      ----------
+    {uunet,pyramid,tekbspa}!optilink!elliott -or- elliott@optilink.com
+       "I used to think I was indecisive, but now I'm not so sure."
+

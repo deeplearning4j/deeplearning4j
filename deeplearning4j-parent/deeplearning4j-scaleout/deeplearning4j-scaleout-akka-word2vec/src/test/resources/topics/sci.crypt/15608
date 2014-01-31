@@ -1,0 +1,47 @@
+From: wcs@anchor.ho.att.com (Bill Stewart +1-908-949-0705)
+Subject: Re: Why the clipper algorithm is secret
+Organization: Brought to you by the numbers 2, 3, and 7
+In-Reply-To: bear@kestrel.fsl.noaa.gov's message of Tue, 20 Apr 1993 01:41:35 GMT
+	<1993Apr18.225502.358@iecc.cambridge.ma.us> <C5pstr.Lu2@panix.com>
+	<1993Apr20.014135.24134@fsl.noaa.gov>
+Nntp-Posting-Host: rainier.ho.att.com
+Lines: 38
+
+In article <1993Apr20.014135.24134@fsl.noaa.gov> bear@kestrel.fsl.noaa.gov (Bear Giles) writes:
+   In article <C5pstr.Lu2@panix.com> dfl@panix.com (Danny O'Bedlam) writes:
+   >	The algorithm is classified because a military contract (or similar
+   >government equivalent to military) has been let for this "proprietary"
+   >design that the Feds say that NSA developed.  Is there a patent?  Is that
+   >patent publicly available?  My betting is that that too is classified.
+
+   Unless there has been a _major_ change in the law, there's no such beast
+   as a "classified patent."  Patents exist to encourage communications and
+   develop the state of the art. 
+
+While there aren't classified patents, there are "patent secrecy orders".
+
+Suppose you invent a voice scrambler for CB radio, and apply for a patent.
+The Patent Office decides the NSA might be interested, gives them a copy
+of your application, and you get a nice note back saying your patent
+application has now been classified for national security reasons and
+you're no longer allowed to make and sell it.  
+I'm picking this example because it happened in the late 1970s.
+It was probably some analog scrambler, and would have probably
+violated FCC rules anyway, but it did get classified.
+
+Or suppose you publish a paper on your Really Spiffy Algorithm and
+then file a patent application.  Since it's been published,
+they can't gain anything by classifying it, though you can't get
+patents in most countries other than the US, where patent laws are different.
+
+Obviously a system of classified patents would be highly bogus
+"You can't sell that widget, because there's a classified patent on it.
+You're not allowed to see the patent, or know who owns the design,
+so just give us all your money and work in progress and maybe we won't throw
+you in jail for espionage."  Some countries might have that kind of
+system :-(, but we don't have that here.  Quite.  Yet.
+--
+#				Pray for peace;      Bill
+# Bill Stewart 1-908-949-0705 wcs@anchor.att.com AT&T Bell Labs 4M312 Holmdel NJ
+#	              No, I'm *from* New Jersey, I only *work* in cyberspace....
+# White House Commect Line 1-202-456-1111  fax 1-202-456-2461

@@ -1,0 +1,28 @@
+From: adriene_nazaretian@qm.yale.edu (Adriene Nazaretian)
+Subject: Re: win nt
+Nntp-Posting-Host: gorgon.cis.yale.edu
+Organization: Yale University; New Haven, Connecticut   USA
+Lines: 22
+
+In article <1pq66v$kkt@gazette.bcm.tmc.edu>, raymaker@bcm.tmc.edu (Mark Raymaker) says:
+>
+>Is anyone aware of existing ipx/netx software for WindowsNT or
+>is attachment to Netware a FUTURE release?
+>please respond to internet mail: raymaker@bcm.tmc.edu
+>thanks
+>
+
+I believe the beta version of the service is available via ftp on 
+ftp.cica.indiana.edu
+in pub/pc/win3/nt called something like nwnt.zip
+
+There is an INDEX ascii file there, which lists the programs in that directory
+and what they do.
+
+unfortunately this beta will also disable netbeui and tcp/ip over your
+primary nic, so if you really want to run it, get yourself an extra nic and
+bind it to that.  
+
+Otherwise wait for next release, like I am.
+
+Adriene

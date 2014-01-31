@@ -1,0 +1,46 @@
+From: disteli@inf.ethz.ch (Andreas Reto Disteli)
+Subject: S3
+Nntp-Posting-Host: lillian-gw
+Organization: Dept. Informatik, Swiss Federal Institute of Technology (ETH), Zurich, CH
+Lines: 40
+
+
+Re: Problems with S3-initialization
+
+As described the manual the following steps must be done for th initialization
+of the S3 card.
+
+InitDisplay;
+	(*BIOS-Call
+		with AX-Reg = 4F02H
+		with BX-Reg = 105H for 1024 x 768 x 256 resolution
+		Interrupt 10H *)
+Unlock Register Lock 1 (CR38)
+	(* For access to S3 Register Set *)
+Unlock Register Lock 2 (CR39)
+	(* For access to Syst. Control and Syst. Extension Register *)
+Unlock Graphic Command Group (CR40)
+	(* Set Bit 0 to 1 in Syst. Configuration Register *)
+Unlock Advanced Display Functions
+	(* Set Bit 0 to 1 in Function Control Register *)
+
+After these operations the FIFO-stack of the S3 should be empty.
+When we watch the status (Graph. Proc. Status), we always get
+the value 0FH instead of 0H.
+Full would mean 0FFH (8 places occupied), empty would mean 0H
+(0 places occupied).
+
+It is possible to read this register in two different ways. 
+Both times we get different results.
+
+
+
+Our machine is a 486 DX/2 with EISA bus and a S3 86C805 local bus. 
+
+--> any ideas?
+
+Andreas Disteli
+Institut fuer Computersysteme, ETH Zuerich
+email: disteli@inf.ethz.ch
+
+

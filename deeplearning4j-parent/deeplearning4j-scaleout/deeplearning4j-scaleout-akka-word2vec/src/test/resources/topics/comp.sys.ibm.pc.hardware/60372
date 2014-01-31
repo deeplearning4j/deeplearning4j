@@ -1,0 +1,40 @@
+From: wayne@amtower.spacecoast.org (Wayne Summer)
+Subject: Re: IDE vs SCSI
+Distribution: world
+Reply-To: wayne@amtower.spacecoast.orgX-NewsSoftware: GRn 1.16f (10.17.92) by Mike Schwartz & Michael B. Smith
+Organization: Wayne's Machine; Palm Bay, Florida
+Lines: 33
+
+In article <1993Apr15.235509.29818@julian.uwo.ca> wlsmith@valve.heart.rri.uwo.ca (Wayne Smith) writes:
+>
+> I won't argue that the SCSI standard makes for a good, well implimented
+> data highway, but I still want to know why it intrinsically better
+> (than IDE, on an ISA bus) when it comes to multi-tasking OS's when
+> managing data from a single SCSI hard drive.
+
+I have been following this thread and figured I'd throw in my two cents...
+
+The Amiga Zorro II bus is comparable with the ISA bus (7.16 vs 8.33 MHZ).
+The Amiga has had a pre-emptative multi-tasking  OS since '85 and can
+operate with 1 MB RAM!  SCSI is used almost exclusively on these systems.
+
+A SCSI controller that transfers data by DMA allows the cpu to request data
+from the hard drive and continue working while the controller gets the data
+and moves it to memory.  A controller that allows reselection can operate
+even better with multiple devices.  This is espically true with SCSI tape
+units.  For example, when rewinding or formatting a tape, the command is
+issued to the controller and the bus is released to allow access to other
+devices on the bus.  This greatly increases productivity or, at least, do
+something else while backing up your hard drive :-).  Which happens to be
+what I am doing while reading this group.
+
+Its a long story, but I still use IDE on my 486 except for the CDROM which,
+thanks to SCSI, I can move between both machines.  If, and when, SCSI is
+better standardized and supported on the ibm-clone machines, I plan to
+completely get rid of IDE.
+--
+  Wayne Summer        //        AMIGA - Simply the Best.
+  Palm Bay, FL. US  \X/        wayne@amtower.spacecoast.org
+
+Quote of the week: Don't hate microsoft because because they are microsoft,
+though...hate them because their products are lame - Found in c.s.ibm.pc.misc

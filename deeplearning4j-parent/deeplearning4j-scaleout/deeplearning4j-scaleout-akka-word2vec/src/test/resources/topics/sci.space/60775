@@ -1,0 +1,73 @@
+From: higgins@fnalf.fnal.gov (Bill Higgins-- Beam Jockey)
+Subject: Sixty-two thousand (was Re: How many read sci.space?)
+Organization: Fermi National Accelerator Laboratory
+Lines: 67
+NNTP-Posting-Host: fnalf.fnal.gov
+
+In article <1993Apr15.072429.10206@sol.UVic.CA>, rborden@ugly.UVic.CA (Ross  Borden) writes:
+> In article <734850108.F00002@permanet.org> Mark.Prado@p2.f349.n109.z1.permanet.org (Mark Prado) writes:
+>>
+>>One could go on and on and on here, but I wonder ... how
+>>many people read sci.space and of what power/influence are
+>>these individuals?
+>>
+> 	Quick!  Everyone who sees this, post a reply that says:
+> 
+> 			"Hey, I read sci.space!"
+> 
+> Then we can count them, and find out how many there are! :-)
+> (This will also help answer that nagging question: "Just what is
+> the maximum bandwidth of the Internet, anyways?")
+
+A practical suggestion, to be sure, but one could *also* peek into
+news.lists, where Brian Reid has posted "USENET Readership report for
+Mar 93." Another posting called "USENET READERSHIP SUMMARY REPORT FOR
+MAR 93" gives the methodology and caveats of Reid's survey.  (These
+postings failed to appear for a while-- I wonder why?-- but they are
+now back.)
+
+Reid, alas, gives us no measure of the "power/influence" of readers...
+Sorry, Mark.
+
+I suspect Mark, dangling out there on Fidonet, may not get news.lists
+so I've mailed him copies of these reports.
+
+The bottom line?
+
+        +-- Estimated total number of people who read the group, worldwide.
+        |     +-- Actual number of readers in sampled population
+        |     |     +-- Propagation: how many sites receive this group at all
+        |     |     |      +-- Recent traffic (messages per month)
+        |     |     |      |      +-- Recent traffic (kilobytes per month)
+        |     |     |      |      |      +-- Crossposting percentage
+        |     |     |      |      |      |    +-- Cost ratio: $US/month/rdr
+        |     |     |      |      |      |    |      +-- Share: % of newsrders
+        |     |     |      |      |      |    |      |   who read this group.
+        V     V     V      V      V      V    V      V
+  88  62000  1493   80%  1958  4283.9    19%  0.10   2.9%  sci.space 
+
+The first figure indicates that sci.space ranks 88th among most-read
+newsgroups.
+
+I've been keeping track sporadically to watch the growth of traffic
+and readership.  You might be entertained to see this.
+
+Oct 91   55  71000  1387   84%   718  1865.2    21%  0.04   4.2%  sci.space
+Mar 92   43  85000  1741   82%  1207  2727.2    13%  0.06   4.1%  sci.space
+Jul 92   48  94000  1550   80%  1044  2448.3    12%  0.04   3.8%  sci.space
+May 92   45  94000  2023   82%   834  1744.8    13%  0.04   4.1%  sci.space
+(some kind of glitch in estimating number of readers happens here)
+Sep 92   45  51000  1690   80%  1420  3541.2    16%  0.11   3.6%  sci.space 
+Nov 92   78  47000  1372   81%  1220  2633.2    17%  0.08   2.8%  sci.space 
+(revision in ranking groups happens here(?))
+Mar 93   88  62000  1493   80%  1958  4283.9    19%  0.10   2.9%  sci.space 
+
+Possibly old Usenet hands could give me some more background on how to
+interpret these figures, glitches, or the history of Reid's reporting
+effort.  Take it to e-mail-- it doesn't belong in sci.space.
+
+Bill Higgins, Beam Jockey              | In a churchyard in the valley
+Fermi National Accelerator Laboratory  | Where the myrtle doth entwine
+Bitnet:           HIGGINS@FNAL.BITNET  | There grow roses and other posies
+Internet:       HIGGINS@FNAL.FNAL.GOV  | Fertilized by Clementine.
+SPAN/Hepnet:           43011::HIGGINS  |

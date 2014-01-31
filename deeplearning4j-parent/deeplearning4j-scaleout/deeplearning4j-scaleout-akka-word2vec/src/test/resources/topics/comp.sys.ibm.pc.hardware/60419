@@ -1,0 +1,20 @@
+From: jschief@finbol.toppoint.de (Joerg Schlaeger)
+Subject: Re: 16Mb ISA limit
+Distribution: world
+Organization: myself
+Lines: 14
+
+rpao@mts.mivj.ca.us writes in article <C5J6zn.681@mts.mivj.ca.us>:
+> 
+> marka@SSD.CSD.HARRIS.COM (Mark Ashley) writes:
+> 
+> >Then the writer claims that glitches can
+> >occur in systems with over 16Mb because 
+> >of that limit. That part I don't understand
+> >because the RAM is right on the motherboard.
+> >So the cpu should have no problems talking
+> >with the RAM. Can anybody explain this ?
+The floppy is served by DMA on the motherboard,
+and original DMA-controller can't reach more than the first
+16MB (The address-space of the ISA-bus)
+joerg

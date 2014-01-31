@@ -1,0 +1,36 @@
+From: mg@cs.princeton.edu (Michael Golan)
+Subject: how can 0.022 uF be different from two 0.047 in series?!
+Originator: news@nimaster
+Nntp-Posting-Host: elan.princeton.edu
+Organization: Princeton University
+Lines: 29
+
+I was looking at the amps diagram for Sony 1090/2090 receivers, and I
+was amazed to find a difference between the US and Canadian model
+on the capacitor(s) that hangs off the output to the speakers:
+
+                         ------\/\/\----- to speaker (identical both models
+from amp ---------------|
+(idnetical both models) >
+                        <  10 
+                        >
+                        |
+                       -----                        
+                      |     |                        
+        0.022        ---   ---        Canadian model only!
+     US model        ---   --- 0.047 
+     and world-wide   |     |
+     model only.      |    ---        Candian model only!
+                      |    ---  0.047
+                      |     |
+                       ----------- gound
+
+The board itself is also identical, with room for all three caps. The
+US/Can versions is clearly indicated in both places.
+
+How does that make sense? 0.047/2 is 0.0235, essentially 0.022 for caps
+(there are just standard caps, no special W/type/precision). 
+
+Please explain this
+ Michael Golan
+ mg@cs.princeton.edu

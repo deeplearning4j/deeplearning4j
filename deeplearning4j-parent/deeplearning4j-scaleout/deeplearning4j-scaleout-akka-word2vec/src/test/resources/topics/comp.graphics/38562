@@ -1,0 +1,18 @@
+From: cs89ssg@brunel.ac.uk (Sunil Gupta)
+Subject: Re: RTrace 8.2.0
+Organization: Brunel University, Uxbridge, UK
+Lines: 12
+X-Newsreader: TIN [version 1.1 PL8]
+
+Comp. Graphics/CAD (cgcad@bart.inescn.pt) wrote:
+: There is a new version of the RTrace ray-tracing package (8.2.0) at
+: asterix.inescn.pt [192.35.246.17] in directory pub/RTrace.
+: Check the README file.
+
+cant seem to reach the site from over here:
+
+>#ping 192.35.246.17
+>ICMP Net Unreachable from gateway nsn-FIX-pe.sura.net (192.80.214.253)
+>for icmp from ccws-24.brunel.ac.uk (134.83.176.30) to 192.35.246.17
+
+Is it possible for you to upload to a more mainstream ftp place?

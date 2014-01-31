@@ -1,0 +1,88 @@
+From: grady@netcom.com (1016/2EF221)
+Subject: Declassifying media
+Organization: capriccioso
+X-Newsreader: TIN [version 1.1 PL6]
+Lines: 82
+
+There are many Urban Legends (maybe this ought to be in the Crypt 
+FAQ?) about what is actually sufficient to clear or declassify 
+magnetic media when used for classified data.  Here is some 
+information "from the horse's mouth".
+
+(Regarding the sufficient overwriting of media ("clearing") meant to 
+be *retained* within the controlled environment, or declassifying 
+the material to be reused *outside* the controlled environment,)
+
+From National Telecommunications and Information Systems 
+Security (NTISS) "Advisory Memorandum on Office Automation 
+Security Guidelines"  (NTISSAM COMPUSEC/1/87):
+
+------
+
+"7.6.2.1 Clearing of Magnetic Media
+
+Certain types of removable media (e.g., magnetic tape, floppy disk, 
+cassettes, and magnetic cards) may be cleared by overwriting the 
+entire media one time with any one character.  Floppy disks may be 
+cleared by applying a vendor's formatting program that overwrites 
+each location with a given character.
+
+Fixed media (e.g., Winchester disks) should be cleared by overwriting 
+at least one time with any one character.  One way to do this is by 
+applying a vendor-supplied formatting program that overwrites each 
+location on the disk with a given character, if it can be shown that 
+this program actually works as advertised.  The user should beware: 
+some programs that purport to overwrite all locations do not 
+actually do this.
+
+Cleared media may be resides within the controlled facility or 
+released for destruction; however, they should be marked and 
+controlled at the level of the most restrictive sensitivity of 
+information ever recorded.
+
+7.6.2.2 Declassification of Magnetic Media
+
+Certain types of removable media can be declassified using a 
+degaussing device that has been approved for declassifying media of 
+that type.  (A list of approved devices is maintained by the NSA.)
+
+If a fixed medium (for example, a hard, or Winchester, disk) is 
+operative, an approved method of declassifying the disk pack is to 
+employ an overwrite procedure which must overwrite all 
+addressable locations at least three times by writing any character, 
+then its complement (e.g., binary ones and binary zeros) 
+alternatively.
+
+When fixed  media become inoperative, it is impossible to declassify 
+the media by the overwrite method.  In this case, there are two 
+alternate procedures that may be used: (1) disassemble the disk 
+pack, and degauss each platter with the appropriate approved 
+degaussing equipment; and (2) courier the inoperative media to the 
+vendor's facility, have the magnetic media (e.g., disk platter) 
+removed in sight of the courier and returned to the courier for 
+destruction at the secure site.  The vendor can then install new 
+platters and repair any other problems with the disk unit.
+
+7.6.3 Destruction of Magnetic Media"
+
+[see DoD Computer Security Center, "Department of Defense Magnetic 
+Remanence Security Guideline", CSC-STD-003-85  FOR OFFICIAL USE 
+ONLY]
+
+------
+
+This and many other interesting documents (many that are more 
+informative than probably intended) on computer security procedures 
+can be obtained (free) from:
+
+Executive Secretary
+National Telecommunications and Informations
+  Systems Security Committee
+National Security Agency
+Fort George G. Meade, MD  20755-6000
+
+Write them!  It's fun to be on the NSA's mailing list... 
+
+-- 
+grady@netcom.com  2EF221 / 15 E2 AD D3 D1 C6 F3 FC  58 AC F7 3D 4F 01 1E 2F
+

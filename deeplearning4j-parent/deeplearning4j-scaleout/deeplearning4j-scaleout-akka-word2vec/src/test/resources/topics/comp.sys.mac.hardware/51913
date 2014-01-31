@@ -1,0 +1,29 @@
+From: bauer@informatik.uni-ulm.de (Christian Bauer)
+Subject: Re: Q700 at 34.5MHz, it's fine...
+Nntp-Posting-Host: christian.informatik.uni-ulm.de
+Organization: University of Ulm
+Lines: 23
+
+In article <lee5.734735026@husc.harvard.edu>, lee5@husc8.harvard.edu
+(Patrick Lee) wrote:
+> 
+> menes@Informatik.TU-Muenchen.DE (Rainer Menes) writes:
+> 
+> 
+> >I wonder why nobody has ever tried to replace the oscilator only, like on a Mac IIsi. As I understand the Newer Variable Speed Overdrive is only hardware, and alittle init which is use to adjust the speed. My idear is to replace the cristal oscilator wit
+> h a socket and than I can change the oscilator very easy. This will be alot cheaper the the Newer Variable Speed Overdrive. I would gues only 20$ to 50$ are need to do the upgrade. 
+> 
+> >Does someone on the net ever tried this variant of speeding up the quadra 700??
+In the May issue of C't Magazine was an article about upgrading 040 models
+of apple. They simply change crystals and add a fan.
+Hammerhead: Centris 610 was able to work with 25 MHz (cooler prefered)
+            and for 1000 DM you get an 68040 (33MHz) which works with the
+            appropriate crystal at full speed. (extra cooling required)    
+            Centris 650 like Quadra 700 with extra cooling 33MHz works on
+            most machines and for real power enthusiasts they used a
+            Quadra 950 at 40 MHz wow! But for better description you should
+            get this issue of C't (a german PC magazine!) 
+
+Christian Bauer
+
+bauer@informatik.uni-ulm.de

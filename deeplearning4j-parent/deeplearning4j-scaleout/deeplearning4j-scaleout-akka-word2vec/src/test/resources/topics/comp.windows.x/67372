@@ -1,0 +1,34 @@
+From: darcym@fpddet4.mentorg.com (Darcy McCallum)
+Subject: Keyboard mapping and window placement questions
+Nntp-Posting-Host: fpddet4.mentorg.com
+Organization: mentor
+Keywords: 
+Lines: 27
+
+These are two common subjects so I hope someone has had to deal with these
+specific questions.
+
+1.  If my application depends on modifiers, what is the best lookup method?
+My choices are to call XGetModifierMapping() for each key press with a 
+modifier, or make the call once at the init of the app and store the modifiers
+in a lookup table.  I would like to do it the second way, but I can't seem to
+get the notify when the user uses xmodmap to remap the modifiers.  I know that
+when an app calls XSetModifierMapping() a MappingNotify event is generated
+(non-maskable) which I can pick up and modify my internal table.  But, I don't
+seem to get any notify events when the user uses xmodmap.  If I use Xt, all 
+O'Reilly has to say is '...is automatically handled by Xt...'.  If I use Xlib, ala XNextEvent(), I get nothing.  This all stems from problems with users of 
+the Sun 4/5 keyboard and the NumLock; plus various Alt/Meta/etc. modifier 
+requirements.
+
+2.  I would like to place a popup so that it will be to the immediate right
+of my main window.  I want it at the same y coord, and their right/left
+sides touching.  What I need to ask for is the x,y coord of the window 
+manager's border for the main window.  This should ring a bell with anyone
+who has called XtMoveWidget(), immediately checking the x,y after the move
+and seeing that it is right, and in their next callback asking for the x,y
+and seeing that it is now offset by the WM border.
+
+Any help would be most appreciated.
+
+Darcy
+darcy_mccallum@mentorg.com

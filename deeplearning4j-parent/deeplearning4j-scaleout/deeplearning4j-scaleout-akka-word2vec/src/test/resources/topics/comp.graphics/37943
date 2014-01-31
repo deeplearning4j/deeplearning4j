@@ -1,0 +1,27 @@
+From: srp@travis.csd.harris.com (Stephen Pietrowicz)
+Subject: Surface normal orientations
+Article-I.D.: travis.1pscti$aqe
+Organization: Harris CSD, Ft. Lauderdale, FL
+Lines: 20
+NNTP-Posting-Host: travis.csd.harris.com
+
+Some rendering programs require that all surface normals point in the same
+direction.  (ie: On a closed cube, all normals point outwards).  You can use
+the points on the faces to determine the direction of the normal, by making
+sure that all points are either in clockwise or counter-clockwise order.
+
+How do you go about orienting all normals in the same direction, given a 
+set of points, edges and faces?   Say that you had a cube with all faces that 
+have their normals facing outwards, except for one face.  What's the
+best way to realize that face is "flipped", and should have it's points
+re-ordered?   I thought I had a good way of telling this, but then realized
+that the algorithm I had would only tell you if you had points in clockwise
+order for a 2d polygon.  I'd like something for 3d data.
+
+Any hints, tips, references would be appreciated.
+
+Steve
+-- 
+Where humor is concerned there are no standards -- no one can say what is good 
+or bad, although you can be sure that everyone will.  -- John Kenneth Galbraith
+------- These opinions are my own.

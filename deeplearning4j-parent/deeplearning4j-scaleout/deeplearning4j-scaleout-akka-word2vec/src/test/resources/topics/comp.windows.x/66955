@@ -1,0 +1,18 @@
+From: mouse@thunder.mcrcim.mcgill.edu (der Mouse)
+Subject: Re: Available memory to the Xserver. How to get the actual size?
+Organization: McGill Research Centre for Intelligent Machines
+Lines: 14
+
+In article <1965@igd.fhg.de>, pfuetz@igd.fhg.de (Matthias Pfuetzner) writes:
+
+> Is there a possibility to determine via X protocol calls the size of
+> free memory available to the Xserver?
+
+No.  Even if you could, the answer could be out of date even before you
+get it (even if you grab the server, it could be taken up by buffering
+user actions).  You should just try to do whatever you want; a BadAlloc
+error is your indication that insufficient server memory is available.
+
+					der Mouse
+
+				mouse@mcrcim.mcgill.edu

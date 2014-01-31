@@ -1,0 +1,95 @@
+From: caronni@nessie.cs.id.ethz.ch (Germano Caronni)
+Subject: Some Questions (was: REVISED SUMMARY)
+Organization: Swiss Federal Institute of Technology (ETH), Zurich, CH
+Lines: 90
+
+
+
+> Here is a revised version of my summary that corrects some errors and
+> provides some additional information and explanation.
+
+Thank you very much. After reading the text some distinct questions
+arised to me, which I guess will also be asked by other people. Perhaps
+would it be interesting to find an answer to these questions ?
+
+
+>                      THE CLIPPER CHIP: A TECHNICAL SUMMARY
+>    N, a 30-bit serial number (this length is subject to change)
+
+shorter or longer ?
+
+> Once the session key K is established, the Clipper Chip is used to
+> encrypt the conversation or message stream M (digitized voice).  The
+> telephone security device feeds K and M into the chip to produce two
+> values:
+
+>    E[M; K], the encrypted message stream, and
+>    E[E[K; U] + N; F], a law enforcement field ,
+
+> which are transmitted over the telephone line.  The law enforcement
+> field thus contains the session key K encrypted under the unit key U
+> concatenated with the serial number N, all encrypted under the family
+> key F.  The law enforcement field is decrypted by law enforcement after
+> an authorized wiretap has been installed.
+
+First question: When will the LawEnforcmentField be transmitted, and how
+does the remote Clipper Chip handle it? Is it transmitted periodically
+in the stream of encrypted blocks, or just at the beginning ? Does the
+phone at the other side discard those packets via a protocol whatsoever,
+or tries it to turn them into voice-output ? (Which would not be disturbing)
+
+
+> At the beginning of a session, a trusted agent from each of the two key
+> escrow agencies enters the vault.  Agent 1 enters a secret, random
+> 80-bit value S1 into the laptop and agent 2 enters a secret, random
+> 80-bit value S2. These random values serve as seeds to generate unit
+> keys for a sequence of serial numbers.  Thus, the unit keys are a
+> function of 160 secret, random bits, where each agent knows only 80.
+
+Second question: Why!?!? Why is such a strange procedure used, and not
+a real RNG ? This turns those S1,S2 in a kind of bottleneck for system-
+security.
+
+
+> When law enforcement has been authorized to tap an encrypted line, they
+> will first take the warrant to the service provider in order to get
+> access to the communications line.  Let us assume that the tap is in
+> place and that they have determined that the line is encrypted with the
+> Clipper Chip.  The law enforcement field is first decrypted with the
+> family key F, giving E[K; U] + N.  Documentation certifying that a tap
+> has been authorized for the party associated with serial number N is
+> then sent (e.g., via secure FAX) to each of the key escrow agents, who
+> return (e.g., also via secure FAX) U1 and U2.  U1 and U2 are XORed
+> together to produce the unit key U, and E[K; U] is decrypted to get the
+> session key K.  Finally the message stream is decrypted.  All this will
+> be accomplished through a special black box decoder.
+
+So no (technical) provision will be taken to place a 'timeout' on these
+warrants? This would be a unique possibility to realize such a technical
+restriction, by letting the escrow-agencies perform the decoding of the
+session key. Just take modem-lines instead of secure fax. Is this such
+a bad idea ?
+
+
+> A successor to the Clipper Chip, called "Capstone" by the government
+> and "MYK-80" by Mykotronx, has already been developed.  It will include
+> the Skipjack algorithm, the Digital Signature Standard (DSS), the
+> Secure Hash Algorithm (SHA), a method of key exchange, a fast
+> exponentiator, and a randomizer.  A prototoype will be available for
+> testing on April 22, and the chips are expected to be ready for
+> delivery in June or July.
+
+Wow! (How does the randomizer work?) Are the SHA (and Key exchange) secret,
+or publicly known ? Key-Exchange is DH, I guess ?
+
+It seems that those who are opposed to this chip shall have a tough time,
+your government realy means to act. :-(
+
+Friendly greetings,
+	   Germano Caronni
+
+-- 
+Instruments register only through things they're designed to register.
+Space still contains infinite unknowns.
+                                                              PGP-Key-ID:341027
+Germano Caronni caronni@nessie.cs.id.ethz.ch   FD560CCF586F3DA747EA3C94DD01720F

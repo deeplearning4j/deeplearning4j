@@ -13,6 +13,7 @@ import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.contrib.pattern.DistributedPubSubMediator.SubscribeAck;
 import akka.japi.Creator;
 
 public class BatchActor extends UntypedActor {
@@ -32,7 +33,10 @@ public class BatchActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if(message instanceof ResetMessage) {
+		if(message instanceof DistributedPubSubMediator.SubscribeAck) {
+			log.info("Susbcribed");
+		}
+		else if(message instanceof ResetMessage) {
 			iter.reset();
 			numTimesReset++;
 		}
@@ -43,7 +47,7 @@ public class BatchActor extends UntypedActor {
 		}
 		else if(iter.hasNext()) {
 			//start the pipeline
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					iter.next()), mediator);
 
 		}

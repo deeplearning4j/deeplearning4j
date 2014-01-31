@@ -1,0 +1,28 @@
+From: iak@cs.joensuu.fi (Ismo K{rkk{inen)
+Subject: Re: Wallpaper in Windows 3.1
+Organization: University of Joensuu
+Lines: 23
+
+louray@seas.gwu.edu (Michael Panayiotakis) writes:
+>>Is there any utility available that will make Windows
+>>randomly select one of your windows directory's .BMP
+>>files as the wallpaper file?
+
+>There are a couple.  I am personally using screenpeace, which is a
+
+If you need just to change the wallpaper, then I've written a short
+program in VB that does this by using SystemParametersInfo-function.
+The bad news is that you need VBRUN200.DLL to run it, and the DLL is
+some 350kb (the program is about 7kb). The order of pictures depends
+on the system date and the number of BMP-files in the directory, so
+the picture remains the same if you execute the program multiple times
+during the same day and the number of BMPs has not changed.
+
+If you feel this is what you need then I could uuencode it and email
+it to you. (It is unavailable via ftp.)
+
+-- 
++--------------------------------------------------------------+
+| Ismo K{rkk{inen / 109740@joyl.joensuu.fi / iak@cs.joensuu.fi |
+|     Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn!      |
++--------------------------------------------------------------+

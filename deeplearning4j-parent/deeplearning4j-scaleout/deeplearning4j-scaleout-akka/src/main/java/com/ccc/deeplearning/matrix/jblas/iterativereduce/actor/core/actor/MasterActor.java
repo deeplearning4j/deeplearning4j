@@ -51,7 +51,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected int epochsComplete;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	public static String BROADCAST = "broadcast";
-	public static String RESULT = "result";
+	public static String MASTER = "result";
 	public static String SHUTDOWN = "shutdown";
 
 	//number of batches over time
@@ -69,7 +69,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
 
-		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.RESULT, getSelf()), getSelf());
+		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		setup(conf);
 
 
@@ -298,7 +298,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 	public static String getRESULT() {
-		return RESULT;
+		return MASTER;
 	}
 
 

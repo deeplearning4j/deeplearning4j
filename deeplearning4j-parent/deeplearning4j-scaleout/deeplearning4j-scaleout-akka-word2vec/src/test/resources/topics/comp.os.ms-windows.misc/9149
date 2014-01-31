@@ -1,0 +1,61 @@
+From: davidgl@microsoft.com (David Glenn)
+Subject: Re: ATM or Truetype-which to choose?
+Article-I.D.: microsof.1993Apr06.023730.5094
+Distribution: usa
+Organization: Microsoft Corp.
+Lines: 54
+
+In article <C4tDGt.Mqq@csn.org> rjn@teal.csn.org wrote:
+> csd25@keele.ac.uk (C.M. Yearsley) writes:
+> 
+> : I've just bought a PC which came with a bundle of Lotus stuff, including
+> : Adobe Type Manager version 1.15. As a newcomer to Windows, I'm
+> : confused about which I should be using, ATM or Truetype. 
+> 
+> If you are going to stay with ATM, be sure to upgrade to 2.5, which
+> replaces 2.0. Who knows how old 1.15 is.  2.5 is as fast as TT, and if
+> you disable the small screen fonts, ATM does better screen rendering at
+> the smaller point sizes.
+
+Not true! Both Type 1 and TT fonts can be of excellent quality and poor quality
+at any size. It all depends on the font's maker and the complexity of the glyphs
+related to the size and resolution at which they are viewed. Probably the reason
+for your opinion/experience that TT is inferior is because most TT fonts on the
+market today have been converted from Type 1 outlines to TT either by the font
+vendor or end-users using Fontographer or FontMonger instead of the TT fonts being
+hand-hinted to take advantage of the TT hinting language. At best these converted
+TT fonts will be on a par with the Type 1 font of its orgin.
+
+TrueType is a much richer and more robust hinting language than Type 1 (the hinting
+of diagonals for instance, which TT does and Type 1 cannot). If you check out the
+Windows 3.1 core fonts (Times, Arial, Courier, Symbol, Wingdings) you'll see what can
+be done with TT. There are other fonts out there that have been hand-hinted and not
+just converted. Some of the Microsoft TT Font Pack 2 fonts are hinted very well.
+
+> You can use both TT and ATM fonts at the same time, if you like.
+> ATM (Type 1) fonts tend to be of higher quality
+> and be more complete in terms of foreign characters.
+
+Again, not true. The characters in a TT or Type 1 font depend on the maker. If someone
+converts a Type 1 font to TT they'll only get the characters in the font of orgin. TT
+allows for much more flexibility in this area as well. You can have thousands of glyphs
+in a TT font file (Mac/PS/Windows/Unicode char set) and use the characters appropriate
+for the particular platform you are running the font on. For instance, all or our fontpack
+2 TT fonts have the Mac/Windows char set in them. The metrics of the fonts are such that
+if the font is brought over to the mac the user will have access to the full mac char set.
+
+
+> Regards,                                            1001-A East Harmony Road
+> Bob Niland                                          Suite 503
+> Internet:  rjn@csn.org                              Fort Collins CO 80525
+> CompuServe: 71044,2124                              (303) 223-5209
+
+Hope this clears up some of the confusion. Feel free to contact me if anyone would like
+more info.
+
+Regards,
+
+Dave Glenn
+Program Manager, Microsoft TT font stuff
+davidgl@microsoft.com
+compuserve: 72420,1067

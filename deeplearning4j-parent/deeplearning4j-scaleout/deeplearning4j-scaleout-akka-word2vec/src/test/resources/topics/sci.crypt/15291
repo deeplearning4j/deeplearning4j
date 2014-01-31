@@ -1,0 +1,20 @@
+From: smb@research.att.com (Steven Bellovin)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Organization: AT&T Bell Laboratories
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Lines: 14
+
+In article <1qp9d1$e37@dorothy.ibmpcug.co.uk>, gtoal@news.ibmpcug.co.uk (Graham Toal) writes:
+> Try reading between the lines David - there are *strong* hints in there
+> that they're angling for NREN next, and the only conceivable meaning of
+> applying this particular technology to a computer network is that they
+> intend it to be used in exclusion to any other means of encryption.
+
+Umm...  I beg to differ with the phrase ``only conceivable meaning''.
+The SDNS protocols, for example, make explicit provision for multiple
+encryption systems, as does PEM.  (And I'd love to see how they'd
+mandate this new system for PEM without disclosing it....)
+
+Mind you, I'm not saying that multiple algorithms will actually be
+used -- but the relevant technologies certainly provide for them, which
+certainly casts doubt on your choice of words.

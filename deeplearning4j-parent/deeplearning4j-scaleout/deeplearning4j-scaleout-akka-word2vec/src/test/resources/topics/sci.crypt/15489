@@ -1,0 +1,53 @@
+From: wcs@anchor.ho.att.com (Bill Stewart +1-908-949-0705)
+Subject: Re: Fifth Amendment and Passwords
+Organization: Brought to you by the numbers 2, 3, and 7
+In-Reply-To: pmetzger@snark.shearson.com's message of Tue, 20 Apr 1993 11:21:34 GMT
+	<1993Apr19.180049.20572@qualcomm.com>
+	<1qv83m$5i2@geraldo.cc.utexas.edu>
+	<1993Apr20.000359.20098@bernina.ethz.ch>
+	<PMETZGER.93Apr20062134@snark.shearson.com>
+Nntp-Posting-Host: rainier.ho.att.com
+Lines: 42
+
+   In article <1993Apr20.000359.20098@bernina.ethz.ch> caronni@nessie.cs.id.ethz.ch (Germano Caronni) writes:
+      Just a question. 
+      As a provider of a public BBS service - aren't you bound by law to gurantee
+      intelligble access to the data of the users on the BBS, if police comes
+      with sufficent authorisation ? I guessed this would be  a basic condition
+      for such systems. (I did run a bbs some time ago, but that was in Switzerland)
+
+The US doesn't yet have many laws covering BBSs - they're not common carriers,
+they're not phone companies, they're just private machines or services
+operated by businesses.  There's no obligation to keep records.
+As Perry Metzger points out, if the police come with a search warrant,
+you have to let them see what the warrant demands, if it exists,
+and they generally can confiscate the equipment as "evidence"
+(which is not Constitutionally valid, but we're only beginning to
+develop court cases supporting us).  A court MAY be able to compel
+you to tell them information you know, such as the encryption password
+for the disk - there aren't any definitive cases yet, since it's a new
+situation, and there probably aren't laws specifically covering it.
+But the court can't force you to *know* the keys, and there are no
+laws preventing you from allowing your users to have their own keys
+for their own files without giving them to you.
+
+Even in areas that do have established law, there is uncertainty.
+There was a guy in Idaho a few years ago who had his business records
+subpoenaed as evidence for taxes or some other business-restriction law,
+so he gave the court the records.  Which were in Hebrew.
+The US doesn't have laws forcing you to keep your records in English,
+and these were the originals of the records.  HE didn't speak Hebrew,
+and neither did anybody in the court organization.  Don't think they
+were able to do much about it.
+
+It might be illegal for your BBS to deny access to potential customers
+based on race, religion, national origin, gender, or sexual preference;
+it probably hasn't been tested in court, but it seems like a plausible
+extension of anti-discrimination laws affecting other businesses.
+
+
+--
+#				Pray for peace;      Bill
+# Bill Stewart 1-908-949-0705 wcs@anchor.att.com AT&T Bell Labs 4M312 Holmdel NJ
+#	              No, I'm *from* New Jersey, I only *work* in cyberspace....
+# White House Commect Line 1-202-456-1111  fax 1-202-456-2461

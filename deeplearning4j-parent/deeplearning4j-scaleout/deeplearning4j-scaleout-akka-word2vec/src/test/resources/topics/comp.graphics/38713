@@ -1,0 +1,11 @@
+From: thomas@ramsey.cs.laurentian.ca (F. Thomas)
+Subject: print graph on printer
+Organization: Dept. of Computer Science, Laurentian University, Sudbury, ON
+Lines: 6
+
+This seems to be a simple problem but I just cannot solve it.
+I wrote a C program to draw some polygons on the screen, and I want to 
+print it on my printer. So, I press "print-screen" on the keyboard.
+The problem is the printer just print out some ASCII characters.
+Is there any other way to print the screen without using "print-screen"????
+Please help!

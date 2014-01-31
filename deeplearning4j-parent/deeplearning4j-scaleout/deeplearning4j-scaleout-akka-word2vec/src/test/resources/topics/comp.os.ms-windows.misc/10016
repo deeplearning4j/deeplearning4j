@@ -1,0 +1,52 @@
+Subject: Is SMARTDRV.EXE causing bad sectors on my hd?
+From: jdriver@netlink.cts.com (John Driver)
+Organization: NetLink Online Communications, San Diego CA
+Lines: 47
+
+        I am having something very unusual happen.  First 
+some background on my system.  I have a Mitsubishi 63 meg Hard Drive, 
+and am running Smartdrv (the version that comes with Windows 3.1) on 
+it.  I rarely use Windows.  I use a program called Disk Technician 
+Gold v1.14 to do diagnostics live time on my hard drive.  It works by 
+having a device driver detect whenever more than one read is 
+necessary for a file, or if there is anything else is wrong with it, 
+and minor problems are fully checked out upon rebooting.  My hard 
+drive is notorious for bad sectors.  I usually end up with 8 new bad 
+sectors a week.
+ 
+        Here's what happened:  I ran a program, and DTG broke in with 
+an Emergency Warning and recommended I reboot.  It gave me this 
+message twice before the program was fully loaded.  I exited the program 
+and did just this.  DTG went through its bootup process, examining 
+for new errors etc., and a screen popped up and said something about 
+sectors for a brief period of time.
+ 
+        I then went back to the program, executed it again, and the 
+exact same error was detected.  I rebooted and tried again, and the 
+same error happened again.  So, I removed DTG from memory, and went 
+to the program to see if I could detect anything wrong.  Sure enough 
+there was a number of read attempts.  So I rebooted and reloaded DTG, 
+but removed the cache.  I executed the program.  No read errors, 
+either audible or detected by DTG.  I quit the program, loaded the 
+cache, and ran the program again.  The errors were detected.
+ 
+        Ok, so the errors are there, and DTG detects but doesn't fix 
+them, when the cache is loaded.  When the cache is not loaded there are 
+no errors.  So, to see if the cache was interfering with any other 
+files, I went into xtree gold and tagged all files, and searched them 
+for a random string (in other words, I wanted the program to 
+completely read every file on my hard drive).  Before I got through 
+the c's DTG had detected at least six errors and recommended I reboot.
+ 
+        Does anybody, have any idea why Smartdrv is causing misreads on 
+my hard drive?  Oh, there are exactly two misreads per file, and 1 in 
+about every 100 files are affected.  
+ 
+        I originally posted this message to Disk Technician Corp.'s 
+system, but I figured someone out in netland may know enough about 
+smartdrv to help me out.
+
+--                    
+INTERNET:  jdriver@netlink.cts.com (John Driver)
+UUCP:   ...!ryptyde!netlink!jdriver
+NetLink Online Communications * Public Access in San Diego, CA (619) 453-1115

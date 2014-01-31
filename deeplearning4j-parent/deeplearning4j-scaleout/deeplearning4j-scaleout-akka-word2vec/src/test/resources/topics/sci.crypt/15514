@@ -1,0 +1,33 @@
+From: smb@research.att.com (Steven Bellovin)
+Subject: Re: Off the shelf cheap DES keyseach machine (Was: Re: Corporate acceptance of the wiretap chip)
+Organization: AT&T Bell Laboratories
+Lines: 28
+
+In article <1993Apr20.150531.2059@magnus.acs.ohio-state.edu>, jebright@magnus.acs.ohio-state.edu (James R Ebright) writes:
+> Now why is that?  I doubt there is a trapdoor in Skipjack.  (But we will
+> never know).  And I doubt the NSA would promote a mass market chip they
+> couldn't compromise.  Ergo, NSA is now capable of compromising (probably
+> with brute force keysearch) engines of the complexity of Skipjack.  Look
+> at the specs.  Why, I bet they have thousands of little chips chugging
+> away in their crypto busters... Maybe even tens of thousands.  Complexity?
+> Not much more than a 3090.  How many such machines will fit into Fort Meade?
+
+> I think PGP2.3 should have 256 bit IDEA keys...
+
+Thousands?  Tens of thousands?  Do some arithmetic, please...  Skipjack
+has 2^80 possible keys.  Let's assume a brute-force engine like that
+hypothesized for DES:  1 microsecond per trial, 1 million chips.  That's
+10^12 trials per second, or about 38,000 years for 2^80 trials.  Well,
+maybe they can get chips running at one trial per nanosecond, and build
+a machine with 10 million chips.  Sure -- only 3.8 years for each solution.
+
+IDEA uses 128-bit keys.  Shall I bother doing the calculations for you?
+Hint:  multiply 3.8 years by 2^(128-80).  And you can't do IDEA at that
+speed; key setup takes much too long.  I wouldn't be surprised if that
+were the case for Skipjack, too, though there's no way of knowing just
+yet.  DES used only xor because that's what was feasible with mid-70's
+technology.  Modern chips can do a lot more.
+
+NSA may or may not know how to crack Skipjack and IDEA (I doubt it for
+the former; I have no idea for the latter, though it does seem to be a
+strong cryptosystem).  But it ain't gonna be by exhaustive search.

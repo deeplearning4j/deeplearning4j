@@ -1,0 +1,94 @@
+From: dp@cec1.wustl.edu (David Prutchi)
+Subject: Re: Long distance IR detection
+Nntp-Posting-Host: cec1
+Organization: Washington University, St. Louis MO
+Lines: 88
+
+In article <1993Apr20.183416.18744@dres.dnd.ca> sburton@dres.dnd.ca (Stan Burton) writes:
+>
+>--
+>
+>I would like to be able to detect the angular position (low accuracy) of an
+>IR emitting source at a distance of about 100 meters (more is better) in
+>daylight.  The IR source could be emitting a signature; I'm leaning toward
+>30 KHz square wave with 50% duty cycle.
+>
+>I am considering the use of a quadrant detector from Centronic Inc. to give
+>information to a pan/tilt head to point the sensor and thus determine the
+>angles.  For the source I am considering wazing the heck out of an IR LED(s),
+>possibly an Optek OP290 or Motorola MLED81.  Wazing would mean at least 1 Amp
+>current pulses.  At this current the duty cycle of the LED drops to 10% and I
+>would need to cycle five of them in turn to get the 50% required.
+>
+>Has anyone done something like this?
+>
+>Stan Burton (DND/CRAD/DRES/DTD/MSS/AGCG)                 sburton@dres.dnd.ca
+>(403) 544-4737     DRE Suffield, Box 4000, Medicine Hat, AB, Canada, T1A 8K6
+
+A method which will directly (almost) provide you with the information that
+you require is that which is commonly used for coordinate measurements of 
+human body landmarks (eg. the SELSPOT system by SELSPOT AB, Sweden, and the
+WATSMART System ??).  These use lateral photoeffect detectors [Lindholm and
+Oberg, 1974; Woltring and Marsolais, 1980] to determine the position of a
+spot of light projected (using a camera lens) over its surface.  In escence,
+the detector is a large photodiode with four cathodes (one on each of the
+four sides of the square detector crystal) and a single anode (the back of
+the crystal).  A spot of light will produce currents which are proportional
+to the position of the spot on the detector's face.  Let's try some ASCII
+graphics in 2-D (so the detector has two cathodes to detect linear position)
+
+
+
+              -------------------------> 1
+             |                       |
+             |                       |       |\
+           -----   cathode 1         |       |  \
+           XXXXX                     ________| +  \
+           XXXXX|                            |      \        -------
+    light >XXXXX|                            |        \_____ divider __ output
+           XXXXX|     |                      |        /      -------
+           XXXXX|-----| |--                  |      /           |
+           XXXXX|   + |    |         ________| -  /           1 + 2
+           XXXXX|         --- gnd    |       |  /
+           XXXXX|         \ /        |       |/
+           XXXXX| anode              |
+           XXXXX                     |
+           ----- cathode 2           |
+             |                       |
+             |                       |
+             --------------------------> 2
+
+If the dot of light from the LED is the ONLY source of light, then the position
+of the projection is given by this circuit regardless of the level of illumina-
+tion (the divider is used to normalize relative to total received power).  When
+this circuit is used in the presence of other sources of light, then the way of
+"tuning" to it is to sample for a few msec the background signal, light the LED
+for an equal time and sample that signal separately.  The difference between
+the two is the position of the LED.
+
+Hamamatsu photonics sells linear and 2-D lateral photoeffect detectors, and
+they also sell the required signal processing electronics.  The ready-made
+systems by SELSPOT and others are NOT cheap ... 
+
+Lindholm, L.E., and K.E. Oberg, "An Optoelectronic Instrument for Remote
+On-Line Movement Monitoring", Biotelemetry, 1, 94-95, 1974.
+
+Woltring, H.J., and E.B. Marsolais, "Opto-Electronic (SELSPOT) Gait Measure-
+ments in Two and Three Dimensional Space - A Preliminary Report", Bull. Pros-
+thetics Research, 46-52, 1980.
+
+Most probably this technique can provide you with a much more accurate
+measurement than you need, but I think that its simplicity beats scanning
+a quadrant detector with a pan/tilt system until you reach zero difference.
+
+            - David
+
+
+
++------------------------------------------------------------+
+|  David Prutchi                 HC1DT                       |
+|  Washington University         <prutchi@mesun4.wustl.edu>  |
+|  Campus Box 1185               <dp@cec1.wustl.edu>         |
+|  One Brookings Drive                                       |
+|  St. Louis, MO  63130-4899                                 |
++------------------------------------------------------------+

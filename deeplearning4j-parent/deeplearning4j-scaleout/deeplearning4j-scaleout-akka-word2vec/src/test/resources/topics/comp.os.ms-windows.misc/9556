@@ -1,0 +1,44 @@
+Subject: Re: Cirrus Logic 5426 Graph Card
+From: gardner_a@kosmos.wcc.govt.nz (andy gardner)
+Reply-To: gardner_a@kosmos.wcc.govt.nz
+Organization: Wellington City Council (Public Access), Wgtn, Nz
+NNTP-Posting-Host: kosmos.wcc.govt.nz
+Lines: 37
+
+In article <1qms3c$37t@news.cs.tu-berlin.de>, wong@cs.tu-berlin.de (Wolfgang Jung) writes:
+>After setting up Windows for using my Cirrus Logic 5426 VLB GraphicsCard
+>It moved a normal Window from one place to another...
+
+>...What I was wondering why is it not using the BITBLT  Engine which
+>is suuposed to be on the Chip.
+
+>How are the experiences here..
+>Have I done something wrong ?
+
+The 5426 has its own set of drivers. You may be using the
+drivers intended for the 5420 or 5422 by mistake.
+
+Be sure you have the 5426 driver version 1.2
+
+>(I installed the MSWIN 3.1 MultiResolution drivers which where supplied 
+>with the Card ?!)
+
+Don't quote me on this one, but I'd steer clear of the
+multi resolution driver that allows you to change resolution
+without exiting Windows.  I think it's buggy.
+
+>Also if there are new(hopefully faster) drrivers around I would love to 
+>how to get hold of them :-) (ftp or whatsoever :-) )
+
+Version 1.3 drivers are due to be release by Cirrus soon.
+Unfortunately, their not available via FTP, you have to dial
+up their BBS in the USA.  I do this from NZ using a 14.4k modem
+to cut down on phone bills.  It took me around 7 minutes to 
+download the v1.2 driver.
+
+
+Good Luck,  
+
+Andy Gardner,
+Wellington, New Zealand
+Te Whanga-nui-a-Tara, Aotearoa

@@ -1,0 +1,35 @@
+From: kerr@ux1.cso.uiuc.edu (Stan Kerr)
+Subject: Re: Sigma Designs Double up??
+Article-I.D.: ux1.C52u8x.B62
+Organization: University of Illinois at Urbana
+Lines: 29
+
+jap10@po.CWRU.Edu (Joseph A. Pellettiere) writes:
+
+
+>	I am looking for any information about the Sigma Designs
+>	double up board.  All I can figure out is that it is a
+>	hardware compression board that works with AutoDoubler, but
+>	I am not sure about this.  Also how much would one cost?
+
+I've had the board for over a year, and it does work with Diskdoubler,
+but not with Autodoubler, due to a licensing problem with Stac Technologies,
+the owners of the board's compression technology. (I'm writing this
+from memory; I've lost the reference. Please correct me if I'm wrong.)
+
+Using the board, I've had problems with file icons being lost, but it's
+hard to say whether it's the board's fault or something else; however,
+if I decompress the troubled file and recompress it without the board,
+the icon usually reappears. Because of the above mentioned licensing
+problem, the freeware expansion utility DD Expand will not decompress
+a board-compressed file unless you have the board installed.
+
+Since Stac has its own product now, it seems unlikely that the holes
+in Autodoubler/Diskdoubler related to the board will be fixed.
+Which is sad, and makes me very reluctant to buy Stac's product since
+they're being so stinky. (But hey, that's competition.)
+-- 
+
+Stan Kerr    
+Computing & Communications Services Office, U of Illinois/Urbana
+Phone: 217-333-5217  Email: stankerr@uiuc.edu   

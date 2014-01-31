@@ -1,0 +1,28 @@
+From: gtoal@gtoal.com (Graham Toal)
+Subject: Re: Do we need the clipper for cheap security?
+Lines: 24
+
+	gtoal@gtoal.com (Graham Toal) writes:
+	>
+	>In the UK, it's impossible to get approval to attach any crypto device
+	>to the phone network.  (Anything that plugs in to our BT phone sockets
+	>must be approved - for some reason crypto devices just never are...)
+	>
+
+	Whats the difference between a V.32bis modem and a V.32bis modem?
+
+	I'm not being entirely silly here: what I'm pointing out is that the
+	modems that they have already approved for data transmission will work
+	just fine to transmit scrambled vocoded voice.
+
+Absolutely.  I just meant that no secure *dedicated* crypto device has
+ever been given approval.  Guerrilla underground devices should be well
+possible with today's high-speed modems (not that I can think of many v32bis
+modems that are approved either mind you - just the overpriced Couriers)
+
+Can someone tell me if hardware compression is or is not needed to run
+digital speech down 14.4K?  I think it is; I've heard it's not.  Lets
+say 8 bit samples.  Would *raw* data at the corresponding sampling rate
+be usable?  If not, how fancy does the compression need to be?
+
+G

@@ -1,0 +1,37 @@
+From: mveraart@fel.tno.nl (Mario Veraart)
+Subject: Re: Help: Importing .EPS files into Word 2.0
+Organization: TNO Physics and Electronics Laboratory
+Lines: 32
+
+jburke@abacus.bates.edu (jburke) writes:
+
+>I was wondering if anyone knew how to view a .EPS in Ms Word 2.0a..
+>Here are the first couple of lines if it helps...
+>%!PS-Adobe-3.0
+>%%Creator: ProWrite
+>%%Title: TCWN
+>%%Orientation: Portrait
+>%%Pages: 12
+>%%PageOrder: Ascend                                                    
+>Can any one Help?
+
+>________________________________________________________________________
+>|       James Burke       |  By reading this you agree not to hold     |
+>|                         |   the writer responsible for any evil      |
+>| jburke@abacus.bates.edu | happening that may befall you at any time. |
+>------------------------------------------------------------------------
+
+We had a similar problem in converting a .EPS file. The solution was simple.
+We changed the first line from %!PS-Adobe-3.0 to
+
+%!PS-Adobe-2.0
+
+This fouled the converter, the .EPS file only contained very simple 
+move and draw statements.
+
+Mario
+-- 
+Mario Veraart                  TNO Physics and Electronics Laboratory
+email: rioj7@fel.tno.nl        The Hague       The Netherlands
+"If all else fails, show pretty pictures and animated videos, 
+ and don't talk about performance",  David Bailey

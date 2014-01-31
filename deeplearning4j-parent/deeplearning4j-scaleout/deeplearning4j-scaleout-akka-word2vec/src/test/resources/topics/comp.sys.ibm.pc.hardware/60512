@@ -1,0 +1,28 @@
+From: wlsmith@valve.heart.rri.uwo.ca (Wayne Smith)
+Subject: Re: SCSI on dos
+Organization: The John P. Robarts Research Institute, London, Ontario
+Keywords: SCSI, DOS, streamer
+Nntp-Posting-Host: valve.heart.rri.uwo.ca
+Lines: 21
+
+In article <1993apr19.072253.14522@dde.dk> ibh@dde.dk (Ib Hojme) writes:
+>	I have a question concerning SCSI on DOS.
+>
+>	I have a ST01 SCSI controller and two hard-disks conected
+>	(id's 0 and 1). I'd like to connect a SCSI streamer, but I
+>	don't have software to access it. Does such a beast exist
+>	as shareware or PD ?
+>	Also what if I want a third disk ? I know that DOs only can
+>	"see" two two physical and four logical disks. Will it be
+>	possible to use extra disks ?
+
+Contrary to what others might have thought, I actually did have a SCSI drive
+once.  It was the Seagate 296N and the ST-02 controller.  I found that the
+controller couldn't keep up with a 1:1 interleave, so the best I could do
+with the drive was a 2:1 interleave and a data transfer of about 450 k/sec.
+
+I have had that drive/controller coexist with MFM, RLL, and IDE drives
+because the ST-02 bios will kinda muscle itself in there with no help
+needed from the computer's bios.  Dos will see many logical drives, much more
+than 4 (I've had up to 10).  I've often wondered how many SCSI drives you
+could hang off a ST-01/02.

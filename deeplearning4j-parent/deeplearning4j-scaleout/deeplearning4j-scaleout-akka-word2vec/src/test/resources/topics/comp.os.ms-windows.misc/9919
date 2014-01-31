@@ -1,0 +1,27 @@
+From: syshtg@gsusgi2.gsu.edu (Tom Gillman)
+Subject: Re: Please Refresh On Internet Access To CompuServe
+Organization: Georgia State University
+Lines: 22
+
+cheong@solomon.technet.sg (SCSTECH admin) writes:
+
+>Hi,
+
+>sometime ago there are some discussions on gaining CompuServe access thru
+>the Internet. But I seem to misplace those articles. Can someone please
+>refresh me where (which site) I can telnet to to gain access.
+
+>Hopefully I can download files as well.
+
+This should be in the FAQ, it only get asked about twenty times a month
+
+There is *NO*, that's right, *NO* telnet access to Compuserve, no ftp access,
+no gopher access....no Internet services except e-mail.
+
+You can telnet to hermes.merit.edu, but that routes you through Sprintnet,
+which is horrendously expensive. 
+-- 
+ Tom Gillman, Systems Programmer       | "AAAAAGGGGHHHH" 
+ Wells Computer Center-Ga. State Univ. |    -- Any "Classic" Star Trek Security
+ (404) 651-4503 syshtg@gsusgi2.gsu.edu |       officer sometime during the show
+ GSU doesn't care what I say on the Internet, why should you?

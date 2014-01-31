@@ -1,0 +1,30 @@
+From: carols@ohsu.edu (Carol Suelzle)
+Subject: Re: Windows 3.1 keeps crashing: Please HELP
+Article-I.D.: ohsu.1993Apr19.213505.2883
+Organization: Oregon Health Sciences University
+Lines: 23
+Nntp-Posting-Host: 137.53.130.7
+
+
+In article <1qur7h$qrl@access.digex.net> wild@access.digex.com (wildstrom) writes:
+>
+>
+>>In article <1993Apr16.155637.15398@oracle.us.oracle.com> ebosco@us.oracle.com (Eric Bosco) writes:
+>>>From: ebosco@us.oracle.com (Eric Bosco)
+>>>Subject: Windows 3.1 keeps crashing: Please HELP
+>>>Date: Fri, 16 Apr 1993 15:56:37 GMT
+>>>
+>>>As the subjects says, Windows 3.1 keeps crashing (givinh me GPF) on me of  
+>>>late.  It was never a very stable package, but now it seems to crash every  
+>>>day.  The worst part about it is that it does not crash consistently: ie I  
+>
+>There is a way in SYS.INI to turn off RAM parity checking (unfortunately,
+>my good Windows references are at home, but any standard Win reference
+>will tell you how to do it. If not, email back to me.) That weird memory
+>may be producing phony parity errors. Danger is, if you turn checkling off,
+>you run the slight risk of data corruption due to a missed real error.
+
+I had this very same problem, and did 'work around' by turning parity checking off, but that only
+worked while I was in windows, and the parity error would occur immediately after exiting
+windows, however,the problem turned out to be 3 chip simms vs 9 chip simms.  I can't use 3 chip simms in my 
+computer, and when I replaced them, the problem vanished, forever.

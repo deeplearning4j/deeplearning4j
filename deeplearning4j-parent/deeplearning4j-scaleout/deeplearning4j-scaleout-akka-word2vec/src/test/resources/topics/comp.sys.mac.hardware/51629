@@ -1,0 +1,42 @@
+From: jsm1@crux1.cit.cornell.edu (Jason S. MacDonald)
+Subject: Re: LC Ram Upgrade will be SLOW!
+Nntp-Posting-Host: crux1.cit.cornell.edu
+Reply-To: jsm1@cornell.edu
+Organization: Ono-Sendai Corporation
+Lines: 35
+
+douce@tfsquad.mn.org (Andrew Geweke) writes:
+>        I cannot speak for Dale. But I am quite sure that the Macintosh 
+>uses the full 16-bit or 32-bit data path to its full advantage. That is, 
+>it is running as fast with two or four 30-pin SIMMs as it would with one 
+>72-pin SIMM. Now, it may be that longword accesses (assuming a 32-bit 
+>data path here) get the first byte from the first SIMM, the second byte 
+>from the second, and so on. This would mean that each longword of memory 
+>is actually split among four SIMMs, one for each byte. On the other hand, 
+>it could be that the SIMMs are interleaved by word or longword (not just 
+>by byte), or they could be successive in memory, and the memory 
+>controller deals with the eight-bit data path that each one has. I 
+>suspect, though, that they are interleaved to some extent so that 32 bits 
+>can be read or written at once. This would indicate a byte-level 
+>interleave.
+>        I am NOT confusing this with the new machines' longword 
+>interleave with two 72-pin SIMMs of the same sort, although that seems to 
+>be the same sort of idea. There, you get an essential 64-bit data path ro 
+>(excuse me, to) RAM instead of just a 32-bit one. Yes, the CPU can't 
+>handle it, but when writing to successive addresses it speeds something 
+>up.
+>        So, Dale, am I right? 30-pin SIMMs are interleaved by bytes, 
+>allowing the full data bus? Or, as is common with Usenet and me in 
+>particular, am I as clueless as everyone else?
+
+What conclusion can be drawn from this?  I'm trying to figure out what kind
+of memory configuration for the LC III (32-bit datapath) would be fastest.  Any
+ideas?
+
+Thanks,
+Jason MacDonald
+--
+- Jason Scott MacDonald -      jsm1@cornell.edu - jsm1@crux3.cit.cornell.edu
+"Technology sufficiently advanced is        ____
+ indistinguishable from magic."             \  /      "Cats exist so that we
+                 -- Arthur C. Clarke         \/        may caress the lion."

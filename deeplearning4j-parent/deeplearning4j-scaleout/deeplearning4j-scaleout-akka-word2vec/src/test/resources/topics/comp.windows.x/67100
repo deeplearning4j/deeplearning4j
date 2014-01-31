@@ -1,0 +1,40 @@
+From: victor@hpfrcu03.FRance.hp.COM (Victor GATTEGNO FRENCH CRC)
+Subject: Re: High order bit of a character in xterm .
+Organization: The Internet
+Lines: 33
+To: kavitsky@hsi.com
+Cc: xpert@expo.lcs.mit.edu
+
+> 
+> Does anyone know why the high order bit is being filtered and what
+> I can do to make sure that the entire 8bits make it through to
+> the final application? Any help is greatly appreciated.
+> 
+
+1. You need these resources :
+	XTerm*EightBitInput:    true
+	XTerm*EightBitOutput:    true
+
+2. In the shell you need to do : 
+        stty cs8 -istrip 
+
+
+Good luck .
+Victor .
+
+                                                              |
+                                                              *
+                                                              X
+                                                              X
+                                                              X
+                                                              X
+______________________________________________________________X________
+                                                              X
+  Victor Gattegno     Email: victor@hpfrcu03.france.hp.com   XXX
+  Hewlett-Packard France   Hpdesk: HP8101/RC                X X X  
+  1, Avenue du Canada      Phone : 33-1-69-82-60-60        X  X  X 
+  91947 - Les Ulis Cedex   Telnet: 770-1141               X   X   X  
+
+ 
+
+

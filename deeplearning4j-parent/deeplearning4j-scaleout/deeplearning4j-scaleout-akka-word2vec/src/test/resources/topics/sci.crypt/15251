@@ -1,0 +1,103 @@
+From: crypt-comments@math.ncsu.edu
+Subject: Cryptography FAQ 02/10 - Net Etiquette
+Organization: The Crypt Cabal
+Lines: 92
+Expires: 22 May 1993 04:00:07 GMT
+Reply-To: crypt-comments@math.ncsu.edu
+NNTP-Posting-Host: pad-thai.aktis.com
+Summary: Part 2 of 10 of the sci.crypt FAQ, Net Etiquette.  Related
+ newsgroups, appropriate topics, how to introduce an encryption scheme.
+X-Last-Updated: 1993/04/16
+
+Archive-name: cryptography-faq/part02
+Last-modified: 1993/4/15
+
+
+FAQ for sci.crypt, part 2: Net Etiquette
+
+This is the second of ten parts of the sci.crypt FAQ. The parts are
+mostly independent, but you should read the first part before the rest.
+We don't have the time to send out missing parts by mail, so don't ask.
+Notes such as ``[KAH67]'' refer to the reference list in the last part.
+
+The sections of this FAQ are available via anonymous FTP to rtfm.mit.edu 
+as /pub/usenet/news.answers/cryptography-faq/part[xx].  The Cryptography 
+FAQ is posted to the newsgroups sci.crypt, sci.answers, and news.answers 
+every 21 days.
+
+
+Contents:
+
+* What groups are around? What's a FAQ? Who am I? Why am I here?
+* Do political discussions belong in sci.crypt?
+* How do I present a new encryption scheme in sci.crypt?
+
+
+* What groups are around? What's a FAQ? Who am I? Why am I here?
+
+  Read news.announce.newusers and news.answers for a few weeks. Always
+  make sure to read a newsgroup for some time before you post to it.
+  You'll be amazed how often the same question can be asked in the same
+  newsgroup. After a month you'll have a much better sense of what the
+  readers want to see.
+
+* Do political discussions belong in sci.crypt?
+
+  No. In fact some newsgroups (notably misc.legal.computing) were
+  created exactly so that political questions like ``Should RSA be
+  patented?'' don't get in the way of technical discussions. Many
+  sci.crypt readers also read misc.legal.computing, comp.org.eff.talk,
+  comp.patents, sci.math, comp.compression, et al.; for the benefit of
+  people who don't care about those other topics, try to put your
+  postings in the right group.
+
+  Questions about microfilm and smuggling and other non-cryptographic
+  ``spy stuff'' don't belong in sci.crypt either.
+
+* How do I present a new encryption scheme in sci.crypt?
+
+  ``I just came up with this neat method of encryption. Here's some
+  ciphertext: FHDSIJOYW^&%$*#@OGBUJHKFSYUIRE. Is it strong?'' Without a
+  doubt questions like this are the most annoying traffic on sci.crypt.
+
+  If you have come up with an encryption scheme, providing some
+  ciphertext from it is not adequate. Nobody has ever been impressed by
+  random gibberish. Any new algorithm should be secure even if the
+  opponent knows the full algorithm (including how any message key is
+  distributed) and only the private key is kept secret. There are some
+  systematic and unsystematic ways to take reasonably long ciphertexts
+  and decrypt them even without prior knowledge of the algorithm, but
+  this is a time-consuming and possibly fruitless exercise which most
+  sci.crypt readers won't bother with.
+
+  So what do you do if you have a new encryption scheme? First of all,
+  find out if it's really new. Look through this FAQ for references and
+  related methods. Familiarize yourself with the literature and the
+  introductory textbooks.
+
+  When you can appreciate how your cryptosystem fits into the world at
+  large, try to break it yourself! You shouldn't waste the time of tens
+  of thousands of readers asking a question which you could have easily
+  answered on your own.
+
+  If you really think your system is secure, and you want to get some
+  reassurance from experts, you might try posting full details of your
+  system, including working code and a solid theoretical explanation, to
+  sci.crypt. (Keep in mind that the export of cryptography is regulated
+  in some areas.)
+
+  If you're lucky an expert might take some interest in what you posted.
+  You can encourage this by offering cash rewards---for instance, noted
+  cryptographer Ralph Merkle is offering $1000 to anyone who can break
+  Snefru-4---but there are no guarantees. If you don't have enough
+  experience, then most likely any experts who look at your system will
+  be able to find a flaw. If this happens, it's your responsibility to
+  consider the flaw and learn from it, rather than just add one more
+  layer of complication and come back for another round.
+
+  A different way to get your cryptosystem reviewed is to have the NSA
+  look at it. A full discussion of this procedure is outside the scope
+  of this FAQ.
+
+  Among professionals, a common rule of thumb is that if you want to
+  design a cryptosystem, you have to have experience as a cryptanalyst.

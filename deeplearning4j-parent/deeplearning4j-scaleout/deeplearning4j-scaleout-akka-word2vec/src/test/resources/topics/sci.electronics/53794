@@ -1,0 +1,44 @@
+From: randall@informix.com (Randall Rhea)
+Subject: Re: Power, signal surges in home...
+Organization: Informix Software, Inc.
+Lines: 39
+
+gstovall@crchh67.NoSubdomain.NoDomain (Greg Stovall) writes:
+>Anyway, over the weekend, I was resting on the sofa (in between chores),
+>and noticed that I briefly picked up what sounded like ham radio traffic
+>over my stereo and television, even though both were off.  Also, all the
+>touch sensitive lights in my house start going wacko, cycling through 
+>their four brightness states.
+
+>I presume that some ham operator with an illegal amplifier drove past
+>my house (I live on a busy thoroughfare); would this be a correct presumption?
+>What kind of power must he be putting out to cause the effects?  
+>The affected equipment is about 100 feet from the road...
+
+Hams can legally run up to 1500 watts.  It is very unlikely, however,
+that a ham would be running that kind of power from a car.  Ham rigs
+for cars put out around 100 watts.  It is possible that a 100 watt
+radio would cause interference to consumer electronic 100 feet 
+away.  Most TVs, stereos, and VCRs have very poor RF shielding.
+If you experience the problem frequently, it may be 
+caused by a ham, CBer, or other radio operator in a base station
+nearby.    The interference may have been caused by a radio 
+transmitter used for other purposes, such as police, fire,
+etc.  If you heard voices over your stereo, I think you are
+correct in assuming that the source is an RF transmitter.
+
+If you have frequent trouble, you may want to try the RF ferrite
+chokes available at Radio Shack.  The interference is probably
+being picked up by your speaker wires, and those chokes can
+be installed on the wires very easily (without cutting them).
+Good instructions are included with the chokes.
+If that does not solve the problem, you may want to search your
+neighborhood for a radio operator.  Look for antennas on the roof
+or car.  Talk to him/her about your problem.  There are things
+a radio operator can do to reduce interference.
+
+-- 
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Randall Rhea                                        Informix Software, Inc. 
+Project Manager, MIS Sales/Marketing Systems    uunet!pyramid!infmx!randall

@@ -1,0 +1,33 @@
+From: phantom@diku.dk (Haktan Bulut)
+Subject: Is 980-1MB/sec. HD transfer slow for 486DX-50 EISA with UltraStor24F
+Keywords: SCSI
+Organization: Department of Computer Science, U of Copenhagen
+Lines: 27
+
+Hi. I recently switched my old Amiga 500 with a 486DX-50. My computer
+configuration is :
+
+486DX-50 Mhz. 8/256 kB EISA (Micronics Motherboard ASIC EISA 50Mhz)
+16MB Ram
+ST3283N 248 MB Harddisk, SCSI
+UltraStor24F EISA Cache Controller
+
+When I use Norton6.0 Harddisk benchmark, I get a Harddisk data transfer
+about 980 kb/sec. and sometimes 1MB/sec. Is that good ? I thought
+that with EISA I could get about 2MB/sec. 
+Somewhere in the manual for my harddisk I have read, that some host 
+adapters need to perform a low-level format to optimize the harddisk 
+performance in that system, do I need that ?
+A guy I know, gets a HD transfer about 1.2MB/sec, and he has an ST3283A and
+a ISA 486DX-50, how can a ISA with the same system be faster ?
+
+Is there anything that I can do to get a speedier harddisk ?
+
+
+                                        Thanks.
+
+phantom@diku.dk   (e-mail is preffered)
+
+
+
+Working on a sign...... "Are we live or on tape ??"

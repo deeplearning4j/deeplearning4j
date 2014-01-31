@@ -1,0 +1,51 @@
+From: toml@blade.Boulder.ParcPlace.COM (Tom LaStrange)
+Subject: Re: Forcing a window manager to accept specific coordinates for a window
+Reply-To: toml@boulder.ParcPlace.COM
+Organization: ParcPlace Boulder
+Lines: 45
+
+In article <1r5l8g$bub@wsinfo03.win.tue.nl>, rcb5@wsinfo03.win.tue.nl (Richard Verhoeven) writes:
+|> bading@cs.tu-berlin.de (Tobias 'Doping' Bading) writes:
+|> > 
+|> > try this after XCreateWindow:
+|> > -----------------------------
+|> > ...
+|> >
+|> >   xsizehints->flags = USPosition | USSize;	/* or = PPosition | PSize */
+|> >   ...
+|> >   XSetWMNormalHints (display, window, xsizehints);
+|> >   ...
+|> >
+|> > These hints tell the window manager that the position and size of the window
+|> > are specified by the users and that the window manager should accept these
+|> > values. If you use xsizehints->flags = PPosition | PSize, this tells the window
+|> > manager that the values are prefered values of the program, not the user.
+|> > I don't know a window manager that doesn't place the window like you prefer
+|> > if you specify the position and size like above.
+|> 
+|> Sorry, but olwm and tvtwm don't do it. They place the title at that position
+|> and the window at a position below it.
+
+The reason they place their outside corner at the location you requested
+is because that's what the ICCCM says they should do.
+
+|> This becomes a problem when you want a program to be able to save its current
+|> configuration and restore is later.
+|> 
+|> Currently, my solution is:
+|> 
+|> 	XCreateWindow(...);
+|> 	XSetWMProperties(..);
+|> 	XMapWindow(...);
+|> 	XFlush(...);
+|> 	XMoveWindow(...);
+
+This code will almost certainly break.  Calling XMapWindow and then
+XFlush does not guarantee that the window is visible and managed by the
+window manager.  Even if this did work, there isn't a reliable way to
+find out how much decoration the window manager placed around your
+window, so you don't know how far to move it.  And what if the window
+manager refuses to move your window?
+
+--
+Tom LaStrange        toml@boulder.ParcPlace.COM

@@ -1,0 +1,19 @@
+From: wstuartj@lucky.ecn.purdue.edu (W Stuart Jones)
+Subject: Adding VRAM to Quadra 800 ?
+Summary: How many 512k VRAM simms do I need to add to the Quadra 800?
+Keywords: VRAM Quadra 800
+Organization: Purdue University Engineering Computer Network
+Lines: 12
+
+I want to go from 512K to 1M VRAM on my Quadra 800.  How many 512K SIMMS do I
+need to buy?  Is the current 512K soldered on the board or do I need to take
+out the current VRAM before I add more?
+
+Thanks,
+
+Wesley Stuart Jones
+--
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Wesley Stuart Jones         jonesw@res.wes.mot.com               	%%
+%%                              wstuartj@ecn.purdue.edu                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

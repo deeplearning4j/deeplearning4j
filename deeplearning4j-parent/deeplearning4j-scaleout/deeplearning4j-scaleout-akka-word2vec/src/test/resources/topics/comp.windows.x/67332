@@ -1,0 +1,29 @@
+From: hughm@brwal.inmos.co.uk (Hugh McIntyre)
+Subject: Sun3/60 + X11R5 -> undeletable console messages.
+Keywords: sun sun3 X11R5 console
+Organization: INMOS Limited, Bristol, UK
+Lines: 23
+
+We have an old Sun3/60 here which gets occasional use.  When X11R5 is started
+on it any console messages during startup are undeletable.  After X is fully
+started we run an xterm as the "console" - the problem is that any messages
+that arrive before this starts go to the plain console.  "Refresh window" fails
+to remove them.  The messages are a real pain since they sit in the middle of
+the screen obscuring anything else below them.
+
+At boot time the 3/60 lists two framebuffers  -  /dev/cgfour0 and /dev/bwtwo1.
+We're running X in color, and I suspect that maybe the offending messages are
+on the B/W framebuffer, and thereby not getting deleted.
+
+My question is: has anyone else seen this, and is there an easy way to get rid
+of these messages?
+
+Please reply by e-mail to hughm@inmos.co.uk.
+
+Hugh McIntyre.
+INMOS Ltd., Bristol, UK.
+
+(BTW: SunOS 4.0.3, X11R5, mwm).
+
+PS: I know I can redirect output of the relevant commands to /dev/null - I'm
+    looking for a more general solution).

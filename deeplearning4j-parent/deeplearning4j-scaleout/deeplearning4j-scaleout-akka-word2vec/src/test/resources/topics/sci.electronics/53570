@@ -1,0 +1,34 @@
+From: smckinty@sunicnc.France.Sun.COM (Steve McKinty - SunConnect ICNC)
+Subject: Re: What do Nuclear Site's Cooling Towers do?
+Organization: SunConnect
+Lines: 26
+Distribution: world
+NNTP-Posting-Host: hardy.france.sun.com
+Keywords: Nuclear
+
+In article <1qlg9o$d7q@sequoia.ccsd.uts.EDU.AU>, swalker@uts.EDU.AU (-s87271077-s.walker-man-50-) writes:
+> 
+> 
+> I really don't know where to post this question so I figured that
+> this board would be most appropriate.
+> I was wondering about those massive concrete cylinders that
+> are ever present at nuclear poer sites. They look like cylinders
+> that have been pinched in the middle. Does anybody know what the
+> actual purpose of those things are?. I hear that they're called
+> 'Cooling Towers' but what the heck do they cool?
+
+Water. Nuclear stations don't generate electricity directly from the
+reactor, they use the reactor to generate heat. The heat is then used to
+heat water just as in a conventional oil or coal station, and the
+resultant steam drives the turbines.
+
+The cooling towers are used to cool the steam and recondense it into water
+to continue the cycle
+
+Steve
+
+-- 
+Steve McKinty
+Sun Microsystems ICNC
+38240 Meylan, France
+email: smckinty@france.sun.com	   BIX: smckinty

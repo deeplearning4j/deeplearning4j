@@ -1,0 +1,25 @@
+From: neil@stone.oz.au (Neil Watkinson)
+Subject: COM3 COM4 is there a hardware standard ?
+Organization: Stone Microsystems, NSW, Australia
+Keywords: COM3 COM4
+Lines: 19
+
+Help....
+
+I need to implement COM3 and COM4 on a board that I'm designing and I'm
+finding it dificult to track down a definition (hardware that is) of COM3
+and COM4.
+
+I have the IO adresses and the fact that COM3 shares IRQ4 with COM1 and COM4
+shares IRQ3 with COM2, except exactly how this IRQ sharing is done is not
+clear especially if the existing COM1/2 does not allow IRQ sharing. Does the
+standard??? allow for a different IRQ to be used and if so how.
+
+Please answer by email to :-
+
+      neil@stone.oz.au
+
+thanks in advance
+
+Neil Watkinson.
+

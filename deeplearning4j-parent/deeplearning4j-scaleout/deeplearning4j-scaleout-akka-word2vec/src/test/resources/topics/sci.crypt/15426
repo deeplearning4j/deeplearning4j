@@ -1,0 +1,125 @@
+From: caronni@nessie.cs.id.ethz.ch (Germano Caronni)
+Subject: Re: More technical details
+Organization: Swiss Federal Institute of Technology (ETH), Zurich, CH
+Lines: 120
+
+Hmm, followup on my own posting... Well, who cares.
+
+First let me try to work out the facts that we get to know about the
+Clipper-Chip, from what Hellman and Denning were able to tell us:
+
+The chip itself is not confined to (digital) telephony, but performs
+general encryption in a symmetric manner.  The chip supports CFB OFB
+ECB (and whatever the fourth mode of operation for DES is), the algorithm
+consists of 32 rounds of *whatever*, and takes 80-Bit keys. Input data
+seems to be 64 Bit? Yes.
+So if two people want secure communication (whatever that means when 
+Clipper is involved) they have first to agree on ONE secret key. 
+(Or is it one key per direction ?)
+They can exchange this key via DH-schemes or however.
+Somehow the two feed their so won secret key into the Clipper-chip
+which is now ready to work.
+The clipper chip carries an unique Serial-Number (30 Bit's), and 160 Key-Bits.
+These 160 key-bits seem to have been gained by encrypting the serial-number
+with 160 seed-bits. (The seed-bits seem not to be stored in the chip)
+At beginning of communication (and perhaps at certain invtervals whithin??)
+before sending the fist real 64-bit output of the first encryption the Clipper
+chip put's out packets (I guess 3) which represent the serial number,
+and the session key. This might look like
+X{ E[K; chipkeyK1+K2], serial number}
+where X is a transformation of these 3? Packets involving a family-key.
+This family(sp?)-key is equal for ALL chips. (X might be a simple XOR ???)
+After that, the (digital?) phone-call can be done as usual, every packet
+being encrypted and decrypted by Clipper.
+
+Denning describes how K1 and K2 shall be generated, using a seed of 160
+Bit's.
+
+Now, leaving alone politics, which does not concern me as much as you, not
+being an American Citicien(tm) [ :-) ] , there are some weak points in this
+scheme, which might be exploited by several parties.
+
+As far as I know about the generation of K1,K2 ; S1 and S2 look like the 
+obvious backdoor. They could be used to generate the chip-keys by knowing
+the serial-number (and also the family-key) of the chip. I really can't
+imagine why these seeds would be needed otherwise, as true random-sources
+for the generation of the K1,K2 can be bought for not to much money.
+
+Then, the escrows. Each of them will get 80 bit of a 160-Bit key. Security
+could (as little as existant) be maximized by giving them 160-bits
+each, which have to be xored together to give the K1,K2. Now let's simply
+assume the escrows are trustworthy, and can't be fooled by criminals or
+law enforchemnt agencies. (And there will be no quarrel between escrows
+and l.e.a which would hinder the l.e.a in doing their duties, and so on
+and so on) Once the keys are surrendered, the corresponding
+chip is compromised forever. Not very clever, IMHO [ :-)) ].
+How about sending in the encrypted session-keys for each phone-call that
+the police (or whoever) want's to listen to? Escrows could then simply decode
+this session-key and send it back to police. (And would naturally not do this
+after the warrant has expired...) This would be a better technical solution,
+but I guess politics will not work that way.
+
+Apparently (as Miss Dennings stated) the only one performing actually decodes
+of intercepted messages shall be the FBI. Great. So local guys can not inter-
+cept (understand) your traffic anymore. Does this mean that the FBI monopolizes
+the right to do legal wiretaps ? (How is law over there, I have no idea who
+is allowed to tap, and who not) This certainly means that watched communi-
+cations will be routed automatically from the service-providing company
+to the FBI, if the communicaiton is a watched one. And this means as far
+as I understand it that the family-key has to be known by each switching-
+company, and those providing cellular-phone servies etcetc. So the family-key
+will not be very secret, and thus serial-numbers of calls will be readable
+by anybody who cares. I _like_ traffic-analysis!
+
+What do you guess, what happens, if you use the chip in ECB mode, and the
+first few packets of the chip are somehow lost or garbled? So the session
+key would not be actually broadcasted over the line? Hmmm. Shouldn't be so
+difficult to do *that* :^)
+
+And now a last point, for the other side. After all I have read and heard about
+Clipper (not the programming language for dBase, is it ? [:-)]) it seems
+to have many advantages, which shold not be overseen!
+
+
+Now an afterthought to your rights. Please note that I have no idea what I am
+talking about!!!
+
+From: grady@netcom.com (1016/2EF221)
+>    Amendment 1                                                           
+>                                                                          
+>    Congress shall make no law respecting an establishment of religion, or
+>prohibiting the free exercise thereof; or abridging the freedom of speech,
+>or of the press; or the right of the people peaceably to assemble, and to 
+>petition the Government for a redress of grievances.
+
+If this text is actually in your Bill of Rights, who can overrule this ?
+But: 'Freedom of speech' is not 'Secrecy of speech'
+
+Maybe you need to extend your Amendment #4  to cover information and
+communication too ?
+
+I am not very sure in what position your government actually is *legally*
+when it tries to ban cryptography (and arms) Amendment say you may have them,
+but not under what conditions. Hmm, tricky situation :-(
+
+Actually it will make not much sense to discuss that topic in sci.crypt...
+Discussion of technical details and vulnerabilites of the system are highly
+suggested and appreciated :-)
+
+Friendly greetings,
+
+	Germano Caronni
+
+
+DISCLAIMER: Everything in here is derived from things I heard and read from
+other persons, so everything could be wrong. All opinions and thoughts in here
+are mine, and subject to change without further notification. No warranty,
+neither implicit not explicit etc. etc. etc. ad nauseam.
+
+p.s. Please don't ask me about political opinions, as I might not bother to re-
+     ply. (For further information read the last line of P. Metzgers signature)
+-- 
+Instruments register only through things they're designed to register.
+Space still contains infinite unknowns.
+                                                              PGP-Key-ID:341027
+Germano Caronni caronni@nessie.cs.id.ethz.ch   FD560CCF586F3DA747EA3C94DD01720F

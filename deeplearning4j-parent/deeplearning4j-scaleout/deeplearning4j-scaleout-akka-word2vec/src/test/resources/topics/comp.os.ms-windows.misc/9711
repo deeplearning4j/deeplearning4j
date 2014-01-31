@@ -1,0 +1,43 @@
+From: msbendts@mtu.edu (BENDTSEN)
+Subject: Re: Utility for updating Win.ini and system.ini
+Organization: Michigan Technological University
+X-Newsreader: Tin 1.1 PL4
+Lines: 37
+
+sp@odin.fna.no (Svein Pedersen) writes:
+: Sorry, I did`nt tell exactly what I need.
+: 
+: I need a utility for automatic updating (deleting, adding, changing) of *.ini files for Windows. 
+: The program should run from Dos batchfile or the program run a script under Windows.
+: 
+: I will use the utility for updating the win.ini (and other files) on meny PC`s.  
+: 
+: Do I find it on any FTP host?
+: 
+:  Svein
+
+Well, in the latest Windows magazine, there is an advertisement for a program
+that will help you uninstall windows apps from your harddisk (Uninstaller)
+but it can be used to update a network, but only for deleting, not adding
+or changing their *.ini files.  (Uninstaller, by MicroHelp Inc.  $79
+1-800-922-3383)
+
+I am also looking for an *.ini updater for my PC network, and so far without
+any luck.  So for the time being I have been pushing DOS and it's batch
+language to its limit...look into DOS 5.0's (I am assumming that DOS 6.0
+has the same command, maybe even more..or less..improved) REPLACE command.
+I use this to update our users personal files with a master set in a batch
+file that is run everytime they invoke Windows.  This basically overwrites
+their color schemes, but does what I need it to do.  Not neat, but does
+the job...I'm looking for a better solution though.
+
+Mike
+
+Just relaying what I know...a not for profit service.
+
+
+-- 
+___________________________________________________________________________
+  Mike Bendtsen                    (msbendts @ mtu.edu)
+   740 Elm St.  Apt#4        CCLI Senior Technical Consultant
+   Hancock, MI  49930        Michigan Technological University

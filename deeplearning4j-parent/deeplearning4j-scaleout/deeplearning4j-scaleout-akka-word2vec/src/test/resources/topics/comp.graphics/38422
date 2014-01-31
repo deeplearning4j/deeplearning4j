@@ -1,0 +1,30 @@
+From: watson@madvax.uwa.oz.au (David Watson)
+Subject: Re: Sphere from 4 points?
+Organization: Maths Dept UWA
+Lines: 23
+Distribution: world
+NNTP-Posting-Host: xanthorrhoea.maths.uwa.edu.au
+
+In article <1qkgbuINNs9n@shelley.u.washington.edu>, 
+bolson@carson.u.washington.edu (Edward Bolson) writes:
+ 
+|> Given 4 points (non coplanar), how does one find the sphere, that is,
+|> center and radius, exactly fitting those points?  
+
+Finding the circumcenter of a tetrahedron is discussed on page 33 in
+
+CONTOURING: A guide to the analysis and display of spatial data,
+by Dave Watson, Pergamon Press,  1992, ISBN 0 08 040286 0, 321p.
+
+Each pair of tetrahedral vertices define a plane which is a 
+perpendicular bisector of the line between that pair.  Express each
+plane in the form Ax + By + Cz = D
+and solve the set of simultaneous equations from any three of those
+planes that have a vertex in common (all vertices are used).  
+The solution is the circumcenter.
+
+-- 
+Dave Watson                          Internet: watson@maths.uwa.edu.au
+Department of Mathematics            
+The University of Western Australia               Tel: (61 9) 380 3359
+Nedlands, WA 6009  Australia.                     FAX: (61 9) 380 1028

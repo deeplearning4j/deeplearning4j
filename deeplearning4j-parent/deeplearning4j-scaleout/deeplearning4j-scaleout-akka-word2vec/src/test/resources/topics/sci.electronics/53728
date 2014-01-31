@@ -1,0 +1,31 @@
+From: agodwin@acorn.co.uk (Adrian Godwin)
+Subject: Re: Single chip receiver for FSK?
+Organization: Acorn Computers Ltd, Cambridge, UK
+Lines: 26
+
+In article <C5L0xM.E25@law7.DaytonOH.NCR.COM> jra@law7.DaytonOH.NCR.COM (John Ackermann x 2966) writes:
+
+>My goal is to come up with an inexpensive design for a receiver "back
+>end" with IF input on one end and an FSK demondulator on the other.  I'm
+>particularly interested in ways to use a higher IF than 10.7 -- do any
+>current chips work up to, say 150MHz with internal downconversion so a
+>normal IF filter can be used?
+>
+
+GEC/Plessey specify a series of FM demodulators (SL1454 etc) for use in
+satellite TV receivers : 150 or 600MHz in, 10MHz of baseband video out.
+I think there's also a related data slicer / clock recovery circuit intended
+for use in DMAC decoders, though that isn't used in the most common 
+implementation - it may not be in volume production.
+
+The most easily available components probably vary with local satellite
+standards, and I think the european systems vary rather widely from those
+in the US - so it may be worth investigating locally-available receiver
+designs to find out what's in common use.
+
+-adrian
+
+
+-- 
+Adrian Godwin : agodwin@acorn.co.uk : adrian@fangorn.demon.co.uk : g7hwn@gb7khw
+ObDisclaimer  : I believe this rubbish .. don't imagine that anyone else does.

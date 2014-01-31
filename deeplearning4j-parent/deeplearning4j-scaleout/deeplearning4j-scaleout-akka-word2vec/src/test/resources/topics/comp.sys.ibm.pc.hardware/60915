@@ -1,0 +1,20 @@
+From: hendersond@iccgcc.decnet.ab.com (Doug Henderson)
+Subject: Kaypro 286 jumper settings
+Lines: 16
+
+I received a Kaypro 286i computer (DOS) without a manual that 
+describes the jumpers on the motherboard.  It came with
+640KB and I up'd it to 1MB.  But the computer or setup does not
+recognize the extra 384K. 
+
+Does anyone know if this computer is capable of greater than 640K
+on the main board and what jumpers are required to expand it to 1MB?
+
+Some specs:
+	Kaypro main board assy number 81-621
+	Phoenix BIOS v1.51 1985
+
+Thanks in advance,
+Doug
+ 
+

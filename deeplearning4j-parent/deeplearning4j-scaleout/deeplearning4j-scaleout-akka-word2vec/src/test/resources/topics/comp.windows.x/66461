@@ -1,0 +1,28 @@
+From: ngai@nova.bellcore.com (John Ngai)
+Subject: How to disable reverse video on xterm/man
+Nntp-Posting-Host: nova.bellcore.com
+Organization: Bellcore
+Lines: 22
+
+Well I am not sure if this is the right newsgroup to ask, but let me try anyway.
+I am running xterm and like all UNIX users, I run man <something>. Recently,
+I switched to Solaris 2.1, and their man pages are littered with ".I" directives
+that are somehow translated into reverse video when displayed by man under xterm.
+The resulting output (admittedly a personal taste) is very ANNOYING to look at.
+Back when I was using SunOS 4.1.2, I remember their man pages have some keywords
+displayed with underlining....
+
+So my question is how do I change the xterm's behaviour under ".I" directives 
+for nroff man pages, to perhaps underlining, or at least disabling it. (".B" 
+directives are fine, I like them. And of course, I don't want to go in and edit
+the man pages inputs...) Somehow, xterm allows one to specify both a normal font
+and a bold font, but not an italic font??
+
+Any pointers, suggestions are greatly appreciated.
+Thanks -- John
+
+P.S. Running xterm -rv won't work, I tried...
+
+
+
+
