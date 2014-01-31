@@ -62,7 +62,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private String type = "master";
 	private Address masterAddress;
 	private DataSetIterator iter;
-	
+
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
@@ -158,10 +158,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 			if(iter == null)
 				throw new IllegalStateException("Unable to initialize no dataset to train");
-			
+
 			masterAddress  = startBackend(null,"master",conf,iter);
-			
-			
+
+
 			//wait for start
 			try {
 				Thread.sleep(5000);
@@ -169,7 +169,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				Thread.currentThread().interrupt();
 			}
 
-			
+
 			system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
 
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
@@ -194,9 +194,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 
 			startWorker(masterAddress,c);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					this), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					epochs), mediator);
 			log.info("Setup master with epochs " + epochs);
 		}
@@ -226,7 +226,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 			log.info("Setup worker nodes");
 		}
-		
+
 		writeMasterAddress();
 	}
 
@@ -246,9 +246,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		}
 		f.deleteOnExit();
 
-	
+
 	}
-	
+
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		this.samples = list;
 		log.info("Publishing to results for training");
@@ -260,17 +260,21 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		}
 
 		//ensure the trainer is known so the next iteration can happen
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				this), mediator);
 		//start the pipeline
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);
 
-		
+
 	}
 
 
 
+	public void train() {
+		if(iter.hasNext())
+			train(iter.next());
+	}
 
 	public void train(Pair<DoubleMatrix,DoubleMatrix> input) {
 		train(new ArrayList<>(Arrays.asList(input)));
@@ -283,7 +287,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		train(new Pair<DoubleMatrix,DoubleMatrix>(input,labels));
 	}
 
-	
+
 	@Override
 	public void epochComplete(UpdateableImpl result) {
 		currEpochs++;
@@ -300,7 +304,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 			log.info("Starting next epoch");
 
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					samples), mediator);
 
 		}
@@ -317,7 +321,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	}
 
 
-	
+
 	@Override
 	public void finish() {
 
@@ -326,7 +330,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	public Address getMasterAddress() {
 		return masterAddress;
 	}
-	
-	
+
+
 
 }

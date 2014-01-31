@@ -1,0 +1,28 @@
+From: dbryant@leconte.Eng.Sun.COM (David Bryant)
+Subject: Re: GUI toolkit for the Sun Sparc.
+Reply-To: dbryant@leconte.Eng.Sun.COM
+Organization: Sun Microsystems, Inc.
+Lines: 21
+NNTP-Posting-Host: leconte
+
+In article C4M@cuug.ab.ca, winsorr@sun (Robin Winsor 233-4670) writes:
+
+>You are right to be going Motif rather than OpenLook.  Sun has just recently
+>seen the light and dumped their commitment to OpenLook.  In the announcement
+>they stated they have no future plans for DevGuide.
+
+This is incorrect.  Sun has made no such claim regarding Devguide, and as 
+manager of the Devguide engineering group I can state with authority that
+work on Devguide is continuing apace.  We had quite a strong show of interest
+from the Devguide user community at last week's Solaris Developer's Conference.
+Devguide is being advocated not only as a valuable future builder tool, but
+as an important bit of transition technology that will help sustain current
+customers and facilitate their migration to the COSE Desktop Environment.
+
+If you have specific questions about Devguide availability, etc., you can 
+contact Tali Aben, our Devguide Product Marketing person, at (415) 336-3536.
+
+	David Bryant
+	Devguide Manager
+	SunSoft
+ 

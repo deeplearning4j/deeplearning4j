@@ -1,0 +1,14 @@
+From: montuno@physics.su.OZ.AU (Lino Montuno)
+Subject: CPU Temperature vs CPU Activity ?
+Nntp-Posting-Host: physics.su.oz.au
+Organization: School of Physics, University of Sydney, Australia
+Lines: 8
+
+This may be a very naive question but is there any basis for the
+claim that a CPU will get hotter when a computationally intensive 
+job is running? My friend claims that there will be little difference
+in the temperature of an idle CPU and a CPU running a computationally
+intensive job.
+
+
+Lino Montuno

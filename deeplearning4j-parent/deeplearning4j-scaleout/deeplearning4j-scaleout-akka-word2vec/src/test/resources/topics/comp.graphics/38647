@@ -1,0 +1,28 @@
+From: raymaker@bcm.tmc.edu (Mark Raymaker)
+Subject: graphics driver standards
+Organization: Baylor College of Medicine, Houston, Tx
+Lines: 21
+NNTP-Posting-Host: bcm.tmc.edu
+Keywords: graphics,standards
+
+I have a researcher who collecting electical impulses from
+the human heart through a complex Analog to Digital system
+he has designed and inputting this information into his EISA
+bus HP Vectra Computer running DOS and the Phar Lap DOS extender. 
+
+He want to purchase a very high-performance video card for
+3-D modeling. He is aware of a company called Matrox but
+he is concerned about getting married to a company and their
+video routine library. He would hope some more flexibility:
+to choose between several card manufacturers with a standard
+video driver. He would like to write more generic code- 
+code that could be easily moved to other cards or computer operating
+systems in the future. Is there any hope?
+Any information would be greatly appreciated-
+Please, if possible, respond directly to internet mail 
+to raymaker@bcm.tmc.edu
+
+Thanks
+
+
+

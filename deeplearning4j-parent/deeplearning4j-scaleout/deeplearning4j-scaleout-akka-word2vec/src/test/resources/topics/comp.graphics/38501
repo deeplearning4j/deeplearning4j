@@ -1,0 +1,19 @@
+From: max@slinky.NYU.EDU (David Max)
+Subject: 24bit mode on Speedstar 24X
+Summary: Routines for 24 bit color on Speedstar 24X?
+Keywords: Diamond Speedstar 24X 24bit 16.7
+Organization: New York University
+Lines: 12
+
+
+   I have a Diamond Speedstar 24X board that I want to program
+for 24 bit 640x480 graphics, or possibly 800x600 16 bit color.
+Does anybody have any libraries supporting these modes on this
+board? Even somes simple routines to set the graphics mode and
+plot individual pixels would be a great help. I plan to use the
+routines with djgp.
+
+   Thanks in advance. Please respond also via e-mail.
+
+   David Max
+   max@slinky.cs.nyu.edu

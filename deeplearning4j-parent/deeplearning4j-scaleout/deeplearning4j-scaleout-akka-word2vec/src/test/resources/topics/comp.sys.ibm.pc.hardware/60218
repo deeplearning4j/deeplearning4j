@@ -1,0 +1,20 @@
+From: erzberg@ifi.unizh.ch (Martin Erzberger)
+Subject: Re: Monitor for XGA
+News-Software: IBM OS/2 PM RN (NR/2) v0.16 by O. Vishnepolsky and R. Rogers
+Lines: 12
+Nntp-Posting-Host: sangria
+Reply-To: erzberg@ifi.unizh.ch (Martin Erzberger)
+Organization: University of Zurich, Department of Computer Science
+
+In <1993Apr15.211053.35792@watson.ibm.com> kaul@vnet.ibm.com writes:
+>my home Viewsonic 6.  I like the Multisyncs because it's easy to run them
+>in modes like 800x600x64k colors noninterlaced, or at higher modes like
+>1360x1024x16.
+Oh yeah! I just got my new Eizo Flexscan yesterday (to replace my old 8515), and
+I tried it with 1360x1024. This mode is just great! I can get four perfectly readable
+command windows on the screen! And if I need more colors, I can go back to 1024x768
+or even 800x600.
+One thing I am wondering though: Why isn't there a MONxxxx.DGS file which contains
+ALL the resolutions up to 1360x1024? Now I have to change the XGASETUP.PRO every
+time I want to switch, instead of simply going through the system settings of OS/2.
+Regards, Martin Erzberger

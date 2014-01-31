@@ -1,0 +1,43 @@
+From: tcmay@netcom.com (Timothy C. May)
+Subject: Re: The source of that announcement
+Organization: NETCOM On-line Communication Services (408 241-9760 guest)
+X-Newsreader: Tin 1.1 PL5
+Lines: 37
+
+Marc Horowitz N1NZU (marc@mit.edu) wrote:
+: The message from the NIST about the clipper chip comes from the
+: following address:
+: 
+: 	clipper@csrc.ncsl.nist.gov (Clipper Chip Announcement)
+: 
+: Just who is that, I asked myself, or rather, I asked the computer.
+: 
+:     % telnet csrc.ncsl.nist.gov 25
+...list of name elided for brevity......
+: 
+: Well, isn't that interesting.  Dorothy Denning, Mitch Kapor, Marc
+: Rotenberg, Ron Rivest, Jim Bidzos, and others.  The Government, RSA,
+: TIS, CPSR, and the EFF are all represented.  I don't suppose anybody
+: within any of these organizations would care to comment?  Or is this
+: just the White House's idea of a cruel joke on these peoples' inboxes?
+
+I know that at least one person on that list says the first he heard
+of Clipper was in the Friday morning newspaper! And another has
+already fired off a letter of protest to NIST.
+
+My point? I suspect this list, interesting as it is for various
+reasons, does not represent the cabal that put this proposal together.
+Some of them, yes. Others, no. 
+
+This may be nothing more than a mailing list of people who get
+crypto-related announcements from NSA, er, I mean "NIST."
+
+-Tim May
+-- 
+..........................................................................
+Timothy C. May         | Crypto Anarchy: encryption, digital money,  
+tcmay@netcom.com       | anonymous networks, digital pseudonyms, zero
+408-688-5409           | knowledge, reputations, information markets, 
+W.A.S.T.E.: Aptos, CA  | black markets, collapse of governments.
+Higher Power: 2^756839 | Public Key: PGP and MailSafe available.
+

@@ -1,0 +1,22 @@
+From: rank@winf.uni-passau.de (Christian Rank)
+Subject: Xsun not running on SPARCclassic
+Organization: Lehrstuhl fuer Wirtschaftsinformatik - Universitaet Passau
+Lines: 15
+Distribution: world
+NNTP-Posting-Host: jupiter.winf.uni-passau.de
+
+I've installed X11R5 with patches for Solaris 2.1 on our SPARCstation LX /
+SPARCclassic pool. On the LX, X11R5 runs fine, but on the classics,
+after giving the command startx, Xsun prints the following messages:
+	WARNING: cg3_mmap: can't map dummy space!
+	Mapping cg3c: No such device or address
+and exits.
+
+Does anybody know how to fix this problem?
+
+Thanks in advance.
+
+---
+Christian Rank
+Lehrstuhl fuer Wirtschaftsinformatik * Universitaet Passau *
+Innstr. 29 * D-8390 Passau

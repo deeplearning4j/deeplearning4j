@@ -1,0 +1,11 @@
+From: Rob Earhart <earhart+@CMU.EDU>
+Subject: Re: Q: How to avoid XOpenDisplay hang?
+Organization: Sophomore, Physics, Carnegie Mellon, Pittsburgh, PA
+Lines: 4
+NNTP-Posting-Host: po4.andrew.cmu.edu
+In-Reply-To: <C512xr.3oy@skates.gsfc.nasa.gov>
+
+  Don't know how to avoid the XOpenDisplay hang... but perhaps you could
+use something else (such as zephyr, perhaps)?
+
+  )Rob

@@ -1,0 +1,1141 @@
+From: ninassup@athena.mit.edu (Nikos I Nassuphis)
+Subject: LGA ncrypt source
+Organization: Massachusetts Institute of Technology
+Lines: 1135
+NNTP-Posting-Host: w20-575-104.mit.edu
+
+I got a number of requests for code.
+So, here it is.
+Its written in 80x86 ASM. 
+Borland TASM will do.
+
+TASM LGA.ASM
+TLINK /t LGA.ASM
+
+
+The code:
+
+;----------------------------------------------------------------------
+; LGA ncryption
+; (C) by Nick Nassuphis
+;----------------------------------------------------------------------
+
+CODE	SEGMENT
+	ASSUME	CS:CODE, DS:CODE
+	
+	ORG	100h
+
+Start:
+	JMP	Begin
+
+;----------------------------------------------------------------------
+;
+; Gas particle assigment:
+;
+; BIT 0    particle moving EAST
+; BIT 1    particle moving WEST
+; BIT 2    particle moving NORTH
+; BIT 3    particle moving SOUTH
+;
+; BIT 4    particle moving EAST
+; BIT 5    particle moving WEST
+; BIT 6    particle moving NORTH
+; BIT 7    particle moving SOUTH
+;
+;
+; Collisiong Rules:
+;
+; 1. Gas Rules
+;
+; IF (E & W) AND !(N & S) THEN (E,W)->(N,S)
+; IF (N & S) AND !(E & W) THEN (N,S)->(E,W)
+;
+; for nibbles:
+;
+; 1100 -> 0011
+; 0011 -> 0011
+;
+; and for bytes:
+;
+; 11000000 -> 00110000
+; 00110000 -> 11000000
+; 00001100 -> 00000011
+; 00000011 -> 00001100
+; 00110011 -> 11001100
+; 00111100 -> 11000011
+; 11000011 -> 00111100
+; 11001100 -> 00110011
+;
+;
+; 2. Reflection Rules
+;
+; just swap bits along directions
+;
+;----------------------------------------------------------------------
+
+;
+; This look-up table implements two particle collisions
+; for the HPP lattice gas
+;
+HPPRule:
+DB   00000000B   ;00000000
+DB   00000001B   ;00000001
+DB   00000010B   ;00000010
+DB   00001100B   ;00000011
+DB   00000100B   ;00000100
+DB   00000101B   ;00000101
+DB   00000110B   ;00000110
+DB   00000111B   ;00000111
+DB   00001000B   ;00001000
+DB   00001001B   ;00001001
+DB   00001010B   ;00001010
+DB   00001011B   ;00001011
+DB   00000011B   ;00001100
+DB   00001101B   ;00001101
+DB   00001110B   ;00001110
+DB   00001111B   ;00001111
+DB   00010000B   ;00010000
+DB   00010001B   ;00010001
+DB   00010010B   ;00010010
+DB   00011100B   ;00010011
+DB   00010100B   ;00010100
+DB   00010101B   ;00010101
+DB   00010110B   ;00010110
+DB   00010111B   ;00010111
+DB   00011000B   ;00011000
+DB   00011001B   ;00011001
+DB   00011010B   ;00011010
+DB   00011011B   ;00011011
+DB   00010011B   ;00011100
+DB   00011101B   ;00011101
+DB   00011110B   ;00011110
+DB   00011111B   ;00011111
+DB   00100000B   ;00100000
+DB   00100001B   ;00100001
+DB   00100010B   ;00100010
+DB   00101100B   ;00100011
+DB   00100100B   ;00100100
+DB   00100101B   ;00100101
+DB   00100110B   ;00100110
+DB   00100111B   ;00100111
+DB   00101000B   ;00101000
+DB   00101001B   ;00101001
+DB   00101010B   ;00101010
+DB   00101011B   ;00101011
+DB   00100011B   ;00101100
+DB   00101101B   ;00101101
+DB   00101110B   ;00101110
+DB   00101111B   ;00101111
+DB   11000000B   ;00110000
+DB   11000001B   ;00110001
+DB   11000010B   ;00110010
+DB   11001100B   ;00110011
+DB   11000100B   ;00110100
+DB   11000101B   ;00110101
+DB   11000110B   ;00110110
+DB   11000111B   ;00110111
+DB   11001000B   ;00111000
+DB   11001001B   ;00111001
+DB   11001010B   ;00111010
+DB   11001011B   ;00111011
+DB   11000011B   ;00111100
+DB   11001101B   ;00111101
+DB   11001110B   ;00111110
+DB   11001111B   ;00111111
+DB   01000000B   ;01000000
+DB   01000001B   ;01000001
+DB   01000010B   ;01000010
+DB   01001100B   ;01000011
+DB   01000100B   ;01000100
+DB   01000101B   ;01000101
+DB   01000110B   ;01000110
+DB   01000111B   ;01000111
+DB   01001000B   ;01001000
+DB   01001001B   ;01001001
+DB   01001010B   ;01001010
+DB   01001011B   ;01001011
+DB   01000011B   ;01001100
+DB   01001101B   ;01001101
+DB   01001110B   ;01001110
+DB   01001111B   ;01001111
+DB   01010000B   ;01010000
+DB   01010001B   ;01010001
+DB   01010010B   ;01010010
+DB   01011100B   ;01010011
+DB   01010100B   ;01010100
+DB   01010101B   ;01010101
+DB   01010110B   ;01010110
+DB   01010111B   ;01010111
+DB   01011000B   ;01011000
+DB   01011001B   ;01011001
+DB   01011010B   ;01011010
+DB   01011011B   ;01011011
+DB   01010011B   ;01011100
+DB   01011101B   ;01011101
+DB   01011110B   ;01011110
+DB   01011111B   ;01011111
+DB   01100000B   ;01100000
+DB   01100001B   ;01100001
+DB   01100010B   ;01100010
+DB   01101100B   ;01100011
+DB   01100100B   ;01100100
+DB   01100101B   ;01100101
+DB   01100110B   ;01100110
+DB   01100111B   ;01100111
+DB   01101000B   ;01101000
+DB   01101001B   ;01101001
+DB   01101010B   ;01101010
+DB   01101011B   ;01101011
+DB   01100011B   ;01101100
+DB   01101101B   ;01101101
+DB   01101110B   ;01101110
+DB   01101111B   ;01101111
+DB   01110000B   ;01110000
+DB   01110001B   ;01110001
+DB   01110010B   ;01110010
+DB   01111100B   ;01110011
+DB   01110100B   ;01110100
+DB   01110101B   ;01110101
+DB   01110110B   ;01110110
+DB   01110111B   ;01110111
+DB   01111000B   ;01111000
+DB   01111001B   ;01111001
+DB   01111010B   ;01111010
+DB   01111011B   ;01111011
+DB   01110011B   ;01111100
+DB   01111101B   ;01111101
+DB   01111110B   ;01111110
+DB   01111111B   ;01111111
+DB   10000000B   ;10000000
+DB   10000001B   ;10000001
+DB   10000010B   ;10000010
+DB   10001100B   ;10000011
+DB   10000100B   ;10000100
+DB   10000101B   ;10000101
+DB   10000110B   ;10000110
+DB   10000111B   ;10000111
+DB   10001000B   ;10001000
+DB   10001001B   ;10001001
+DB   10001010B   ;10001010
+DB   10001011B   ;10001011
+DB   10000011B   ;10001100
+DB   10001101B   ;10001101
+DB   10001110B   ;10001110
+DB   10001111B   ;10001111
+DB   10010000B   ;10010000
+DB   10010001B   ;10010001
+DB   10010010B   ;10010010
+DB   10011100B   ;10010011
+DB   10010100B   ;10010100
+DB   10010101B   ;10010101
+DB   10010110B   ;10010110
+DB   10010111B   ;10010111
+DB   10011000B   ;10011000
+DB   10011001B   ;10011001
+DB   10011010B   ;10011010
+DB   10011011B   ;10011011
+DB   10010011B   ;10011100
+DB   10011101B   ;10011101
+DB   10011110B   ;10011110
+DB   10011111B   ;10011111
+DB   10100000B   ;10100000
+DB   10100001B   ;10100001
+DB   10100010B   ;10100010
+DB   10101100B   ;10100011
+DB   10100100B   ;10100100
+DB   10100101B   ;10100101
+DB   10100110B   ;10100110
+DB   10100111B   ;10100111
+DB   10101000B   ;10101000
+DB   10101001B   ;10101001
+DB   10101010B   ;10101010
+DB   10101011B   ;10101011
+DB   10100011B   ;10101100
+DB   10101101B   ;10101101
+DB   10101110B   ;10101110
+DB   10101111B   ;10101111
+DB   10110000B   ;10110000
+DB   10110001B   ;10110001
+DB   10110010B   ;10110010
+DB   10111100B   ;10110011
+DB   10110100B   ;10110100
+DB   10110101B   ;10110101
+DB   10110110B   ;10110110
+DB   10110111B   ;10110111
+DB   10111000B   ;10111000
+DB   10111001B   ;10111001
+DB   10111010B   ;10111010
+DB   10111011B   ;10111011
+DB   10110011B   ;10111100
+DB   10111101B   ;10111101
+DB   10111110B   ;10111110
+DB   10111111B   ;10111111
+DB   00110000B   ;11000000
+DB   00110001B   ;11000001
+DB   00110010B   ;11000010
+DB   00111100B   ;11000011
+DB   00110100B   ;11000100
+DB   00110101B   ;11000101
+DB   00110110B   ;11000110
+DB   00110111B   ;11000111
+DB   00111000B   ;11001000
+DB   00111001B   ;11001001
+DB   00111010B   ;11001010
+DB   00111011B   ;11001011
+DB   00110011B   ;11001100
+DB   00111101B   ;11001101
+DB   00111110B   ;11001110
+DB   00111111B   ;11001111
+DB   11010000B   ;11010000
+DB   11010001B   ;11010001
+DB   11010010B   ;11010010
+DB   11011100B   ;11010011
+DB   11010100B   ;11010100
+DB   11010101B   ;11010101
+DB   11010110B   ;11010110
+DB   11010111B   ;11010111
+DB   11011000B   ;11011000
+DB   11011001B   ;11011001
+DB   11011010B   ;11011010
+DB   11011011B   ;11011011
+DB   11010011B   ;11011100
+DB   11011101B   ;11011101
+DB   11011110B   ;11011110
+DB   11011111B   ;11011111
+DB   11100000B   ;11100000
+DB   11100001B   ;11100001
+DB   11100010B   ;11100010
+DB   11101100B   ;11100011
+DB   11100100B   ;11100100
+DB   11100101B   ;11100101
+DB   11100110B   ;11100110
+DB   11100111B   ;11100111
+DB   11101000B   ;11101000
+DB   11101001B   ;11101001
+DB   11101010B   ;11101010
+DB   11101011B   ;11101011
+DB   11100011B   ;11101100
+DB   11101101B   ;11101101
+DB   11101110B   ;11101110
+DB   11101111B   ;11101111
+DB   11110000B   ;11110000
+DB   11110001B   ;11110001
+DB   11110010B   ;11110010
+DB   11111100B   ;11110011
+DB   11110100B   ;11110100
+DB   11110101B   ;11110101
+DB   11110110B   ;11110110
+DB   11110111B   ;11110111
+DB   11111000B   ;11111000
+DB   11111001B   ;11111001
+DB   11111010B   ;11111010
+DB   11111011B   ;11111011
+DB   11110011B   ;11111100
+DB   11111101B   ;11111101
+DB   11111110B   ;11111110
+DB   11111111B   ;11111111
+
+;
+; This rule implements the velocity-reversal needed to
+; run the gas evolution in reverse. Its called a WallRule
+; because its the same as is all particles hit a wall
+; head on.
+;
+WallRule:
+DB   00000000B   ;00000000
+DB   00000010B   ;00000001
+DB   00000001B   ;00000010
+DB   00001100B   ;00000011
+DB   00001000B   ;00000100
+DB   00001010B   ;00000101
+DB   00001001B   ;00000110
+DB   00001011B   ;00000111
+DB   00000100B   ;00001000
+DB   00000110B   ;00001001
+DB   00000101B   ;00001010
+DB   00000111B   ;00001011
+DB   00000011B   ;00001100
+DB   00001110B   ;00001101
+DB   00001101B   ;00001110
+DB   00001111B   ;00001111
+DB   00100000B   ;00010000
+DB   00100010B   ;00010001
+DB   00100001B   ;00010010
+DB   00101100B   ;00010011
+DB   00101000B   ;00010100
+DB   00101010B   ;00010101
+DB   00101001B   ;00010110
+DB   00101011B   ;00010111
+DB   00100100B   ;00011000
+DB   00100110B   ;00011001
+DB   00100101B   ;00011010
+DB   00100111B   ;00011011
+DB   00100011B   ;00011100
+DB   00101110B   ;00011101
+DB   00101101B   ;00011110
+DB   00101111B   ;00011111
+DB   00010000B   ;00100000
+DB   00010010B   ;00100001
+DB   00010001B   ;00100010
+DB   00011100B   ;00100011
+DB   00011000B   ;00100100
+DB   00011010B   ;00100101
+DB   00011001B   ;00100110
+DB   00011011B   ;00100111
+DB   00010100B   ;00101000
+DB   00010110B   ;00101001
+DB   00010101B   ;00101010
+DB   00010111B   ;00101011
+DB   00010011B   ;00101100
+DB   00011110B   ;00101101
+DB   00011101B   ;00101110
+DB   00011111B   ;00101111
+DB   11000000B   ;00110000
+DB   11000010B   ;00110001
+DB   11000001B   ;00110010
+DB   11001100B   ;00110011
+DB   11001000B   ;00110100
+DB   11001010B   ;00110101
+DB   11001001B   ;00110110
+DB   11001011B   ;00110111
+DB   11000100B   ;00111000
+DB   11000110B   ;00111001
+DB   11000101B   ;00111010
+DB   11000111B   ;00111011
+DB   11000011B   ;00111100
+DB   11001110B   ;00111101
+DB   11001101B   ;00111110
+DB   11001111B   ;00111111
+DB   10000000B   ;01000000
+DB   10000010B   ;01000001
+DB   10000001B   ;01000010
+DB   10001100B   ;01000011
+DB   10001000B   ;01000100
+DB   10001010B   ;01000101
+DB   10001001B   ;01000110
+DB   10001011B   ;01000111
+DB   10000100B   ;01001000
+DB   10000110B   ;01001001
+DB   10000101B   ;01001010
+DB   10000111B   ;01001011
+DB   10000011B   ;01001100
+DB   10001110B   ;01001101
+DB   10001101B   ;01001110
+DB   10001111B   ;01001111
+DB   10100000B   ;01010000
+DB   10100010B   ;01010001
+DB   10100001B   ;01010010
+DB   10101100B   ;01010011
+DB   10101000B   ;01010100
+DB   10101010B   ;01010101
+DB   10101001B   ;01010110
+DB   10101011B   ;01010111
+DB   10100100B   ;01011000
+DB   10100110B   ;01011001
+DB   10100101B   ;01011010
+DB   10100111B   ;01011011
+DB   10100011B   ;01011100
+DB   10101110B   ;01011101
+DB   10101101B   ;01011110
+DB   10101111B   ;01011111
+DB   10010000B   ;01100000
+DB   10010010B   ;01100001
+DB   10010001B   ;01100010
+DB   10011100B   ;01100011
+DB   10011000B   ;01100100
+DB   10011010B   ;01100101
+DB   10011001B   ;01100110
+DB   10011011B   ;01100111
+DB   10010100B   ;01101000
+DB   10010110B   ;01101001
+DB   10010101B   ;01101010
+DB   10010111B   ;01101011
+DB   10010011B   ;01101100
+DB   10011110B   ;01101101
+DB   10011101B   ;01101110
+DB   10011111B   ;01101111
+DB   10110000B   ;01110000
+DB   10110010B   ;01110001
+DB   10110001B   ;01110010
+DB   10111100B   ;01110011
+DB   10111000B   ;01110100
+DB   10111010B   ;01110101
+DB   10111001B   ;01110110
+DB   10111011B   ;01110111
+DB   10110100B   ;01111000
+DB   10110110B   ;01111001
+DB   10110101B   ;01111010
+DB   10110111B   ;01111011
+DB   10110011B   ;01111100
+DB   10111110B   ;01111101
+DB   10111101B   ;01111110
+DB   10111111B   ;01111111
+DB   01000000B   ;10000000
+DB   01000010B   ;10000001
+DB   01000001B   ;10000010
+DB   01001100B   ;10000011
+DB   01001000B   ;10000100
+DB   01001010B   ;10000101
+DB   01001001B   ;10000110
+DB   01001011B   ;10000111
+DB   01000100B   ;10001000
+DB   01000110B   ;10001001
+DB   01000101B   ;10001010
+DB   01000111B   ;10001011
+DB   01000011B   ;10001100
+DB   01001110B   ;10001101
+DB   01001101B   ;10001110
+DB   01001111B   ;10001111
+DB   01100000B   ;10010000
+DB   01100010B   ;10010001
+DB   01100001B   ;10010010
+DB   01101100B   ;10010011
+DB   01101000B   ;10010100
+DB   01101010B   ;10010101
+DB   01101001B   ;10010110
+DB   01101011B   ;10010111
+DB   01100100B   ;10011000
+DB   01100110B   ;10011001
+DB   01100101B   ;10011010
+DB   01100111B   ;10011011
+DB   01100011B   ;10011100
+DB   01101110B   ;10011101
+DB   01101101B   ;10011110
+DB   01101111B   ;10011111
+DB   01010000B   ;10100000
+DB   01010010B   ;10100001
+DB   01010001B   ;10100010
+DB   01011100B   ;10100011
+DB   01011000B   ;10100100
+DB   01011010B   ;10100101
+DB   01011001B   ;10100110
+DB   01011011B   ;10100111
+DB   01010100B   ;10101000
+DB   01010110B   ;10101001
+DB   01010101B   ;10101010
+DB   01010111B   ;10101011
+DB   01010011B   ;10101100
+DB   01011110B   ;10101101
+DB   01011101B   ;10101110
+DB   01011111B   ;10101111
+DB   01110000B   ;10110000
+DB   01110010B   ;10110001
+DB   01110001B   ;10110010
+DB   01111100B   ;10110011
+DB   01111000B   ;10110100
+DB   01111010B   ;10110101
+DB   01111001B   ;10110110
+DB   01111011B   ;10110111
+DB   01110100B   ;10111000
+DB   01110110B   ;10111001
+DB   01110101B   ;10111010
+DB   01110111B   ;10111011
+DB   01110011B   ;10111100
+DB   01111110B   ;10111101
+DB   01111101B   ;10111110
+DB   01111111B   ;10111111
+DB   00110000B   ;11000000
+DB   00110010B   ;11000001
+DB   00110001B   ;11000010
+DB   00111100B   ;11000011
+DB   00111000B   ;11000100
+DB   00111010B   ;11000101
+DB   00111001B   ;11000110
+DB   00111011B   ;11000111
+DB   00110100B   ;11001000
+DB   00110110B   ;11001001
+DB   00110101B   ;11001010
+DB   00110111B   ;11001011
+DB   00110011B   ;11001100
+DB   00111110B   ;11001101
+DB   00111101B   ;11001110
+DB   00111111B   ;11001111
+DB   11100000B   ;11010000
+DB   11100010B   ;11010001
+DB   11100001B   ;11010010
+DB   11101100B   ;11010011
+DB   11101000B   ;11010100
+DB   11101010B   ;11010101
+DB   11101001B   ;11010110
+DB   11101011B   ;11010111
+DB   11100100B   ;11011000
+DB   11100110B   ;11011001
+DB   11100101B   ;11011010
+DB   11100111B   ;11011011
+DB   11100011B   ;11011100
+DB   11101110B   ;11011101
+DB   11101101B   ;11011110
+DB   11101111B   ;11011111
+DB   11010000B   ;11100000
+DB   11010010B   ;11100001
+DB   11010001B   ;11100010
+DB   11011100B   ;11100011
+DB   11011000B   ;11100100
+DB   11011010B   ;11100101
+DB   11011001B   ;11100110
+DB   11011011B   ;11100111
+DB   11010100B   ;11101000
+DB   11010110B   ;11101001
+DB   11010101B   ;11101010
+DB   11010111B   ;11101011
+DB   11010011B   ;11101100
+DB   11011110B   ;11101101
+DB   11011101B   ;11101110
+DB   11011111B   ;11101111
+DB   11110000B   ;11110000
+DB   11110010B   ;11110001
+DB   11110001B   ;11110010
+DB   11111100B   ;11110011
+DB   11111000B   ;11110100
+DB   11111010B   ;11110101
+DB   11111001B   ;11110110
+DB   11111011B   ;11110111
+DB   11110100B   ;11111000
+DB   11110110B   ;11111001
+DB   11110101B   ;11111010
+DB   11110111B   ;11111011
+DB   11110011B   ;11111100
+DB   11111110B   ;11111101
+DB   11111101B   ;11111110
+DB   11111111B   ;11111111
+
+
+MAXBYTE	EQU	55
+LINENO	EQU	23
+
+SrcPtr	DW	OFFSET Buffer1
+DesPtr	DW	OFFSET Buffer2
+
+SaveBuff:
+	DB	MAXBYTE*(LINENO+1) DUP(0)
+	
+Buffer1:
+	DB	MAXBYTE*(LINENO+1) DUP(0)
+	DB	256 DUP(0)
+
+Buffer2:
+	DB	MAXBYTE*(LINENO+1) DUP(0)
+	DB	256 DUP(0)
+
+;----------------------------------------------------------------------
+;
+;
+;
+;----------------------------------------------------------------------
+
+Data:
+DB	"                                                       "
+DB	"                                                       "
+DB	"                                                       "
+DB	" This is a test for a Lattice Gas based encryption     "
+DB	" algorithm. The data is encoded as particles of a      "
+DB	" digital gas, whose time evolution is then simulated   "
+DB	" with a cellular-automaton type algorithm. Decryption  "
+DB	" can be achieved by running the simulation in reverse. "
+DB	" A thermodynamic argument ensures that even if a single"
+DB	" bit is flipped, no decryption of the data is possible "
+DB	"                                                       "
+DB	" After the gas is let to evolve for 256 timesteps,     "
+DB	" one can either run the reverse evolution by pressing  "
+DB	" space, or flip a bit and then run by pressing '0'     "
+DB	"                                                       "
+DB	" For a cryptographic application, the key would consist"
+DB	" of the number of time steps and the time and location "
+DB	" of specific bit inversions.                           "
+DB	"                                                       "
+DB	"                                                       "
+DB	"                                                       "
+DB	"                                                       "
+DB	"                                                       "
+
+;
+; Fill the gas with a piece of code
+;
+InitGas:
+	MOV	DI,CS:SrcPtr
+	MOV	SI,OFFSET Data
+
+	MOV	CX,LINENO
+IG0:
+	PUSH	DI
+	PUSH	CX
+	MOV	CX,MAXBYTE
+IG1:
+	MOV	AL,CS:[SI]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	LOOP	IG1
+	POP	CX
+	POP	DI
+	ADD	DI,MAXBYTE
+	LOOP	IG0
+	MOV	SI,CS:SrcPtr
+	MOV	DI,OFFSET InitGas
+	MOV	CX,MAXBYTE*3
+	MOV	AL,0
+LG2:
+	MOV	BYTE PTR CS:[SI],AL
+	NOT	AL
+	INC	SI
+	LOOP	LG2
+	RET
+
+;----------------------------------------------------------------------
+;
+; Display gas molecules bouncing around
+;
+ShowGas:
+	PUSH	ES
+	PUSH	SI
+	PUSH	DI
+	PUSH	CX
+	PUSH	BX
+
+	MOV	AX,0B800h
+	MOV	ES,AX
+	MOV	SI,CS:SrcPtr
+	MOV	DI,160*2+10*2
+	MOV	CX,LINENO-3
+	ADD	SI,MAXBYTE*3
+SG1:
+	PUSH	CX
+	PUSH	DI
+
+	MOV	CX,MAXBYTE
+SG2:
+	MOV	AL,CS:[SI]
+	MOV	BYTE PTR ES:[DI],AL
+	INC	SI
+	ADD	DI,2
+	DEC	CX
+	JNZ	SG2
+
+	POP	DI
+	POP	CX
+	ADD	DI,160
+	LOOP	SG1
+	
+	POP	BX
+	POP	CX
+	POP	DI
+	POP	SI
+	POP	ES
+	RET
+
+;----------------------------------------------------------------------
+;
+; CS:SI 	->	Sourse of Data
+; CS:DI		->	Destination of Data
+;
+ScanOneMiddleLine:
+;
+; first byte is a special case because of warparound
+;
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]	; NORTH is one line "up" (lower)
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]	; SOUTH is one line "down" (higher)
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI+(MAXBYTE-1)]	; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+;
+; middle bytes can be handled in a loop 
+;
+	MOV	CX,MAXBYTE-2
+SOL1:
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]	; NORTH is one line "up" (lower)
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]	; SOUTH is one line "down" (higher)
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	LOOP	SOL1
+;
+; last byte is also special
+;
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]	; NORTH is one line "up" (lower)
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]	; SOUTH is one line "down" (higher)
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI-(MAXBYTE-1)]	; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	RET
+
+
+;----------------------------------------------------------------------
+;
+; CS:SI 	->	Sourse of Data
+; CS:DI		->	Destination of Data
+;
+ScanFirstLine:
+;
+; first byte is a special case because of warparound
+;
+	MOV	BL,0				
+	MOV	BH,CS:[SI+MAXBYTE*(LINENO-1)]	
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI+MAXBYTE-1]	; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+;
+; middle bytes can be handled in a loop 
+;
+	MOV	CX,MAXBYTE-2
+SFL1:
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI+MAXBYTE*(LINENO-1)]
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	LOOP	SFL1
+;
+; last byte is also special
+;
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI+MAXBYTE*(LINENO-1)]
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI+MAXBYTE]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI-(MAXBYTE-1)]	; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	RET
+
+
+;----------------------------------------------------------------------
+;
+; CS:SI 	->	Sourse of Data
+; CS:DI		->	Destination of Data
+;
+ScanLastLine:
+;
+; first byte is a special case because of warparound
+;
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI-MAXBYTE*(LINENO-1)]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI+(MAXBYTE-1)]	; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+;
+; middle bytes can be handled in a loop 
+;
+	MOV	CX,MAXBYTE-2
+SLL1:
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI-MAXBYTE*(LINENO-1)]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI+1]		; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	LOOP	SLL1
+;
+; last byte is also special
+;
+	MOV	BL,0			; AL is the "assembled" byte.
+	MOV	BH,CS:[SI-MAXBYTE]
+	AND	BH,10001000B		; and at bits 7 and 3
+	OR	BL,BH			; OR them into the assembled byte
+	MOV	BH,CS:[SI-MAXBYTE*(LINENO-1)]
+	AND	BH,01000100B		; and at bits 6 and 2
+	OR	BL,BH			; place the stuff into AL
+	MOV	BH,CS:[SI-1]		; WEST is one byte "left" (lower)
+	AND	BH,00100010B		; and at bits 5 and 1
+	OR	BL,BH
+	MOV	BH,CS:[SI-(MAXBYTE-1)]	; EAST is one byte "right" (higher)
+	AND	BH,00010001B		; and at bits 4 and 0
+	OR	BL,BH
+	MOV	BH,0
+	MOV	AL,BYTE PTR CS:[BX + OFFSET HPPRule]
+	MOV	CS:[DI],AL
+	INC	SI
+	INC	DI
+	RET
+
+
+
+;----------------------------------------------------------------------
+;
+; Invert all velocities in the gas
+;
+InvertAll:
+	PUSH	BX
+	PUSH	CX
+	PUSH	SI
+	MOV	SI,CS:SrcPtr
+	MOV	BX,0
+	MOV	CX,LINENO
+IA1:
+	PUSH	CX
+	MOV	CX,MAXBYTE
+IA2:
+	MOV	BL,CS:[SI]
+	MOV	AL,BYTE PTR CS:[BX + (OFFSET WallRule)]
+	MOV	CS:[SI],AL
+	INC	SI
+	LOOP	IA2
+	POP	CX
+	LOOP	IA1
+	POP	SI
+	POP	CX
+	POP	BX
+	RET
+
+;----------------------------------------------------------------------
+; 
+;
+IterateOnce:
+	MOV	SI,CS:SrcPtr
+	MOV	DI,CS:DesPtr
+	MOV	CS:SrcPtr,DI
+	MOV	CS:DesPtr,SI
+
+	PUSH	SI
+	PUSH	DI
+	CALL	ScanFirstLine
+	POP	DI
+	POP	SI
+	ADD	SI,MAXBYTE
+	ADD	DI,MAXBYTE	
+	MOV	CX,LINENO-2		; dont scan first and last
+L1:
+	PUSH	SI
+	PUSH	DI
+	PUSH	CX
+	CALL	ScanOneMiddleLine
+	POP	CX
+	POP	DI
+	POP	SI
+	ADD	SI,MAXBYTE
+	ADD	DI,MAXBYTE
+	LOOP	L1
+
+	PUSH	SI
+	PUSH	DI
+	CALL	ScanLastLine
+	POP	SI
+	POP	DI
+L3:
+	RET
+
+;----------------------------------------------------------------------
+;
+; Iterate HPP rule CX times
+;
+Iterate:
+	PUSH	CX
+	CALL	IterateOnce
+	POP	CX
+	CALL	ShowGas
+	LOOP	Iterate
+	RET
+
+;----------------------------------------------------------------------
+;
+; Iterate HPP rule CX times
+;
+IterateUntil:	
+	MOV	SI,0
+	MOV	CX,OFFSET IU4 - OFFSET IU3
+IU00:
+	MOV	AL,BYTE PTR CS:[SI + OFFSET IU3]
+	XOR	BYTE PTR CS:[SI + OFFSET IU4],AL
+	INC	SI
+	LOOP	IU00
+IU0:
+	CALL	IterateOnce
+	CALL	ShowGas
+	MOV	SI,CS:SrcPtr
+	MOV	CX,MAXBYTE*3
+	MOV	BX,0
+	MOV	AH,0
+	MOV	AL,255
+IU1:
+	MOV	BL,BYTE PTR CS:[SI]
+	MOV	DL,BYTE PTR CS:[BX+WallRule]
+	NOT	AH
+	XOR	DL,AH
+	AND	AL,DL
+	INC	SI
+	LOOP	IU1
+	MOV	SI,0
+	MOV	CX,OFFSET IU4 - OFFSET IU3
+IU2:
+	MOV	AH,BYTE PTR CS:[SI+OFFSET IU4]
+	AND	AH,AL
+	XOR	BYTE PTR CS:[SI+OFFSET IU3],AH
+	INC	SI
+	LOOP	IU2
+	JMP	IU3
+IU3:
+	MOV	AX,OFFSET IU0
+	PUSH	AX
+	RET
+	DB	256 DUP(90h)
+IU4:
+	PUSH	AX
+	PUSH	BX
+	PUSH	CX
+	PUSH	DX
+	PUSH	DS
+
+	MOV	AH,9
+	MOV	DX,CS:MsgPtr
+	INT	21H
+
+	POP	DS
+	POP	DX
+	POP	CX
+	POP	BX
+	POP	AX
+	RET
+
+	DB	512 DUP(90h)
+
+MsgPtr	DW	OFFSET Msg
+Msg	DB	"This message is printed out by",10,13
+	DB	"code decrypted using data from the lattice",10,13
+	DB	"which was applied to the decoding routine",10,13
+	DB	"after every time step",10,13
+	DB	"The decoding function left the code unchanged",10,13
+	DB	"except after the gas evolution had completelly",10,13
+	DB	"reversed the thermalization",10,13,"$"
+
+
+TIMES	EQU	16		; 256 repetitions are enough to
+				; "equilibrate" the gas
+
+Begin:
+	MOV	AX,0600h
+	MOV	BH,7
+	MOV	DH,25
+	MOV	DL,80
+	MOV	CX,0
+	INT	10h
+
+	MOV	AH,2
+	MOV	BH,0
+	MOV	DH,24
+	MOV	DL,0
+	INT	10h
+
+	CALL	InitGas
+	CALL	ShowGas
+	MOV	AH,0
+	INT	16h
+	PUSH	CX
+	MOV	CX,TIMES
+	CALL	Iterate
+	CALL	InvertAll
+	CALL	ShowGas
+	MOV	AH,0
+	INT	16h
+	CMP	AL,"0"
+	JNE	Begin0
+	MOV	SI,CS:SrcPtr
+	XOR	BYTE PTR CS:[SI],10000001B
+Begin0:
+	MOV	CX,TIMES
+	CALL	IterateUntil
+	CALL	InvertAll
+	CALL	ShowGas
+	MOV	AX,4C00h
+	INT	21h
+	
+
+CODE	ENDS
+	END	Start
+

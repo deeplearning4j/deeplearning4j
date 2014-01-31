@@ -1,0 +1,16 @@
+From: cerna@ntep.tmg.nec.co.JP (Alexander Cerna (SV))
+Subject: transparent widgets--how?
+Organization: The Internet
+Lines: 8
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xpert@expo.lcs.mit.edu
+Cc: cerna@ntep.tmg.nec.co.jp
+
+I need to write an application which does annotation notes
+on existing documents.  The annotation could be done several
+times by different people.  The idea is something like having
+several acetate transparencies stacked on top of each other
+so that the user can see through all of them.  I've seen
+something like this being done by the oclock client.
+Could someone please tell me how to do it in Xt?
+Thank you very much.

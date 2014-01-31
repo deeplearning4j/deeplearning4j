@@ -1,0 +1,31 @@
+From: Michael.Ameres@f204.n2603.z1.fidonet.org (Michael Ameres)
+Subject: x86 ~= 680x0 ??  (How do they compare?)
+Organization: FidoNet node 1:2603/204 - Not Even Odd, Forest Hills NY
+Lines: 26
+
+I believe it goes or will go:
+680060
+powerPC
+Pentium
+680040
+486
+680030
+386
+680020
+286=680000
+
+In a resent article in one of the macMags I think a 50mHz 030 accelerator was
+ slightly slower than a 25mHz 040 accel. But, this is using a system designed
+ for the 030. So, It stands to reason that a system designed for an 040 ie
+ quadra) would do better. So overall I'd figure 040 = 030 * 2.5 or so.
+    Along the same lines the new POwerPC stuff is supposed to run the system
+ at the level of a fast quadra, but system 8 or whatever will allow 3 times the
+ speed of a 040 in the powerPC based systems. and wait for the 680060. I think
+ it laps the pentium.
+
+pro-life pro-women
+
+
+--  
+=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
+ Michael Ameres - Internet: Michael.Ameres@f204.n2603.z1.fidonet.org

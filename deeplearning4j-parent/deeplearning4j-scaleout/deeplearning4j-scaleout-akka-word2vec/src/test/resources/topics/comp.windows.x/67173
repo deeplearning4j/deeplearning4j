@@ -1,0 +1,30 @@
+From: operator@mast.mast.queensu.ca (Me)
+Subject: Vanishing font problem....
+Organization: Department of Mathematics, Queen's University at Kingston
+Lines: 25
+
+   A colleague has a bizarre font problem on his new MIPS workstation.
+When he first logs on (via xdm), he has a single xterm window appear
+with the mwm window manager running.  In this configuration, X windows
+applications (particularly xdvi) work fine.  However, if he opens up a
+second xterm application, suddenly xdvi cannot start in either window,
+giving the error: Unable to load ISO 8859-1 font.
+
+   The only difference between the two xterm windows is that the initial
+one references a different name in the Xsession file, with prettier
+colours and other slight changes.  Further investigation shows that only
+opening a default xterm causes this behaviour, and more significant, ALL
+X applications can no longer load any fonts if they are invoked from the
+command line in either window.  If I start the xterm with a different
+font (using the -fn option), no problems.  It would seem that the
+default xterm is loading a font which somehow causes the server to lose
+all of its fonts.  Note: xlsfonts in either window shows all of the
+fonts available, so there doesn't appear to be a problem in the font
+directories/hash-tables.
+
+   Other than rewriting the XTerm app-defaults file to use a different
+font and hope for the best, does anyone have any ideas?
+
+More info:  This is the most recent MIPS workstation (R4000 I believe),
+       with the most current operating system and running X11R5.
+       It is not mwm's fault, as the same problems occur under twm, etc.

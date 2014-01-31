@@ -1,0 +1,26 @@
+From: C445585@mizzou1.missouri.edu (John Kelsey)
+Subject: Re: How large are commercial keys?
+Nntp-Posting-Host: mizzou1.missouri.edu
+Organization: University of Missouri
+Lines: 20
+
+In article <1993Apr20.182038.12009@ee.eng.ohio-state.edu>
+butzerd@maumee.eng.ohio-state.edu (Dane C. Butzer) writes:
+ 
+>Finally, can anyone even concieve of a time/place where 128 bit keys aren't
+>sufficient?  (I certainly can't - even at a trillion keys a second, it
+>would take about 10 billion years to search just one billionth of that keys
+>space.)
+ 
+   It depends on the attack.  Adding a bit to the key doubles the amount of
+work to be done in a straight brute-force attack, where you try every single
+possible key until one works.  Processing and storage requirements for this
+kind of attack on a 128-bit key seem like they ought to make it effectively
+impossible.  However, there may be other attacks whose difficulty is (for
+example) proportional to, say, 2**sqrt(n), or some such.  Also, a long
+key does you little good if there is a way to incrementally guess a little
+of the key at a time....
+ 
+>Thanks,
+>Dane
+   --John

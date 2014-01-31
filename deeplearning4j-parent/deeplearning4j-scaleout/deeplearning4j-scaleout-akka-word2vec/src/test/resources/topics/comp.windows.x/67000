@@ -1,0 +1,25 @@
+From: beck@irzr17.inf.tu-dresden.de (Andre Beck)
+Subject: Re: System file in /tmp
+Organization: Dept. of Computer Science, TU Dresden, Germany.
+Lines: 17
+Distribution: world
+Reply-To: Andre_Beck@IRS.Inf.TU-Dresden.DE
+NNTP-Posting-Host: irzr17.inf.tu-dresden.de
+
+
+In article <C5JJIG.Doy@acsu.buffalo.edu>, lusardi@cs.buffalo.edu (Christopher Lusardi) writes:
+|> 
+|> What is the directory .X11-unix for in /tmp? When I start
+|> x, it is created by the system. This directory wasn't created 
+|> by root, and it contains an empty file (X0) that is owned by me. 
+|> 
+
+It's the Unix Domain Socket (local connection) to your XServer.
+Try to rm it :)
+
+--
++-o-+--------------------------------------------------------------+-o-+
+| o |                \\\-  Brain Inside -///                       | o |
+| o |                    ^^^^^^^^^^^^^^^                           | o |
+| o | Andre' Beck (ABPSoft) mehl: Andre_Beck@IRS.Inf.TU-Dresden.de | o |
++-o-+--------------------------------------------------------------+-o-+

@@ -1,0 +1,33 @@
+From: graeme@labtam.labtam.oz.au (Graeme Gill)
+Subject: Re: looking for circle algorithm faster than Bresenhams
+Organization: Labtam Australia Pty. Ltd., Melbourne, Australia
+Lines: 28
+
+In article <1993Apr13.025240.8884@nwnexus.WA.COM>, mpdillon@halcyon.com (Michael Dillon) writes:
+> I have an algorithm similar to Bresenhams line drawing algorithm, that
+> draws a line by stepping along the minor axis and drawing slices like
+> AAAA, BBBB, CCCC in the following diagram.
+> 
+>      AAAA
+>          BBBB
+>              CCCC
+> 
+
+	Yes, that's known as "Bresenhams Run Length Slice Algorithm for
+Incremental lines". See Fundamental Algorithms for Computer Graphics,
+Springer-Verlag, Berlin Heidelberg 1985.
+
+> I have tried to extrapolate this to circles but I can't figure out
+> how to determine the length of the slices. Any ideas?
+
+	Hmm. I don't think I can help you with this, but you might
+take a look at the following:
+
+	"Double-Step Incremental Generation of Lines and Circles",
+X. Wu and J. G. Rokne, Computer Graphics and Image processing,
+Vol 37, No. 4, Mar. 1987, pp. 331-334
+
+	"Double-Step Generation of Ellipses", X. Wu and J. G. Rokne,
+IEEE Computer Graphics & Applications, May 1989, pp. 56-69
+
+	Graeme Gill.

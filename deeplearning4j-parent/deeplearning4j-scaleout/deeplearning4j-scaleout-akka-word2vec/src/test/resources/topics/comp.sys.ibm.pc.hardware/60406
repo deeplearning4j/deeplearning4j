@@ -1,0 +1,32 @@
+From: bss_brucep@vd.seqeb.gov.au (Bruce Powell)
+Subject: Re: ESDI with IDE??? -- Yes it should be Possible,
+Organization: South East Queensland Electricity Board
+Lines: 27
+
+In article <1993Apr16.033802.6605@monu6.cc.monash.edu.au>, els390r@fawlty1.eng.monash.edu.au (G Chow) writes:
+> In article <1qegfd$dqi@wsinis03.info.win.tue.nl> monty@wsinis03.info.win.tue.nl (Guido Leenders) writes:
+>>Hi,
+>>
+>>Is it possible to use an ESDI-controller with HDD together with an
+>>IDE-harddisk + controller in one ISA-system?
+>>
+>>I've read stuff about secondary controllers. Does this trick work?
+>>
+>>Thanx in advance,
+>>
+>>Guido
+>>monty@win.tue.nl
+> 
+> I have the same question as Guido. It is possible to use the ESDI drive 
+> as a master and the IDE drive as the slave ? 
+
+I can definitily say that you can use an RLL as Master and IDE as slave, as
+I have just upgraded my machine with a 200Mb IDE ( And custom Controller
+Mdl CI-1010 Extended IDE Controller ) While maintaining my RLL'd Wren as
+master Drive.  The trick is the controller which supports up to 4 IDE Drives
+while coexisting with existing Controllers ( MFM,RLL,ESDI,SCSI ).
+
+So according to the Documentation it should work with ESDI, and I can assure
+you it works with RLL.
+
+Bruce Powell				email: bss_brucep@vd.seqeb.gov.au

@@ -1,0 +1,35 @@
+From: seema@madvlsi.columbia.edu (Seema Varma)
+Subject: IC Packages
+Organization: Columbia University
+X-Posted-From: britain.madvlsi.columbia.edu
+NNTP-Posting-Host: sol.ctr.columbia.edu
+Lines: 28
+
+Hi,
+	I am looking for some help in choosing a package
+for a high-speed silicon ADC (100Mhz) currently being 
+fabricated. This is a PhD research project and I have to test
+the chip at speed on a PCB. I expect to have roughly 100
+packaged circuits and will do DC, low-speed and high-speed
+testing using 3 different set-ups for the test chip.
+ 	
+	I know for sure that a DIP will not work
+(the long lead lines have too high an inductance).
+Getting a custom-made package is too expensive, so
+I am trying to choose between a flatpak and a
+leadless chip carrier. The flatpack would be hard
+to test since it has to be soldered on to the test
+setup and I would spend loads of time soldering 
+as I kept changing the test chip. The leadless chip
+carrier sockets also have long lead lines and may
+not work at high speeds.
+ 
+	Does anyone out there have experience/knowledge
+of this field ? I would greatly appreciate help! Any ideas/
+names of companies manufacturing holders/sockets/packages
+would help. 
+ 
+P.S. The multi-layer fancy GaAs packages seem like a bit
+of overkill(?)
+	
+ --- Seema Varma

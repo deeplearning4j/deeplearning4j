@@ -1,0 +1,15 @@
+From: scrowe@hemel.bull.co.uk (Simon Crowe)
+Subject: Point within a polygon
+Summary: Algorithm to find if a point is bound by a polygon
+Keywords: point, polygon
+Nntp-Posting-Host: bogart
+Organization: Bull HN UK
+Lines: 7
+
+I am looking for an algorithm to determine if a given point is bound by a 
+polygon. Does anyone have any such code or a reference to book containing
+information on the subject ?
+
+		Regards
+
+			Simon

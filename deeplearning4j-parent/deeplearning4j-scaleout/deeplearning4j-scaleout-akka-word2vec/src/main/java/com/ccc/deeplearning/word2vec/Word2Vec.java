@@ -61,8 +61,8 @@ public class Word2Vec implements Persistable {
 	/* all words; including those not in the actual ending index */
 	private Map<String,VocabWord> rawVocab = new HashMap<String,VocabWord>();
 	private Map<Integer,String> indexToWord = new HashMap<Integer,String>();
-	private TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
-	private SentenceIterator sentenceIter;
+	private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+	private transient SentenceIterator sentenceIter;
 	private Random rand = new Random(1);
 	private int topNSize = 40;
 	public int EXP_TABLE_SIZE = 500;

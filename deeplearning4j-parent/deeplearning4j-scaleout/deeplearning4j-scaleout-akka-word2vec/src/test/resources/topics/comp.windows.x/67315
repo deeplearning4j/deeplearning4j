@@ -1,0 +1,78 @@
+From: rchui@nswc-wo.nswc.navy.mil (Raymond Chui)
+Subject: Re: A Question I Do Not Found In FAQ
+Reply-To: rchui@opal.nswc.navy.mil
+Organization: NAVSWC DD White Oak Det.
+Lines: 72
+
+comp.windows.x
+In article <1993Apr26.122007.25760@relay.nswc.navy.mil>, rchui@nswc-wo.nswc.navy.mil (Raymond Chui) writes:
+
+	Please igore my previouse calculation mistaked. Please see the correct
+calculation. Sorry!
+|> I created a pixmap or drawable window, then used XDrawLine() function 
+|> drawed a line as below fingure:
+|> 
+|> 		width = 300
+|> 	================================
+|> 	|				|
+|> 	|				|
+|> 	|			p1	|
+|> 	|			\	|
+|> 	|			 \	| height = 300
+|> 	|			  \	|
+|> 	|			   \	|
+|> 	|			    \	|
+|> 	|			     \	|
+|> 	|			      \	|
+|> 	|			       \|p3
+|> 	|				| 
+|> 	|===============================| \
+|> 					    \
+|> 					     p2
+|> 
+|> 	I created the pixmap or drawable window only with size 300x300.
+|> But I draw line from p1(x1=270,y1=100) to p2(x2=500,y2=800).
+|> My question is, dose the XDrawLine function can finger out that correct
+|> p3(x3 and y3) for me? If you calculate x3 and y3. 
+|> 
+ x3 = 300;
+ @ = art tan (500 - 270)/(800 - 100)) = 18.19 degrees;
+ y3 = 100 + (300 - 270)/tan(@) = 191.29 ~= 191 integer
+
+|> 
+|> How do I prove XDrawLine() give me the right x3, y3 or not?
+|> Please don't ask me why I don't created a 900x900 pixmap. No, I don't
+|> wan to. 
+|> 
+|> Thanks in advance!
+|> -- 
+|> Raymond H. Chui
+|> NSWC N62
+|> 10901 New Hampshire Ave.
+|> Silver Spring, MD 20903-5000
+|> U.S.A.
+|> Voice:1(301)394-3807 Ext. 45
+|> FAX:1(301)394-4483
+|> EMail:rchui@opal.nswc.navy.mil
+|>  _ __                                  _    ,    __
+|> ' )  )                           /    ' )  /    /  ) /
+|>  /--' __. , , ____   ______   __/      /--/    /    /_  . . o
+|> /  \_(_(_(_/_/) ) )_(_) /) )_(_(_     /  ( o  (__/ / /_(_/_(_
+|>           /
+|>          '
+
+-- 
+Raymond H. Chui
+NSWC N62
+10901 New Hampshire Ave.
+Silver Spring, MD 20903-5000
+U.S.A.
+Voice:1(301)394-3807 Ext. 45
+FAX:1(301)394-4483
+EMail:rchui@opal.nswc.navy.mil
+ _ __                                  _    ,    __
+' )  )                           /    ' )  /    /  ) /
+ /--' __. , , ____   ______   __/      /--/    /    /_  . . o
+/  \_(_(_(_/_/) ) )_(_) /) )_(_(_     /  ( o  (__/ / /_(_/_(_
+          /
+         '

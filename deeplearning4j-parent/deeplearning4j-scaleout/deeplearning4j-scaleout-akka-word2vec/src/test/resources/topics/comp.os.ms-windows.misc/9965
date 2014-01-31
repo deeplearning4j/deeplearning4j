@@ -1,0 +1,19 @@
+From: dpiaseck@jarthur.claremont.edu (Derek A. Piasecki)
+Subject: Re: Ami Pro 3.0 and PCTools compress?!? Doesn't like being moved?
+Keywords: Ami Pro 3.0 PCTools compress
+Organization: Harvey Mudd College, Claremont, CA 91711
+Lines: 13
+
+
+Sorry about that - don't want to alarm anyone...
+
+I don't think there is any correlation between the crashes and PCTools.
+I reinstalled Ami Pro, and ran compress again, with no problems.
+I think problems may have been related to filling my disk until it had
+0 bytes (!) left while FTPing, although I would think it wouldn't
+matter since Ami Pro wasn't running at the time, and I made space available
+immediately anyways.
+But, whatever, the cause, it is working now.
+
+				-Derek
+

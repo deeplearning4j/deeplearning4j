@@ -1,0 +1,23 @@
+From: christen@astro.ocis.temple.edu (Carl Christensen)
+Subject: 8 cards on a 6 card motherboard?
+Organization: Temple University
+Lines: 16
+Nntp-Posting-Host: astro.ocis.temple.edu
+X-Newsreader: TIN [version 1.1 PL8]
+
+This may be the dumbest question of the year, but is there a
+way to 'piggyback' or expand a 6-slot motherboard (all 16-bit)
+to get the usual 8?  My case has slots for 8, and I'd like to
+get a scanner, but with all my other cards I'm already max'd out!
+I'm hoping that a simple solution exists, e.g. an adapter that turns
+one slot into three.  I don't mind if it turns it into 8-bit slots,
+as I can put my I/O card, MIDI card, and Soundblaster card there.
+My other cards are 16 bit (IDE/Floppy, SVGA, modem).
+
+If there is such an expander, does that screw up performance of
+everything else?  I'd hate to buy a new motherboard! :-( 
+
+--
+Carl Christensen                /~~\_/~\        ,,,  Dept. of Computer Science
+christen@astro.ocis.temple.edu |  #=#==========#   | Temple University        
+"Curiouser and curiouser!" - LC \__/~\_/        ```  Philadelphia, PA  USA   

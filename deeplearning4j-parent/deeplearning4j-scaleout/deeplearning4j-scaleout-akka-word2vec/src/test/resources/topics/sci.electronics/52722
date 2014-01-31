@@ -1,0 +1,43 @@
+Subject: ACCESS BUS (was I2C bus)
+From: srgxnbs@grace.cri.nz
+Organization: Industrial Research Ltd., New Zealand.
+NNTP-Posting-Host: grv.grace.cri.nz
+Lines: 37
+
+From:	MX%"Andy.Macrae@Corp.Sun.COM"  6-APR-1993 06:48:34.96
+To:	SRGXNBS
+CC:	
+Subj:	Re: I^2C bus and long haul serial (also Axlo
+
+Return-Path: <Andy.Macrae@Corp.Sun.COM>
+Received: from Sun.COM by GRV.GRACE.CRI.NZ (MX V3.1C) with SMTP; Tue, 06 Apr
+          1993 06:48:29 +1300
+Received: from Corp.Sun.COM (lemay.Corp.Sun.COM) by Sun.COM (4.1/SMI-4.1) id
+          AA24280; Mon, 5 Apr 93 11:48:08 PDT
+Received: from grendal.Corp.Sun.COM by Corp.Sun.COM (4.1/elliemay (corpmail1
+          inbound)) id AA25933; Mon, 5 Apr 93 11:48:07 PDT
+Received: by grendal.Corp.Sun.COM (4.1/SMI-4.1) id AA05710; Mon, 5 Apr 93
+          11:47:28 PDT
+Date: Mon, 5 Apr 93 11:47:28 PDT
+From: Andy.Macrae@Corp.Sun.COM (Andrew MacRae)
+Message-ID: <9304051847.AA05710@grendal.Corp.Sun.COM>
+To: srgxnbs@grace.cri.nz
+Subject: Re: I^2C bus and long haul serial (also Axlo
+CC: Andy.Macrae@Corp.Sun.COM
+content-length: 693
+
+In article <1pii04INNk6t@zephyr.grace.cri.nz> you write:
+> Whats required to get onto the ACCESS bus? The nice thing about the
+> i2c is that most i/o requires one 8 ... 16 pin DIL chip, ie its cheap
+> and easy. Anyone can design a bus, trouble is most buses require a
+> host of interface chips and often on-board intelligence.
+
+Bruce,
+	For the latest information on Access.Bus call the Access.Bus
+Industry Group at (408) 991-3517.  Also, Sun will be hosting the next
+meeting of the group on April 19th, here in Mountain View.  For some reason
+I am not able to post to any newsgroups today, so please feel free to pass
+this information on yourself as you see fit.
+
+						Andrew MacRae
+

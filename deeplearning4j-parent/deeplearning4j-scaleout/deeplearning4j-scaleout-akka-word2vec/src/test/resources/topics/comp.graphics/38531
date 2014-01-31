@@ -1,0 +1,33 @@
+From: zyeh@caspian.usc.edu (zhenghao yeh)
+Subject: Re: Need polygon splitting algo...
+Organization: University of Southern California, Los Angeles, CA
+Lines: 25
+Distribution: world
+NNTP-Posting-Host: caspian.usc.edu
+Keywords: polygons, splitting, clipping
+
+
+In article <1qvq4b$r4t@wampyr.cc.uow.edu.au>, g9134255@wampyr.cc.uow.edu.au (Coronado Emmanuel Abad) writes:
+|> 
+|> The idea is to clip one polygon using another polygon (not
+|> necessarily rectangular) as a window.  My problem then is in
+|> finding out all the new vertices of the resulting "subpolygons"
+|> from the first one.  Is this simply a matter of extending the
+|> usual algorithm whereby each of the edges of one polygon is checked
+|> against another polygon???  Is there a simpler way??
+|> 
+|> Comments welcome.
+|> 
+|> Noel.
+
+	It depends on what kind of the polygons. 
+	Convex - simple, concave - trouble, concave with loop(s)
+	inside - big trouble.
+
+	Of cause, you can use the box test to avoid checking
+	each edges. According to my experience, there is not
+	a simple way to go. The headache stuff is to deal with
+	the special cases, for example, the overlapped lines.
+
+	Yeh
+	USC

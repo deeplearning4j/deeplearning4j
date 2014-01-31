@@ -1,0 +1,42 @@
+From: ray@netcom.com (Ray Fischer)
+Subject: Re: x86 ~= 680x0 ??  (How do they compare?)
+Organization: Netcom. San Jose, California
+Distribution: usa
+Lines: 36
+
+dhk@ubbpc.uucp (Dave Kitabjian) writes ...
+>I'm sure Intel and Motorola are competing neck-and-neck for 
+>crunch-power, but for a given clock speed, how do we rank the
+>following (from 1st to 6th):
+>  486		68040
+>  386		68030
+>  286		68020
+
+040 486 030 386 020 286
+
+>While you're at it, where will the following fit into the list:
+>  68060
+>  Pentium
+>  PowerPC
+
+060 fastest, then Pentium, with the first versions of the PowerPC
+somewhere in the vicinity.
+
+>And about clock speed:  Does doubling the clock speed double the
+>overall processor speed?  And fill in the __'s below:
+>  68030 @ __ MHz = 68040 @ __ MHz
+
+No.  Computer speed is only partly dependent of processor/clock speed.
+Memory system speed play a large role as does video system speed and
+I/O speed.  As processor clock rates go up, the speed of the memory
+system becomes the greatest factor in the overall system speed.  If
+you have a 50MHz processor, it can be reading another word from memory
+every 20ns.  Sure, you can put all 20ns memory in your computer, but
+it will cost 10 times as much as the slower 80ns SIMMs.
+
+And roughly, the 68040 is twice as fast at a given clock
+speed as is the 68030.
+
+-- 
+Ray Fischer                   "Convictions are more dangerous enemies of truth
+ray@netcom.com                 than lies."  -- Friedrich Nietzsche

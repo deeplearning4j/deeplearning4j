@@ -12,7 +12,7 @@ import cc.mallet.optimize.Optimizable;
 
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.util.MatrixUtil;
-import com.ccc.deeplearning.util.MyConjugateGradient;
+import com.ccc.deeplearning.util.NonZeroStoppingConjugateGradient;
 
 
 /**
@@ -54,7 +54,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		
 		if(!network.isForceNumEpochs()) {
 			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
-			MyConjugateGradient g = new MyConjugateGradient(opt);
+			NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
 			g.optimize(epochs);
 		}
 		else {

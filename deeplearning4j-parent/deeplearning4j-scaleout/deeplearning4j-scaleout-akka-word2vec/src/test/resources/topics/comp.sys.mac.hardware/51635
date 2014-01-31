@@ -1,0 +1,36 @@
+From: noah@apple.com (Noah Price)
+Subject: Re: What to put in Centris 650 Internal Bay?
+Organization: (not the opinions of) Apple Computer, Inc.
+Lines: 31
+
+In article <C5JFnp.FCx@world.std.com>, jbailey@world.std.com (jim bailey)
+wrote:
+> 
+> hades@coos.dartmouth.edu (Brian V. Hughes) writes:
+> >tzs@stein2.u.washington.edu (Tim Smith) writes:
+> >>jbailey@world.std.com (jim bailey) writes:
+> >>>Yes, you get internal mixing of the analog CD-Audio outputs with
+> >>>the Mac generated audio on the Mac motherboard.  Also you can sample
+> >>>the CD-Audio using the sound control panel by clicking on the Options
+> >>>button next to the microphone icon.
+> >>How do you click on the Options button?  I've never seen it undimmed.
+> 
+> >    The latest word on this is you have to disconnect the Microphone
+> >cable on the motherboard. Then the button is supposed to un-dim.
+
+The audio will simply select the CD audio when the microphone is removed. 
+I don't believe the button un-dims, since there's nothing to select.  I
+haven't tracked down a Centris to check this on though.
+
+> Sorry, I assumed that the the various new machines with the internal
+> CD-ROM bay worked the same as the Quadra 900.  Obviously they don't.
+
+Yup, I made the same mistake several months ago when this issue came up
+before :-)
+
+
+noah
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+noah@apple.com                                 Macintosh Hardware Design
+...!{sun,decwrl}!apple!noah   (not the opinions of) Apple Computer, Inc.

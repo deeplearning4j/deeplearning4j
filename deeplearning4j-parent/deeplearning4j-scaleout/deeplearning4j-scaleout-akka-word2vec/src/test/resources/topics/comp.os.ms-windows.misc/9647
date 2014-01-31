@@ -1,0 +1,19 @@
+From: silver@fraser.sfu.ca (Craig Silver)
+Subject: format a:/s under Win. & DOS6 ??
+Organization: Simon Fraser University, Burnaby, B.C., Canada
+Distribution: na
+Lines: 13
+
+Has anyone experienced problems formatting a system floppy in the File
+Manager under DOS 6?  I get a formatted disk but when I boot with it,
+my hard drive isn't recognized.  I did install DoubleSpace.  Also, I
+*was* able to make a good-working system floppy from the DOS 6 command
+shell (no Windows).
+
+Let me know if you've had this problem too and if you've heard what's
+going on.
+-- 
+
+----------------------------------------------------------------------
+Craig Silver	           Computer Science at Simon Fraser University
+silver@sfu.ca (Internet)   Burnaby, B.C., Canada

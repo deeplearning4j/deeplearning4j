@@ -1,0 +1,19 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: Sunrise/ sunset times
+Organization: U of Toronto Zoology
+Lines: 14
+
+In article <1r6f3a$2ai@news.umbc.edu> rouben@math9.math.umbc.edu (Rouben Rostamian) writes:
+>>Hello. I am looking for a program (or algorithm) that can be used
+>>to compute sunrise and sunset times.
+>
+>Here is a computation I did a long time ago that computes the length
+>of the daylight.  You should be able to convert the information here
+>to sunrise and sunset times.
+
+Sorry, not so -- the changes in sunrise and sunset times are not
+quite synchronized.  For example, neither the earliest sunrise nor the
+latest sunset comes on the longest day of the year.
+
+You can derive day length from sunrise and sunset times, but not
+vice-versa.

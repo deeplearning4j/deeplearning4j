@@ -1,0 +1,38 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: Moonbase race, NASA resources, why?
+Organization: U of Toronto Zoology
+Lines: 33
+
+In article <1993Apr21.210712.1@aurora.alaska.edu> nsmca@aurora.alaska.edu writes:
+>> So how much would it cost as a private venture, assuming you could talk the
+>> U.S. government into leasing you a couple of pads in Florida? 
+>
+>Why must it be a US Government Space Launch Pad? Directly I mean...
+
+In fact, you probably want to avoid US Government anything for such a
+project.  The pricetag is invariably too high, either in money or in
+hassles.
+
+The important thing to realize here is that the big cost of getting to
+the Moon is getting into low Earth orbit.  Everything else is practically
+down in the noise.  The only part of getting to the Moon that poses any
+new problems, beyond what you face in low orbit, is the last 10km --
+the actual landing -- and that is not immensely difficult.  Of course,
+you *can* spend sagadollars (saga- is the metric prefix for beelyuns
+and beelyuns) on things other than the launches, but you don't have to.
+
+The major component of any realistic plan to go to the Moon cheaply (for
+more than a brief visit, at least) is low-cost transport to Earth orbit.
+For what it costs to launch one Shuttle or two Titan IVs, you can develop
+a new launch system that will be considerably cheaper.  (Delta Clipper
+might be a bit more expensive than this, perhaps, but there are less
+ambitious ways of bringing costs down quite a bit.)  Any plan for doing
+sustained lunar exploration using existing launch systems is wasting
+money in a big way.
+
+Given this, questions like whose launch facilities you use are *not* a
+minor detail; they are very important to the cost of the launches, which
+dominates the cost of the project.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

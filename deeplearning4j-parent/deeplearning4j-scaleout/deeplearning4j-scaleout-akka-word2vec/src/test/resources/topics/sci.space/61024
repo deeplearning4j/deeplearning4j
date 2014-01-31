@@ -1,0 +1,40 @@
+From: abdkw@stdvax (David Ward)
+Subject: Re: Keeping Spacecraft on after Funding Cuts.
+News-Software: VAX/VMS VNEWS 1.4-b1  
+Organization: Goddard Space Flight Center - Robotics Lab
+Lines: 34
+
+In article <20APR199321040621@kelvin.jpl.nasa.gov>, baalke@kelvin.jpl.nasa.gov (Ron Baalke) writes...
+>In article <1993Apr20.204335.157595@zeus.calpoly.edu>, jgreen@trumpet.calpoly.edu (James Thomas Green) writes...
+>>Why do spacecraft have to be shut off after funding cuts.  For
+>>example, Why couldn't Magellan just be told to go into a "safe"
+>>mode and stay bobbing about Venus in a low-power-use mode and if
+>>maybe in a few years if funding gets restored after the economy
+>>gets better (hopefully), it could be turned on again.  
+> 
+>It can be, but the problem is a political one, not a technical one.
+
+Also remember that every dollar spent keeping one spacecraft in safe mode
+(probably a spin-stabilized sun-pointing orientation) is a dollar not
+spent on mission analysis for a newer spacecraft.  In order to turn the
+spacecraft back on, you either need to insure that the Ops guys will be
+available, or you need to retrain a new team.
+
+Having said that, there are some spacecraft that do what you have proposed.
+Many of the operational satellites Goddard flies (like the Tiros NOAA 
+series) require more than one satellite in orbit for an operational set.
+Extras which get replaced on-orbit are powered into a "standby" mode for
+use in an emergency.  In that case, however, the same ops team is still
+required to fly the operational birds; so the standby maintenance is
+relatively cheap.
+
+Finally, Pat's explanation (some spacecraft require continuous maintenance
+to stay under control) is also right on the mark.  I suggested a spin-
+stabilized control mode because it would require little power or 
+maintenance, but it still might require some momentum dumping from time
+to time.
+
+In the end, it *is* a political decision (since the difference is money),
+but there is some technical rationale behind the decision.
+
+David W. @ GSFC  

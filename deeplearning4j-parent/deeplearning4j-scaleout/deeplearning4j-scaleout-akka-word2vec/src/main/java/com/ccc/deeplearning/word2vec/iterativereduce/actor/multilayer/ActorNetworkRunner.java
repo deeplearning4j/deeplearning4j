@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,13 +29,13 @@ import com.ccc.deeplearning.iterativereduce.actor.BatchActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.ModelSavingActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.SimpleClusterListener;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
-import com.ccc.deeplearning.word2vec.updateable.MasterActor;
-import com.ccc.deeplearning.word2vec.updateable.WorkerActor;
-import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
+import com.ccc.deeplearning.word2vec.Word2Vec;
 import com.ccc.deeplearning.word2vec.iterator.Word2VecDataSetIterator;
+import com.ccc.deeplearning.word2vec.updateable.MasterActor;
 import com.ccc.deeplearning.word2vec.updateable.Word2VecUpdateable;
+import com.ccc.deeplearning.word2vec.updateable.WorkerActor;
 import com.ccc.deeplearning.word2vec.util.Window;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -200,9 +198,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 
 			startWorker(masterAddress,c);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					this), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					epochs), mediator);
 			log.info("Setup master with epochs " + epochs);
 		}
@@ -265,10 +263,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		}
 
 		//ensure the trainer is known so the next iteration can happen
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				this), mediator);
 		//start the pipeline
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);
 
 		
@@ -301,7 +299,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 			log.info("Starting next epoch");
 
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.RESULT,
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					samples), mediator);
 
 		}

@@ -1,0 +1,24 @@
+From: david@swat (David E. Smyth)
+Subject: Re: MS Windows VS Motif (GUI design differences), was Re: Future of Unix
+Nntp-Posting-Host: swat
+Organization: Jet Propulsion Laboratory (NASA)
+Distribution: usa
+Lines: 17
+
+Ik Su Yoo <ik@mobydick.leis.bellcore.com> writes:
+>
+>Another important difference is that MSW doesn't have any window that
+>handle sophisticated geometry management (like XmForm).
+
+Is this an advantage to MS Windows or to Xt?  I used to think it
+was a big advantage for Xt, but I am not at all sure anymore...
+
+-------------------------------------------------------------------------
+David Smyth				david@jpl-devvax.jpl.nasa.gov
+Senior Software Engineer,		(818)306-6463 (temp! do NOT use v-mail)
+X and Object Guru.			tempory office: 525/B70
+Jet Propulsion Lab, M/S 525-3660 4800 Oak Grove Drive, Pasadena, CA 91109
+------------------------------------------------------------------------- 
+ What's the earliest possible date you can't prove it won't be done by?
+					- Tom DeMarco
+-------------------------------------------------------------------------

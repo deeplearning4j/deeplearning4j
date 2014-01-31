@@ -1,0 +1,48 @@
+From: ehgasm2@uts.mcc.ac.uk (Simon Marshall)
+Subject: How do I compensate for photographic viewpoint and distortion?
+Reply-To: S.Marshall@dcs.hull.ac.uk
+Organization: Manchester Computing Centre, Manchester, England
+Lines: 42
+
+Hi to all out there.  We have this problem, and I'm not certain I'm solving it
+in the correct way.  I was wondering if anyone can shed light on this, or point
+me in the right place to look...
+
+We have an X-ray imaging camera and a metallic tube with a cylindrical hole
+passing through it at a right angle to the tube's axis:
+
+                                                          |
+                                     ||                   [ image
+                                                          |
+  X-ray source ]                     ||                   | screen
+                            metallic || tube              |
+                                     ||                   |
+                                                          |
+
+We know source--screen centre distance, radius of the tube, radius of the hole.
+
+We do some calculations based on the image of the hole on the screen.  However,
+the calculations are mathematically highly complex, and must assume that the
+object's hole projects an image (resembling an ellipse if the tube is not
+parallel to the screen) in the centre of the screen.  However, it is unlikely
+that the object is placed so conveniently.  
+
+Firstly, we must transform the major and minor axis of the ellipse.  I cannot
+know what the angle between the tube and screen is.  Do I have to assume that
+they are parallel to do the transformation?  How do I do this transformation?
+
+Secondly, there is a distortion of the image due to the screen being planar
+(the source--screen distance increases as we move away from the centre of the
+screen).  How can I compensate the ellipse's axis for this image distortion?
+
+So, please can anyone give us a few pointers here?  How do we transform the
+image so it appears as it would if it were in the centre of the screen, and how
+do I deal with distortion due to the shape of the screen?
+
+We'd appreciate any help, either posted or emailed.
+
+Thanks in advance, Simon.
+-- 
+Simon Marshall, Dept. of Computer Science, University of Hull, Hull HU6 7RX, UK
+  "Football isn't about life and death.  It's more important than that." Bill
+Email: S.Marshall@cs.hull.ac.uk   Phone: +44 482 465951  Fax: 466666   Shankley

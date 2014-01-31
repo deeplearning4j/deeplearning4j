@@ -1,0 +1,28 @@
+From: paladin@world.std.com (Thomas G Schlatter)
+Subject: Re: More Cool BMP files??
+Organization: The World Public Access UNIX, Brookline, MA
+Distribution: usa
+Lines: 22
+
+In article <1993Apr24.062055.7123@seas.gwu.edu> louray@seas.gwu.edu (Michael Panayiotakis) writes:
+>>
+>>
+>>>BEGIN ----------------------- CUT HERE ---------------
+>>>begin 666 ntreal.bmp
+>>>M0DTV5P<      #8$   H    ( ,  %@"   !  @                     
+>>>M            $    ! @@P![( @ "!A> #!_F   #CD ,56# #D.  !=>_D 
+>>>M4PA: &4H@P"L,1  $U); &N+L0 ($!@ +4WA !,J.0 B/%H 9TJ3 $KKZP 0
+>>>M,;, TD4I /ZGB0!)#UH (0A.  "6E@ I !@ 4B!I " !  !BBZX #!E1 )BV
+>>
+>>Deleted a lot of stuff!!!!!!!
+>>How do you convert this to a bit map???
+>
+>You're supposed to delete everything above the "cut here" mark, and
+>below the lower cut here mark, and uudecode it.  but 
+>*I was not able to: unexpected end of file encountered at the last line.
+>
+>could you please re-post it, or tell be what I'm doing wrong?
+
+Sounds like the original poster of the bitmap uuencoded the file
+on a DOS machine, and you tried to uudecode it on a Un*x machine, and your
+uudecode program balked at the carraige-returns.

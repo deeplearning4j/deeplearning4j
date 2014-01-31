@@ -1,0 +1,46 @@
+From: daniels@NeoSoft.com (Brad Daniels)
+Subject: Re: C++ toolkit "directions" ?
+Organization: NeoSoft Communications Services -- (713) 684-5900
+Lines: 41
+
+In article <533@imp.HellNet.org> devil@loki.HellNet.org (Gil Tene) writes:
+>I am trying to figure out the current C++ toolkit "directions".
+>More simply, I'd like to know which C++ toolkit to "bet on" 
+>for use in a new long term project.
+
+I have the same problem.  I have looked at Motif++, WWL, InterViews, GINA++,
+and a few variations on the above.  I've also done a cursory examination
+of Rogue Wave's View.h++.  I like View.h++'s abstractions best of all of the
+toolkits I mentioned, but the resulting code looks little like Motif, and I
+have little confidence that this software will catch on or otherwise result
+in significant longevity for my code.  GINA++ allows you to write code which
+looks a great deal like Motif and also makes interesting use of inheritance,
+but the resulting code is almost too Motif-like, and is certainly not
+significantly less verbose than equivalent C code.  InterViews looks
+promising, but I haven't found a free version with Motif support, and I'm
+not confident how widely InterViews with Motif support will be adopted,
+and what (if any) specific Motif support will be available over time.  The
+other libraries produce code which is less Motif-like, but which does not make
+sufficient use of the features of C++ to simplify my coding task.
+
+At this point, my inclination is to write my Motif manipulation routines in
+C, and invoke those routines from my C++ code using simple abstractions suited
+to my specific task.  Later, if OSF or some credible standards-setting body
+comes up with a C++ interface to Motif, I will change to that.  It does me
+no goo to write in C++ if my choice of interfaces leaves me with code which
+leaves me tied to an abstraction which is not consistent with the industry
+directions.  It's better to take a standard if inferior solution for now
+than to go with a slgihtly superior approach which will leave me with both
+useless code and useless skills a few years from now.  Views.h++ is the only
+library I'd consider right now, but in our environment, we'd end up spending
+nearly $5000 to use it, and I can't justify it when it's likely to cause
+short-term productivity decreases as we learn the new abstraction, and is
+unlikely to be a sufficiently long-lived solution for us to reap the benefits
+at the high end of the J curve.
+
+- Brad
+-- 
+Brad Daniels		`	|  "If money can't buy happiness,
+daniels@neosoft.com		|   I guess I'll have to rent it."
+I don't work for NeoSoft, and	|		- Weird Al Yenkovic
+don't speak for my employer.	|

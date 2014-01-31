@@ -1,0 +1,39 @@
+From: whughes@lonestar.utsa.edu (William W. Hughes)
+Subject: Re: Tempest
+Nntp-Posting-Host: lonestar.utsa.edu
+Organization: University of Texas at San Antonio
+Distribution: na
+Lines: 32
+
+In article <1993Apr22.105915.5584@infodev.cam.ac.uk> rja14@cl.cam.ac.uk
+(Ross Anderson) writes:
+>res@colnet.cmhnet.org (Rob Stampfli) writes:
+>> Wouldn't a a second monitor of similar type scrolling gibberish and adjacent
+>> to the one being used provide reasonable resistance to tempest attacks?
+>We've got a tempest receiver in the lab here, and there's no difficulty in
+>picking up individual monitors. Their engineering tolerances are slack enough
+>that they tend to radiate on different frequencies. Even where they overlap, you
+>can discriminate because they have different line synch frequencies - you can
+>lock in on one and average the others out.
+>
+>The signals are weird in any case, with varying polarisations and all sorts
+>of interactions with the building. Just moving a folded dipole around is also
+>highly effective as a (randomised) means of switching from one monitor to
+>another,
+>
+Hell, just set up a spark jammer, or some other _very_ electrically-noisy
+device. Or build an active Farrady cage around the room, with a "noise"
+signal piped into it. While these measures will not totally mask the
+emissions of your equipment, they will provide sufficient interference to
+make remote monitoring a chancy proposition, at best. There is, of course,
+the consideration that these measures may (and almost cretainly will)
+cause a certain amount of interference in your own systems. It's a matter
+of balancing security versus convenience.
+
+BTW, I'm an ex-Air Force Telecommunications Systems Control Supervisor and
+Telecommunications/Cryptographic Equipment Technician.
+
+-- 
+                            REMEMBER WACO!
+     Who will the government decide to murder next? Maybe you?
+[Opinions are mine; I don't care if you blame the University or the State.]

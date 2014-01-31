@@ -1,0 +1,29 @@
+From: dla@se05.wg2.waii.com (Doug Acker)
+Subject: Re: xterm build problem in Solaris2.1
+Organization: western geophysical exploration products
+Lines: 22
+NNTP-Posting-Host: se05.wg2.waii.com
+In-reply-to: dla@se05.wg2.waii.com's message of 16 Apr 1993 23:58:27 GMT
+
+>>>>> On 16 Apr 1993 23:58:27 GMT, dla@se05.wg2.waii.com (Doug Acker) said:
+	Doug> NNTP-Posting-Host: se05.wg2.waii.com
+
+	Doug> ..continuing on my build problems, I got stuck here build xterm...
+
+
+	Doug> Undefined                       first referenced
+	Doug>  symbol                             in file
+	Doug> index                               /usr/ucblib/libtermcap.a(termcap.o)
+	Doug> rindex                              /usr/ucblib/libtermcap.a(termcap.o)
+	Doug> ld: fatal: Symbol referencing errors. No output written to xterm
+
+
+Actually .. the problem is that you have to build with LD_LIBRARY_PATH
+unset as well as LD_RUN_PATH.
+--
+Douglas L.Acker                Western Geophysical Exploration Products
+____    ____     ____          a division of Western Atlas International Inc.
+\   \  /   /\   /   /\         A Litton / Dresser Company
+ \   \/   /  \ /   /  \        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  \  /   / \  /   /\   \       Internet  :  acker@wg2.waii.com
+   \/___/   \/___/  \___\      Voice     :  (713) 964-6128

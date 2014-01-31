@@ -1,0 +1,24 @@
+From: oddjob@oz.plymouth.edu (Andrew C. Stoffel)
+Subject: Re: Utility for updating Win.ini and system.ini
+Organization: Plymouth State College - Plymouth, NH.
+Lines: 19
+
+In article <1993Apr20.151912.18590@midway.uchicago.edu> am37@midway.uchicago.edu writes:
+
+>Unless I am completely misunderstanding you, try using either Notepad or
+>sysedit.exe (found in your system subdirectory) to edit you .ini files.
+You can add sysedit (& regedit) to a program group... they are Windows
+programs. 
+>The sysedit.exe program is cool because it automatically opens you win.ini,
+>system.ini, autoexec.bat and config.sys files to be edited.
+
+Is it possible to get it to load other *.ini files ????
+
+>Drewster (am37@kimbark.uchicago.edu)
+>
+
+
+-- 
+|E-mail  --> un*x: oddjob@oz.plymouth.edu |vms: andys@psc.plymouth.edu |
+|Disclaimer > Any "end-user" software that provides NO avenue for user |
+|of the week> modification or programmability is NOT user friendly.    |

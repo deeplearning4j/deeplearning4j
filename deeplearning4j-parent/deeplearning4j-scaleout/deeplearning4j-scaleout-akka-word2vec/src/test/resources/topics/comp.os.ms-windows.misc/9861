@@ -1,0 +1,44 @@
+From: kuehnel@rvs.uni-hannover.de (Stefan Kuehnel, SWL)
+Subject: Re: NT Questions
+Reply-To: kuehnel@rvs.uni-hannover.de
+Organization: RVS, Universitaet Hannover, Germany
+Lines: 38
+
+In article 5802@news.yale.edu, adriene_nazaretian@qm.yale.edu (Adriene Nazaretian) writes:
+> In article <1993Mar26.020427.29119@samba.oit.unc.edu>, tclark@med.unc.edu (Thomas B. Clark) says
+
+[...]
+
+> >2.  Is the driver support as seamless as program support?
+> >e.g., Will my Soundblaster, scanner, CD-Rom, tape backup
+> >continue to work even if there are no specific NT drivers?
+> >
+> There is a hardware compatibility guide to answer these questions.
+> There are many drivers for CD Rom and there are MIDI and other
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> sound drivers installed, I dont do a lot with sound digitizing on this
+> platform, but recall seeing items for their configuration in the Control
+> Panel Applet.  There is built in support for tape backup systems as well.
+
+[...]
+
+My Problem: I wasn't aware of the fact that I would need an *SCSI*-CD-ROM for
+Windows NT when ordering the Beta-SDK-Package. So my question: Is there any driver
+available that will allow me to use my Mitsumi (Non-SCSI) CD-ROM for installation ?
+If there is one, from which place (ftp-site) can I get it ?
+
+Many thanks in advance
+
+	Stefan Kuehnel
+---
+
+----------------------------------------------------------------------
+   /\  Stefan K"uhnel
+  |   
+  |/   kuehnel@rvs.uni-hannover.de   
+  |\   kuehnel@swl.uni-hannover.de (neu ab. 17.04.1993)
+  |  
+\/     Die oben wiedergegebene Meinung ist meine private und nicht die         
+       des RRZN, des LG RVS der UH oder einer anderen Institution.             
+----------------------------------------------------------------------
+

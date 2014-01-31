@@ -1,0 +1,28 @@
+From: ken@sugra.uucp (Kenneth Ng)
+Subject: Re: Identifying / Securing Files
+Organization: Private Computer, Totowa, NJ
+Lines: 23
+
+In article <2bb29f4c@mash.boulder.co.us: rmashlan%mash@csn.org (Robert Mashlan) writes:
+:tarnold@vnet.IBM.COM (Todd W. Arnold) said in article <19930322.101356.617@almaden.ibm.com>:
+:>It's OK as long as you trust the end-user to stay out of your application
+:>program - or as long as it runs in a system where the user can't get to it.
+:>Otherwise, you can't stop him from finding the "load a module" code in your
+:>program, and simply bypassing the check for a valid module.  The devious user
+:>can either modify the object code before running the program, or he can run
+:>the program under a debugger and change the instructions in memory.
+:There is a way to foil debuggers, by clearing the single step 
+:interrupt, on which a debugger depends, every few instructions in 
+:the sensitive areas of the code.
+
+This assumes the person is using the hardware debug instruction of an X86
+type processor.  It can be negated by NOP'ing the clear debug instruction,
+or by running the code on a machine simulator, like one I wrote as a senior
+project in college.  It can bypass and trace practically anything one could
+write in software.  Kind of like being on a Star Trek Holideck :-).
+
+-- 
+Kenneth Ng
+Please reply to ken@eies2.njit.edu for now.
+"All this might be an elaborate simulation running in a little device sitting
+on someone's table" -- J.L. Picard: ST:TNG

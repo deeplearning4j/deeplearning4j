@@ -1,0 +1,54 @@
+From: row0@ns1.cc.lehigh.edu (RICHARD O. WHITE)
+Subject: Re: Help with ultra-long timing
+Organization: Lehigh University
+Lines: 49
+
+
+In article <1993Apr5.083324.48826@kuhub.cc.ukans.edu>, wellison@kuhub.cc.ukans.e
+du writes:
+>I have a project that was drooped in my lap that is somewhat a pain to design.
+>What I am looking for is a stable ultra-long solid state timer. What they want
+>to do is to place this thing on the Antartic ice shelf and measure the amount
+>of snow fall over a period of six weeks. Every two weeks, they want to trip a
+>selonoid to discharge different colored pellets by gas pressure out across the
+>snow. Then by digging down into the snow, the snow fall amount can be measured
+>as they come to the different color pellets.
+>
+>The problem is trying to build a timer that would stand the cold (-40 degrees)
+>and a power source that wouldn't drain. I have looked at the XR-2204 timers and
+>the standard NE556 dual timers, but thier temp specs won't go that low. Also,
+>two weeks equates to 1,209,600 seconds per firing, which means one big timing
+>cap ! I have found 2.2 farad (yes, Farad !) caps that have a working voltage of
+>5 volts and are small in size. But again, the time of discharge at -40 or lower
+>degrees isn't linear. I was thinking of using several timers chained together
+>to fire the selonid at the end of the timing period, but that blasted cold and
+>the drain on a battery over six weeks is the pain. One possibility would be to
+>use solar panels, but this is during the six month twilight. Anyone have any
+>good ideas ?
+>
+>Thanks in advance...
+>
+>-=-= Wes =-=-
+>
+just a suggestion:
+take a motorola mc14536B set it up to give you a pulse once every sec or ten
+secs with either a RC or xtal clock input. then feed to a MC14521B as clock
+input and decode output for 1,209,600 sec output ,might have to add a few 'and'
+gates or decoder chips to get output and reset pulse back to the'521 to restart
+cycle... Trigger a oneshot from the decoded riseing edge ;the one shot then
+goes to a mosfet to drive the mechanism to fire the pellet launcher..
+these ckts require uAmps of current,between 5 - 15 volts, so a 12 volt
+gel cell of a few Amphours would last the six weeks.
+Then take the ckt board & battery wrap in 3" or 4" of foam or build a box
+of out of the stuff...with plywood or metal exterior...
+build a small heater out of 10-50 Watt resistors in series to keep the battery
+and ckts warm.
+2nd thought use 2 batteries one for heater one for timer and pellet trigger.
+
+Insolate-insolate.......even though the chips state that the - AL
+rated devices are good to -55 C.. The batteries have a considerable reduction
+in capacity...oh make sure the area inside has minium air leakage..
+
+hope this helps
+RW     ( is this to long winded for the net??)(be gentle)...
+-- 

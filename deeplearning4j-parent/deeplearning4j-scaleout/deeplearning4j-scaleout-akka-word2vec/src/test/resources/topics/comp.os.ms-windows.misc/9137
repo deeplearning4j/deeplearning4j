@@ -1,0 +1,32 @@
+Subject: re: WINBENCH 3.11 help -- graphics comparison?!?
+From: srg3sir@grv.grace.cri.nz
+Distribution: world
+Organization: Industrial Research Ltd., New Zealand.
+NNTP-Posting-Host: rmayston.grace.cri.nz
+Lines: 25
+
+
+
+In article <C4zoGD.C56@news.udel.edu> swyatt@bach.udel.edu (Stephen L Wyatt) writes:
+>I have a question about WINBENCH (pc labs thing) 3.11..
+>
+>I have a 386/33 and a Ahead B (512k) card and got these results-
+>
+>windows vga driver - 2.44 million
+>ahead B (640-480-256) driver - 455,000 winmarks
+>windows svga (800-600-16) driver - 1.68 million winmarks...
+>
+>I was thinking about upgrading to a diamond 24x card.. I read it had about
+>8 million winmark..
+>
+>obviously this is MUCH MUCH greater... but is this in 256-color mode or what?
+>is this a good card...street price is about $170...
+
+On my 386dx 33Mhz 4Mb RAM
+Winbench 2.5
+ 24x v2.02 16.7M        1,668,274
+     v2.03 16.7M        1,668,985
+     v2.03 16           4,602,428
+     v2.03 256          7,635,278
+Richard Mayston
+maystonr@grace.cri.nz

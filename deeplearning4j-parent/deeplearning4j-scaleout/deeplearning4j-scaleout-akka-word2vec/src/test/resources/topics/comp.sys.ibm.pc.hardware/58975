@@ -1,0 +1,66 @@
+From: root@zeos.com (Superuser)
+Subject: ZEOS VESA Video Changes & Specs
+Organization: Zeos International, Ltd
+Lines: 61
+
+
+As most of you know, we have recently changed our standard VESA local-bus
+video card from our own NCR-based card to the new Diamond Stealth 24 VLB card
+for packages 2, 3, and 4 (package #1 still has the NCR "screamer').  We also have
+added the $149 upgrade from the Stealth 24 or NCR to the Diamond Viper to our
+product list.  Below are the comparisons of the different cards in the
+configurations we will offer:
+
+                     NCR              Stealth 24 VLB        Viper VLB
+64Ox480 Colors       16,256           16,256,32K,64K,16.7M 16,256,32K,64K,16.7M *
+8OOx6OO Colors       16,256           16,256,32K,64K        16,256,32K,64K *
+1024x768 Colors      16,256           16,256                16,256
+1280x1024 Colors     16               16                    16
+Video Processor      NCR 77C22E+      S3 86C805             Weitek Power 9000
+Video RAM            1M               1M                    1M
+Max RAM addressable
+  by Vid Processor   3M               2M                    2M
+RAM Type             DRAM             DRAM                  VRAM
+User RAM Upgrade?    No (no sockets)  No (no sockets)       Yes (thru
+Diamond)
+64Ox480 Refresh      60-72 Hz         60-72   Hz            60-72   Hz
+8OOx6OO Refresh      56-72 Hz         56-72   Hz            56-72   Hz
+1024x768 Refresh     44-70 Hz         43-72   Hz            43-72   Hz
+128Oxl024 Refresh    43 Hz            43-60   Hz            43-74   Hz
+26 pin VESA
+  Feature Connector  No               Yes                   No 
+Conflict with x2E8
+  port addr (COM4)   No               YES*                  No*
+Drivers for:
+  Win 3.1            Yes              Yes                   Yes
+  ACad    9/10/11    Yes              Yes                   Yes
+  ACad 12            No               Yes**                 Yes**
+  VESA               Yes              Yes                   Yes
+  OS/2,     WinNT    NO***            NO***                 NO***
+Win 3.1 WINMARKS     10.5M****        21 M****              50M****
+
+
+^L
+*    Viper VLB with 2M of video RAM also gives 8OOx6OO 16.7M, 1024x768 32K &
+     64K, and 1280xl 024 256 color.  S3-based cards, since they are downward
+     compatible, will have the conflict with 2E8.  Diamond admits conflict will
+     exist with the Stealth 24.  The prelim Viper manual incorrectly lists the 
+     S3 port addresses.  No conflict. 
+
+
+**   AutoCAD 12 drivers are now currently available for Stealth, SpeedSTAR
+     24X, Stealth 24 VLB, and Viper VLB.  They can only be obtained from
+     Diamond Tech Support, 408-736-2000 and NOT on any BBS. 
+
+**   OS/2 2.0 is supported for Standard VGA for all cards.  SVGA drivers
+     available in the near future.  Windows NT is not released yet, and no
+     drivers are available currently.  Diamond hopes to have all current
+     products supported in the Win NT release, on the NT disks.
+
+***  NCR testing is coming from tests ran in our tech support department was 
+    at ZEOS at 1024x768x256 on Zeos DX2-66. These results are not official.
+    Diamond results are from their own DX2-66, 1024x768 256 colors @ 7OHz 
+    refresh.
+
+
+

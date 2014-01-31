@@ -1,0 +1,26 @@
+From: biernat@rtsg.mot.com (Tim Biernat)
+Subject: Re: G2K/Jumbo 250 Backup Problems
+Keywords: tape backup gateway jumbo
+Nntp-Posting-Host: tophat1
+Organization: Motorola, Inc., Cellular Infrastructure Group
+Distribution: usa
+Lines: 18
+
+In article <1993Apr19.181139.24147@den.mmc.com> snorman@den.mmc.com writes:
+>I have a Colorado Memory Systems Jumbo 250 tape backup unit in my Gateway
+>486/33V Tower system. I have found the supplied backup capability to be 
+>fairly unreliable. In approx 3 cases out of 10, I have had the backup fail
+>at one point or another, often hanging in the middle of writing the tape.
+>Seek errors, drive communication errors seem to be most common. I use the
+>DOS backup software from Colorado Memory Systems. Should I return the drive,
+>get some better backup software, reformat the tapes (am using CMS tapes)?
+>Any hints would be appreciated - this stuff is to time-consuming to do over
+>and over again until it cooperates...
+
+i've been using an identical setup, except for the tower config,
+for several months now.  from previous discussions on the net,
+the first thing to check for is DMA conflicts with other devices,
+especically if you've got any funky ones.  next off, suspect
+your tape - try a fresh one.  good luck !
+
+--  tim

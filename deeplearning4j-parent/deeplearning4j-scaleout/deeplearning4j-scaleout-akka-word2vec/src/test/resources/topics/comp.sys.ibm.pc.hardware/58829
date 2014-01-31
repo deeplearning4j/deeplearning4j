@@ -1,0 +1,19 @@
+From: glang@slee01.srl.ford.com (Gordon Lang)
+Subject: Please help identify video hardware
+Article-I.D.: fmsrl7.1pqep5INN88e
+Organization: Ford Motor Company Research Laboratory
+Lines: 11
+NNTP-Posting-Host: slee01.srl.ford.com
+X-Newsreader: Tin 1.1 PL5
+
+I need a device (either an ISA board or a subsystem) which will
+take two RGB video signals and combine them according to a template.
+The template can be as simple as a rectangular window with signal
+one being used for the interior and signal two for the exterior.
+But I beleive fancier harware may also exist which I do not want
+to exclude from my search.  I know this sort of hardware exists
+for NTSC, etc. but I need it for RGB.
+
+Please email and or post any leads....
+
+Gordon Lang (glang@smail.srl.ford.com  -or-  glang@holo6.srl.ford.com)

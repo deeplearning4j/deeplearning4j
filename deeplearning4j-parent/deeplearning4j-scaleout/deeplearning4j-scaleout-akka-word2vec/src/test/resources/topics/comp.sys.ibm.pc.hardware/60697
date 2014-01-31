@@ -1,0 +1,25 @@
+From: andrew@frip.WV.TEK.COM (Andrew Klossner)
+Subject: Re: Soundblaster IRQ and Port settings
+Reply-To: andrew@frip.wv.tek.com
+Organization: Tektronix Color Printers, Wilsonville, Oregon
+Lines: 19
+
+[]
+
+	"These LPT1, COM1, disk controller are call devices.  There are
+	devices that requires exclusive interrupt ownership, eg. disk
+	controller (I6) and keyboard (I1).  There are also devices that
+	does not require exclusive ownership, ie. it will share an
+	interrupt with another device, eg. LPT1"
+
+No.  In a standard ISA bus, the one that almost all non-laptop PCs use,
+two separate interface cards cannot share an interrupt.  This is due to
+a screwup in the bus design.  For example, if your Soundblaster wants
+to drive interrupt number 7, then it must hold a certain bus wire to 0
+or 1 at all times, depending on whether or not it wants an interrupt.
+This precludes letting another card assert interrupt number 7.
+
+When two or more devices in an ISA bus PC share an interrupt, it's
+because they're implemented by a single card.
+
+  -=- Andrew Klossner  (andrew@frip.wv.tek.com)

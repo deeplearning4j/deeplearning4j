@@ -1,0 +1,30 @@
+From: markus@octavia.anu.edu.au (Markus Buchhorn)
+Subject: Re: HDF readers/viewers
+Organization: Australian National University, Canberra
+Lines: 22
+Distribution: world
+NNTP-Posting-Host: 150.203.5.35
+Originator: markus@octavia
+
+
+I wrote...
+> 
+> G'day all,
+> 
+> Can anybody point me at a utility which will read/convert/crop/whatnot/
+> display HDF image files ? I've had a look at the HDF stuff under NCSA 
+> and it must take an award for odd directory structure, strange storage
+> approaches and minimalist documentation :-)
+
+and it has since turned out that all the mirror sites I looked at were 
+fooled by a restructuring at the original site - zaphod.ncsa.uiuc.edu - 
+and hence were in a mess. That and a pointer to 'imconv' should get
+me started. Ta muchly.
+
+Cheers
+	Markus
+-- 
+Markus Buchhorn, Parallel Computing Research Facility
+email = markus@octavia.anu.edu.au
+Australian National University, Canberra, 0200 , Australia.
+[International = +61 6, Australia = 06] [Phone = 2492930, Fax = 2490747]

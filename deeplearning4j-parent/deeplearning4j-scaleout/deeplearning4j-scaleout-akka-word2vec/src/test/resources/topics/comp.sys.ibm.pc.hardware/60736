@@ -1,0 +1,10 @@
+Organization: University of Illinois at Chicago, academic Computer Center
+From: Alan Hinds <U32472@uicvm.uic.edu>
+Subject: Disk data compression and Interleave
+Lines: 5
+
+Does anyone have enough experience to report whether disk data
+compression has any effect on the optimal disk sector interleave?
+Offhand, I expect that the time required to decompress disk data
+would increase the optimum disk sector interleave.
+                                              - Alan Hinds

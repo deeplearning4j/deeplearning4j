@@ -1,0 +1,38 @@
+From: bishop@baeyer.chem.fsu.edu (Greg Bishop)
+Subject: Re: Borland's Paradox Offer
+Organization: Physics Department, FSU
+News-Software: VAX/VMS VNEWS         
+Reply-To: bishop@baeyer.chem.fsu.edu
+Lines: 31
+
+
+>I am considering buying Borland's Paradox for Windows since I
+>would like to use a database with Windows (I don't have/use
+>one yet) for both work/home use.  I would like to advantage
+>of Borland's "$129.95 until April 30" offer if this package
+>is everything that Borland claims it to be.  So, I was
+>wondering ... has anybody used this and/or have any opinions?
+>
+>-- Tom Belmonte
+
+If you are interested in a program which is very easy to use, I strongly 
+suggest Approach 2.0.  It is extremely easy to use, make reports, etc.  I
+own both it and Paradox, and I almost never use Paradox.  If you need to 
+build up a complicated application, then Paradox is the way to go.  I have
+heard horror stories about the Access programming being extremely cryptic.
+Since you seem like you will probably be doing fairly small stuff (work/
+home use and you have not used a database before), I recommend Approach.  I 
+have found only one small thing which I would like it to do more easily:
+I have one database where the order in which the records are entered must 
+be different than what is the logical ordering.  To permanently reorder (to 
+use the old DBASE III command) the records requires sorting the records 
+appropriately (no problem, since I almost always use them in this order)
+exporting the database to another database (which can still be an Approach 
+database), and then copying the exported files back to the original 
+filename.  This is a small weakness, considering the other items I really 
+like about Approach.  It is also a little slower than Paradox (other than 
+the loading, Paradox takes forever and a minute to load).  Paradox also 
+takes a lot of memory (both hard disk (around 12MB) and RAM).
+
+Greg Bishop. (bishop@baeyer.chem.fsu.edu)
+

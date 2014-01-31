@@ -1,0 +1,70 @@
+From: barnett@grymoire.crd.ge.com (Bruce Barnett)
+Subject: Re: Title for XTerm
+In-Reply-To: lanzo@tekelec.com's message of Thu, 22 Apr 1993 17:35:46 GMT
+Nntp-Posting-Host: grymoire.crd.ge.com
+Reply-To: barnett@crdgw1.ge.com
+Organization: GE Corp. R & D, Schenectady, NY
+	<C5oL74.3B1@aeon.in-berlin.de> <1993Apr22.173546.5198@gecko.uucp>
+
+In article <1993Apr22.173546.5198@gecko.uucp> lanzo@tekelec.com (Mark Lanzo) writes:
+
+       [Hint for Sun OS users:  use /usr/5bin/echo instead of
+       /bin/echo or Csh's built-in echo.  Otherwise you'll have
+       to embed literal ESC and BEL characters in the string
+       instead of using convenient octal sequences.]
+
+Bad idea. using /usr/5bin/echo is slower than the built-in echo.
+This is what I do. It does execute `hostname` once per shell window,
+and does read in one extra file. But manipluating the titles does not
+require executing extra programs.
+
+Oh yes, it does execute some programs once per each system. 
+But it stores them in a file for the next time...
+
+
+if ( ! $?HOSTNAME ) then
+	setenv  HOSTNAME `hostname`
+endif
+
+# figure how how to generate escape, bell, 
+# and echo commands without a a line terminator
+# I may have done this before. If so, the variable E is set
+
+# have I executed this script before on this system?
+if ( $?E ) then
+#	echo "already set the echo variables">/dev/tty
+else if ( -f ~/.echo.${HOSTNAME} ) then
+	source ~/.echo.${HOSTNAME}
+else if ( `echo -n |wc -l`  == 0 ) then
+#	echo "built in echo is bsd" >/dev/tty
+	# then berkeley style echo
+	echo 'set ech = "echo -n"' >~/.echo.${HOSTNAME}
+	echo "set E = `echo a | tr a '\033'`" >> ~/.echo.${HOSTNAME}
+	echo "set B = `echo a | tr a '\007'`" >> ~/.echo.${HOSTNAME}
+	echo 'set N = ""' >> ~/.echo.${HOSTNAME}
+	source ~/.echo.${HOSTNAME}
+else 
+#	echo "built in echo is sysV" >/dev/tty
+	echo 'set ech = "echo"' >~/.echo.${HOSTNAME}
+	echo 'set E = "\033"' >> ~/.echo.${HOSTNAME}
+	echo 'set B = "\007"' >> ~/.echo.${HOSTNAME}
+	echo 'set N = "\c"' >> ~/.echo.${HOSTNAME}
+	source ~/.echo.${HOSTNAME}
+endif	
+
+
+# Are we using shelltool, cmdtool or xterm?
+# duplicate these aliases here to avoid problems
+if ( $term =~ sun* ) then
+	# Sun Aliases
+	alias Header '${ech}  "${E}]l\!:1${E}\${N}"'
+	alias IHeader '${ech}  "${E}]L\!:1${E}\${N}"'
+else if ( $term =~ xterm ) then
+	alias Header '${ech}  "${E}]2;\!:1${B}${N}"'
+	alias IHeader '${ech}  "${E}]1;\!:1${B}${N}"'
+endif
+
+
+
+--
+Bruce Barnett <barnett@crd.ge.com> uunet!crdgw1!barnett

@@ -1,0 +1,29 @@
+From: ibh@dde.dk (Ib Hojme)
+Subject: SCSI on dos
+Keywords: SCSI, DOS, streamer
+Organization: Dansk Data Elektronik A/S
+Lines: 23
+
+Hello netters,
+
+	I have a question concerning SCSI on DOS.
+
+	I have a ST01 SCSI controller and two hard-disks conected
+	(id's 0 and 1). I'd like to connect a SCSI streamer, but I
+	don't have software to access it. Does such a beast exist
+	as shareware or PD ?
+	
+	Also what if I want a third disk ? I know that DOs only can
+	"see" two two physical and four logical disks. Will it be
+	possible to use extra disks ?
+
+	Thanks in advance.
+
+	Ib
+
+|               | Ib Hojme
+|    |   |      | Euromax
+|  __| __| __   | Dansk Data Elektronik A/S, Vejle branch, Denmark
+| /  |/  |/__>  | Telephone: Int +45 75 72 26 00
+| \__/\__/\__   | Fax:       Int +45 75 72 27 76
+|               | E-mail:    ibh@dde.dk

@@ -1,0 +1,60 @@
+From: nsmca@aurora.alaska.edu
+Subject: Re: DC-X: Vehicle Nears Flight Test
+Article-I.D.: aurora.1993Apr5.191011.1
+Organization: University of Alaska Fairbanks
+Lines: 53
+Nntp-Posting-Host: acad3.alaska.edu
+
+In article <C4zHKw.3Dn@zoo.toronto.edu>, henry@zoo.toronto.edu (Henry Spencer) writes:
+> In article <2736@snap> paj@uk.co.gec-mrc (Paul Johnson) writes:
+>>This bit interests me.  How much automatic control is there?  Is it
+>>purely autonomous or is there some degree of ground control?
+> 
+> The "stick-and-rudder man" is always the onboard computer.  The computer
+> normally gets its orders from a stored program, but they can be overridden
+> from the ground.
+> 
+>>How is
+>>the transition from aerodynamic flight (if thats what it is) to hover
+>>accomplished?  This is the really new part...
+> 
+> It's also one of the tricky parts.  There are four different ideas, and
+> DC-X will probably end up trying all of them.  (This is from talking to
+> Mitch Burnside Clapp, who's one of the DC-X test pilots, at Making Orbit.)
+> 
+> (1) Pop a drogue chute from the nose, light the engines once the thing
+> 	stabilizes base-first.  Simple and reliable.  Heavy shock loads
+> 	on an area of structure that doesn't otherwise carry major loads.
+> 	Needs a door in the "hot" part of the structure, a door whose
+> 	operation is mission-critical.
+> 
+> (2) Switch off pitch stability -- the DC is aerodynamically unstable at
+> 	subsonic speeds -- wait for it to flip, and catch it at 180
+> 	degrees, then light engines.  A bit scary.
+> 
+> (3) Light the engines and use thrust vectoring to push the tail around.
+> 	Probably the preferred method in the long run.  Tricky because
+> 	of the fuel-feed plumbing:  the fuel will start off in the tops
+> 	of the tanks, then slop down to the bottoms during the flip.
+> 	Keeping the engines properly fed will be complicated.
+> 
+> (4) Build up speed in a dive, then pull up hard (losing a lot of speed,
+> 	this thing's L/D is not that great) until it's headed up and
+> 	the vertical velocity drops to zero, at which point it starts
+> 	to fall tail-first.  Light engines.  Also a bit scary, and you
+> 	probably don't have enough altitude left to try again.
+> -- 
+> All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+>                     - Kipling           |  henry@zoo.toronto.edu  utzoo!henry
+
+Since the DC-X is to take off horizontal, why not land that way??
+Why do the Martian Landing thing..  Or am I missing something.. Don't know to
+much about DC-X and such.. (overly obvious?).
+
+Why not just fall to earth like the russian crafts?? Parachute in then...
+
+==
+Michael Adams, nsmca@acad3.alaska.edu -- I'm not high, just jacked
+
+Please enlighten me... Ignorance is easy to correct. make a mistake and
+everyone will let you know you messed up..

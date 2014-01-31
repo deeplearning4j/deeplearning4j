@@ -1,0 +1,22 @@
+From: davidr@rincon.ema.rockwell.com (David J. Ray)
+Subject: Re: Fractals? what good are they?
+Organization: Rockwell International
+X-Newsreader: Tin 1.1 PL5
+Lines: 16
+
+In regards to fractal commpression, I have seen 2 fractal compressed "movies".
+They were both fairly impressive.  The first one was a 64 gray scale "movie" of
+Casablanca, it was 1.3MB and had 11 minutes of 13 fps video.  It was a little
+grainy but not bad at all.  The second one I saw was only 3 minutes but it
+had 8 bit color with 10fps and measured in at 1.2MB.
+
+I consider the fractal movies a practical thing to explore.  But unlike many 
+other formats out there, you do end up losing resolution.  I don't know what
+kind of software/hardware was used for creating the "movies" I saw but the guy
+that showed them to me said it took 5-15 minutes per frame to generate.  But as
+I said above playback was 10 or more frames per second.  And how else could you
+put 11 minutes on one floppy disk?
+
+davidr@rincon.ema.rockwell.com
+My opinions are my own except where they are shared by others in which case I 
+will probably change my mind.

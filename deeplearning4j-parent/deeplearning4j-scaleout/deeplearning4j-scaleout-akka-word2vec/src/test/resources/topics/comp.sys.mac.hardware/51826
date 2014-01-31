@@ -1,0 +1,35 @@
+From: walsteyn@fys.ruu.nl (Fred Walsteijn)
+Subject: built-in video problems on Mac IIsi !!??!!
+Organization: Physics Department, University of Utrecht, The Netherlands
+Lines: 30
+
+Dear Mac-friends,
+
+I've seen the following problem om three Mac IIsi machines
+all with 17 Mb RAM installed (70 or 80 ns SIMMs).
+
+If the contents of a window are being calculated and updated
+a lot of strange horizontal lines are temporarily generated
+on the screen.  The lines translate to the top of the screen and
+have a slightly lower brightness than their surroundings (they
+are a few millimeters apart).
+I admit that they are vague, but they can still be distinguished clearly,
+especially if the environment (i.e. the rest of the room) is a bit dark.
+Applications which produce this effect are:
+- the previewer of DirectTeX 1.2 (i.e. DVIReader 1.2)
+- Kaleidagraph 2.1.1/FPU
+
+The machines use their built-in video and drive the old 
+Apple Hires Monochrome screen (two monitors/cable sets tried).  
+The effect is independent of the settings in the following control 
+panels: Memory (adressing mode, disk cache) 
+        and Monitors (nr of greys/colors).
+
+Have you ever seen this effect too ?   Is there a solution ?
+
+Thanks,
+Fred
+-----------------------------------------------------------------------------
+Fred Walsteijn                                | Internet: walsteyn@fys.ruu.nl
+Institute for Marine and Atmospheric Research | FAX:      31-30-543163
+Utrecht University, The Netherlands           | Phone:    31-30-533169

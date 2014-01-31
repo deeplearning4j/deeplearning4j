@@ -1,0 +1,19 @@
+From: FL2G@gandalf.fl.bs.dlr.de (Reiner Suikat)
+Subject: TrueType font mix-up Times=>Cyrillic
+Organization: DLR Insitute of Flight Guidance
+Lines: 13
+NNTP-Posting-Host: frodo.fl.bs.dlr.de
+
+Hi
+I'm having a problem with TrueType fonts in WIndows 3.1. I have installed
+the Cyrillic fonts I found on CICA and now a strange thing happens:
+Sometimes windows uses Cyrillic when its supposed to use Times Roman.
+Examples: The PC-Tools Backup (version 7.1) has one line of Cyrillic text
+in its opening banner, the next to last line. Importing a Word for Windows
+text written in Times into WP5.2 also results in Cyrillic.
+Does anyone have an idea where to look for the problem?
+Thanks
+--
+Reiner Suikat                       |   Institute for Flight Guidance                  
+fl2g@gandalf.fl.bs.dlr.de           |   German Aerospace Research Establishment (DLR)
+

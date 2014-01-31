@@ -1,0 +1,27 @@
+From: hugo@hydra.unm.edu (patrice cummings)
+Subject: polygon orientation in DXF?
+Organization: University of New Mexico, Albuquerque
+Lines: 21
+NNTP-Posting-Host: hydra.unm.edu
+
+
+Hi.  I'm writing a program to convert .dxf files to a database
+format used by a 3D graphics program I've written.  My program stores
+the points of a polygon in CCW order.  I've used 3D Concepts a 
+little and it seems that the points are stored in the order
+they are drawn.
+
+Does the DXF format have a way of indicating which order the 
+points are stored in, CW or CCW?  Its easy enough to convert,
+but if I don't know which way they are stored, I dont know 
+which direction the polygon should be visible from.
+
+If DXF doesn't handle this, can anyone recommend a workaround?
+The best I can think of is to create two polygons for each one
+in the DXF file, one stored CW and the other CCW.  But that
+doubles the number of polygons and decreases speed...
+
+Thanks in advance for any help,
+
+Patrice
+hugo@hydra.unm.edu 

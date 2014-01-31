@@ -1,0 +1,26 @@
+From: d88-jwa@hemul.nada.kth.se (Jon Wätte)
+Subject: Re: Why the drive speeds differ??
+Keywords: Quantum, LPS, speed
+Nntp-Posting-Host: hemul.nada.kth.se
+Organization: Royal Institute of Technology, Stockholm, Sweden
+Lines: 19
+
+In <C5r70z.4GB@zimmer.CSUFresno.EDU> mmatteo@mondrian.CSUFresno.EDU (Marc Matteo) writes:
+
+>I just got a La Cie 240 meg external hard drive.  Speed tests show that it's
+>substantially faster that my internal 105 meg Quantum HD.  Supposedly the 105
+>and the 240 (both LPS drives) are roughly rated the same speed.  Why such a 
+>large difference?
+
+Could be better caching on the disk.
+Could be faster coil for seeks.
+Could be that the disk spins faster so data transfers faster.
+Could be that data is packed tighter so it transfers faster.
+Could be a faster SCSI command decoder in the drive.
+
+Among other things...
+-- 
+ -- Jon W{tte, h+@nada.kth.se, Mac Hacker Deluxe --
+ Engineering: "How will this work?" Science: "Why will this work?" Management:
+ "When will this work?"  Liberal Arts: "Do you want fries with that?"
+                     -- Jesse N. Schell

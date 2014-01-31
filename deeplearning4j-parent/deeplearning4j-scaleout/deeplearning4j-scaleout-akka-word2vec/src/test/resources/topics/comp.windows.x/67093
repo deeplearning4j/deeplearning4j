@@ -1,0 +1,19 @@
+From: matthew@alchemy.TN.Cornell.EDU (Matthew Kleinmann)
+Subject: Is a 2 headed Sun 3/60 possible (cgfour0/bwtwo0)
+Organization: Alchemy International
+Lines: 12
+Distribution: world
+NNTP-Posting-Host: alchemy.tn.cornell.edu
+
+I have a Sun 3/60 that has a mono framebuffer (bwtwo0 ?) built on the
+motherboard.  The same system also has a cgfour (cgfour0 and bwtwo1 ?)
+daughterboard.  I have been using this system with a color monitor having a
+color "front" screen from the cgfour, and a mono "back" screen from the
+bwtwo1, both on the same tube.  I recentley picked up a 1600 x 1280 Sun mono
+monitor, and I would like to make a two headed system with the cgfour0 and the
+bwtwo0.  I do not care if I loose the "back" screen on the color tube from the
+bwtwo1.  After looking through the Xsun man page I am not sure if this is
+possible.  Has anybody sucessfuly done this before?  
+
+--Matthew
+

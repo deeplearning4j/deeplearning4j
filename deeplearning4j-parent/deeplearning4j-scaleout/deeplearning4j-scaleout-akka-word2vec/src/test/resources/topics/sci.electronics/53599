@@ -1,0 +1,13 @@
+From: cam@castle.ed.ac.uk (Chris Malcolm)
+Subject: CASIO SF7500 SERIAL LINK
+Organization: Edinburgh University
+Lines: 8
+
+The Casio 7500 lectric diary has a 3-wire serial interface with param
+setting like RS232, for which one get a magic but expensive cable to
+connect to a PC. Does anyone know the spec of this interface, e.g., it
+needs inverting and boosting from CMOS signals to match RS232 lines?
+-- 
+Chris Malcolm    cam@uk.ac.ed.aifh          +44 (0)31 650 3085
+Department of Artificial Intelligence,    Edinburgh University
+5 Forrest Hill, Edinburgh, EH1 2QL, UK                DoD #205

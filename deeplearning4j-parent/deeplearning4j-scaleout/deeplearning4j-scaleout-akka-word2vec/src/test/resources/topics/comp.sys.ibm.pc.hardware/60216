@@ -1,0 +1,24 @@
+From: djweisbe@unix.amherst.edu (David Weisberger)
+Subject: Booting from B drive
+Nntp-Posting-Host: amhux3.amherst.edu
+Organization: large
+X-Newsreader: TIN [version 1.1 PL7]
+Lines: 17
+
+I have a 5 1/4" drive as drive A.  How can I make the system boot from
+my 3 1/2" B drive?  (Optimally, the computer would be able to boot
+from either A or B, checking them in order for a bootable disk.  But
+if I have to switch cables around and simply switch the drives so that
+it can't boot 5 1/4" disks, that's OK.  Also, boot_b won't do the trick
+for me.)
+
+Thanks,
+  Davebo
+
+--
+David Weisberger   | Q: Mr. President, do you care to say any more about the
+                   |    operational details of the airlift?
+djweisbe           | THE PRESIDENT:  No.
+@unix.amherst.edu  | Q: How about explaining to the American people why it's
+                   |    an important issue for the United States to undertake?
+                   | THE PRESIDENT:  What?

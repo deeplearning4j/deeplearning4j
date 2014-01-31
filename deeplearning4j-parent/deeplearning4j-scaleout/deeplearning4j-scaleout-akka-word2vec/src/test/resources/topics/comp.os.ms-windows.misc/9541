@@ -1,0 +1,20 @@
+Subject: Re: Windows for WorkGroups and LAN Workplace
+From: Flint.Waters@uwyo.edu (Flint Waters)
+Distribution: comp.os.ms-windows.apps,comp.os.ms-windows.misc,comp.os.ms-,world
+Organization: University of Wyoming
+Nntp-Posting-Host: sheriff.uwyo.edu
+Lines: 13
+
+
+>Now does anyone know if it is possible to use W4WG and Lan Workplace
+>for DOS at the same time. 
+
+>ie Can I access a file on another PC while being logged on to the
+>mainframe at the same time, simultaneously.
+
+Yup.  We're using both and they work just fine.  Hopefully, someday WFWG
+will communicate over LWP TCPIP.  Right now we have to load NetBeui.
+
+I use ODI with ODINSUP and all works well.
+
+

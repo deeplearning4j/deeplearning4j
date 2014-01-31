@@ -1,0 +1,20 @@
+From: lihan@ccwf.cc.utexas.edu (Bruce G. Bostwick)
+Subject: Re: how can 0.022 uF be different from two 0.047 in series?!
+Organization: The University of Texas at Austin, Austin TX
+Lines: 13
+Distribution: usa
+NNTP-Posting-Host: doc.cc.utexas.edu
+
+In article <C5uC68.19K@zoo.toronto.edu> henry@zoo.toronto.edu (Henry Spencer) writes:
+>
+>This may be a safety issue; the CSA is more paranoid in certain areas than
+>UL and such.  Two caps in series means that you don't have a short if one
+>of them shorts.
+
+Not necessarily true; a short in one, if near the maximum series
+voltage drop, will overvoltage the other one and short it too, more
+-- 
+<BGB>
+lihan@ccwf.cc.utexas.edu        /   The only reason the world hasn't
+(really Bruce Bostwick)        /   dissolved into total chaos is that
+from the great state of TEXAS /   Murphy's Law also applies to Murphy.

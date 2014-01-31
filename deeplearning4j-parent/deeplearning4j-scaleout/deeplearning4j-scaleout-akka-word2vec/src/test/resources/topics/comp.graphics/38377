@@ -1,0 +1,1568 @@
+From: nfotis@ntua.gr (Nick C. Fotis)
+Subject: (17 Apr 93) Computer Graphics Resource Listing : WEEKLY [part 1/3]
+Lines: 1566
+Reply-To: nfotis@theseas.ntua.gr (Nick (Nikolaos) Fotis)
+Organization: National Technical Univ. of Athens
+
+Archive-name: graphics/resources-list/part1
+Last-modified: 1993/04/17
+
+
+Computer Graphics Resource Listing : WEEKLY POSTING [ PART 1/3 ]
+===================================================
+Last Change : 17 April 1993
+
+Many FAQs, including this Listing, are available on the archive site
+pit-manager.mit.edu (alias rtfm.mit.edu) [18.172.1.27] in the directory
+pub/usenet/news.answers.  The name under which a FAQ is archived appears
+in the Archive-name line at the top of the article.
+This FAQ is archived as graphics/resources-list/part[1-3]
+
+There's a mail server on that machine. You send a e-mail message to
+mail-server@pit-manager.mit.edu  containing the keyword "help" (without
+quotes!) in the message body.
+
+You can see in many other places for this Listing. See the item:
+
+0. Places to find the Resource Listing
+
+for more information.
+
+Items Changed:
+--------------
+
+RE-ARRANGED the subjects, in order to fir better in the 63K/article limit.
+I PLAN ON CHANGING HEADERS SOON, SO BE CAREFUL! ONLY THE "Resource Listing"
+keys are sure to remain in the Subject: line!
+
+0. Places to find the Resource Listing
+6.  3D graphics editors
+   a. Public domain, free and shareware systems
+9. Plotting packages
+18. Molecular visualization stuff
+
+[ I'm thinking of making this post bi-weekly. What do you think??? ]
+
+--------------
+
+Lines which got changed, have the `#' character in front of them.
+Added lines are prepended with a `+'
+Removed lines are just removed. Use 'diff' to locate these changes.
+
+========================================================================
+
+This text is (C)Copyright 1992, 1993 of Nikolaos C. Fotis. You can copy
+freely this file, provided you keep this copyright notice intact.
+
+Compiled by Nikolaos (Nick) C. Fotis, e-mail: nfotis@theseas.ntua.gr
+
+Please contact me for updates,corrections, etc.
+
+Disclaimer: I do not guarantee the accuracy of this document.
+Use it at your own risk.
+
+========================================================================
+
+This is mainly a guide for computer graphics software.
+I would suggest reading the Comp. Graphics FAQ for image analysis stuff.
+
+It's entitled: 
+ (date) comp.graphics Frequently Asked Questions (FAQ)
+
+ John T. Grieggs <grieggs@jpl-devvax.jpl.nasa.gov> is the poster of the
+ official comp.graphics FAQ
+
+I have included my comments within braces '[' and ']'.
+
+Nikolaos Fotis
+
+========================================================================
+
+Contents of the Resource Listing
+================================
+
+PART1:
+------
+0. Places to find the Resource Listing
+1. ARCHIE
+2. Notes
+3. Computer graphics FTP site list, by Eric Haines
+4. Mail servers and graphics-oriented BBSes
+5. Ray-tracing/graphics-related mailing lists.
+6.  3D graphics editors
+   a. Public domain, free and shareware systems
+   b. Commercial systems
+7. Scene description languages
+8. Solids description formats
+
+PART2:
+------
+
+9. Plotting packages
+10. Image analysis software - Image processing and display
+
+PART3:
+------
+11. Scene generators/geographical data/Maps/Data files
+12. 3D scanners - Digitized 3D Data.
+13. Background imagery/textures/datafiles
+14. Introduction to rendering algorithms
+   a. Ray tracing
+   b. Z-buffer (depth-buffer)
+   c. Others
+15. Where can I find the geometric data for the:
+   a. Teapot ?
+   b. Space Shuttle ?
+16. Image annotation software
+17. Scientific visualization stuff
+18. Molecular visualization stuff
+19. GIS (Geographical Information Systems software)
+
+Future additions:
+[Please send me updates/info!]
+
+========================================================================
+
+0. Places to find the Resource Listing
+======================================
+
+#This file is crossposted to comp.graphics, comp.answers and news.answers,
+so if you can't locate it in comp.graphics, you're advised to search in
+#comp.answers or news.answers
+(The latter groups usually are archived in your site. Contact your sysadmin
+for more info).
+
+These 3 articles are posted to comp.graphics 3-4 times a month and are kept in
+many places (see below)
+
+--
+
+Many FAQs, including this one, are available on the archive site
+pit-manager.mit.edu (alias rtfm.mit.edu) [18.172.1.27] in the directory
+pub/usenet/news.answers.  The name under which a FAQ is archived appears
+in the Archive-name line at the top of the article.
+This FAQ is archived as graphics/resources-list/part[1-3]
+
+There's a mail server on that machine. You send a e-mail message to
+mail-server@pit-manager.mit.edu  containing: help in the Subject: field
+
+--
+
+The inria-graphlib mail server mirrors this posting (see under the
+Subject 4: Mail servers )
+
+--
+
+The Resource Listing is accesible through WAIS in the machine
+enuxva.eas.asu.edu (port 8000) under the name graphics-resources-list.
+It's got a digest-type line before every numbered item for purposes of
+indexing.
+
+--
+
+Another place that monitors the Listing is the MaasInfo files.
+For more info contact Robert E. Maas <rem@btr.com>
+
+--
+
+Yet another place to search for FAQs in general is the SWITCH
+(Swiss Academic and Research Network) system in Switzerland:
+
+interactive:
+  telnet nic.switch.ch [130.59.1.40], login as "info". Move to the
+  info_service/Usenet/periodic-postings directory. Search in the
+  00index file by typing "/" and the word to look for.
+  You may then just read the FAQ in the "faqs" directory, or decide
+  to fetch it by one of the following methods.
+
+ftp:
+  login to nic.switch.ch [130.59.1.40] as user anonymous and
+  enter your internet-style address after being prompted for a
+  password.
+
+	cd info_service/Usenet/periodic-postings
+
+mail:
+  send e-mail to
+
+RFC-822:
+   archive-server@nic.switch.ch
+X.400:
+  /S=archive-server/OU=nic/O=switch/PRMD=switch/ADMD=arcom/C=ch/
+
+Enter 'help' in the bodypart to receive instructions. No information
+is required in the subject header line.
+
+
+1. ARCHIE
+=========
+
+The Archie is a service system to locate FTP places for
+requested files. It's appreciated that you will use Archie
+before asking help in the newsgroups.
+
+Archie servers:
+  archie.au or 139.130.4.6             (Aussie/NZ)
+  archie.funet.fi or 128.214.6.100  (Finland/Eur.)
+  archie.th-darmstadt.de or 130.83.128.111  (GER.)
+  cs.huji.ac.il or 132.65.6.5             (Israel)
+  archie.kuis.kyoto-u.ac.jp or 130.54.20.1 (JAPAN)
+  archie.sogang.ac.kr or 163.239.1.11      (Korea)
+  archie.ncu.edu.tw or telnet 140.115.19.24  (TWN)
+  archie.doc.ic.ac.uk or 146.169.3.7  (UK/Ireland)
+  archie.sura.net or 128.167.254.179    (USA [MD])
+  archie.unl.edu (password: archie1)    (USA [NE])
+  archie.ans.net or 147.225.1.2         (USA [NY])
+  archie.rutgers.edu or 128.6.18.15     (USA [NJ])
+  archie.nz or 130.195.9.4           (New Zealand)
+
+Connect to Archie server with telnet and type "archie" as username.
+To get help type 'help'.
+You can get 'xarchie' or 'archie', which are clients that call Archie
+without the burden of a telnet session.
+'Xarchie' is on the X11.R5 contrib tape, and 'archie' on comp.sources.misc,
+vol. 27.
+
+To get information on how to use Archie via e-mail, send mail with
+subject "help" to "archie" account at any of above sites.
+
+(Note to Janet/PSS users -- the United Kingdom archie site is
+accessible on the Janet host doc.ic.ac.uk [000005102000].
+Connect to it and specify "archie" as the host name and "archie" as
+the username.)
+
+==========================================================================
+
+2. Notes
+========
+(Excerpted from the FAQ article)
+
+Please do *not* post or mail messages saying "I can't FTP, could
+someone mail this to me?"  There are a number of automated mail servers
+that will send you things like this in response to a message.
+
+There are a number of sites that archive the Usenet sources newsgroups
+and make them available via an email query system.  You send a message
+to an automated server saying something like "send comp.sources.unix/fbm",
+and a few hours or days later you get the file in the mail.
+
+==========================================================================
+
+3. Computer graphics FTP site list, by Eric Haines
+==================================================
+
+Computer graphics related FTP sites (and maintainers), 26/03/93
+	compiled by Eric Haines, erich@eye.com
+	and Nick Fotis, nfotis@theseas.ntua.gr
+
+Ray-tracers:
+------------
+
+RayShade - a great ray tracer for workstations on up, also for PC, Mac & Amiga.
+PoV - son and successor to DKB trace, written by Compuservers.
+	(For more questions call Drew Wells --
+	73767.1244@compuserve.com or Dave Buck -- david_buck@carleton.ca)
+ART - ray tracer with a good range of surface types, part of VORT package.
+DKBtrace - another good ray tracer, from all reports; PCs, Mac II,
+	Amiga, UNIX, VMS (last two with X11 previewer), etc.
+RTrace - Portugese ray tracer, does bicubic patches, CSG, 3D text, etc. etc.
+	An MS-DOS version for use with DJGPP DOS extender (GO32) exists also,
+	as a Mac port.
+VIVID2 - A shareware raytracer for PCs - binary only (286/287).  Author:
+	Stephen Coy (coy@ssc-vax.boeing.com).  The 386/387 (no source) version
+	is available to registered users (US$50) direct from the author.
+RAY4 - Steve Hollasch's 4-dimensional ray tracer - renders hyperspheres,
+	hypertetrahedra, hyperplanes, and hyperparallelepipeds (there's
+	a separate real-time wireframe viewer written in GL called WIRE4 ) .
+MTV,QRT,DBW - yet more ray tracers, some with interesting features.
+
+Distributed/Parallel Raytracers:
+--------------------------------
+
+XDART - A distributed ray-tracer that runs under X11. There are server binaries
+	which work only on DECstations, SPARCs, HP Snakes (7x0 series) and NeXT.
+	The clients are distributed as binaries and C source.
+Inetray - A network version of Rayshade 4.0.  Needs Sun RPC 4.0 or newer.
+	Contact Andreas Thurnherr (ant@ips.id.ethz.ch)
+prt, VM_pRAY - parallel ray tracers.
+
+Volume renderers:
+-----------------
+
+VREND - Cornell's Volume Renderer, from Kartch/Devine/Caffey/Warren (FORTRAN).
+
+Radiosity (and diffuse lighting) renderers:
+-------------------------------------------
+
+Radiance - a ray tracer w/radiosity effects, by Greg Ward.  Excellent shading
+	models and physically based lighting simulation.  Unix/X based, though
+	has been ported to the Amiga and the PC (386).
+INDIA - An Indian radiosity package based on Radiance.
+SGI_RAD - An interactive radiosity package that runs on SGI machines with a
+	Spaceball. It includes a house database.
+	Author: Guy Moreillon <moreillo@ligsg1.epfl.ch>
+RAD - a simple public-domain radiosity package in C. The solution can be run
+	stand-alone on any Unix box, but the walk-through requires a SGI 4D.
+	Author: Bernard Kwok <g-kwok@cs.yorku.ca>
+
+Renderers which are not raytracers, and graphics libraries:
+-----------------------------------------------------------
+
+SIPP - Scan line z-buffer and Phong shading renderer.
+	Now uses the shadow buffer algorithm.
+Tcl-SIPP - a Tcl command interface to the SIPP rendering
+	program. Tcl-SIPP is a set of Tcl commands used to programmed
+	SIPP without having to write and compile C code.
+	Commands are used to specify surfaces, objects,
+	scenes and rendering options.
+	It renders either in PPM format or in Utah Raster Toolkit RLE format
+	or to the photo widget in the Tk-based X11 applications.
+
+VOGLE - graphics learning environment (device portable).
+VOGL - an SGI GL-like library based on VOGLE.
+REND386 - A *fast* polygon renderer for Intel 386s and up. Version 2 on up.
+	[ It's not photorealistic, but rather a real-time renderer]
+XSHARP21 - Dr. Dobb's Journal PC renderer source code, with budget texture
+	mapping.
+
+Modellers, wireframe viewers:
+-----------------------------
+
+VISION-3D - Mac modeler, can output Radiance & Rayshade files.
+IRIT - A CSG solid modeler, with support for freeform surfaces.
+X3D - A wireframe viewer for X11.
+3DV - 3-D wireframe graphics toolkit, with C source, 3dv objects, other stuff
+	Look at major PC archives like wuarchive. One such file is 3DKIT1.ZIP
+PV3D - a shareware front end modeler for POVRAY, still in beta test.
+  French docs for now, price for registering 250 French Francs. Save disabled.
+  Some extra utilities, DXF files for the registered version.
+
+Geometric viewers:
+------------------
+
+SALEM - A GL-based package from Dobkin et al. for exploring mathematical
+	structures.
+GEOMVIEW - A GL-based package for looking and interactively manipulating
+3D objects, from Geometry Center at Minnesota.
+XYZ GeoBench -(eXperimental geometrY Zurich) is a workbench for geometric
+	computation for Macintosh computers.
+WIRE4 - GL wireframe previewer for Steve Hollasch's RAY4 (see above)
+
+Data Formats and Data Sets for Ray Tracing:
+-------------------------------------------
+
+SPD - a set of procedural databases for testing ray tracers.
+NFF - simplistic file format used by SPD.
+OFF - another file format.
+P3D - a lispy file format.
+TDDD - Imagine (3D modeler) format, has converters for RayShade, NFF, OFF, etc.
+	Also includes a nice postscript object displayer.  Some GREAT models.
+TTDDDLIB - converts to/from TDDD/TTDDD, OFF, NFF, Rayshade 4.0, Imagine,
+	and vort 3d objects. Also outputs Framemaker MIF files and isometric
+	views in Postscript. Registered users get a TeX PK font converter and
+	a superquadric surfaces generator.
+	Glenn Lewis <glewis@pcocd2.intel.com>
+	[Note : TTDDDLIB is also known as T3DLIB]
+CHVRTD - Chapel Hill Volume Rendering Test Datasets, includes volume sets for
+	two heads, a brain, a knee, electron density maps for RNA and others.
+
+Written Material on Rendering:
+------------------------------
+
+RT News - collections of articles on ray tracing.
+RT bib - references to articles on ray tracing in "refer" format.
+Rad bib - references to articles on radiosity (global illumination).
+Speer RT bib - Rick Speer's cross-referenced RT bib, in postscript.
+RT abstracts - collection by Tom Wilson of abstracts of many RT articles.
+Paper bank project - various technical papers in electronic form.  Contact
+	Juhana Kouhia <jk87377@cs.tut.fi>
+Online Bibliography Project :
+        The ACM SIGGRAPH Online Bibliography Project is a database of 
+        over 15,000 unique computer graphics and computational geometry
+        references in BibTeX format, available to the computer graphics
+        community as a research and educational resource.
+
+        The database is located at "siggraph.org".  Users may download 
+        the BibTeX files via FTP and peruse them offline, or telnet to
+        "siggraph.org" and log in as "biblio" and interactively search
+        the database for entries of interest, by keyword.
+        For the people without Internet access, there's also an e-mail
+        server. Send mail to
+
+        archive-server@siggraph.org
+
+        and in the subject or the body of the message include the message  send
+        followed by the topic and subtopic you wish. A good place to start is
+        with the command
+             send index
+        which will give you an up-to-date list of available information.
+
+        Additions/corrections/suggestions may be directed to the admin,
+        "bibadmin@siggraph.org".
+
+Image Manipulation Libraries:
+-----------------------------
+
+Utah Raster Toolkit - nice image manipulation tools.
+PBMPLUS - a great package for image conversion and manipulation.
+LIBTIFF - library for reading/writing TIFF images.
+ImageMagick - X11 package for display and interactive manipulation
+	of images.  Uses its own format (MIFF), and includes some converters.
+xv - X-based image display, manipulation, and format converter.
+xloadimage, xli - displays various formats on an X11 screen.
+Khoros - a huge, excellent system for image processing, with a visual
+	programming interface and much much more.  Uses X windows.
+FBM - another set of image manipulation tools, somewhat old now.
+Img - image manipulation, displays on X11 screen, a bit old now.
+xflick - Plays .FLI animation under X11
+XAnim - plays any resolution FLI along with GIF's(including GIF89a animation
+	extensions), DL's and Amiga IFF animations(3,5,J,l) and IFF
+	pictures(including HAM,EHB and color cycling)
+SDSC - SDSC Image Tools package (San Diego Supercomputing Center)
+	for image manipulation and conversion
+CLRpaint - A 24-bit paint program for SGI 24bit workstations and 8bit Indigos.
+
+Libraries with code for graphics:
+---------------------------------
+
+Graphics Gems I,II,III - code from the ever so useful books.
+spline-patch.tar.Z - spline patch ray intersection routines by Sean Graves
+kaleido - Computation and 3D Display of Uniform Polyhedra. Mirrored in
+	wuarchive. This package computes (and displays) the metrical
+	properties of 75 polyhedra. Author: Dr. Zvi Har'El,
+	e-mail: rl@gauss.technion.ac.il
+
+(*) means site is an "official" distributor, so is most up to date.
+
+
+NORTH AMERICA (please look for things on your own continent first...):
+-------------
+
+wuarchive.wustl.edu [128.252.135.4]:  /graphics/graphics - get CONTENTS file
+	for a roadmap.  /graphics/graphics/objects/TDDD - *the TTDDD objects
+	and converters*, /mirrors/unix-c/graphics - Rayshade ray tracer, MTV
+	ray tracer, Vort ray tracer, FBM, PBMPLUS, popi, Utah raster toolkit.
+	/mirrors/msdos/graphics - DKB ray tracer, FLI RayTracker demos.
+	/pub/rad.tar.Z - *SGI_RAD*, /graphics/graphics/radiosity - Radiance
+	and Indian radiosity package.  /msdos/ddjmag/ddj9209.zip - version 21
+	of Xsharp, with fast texture mapping.  There's lots more, including
+	bibs, Graphics Gems I & II code, OFF, RTN, Radiance, NFF, SIPP, spline
+	patch intersection routines, textbook errata, source code from Roy
+	Hall's book "Illumination and Color in Computer Generated Imagery", etc
+	graphics/graphics/packages/kaleido - *kaleido*
+	George Kyriazis <kyriazis@turing.cs.rpi.edu>
+
+princeton.edu [128.112.128.1]:  /pub/Graphics (note capital "G") - *Rayshade
+	4.0 ray tracer (and separate 387 executable)*, *color quantization
+	code*, *SPD*, *RT News*, *Wilson's RT abstracts*, "RT bib*, *Utah
+	Raster Toolkit*, newer FBM, *Graphics Gems I, II & III code*.
+	/pub/graphics directory - *SALEM* and other stuff.
+	Craig Kolb <cek@princeton.edu>
+	[replaces weedeater.math.yale.edu - note the capital "G" in
+	pub/Graphics] Because there's a trouble with princeton's incoming
+	area, you can upload Rayshade-specific stuff to
+	weedeater.math.yale.edu [128.36.23.17]
+
+alfred.ccs.carleton.ca [134.117.1.1]:  /pub/dkbtrace - *DKB ray tracer*,
+	/pub/pov-ray/POV-Ray1.0 - *PVRay Compuserve group ray tracer (or PoV)*.
+	David Buck <david_buck@carleton.ca>
+
+avalon.chinalake.navy.mil [129.131.31.11]:  3D objects (multiple formats),
+	utilities, file format documents.
+	This site was created to be a 3D object "repository" for the net.
+	Francisco X DeJesus <dejesus@archimedes.chinalake.navy.mil>
+
+omicron.cs.unc.edu [152.2.128.159]:  pub/softlab/CHVRTD - Chapel Hill
+	Volume Rendering Test Datasets.
+
+ftp.mv.com [192.80.84.1]: - Official DDJ FTP repository.
+	*XSHARP*
+
+peipa.essex.ac.uk [155.245.115.161]: the Pilot European Image Processing
+	Archive; in a directory ipa/synth or something like that, there are
+	image synthesis packages.
+	Adrian Clarke <alien@essex.ac.uk>
+
+barkley.berkeley.edu [128.32.142.237] : tcl/extensions/tsipp3.0b.tar.Z -
+	*Tcl-SIPP*
+	Mark Diekhans <markd@grizzly.com or markd@NeoSoft.com>
+
+acs.cps.msu.edu [35.8.56.90]: pub/sass - *X window fonts converter into
+	Rayshade 3.0 polygons*, Rayshade animation tool(s).
+	Ron Sass <sass@cps.msu.edu>
+
+hobbes.lbl.gov [128.3.12.38]: *Radiance* ray trace/radiosity package.
+	Greg Ward <gjward@lbl.gov>
+
+geom.umn.edu [128.101.25.31] : pub/geomview - *GEOMVIEW*
+	Contact (for GEOMVIEW): software@geom.umn.edu
+
+ftp.arc.umn.edu [137.66.130.11] : pub/gvl.tar.Z - the latest version of Bob,
+	Icol and Raz.  Source, a manual, man pages, and binaries for
+	IRIX 4.0.5 are included (Bob is a real time volume renderer)
+	pub/  contains also many volume datasets.
+	Ken Chin-Purcell <ken@ahpcrc.umn.edu>
+
+ftp.kpc.com [144.52.120.9] : /pub/graphics/holl91 - Steve Hollasch's
+	Thesis, /pub/graphics/ray4 - *RAY4*, /pub/graphics/wire4 - *WIRE4*.
+	/pub/mirror/avalon - mirror of avalon's 3D objects repository.
+	Steve Hollasch <hollasch@kpc.com>
+
+swedishchef.lerc.nasa.gov [139.88.54.33] : programs/hollasch-4d - RAY4,
+	SGI Explorer modules and Postscript manual, etc.
+
+zamenhof.cs.rice.edu [128.42.1.75] : pub/graphics.formats - Various electronic
+	documents about many object and image formats.
+	Mark Hall <foo@cs.rice.edu>
+	will apparently no longer be maintaining it, see ftp.ncsa.uiuc.edu.
+
+rascal.ics.utexas.edu [128.83.144.1]:  /misc/mac/inqueue - VISION-3D facet
+	based modeller, can output RayShade and Radiance files.
+
+ftp.ncsa.uiuc.edu [141.142.20.50] :  misc/file.formats/graphics.formats -
+	contains various image- and object-format descriptions.  Many SciVi
+	tools in various directories, e.g.  SGI/Alpha-shape/Alvis-1.0.tar.Z -
+	3D alpha-shape visualizer (SGI machines only),
+	SGI/Polyview3.0/polyview.Z - interactive visualization and analysis of
+	3D geometrical structures.
+	Quincey Koziol <koziol@ncsa.uiuc.edu>
+
+tucana.noao.edu [140.252.1.1] : /iraf - the IRAF astronomy package
+
+ftp.ipl.rpi.edu [128.113.14.50]:  sigma/erich - SPD images and Haines thesis
+	images.  pub/images - various 24 and 8 bit image stills and sequences.
+	Kevin Martin <sigma@ipl.rpi.edu>
+
+ftp.psc.edu [128.182.66.148]:  pub/p3d - p3d_2_0.tar P3D lispy scene
+	language & renderers.  Joel Welling <welling@seurat.psc.edu>
+
+ftp.ee.lbl.gov [128.3.254.68]: *pbmplus.tar.Z*, RayShade data files.
+	Jef Poskanzer <jef@ace.ee.lbl.gov>
+
+george.lbl.gov [128.3.196.93]: pub/ccs-lib/ccs.tar.Z - *CCS (Complex
+	Conversion System), a standard software interface for image processing*
+
+hanauma.stanford.edu [36.51.0.16]: /pub/graphics/Comp.graphics - best of
+	comp.graphics (very extensive), ray-tracers - DBW, MTV, QRT, and more.
+	Joe Dellinger <joe@hanauma.stanford.edu>
+
+ftp.uu.net [192.48.96.2]:  /graphics - *IRIT*, RT News back issues (not
+	complete), NURBS models, other graphics related material.
+	/graphics/jpeg/jpegsrc.v?.tar.Z - Independent JPEG Group package for
+	reading and writing JPEG files.
+
+freebie.engin.umich.edu [141.212.68.23]:  *Utah Raster Toolkit*,
+	Spencer Thomas <thomas@eecs.umich.edu>
+
+export.lcs.mit.edu [18.24.0.12] : /contrib - pbmplus, Image Magick, xloadimage,
+	xli, xv, Img, lots more.  /pub/R5untarred/mit/demos/gpc - NCGA Graphics
+	Performance Characterization (GPC) Suite.
+
+life.pawl.rpi.edu [128.113.10.2]: /pub/ray - *Kyriazis stochastic Ray Tracer*.
+	George Kyriazis <kyriazis@turing.cs.rpi.edu>
+
+cs.utah.edu [128.110.4.21]: /pub - Utah raster toolkit, *NURBS databases*.
+	Jamie Painter <jamie@cs.utah.edu>
+
+gatekeeper.dec.com [16.1.0.2]:  /pub/DEC/off.tar.Z - *OFF models*,
+	Also GPC Benchmark files (planned, but not checked).
+	Randi Rost <rost@kpc.com>
+
+hubcap.clemson.edu [130.127.8.1]:  /pub/amiga/incoming/imagine - stuff for the
+	Amiga Imagine & Turbo Silver ray tracers.  /pub/amiga/TTDDDLIB -
+	*TTDDDLIB* /pub/amiga/incoming/imagine/objects - MANY objects.
+	Glenn Lewis <glewis@pcocd2.intel.com>
+
+pprg.eece.unm.edu [129.24.24.10]:  /pub/khoros - *Khoros image processing
+	package (huge, but great)*.
+	Danielle Argiro <danielle@bullwinkle.unm.edu>
+
+expo.lcs.mit.edu [18.30.0.212]:  contrib - *PBMPLUS portable bitmap package*,
+	*poskbitmaptars bitmap collection*, *Raveling Img*, xloadimage.  Jef
+	Poskanzer <jef@well.sf.ca.us>
+
+venera.isi.edu [128.9.0.32]:  */pub/Img.tar.z and img.tar.z - some image
+	manipulation*, /pub/images - RGB separation photos.
+	Paul Raveling <raveling@venera.isi.edu>
+
+ucsd.edu [128.54.16.1]:  /graphics - utah rle toolkit, pbmplus, fbm,
+	databases, MTV, DBW and other ray tracers, world map, other stuff.
+	Not updated much recently.
+
+castlab.engr.wisc.edu [128.104.52.10]:  /pub/x3d.2.2.tar.Z - *X3D*
+	/pub/xdart.1.1.* - *XDART*
+	Mark Spychalla <spy@castlab.engr.wisc.edu>
+
+sgi.com [192.48.153.1]:  /graphics/tiff - TIFF 6.0 spec & *LIBTIFF* software
+	and pics.  Also much SGI- and GL-related stuff (e.g. OpenGL manuals)
+	Sam Leffler <sam@sgi.com>
+	[supercedes okeeffe.berkeley.edu for the LIBTIFF stuff]
+
+surya.waterloo.edu [129.97.129.72]: /graphics - FBM, ray tracers
+
+ftp.sdsc.edu [132.249.20.22]: /sdscpub - *SDSC*
+
+ftp.brl.mil [128.63.16.158]: /brl-cad - information on how to get the
+	BRL CAD package & ray tracer.  /images - various test images.
+	A texture library has also begun here.
+	Lee A. Butler <butler@BRL.MIL>
+
+cicero.cs.umass.edu [128.119.40.189]:  /texture_temp - 512x512 grayscale
+	Brodatz textures,
+	from Julien Flack <julien@scs.leeds.ac.uk>.
+
+karazm.math.uh.edu [129.7.7.6]:  pub/Graphics/rtabs.shar.12.90.Z - *Wilson's
+	RT abstracts*, VM_pRAY.
+	J. Eric Townsend <jet@karazm.math.uh.edu or jet@nas.nasa.gov>
+
+ftp.pitt.edu [130.49.253.1]:  /users/qralston/images - 24 bit image archive
+	(small).  James Ralston Crawford <qralston@gl.pitt.edu>
+
+ftp.tc.cornell.edu [128.84.201.1]: /pub/vis - *VREND*
+
+sunee.waterloo.edu [129.97.50.50]: /pub/raytracers - vivid, *REND386*
+	[or sunee.uwaterloo.ca]
+
+archive.umich.edu [141.211.164.153]: /msdos/graphics - PC graphics stuff.
+	/msdos/graphics/raytrace - VIVID2.
+
+apple.apple.com [130.43.2.2?]:  /pub/ArchiveVol2/prt.
+
+research.att.com [192.20.225.2]: /netlib/graphics - *SPD package*, ~/polyhedra -
+	*polyhedra databases*.  (If you don't have FTP, use the netlib
+	automatic mail replier:  UUCP - research!netlib, Internet -
+	netlib@ornl.gov.  Send one line message "send index" for more info,
+	"send haines from graphics" to get the SPD)
+
+siggraph.org [128.248.245.250]: SIGGRAPH archive site.
+	publications - *Online Bibliography Project*, Conference proceedings
+	in various electronic formats (papers, panels), SIGGRAPH Video Review
+	information and order forms.
+	Other stuff in various directories.
+	Automatic mailer is archive-server@siggraph.org ("send index").
+
+ftp.cs.unc.edu [128.109.136.159]: pub/reaction_diffusion - Greg Turk's work on
+	reaction-diffusion textures, X windows code (SIGGRAPH '91)
+
+avs.ncsc.org [128.109.178.23]:  ~ftp/VolVis92 - Volume datasets from the
+	Boston Workshop on Volume Visualization '92.  This site is also the
+	International AVS Center.
+	Terry Myerson <tvv@ncsc.org>
+
+uvacs.cs.virginia.edu [128.143.8.100]:  pub/suit/demo/{sparc,dec,etc} - SUIT
+	(Simple User Interface Toolkit).  "finger suit@uvacs.cs.virginia.edu"
+	to get detailed instructions.
+
+nexus.yorku.ca [130.63.9.66]: /pub/reports/Radiosity_code.tar.Z - *RAD*
+	/pub/reports/Radiosity_thesis.ps.Z - *RAD MSc. Thesis*
+	[This site will be changed to ftp.yorku.ca in the near future]
+
+milton.u.washington.edu [128.95.136.1] - ~ftp/public/veos - VEOS Virtual
+	Reality and distributed applications prototyping environment
+	for Unix. Veos Software Support : veos-support@hitl.washington.edu
+        oldpublic/fly - FLY! 3D Visualization Software demo.
+        That package is built for "fly-throughs" from various datasets in
+        near real-time. There are binaries for many platforms.
+	Also, much other Virtual Reality stuff.
+
+zug.csmil.umich.edu [141.211.184.2]: X-Xpecs 3D files (an LCD glass shutter
+	for Amiga computers - great for VR stuff!)
+
+sugrfx.acs.syr.edu [128.230.24.1]: Various stereo-pair images.
+[ Has closed down :-( ]
+
+sunsite.unc.edu [152.2.22.81]: /pub/academic/computer-science/virtual-reality -
+	Final copy of the sugrfx.acs.syr.edu archive that ceased to exist.
+	It contains Powerglove code, VR papers, 3D images and IRC research
+	material.
+	Jonathan Magid <jem@sunSITE.unc.edu>
+
+archive.cis.ohio-state.edu [128.146.8.52]: pub/siggraph92 - Code for
+	Siggraph '92 Course 23 (Procedural Modeling and Rendering Techniques)
+	Dr. David S. Ebert <ebert@cis.ohio-state.edu>
+
+lyapunov.ucsd.edu [132.239.86.10]: This machine is considered the
+	repository for preprints and programs for nonlinear dynamics,
+	signal processing, and related subjects  (and fractals, of course!)
+	Matt Kennel <mbk@inls1.ucsd.edu>
+
+cod.nosc.mil [128.49.16.5]: /pub/grid.{ps,tex,ascii} - a short survey of
+	methods to interpolate and contour bivariate data
+
+ics.uci.edu [128.195.1.1]: /honig --- Various stereo-pair images,
+	movie.c - animates a movie on an X display (8-bit and mono) with
+	digital subtraction.
+
+taurus.cs.nps.navy.mil [131.120.1.13]: pub/dabro/cyberware_demo.tar.Z - Human
+	head data
+
+pioneer.unm.edu [129.24.9.217]:  pub/texture_maps - Hans du Buf's grayscale
+	test textures (aerial swatches, Brodatz textures, synthetic swatches).
+	Space & planetary image repository.  Provides access to >150 CD-ROMS
+	with data/images (3 on-line at a time).
+        pub/info/beginner-info - here you should start browsing.
+        Colby Kraybill <opus@pioneer.unm.edu>.
+
+cs.brown.edu [128.148.33.66] : *SRGP/SPHIGS* . For more info on SRGP/SPHIGS:
+         mail -s 'software-distribution' graphtext@cs.brown.edu
+
+pdb.pdb.bnl.gov [130.199.144.1] has data about various organic molecules,
+       bonds between the different atoms, etc.
+       Atomic coordinates (and a load of other stuff) are contained in the
+       "*.ent" files, but the actual atomic dimemsions seem to be missing.
+       You could convert these data to PoV, rayshade, etc.
+
+biome.bio.ns.ca [142.2.20.2] : /pub/art - some Renoir paintings,
+        Escher's pictures, etc.
+
+ic16.ee.umanitoba.ca [] : /specmark - sample set of images from the
+        `Images from the Edge' CD-ROM (images of atomic landscapes, advanced
+        semiconductors, superconductors and experimental surface
+        chemistry among others). Contact ruskin@ee.umanitoba.ca
+
+explorer.dgp.toronto.edu [128.100.1.129] : pub/sgi/clrpaint - *CLRpaint*
+        pub/sgi/clrview.* - CLRview, a tool that aids in visualization
+        of GIS datasets in may formats like DXF, DEM, Arc/Info, etc.
+
+ames.arc.nasa.gov [128.102.18.3]: pub/SPACE/CDROM - images from Magellan
+        and Viking missions etc. Get pub/SPACE/Index first.
+        pub/SPACELINK has most of the SpaceLink service data (see below)
+        e-mail server available: send mail to archive-server@ames.arc.nasa.gov
+        (or ames!archive-server) with subject:"help"
+        or "send SPACE Index" (without the quotes!)
+        Peter Yee <yee@ames.arc.nasa.gov>
+
+pubinfo.jpl.nasa.gov [128.149.6.2]: images, other data, etc. from JPL
+        missions. Modem access at (818)-354-1333 (no parity, 8 data bits, 1
+        stop bit).
+        newsdesk@jplpost.jpl.nasa.gov or phone (818)-354-7170
+
+spacelink.msfc.nasa.gov [128.158.13.250] (passwd:guest) : space graphics
+        and GIF images from NASA's planetary probes and the Hubble Telescope.
+        Main function is support for teachers (you can telnet also to this
+        site). Dial up access: (205)-895-0028 (300/1200/2400/9600(V.32) baud,
+        8 bits, no parity, 1 stop bit).
+
+stsci.edu [130.167.1.2] : Hubble Space Telescope stuff (images and other
+        data). Read the README first!
+        Pete Reppert <reppert@stsci.edu> or Chris O'Dea <odea@stsci.edu>
+
+pit-manager.mit.edu [18.172.1.27]:  /pub/usenet/news.answers - the land of
+	FAQs.  graphics and pictures directories of particular interest.
+	[Also available from mail-server@pit-manager.mit.edu by sending a mail
+	message containing: help]
+
+UUCP archive: avatar - RT News back issues.  For details, write Kory Hamzeh
+	<kory@avatar.avatar.com>
+
+
+EUROPE:
+-------
+
+nic.funet.fi [128.214.6.100]:  *pub/sci/papers - *Paper bank project,
+	including Pete Shirley's entire thesis (with pics)*, *Wilson's RT
+	abstracts*, pub/misc/CIA_WorldMap - CIA world data bank,
+	comp.graphics.research archive, *India*, and much, much more.
+	Juhana Kouhia <jk87377@cs.tut.fi>
+
+dasun2.epfl.ch [128.178.62.2]:  Radiance. Good for European sites, but
+	doesn't carry the add-ons that are available for Radiance.
+
+isy.liu.se [130.236.1.3]:  pub/sipp/sipp-3.0.tar.Z - *SIPP* scan line z-buffer
+	and Phong shading renderer.  Jonas Yngvesson <jonas-y@isy.liu.se>
+
+irisa.fr [131.254.2.3]:  */iPSC2/VM_pRAY ray tracer*, SPD, /NFF - many non-SPD
+	NFF format scenes, RayShade data files.  Didier Badouel
+	<badouel@irisa.irisa.fr> [may have disappeared]
+
+phoenix.oulu.fi [130.231.240.17]:  *FLI RayTracker animation files (PC VGA) -
+	also big .FLIs (640*480)* *RayScene demos* [Americans:  check wuarchive
+	first].  More animations to come.  Jari Kahkonen
+	<hole@phoenix.oulu.fi>
+
+jyu.fi [128.214.7.5]: /pub/graphics/ray-traces - many ray tracers, including
+	VM_pRAY, DBW, DKB, MTV, QRT, RayShade, some RT News, NFF files.  Jari
+	Toivanen <toivanen@jyu.fi>
+
+garbo.uwasa.fi [128.214.87.1]:  Much PC stuff, etc., /pc/source/contour.f -
+	FORTRAN program to contour scattered data using linear triangle-based
+	interpolation
+
+asterix.inescn.pt [192.35.246.17]:  pub/RTrace - *RTrace* nffutils.tar.Z (NFF
+	utilities for RTrace), medical data (CAT, etc.)  converters to NFF,
+	Autocad to NFF Autolisp code, AUTOCAD 11 to SCN (RTrace's language)
+	converter and other goodies.  Antonio Costa (acc@asterix.inescn.pt)
+
+vega.hut.fi [128.214.3.82]: /graphics - RTN archive, ray tracers (MTV, QRT,
+	others), NFF, some models.
+[ It was shut down months ago , check under nic.funet.fi -- nfotis ]
+
+sun4nl.nluug.nl [192.16.202.2]: /pub/graphics/raytrace - DBW.microray, MTV, etc
+
+unix.hensa.ac.uk [] : misc/unix/ralcgm/ralcgm.tar.Z - CGM viewer and
+        converter.
+        There's an e-mail server also - mail to archive@unix.hensa.ac.uk
+        with the message body "send misc/unix/ralcgm/ralcgm.tar.Z"
+
+maeglin.mt.luth.se [130.240.0.25]:  graphics/raytracing - prt, others, ~/Doc -
+	*Wilson's RT abstracts*, Vivid.
+
+ftp.fu-berlin.de [130.20.225.2]:  /pub/unix/graphics/rayshade4.0/inputs -
+	aq.tar.Z is RayShade aquarium [Americans:  check princeton.edu first).
+	Heiko Schlichting <heiko@math.fu-berlin.de>
+
+maggia.ethz.ch [129.132.17.1]: pub/inetray - *Inetray* and Sun RPC 4.0 code
+	Andreas Thurnherr <ant@ips.id.ethz.ch>
+
+osgiliath.id.dth.dk [129.142.65.24]:  /pub/amiga/graphics/Radiance - *Amiga
+	port of Radiance 2.0*.  Per Bojsen <bojsen@ithil.id.dth.dk>
+
+ftp.informatik.uni-oldenburg.de [134.106.1.9] : *PoV raytracer*
+        Mirrored in wuarchive, has many goods for PoV.
+	pub/dkbtrace/incoming/polyray - Polyray raytracer
+        pub/dkbtrace/incoming/pv3d* - *PV3D*
+
+ftp.uni-kl.de [131.246.9.95]: /pub/amiga/raytracing/imagine - mirror of
+	the hubcap Imagine files.
+
+neptune.inf.ethz.ch [129.132.101.33]: XYZ - *XYZ GeoBench*
+	Peter Schorn <schorn@inf.ethz.ch>
+
+iamsun.unibe.ch [130.92.64.10]: /Graphics/graphtal* - a L-system interpreter.
+	Christoph Streit <streit@iam.unibe.ch>
+
+amiga.physik.unizh.ch [130.60.80.80]: /amiga/gfx - Graphics stuff
+	for the Amiga computer.
+
+stesis.hq.eso.org [134.171.8.100]: on-line access to a huge astronomical
+        database. (login:starcat;no passwd)
+        DECnet:STESIS (It's the Space Telescope European Coordination Facility)
+        Benoit Pirenne <bpirenne@eso.org>, phone +49 89 320 06 433
+
+
+MIDDLE EAST
+-----------
+
+gauss.technion.ac.il [132.68.112.60]: *kaleida*
+
+
+AUSTRALIA:
+----------
+
+gondwana.ecr.mu.oz.au [128.250.70.62]: pub - *VORT(ART) ray tracer*, *VOGLE*,
+	Wilson's ray tracing abstracts, /pub/contrib/artscenes (ART scenes from
+	Italy), pub/images/haines - Haines thesis images, Graphics Gems code,
+	SPD, NFF & OFF databases, NFF and OFF previewers, plus some 8- and
+	24bit images and lots of other stuff.  pub/rad.tar.Z - *SGI_RAD*
+	Bernie Kirby <bernie@ecr.mu.oz.au>
+
+munnari.oz.au [128.250.1.21]:  pub/graphics/vort.tar.Z - *VORT (ART) 2.1 CSG and
+	algebraic surface ray tracer*, *VOGLE*, /pub - DBW, pbmplus.  /graphics
+	- room.tar.Z (ART scenes from Italy).
+	David Hook <dgh@munnari.oz.au>
+
+marsh.cs.curtin.edu.au [134.7.1.1]: pub/graphics/bibliography/Facial_Animation,
+	pub/graphics/bibliography/Morph, pub/graphics/bibliography/UI -
+	stuff about Facial animation, Morphing and User Interfaces.
+	pub/fascia - Fred Parke's fascia program.
+	Valerie Hall <val@lillee.cs.curtin.edu.au>
+
+
+OCEANIA - ASIA:
+---------------
+
+ccu1.aukland.ac.nz [130.216.1.5]:  ftp/mac/architec - *VISION-3D facet
+	based modeller, can output RayShade files*.  Many other neat things
+	for Macs.  Paul Bourke <pdbourke@ccu1.aukland.ac.nz>
+
+scslwide.sony.co.jp [133.138.199.1]:  ftp2/SGI/Facial-Animation - Steve Franks
+	site for facial animation.
+ 	Steve Franks <stevef@csl.sony.co.jp OR stevef@cs.umr.edu>
+
+
+4. Mail servers and graphics-oriented BBSes
+===========================================
+
+Please check first with the FTP places above, with archie's help.
+Don't overuse mail servers.
+
+There are some troubles with wrong return addresses. Many of these
+mail servers have a command like
+   path a_valid_return_e-mail_address
+to get a hint for sending back to you stuff.
+
+DEC's FTPMAIL
+-------------
+  Send a one-line message to ftpmail@decwrl.dec.com WITHOUT a Subject: field,
+  and having a line containing the word 'help'.
+  You should get back a message detailing the relevant procedures you
+  must follow in order to get the files you want.
+
+  Note that the "reply" or "answer" command in your mailer will not work
+  for this message or any other mail you receive from FTPMAIL.  To send
+  requests to FTPMAIL, send an original mail message, not a reply.
+  Complaints should be sent to the ftpmail-request@uucp-gw-2.pa.dec.com
+  address rather than to postmaster, since DECWRL's postmaster is not
+  responsible for fixing ftpmail problems.
+
+BITFTP
+------
+  For BITNET sites ONLY, there's BITFTP@PUCC.
+  Send a one-line 'help' message to this address for more info.
+
+Lightwave 3D mail based file-server
+-----------------------------------
+  A mail based file server for 3D objects, 24bit JPEG images, GIF images
+  and image maps is now online for all those with Internet mail access.
+  The server is the official archive site for the Lightwave 3D mail-list
+  and contains many PD and Shareware graphics utilities for
+  several computer platforms including Amiga, Atari, IBM and Macintosh.
+
+  The server resides on a BBS called "The Graphics BBS".  The BBS is
+  operational 24 hours a day 7 days a week at the phone number of +1
+  908/469-0049.  It has upgraded its modem to a Hayes Ultra 144
+  V.32bis/V.42bis, which has speeds from 300bps up to 38,400bps.
+
+  If you would like to submit objects, scenes or images to the server,
+  please pack, uuencode and then mail the files to the address:
+  server@bobsbox.rent.com.
+
+  For information on obtaining files from the server send a mail message
+  to the address file-server@graphics.rent.com with the following in
+  the body of the message:
+    HELP
+    /DIR
+  And a help file describing how to use the server and a complete
+  directory listing will be sent to you via mail.
+
+[ Now it includes the Cyberware head and shouders in TTDDD format! Check it
+ out, only if you can't use FTP! -- nfotis ]
+
+INRIA-GRAPHLIB
+--------------
+  Pierre Jancene and Sabine Coquillart launched the inria-graphlib mail
+  server a few months ago.
+
+    echo help | mail inria-graphlib@inria.fr
+
+  will give you a quick summary of what inria-graphlib contains and 
+  how to browse among its files.
+
+    echo send contents | mail inria-graphlib@inria.fr
+
+  will return the extended summary.
+
+  As an other example :
+
+    echo send cgrl from Misc | mail inria-graphlib@inria.fr
+
+  will return the Computer Graphics Resource Listing mirrored from
+  comp.graphics.
+
+BBSes
+-----
+  There are many BBSes that store datafiles, etc.etc., but a guide to these
+  is beyond the scope of this Listing (and the resources of the author!)
+  If you can point to me Internet- or mail- accessible BBSes that carry
+  interesting stuff, send me info!
+
+
+  Studio Amiga is a 3D modelling and ray tracing specific BBS, (817) 467-3658.
+  24 hours, 105 Meg online.
+--
+From Jeff Walkup <pwappy@well.sf.ca.us>:
+  "The Castle" 415/355-2396 (14.4K/v.32bis/v.42/v.42bis/MNP)
+  (In Pacifica, dang close to San Francisco, California, USA)
+  The new-user password is: "TAO".
+  
+  [J]oin base #2; The Castle G/FX, Anim, Video, 3D S.I.G., of which
+  I am the SIG-Op, "Lazerus".
+--
+  Bob Lindabury operates a BBS (see above the entry for "The Graphics BBS")
+--
+'You Can Call Me Ray' ray tracing related BBS in Chicago suburbs (708-358-5611)
+ or (708-358-8721)
+--
+  Digital Pixel (Sysop: Mark Ng <mcng@descartes.waterloo.edu>) is based at
+  Toronto, Ontario, Canada.
+ 
+  Phone : (416) 298 1487
+  Storage space: 330 megs
+  Modem type:  14.4k baud,16.8k (Zyxel) , v32bis ,v32, mnp 5
+
+  Access Fee: none.. (free)
+  System supported : DOS, OS/2, Amiga, Mac.  
+  Netmail:     Currently no echo mail.
+  Topics:      Raytracing, Fractals, Graphics programming, CAD, Any Comp.
+               Graphics related  
+
+--
+From: David Tiberio <dtiberio@ic.sunysb.edu>
+
+  Amiga Graphics BBS (516) 473-6351 in Long Island, New York,
+  running 24 hours at 14.4k v.32bis, with 157 megs on line.
+  We also subscribe to 9 mailing lists, of which 5 originate
+  from our BBS, with 3 more to be added soon. These include:
+
+  Lightwave, Imagine, Real 3D (ray tracing)
+
+  Database files include:
+  Imagine 3D objects, 3D renderings, scalable fonts, music
+  modules, sound samples, demos, animations, utilities,
+  text databases, and pending Lightwave 3D objects.
+--
+The Graphics Alternative
+
+ The Graphics Alternative is in El Cerrito, CA., running 24 hours a
+ day at 14.4k HST/v.32bis, with 642MB online and a 1300+ user base.
+ TGA runs two nodes, node 1 (510) 524-2780 is for public access and
+ includes a free 90 day trial subscription.  TGA is the West Coast
+ Host for PCGnet, The Profesional CAD and Graphics Network, supporting
+ nodes across the Continental U.S., Alaska, New Zealand, Australia,
+ France and the UK.
+ 
+ TGA's file database includes MS-DOS executables for POV, Vivid,
+ RTrace, Rayshade, Polyray, and others.  TGA also has numerous
+ graphics utilities, viewers, and conversion utilities.  Registered
+ Vivid users can also download the latest Vivid aeta code from a
+ special Vivid conference.
+
+--
+From: Scott Bethke <sbathkey@access.digex.com>
+
+The Intersection BBS, 410-250-7149.
+
+  This BBS Is dedicated to supporting 3D Animators.The system is provided
+  FREE OF CHARGE, and is NOT Commercialized in ANYWAY.
+  Users are given FULL Access on the first call.
+
+Features: Usenet NEWS & Internet Mail, Fidonet Echo's & Netmail,
+	200 Megs online, V.32bis/V.42bis Modem.
+
+Platforms of interest: Amiga & The VideoToaster, Macintosh, Ms-Dos,
+	Unix Workstations (Sun, SGI, etc), Atari-ST.
+--
+From: Alfonso Hermida <afanh@robots.gsfc.nasa.gov>:
+
+ Pi Square BBS (301)725-9080 in Maryland. It supports raytracers such as POV
+ and VIVID. The BBS runs off a 486/33Mhz, 100Megs hard drive and CD ROM.
+ Now it runs on 1200-2400bps (this will change soon)
+
+ Topics: graphics programming, animation,raytracing,programming (general)
+--
+From: Lynn Falkow <ROXXIE@delphi.com>:
+
+  Vertech Design's GRAPHIC CONNECTION. (503) 591-8412 in Portland, Oregon.
+  V.32/V.42bis.
+
+  The BBS, aside from carrying typical BBS services like message bases
+  ( all topic specific ) and files ( CAD and graphics related -- hundreds
+  of megabytes ), also offers material texture files that are full color,
+  seamlessly tiling, photo-realistic images.  There are samples available
+  to first time callers.  The BBS is a subscription system although callers
+  have 2 hours before they must subscribe, and there are several subscription
+  rates available.   People interested in materials can subscribe to the
+  library in addition to a basic subscription rate, and can use their
+  purchased time to download whichever materials they wish.
+
+==========================================================================
+
+5. Ray-tracing/graphics-related mailing lists
+=============================================
+
+Imagine
+-------
+  Modeling and animation system for the Amiga:
+  send subscription requests to Imagine-request@email.sp.paramax.com
+  send material to Imagine@email.sp.paramax.com
+  (Dave Wickard has substituted Steve Worley in the maintenance of
+  the mailing list) - PLEASE note that the unisys.com address is
+  NO longer valid!!!
+
+Lightwave
+---------
+  (for the Amiga. It's part of Newtek's Video Toaster):
+  send subscription requests to lightwave-request@bobsbox.rent.com
+  send material to lightwave@bobsbox.rent.com
+  (Bob Lindabury)
+
+Toaster
+-------
+  send subscription requests to listserv@karazm.math.uh.edu with a *body* of:
+     subscribe toaster-list
+
+Real 3D
+-------
+  Another modeling and animation system for the Amiga:
+  To subscribe, send a mail containing the body
+
+  subscribe real3d-l <Your full name>
+
+  to listserv@gu.uwa.edu.au
+
+Rayshade
+--------
+  send subscription requests to rayshade-request@cs.princeton.edu
+  send material to rayshade-users@cs.princeton.edu
+  (Craig Kolb)
+
+Alladin 4D for the Amiga
+----------
+  send subscription requests to subscribe@xamiga.linet.org
+
+  and in the body of the message write
+
+  #Alladin 4D username@domain
+
+Radiance
+--------
+  Greg Ward, the author, sends to registered (via e-mail) users digests of
+  his correspodence with them, notes about fixes, updates, etc.
+  His address is: gjward@lbl.gov
+
+REND386
+-------
+  send subscription requests to rend386-request@sunee.waterloo.edu
+  send material to rend386@sunee.waterloo.edu
+
+PoV ray / DKB raytracers
+------------------------
+  To subscribe, send a mail containing the body
+
+  subscribe dkb-l <Your full name>
+
+  to listserv@trearn.bitnet
+
+  send material to dkb-l@trearn.bitnet
+
+Mailing List for Massively Parallel Rendering
+---------------------------------------------
+  send subscription requests to mp-render-request@icase.edu
+  send material to mp-render@icase.edu
+
+==========================================================================
+
+6. 3D graphics editors
+======================
+
+a. Public domain, free and shareware systems
+============================================
+
+VISION-3D
+---------
+  Mac-based program written by Paul D. Bourke (pdbourke@ccu1.aukland.ac.nz).
+  The program can be used to generate models directly in the RayShade
+  and Radiance file formats (polygons only).
+  It's shareware and listed on the FTP list.
+
+BRL
+---
+  A solid modeling system for most environments -- including SGI and X11.
+  It has CSG and NURBS, plus support for Non-Manifold Geometry
+  [Whatever it is].
+
+  You can get it *free* via FTP by signing and returning the relevant license,
+  found on ftp.brl.mil. Uses ray-tracing for engineering analyses.
+
+  Contact:
+
+  Ms. Carla Moyer
+  (410)-273-7794 tel.
+  (410)-272-6763 FAX
+  cad-dist@brl.mil E-mail
+
+  Snail mail:
+
+  BRL-CAD Distribution
+  SURVIAC Aberdeen Satellite Office 1003
+  Old Philadelphia Road,
+  Suite 103 Aberdeen
+  MD  21001  USA
+
+IRIT
+----
+  A constructive solid geometry (CSG) modeling program for PC and X11.
+  Includes freeform surface support. Free - see FTP list for where to
+  find it.
+
+SurfModel
+---------
+  A solid modeling program for PC written in Turbo Pascal 6.0 by
+  Ken Van Camp. Available from SIMTEL, pd1:<msdos.srfmodl> directory.
+
+NOODLES
+-------
+   From CMU, namely Fritz Printz and Levent Gursoz (elg@styx.edrc.cmu.edu).
+   It's based on Non Manifold Topology.
+   Ask them for more info, I don't know if they give it away.
+
+XYZ2
+----
+  XYZ2 is an interactive 3-D editor/builder written by Dale P. Stocker to
+  create objects for the SurfaceModel, Automove, and DKB raytracer packages.
+  XYZ2 is free and can be found, for example, in SIMTEL20 as
+  <MSDOS.SURFMODL>XYZ21.ZIP (DOS only??)
+
+3DMOD
+-----
+  It's an MSDOS program. Check at barnacle.erc.clarkson.edu [128.153.28.12],
+  /pub/msdos/graphics/3dmod.* . Undocumented file format :-(
+  3DMOD is (C) 1991 by Micah Silverman, 25 Pierrepoint Ave., Postdam,
+  New York 13676, tel. 315-265-7140
+
+NORTHCAD
+--------
+  Shareware, <MSDOS.CAD>NCAD3D42.ZIP in SIMTEL20. Undocumented file format :-(
+
+Vertex
+------
+  (Amiga)
+  Shareware, send $40 US (check or money order) to:
+
+  The Art Machine, 4189 Nickolas
+  Sterling Heights, MI  48310
+  USA
+
+  In addition to the now standard file formats, including Lightwave,
+  Imagine, Sculpt, Turbo Silver, GEO and Wavefront, this release offers
+  3D Professional and RayShade support. (Rayshade is supported only by
+  the primitive "triangle", but you can easily include this output in
+  your RayShade scripts)
+
+  The latest demo, version 1.62, is available on Fred Fish #727.
+
+  For more information, contact the author, Alex Deburie, at:
+
+  ad99s461@sycom.mi.org, Phone: (313) 939-2513
+  
+
+ICoons
+------
+  (Amiga)
+  It's a spline based object modeller ("ICoons" = Interactive 
+  COONS path editor) in amiga.physik.unizh.ch (gfx/3d/ICoons1.0.lzh).
+  It's free (under the GNU Licence) and requires FPU.
+
+  The program has a look&feel which is a cross between Journeyman and
+  Imagine, and it generates objects in TTDDD format.
+
+  It is possible to load Journeyman objects into ICoons, so the program
+  can be used to convert JMan objects to Imagine format.
+
+  Author: Helge E. Rasmussen <her@compel.dk>
+  PHONE + 45 36 72 33 00, FAX   + 45 36 72 43 00
+
+[ It's also on Fred Fish disk series n.775 - nfotis ]
+
+
+ProtoCAD 3D
+-----------
+ Ver 1.1 from Trius (shareware?)
+
+ It's at wsmr-simtel20.army.mil and oak.oakland.edu as PCAD3D.ZIP (for PCs)
+
+ It has this menu layout:
+
+         FILE       File handling (Load, Save, Import, Xport...)
+         DRAW       Draw 2D objects (Line, Circle, Box...)
+         3D         Draw 3D objects (Mesh, Sphere, Block...)
+         EDIT       Editing features (Copy, Move ...)
+         SURFACE    Modify objects (Revolve, Xtrude, Sweep...)
+         IMAGE      Image zooming features (Update, Window, Half...)
+         OPTION     Global defaults (Grid, Toggles, Axis...)
+         PLOT       Print drawing/picture (Go, Image...)
+         RENDER     Shade objects (Frame, Lighting, Tune...)
+         LAYER      Layer options (Select active layer, set Colors...)
+
++Sculptura
++---------
++  Runs under Windows 3.1, and outputs PoV files. A demo can be found
++  on wuarchive.wustl.edu in mirrors/win3/demo/demo3d.zip
++
++  Author: Michael Gibson <gibsonm@stein.u.washington.edu>
+
+
+b. Commercial systems
+=====================
+
+Alpha_1
+-------
+  A spline-based modeling program written in University of Utah.
+  Features: splines up to trimmed NURBS; support for boolean operations;
+    sweeps, bending, warping, flattening etc.; groups of objects, and
+    transformations; extensible object types.
+  Applications include: NC machining, Animation utilities,
+    Dimensioning, FEM analysis, etc.
+  Rendering subsystem, with support for animations.
+  Support the following platforms: HP 300 and 800's (X11R4, HP-UX 6.5),
+    SGI 4D or PI machines (X11R4 and GL, IRIX 3.3.1), Sun SparcStation
+    (X11R4, SunOS 4.1.1).
+ 
+  Licensing and distribution is handled by EGS:
+    Glenn McMinn, President
+    Engineering Geometry Systems
+    275 East South Temple, Suite 305
+    Salt Lake City, UT  84111
+    (801) 575-6021
+    mcminn@cs.utah.edu
+
+ [ Educational pricing ]
+  The charge is $675 per platform.  You may run the system on as many
+  different workstations of that type as you wish.  For each platform
+  there is also a $250 licensing fee for Portable Standard Lisp (PSL)
+  which is bundled with the system.  You need to obtain an additional
+  license from the University of Utah for PSL from the following address:
+    Professor Robert Kessler
+    Computer Science Department
+    University of Utah
+    Salt Lake City, Utah 84112
+
+  [ EGS can handle the licensing of PSL for U.S. institutions for a
+    300 $USD nominal fee -- nfotis ]
+
+VERTIGO
+-------
+
+  They have an Educational Institution Program. The package is used in
+  the industrial design, architectural, scientific visualization,
+  educational, broadcast, imaging and post production fields.
+
+  They'll [quoting from a letter sent to me -- nfotis ] "donate fully
+  configured Vertigo 3D Graphics Software worth over $29,000USD per
+  package to qualified educational institutions for licencing on any
+  number of Silicon Graphics Personal IRIS or POWER Series Workstations.
+  If you use an IRIS Indigo station, we will also licence our Vertigo
+  Revolution Software (worth $12,000USD).
+
+  If you are interested in participating in this program please send a
+  letter by mail or fax (604/684-2108) on your institution's letterhead
+  briefly outlining your potential uses for Vertigo together with the
+  following information: 1. UNIX version 2. Model and number of SGI
+  systems 3. Peripheral devices 4. Third Party Software.
+
+  Participants will be asked to contribute $750USD per institution to cover
+  costs of the manual, administration, and shipping.
+
+  We recommend that Vertigo users subscribe to our technical support
+  services. For an annual fee you will receive: technical assistance
+  on our support hotline, bug fixes, software upgrades and manual updates.
+  For educational institution we will waive the $750 administration fee
+  if support is purchased.
+
+  The annual support fee is $2,500 plus the following cost for additional
+  machines:
+
+  Number of machines:		2-20		20+
+  Additional cost per machine:	$700		$600 "
+
+[ There's also a 5-day training program - nfotis]
+
+Contact:
+  Vertigo Technology INC
+  Suite 1010
+  1030 West Georgia St.
+  VANCOUVER, BC
+  CANADA, V6E 2Y3
+
+  Phone: 604/684-2113
+  Fax:   604/684-2108
+
+[ Does anyone know of such offers from TDI, Alias, Softimage, Wavefront,
+  etc.??? this would be a VERY interesting part!!  -- nfotis ]
+
+PADL-2
+------
+[ Basically, it's a Solid Modeling Kernel in top of which you build your
+  application(s)]
+
+  Available by license from
+    Cornell Programmable Automation
+    Cornell University
+    106 Engineering and Theory Center
+    Ithaca, NY 14853
+
+  License fees are very low for educational institutions and gov't agencies.
+  Internal commercial licenses and re-dissemination licenses are available.
+  For an information packet, write to the above address, or send your
+  address to:   marisa@cpa.tn.cornell.edu (Richard Marisa)
+
+ACIS
+----
+  From Spatial Technology. It's a Solid Modelling kernel callable from C.
+  Heard that many universities got free copies from the company.
+  The person to contact regarding ACIS in academic institutions is
+
+    Scott Owens, e-mail: sdo@spatial.com
+
+  And their address is:
+
+  Spatial Technology, Inc.
+  2425 55th St., Bldg. A
+  Boulder, CO 80301-5704
+  Phone: (303) 449-0649, Fax: (303) 449-0926
+
+MOVIE-BYU / CQUEL.BYU
+---------------------
+  Basically [in my understanding], this is a FEM pre- and post-proccessor
+  system. It's fairly old today, but it still serves some people in
+  Mech. Eng. Depts.
+  Now it's superseded from CQUEL.BYU (pronounced "sequel"). That's a
+  complete modelling, animation and visualization package. Runs in the usual
+  workstation environments (SUN, DEC, HP, SGI, IBM RS6000, and others)
+  You can get a demo version (30-days trial period) either by sending $20
+  USD in their address or a blank tape. It costs 1,500 for a full run-time
+  licence.
+
+  Contact:
+
+  Engineering Computer Graphics Lab
+  368 Clyde Building, Brigham Young Univ.
+  Provo, UT 84602
+  Phone: 801-378-2812
+  E-mail: cquel@byu.edu
+
+
+twixt
+-----
+  Soon to add stuff about it... If I get a reply to my FAX
+
+VOXBLAST
+--------
+  It's a volume renderer marketed by:
+  Vaytek Inc. (Fairfield, Iowa phone: 515-472-2227) , running on PCs
+  with 386+FPU at least.  Call Vaytek for more info.
+
+VoxelBox
+--------
+  A 3D Volume renderer for Windows. Features include direct
+  ray-traced volume rendering, color and alpha mapping,
+  gradient lighting, animation, reflections and shadows.
+
+  Runs on a PC(386 or higher) with at least an 8 bit video card(SVGA is fine)
+  under Windows 3.x. It costs $495.
+
+  Contact:
+
+  Jaguar Software Inc.
+  573 Main St., Suite 9B
+  Winchester, MA 01890
+  (617) 729-3659
+  jwp@world.std.com (john w poduska)
+
+==========================================================================
+
+7. Scene description languages
+==============================
+
+NFF
+---
+  Neutral file format , by Eric Haines. Very simple, there are some
+  procedural database generators in the SPD package, and many objects
+  floating in various FTP sites. There's also a previewer written in
+  HP Starbase from E.Haines. Also there's one written in VOGLE, so you can
+  use any of the devices VOGLE can output on.
+  (Check in sites carrying VOGLE, like gondwana.ecr.mu.oz.au)
+
+OFF
+---
+  Object file format, from DEC's Randy Rost (rost@kpc.com).
+[ The object archive server seems to be mothballed. In a future version,
+ I'll remove the ref. to it -- nfotis ]
+
+  Available also through their mail server. To obtain help about using this
+  service, send a message with a "Subject:" line containing only the word
+  "help" and a null message body to: object-archive-server@decwrl.dec.com.
+  [For FTP places to get it, see in the relevant place]. There's an OFF
+  previewer for SGI 4D machines, called off-preview in
+  godzilla.cgl.rmit.oz.au . There are previewers for xview and sunview,
+  also on gondwana.
+
+TDDD
+----
+It's a library of 3D objects with translators to/from OFF, NFF,
+Rayshade, Imagine or vort objects.
+Edited copy of the announcement follows (from Raytracing News, V4,#3):
+
+  New Library of 3D Objects Available via FTP, by Steve Worley
+  (worley@cup.portal.com)
+
+  I have assembled a set of over 150 3D objects in a binary format
+  called TDDD. These objects range from human figures to airplanes,
+  from semi-trucks to lampposts.  These objects are all freely
+  distributable, and most have READMEs that describe them.
+
+  In order to convert these objects to a human-readable format, a file
+  with the specification of TDDD is included in the directory with the
+  objects. There is also a shareware system called TTDDDLIB (officially
+  on hubcap.clemson.edu) that will convert (ala PBM+) to/from various
+  object formats : Imagine TTDDD (extension of TDDD?), OFF, NFF,
+  Rayshade 4.0, or vort. Source included for Amiga/Unix as executables
+  for the Amiga. Also outputs Framemaker MIF files and isometric views
+  in Postscript.
+
+P3D
+---
+  From Pittsburgh Supercomputing Center. The P3D uses lisp with slight
+  extensions to store three-dimensional models. A simple lisp
+  interpreter is included with the P3D release, so there is no need to
+  have access to any vendor's lisp to run this software.
+
+  The mouse-driven user interfaces for Motif, Open Look, and Silicon
+  Graphics GL, and the DrawP3D subroutine library for generating P3D
+  without ever looking at the underlying Lisp.
+
+  The P3D software currently supports nine renderers.  They are:
+  Painter - Painter's Algorithm, Dore, Silicon Graphics Inc. GL language,
+  Generic Phigs, Sun Phigs+, DEC Phigs+, Rayshade, ART ray tracer (from
+  VORT package) and Pixar RenderMan.
+
+  The code is available via anonymous FTP from the machines
+  ftp.psc.edu, directory pub/p3d, and nic.funet.fi, directory
+  pub/graphics/programs/p3d.
+
+RenderMan
+---------
+  Pixar's RenderMan is not free - call Pixar for details.
+
+==========================================================================
+
+8. Solids description formats
+=============================
+
+a. EEC's ESPRIT project 322 CAD*I (CAD Interfaces) has developed a
+  neutral file format for transfer of CAD data (curves, surfaces, and
+  solid models between CAD systems and from CAD to CAA (Computer Aided
+  Analysis) an CAM (Computer Aided Manufacturing)
+
+b. IGES [v. 5.1 now] tries to define a standard to tranfer solid
+  models - Brep and CSG. The current standard number is ANSI Y14.26M-1987
+  For documentation, you might want to contact Nancy Flower at
+  NCGA Technical Services and Standards, 1-800-225-6242 ext. 325
+  and the cost is $100.
+  This standard is not available in electronic format.
+
+c. PDES/STEP : This slowly emerging standard tries to encompass not only
+  the geometrical information, but also for things like FEM, etc.
+  The main bodies besides this standard are NIST and DARPA. You can get
+  more information about PDES by sending mail to nptserver@cme.nist.gov
+  and putting the line
+	send index
+  in the body (NOT the Subject:) area of the message.
+
+  The people at Rutherford Appleton Lab.  are also working
+  on STEP tools: they have an EXPRESS compiler and an Exchange file parser,
+  both available in source form (and for free) for research purposes.
+  Soon they will also have an EXPRESS-based database system.
+
+  For the tools contact Mike Mead, Phone: +44 (0235) 44 6710 (FAX: x 5893),
+  e-mail: mm@inf.rl.ac.uk or {...!}mcsun!uknet!rlinf!mm or
+          mm%inf.rl.ac.uk@NSFnet-relay.ac.uk
+
+==========================================================================
+
+End of Part 1 of the Resource Listing
+-- 
+Nick (Nikolaos) Fotis         National Technical Univ. of Athens, Greece
+HOME: 16 Esperidon St.,       InterNet : nfotis@theseas.ntua.gr
+      Halandri, GR - 152 32   UUCP:    mcsun!ariadne!theseas!nfotis
+      Athens, GREECE          FAX: (+30 1) 77 84 578

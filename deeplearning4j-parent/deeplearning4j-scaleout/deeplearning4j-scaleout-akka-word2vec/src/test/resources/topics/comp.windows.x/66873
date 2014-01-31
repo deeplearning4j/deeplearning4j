@@ -1,0 +1,38 @@
+From: kk@unisql.UUCP (Kerry Kimbrough)
+Subject: GUI Study -- do users want to build solutions?
+Organization: The Internet
+Lines: 30
+NNTP-Posting-Host: enterpoop.mit.edu
+To: visual.com!dbl@cs.utexas.edu
+Cc: expo.lcs.mit.edu!xpert@cs.utexas.edu
+
+
+
+   ...let me point out that both GUI-based word-processors and text-based
+   formatters both have a language; one happens to be mouse- and
+   action-based, and the other symbol-based.
+
+True, but that's beside the point. This is a fact about an abstract model
+of what the GUI users are doing, not about what they actually *are* doing.
+This abstract model is only apparent from the perpective of a *programmer*
+of the system. (NB: some users may see it, too, but only when they put
+aside the work at hand and start thinking like a programmer.)
+
+I'm not saying that the programmer's perspective is evil or stunted. After
+all, that's what I do, too! I am saying that UI designers must carefully
+distinguish between the user/programmer conceptual models, and they must
+ultimately serve the user of the system, not the builder of the system. 
+
+
+   I don't recall the actual stats, but something like 1 in 5 people can be
+   categorized as a "symbol manipulator".
+
+It would be interesting to know more about the meaning and basis for this
+claim. At any rate, I don't think this is evidence that 20% of users think
+like programmers. Bankers, financial analysts, structural engineers ---
+these are all people whose work you could characterize as primarily symbol
+manipulation. But what they do is not programming, and programming is not
+required to do what they do. 
+
+To restate my previous point: yes, users want to build their own solutions;
+no, they do not want to do programming to accomplish this.

@@ -1,0 +1,26 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: japanese moon landing?
+Organization: U of Toronto Zoology
+Lines: 21
+
+In article <1qnb9tINN7ff@rave.larc.nasa.gov> C.O.EGALON@LARC.NASA.GOV (CLAUDIO OLIVEIRA EGALON) writes:
+>> there is no such thing as a stable lunar orbit
+>
+>Is it right??? That is new stuff for me. So it means that  you just can 
+>not put a sattellite around around the Moon for too long because its 
+>orbit will be unstable??? If so, what is the reason??? Is that because 
+>the combined gravitacional atraction of the Sun,Moon and Earth 
+>that does not provide a stable  orbit around the Moon???
+
+Any lunar satellite needs fuel to do regular orbit corrections, and when
+its fuel runs out it will crash within months.  The orbits of the Apollo
+motherships changed noticeably during lunar missions lasting only a few
+days.  It is *possible* that there are stable orbits here and there --
+the Moon's gravitational field is poorly mapped -- but we know of none.
+
+Perturbations from Sun and Earth are relatively minor issues at low
+altitudes.  The big problem is that the Moon's own gravitational field
+is quite lumpy due to the irregular distribution of mass within the Moon.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

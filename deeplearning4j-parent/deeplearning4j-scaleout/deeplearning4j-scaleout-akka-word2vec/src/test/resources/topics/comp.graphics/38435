@@ -1,0 +1,20 @@
+From: bryanw@rahul.net (Bryan Woodworth)
+Subject: Re: CView answers
+Nntp-Posting-Host: bolero
+Organization: a2i network
+Lines: 14
+
+In <1993Apr16.114158.2246@whiting.mcs.com> sean@whiting.mcs.com (Sean Gum) writes:
+
+>A stupid question, but what will CView run on and where can I get it? I
+>am still in need of a GIF viewer for Linux. (Without X-Windows.)
+>Thanks!
+> 
+
+Ho boy. There is no way in HELL you are going to be able to view GIFs or do
+any other graphics in Linux without X windows!  I love Linux because it is
+so easy to learn..  You want text?  Okay.   Use Linux. You want text AND
+graphics?  Use Linux with X windows.  Simple.  Painless.  REQUIRED to have
+X Windows if you want graphics!  This includes fancy word processors like
+doc, image viewers like xv, etc.
+

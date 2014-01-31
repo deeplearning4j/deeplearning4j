@@ -1,0 +1,44 @@
+From: mbeckman@mbeckman.mbeckman.com (Mel Beckman)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Organization: Beckman Software Engineering
+Reply-To: mbeckman@mbeckman.com
+Distribution: world
+X-Mailer: uAccess LITE - Macintosh Release: 1.5v5
+Lines: 35
+
+
+In article <1993Apr17.090731.18680@clarinet.com> (sci.crypt), brad@clarinet.com (Brad Templeton) writes:
+> Interestingly enough, in designing the escrow, we may want to use some
+> rather unusual technology, such as sealed boxes of paper, or
+> destructive read memory, rather than typical computer databases, which
+> is fun for a database of hundreds of millions of keys.
+> 
+
+To me, a larger problem is that once disclosed, your keys could be used
+to decrypt any previously recorded conversations. I gather that from this
+proposal a warrant would be required to get the keys, but not to collect
+conversations! Consider the scenario where an agency collects preemptively
+all encrypted conversations for certain people likely to be targets (and
+not necessarily "legitimate" targets), then arranges for some unrelated
+incident that can trigger a warrant:
+
+   "Your honor, we know that the suspect has received calls from noted 
+crime figure Bugsy Butthead [said calls arranged by the agency] and we must 
+therefore have this warrant to determine whether this suspect, in a
+sensitive govt post, is corrupt."
+
+  I suppose that it is conceivable that there are session keys involved
+somewhere, but that doesn't seem likely; if there are, why wouldn't the
+technical overview mention them when it goes to such details as the number
+of bits held by each escrow authority?
+
+  This scheme is full of holes, and stinks to high heaven.
+
+  -mel
+
+________________________________________________________________________
+| Mel beckman                  |   Internet: mbeckman@mbeckman.com     |
+| Beckman Software Engineering | Compuserve: 75226,2257                |
+| Ventura, CA 93003            |  Voice/fax: 805/647-1641 805/647-3125 |
+|______________________________|_______________________________________|
+ "You can observe a lot just by watching."  -Yogi Bera

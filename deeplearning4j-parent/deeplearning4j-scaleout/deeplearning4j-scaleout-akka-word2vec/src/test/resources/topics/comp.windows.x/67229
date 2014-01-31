@@ -1,0 +1,23 @@
+From: tomk@skywalker.bocaraton.ibm.com (Thomas Chun-Hong Kok)
+Subject: Re: Hypercard for UNIX
+Organization: IBM Austin
+Lines: 18
+
+In article <1993Apr23.114028.17633@bernina.ethz.ch>, queloz@bernina.ethz.ch (Ronald Queloz) writes:
+> Hi netlanders,
+> 
+> Does anybody know if there is something like Macintosh Hypercard for any UNIX 
+> platform?
+> 
+> 
+> Thanks in advance
+> 
+> 
+> Ron.
+
+-- 
+
+Try MetaCard - a HyperCard-like programming environment on X.
+
+
+Chun Hong

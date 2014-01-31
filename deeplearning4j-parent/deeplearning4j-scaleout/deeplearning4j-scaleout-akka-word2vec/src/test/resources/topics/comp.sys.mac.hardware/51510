@@ -1,0 +1,48 @@
+From: jbailey@world.std.com (jim bailey)
+Subject: Re: Quadra 900/950 differences
+Organization: The World Public Access UNIX, Brookline, MA
+Lines: 43
+
+jim@jagubox.gsfc.nasa.gov (Jim Jagielski) writes:
+
+>jbailey@world.std.com (jim bailey) writes:
+
+>>rdk2@cec2.wustl.edu (Robert David Klapper) writes:
+
+>>>	I also believe that the 950 fixed a bug in the CPU which screwed up
+>>>some floating point calculations.
+>>>-- 
+>>>Robert D. Klapper
+>>>Washington University in St. Louis
+>>>rdk2@cec2.wustl.edu
+>>>Lubarsky's Law of Cybernetic Entomology:  There's always one more bug.
+
+>>Does someone have any definite information on this.  This is the
+>>first I've heard of it.  How does the CPU get fixed by a hardware
+>>upgrade?  This doesn't make much sense to me.
+
+>Let's see now... The differences between the 950 and 900 are
+>basically:
+
+>	1. Runs at 33MHz, not 25MHz
+>	2. Has 25MHz I/O bus, not 16MHz
+>	3. Upgraded Graphics controller
+>	4. #3 results in Q950 requiring 80ns VRAM, not 100ns
+>	5. ROM fixes:
+>	    a. rounding errors in floating point calculations
+>	       at 15th digit
+
+So patch the ROMs with the latest OS version.  I don't see
+how this is a problem.
+
+>	    b. Ethernet problems with more than 16 buffers
+
+>So, no doubt, the person was refering to 5a, hardly "screwing
+>up" though :)
+
+>-- 
+>    Jim Jagielski               |  "And he's gonna stiff me. So I say,
+>    jim@jagubox.gsfc.nasa.gov   |   'Hey! Lama! How about something,
+>    NASA/GSFC, Code 734.4       |   you know, for the effort!'"
+>    Greenbelt, MD 20771         |
+

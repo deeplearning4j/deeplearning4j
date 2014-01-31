@@ -1,0 +1,45 @@
+From: neuhaus@vier.informatik.uni-kl.de (Stephan Neuhaus (HiWi Mattern))
+Subject: Re: Do we need the clipper for cheap security?
+Nntp-Posting-Host: vier.informatik.uni-kl.de
+Organization: University of Kaiserslautern, Germany
+Lines: 39
+
+gtoal@gtoal.com (Graham Toal) writes:
+
+>Can someone tell me if hardware compression is or is not needed to run
+>digital speech down 14.4K?  I think it is; I've heard it's not.  Lets
+>say 8 bit samples.  Would *raw* data at the corresponding sampling rate
+>be usable?  If not, how fancy does the compression need to be?
+
+Note: I am *not* a cable freak, so I might have completely
+misunderstood what you said.  Also, my math is frequently noted for
+being wrong, so you'll better check the calculations yourself.
+
+I assume that 14.4K means 14.4K Bits.  So if we assume one start and
+one stopbit, and no protocol overhead, the effective number of bytes
+per second is 1.44K.
+
+Let's also assume that you do not want to transmit your speech in
+stereo, so that you can send 1,440 samples/sec.  This corresponds to a
+Nyquist frequency of 720 Hz, which should be too low, especially if
+you think about the 8-bit low quality sound.  Furthermore, your D/A
+converter will probably not present you with a signal that has been
+cut off at 720 Hz, but will instead alias in all the higher
+frequencies.  (Although you can definitely build a filter to overcome
+that problem.)
+
+On the other hand, speech should be easily compressible.  For example,
+you could form power spectra, or you could simply band-pass filter and
+then linearize the fourier transforms.  It won't be CD quality sound,
+but it'll be discernible.  The power spectrum method is very good in
+that respect.  I have once programmed such a software compressor, and
+compression rates of 90% with relative errors due to linearization of
+less than 5% were common.  Although I must say that these were musical
+sounds, not speech.
+
+Have fun.
+
+-- 
+Stephan <neuhaus@informatik.uni-kl.de>
+sig closed for inventory.  Please leave your pickaxe outside.
+PGP 2.2 public key available on request.  Note the expiration date.

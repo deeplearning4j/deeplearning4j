@@ -1,0 +1,34 @@
+From: ggeorge@bu.edu (Gerry George)
+Subject: Re: 8 cards on a 6 card motherboard?
+Article-I.D.: bu.115969
+Lines: 28
+X-Newsreader: Tin 1.1 PL5
+
+Carl Christensen (christen@astro.ocis.temple.edu) wrote:
+: This may be the dumbest question of the year, but is there a
+: way to 'piggyback' or expand a 6-slot motherboard (all 16-bit)
+: to get the usual 8?  My case has slots for 8, and I'd like to
+: get a scanner, but with all my other cards I'm already max'd out!
+: I'm hoping that a simple solution exists, e.g. an adapter that turns
+
+I'm not sure if this will work, but how about using one of those 'T' expanders
+used in the low-profile cases.  They allow 3-5 slots staggered on either
+side of the card.  You can install it in the last slot, and then (probably) 
+have 2 or 3 sideways slots.  This is actually how it is done in the low
+profile cases - a standard motherboard, the 'T' connector in one slot, 
+and the expansion cards plugged into the 'T'.  I guess you could do this at 
+each end of the slots (1 & 8) to add even more.  
+
+The 'T' connectors are simply tracks with slots on them - no electronics
+on it.  The only downside - your case won't close, but for a homebrew system,
+that may not be a problem.
+
+Don't know about performance, though.  I'll leave that discussion to the 
+engineers.
+
+===========================================================================
+Gerry George                          | Anything good in life is either
+School of Management, Boston Univ.    | illegal, immoral or fattening.
+Internet: ggeorge@acs.bu.edu          | Any item not in the above three
+Compu$erve: 72607.2560@compuserve.com | categories causes cancer in rats!
+===========================================================================

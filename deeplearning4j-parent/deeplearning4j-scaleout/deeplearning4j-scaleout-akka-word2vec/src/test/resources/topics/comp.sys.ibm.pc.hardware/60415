@@ -1,0 +1,36 @@
+From: venaas@flipper.pvv.unit.no (Stig Venaas)
+Subject: Re: CAN'T WRITE TO 720 FLOPPY
+Organization: ProgramVareVerkstedet - UNIT
+Lines: 31
+
+In article <1qndvd$jhn@usenet.INS.CWRU.Edu> da416@cleveland.Freenet.Edu (Andy Nicola) writes:
+>
+>In a previous article, limagen@hpwala.wal.hp.com () says:
+>
+>>OK all you experts!
+>>Need answer quick.386 machine ,1.44 floppy ; unable to write to a formated
+>>720 disk.Machine claims that disk is write protected,but it is not.
+>>
+>>Note: It 'll read 720's with no problem.
+>>
+>>Please e_mail or post.
+>>
+>>
+>>
+>>
+>If the disk is not an HD-type disk, i.e. with the extra hole in the case
+>opposite the normal write protect hole, the drive will not write to the
+>disk. You can punch a similar hole with whatever is handy or buy a small
+>device, a square hole puncher, for about $19.95...see the back pages of
+>computer shopper magazine for it.
+>
+>To be brief, make the hole any way you can or no writing!
+>
+>-- 
+>Andy Nicola
+>
+
+Of course you should be able to write a DD 720Kb disk without
+making any holes.
+
+Stig

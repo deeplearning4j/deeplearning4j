@@ -1,0 +1,48 @@
+From: bading@cs.tu-berlin.de (Tobias 'Doping' Bading)
+Subject: Re: Forcing a window manager to accept specific coordinates for a window
+Organization: Technical University of Berlin, Germany
+Lines: 36
+Distribution: world
+	<C5u667.Ln8@boulder.parcplace.com> <1r5l8g$bub@wsinfo03.win.tue.nl>
+NNTP-Posting-Host: athene.cs.tu-berlin.de
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+In-reply-to: rcb5@wsinfo03.win.tue.nl's message of 22 Apr 1993 10:33:20 +0200
+
+
+In article <1r5l8g$bub@wsinfo03.win.tue.nl> rcb5@wsinfo03.win.tue.nl (Richard Verhoeven) writes:
+
+   Sorry, but olwm and tvtwm don't do it. They place the title at that position
+   and the window at a position below it.
+
+   This becomes a problem when you want a program to be able to save its current
+   configuration and restore is later.
+
+   Currently, my solution is:
+
+	   XCreateWindow(...);
+	   XSetWMProperties(..);
+	   XMapWindow(...);
+	   XFlush(...);
+	   XMoveWindow(...);
+
+
+   It works with olwm, but is less than elegant. All this leaves me wondering
+   if I'm overlooking something obvious.
+
+   Richard.
+
+
+I know that the mwm has an resource to specify if positions are to be used for
+the border of a window or for the "user" window. Maybe other window managers
+have similar options.
+Another way to figure out the difference between the "user" window position
+and the window manager decoration window position is to subtract their
+positions. You just have to use XQueryTree and remember that the window manager
+decorations window is the parent of your window. Unfortunately, you can only
+figure out the decoration width and height after the window has been mapped
+this way.
+
+Greeting,
+          Tobias (bading@cs.tu-berlin.de)

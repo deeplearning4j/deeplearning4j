@@ -1,0 +1,32 @@
+From: ianmc@spartan.ac.BrockU.CA (Ian McPherson)
+Subject: Re: chip / chipset for code 39 barcode?
+Organization: Brock University, St. Catharines Ontario
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 26
+
+LLBGB@utxdp.dp.utexas.edu wrote:
+: Distribution: usa
+: Reply-To: lihan@ccwf.cc.utexas.edu
+
+: While I'm on the net bugging everyone, is there such a thing as a chip
+: or chipset to decode Code 39 barcode?  I ask for a couple of reasons --
+: mainly I want a reasonably compact encoding scheme to write information
+: on magstripe cards and Code 39 appears to be about right.  (If the 'right'
+: way to do it is something else, and it's reasonably easy, can someone let
+: me know?)
+
+: I might not get a chance to reply too quickly to this or my earlier post,
+: but I'll get to them within a couple days, I think ..
+
+: thanx everyone!  <BGB>  lihan@ccwf.cc.utexas.edu
+
+Hewlett Packard has a series of barcode decoder ICs HBCR-1800, HBCR-2000,
+and HBCR-2010 and they support 3of9  extended 3of9  interleaved 2of5  
+and UPC codes. The 2000 and 2010 pieces add codabar and code 128.
+
+These chips support HP's barcode wands and slot readers.
+
+An 1800 + a HEDS-3050 wand run about $150 CDN .
+
+Ian.
+

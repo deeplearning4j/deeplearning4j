@@ -1,0 +1,35 @@
+From: jemartin@nyx.cs.du.edu (John Martin)
+Subject: Setting up three-user accounting system with WFWG
+Organization: Nyx, Public Access Unix at U. of Denver Math/CS dept.
+Lines: 30
+
+I am a novice (at best) in working with pc networks, and am in the
+process of planning a small accounting system for a small business.
+
+The particular need in this case is for three machines, each in a
+different office of the same building, each having access to a
+Windows-based accounting system.
+
+My first thought is to set up MS Windows for Workgroups on each of the
+machines (likely a 486 and two 386's) along with the appropriate Ethernet
+cards and cabling that come with the Windows for Workgroups starter kit (one
+additional user kit will be necessary).  It then seems logical to purchase
+a simple multi-user accounting system, along the lines of DacEasy or
+M.Y.O.B., and fire it all up!  The 486 will more or less act as server with
+a report/check printer attached to it.
+Cable runs of 30-40 feet will be necessary for this setup.
+
+Well, this all seems too easy to me.  Would any of you network gurus out
+there tell me if I am out of my mind here?  Any and all suggestions, however
+trivial, will be immensely appreciated.  My apologies if this has been
+brought up before.
+
+Thanks!
+
+John
+--
+ John E. Martin    jemartin@nyx.cs.du.edu      University of Puget Sound '92
+    Kent, WA     (formerly martin@ups.edu)   SeinfeldSuperSonicsRushBelaFleck
+--
+ John E. Martin    jemartin@nyx.cs.du.edu      University of Puget Sound '92
+    Kent, WA     (formerly martin@ups.edu)   SeinfeldSuperSonicsBC++RushDWeckl

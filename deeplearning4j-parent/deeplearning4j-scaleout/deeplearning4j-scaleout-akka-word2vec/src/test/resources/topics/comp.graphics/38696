@@ -1,0 +1,29 @@
+From: 8910782@sunvax.sun.ac.za
+Subject: Rayshade query
+Article-I.D.: sunvax.1993Apr23.104107.5742
+Organization: University of Stellenbosch
+Lines: 23
+
+Hi there
+
+I am very interested in Rayshade 4.00. I have managed to make a chessboard
+for Rayshade. Unfortunately I still have to do the knight (horse). Any ideas?
+I am also looking for a surface for the chesspieces. The board is marble.
+Unfortunately black won't work very well for the one side. Anybody with ideas
+for nice surfaces?
+
+I would also like to use the image command of rayshade and the heightfield
+command. Unfortunately the manual is very vague about this, and I don't have
+Craig Kolb's email address. Anybody with ideas, because this is essential
+for my next venture into raytracing.
+
+Where should I post the finished chessboard?
+
+Is there anybody else using rayshade on non-Unix systems?
+
+How fast does Unix render?
+
+Thanks
+
+Rayshade is the best program for people who loves graphics, but have no
+artistic talent.

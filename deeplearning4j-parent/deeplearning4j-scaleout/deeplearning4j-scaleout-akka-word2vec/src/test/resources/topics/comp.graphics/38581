@@ -1,0 +1,33 @@
+From: dstampe@psych.toronto.edu (Dave Stampe)
+Subject: Re: Fast polygon routine needed
+Keywords: polygon, needed
+Organization: Department of Psychology, University of Toronto
+Lines: 27
+
+sol.surv.utas.edu.au (Stephen Quan) writes:
+
+>>>>[...], but I'm looking for a fast polygon routine to be used in a 3D game.
+>>>A fast polygon routine to do WHAT?
+>>To draw polygons of course.  Its a VGA mode 13h (320x200) game, [...]
+>
+>Hi, I've come across a fast triangle fill-draw routine for mode 13h.  By
+>calling this routine enough times, you have a fast polygon drawing routine.
+>
+>I think I ftp'ed from wuarchive.wustl.edu:/pub/MSDOS_UPLOADS/programming.
+>I have a copy of it so I reupload it there.  The triangle.txt file has this
+>to say :
+>
+>>  C and inline assembly source for a VGA mode 13h triangle drawer.
+>
+Another source:  There's a poly blitter for mode y (mode x in 320x200)
+at sunee.uwaterloo.ca.  Also there is REND386, an even faster 3D
+renderer with VR extensions.
+
+
+--------------------------------------------------------------------------
+| My life is Hardware,                    |         Dave Stampe          | 
+| my destiny is Software,                 | dstampe@psych.toronto.edu    |
+| my CPU is Wetware...                    | dstampe@sunee.uwaterloo.ca   | 
+| Am I a techno-psychologist, or just a psycho-engineer ??               |
+--------------------------------------------------------------------------
+

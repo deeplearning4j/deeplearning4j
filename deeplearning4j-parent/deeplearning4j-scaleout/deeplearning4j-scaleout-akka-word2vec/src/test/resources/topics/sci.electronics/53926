@@ -1,0 +1,14 @@
+From: jam@ameslab.gov (Jerry Musselman)
+Subject: UART needed
+Organization: Ames Laboratory, ISU
+Lines: 9
+
+I need to find a UART that will interface to an 8051 and do the following:
+	-250k baud, 8 data bits, 2 stop bits, no parity
+	-ability to do BREAK detect (IRQ or output pin)
+	-IRQ on character received
+
+I'm using a Dallas DS2250 at 16 Mhz (8051 clone), but it won't do 
+break detect.  I've looked at the 6850, 8251, 7201, 2661, etc...
+
+	Any help would be appriciated!!!

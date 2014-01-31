@@ -1,0 +1,22 @@
+From: dab6@po.CWRU.Edu (Douglas A. Bell)
+Subject: Re: Why VESA Local-Bus ????
+Organization: Case Western Reserve University, Cleveland, OH (USA)
+Lines: 15
+Reply-To: dab6@po.CWRU.Edu (Douglas A. Bell)
+NNTP-Posting-Host: slc12.ins.cwru.edu
+
+
+In a previous article, guyd@austin.ibm.com (Guy Dawson) says:
+
+>Something to bear in mind is what the V in VLB stands for!
+>
+>V for Video - the origional intention of the bus was to speed up
+>the bus so that large memory to memory transfers would be faster.
+>This is espically useful in transfering data from main memory to
+>video memory.
+
+
+Well, not to be picky, but the V in VLB stands for VESA.
+While the V in VESA stands for video, saying the V in VLB stands
+for video is not entirely correct.
+-- 

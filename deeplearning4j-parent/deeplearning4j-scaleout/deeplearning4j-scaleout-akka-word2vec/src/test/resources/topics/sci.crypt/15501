@@ -1,0 +1,41 @@
+From: koontzd@phobos.lrmsc.loral.com (David Koontz )
+Subject: Spoofing Clipper Serial Number
+Distribution: usa
+Organization: Loral Rolm Mil-Spec Computers
+Lines: 35
+
+Secrecy in Clipper Chip
+
+The serial number of the clipper chip is encrypted with the system key and
+transmitted as one part of a three part message.
+
+Presumably the protocol can be recovered (if by nothing else, differential
+analysis).
+
+Postulate if you will, a chip (or logic) sitting between the clipper chip
+and its communications channel.  The purpose of this chip is twofold:
+    
+	1) Transmit Channel
+
+	    The spoof chip XORs the 30 bit encrypted serial number with
+	    a secondary keying variable.  This renders the serial number
+	    unrecoverable with just the system key
+
+	2) Recieve Channel
+
+	    The spoof chip XORs the incoming encrypted serial number
+	    with a secondary keying variable (assuming the serial number
+	    is necessary for local operation).
+
+This has the net result of hiding the serial number.  This gets more
+interesting when the number of serial numbers issued becomes large,
+making it difficult to distinguish between valid serial numbers and
+a spoofed serial number.  Without knowing the system key, you could
+lie about the serial number, but risk detection of the lie.
+
+IF you had the system key and the encryption algorithm you could
+successfully lie with a lower probability of detection by emulating the
+format of your own serial number.
+
+Makes you wonder whats being hidden here?   Seems  like the secrecy is
+to prevent you from lying about who you are.

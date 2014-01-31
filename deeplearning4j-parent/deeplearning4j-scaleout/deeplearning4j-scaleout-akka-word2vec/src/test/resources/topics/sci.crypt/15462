@@ -1,0 +1,82 @@
+From: pmetzger@snark.shearson.com (Perry E. Metzger)
+Subject: The Escrow Database.
+Organization: Partnership for an America Free Drug
+Lines: 77
+
+Here is a disturbing thought.
+
+Now, we no longer live in the days of big filing cabinets. We live in
+the electronic age. I asked myself, how big could the escrow database
+get? How hard might it be to steal the whole thing, particularly were
+I an NSA official operating with the tacit permission of the escrow
+houses? (We can pretend that such will not happen, but thats naive.)
+
+Well, lets see. Ten bytes of each escrow half. Lets asume ten bytes of
+serial number -- in fact, I believe the serial number is smaller, but
+this is an order of magnitude calculation. We assume 250*10^6 as the
+population, and that each person has a key. I get five gigabytes for
+each of the two escrow databases. Fits conveniently on a single very
+valuable Exabyte tape. This can only get easier with time, but who
+cares -- I can already hold all the clipper keys in the country in my
+pocket on two 8mm tapes.
+
+Admittely, they will think of safeguards. They won't put the whole
+database on one disk, prehaps. Maybe they will throw stumbling blocks
+in the way. This changes nothing -- they keys will be needed every day
+by hundreds if not thousands of law enforcement types, so convenience
+will dictate that the system permit quick electronic retrieval. At
+some point, with or without collusion by the agencies, those exabyte
+tapes are going to get cut. Dorothy Denning and David Sternlight will
+doubtless claim this can't happen -- but we know that "can't" is a
+prayer, not a word that in this instance connotes realism.
+
+With two exabyte tapes in your pocket, you would hold the keys for
+every person's conversations in the country in your hands. Yeah, you
+need the "master key" two -- but thats just ten bytes of information
+that have to be stored an awful lot of places.
+
+Come to think of it, even if the NSA getting a copy of the database
+isn't a threat to you because unlike me you have no contraversial
+political views, consider foreign intelligence services. You know, the
+ones that David Sternlight wants to protect us from because of the
+evil industrial espionage that they do. The French apparently do have
+a big spying operation in friendly countries to get industrial
+secrets, so he isn't being completely irrational here (although why
+our companies couldn't use cryptosystems without back doors is left
+unexplained by those that point out this threat.) 
+
+Presumably, foreign intelligence services can get moles into the NSA
+and other agencies. We have proof by example of this: its happened
+many times. Presumably, someday they will get their hands on some
+fraction of the keys. You can't avoid that sort of thing.
+
+Don't pretend that no one unauthorized will ever get their hands on
+the escrow databases.
+
+We crypto types are all taught something very important at the
+beginning of intro to cryptography -- security must depend on the
+easily changed key that you pick to run your system, and not on a
+secret. The escrow databases aren't the sorts of secrets that our
+teachers told us about, but they are the sort of big secrets they
+would lump into this category. Imagine trying to replace 100 million
+Clipper chips.
+
+I cannot believe that the NSA or whomever it is thats doing this
+doesn't realize all this already. They are too smart. There are too
+many of them who have made their bones in the real world. I suspect
+that they know precisely what they are doing -- and that what they are
+doing is giving us the appearance of safety so that they can continue
+to surveil in spite of the growth of strong cryptography. I suspect
+that they realize that they can't put things off forever, but they can
+try to delay things as long as possible.
+
+Who knows. Maybe even some of the higher ups, the inevitable
+bureaucratic types that rise in any organization, really do believe
+that this scheme might give people some security, even as their
+subordinates in Fort Meade wring their hands over the foolishness of
+it all.
+
+--
+Perry Metzger		pmetzger@shearson.com
+--
+Laissez faire, laissez passer. Le monde va de lui meme.

@@ -1,0 +1,24 @@
+From: dmittleman@misvms.bpa.arizona.edu (Daniel Mittleman)
+Subject: Re: NDW Norton Desktop for Windows
+Organization: University of Arizona MIS Department
+Lines: 16
+Distribution: world
+NNTP-Posting-Host: misvms.bpa.arizona.edu
+News-Software: VAX/VMS VNEWS 1.41    
+
+In article <1993Apr17.130528.2773@leland.Stanford.EDU>, shiva@leland.Stanford.EDU (Matt Jacobson) writes...
+> 
+>I have an IBM and run Windows 3.1.  A friend installed Norton Desktop For
+>Windows on top of this.  It loads automatically when I type "win", and
+>surely adds to the (already dismally slow) process of starting up.
+> 
+>I would like to know how to STOP or uninstall this program!!
+>Is there anyone familiar with NDW who can tell me how to turn it off??
+
+    1. Get the friend to uninstall it.
+    2. Read the manual (though from your post I infer that you are using
+    pirated software.)
+    3. Go into SYS.INI and change the SHELL= line to read SHELL=PROGMAN.EXE
+
+===========================================================================
+daniel david mittleman     -     danny@arizona.edu     -     (602) 621-2932

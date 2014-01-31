@@ -1,0 +1,19 @@
+From: shirriff@sprite.berkeley.edu (Ken Shirriff)
+Subject: Re: Once tapped, your code is no good any more.
+Organization: University of California, Berkeley
+Lines: 12
+Distribution: na
+NNTP-Posting-Host: hijack.berkeley.edu
+
+In article <Apr18.194927.17048@yuma.ACNS.ColoState.EDU> holland@CS.ColoState.EDU (douglas craig holland) writes:
+>	With E-Mail, if they can't break your PGP encryption, they'll just
+>call up one of their TEMPEST trucks and read the electromagnetic emmisions
+>from your computer or terminal.  Note that measures to protect yourself from
+>TEMPEST surveillance are still classified, as far as I know.
+
+Note that TEMPEST is the name of the shielding standard.  TEMPEST is not
+the name of the surveillance technique.
+
+Ken Shirriff				shirriff@sprite.Berkeley.EDU
+Disclaimer: this is what I've heard and it's in the sci.crypt FAQ, so it's
+probably true but I can't guarantee it.  I'd like to know if I'm wrong.

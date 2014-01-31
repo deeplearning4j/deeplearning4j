@@ -1,0 +1,43 @@
+From: jfc@athena.mit.edu (John F Carr)
+Subject: Re: Screw the people, crypto is for hard-core hackers & spooks only
+Organization: Massachusetts Institute of Technology
+Lines: 37
+NNTP-Posting-Host: achates.mit.edu
+
+In article <1993Apr20.145338.14804@shearson.com>
+	pmetzger@snark.shearson.com (Perry E. Metzger) writes:
+
+[I wrote:]
+>>The chip and algorithm are classified.  If you reverse engineer it and
+>>tell people, you are likely to go to jail.
+
+>Well, I'm not a lawyer, but from what I can tell this is completely
+>and utterly untrue.
+
+>The U.S. does NOT have an official secrets act. We do have laws that
+>will punish you for revealing what classified information you learned
+>in your capacity as a government official, contractor, etc, and we
+>have laws that prohibit stealing such information. However, if they
+>sell you the chip, I can't see that they can make reverse engineering
+>it and revealing the details illegal.
+
+In most cases information you come by properly is yours to use as you wish,
+but there are certainly exceptions.  If you write a paper which includes
+sufficiently detailed information on how to build a nuclear weapon, it is
+classified.  As I understand the law, nuclear weapons design is
+_automatically_ classified even if you do the work yourself.  I believe you
+are then not allowed to read your own paper.
+
+A less serious example: if you tell drivers about a speed trap they are
+about to run into, you can be fined, even though you might argue that you
+broke no law when you discovered the location of the policeman.  The charge
+is interfering with a police officer, which is quite similar what you would
+be doing by reverse engineering the Clipper chip.
+
+Don't tell me that you think this violates the Constitution -- find some
+court cases which have struck down such laws.  Many people would not be
+comforted by the fact that the government violated their rights when it
+imprisoned them.
+
+--
+    John Carr (jfc@athena.mit.edu)

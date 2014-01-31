@@ -1,0 +1,54 @@
+From: mleisher@nmsu.edu (Mark Leisher)
+Subject: CRL Archive Change Announcement
+Organization: Computing Research Lab
+Lines: 46
+Distribution: world
+NNTP-Posting-Host: pylos.nmsu.edu
+X-Md4-Signature: 6a869a6491f9d34c90b1e79dcbce325b
+
+The multi-lingual archives at The Computing Research Labs, New Mexico
+State University will be moving to a new ftp address soon.  The
+archives are being put under control of the Consortium for Lexical
+Research.
+
+The new ftp address will be: clr.nmsu.edu (the current IP address
+is 128.123.1.12 but may change, so use clr.nmsu.edu whenever
+possible).
+
+Please note that there is a difference between ftp sites crl.nmsu.edu and
+clr.nmsu.edu.  The crl.nmsu.edu site will be our ftp site for items
+not related to the Consortium for Lexical Research.
+
+The Arabic, Chinese, French, Italian, Indian, Japanese, Korean,
+Tibetan, and Vietnamese archives will all be moved.
+
+We will announce the new locations of the relevant directories once
+the archives have been moved.
+
+Please be patient if you discover directories missing when you ftp to
+either crl.nmsu.edu or clr.nmsu.edu.  It will take a few days to move
+everything.
+
+If you are not familiar with our multi-lingual archives, we have been
+slowly collecting various software, fonts, and text for different
+languages over the past 2 years.  Most of the software is currently
+Unix oriented.  We would also like to encourage people to continue to
+contribute items to the archives to help improve the quality and
+quantity of multi-lingual tools.
+
+If you have an item to contribute, please put it in:
+
+clr.nmsu.edu:incoming/
+
+and send a note to lexical@nmsu.edu telling them about your
+contribution.
+
+If you have any questions or comments, please send them to:
+lexical@nmsu.edu
+
+-----------------------------------------------------------------------------
+mleisher@nmsu.edu
+Mark Leisher
+Computing Research Lab                    "Elegance is not optional!"
+New Mexico State University                  -- Attributed to Richard O'Keefe
+Box 3CRL, Las Cruces, NM  88003

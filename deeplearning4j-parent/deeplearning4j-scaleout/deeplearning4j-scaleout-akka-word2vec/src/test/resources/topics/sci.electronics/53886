@@ -1,0 +1,47 @@
+From: squish@endor.uucp (Shishin Yamada)
+Subject: Re: ATARI 2600 Processors
+Organization: Aiken Computation Lab, Harvard University
+Lines: 42
+
+In article <93110.125951PCA103@psuvm.psu.edu> <PCA103@psuvm.psu.edu> writes:
+>Does anyone know what processor the Atari 2600 used? What I'm looking for is th
+>e pin-outs for the Atari 2600.... the schematics for it it... does anyone have
+>any idea where I could find this or any related information? This is very impor
+>tant. Also, are the ROM chips that were used fo rthe 2600 games still available
+>, or were they propreitary? Please email me with any responces, as this is very
+> important.. Thanks a million...
+>
+>BTW- Anyone who works/has worked for Atari, I could really use your help with i
+>nfo on the old 2600, please email me if you are willing to help me.... thatnks
+>alot!!
+>
+>-Peter
+
+The Atari 2600 used a 6502 CPU, just like their entire 8-bit line
+(400, 800,1200,1400, 1440, 130xe, 65xe computers, as well as the 5200
+game machine). The 2600 had some extra ASIC chips that were basically
+modified graphics chips and PIA's for the joysticks. Later model 2600
+might have incorporated many of the chips into one ASCI, as the weight
+of the machines and part count decreased a lot over the years.
+
+Additionally, I think the 2600 used 2K, 4K, and up to 8K of ROM for
+their games. I have no idea how much RAM it had to work with, but I
+would hazard a guess of 2 or 4K RAM. Think comes from a lot of hacking
+with the 800 and 130xe computers. And occasionally hacking with the
+2600 (fixing it for monitor composite video use, and audio hookups).
+Also I tryed to make a cartridge-less system that stored the ROM into
+a RAM cartridge that could be loaded up at some prior time (a way to
+backup cartridges). I've heard of a setup like this where games could
+be bought (cheaply) on FSK-recorded tapes, then you would load them
+into a special RAM cartidge, and play them.
+
+Anyways, if you're interested in looking for 2600 equipment, we've got
+two 2600 machines around (one composite A/V modified), and lotsa
+cartridges. Willing to sell for reasonable offer + shipping and
+handling. Don't play it anymore, since going to computers + Nintendo
+(interested in that too?).
+
+Hope that helps your question... I might grab some 6502's out too,
+since they must be fun to play with (as microcontrollers).
+-shishin "squish" yamada
+squish@endor.harvard.edu

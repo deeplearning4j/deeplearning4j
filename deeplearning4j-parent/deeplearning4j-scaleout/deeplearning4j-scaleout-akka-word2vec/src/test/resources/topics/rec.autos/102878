@@ -1,0 +1,26 @@
+From: alung@megatest.com (Aaron Lung)
+Subject: Re: electronic odometers (was: Used BMW Question ..... ???)
+Organization: Megatest Corporation
+Lines: 21
+
+In article <9833@dirac.physics.purdue.edu> lovall@bohr.physics.purdue.edu (Daniel L. Lovall) writes:
+>
+>It shouldn't be THAT hard if you know much about digital electronics.  If the
+>counter is made with standard TTL chips, all you should need to do is find
+>the chip(s) used for counting, figure out what mileage you want to put in,
+>and preset it but wiring the preset pins directly to low/high (you'd also have
+>to know what the conventions are for low and high).  It might be a little more
+>involved than this, but it shouldn't be beyond someone with a BSEE or BS EET.
+>All the display does is convert what the counter chips say into digits using
+>a "translation table" stored in ROM.
+>
+
+Nobody is using discrete IC's to do these functions anymore if at
+all.  I doubt any of the Motor electronics had any to start with.
+...Much less TTL.
+
+I can almost guarantee that it'll a fruitless attempt to figure out
+how BMW does it without breaking anything and invalidating any
+warranty  on the car.  If you're lucky, you'd still be able to
+start the car.
+

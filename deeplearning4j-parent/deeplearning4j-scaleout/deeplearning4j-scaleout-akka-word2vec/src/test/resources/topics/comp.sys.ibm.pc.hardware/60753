@@ -1,0 +1,35 @@
+From: etobkkc@etn.ericsson.se (Karlsen Bjorn)
+Subject: Re: How is a Loopback connector made?
+In-Reply-To: 35002_4401@uwovax.uwo.ca's message of Mon, 19 Apr 1993 17:26:28 GMT
+Nntp-Posting-Host: aliboats.etn.ericsson.se
+Reply-To: etobkkc@hisoy.etn.ericsson.se
+Organization: Ericsson AS
+Lines: 27
+
+35002_4401@uwovax.uwo.ca writes:
+
+>I need to know the Pins to connect to make a loopback connector for a serial
+>port so I can build one.  The loopback connector is used to test the 
+>serial port.
+>
+>Thanks for any help.
+
+From a recent BYTE magazine i got the following:
+
+[Question and part of the answer deleted]
+
+  If you are handy with a soldering iron, the loopback plugs are easy to
+make.  On a serial RS-232 nine-pin port, use a female DB-9 connector and
+connect pins 1 to 7 to 8; 2 to 3; and 4 to 6 to 9.  For serial RS-232 
+25-pin ports, you'll need a female DB-25 connector with pins 1 to 7;
+2 to 3; 4 to 5 to 8; 6 to 11 to 20 to 22; 15 to 17 to 23; and 18 to 25
+connected.  To test a Centronics 25-pin parallel port, you'll need to
+connect pins 1 to 13; 2 to 15; 10 to 16; 11 to 17; and 12 to 14 in a male
+DB-25 connector.
+
+					-Stan Wszola
+---
+
+I haven't tried it. Use at own risk.
+
+-KKC-  etobkkc@hisoy.etn.ericsson.se

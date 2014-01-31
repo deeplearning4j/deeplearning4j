@@ -1,0 +1,13 @@
+From: Mikael Fredriksson <Mikael.Fredriksson@macexchange.se>
+Subject: RE-Re: Quadra SCSI Problems???
+X-Mailer: TeleFinder (version 3.0)
+Organization: Mac Exchange BBS
+             BBS +46-31-948290, FAX +46-31-948294
+             PL 3813,S-437 92 Lindome, Sweden
+Lines: 5
+
+ In article <C5L39p.2qz@news.udel.edu>, johnston@me.udel.edu (Bill Johnston) writes:|> In article <1993Apr16.144750.1568@mintaka.lcs.mit.edu> nodine@lcs.mit.edu (Mark H. Nodine) writes:|> >I don't know about the specific problem mentioned in your|> >message, but I definitely had SCSI problems between my|> >Q700 and my venerable Jasmine Megadrive 10 cartridge|> >drives.  My solution was to get Silverlining.  None of|> >the loops that involved blind writes worked to the drives;
+op that worked was the "Macintosh|> >Software" loop (whatever that means).|> |> I doubt this is a Quadra-specific problem.  I had to get|> rid of my "venerable" Bernoulli 20 last year (with enough |> cartridges purchased at ~$90 each to make the whole thing |> worth more than my whole computer ;).  The tech support guys|> at Ocean Microsystems suggested that some third-party drivers |> might fix the problem - in my case the cartridges wouldn't |> format/mount/partition for A/UX.  
+hat the Megadrives worked perfectly on both myMac Plus and my Powerbook 140.  It was for this reason I assumedthe problem had something to do with the Quadra.  Even with theQuadra, they mostly worked OK.  The problem occurred when I ejecteda cartridge from a drive: it would start popping up dialog boxessaying "This cartridge must be formatted with Jasmine Driveware"even though there was no cartridge in the drive.	--Mark
+t to format) I have this confirmed from Apple Computer in Sweden (I work for a Apple dealer as a service tech). We had problems that Quadras wanted to format a diskette or a Syquest when ther was nothing in the drive. This problem was fixed sytem 7.1Mikael Fredriksson-------------------------------------------------email: mikael_fredriksson@macexchange.seMac Exchange BBSPL 3813S-437 92 LindomeSwedenBBS +46-31-948290 (5 lines)FAX +46-31-948294FIDO 2:203/211  
+<Disclaimer: Mac Exchange BBS cannot be held responsible for the contents of this message>

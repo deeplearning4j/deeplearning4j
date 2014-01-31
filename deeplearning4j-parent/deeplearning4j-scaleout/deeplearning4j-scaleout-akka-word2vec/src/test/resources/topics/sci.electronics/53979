@@ -1,0 +1,32 @@
+From: jvannes@vms.macc.wisc.edu
+Subject: Re: Long distance IR detection
+Organization:  University of Wisconsin Academic Computing Center
+Distribution:  na
+Lines: 26
+
+In article <wb9omc.735430855@dynamo.ecn.purdue.edu>, wb9omc@dynamo.ecn.purdue.edu (Duane P Mantick) writes...
+
+>	BTW, I have seen IRLEDs with outputs up to 6 watts...honest,
+>6 WATTS.  I don't have the book here at work so I can't recall the company
+>name.  The 6 watter ain't cheap, around $108 but if you want some power,
+>mamamia, that's pretty hot.  They also have a 4 watt, a 2 watt and a
+>1 watt device in their line, and will sell small quan. to individuals.
+>If you are interested, I can find the book at home and get the
+>pertinent info.
+> 
+
+You are probably referring to the products of
+		
+		Opto Diode Corp.
+		750 Mitchell Road
+		Newbury Park Ca 91320
+		805 499-0335
+
+The make some amazing IRLED's.  The really high-powered devices are arrays of
+3, 6, or 9, LED's on a TO-66 header.  The 9-chip model puts out 6.5 Watts in
+response to a 5 Amp, 10 uS. pulse at a .5% duty cycle.  I think  these are
+designed as illuminators for IR vision systems.
+
+I would also be interested in the application here.  I work with a Dance and
+Technology program, and want to build something to track dancers on a 30 foot
+wide stage from 50 feet away.

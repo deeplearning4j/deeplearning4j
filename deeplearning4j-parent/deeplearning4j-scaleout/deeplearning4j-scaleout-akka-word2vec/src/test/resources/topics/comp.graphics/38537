@@ -1,0 +1,54 @@
+From: jbrandt@NeoSoft.com (J Brandt)
+Subject: Beta Testers Wanted for Graphics Libraries
+Organization: NeoSoft Communications Services -- (713) 684-5900
+Keywords: xeg ceg beta imsl vni x graphics
+Lines: 48
+
+
+  Visual Numerics Inc. (formerly IMSL and Precision Visuals) is in the
+process of securing sites for beta testing X Exponent Graphics 1.0 
+and C Exponent Graphics 2.0.  (Both X Exponent Graphics and C Exponent
+Graphics are 3GL products).  The beta period is from April 26 through 
+June 18.  The platform is HP9000/700 running under OS 8.07 with 
+ansi C 8.71 compiler.  The media will be sent on 4mm DAT cartridge 
+tape.  Here are some of the key facts about the two products.
+ 
+X Exponent Graphics 1.0 key facts:
+ 
+1. Complete collection of high-level 2D and 3D application plot types
+   available through a large collection of X resources.
+2. Cstom widget for OSF/Motif developers.
+3. Built-in interactive GUI for plot customization.
+4. Easily-implemented callbacks for customized application feedback.
+5. XEG 1.0, being built on the Xt Toolkit provides the user a widget 
+   library that conforms to the expected syntax and standards familar 
+   to X programmers.
+6. XEG will also be sold as a bundle with Visual Edge's UIM/X product.
+   This will enable user to use a GUI builder to create the graphical
+   layout of an application.
+ 
+C Exponent Graphics 2.0 key facts:
+ 
+1. Written in C for C application programmers/developers.  The library
+   is 100% written in C, and the programming interface conforms to C
+   standards, taking advantage fo the most desirable features of C.
+2. Build-in GUI for interactive plot customization.  Through mouse 
+   interaction, the user has complete interactive graph output control
+   with over 200 graphics attributes for plot customization.
+3. Large collection of high-level application functions for "two-call"
+   graph creation.  A wide variety of 2D and 3D plot types are available
+   with minimal programming effort.
+4. User ability to interrupt and control the X event.  By controlling
+   the X event loop, when the user use the mouse to manipulate the  plot
+   the user can allow CEG to control the event loop or the user can 
+   control the event loop.
+ 
+If anyone is interested in beta testing either of the products, please
+contact Wendy Hou at Visual Numerics via email at hou@imsl.com or call
+713-279-1066.
+ 
+ 
+-- 
+Jaclyn Brandt
+jbrandt@NeoSoft.com
+--
