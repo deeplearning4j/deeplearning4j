@@ -56,7 +56,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	/* visible bias */
 	public DoubleMatrix vBias;
 	/* RNG for sampling. */
-	public RandomGenerator rng;
+	public transient RandomGenerator rng;
 	/* input to the network */
 	public DoubleMatrix input;
 	/* sparsity target */
@@ -64,7 +64,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	/* momentum for learning */
 	public double momentum = 0.1;
 	/* Probability distribution for weights */
-	public RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+	public transient RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 	/* L2 Regularization constant */
 	public double l2 = 0.1;
 	public transient NeuralNetworkOptimizer optimizer;
@@ -307,6 +307,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.hBias = n.hBias;
 		this.vBias = n.vBias;
 		this.l2 = n.l2;
+		this.useRegularization = n.useRegularization;
 		this.momentum = n.momentum;
 		this.nHidden = n.nHidden;
 		this.nVisible = n.nVisible;
@@ -355,7 +356,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			return - inner.rowSums().mean() / normalized;
 		}
 
-		return - inner.rowSums().mean();
+		double ret =  - inner.rowSums().mean();
+		if(Double.isNaN(ret) || Double.isInfinite(ret))
+			throw new IllegalStateException("We appear to have an invalid return value of " + (Double.isNaN(ret) ? "NAN" : "Inifinity"));
+		
+		
+		return ret;
 	}
 
 
@@ -716,5 +722,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			return ret;
 		}
 	}
+	
+	
 
 }
