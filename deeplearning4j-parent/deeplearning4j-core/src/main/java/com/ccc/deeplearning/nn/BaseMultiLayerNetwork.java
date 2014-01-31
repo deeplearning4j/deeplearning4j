@@ -54,7 +54,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public HiddenLayer[] sigmoidLayers;
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
 	public LogisticRegression logLayer;
-	public RandomGenerator rng;
+	public transient RandomGenerator rng;
 	/* probability distribution for generation of weights */
 	public RealDistribution dist;
 	public double momentum = 0.1;
@@ -231,8 +231,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		if(input.columns != nIns)
 			throw new IllegalArgumentException("Unable to train on number of inputs; columns should be equal to number of inputs");
-		
-		
+
+
 		this.input = input.dup();
 		DoubleMatrix layerInput = input;
 		int inputSize;
@@ -560,8 +560,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
 		return reconstruct(x,sigmoidLayers.length);
 	}
-	
-	
+
+
 	/**
 	 * Serializes this to the output stream.
 	 * @param os the output stream to write to
@@ -642,10 +642,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public double negativeLogLikelihood() {
 		double ret  = 0.0;
 		for(int i = 0; i < nLayers; i++) {
-			ret += (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0)  * l2;
+			double sum = (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0);
+			if(useRegularization)
+				ret += sum  * l2;
+			else
+				ret += sum;
 		}
-		ret += (MatrixFunctions.pow(logLayer.W,2).sum()/ 2.0)  * l2;
+		double sum = (MatrixFunctions.pow(logLayer.W,2).sum()/ 2.0);
+		if(useRegularization)
+			ret +=  sum * l2;
 
+		else 
+			ret += sum;
+		if(Double.isNaN(ret) || Double.isInfinite(ret))
+			throw new IllegalStateException("We appear to have hit an invalid negative log likelidhood " + (Double.isNaN(ret) ? "NAN" : "Inifinity"));
 		return ret;
 	}
 

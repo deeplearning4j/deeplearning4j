@@ -29,6 +29,7 @@ import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.MasterActor;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
+import com.ccc.deeplearning.rng.SynchronizedRandomGenerator;
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
 
@@ -144,7 +145,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	public void setup(Conf conf) {
 		super.setup(conf);
 		
-		RandomGenerator rng = new MersenneTwister(conf.getSeed());
+		RandomGenerator rng = new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
 		network = new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(numVisible).numberOfOutPuts(numHidden)
 				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)

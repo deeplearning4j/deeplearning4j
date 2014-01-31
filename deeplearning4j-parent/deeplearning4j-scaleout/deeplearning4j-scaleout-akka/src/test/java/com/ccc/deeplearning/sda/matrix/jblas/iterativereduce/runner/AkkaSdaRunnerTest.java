@@ -131,8 +131,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 		DataSet first = fetcher.next();
 
 		runner.train(first.getFirst(), first.getSecond());  
-		while(true)
-			Thread.sleep(10000);
+		
 		/*
 		BaseMultiLayerNetwork trained = runner.getResult().get();
 		Evaluation eval = new Evaluation();

@@ -83,7 +83,7 @@ public class DBN extends BaseMultiLayerNetwork {
 	 */
 	public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
 
-		if(this.input == null) {
+		if(this.input == null || this.layers == null || this.layers[0] == null || this.sigmoidLayers == null || this.sigmoidLayers[0] == null) {
 			this.input = input;
 			initializeLayers(input);
 		}
@@ -96,7 +96,7 @@ public class DBN extends BaseMultiLayerNetwork {
 			if(i == 0)
 				layerInput = this.input;
 			else 
-				layerInput = sigmoidLayers[i-1].sampleHGivenV(layerInput);
+				layerInput = sigmoidLayers[i - 1].sampleHGivenV(layerInput);
 			log.info("Training on layer " + (i + 1));
 			if(forceNumEpochs) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
