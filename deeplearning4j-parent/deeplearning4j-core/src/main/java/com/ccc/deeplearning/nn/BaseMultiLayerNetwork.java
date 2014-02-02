@@ -27,7 +27,6 @@ import com.ccc.deeplearning.optimize.MultiLayerNetworkOptimizer;
 import com.ccc.deeplearning.rbm.CRBM;
 import com.ccc.deeplearning.rbm.RBM;
 import com.ccc.deeplearning.transformation.MatrixTransform;
-import com.ccc.deeplearning.util.MatrixUtil;
 
 
 /**
@@ -43,44 +42,44 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
 	private static final long serialVersionUID = -5029161847383716484L;
 	//number of columns in the input matrix
-	public int nIns;
+	private int nIns;
 	//the hidden layer sizes at each layer
-	public int[] hiddenLayerSizes;
+	private int[] hiddenLayerSizes;
 	//the number of outputs/labels for logistic regression
-	public int nOuts;
+	private int nOuts;
 	//number of layers
-	public int nLayers;
+	private int nLayers;
 	//the hidden layers
-	public HiddenLayer[] sigmoidLayers;
+	private HiddenLayer[] sigmoidLayers;
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
-	public LogisticRegression logLayer;
-	public transient RandomGenerator rng;
+	private LogisticRegression logLayer;
+	private RandomGenerator rng;
 	/* probability distribution for generation of weights */
-	public RealDistribution dist;
-	public double momentum = 0.1;
+	private RealDistribution dist;
+	private double momentum = 0.1;
 	//default training examples and associated layers
-	public DoubleMatrix input,labels;
-	public MultiLayerNetworkOptimizer optimizer;
+	private DoubleMatrix input,labels;
+	private MultiLayerNetworkOptimizer optimizer;
 	//activation function for each hidden layer
-	public ActivationFunction activation = new Sigmoid();
-	public boolean toDecode;
+	private ActivationFunction activation = new Sigmoid();
+	private boolean toDecode;
 	//l2 regularization constant for weight decay
-	public double l2 = 0.01;
+	private double l2 = 0.01;
 	//whether to initialize layers
-	public boolean shouldInit = true;
+	private boolean shouldInit = true;
 	//fan in for uniform distributions
-	public double fanIn = -1;
+	private double fanIn = -1;
 	//whether to render weights or not; anything <=0 will not render the weights
-	public int renderWeightsEveryNEpochs = -1;
-	public boolean useRegularization = true;
+	private int renderWeightsEveryNEpochs = -1;
+	private boolean useRegularization = true;
 	//sometimes we may need to transform weights; this allows a 
 	//weight transform upon layer setup
-	protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
-	protected boolean shouldBackProp = true;
+	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+	private boolean shouldBackProp = true;
 	//whether to only train a certain number of epochs
-	protected boolean forceNumEpochs = false;
+	private boolean forceNumEpochs = false;
 	//don't use sparsity by default
-	public double sparsity = 0;
+	private double sparsity = 0;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -164,13 +163,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(int i = 0; i < nLayers; i++) {
 			HiddenLayer h = sigmoidLayers[i];
 			NeuralNetwork network = layers[i];
-			h.W.assertSameSize(network.getW());
-			h.b.assertSameSize(network.gethBias());
+			h.getW().assertSameSize(network.getW());
+			h.getB().assertSameSize(network.gethBias());
 
 			if(i < nLayers - 1) {
 				HiddenLayer h1 = sigmoidLayers[i + 1];
 				NeuralNetwork network1 = layers[i + 1];
-				if(h1.nIn != h.nOut)
+				if(h1.getnIn() != h.getnOut())
 					throw new IllegalStateException("Invalid structure: hidden layer in for " + (i + 1) + " not equal to number of ins " + i);
 				if(network.getnHidden() != network1.getnVisible())
 					throw new IllegalStateException("Invalid structure: network hidden for " + (i + 1) + " not equal to number of visible " + i);
@@ -178,7 +177,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 		}
 
-		if(sigmoidLayers[sigmoidLayers.length - 1].nOut != logLayer.nIn)
+		if(sigmoidLayers[sigmoidLayers.length - 1].getnOut() != logLayer.getnIn())
 			throw new IllegalStateException("Number of outputs for final hidden layer not equal to the number of logistic input units for output layer");
 
 
@@ -230,8 +229,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
 		if(input.columns != nIns)
-			throw new IllegalArgumentException("Unable to train on number of inputs; columns should be equal to number of inputs");
-
+			throw new IllegalArgumentException(String.format("Unable to train on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d",nIns,input.columns));
+		if(this.layers == null)
+			this.layers = new NeuralNetwork[nLayers];
 
 		this.input = input.dup();
 		DoubleMatrix layerInput = input;
@@ -247,31 +247,95 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			if(i == 0) {
 				// construct sigmoid_layer
 				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
-				sigmoidLayers[i].activationFunction = activation;
+				sigmoidLayers[i].setActivationFunction(activation);
 			}
 			else {
 				layerInput = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
 				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
-				sigmoidLayers[i].activationFunction = activation;
+				sigmoidLayers[i].setActivationFunction(activation);
 
 
 			}
 
-			this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].W, this.sigmoidLayers[i].b, null, rng,i);
+			this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].getW(), this.sigmoidLayers[i].getB(), null, rng,i);
 
 		}
 
 		// layer for output using LogisticRegression
 		this.logLayer = new LogisticRegression(layerInput, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
-		this.logLayer.useRegularization = this.useRegularization;
-		this.logLayer.l2 = this.l2;
+		this.logLayer.setUseRegularization(this.isUseRegularization());
+		this.logLayer.setL2(this.getL2());
 
 
 		dimensionCheck();
 		applyTransforms();
 	}
 
+
+	public synchronized int getnIns() {
+		return nIns;
+	}
+
+	public synchronized void setnIns(int nIns) {
+		this.nIns = nIns;
+	}
+
+	public synchronized int getnOuts() {
+		return nOuts;
+	}
+
+	public synchronized void setnOuts(int nOuts) {
+		this.nOuts = nOuts;
+	}
+
+	public synchronized int getnLayers() {
+		return nLayers;
+	}
+
+	public synchronized void setnLayers(int nLayers) {
+		this.nLayers = nLayers;
+	}
+
+	public synchronized double getMomentum() {
+		return momentum;
+	}
+
+	public synchronized void setMomentum(double momentum) {
+		this.momentum = momentum;
+	}
+
+	public synchronized double getL2() {
+		return l2;
+	}
+
+	public synchronized void setL2(double l2) {
+		this.l2 = l2;
+	}
+
+	public synchronized boolean isUseRegularization() {
+		return useRegularization;
+	}
+
+	public synchronized void setUseRegularization(boolean useRegularization) {
+		this.useRegularization = useRegularization;
+	}
+
+	public synchronized void setSigmoidLayers(HiddenLayer[] sigmoidLayers) {
+		this.sigmoidLayers = sigmoidLayers;
+	}
+
+	public synchronized void setLogLayer(LogisticRegression logLayer) {
+		this.logLayer = logLayer;
+	}
+
+	public synchronized void setShouldBackProp(boolean shouldBackProp) {
+		this.shouldBackProp = shouldBackProp;
+	}
+
+	public synchronized void setLayers(NeuralNetwork[] layers) {
+		this.layers = layers;
+	}
 
 	protected void initializeNetwork(NeuralNetwork network) {
 		network.setFanIn(fanIn);
@@ -284,70 +348,83 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+
+
+
+	public synchronized DoubleMatrix getLabels() {
+		return labels;
+	}
+
+	public synchronized LogisticRegression getLogLayer() {
+		return logLayer;
+	}
+
+	public synchronized void setInput(DoubleMatrix input) {
+		this.input = input;
+	}
+
+	public synchronized DoubleMatrix getInput() {
+		return input;
+	}
+
+	public synchronized HiddenLayer[] getSigmoidLayers() {
+		return sigmoidLayers;
+	}
+
+	public synchronized NeuralNetwork[] getLayers() {
+		return layers;
+	}
+
 	/**
-	 * Conpute activations from input to output of the output layer
+	 * Compute activations from input to output of the output layer
 	 * @return the list of activations for each layer
 	 */
-	public List<DoubleMatrix> feedForward() {
+	public synchronized List<DoubleMatrix> feedForward(DoubleMatrix input) {
 		if(this.input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
+		DoubleMatrix currInput = input;
+
 		List<DoubleMatrix> activations = new ArrayList<>();
-		DoubleMatrix input = this.input;
-		activations.add(input);
+		activations.add(currInput);
 
 		for(int i = 0; i < nLayers; i++) {
-			HiddenLayer layer = sigmoidLayers[i];
-			layers[i].setInput(input);
-			input = layer.activate(input);
-			activations.add(input);
+			getLayers()[i].setInput(currInput);
+			currInput = getSigmoidLayers()[i].activate(currInput);
+			activations.add(currInput);
 		}
 
-		activations.add(logLayer.predict(input));
+		activations.add(getLogLayer().predict(currInput));
 		return activations;
 	}
 
-	private void computeDeltas(List<DoubleMatrix> activations,List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
+	private synchronized void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
 		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
 		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
-		ActivationFunction derivative = sigmoidLayers[0].activationFunction;
+		ActivationFunction derivative = sigmoidLayers[0].getActivationFunction();
 		//- y - h
 		DoubleMatrix delta = null;
-
+		List<DoubleMatrix> activations = feedForward(getInput());
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
 		List<DoubleMatrix> weights = new ArrayList<>();
-		for(int j = 0; j < layers.length; j++)
-			weights.add(layers[j].getW());
-		weights.add(logLayer.W);
+		for(int j = 0; j < getLayers().length; j++)
+			weights.add(getLayers()[j].getW());
+		weights.add(getLogLayer().getW());
 
-		List<DoubleMatrix> zs = new ArrayList<>();
-		zs.add(input);
-		/*
-		 * activations for each layer
-		 */
-		for(int i = 0; i < layers.length; i++) {
-			if(layers[i].getInput() == null && i == 0) {
-				layers[i].setInput(input);
-			}
-			else if(layers[i].getInput() == null){
-				this.feedForward();
-			}
+		DoubleMatrix labels = predict(getInput());
+	
 
-			zs.add(MatrixUtil.sigmoid(layers[i].getInput().mmul(weights.get(i)).addRowVector(layers[i].gethBias())));
-		}
-
-		//account for final activation of log layer as well
-		zs.add(logLayer.input.mmul(logLayer.W).addRowVector(logLayer.b));
-
-		//errors
+		//errors 
 		for(int i = nLayers + 1; i >= 0; i--) {
 			//output layer
 			if(i >= nLayers + 1) {
-				DoubleMatrix z = zs.get(i);
+				DoubleMatrix z = activations.get(i);
+				
+				
 				//- y - h
-				delta = labels.sub(activations.get(i)).neg();
+				delta = labels.sub(z).neg();
 
 				//(- y - h) .* f'(z^l) where l is the output layer
 				DoubleMatrix initialDelta = delta.mul(derivative.applyDerivative(z));
@@ -358,7 +435,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				//derivative i + 1; aka gradient for bias
 				delta = deltas[i + 1];
 				DoubleMatrix w = weights.get(i).transpose();
-				DoubleMatrix z = zs.get(i);
+				DoubleMatrix z = activations.get(i);
 				DoubleMatrix a = activations.get(i);
 				//W^t * error^l + 1
 
@@ -373,7 +450,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				DoubleMatrix lastLayerDelta = deltas[i + 1].transpose();
 				DoubleMatrix newGradient = lastLayerDelta.mmul(a);
 
-				gradients[i] = newGradient.div(input.rows);
+				gradients[i] = newGradient.div(getInput().rows);
 			}
 
 		}
@@ -388,7 +465,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	@Override
 	protected BaseMultiLayerNetwork clone() {
-		@SuppressWarnings("unchecked")
 		BaseMultiLayerNetwork ret = new Builder<>().withClazz(getClass()).buildEmpty();
 		ret.update(this);
 		return ret;
@@ -437,18 +513,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	protected boolean backPropStep(Double lastEntropy,BaseMultiLayerNetwork revert,double lr,int epoch) {
 		//feedforward to compute activations
-		List<DoubleMatrix> activations = feedForward();
 		//initial error
 		double error = this.negativeLogLikelihood();
 		if(lastEntropy == null) {
 			lastEntropy = error;
 		}
+		
 		else if(error == lastEntropy) {
 			log.info("Converged; no more stepping appears to do anything");
 			return false;
 		}
 
-		else if(error > lastEntropy) {
+		else if(error > lastEntropy || Double.isNaN(error) || Double.isInfinite(error)) {
 			log.info("Error greater than previous; found global minima; converging");
 			update(revert);
 			return false;
@@ -462,7 +538,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		//precompute deltas
 		List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
 		//compute derivatives and gradients given activations
-		computeDeltas(activations, deltas);
+		computeDeltas(deltas);
 
 
 		for(int l = 0; l < nLayers; l++) {
@@ -475,7 +551,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			//update W
 			layers[l].setW(layers[l].getW().add(add.mul(lr)));
-			sigmoidLayers[l].W = layers[l].getW();
+			sigmoidLayers[l].setW(layers[l].getW());
 
 
 			//update hidden bias
@@ -483,11 +559,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			deltaColumnSums.divi(input.rows);
 
 			layers[l].gethBias().addi(deltaColumnSums.mul(lr));
-			sigmoidLayers[l].b = layers[l].gethBias();
+			sigmoidLayers[l].setB(getLayers()[l].gethBias());
 		}
 
 
-		logLayer.W.addi(deltas.get(nLayers).getFirst());
+		logLayer.getW().addi(deltas.get(nLayers).getFirst());
 		return true;
 
 	}
@@ -639,7 +715,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Negative log likelihood of the model
 	 * @return the negative log likelihood of the model
 	 */
-	public double negativeLogLikelihood() {
+	public synchronized double negativeLogLikelihood() {
 		double ret  = 0.0;
 		for(int i = 0; i < nLayers; i++) {
 			double sum = (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0);
@@ -648,14 +724,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			else
 				ret += sum;
 		}
-		double sum = (MatrixFunctions.pow(logLayer.W,2).sum()/ 2.0);
+		double sum = (MatrixFunctions.pow(logLayer.getW(),2).sum()/ 2.0);
 		if(useRegularization)
 			ret +=  sum * l2;
 
 		else 
 			ret += sum;
-		if(Double.isNaN(ret) || Double.isInfinite(ret))
-			throw new IllegalStateException("We appear to have hit an invalid negative log likelidhood " + (Double.isNaN(ret) ? "NAN" : "Inifinity"));
+
 		return ret;
 	}
 
@@ -733,12 +808,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			NeuralNetwork otherNetwork = network.layers[i];
 			n.merge(otherNetwork, batchSize);
 			//tied weights: must be updated at the same time
-			HiddenLayer l = sigmoidLayers[i];
-			l.b = n.gethBias();
-			l.W = n.getW();
+			getSigmoidLayers()[i].setB(n.gethBias());
+			getSigmoidLayers()[i].setW(n.getW());
+
 		}
 
-		logLayer.merge(network.logLayer, batchSize);
+		getLogLayer().merge(network.logLayer, batchSize);
 	}
 
 	/**
@@ -770,6 +845,123 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public boolean isForceNumEpochs() {
 		return forceNumEpochs;
 	}
+
+
+
+	public synchronized int[] getHiddenLayerSizes() {
+		return hiddenLayerSizes;
+	}
+
+	public synchronized void setHiddenLayerSizes(int[] hiddenLayerSizes) {
+		this.hiddenLayerSizes = hiddenLayerSizes;
+	}
+
+	public synchronized RandomGenerator getRng() {
+		return rng;
+	}
+
+	public synchronized void setRng(RandomGenerator rng) {
+		this.rng = rng;
+	}
+
+	public synchronized RealDistribution getDist() {
+		return dist;
+	}
+
+	public synchronized void setDist(RealDistribution dist) {
+		this.dist = dist;
+	}
+
+	public synchronized MultiLayerNetworkOptimizer getOptimizer() {
+		return optimizer;
+	}
+
+	public synchronized void setOptimizer(MultiLayerNetworkOptimizer optimizer) {
+		this.optimizer = optimizer;
+	}
+
+	public synchronized ActivationFunction getActivation() {
+		return activation;
+	}
+
+	public synchronized void setActivation(ActivationFunction activation) {
+		this.activation = activation;
+	}
+
+	public synchronized boolean isToDecode() {
+		return toDecode;
+	}
+
+	public synchronized void setToDecode(boolean toDecode) {
+		this.toDecode = toDecode;
+	}
+
+	public synchronized boolean isShouldInit() {
+		return shouldInit;
+	}
+
+	public synchronized void setShouldInit(boolean shouldInit) {
+		this.shouldInit = shouldInit;
+	}
+
+	public synchronized double getFanIn() {
+		return fanIn;
+	}
+
+	public synchronized void setFanIn(double fanIn) {
+		this.fanIn = fanIn;
+	}
+
+	public synchronized int getRenderWeightsEveryNEpochs() {
+		return renderWeightsEveryNEpochs;
+	}
+
+	public synchronized void setRenderWeightsEveryNEpochs(
+			int renderWeightsEveryNEpochs) {
+		this.renderWeightsEveryNEpochs = renderWeightsEveryNEpochs;
+	}
+
+	public synchronized Map<Integer, MatrixTransform> getWeightTransforms() {
+		return weightTransforms;
+	}
+
+	public synchronized void setWeightTransforms(
+			Map<Integer, MatrixTransform> weightTransforms) {
+		this.weightTransforms = weightTransforms;
+	}
+
+	public synchronized double getSparsity() {
+		return sparsity;
+	}
+
+	public synchronized void setSparsity(double sparsity) {
+		this.sparsity = sparsity;
+	}
+
+	public synchronized double getLearningRateUpdate() {
+		return learningRateUpdate;
+	}
+
+	public synchronized void setLearningRateUpdate(double learningRateUpdate) {
+		this.learningRateUpdate = learningRateUpdate;
+	}
+
+	public synchronized double getErrorTolerance() {
+		return errorTolerance;
+	}
+
+	public synchronized void setErrorTolerance(double errorTolerance) {
+		this.errorTolerance = errorTolerance;
+	}
+
+	public synchronized void setLabels(DoubleMatrix labels) {
+		this.labels = labels;
+	}
+
+	public synchronized void setForceNumEpochs(boolean forceNumEpochs) {
+		this.forceNumEpochs = forceNumEpochs;
+	}
+
 
 
 	public static class Builder<E extends BaseMultiLayerNetwork> {
@@ -967,31 +1159,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		public E build() {
 			try {
 				ret = (E) clazz.newInstance();
-				ret.input = this.input;
-				ret.nOuts = this.nOuts;
-				ret.nIns = this.nIns;
-				ret.labels = this.labels;
-				ret.hiddenLayerSizes = this.hiddenLayerSizes;
-				ret.nLayers = this.nLayers;
-				ret.rng = this.rng;
-				ret.shouldBackProp = this.backProp;
-				ret.sigmoidLayers = new HiddenLayer[ret.nLayers];
-				ret.layers = ret.createNetworkLayers(ret.nLayers);
-				ret.toDecode = this.decode;
-				ret.input = this.input;
-				ret.momentum = this.momentum;
-				ret.labels = this.labels;
-				ret.fanIn = this.fanIn;
-				ret.sparsity = this.sparsity;
-				ret.renderWeightsEveryNEpochs = this.renderWeithsEveryNEpochs;
-				ret.l2 = l2;
-				ret.forceNumEpochs = shouldForceEpochs;
-				ret.useRegularization = useRegularization;
+				ret.setInput(this.input);
+				ret.setnOuts(this.nOuts);
+				ret.setnIns(this.nIns);
+				ret.setLabels(this.labels);
+				ret.setHiddenLayerSizes(this.hiddenLayerSizes);
+				ret.setnLayers(this.nLayers);
+				ret.setRng(this.rng);
+				ret.setShouldBackProp(this.backProp);
+				ret.setSigmoidLayers(new HiddenLayer[ret.getnLayers()]);
+				ret.setToDecode(decode);
+				ret.setInput(this.input);
+				ret.setMomentum(momentum);
+				ret.setLabels(labels);
+				ret.setFanIn(fanIn);
+				ret.setSparsity(sparsity);
+				ret.setRenderWeightsEveryNEpochs(renderWeithsEveryNEpochs);
+				ret.setL2(l2);
+				ret.setForceNumEpochs(shouldForceEpochs);
+				ret.setUseRegularization(useRegularization);
 				if(activation != null)
-					ret.activation = activation;
+					ret.setActivation(activation);
 				if(dist != null)
-					ret.dist = dist;
-				ret.weightTransforms.putAll(weightTransforms);
+					ret.setDist(dist);
+				ret.getWeightTransforms().putAll(weightTransforms);
 
 
 				return ret;

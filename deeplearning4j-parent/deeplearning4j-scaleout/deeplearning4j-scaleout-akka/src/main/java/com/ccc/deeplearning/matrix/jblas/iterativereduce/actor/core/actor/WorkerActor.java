@@ -62,7 +62,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-
+		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+				getSelf()), mediator);
 	}
 
 
@@ -75,11 +76,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			log.info("Subscribed to " + ack.toString());
 		}
-		else if(message instanceof ShutdownMessage) {
+		/*else if(message instanceof ShutdownMessage) {
 			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString() );
 			if(!context().system().isTerminated())
 				context().system().shutdown();
-		}
+		}*/
 
 		else if(message instanceof List) {
 			List<Pair<DoubleMatrix,DoubleMatrix>> input = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
@@ -181,6 +182,207 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	@Override
 	public void update(E t) {
 		this.e = t;
+	}
+
+
+	public synchronized DoubleMatrix getCombinedInput() {
+		return combinedInput;
+	}
+
+
+
+
+	public synchronized void setCombinedInput(DoubleMatrix combinedInput) {
+		this.combinedInput = combinedInput;
+	}
+
+
+
+
+	public synchronized DoubleMatrix getOutcomes() {
+		return outcomes;
+	}
+
+
+
+
+	public synchronized void setOutcomes(DoubleMatrix outcomes) {
+		this.outcomes = outcomes;
+	}
+
+
+
+
+	public synchronized ActorRef getMediator() {
+		return mediator;
+	}
+
+
+
+
+	public synchronized void setMediator(ActorRef mediator) {
+		this.mediator = mediator;
+	}
+
+
+
+
+	public synchronized E getE() {
+		return e;
+	}
+
+
+
+
+	public synchronized void setE(E e) {
+		this.e = e;
+	}
+
+
+
+
+	public synchronized int getFineTuneEpochs() {
+		return fineTuneEpochs;
+	}
+
+
+
+
+	public synchronized void setFineTuneEpochs(int fineTuneEpochs) {
+		this.fineTuneEpochs = fineTuneEpochs;
+	}
+
+
+
+
+	public synchronized int getPreTrainEpochs() {
+		return preTrainEpochs;
+	}
+
+
+
+
+	public synchronized void setPreTrainEpochs(int preTrainEpochs) {
+		this.preTrainEpochs = preTrainEpochs;
+	}
+
+
+
+
+	public synchronized int[] getHiddenLayerSizes() {
+		return hiddenLayerSizes;
+	}
+
+
+
+
+	public synchronized void setHiddenLayerSizes(int[] hiddenLayerSizes) {
+		this.hiddenLayerSizes = hiddenLayerSizes;
+	}
+
+
+
+
+	public synchronized int getNumHidden() {
+		return numHidden;
+	}
+
+
+
+
+	public synchronized void setNumHidden(int numHidden) {
+		this.numHidden = numHidden;
+	}
+
+
+
+
+	public synchronized int getNumVisible() {
+		return numVisible;
+	}
+
+
+
+
+	public synchronized void setNumVisible(int numVisible) {
+		this.numVisible = numVisible;
+	}
+
+
+
+
+	public synchronized int getNumHiddenNeurons() {
+		return numHiddenNeurons;
+	}
+
+
+
+
+	public synchronized void setNumHiddenNeurons(int numHiddenNeurons) {
+		this.numHiddenNeurons = numHiddenNeurons;
+	}
+
+
+
+
+	public synchronized long getSeed() {
+		return seed;
+	}
+
+
+
+
+	public synchronized void setSeed(long seed) {
+		this.seed = seed;
+	}
+
+
+
+
+	public synchronized double getLearningRate() {
+		return learningRate;
+	}
+
+
+
+
+	public synchronized void setLearningRate(double learningRate) {
+		this.learningRate = learningRate;
+	}
+
+
+
+
+	public synchronized double getCorruptionLevel() {
+		return corruptionLevel;
+	}
+
+
+
+
+	public synchronized void setCorruptionLevel(double corruptionLevel) {
+		this.corruptionLevel = corruptionLevel;
+	}
+
+
+
+
+	public synchronized Object[] getExtraParams() {
+		return extraParams;
+	}
+
+
+
+
+	public synchronized void setExtraParams(Object[] extraParams) {
+		this.extraParams = extraParams;
+	}
+
+
+
+
+	public synchronized void setResults(E results) {
+		this.results = results;
 	}
 
 

@@ -18,6 +18,7 @@ import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.iterativereduce.akka.DeepLearningAccumulator;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.DoneReaper;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
 import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.scaleout.conf.Conf;
@@ -38,6 +39,8 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
+		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+				getSelf()), mediator);
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
@@ -90,21 +93,23 @@ public class MasterActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		else if(message instanceof UpdateableImpl) {
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
-			if(updates.size() == partition) {
+			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
+			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterResults);
 				//reset the dataset
-				batchActor.tell(new ResetMessage(), getSelf());
+				//batchActor.tell(new ResetMessage(), getSelf());
 				epochsComplete++;
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getPretrainEpochs()) {
+				/*if(epochsComplete == conf.getPretrainEpochs()) {
 					isDone = true;
+					
 					log.info("All done; shutting down");
 					context().system().shutdown();
-				}
+				}*/
 
 			}
 

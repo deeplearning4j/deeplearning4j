@@ -91,7 +91,7 @@ public class RBM extends BaseNeuralNetwork {
 
 
 	@Override
-	public NeuralNetworkGradient getGradient(Object[] params) {
+	public synchronized NeuralNetworkGradient getGradient(Object[] params) {
 		int k = (int) params[0];
 		double learningRate = (double) params[1];
 		/*
@@ -252,8 +252,10 @@ public class RBM extends BaseNeuralNetwork {
 	@Override
 	public void trainTillConvergence(DoubleMatrix input, double lr,
 			Object[] params) {
-		int k = (int) params[0];
-		trainTillConvergence(lr,k,input);
+		if(input != null)
+			this.input = input;
+		optimizer = new RBMOptimizer(this, lr, params);
+		optimizer.train(input);
 	}
 
 	@Override

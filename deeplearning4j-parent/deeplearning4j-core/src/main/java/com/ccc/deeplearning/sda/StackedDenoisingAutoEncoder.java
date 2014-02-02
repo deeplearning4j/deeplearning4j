@@ -39,7 +39,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 
 	public void pretrain( double lr,  double corruptionLevel,  int epochs) {
-		pretrain(this.input,lr,corruptionLevel,epochs);
+		pretrain(this.getInput(),lr,corruptionLevel,epochs);
 	}
 
 	/**
@@ -52,18 +52,18 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	 * @param epochs the number of iterations to run
 	 */
 	public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
-		if(this.input == null)
+		if(this.getInput() == null)
 			initializeLayers(input.dup());
 
 		DoubleMatrix layerInput = null;
 
-		for(int i = 0; i < nLayers; i++) {  // layer-wise                        
+		for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise                        
 			//input layer
 			if(i == 0)
 				layerInput = input;
 			else
-				layerInput = this.sigmoidLayers[i - 1].sampleHGivenV(layerInput);
-			if(forceNumEpochs) {
+				layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
 					layers[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
 					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
@@ -116,9 +116,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
 		.withHBias(hbias).withInput(input).withWeights(W)
-		.withRandom(rng).withMomentum(momentum).withVisibleBias(vBias)
-		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(dist)
-		.withSparsity(sparsity).renderWeights(renderWeightsEveryNEpochs).fanIn(fanIn)
+		.withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias)
+		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
+		.withSparsity(this.getSparsity()).renderWeights(getRenderWeightsEveryNEpochs()).fanIn(getFanIn())
 		.build();
 
 		return ret;

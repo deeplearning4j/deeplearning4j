@@ -20,7 +20,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	}
 
 	@Override
-	public void getValueGradient(double[] buffer) {
+	public synchronized void getValueGradient(double[] buffer) {
 		int k = (int) extraParams[0];
 		numTimesIterated++;
 		//adaptive k based on the number of iterations.

@@ -40,12 +40,10 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
-		//ensure network input is synced to the passed in labels
-		network.feedForward();
 		//sample from the final layer in the network and train on the result
-		DoubleMatrix layerInput = network.sigmoidLayers[network.sigmoidLayers.length - 1].sample_h_given_v();
-		network.logLayer.input = layerInput;
-		network.logLayer.labels = labels;
+		DoubleMatrix layerInput = network.getSigmoidLayers()[network.getSigmoidLayers().length - 1].sample_h_given_v();
+		network.getLogLayer().setInput(layerInput);
+		network.getLogLayer().setLabels(labels);
 		
 		if(layerInput.rows != labels.rows) {
 			throw new IllegalStateException("Labels not equal to input");
@@ -53,14 +51,14 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		
 		
 		if(!network.isForceNumEpochs()) {
-			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.logLayer,lr);
+			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.getLogLayer(),lr);
 			NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
 			g.optimize(epochs);
 		}
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
-				network.logLayer.train(layerInput, labels, lr);
+				network.getLogLayer().train(layerInput, labels, lr);
 			}
 		}
 		
@@ -80,7 +78,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public int getNumParameters() {
-		return network.logLayer.W.length + network.logLayer.b.length;
+		return network.getLogLayer().getW().length + network.getLogLayer().getB().length;
 	}
 
 
@@ -88,11 +86,12 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	@Override
 	public void getParameters(double[] buffer) {
 		int idx = 0;
-		for(int i = 0; i < network.logLayer.W.length; i++) {
-			buffer[idx++] = network.logLayer.W.get(i);
+		for(int i = 0; i < network.getLogLayer().getW().length; i++) {
+			buffer[idx++] = network.getLogLayer().getW().get(i);
+			
 		}
-		for(int i = 0; i < network.logLayer.b.length; i++) {
-			buffer[idx++] = network.logLayer.b.get(i);
+		for(int i = 0; i < network.getLogLayer().getB().length; i++) {
+			buffer[idx++] = network.getLogLayer().getB().get(i);
 		}
 	}
 
@@ -100,12 +99,12 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public double getParameter(int index) {
-		if(index >= network.logLayer.W.length) {
-			int i = index - network.logLayer.b.length;
-			return network.logLayer.b.get(i);
+		if(index >= network.getLogLayer().getW().length) {
+			int i = index - network.getLogLayer().getB().length;
+			return network.getLogLayer().getB().get(i);
 		}
 		else
-			return network.logLayer.W.get(index);
+			return network.getLogLayer().getW().get(index);
 	}
 
 
@@ -113,11 +112,11 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	@Override
 	public void setParameters(double[] params) {
 		int idx = 0;
-		for(int i = 0; i < network.logLayer.W.length; i++) {
-			network.logLayer.W.put(i,params[idx++]);
+		for(int i = 0; i < network.getLogLayer().getW().length; i++) {
+			network.getLogLayer().getW().put(i,params[idx++]);
 		}
-		for(int i = 0; i < network.logLayer.b.length; i++) {
-			network.logLayer.b.put(i,params[idx++]);
+		for(int i = 0; i < network.getLogLayer().getB().length; i++) {
+			network.getLogLayer().getB().put(i,params[idx++]);
 		}
 	}
 
@@ -125,23 +124,23 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public void setParameter(int index, double value) {
-		if(index >= network.logLayer.W.length) {
-			int i = index - network.logLayer.b.length;
-			network.logLayer.b.put(i,value);
+		if(index >= network.getLogLayer().getW().length) {
+			int i = index - network.getLogLayer().getB().length;
+			network.getLogLayer().getB().put(i,value);
 		}
 		else
-			network.logLayer.W.put(index,value);
+			network.getLogLayer().getW().put(index,value);
 	}
 
 
 
 	@Override
 	public void getValueGradient(double[] buffer) {
-		DoubleMatrix p_y_given_x = softmax(network.logLayer.input.mmul(network.logLayer.W).addRowVector(network.logLayer.b));
-		DoubleMatrix dy = network.logLayer.labels.sub(p_y_given_x);
+		DoubleMatrix p_y_given_x = softmax(network.getLogLayer().getInput().mmul(network.getLogLayer().getW()).addRowVector(network.getLogLayer().getB()));
+		DoubleMatrix dy = network.getLogLayer().getLabels().sub(p_y_given_x);
 
 		int idx = 0;
-		DoubleMatrix weightGradient = network.logLayer.input.transpose().mmul(dy).mul(lr);
+		DoubleMatrix weightGradient = network.getLogLayer().getInput().transpose().mmul(dy).mul(lr);
 		DoubleMatrix biasGradient =  dy.columnMeans().mul(lr);
 		for(int i = 0; i < weightGradient.length; i++)
 			buffer[idx++] = weightGradient.get(i);

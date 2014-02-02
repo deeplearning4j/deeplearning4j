@@ -20,18 +20,18 @@ public class LogisticRegression implements Serializable {
 
 	private static final long serialVersionUID = -7065564817460914364L;
 	//number of inputs from final hidden layer
-	public int nIn;
+	private int nIn;
 	//number of outputs for labeling
-	public int nOut;
+	private int nOut;
 	//current input and label matrices
-	public DoubleMatrix input,labels;
+	private DoubleMatrix input,labels;
 	//weight matrix
-	public DoubleMatrix W;
+	private DoubleMatrix W;
 	//bias
-	public DoubleMatrix b;
+	private DoubleMatrix b;
 	//weight decay; l2 regularization
-	public double l2 = 0.01;
-	public boolean useRegularization = true;
+	private double l2 = 0.01;
+	private boolean useRegularization = true;
 
 	private LogisticRegression() {}
 
@@ -185,6 +185,72 @@ public class LogisticRegression implements Serializable {
 	public DoubleMatrix predict(DoubleMatrix x) {
 		return softmax(x.mmul(W).addRowVector(b));
 	}	
+
+
+
+	public synchronized int getnIn() {
+		return nIn;
+	}
+
+	public synchronized void setnIn(int nIn) {
+		this.nIn = nIn;
+	}
+
+	public synchronized int getnOut() {
+		return nOut;
+	}
+
+	public synchronized void setnOut(int nOut) {
+		this.nOut = nOut;
+	}
+
+	public synchronized DoubleMatrix getInput() {
+		return input;
+	}
+
+	public synchronized void setInput(DoubleMatrix input) {
+		this.input = input;
+	}
+
+	public synchronized DoubleMatrix getLabels() {
+		return labels;
+	}
+
+	public synchronized void setLabels(DoubleMatrix labels) {
+		this.labels = labels;
+	}
+
+	public synchronized DoubleMatrix getW() {
+		return W;
+	}
+
+	public synchronized void setW(DoubleMatrix w) {
+		W = w;
+	}
+
+	public synchronized DoubleMatrix getB() {
+		return b;
+	}
+
+	public synchronized void setB(DoubleMatrix b) {
+		this.b = b;
+	}
+
+	public synchronized double getL2() {
+		return l2;
+	}
+
+	public synchronized void setL2(double l2) {
+		this.l2 = l2;
+	}
+
+	public synchronized boolean isUseRegularization() {
+		return useRegularization;
+	}
+
+	public synchronized void setUseRegularization(boolean useRegularization) {
+		this.useRegularization = useRegularization;
+	}
 
 
 

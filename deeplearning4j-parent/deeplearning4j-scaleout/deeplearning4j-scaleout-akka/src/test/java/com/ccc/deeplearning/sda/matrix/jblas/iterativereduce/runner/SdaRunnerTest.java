@@ -101,7 +101,7 @@ public class SdaRunnerTest extends DeepLearningTest implements DeepLearningConfi
 	@Test
 	public void testOutput() {
 		BaseMultiLayerNetwork m = runner.train(this.train_X_matrix,this.train_Y_matrix);
-		log.info(m.logLayer.W.toString());
+		log.info(m.getLogLayer().getW().toString());
 	}
 
 	@Test

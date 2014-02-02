@@ -40,11 +40,11 @@ public class BatchActor extends UntypedActor implements Serializable {
 			iter.reset();
 			numTimesReset++;
 		}
-		else if(message instanceof ShutdownMessage) {
+		/*else if(message instanceof ShutdownMessage) {
 			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString());
 			if(!context().system().isTerminated())
 				context().system().shutdown();
-		}
+		}*/
 		else if(iter.hasNext()) {
 			//start the pipeline
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,

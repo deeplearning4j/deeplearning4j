@@ -34,7 +34,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected BaseNeuralNetwork network;
 	protected double lr;
 	protected Object[] extraParams;
-	protected double tolerance = 0.00000001;
+	protected double tolerance = 0.0001;
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
@@ -44,8 +44,9 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		if(opt == null)
 			opt = new NonZeroStoppingConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
+		int epochs = (int) extraParams[2];
 		opt.setMaxIterations(10000);
-		opt.optimize(1500);
+		opt.optimize(epochs);
 
 
 	}

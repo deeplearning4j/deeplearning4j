@@ -36,7 +36,6 @@ public class TestZookeeperRegister {
 	@Before
 	public void init() throws Exception {
 		conf = new Conf();
-		conf.put("test","test");
 		server = new TestingServer(2181);
 
 		String host = "localhost";

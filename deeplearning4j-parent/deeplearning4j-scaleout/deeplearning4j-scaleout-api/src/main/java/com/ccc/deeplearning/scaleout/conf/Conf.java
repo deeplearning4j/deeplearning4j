@@ -1,6 +1,8 @@
 package com.ccc.deeplearning.scaleout.conf;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
 
@@ -8,6 +10,7 @@ import com.ccc.deeplearning.nn.BaseMultiLayerNetwork;
 import com.ccc.deeplearning.nn.NeuralNetwork;
 import com.ccc.deeplearning.nn.activation.ActivationFunction;
 import com.ccc.deeplearning.nn.activation.Sigmoid;
+import com.ccc.deeplearning.transformation.MatrixTransform;
 
 public class Conf implements Serializable,Cloneable {
 
@@ -33,6 +36,7 @@ public class Conf implements Serializable,Cloneable {
 	private Object[] deepLearningParams;
 	private String masterUrl;
 	private double l2;
+	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	
 	
 	
@@ -41,6 +45,12 @@ public class Conf implements Serializable,Cloneable {
 	
 	
 	
+	public Map<Integer, MatrixTransform> getWeightTransforms() {
+		return weightTransforms;
+	}
+	public void setWeightTransforms(Map<Integer, MatrixTransform> weightTransforms) {
+		this.weightTransforms = weightTransforms;
+	}
 	public double getL2() {
 		return l2;
 	}
@@ -179,13 +189,14 @@ public class Conf implements Serializable,Cloneable {
 	
 	/**
 	 * Corruption level of 0.3 and learning rate of 0.01
+	 * and 1000 epochs
 	 * @return
 	 */
 	public static Object[] getDefaultDenoisingAutoEncoderParams() {
 		return new Object[]{0.3,0.01,1000};
 	}
 	/**
-	 * K of 1 and learning rate of 0.01
+	 * K of 1 and learning rate of 0.01 and 1000 epochs
 	 * @return the default parameters for RBMs
 	 * and DBNs
 	 */

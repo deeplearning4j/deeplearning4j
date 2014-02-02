@@ -56,7 +56,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	/* visible bias */
 	public DoubleMatrix vBias;
 	/* RNG for sampling. */
-	public transient RandomGenerator rng;
+	public RandomGenerator rng;
 	/* input to the network */
 	public DoubleMatrix input;
 	/* sparsity target */
@@ -357,8 +357,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		}
 
 		double ret =  - inner.rowSums().mean();
-		if(Double.isNaN(ret) || Double.isInfinite(ret))
-			throw new IllegalStateException("We appear to have an invalid return value of " + (Double.isNaN(ret) ? "NAN" : "Inifinity"));
 		
 		
 		return ret;

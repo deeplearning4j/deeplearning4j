@@ -101,7 +101,7 @@ public class AkkaSdaRunnerTest extends DeepLearningTest implements DeepLearningC
 	public void testOutput() {
 		runner.train(this.train_X_matrix,this.train_Y_matrix);
 		BaseMultiLayerNetwork m = runner.getResult().get();
-		log.info(m.logLayer.W.toString());
+		log.info(m.getLogLayer().getW().toString());
 	}
 
 	@Test
