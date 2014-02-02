@@ -236,7 +236,7 @@ public class MathUtils  {
 	 * @param idf inverse document frequency (assumed calculated)
 	 * @return td * idf
 	 */
-	public static double tdidf(double td,double idf) {
+	public static double tfidf(double td,double idf) {
 		return td * idf;
 	}
 

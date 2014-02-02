@@ -14,6 +14,13 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import com.ccc.deeplearning.scaleout.conf.Conf;
 /**
  * This registers a given hadoop configuration with a zookeeper cluster.
@@ -55,25 +62,37 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 			this.zk = new ZookeeperBuilder().setHost(host).setPort(port).build();
 	}
 
-	private String toFile(Conf configuration) {
-		StringBuffer sb = new StringBuffer();
-		for( String key : configuration.keySet()) {
-			sb.append(key + "=" + configuration.get(key) + "\n");
-		}
-		return sb.toString();
 
+	public static byte[] serialize(Object obj) throws IOException {
+		ByteArrayOutputStream b = new ByteArrayOutputStream();
+		ObjectOutputStream o = new ObjectOutputStream(b);
+		o.writeObject(obj);
+		return b.toByteArray();
 	}
+
+	public static Object deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
+		ByteArrayInputStream b = new ByteArrayInputStream(bytes);
+		ObjectInputStream o = new ObjectInputStream(b);
+		return o.readObject();
+	}
+
+
 	/**
 	 * Registers the configuration in zookeeper
 	 */
 	public void register() {
-		byte[] data = toFile(configuration).getBytes();
+		byte[] data;
 		try {
-		zk.multi(Arrays.asList(
-		Op.create(new ZookeeperPathBuilder().setHost(host).setPort(port).build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
-		Op.create(new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
-		
-		));
+			data = serialize(configuration);
+		} catch (IOException e1) {
+			throw new RuntimeException(e1);
+		}
+		try {
+			zk.multi(Arrays.asList(
+					Op.create(new ZookeeperPathBuilder().setHost(host).setPort(port).build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+					Op.create(new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+
+					));
 		}catch(KeeperException.NodeExistsException e) {
 			log.warn("Already exists..");
 		} catch (InterruptedException e) {
@@ -81,8 +100,8 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 		} catch (KeeperException e) {
 			log.error("Error with node creation",e);
 		}
-		
-		
+
+
 		try {
 			String path = new ZookeeperPathBuilder().setHost(host).setPort(port).addPaths(Arrays.asList("tmp",id)).build();
 			Stat stat = zk.exists(path, true);

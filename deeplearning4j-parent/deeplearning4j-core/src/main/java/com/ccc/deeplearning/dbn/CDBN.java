@@ -36,14 +36,14 @@ public class CDBN extends DBN {
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		if(index == 0)
-			return new CRBM.Builder().useRegularization(useRegularization)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(sparsity)
-		.withInput(input).withL2(l2).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
+			return new CRBM.Builder().useRegularization(isUseRegularization())
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
+		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 		else
-			return new RBM.Builder().useRegularization(useRegularization)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(sparsity)
-		.withInput(input).withL2(l2).fanIn(fanIn).renderWeights(renderWeightsEveryNEpochs)
+			return new RBM.Builder().useRegularization(isUseRegularization())
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
+		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 	}
 

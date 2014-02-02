@@ -47,7 +47,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		super(conf);
 		setup(conf);
 		//subscribe to broadcasts from workers (location agnostic)
-	    mediator.tell(new Put(getSelf()), getSelf());
+		mediator.tell(new Put(getSelf()), getSelf());
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
@@ -78,61 +78,65 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 
 		else if(message instanceof UpdateMessage) {
 			UpdateMessage<UpdateableImpl> m = (UpdateMessage<UpdateableImpl>) message;
-			workerMatrix = (UpdateableImpl) m.getUpdateable().get();
+			setWorkerMatrix(m.getUpdateable().get());
 		}
 		else
 			unhandled(message);
 	}
 
-	private void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+	private synchronized void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
 		for(int i = 0; i < list.size(); i++) {
 			newInput.putRow(i,list.get(i).getFirst());
 			newOutput.putRow(i,list.get(i).getSecond());
 		}
-		this.combinedInput = newInput;
-		this.outcomes = newOutput;
 		
+		setCombinedInput(newInput);
+		setOutcomes(newOutput);
+
 		Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
 
 			@Override
 			public UpdateableImpl call() throws Exception {
-			
+
 				UpdateableImpl work = compute();
-				
+
 				return work;
 			}
-			
+
 		}, getContext().dispatcher());
-		
+
 		f.onComplete(new OnComplete<UpdateableImpl>() {
 
 			@Override
 			public void onComplete(Throwable arg0, UpdateableImpl work) throws Throwable {
 				if(arg0 != null)
 					throw arg0;
-				
+
 				log.info("Updating parent actor...");
 				//update parameters in master param server
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						work), getSelf());				
 			}
-			
+
 		}, context().dispatcher());
-		
-	
+
+
 	}
 
 	@Override
-	public UpdateableImpl compute(List<UpdateableImpl> records) {
+	public synchronized UpdateableImpl compute(List<UpdateableImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public UpdateableImpl compute() {
+	public synchronized UpdateableImpl compute() {
 		log.info("Training network");
-		network.trainNetwork(combinedInput, outcomes,extraParams);
+		synchronized(network) {
+			network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
+
+		}
 		return new UpdateableImpl(network);
 	}
 
@@ -144,13 +148,13 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);
-		
+
 		RandomGenerator rng = new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
-		network = new BaseMultiLayerNetwork.Builder<>()
-				.numberOfInputs(numVisible).numberOfOutPuts(numHidden)
-				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng)
+		network = new BaseMultiLayerNetwork.Builder<>().disableBackProp()
+				.numberOfInputs(numVisible).numberOfOutPuts(numHidden).withActivation(conf.getFunction())
+				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng).transformWeightsAt(conf.getWeightTransforms())
 				.withClazz(conf.getMultiLayerClazz()).build();
-		
+
 	}
 
 
@@ -165,15 +169,45 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 		});
 	}
 
-	
+
 	@Override
-	public UpdateableImpl getResults() {
+	public synchronized UpdateableImpl getResults() {
 		return workerMatrix;
 	}
 
 	@Override
-	public void update(UpdateableImpl t) {
+	public synchronized void update(UpdateableImpl t) {
 		this.workerMatrix = t;
+	}
+
+
+	public synchronized BaseMultiLayerNetwork getNetwork() {
+		return network;
+	}
+
+
+	public synchronized void setNetwork(BaseMultiLayerNetwork network) {
+		this.network = network;
+	}
+
+
+	public synchronized DoubleMatrix getCombinedInput() {
+		return combinedInput;
+	}
+
+
+	public synchronized void setCombinedInput(DoubleMatrix combinedInput) {
+		this.combinedInput = combinedInput;
+	}
+
+
+	public synchronized UpdateableImpl getWorkerMatrix() {
+		return workerMatrix;
+	}
+
+
+	public synchronized void setWorkerMatrix(UpdateableImpl workerMatrix) {
+		this.workerMatrix = workerMatrix;
 	}
 
 

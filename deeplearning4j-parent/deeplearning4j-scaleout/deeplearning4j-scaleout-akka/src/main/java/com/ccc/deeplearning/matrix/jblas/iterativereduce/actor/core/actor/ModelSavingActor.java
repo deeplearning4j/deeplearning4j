@@ -3,17 +3,17 @@ package com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.Callable;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
-import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.dispatch.Futures;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 
-import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
 import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.scaleout.iterativereduce.Updateable;
 
@@ -45,9 +45,9 @@ public class ModelSavingActor extends UntypedActor {
 
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	@SuppressWarnings("unchecked")
+	public void onReceive(final Object message) throws Exception {
 		if(message instanceof Updateable) {
-			@SuppressWarnings("unchecked")
 			Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
 			File save = new File(pathToSave);
 			if(save.exists()) {
@@ -59,12 +59,10 @@ public class ModelSavingActor extends UntypedActor {
 			bos.flush();
 			bos.close();
 			log.info("saved model to " + pathToSave);
+
+
 		}
-		else if(message instanceof ShutdownMessage) {
-			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString() );
-			if(!context().system().isTerminated())
-				context().system().shutdown();
-		}
+		
 		else
 			unhandled(message);
 	}

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
@@ -21,10 +23,12 @@ import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
+import akka.dispatch.Futures;
 import akka.japi.Creator;
 import akka.japi.Function;
 
 import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.FinishMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ResetMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.UpdateMessage;
@@ -53,6 +57,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String BROADCAST = "broadcast";
 	public static String MASTER = "result";
 	public static String SHUTDOWN = "shutdown";
+	public static String FINISH = "finish";
 
 	//number of batches over time
 	protected int partition = 1;
@@ -70,6 +75,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new Put(getSelf()), getSelf());
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
+		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
+		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+				getSelf()), mediator);
 		setup(conf);
 
 
@@ -101,7 +109,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		else if(message instanceof Updateable) {
 			E up = (E) message;
 			updates.add(up);
-			if(updates.size() == partition) {
+			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterResults);
@@ -111,17 +119,33 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				if(epochsComplete == conf.getPretrainEpochs()) {
+				if(epochsComplete == conf.getNumPasses()) {
 					isDone = true;
-					log.info("All done; shutting down");
+					/*log.info("All done; shutting down");
 					//send a shutdown signal
 					mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
-							new ShutdownMessage()), getSelf());
-					Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
+							new ShutdownMessage()), getSelf());*/
+					//Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
 
 				}
 
 			}
+
+		}
+		else if(message instanceof FinishMessage) {
+			if(!updates.isEmpty()) {
+				masterResults = this.compute(updates, updates);
+				if(listener != null)
+					listener.epochComplete(masterResults);
+
+			}
+
+			isDone = true;
+			log.info("All done; shutting down");
+			//send a shutdown signal
+			/*mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
+					new ShutdownMessage()), getSelf());
+			Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());*/
 
 		}
 
@@ -170,12 +194,24 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	protected void sendToWorkers(List<Pair<DoubleMatrix,DoubleMatrix>> pairs) {
 		int split = conf.getSplit();
-		List<List<Pair<DoubleMatrix,DoubleMatrix>>> splitList = Lists.partition(pairs, split);
+		final List<List<Pair<DoubleMatrix,DoubleMatrix>>> splitList = Lists.partition(pairs, split);
 		partition = splitList.size();
+		log.info("Found partition of size " + partition);
+		for(int i = 0; i < splitList.size(); i++)  {
+			final int j = i;
+			Futures.future(new Callable<Void>() {
 
-		for(int i = 0; i < splitList.size(); i++) 
-			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-					new ArrayList<>(splitList.get(i))), getSelf());
+				@Override
+				public Void call() throws Exception {
+					log.info("Sending off work for batch " + j);
+					mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+							new ArrayList<>(splitList.get(j))), getSelf());
+					return null;
+				}
+				
+			},context().system().dispatcher());
+		}
+			
 
 	}
 
@@ -193,7 +229,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				throw new IllegalArgumentException("No input rows found");
 			if(inputRows.size() != labelRows.size())
 				throw new IllegalArgumentException("Label rows not equal to input rows");
-			
+
 			for(int i = 0; i < inputRows.size(); i++) {
 				list.add(new Pair<DoubleMatrix,DoubleMatrix>(inputRows.get(i),labelRows.get(i)));
 			}

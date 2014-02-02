@@ -26,7 +26,8 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public int getNumParameters() {
-		return logReg.W.length + logReg.b.length;
+		return logReg.getW().length + logReg.getB().length;
+		
 	}
 
 	@Override
@@ -42,9 +43,9 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public double getParameter(int index) {
-		if(index >= logReg.W.length)
-			return logReg.b.get(index - logReg.W.length);
-		return logReg.W.get(index);
+		if(index >= logReg.getW().length)
+			return logReg.getB().get(index - logReg.getW().length);
+		return logReg.getW().get(index);
 	}
 
 	@Override
@@ -56,20 +57,21 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public void setParameter(int index, double value) {
-		if(index >= logReg.W.length)
-			logReg.b.put(index - logReg.W.length,value);
+		if(index >= logReg.getW().length)
+			logReg.getB().put(index - logReg.getW().length,value);
 		else
-			logReg.W.put(index,value);
+			logReg.getW().put(index,value);
 	}
 
 	@Override
 	public void getValueGradient(double[] buffer) {
 		LogisticRegressionGradient grad = logReg.getGradient(lr);
 		for(int i = 0; i < buffer.length; i++) {
-			if(i < logReg.W.length)
+			if(i < logReg.getW().length)
 				buffer[i] = grad.getwGradient().get(i);
 			else
-				buffer[i] = grad.getbGradient().get(i - logReg.W.length);
+				buffer[i] = grad.getbGradient().get(i - logReg.getW().length);
+			
 		}
 	}
 

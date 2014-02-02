@@ -83,37 +83,37 @@ public class DBN extends BaseMultiLayerNetwork {
 	 */
 	public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
 
-		if(this.input == null || this.layers == null || this.layers[0] == null || this.sigmoidLayers == null || this.sigmoidLayers[0] == null) {
-			this.input = input;
+		if(this.getInput() == null || this.layers == null || this.layers[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
+			setInput(input);
 			initializeLayers(input);
 		}
 		else 
-			this.input = input;
+			setInput(input);
 
 		DoubleMatrix layerInput = null;
 
-		for(int i = 0; i < nLayers; i++) {
+		for(int i = 0; i < getnLayers(); i++) {
 			if(i == 0)
-				layerInput = this.input;
+				layerInput = this.getInput();
 			else 
-				layerInput = sigmoidLayers[i - 1].sampleHGivenV(layerInput);
+				layerInput = getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
 			log.info("Training on layer " + (i + 1));
-			if(forceNumEpochs) {
+			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
-					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
-					layers[i].train(layerInput, learningRate,new Object[]{k,learningRate});
+					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+					getLayers()[i].train(layerInput, learningRate,new Object[]{k,learningRate});
 
 				}
 			}
 			else
-				layers[i].trainTillConvergence(layerInput, learningRate, new Object[]{k});
+				getLayers()[i].trainTillConvergence(layerInput, learningRate, new Object[]{k,learningRate,epochs});
 
 
 		}
 	}
 
 	public void pretrain(int k,double learningRate,int epochs) {
-		pretrain(this.input,k,learningRate,epochs);
+		pretrain(this.getInput(),k,learningRate,epochs);
 	}
 
 
@@ -121,12 +121,12 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		RBM ret = new RBM.Builder().useRegularization(useRegularization)
-				.withMomentum(momentum).withSparsity(sparsity)
+		RBM ret = new RBM.Builder().useRegularization(isUseRegularization())
+				.withMomentum(getMomentum()).withSparsity(getSparsity())
 				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
-				.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(dist)
-				.withRandom(rng).renderWeights(renderWeightsEveryNEpochs)
-				.fanIn(fanIn).build();
+				.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
+				.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
+				.fanIn(getFanIn()).build();
 		return ret;
 	}
 

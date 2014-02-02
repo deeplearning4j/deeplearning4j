@@ -11,7 +11,9 @@
 
 package com.ccc.deeplearning.util;
 
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cc.mallet.optimize.BackTrackLineSearch;
 import cc.mallet.optimize.LineOptimizer;
@@ -19,7 +21,6 @@ import cc.mallet.optimize.Optimizable;
 import cc.mallet.optimize.Optimizer;
 import cc.mallet.optimize.OptimizerEvaluator;
 import cc.mallet.types.MatrixOps;
-import cc.mallet.util.MalletLogger;
 
 import com.ccc.deeplearning.optimize.NeuralNetEpochListener;
 
@@ -35,14 +36,14 @@ import com.ccc.deeplearning.optimize.NeuralNetEpochListener;
 // from "Numeric Recipes in C", Section 10.6.
 
 public class NonZeroStoppingConjugateGradient implements Optimizer {
-	private static Logger logger = MalletLogger.getLogger(NonZeroStoppingConjugateGradient.class.getName());
+	private static Logger logger = LoggerFactory.getLogger(NonZeroStoppingConjugateGradient.class);
 
 	boolean converged = false;
 	Optimizable.ByGradientValue optimizable;
 	LineOptimizer.ByGradient lineMaximizer;
 
 	double initialStepSize = 1;
-	double tolerance = 0.0001;
+	double tolerance = 0.001;
 	double gradientTolerance = 0.001;
 	int maxIterations = 1000;
 	private String myName = "";
@@ -201,7 +202,7 @@ public class NonZeroStoppingConjugateGradient implements Optimizer {
 			if (MatrixOps.dotProduct(xi, h) > 0) {
 				MatrixOps.set(xi, h);
 			} else {
-				logger.warning("Reverting back to GA");
+				logger.warn("Reverting back to GA");
 				MatrixOps.set(h, xi);
 			}
 

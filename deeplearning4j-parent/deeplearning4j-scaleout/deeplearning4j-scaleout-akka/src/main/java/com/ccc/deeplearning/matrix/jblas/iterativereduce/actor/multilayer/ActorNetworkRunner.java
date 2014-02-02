@@ -10,10 +10,16 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
@@ -26,10 +32,16 @@ import akka.contrib.pattern.ClusterClient;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
+import akka.routing.RoundRobinPool;
 
 import com.ccc.deeplearning.berkeley.Pair;
+import com.ccc.deeplearning.datasets.DataSet;
 import com.ccc.deeplearning.datasets.iterator.DataSetIterator;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.FinetuneMessage;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.BatchActor;
+import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.DoneReaper;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.ModelSavingActor;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.actor.SimpleClusterListener;
 import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDoneListener;
@@ -56,7 +68,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private List<Pair<DoubleMatrix,DoubleMatrix>> samples;
 	private UpdateableImpl result;
 	private ActorRef mediator;
-
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
 	private static String systemName = "ClusterSystem";
 	private String type = "master";
@@ -105,7 +116,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
-		ActorRef batchActor = system.actorOf(Props.create(new BatchActor.BatchActorFactory(iter)));
+		ActorRef batchActor = system.actorOf(Props.create(new BatchActor.BatchActorFactory(iter,c.getNumPasses())));
+		
+		system.actorOf(Props.create(DoneReaper.class));
+		
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
@@ -117,7 +131,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	}
 
 
-	public static void startWorker(Address contactAddress,Conf conf) {
+	public static ActorRef startWorker(Address contactAddress,Conf conf) {
 		// Override the configuration of the port
 
 		ActorSystem system = ActorSystem.create(systemName);
@@ -126,8 +140,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		initialContacts.add(system.actorSelection(contactAddress + "/user/receptionist"));
 		ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
 				"clusterClient");
-		system.actorOf(WorkerActor.propsFor(clusterClient, conf), "worker");
-
+		Props p = WorkerActor.propsFor(clusterClient, conf);
+		int cores = Runtime.getRuntime().availableProcessors();
+		ActorRef ref = system.actorOf(new RoundRobinPool(cores).props(p), "worker");
+		
 		try {
 			Thread.sleep(5000);
 		} catch (InterruptedException e) {
@@ -135,6 +151,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		}
 
 		Cluster.get(system).join(contactAddress);
+		return ref;
 	}
 
 
@@ -170,8 +187,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			}
 
 
-			system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
-
+			ActorRef ref = system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
+			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+					ref), mediator);
+			
+			
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
@@ -181,10 +201,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 			Conf c = conf.copy();
-			//only one iteration per worker; this events out to number of epochs iterated
-			//TODO: make this tunable
-			c.setFinetuneEpochs(1);
-			c.setPretrainEpochs(1);
+			
 
 			//Wait for backend to be up
 			try {
@@ -193,11 +210,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				Thread.currentThread().interrupt();
 			}
 
-			startWorker(masterAddress,c);
+			ActorRef worker = startWorker(masterAddress,c);
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					this), mediator);
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					epochs), mediator);
+			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+					worker), mediator);
+			
 			log.info("Setup master with epochs " + epochs);
 		}
 
@@ -210,7 +230,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			c.setPretrainEpochs(1);
 
 
-			startWorker(masterAddress,c);
+			ActorRef worker = startWorker(masterAddress,c);
+
 			//Wait for backend to be up
 
 			try {
@@ -219,6 +240,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				Thread.currentThread().interrupt();
 			}
 
+			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+					worker), mediator);
+			
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
@@ -227,27 +251,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			log.info("Setup worker nodes");
 		}
 
-		writeMasterAddress();
 	}
 
-	private void writeMasterAddress() {
-		String temp = System.getProperty("java.io.tmpdir");
-		File f = new File(temp,"masteraddress");
-		if(f.exists()) 
-			f.delete();
-		try {
-			f.createNewFile();
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
-			bos.write(masterAddress.toString().getBytes());
-			bos.flush();
-			bos.close();
-		}catch(IOException e) {
-			log.error("Unable to create file for master address",e);
-		}
-		f.deleteOnExit();
-
-
-	}
+	
 
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		this.samples = list;
@@ -291,28 +297,16 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	@Override
 	public void epochComplete(UpdateableImpl result) {
 		currEpochs++;
-		if(currEpochs < epochs) {
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
-					result), mediator);
-
-			log.info("Updating result on epoch " + currEpochs);
-			//This needs to happen to wait for state to propagate.
-			try {
-				Thread.sleep(15000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-			log.info("Starting next epoch");
-
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					samples), mediator);
-
-		}
 
 		//update the final available result
 		this.result = result;
-		mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
-				result), mediator);
+		mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
+				new FinetuneMessage(result)), mediator);
+		if(!iter.hasNext()) {
+			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+					iter), mediator);
+		}
+
 
 	}
 

@@ -26,7 +26,7 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 		this("localhost",2181,id);
 	}
 
-	
+
 	public ZookeeperConfigurationRetriever( String host,
 			int port, String id) {
 		super();
@@ -39,13 +39,10 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 
 	public Conf retrieve(Conf conf) throws Exception {
 		Conf ret = retreive();
-		for( String key : conf.keySet()) {
-			conf.put(key,ret.get(key));
-		}
-		return conf;
+		return ret;
 	}
-	
-	
+
+
 	public Conf retreive(String host) throws Exception {
 		Conf conf = new Conf();
 		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
@@ -54,20 +51,13 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 			List<String> list = keeper.getChildren( new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), false);
 			throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
 		}
-		String data = new String( keeper.getData(path, false, stat ) );
-		String[] split = data.split("\n");
-		for(String s : split) {
-			if(s.isEmpty() || s.charAt(0)=='#')
-				continue;
-			String[] split2 = s.split("=");
-			if(split2.length > 1)
-				conf.put(split2[0], split2[1]);
+		byte[] data = keeper.getData(path, false, stat ) ;
+		conf = (Conf) ZooKeeperConfigurationRegister.deserialize(data);
 
-		}
 
 		return conf;
 	}
-	
+
 	public Conf retreive() throws Exception {
 		Conf conf = new Conf();
 		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
@@ -76,16 +66,8 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 			List<String> list = keeper.getChildren( new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), false);
 			throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
 		}
-		String data = new String( keeper.getData(path, false, stat ) );
-		String[] split = data.split("\n");
-		for(String s : split) {
-			if(s.isEmpty() || s.charAt(0)=='#')
-				continue;
-			String[] split2 = s.split("=");
-			if(split2.length > 1)
-				conf.put(split2[0], split2[1]);
-
-		}
+		byte[] data = keeper.getData(path, false, stat );
+		conf = (Conf) ZooKeeperConfigurationRegister.deserialize(data);
 
 		return conf;
 	}
