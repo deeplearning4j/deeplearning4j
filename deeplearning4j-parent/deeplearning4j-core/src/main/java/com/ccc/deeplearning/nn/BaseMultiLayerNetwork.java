@@ -230,9 +230,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		if(input.columns != nIns)
 			throw new IllegalArgumentException(String.format("Unable to train on number of inputs; columns should be equal to number of inputs. Number of inputs was %d while number of columns was %d",nIns,input.columns));
+		
 		if(this.layers == null)
 			this.layers = new NeuralNetwork[nLayers];
-
+		
+		for(int i = 0; i < hiddenLayerSizes.length; i++) 
+			if(hiddenLayerSizes[i] < 1)
+				throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
+		
+		
+		
 		this.input = input.dup();
 		DoubleMatrix layerInput = input;
 		int inputSize;

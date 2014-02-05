@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.berkeley.Pair;
 import com.ccc.deeplearning.datasets.fetchers.MnistDataFetcher;
+import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.util.MathUtils;
 import com.google.common.collect.Lists;
 
@@ -31,7 +32,7 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
+public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persistable {
 
 	private static final long serialVersionUID = 1935520764586513365L;
 	private static Logger log = LoggerFactory.getLogger(DataSet.class);
@@ -42,10 +43,19 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 
 	public DataSet(DoubleMatrix first, DoubleMatrix second) {
 		super(first, second);
+		if(first.rows != second.rows)
+			throw new IllegalStateException("Invalid data set; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
+		
+		
 	}
 
 	public DataSet copy() {
 		return new DataSet(getFirst(),getSecond());
+	}
+	
+	
+	public static DataSet empty() {
+		return new DataSet(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
 	}
 	
 	public static DataSet merge(List<DataSet> data) {
@@ -85,6 +95,16 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 	}
 	
 	
+	
+	
+	public List<DataSet> dataSetBatches(int num) {
+		List<List<DataSet>> list =  Lists.partition(asList(),num);
+		List<DataSet> ret = new ArrayList<>();
+		for(List<DataSet> l : list)
+			ret.add(DataSet.merge(l));
+		return ret;
+	
+	}
 	
 
 	/**
@@ -352,6 +372,32 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> {
 		write.saveTo(new File(args[0]), false);
 
 
+	}
+
+	@Override
+	public void write(OutputStream os) {
+		DataOutputStream dos = new DataOutputStream(os);
+		
+		try {
+			getFirst().out(dos);
+			getSecond().out(dos);
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+	@Override
+	public void load(InputStream is) {
+		DataInputStream dis = new DataInputStream(is);
+		try {
+			getFirst().in(dis);
+			getSecond().in(dis);
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

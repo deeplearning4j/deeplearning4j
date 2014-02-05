@@ -88,7 +88,9 @@ public class Window implements Serializable {
 	}
 
 
-
+	
+	
+	
 	@Override
 	public String toString() {
 		return words.toString();
@@ -123,7 +125,7 @@ public class Window implements Serializable {
 	}
 
 	public int getWindowSize() {
-		return windowSize;
+		return words.size();
 	}
 
 	public int getMedian() {

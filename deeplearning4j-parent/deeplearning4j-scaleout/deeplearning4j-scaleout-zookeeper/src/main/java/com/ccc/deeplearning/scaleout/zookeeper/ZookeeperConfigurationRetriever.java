@@ -1,5 +1,6 @@
 package com.ccc.deeplearning.scaleout.zookeeper;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,6 +9,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ccc.deeplearning.scaleout.conf.Conf;
 /**
@@ -21,6 +24,7 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 	private String host;
 	private int port;
 	private String id;
+	private static Logger log = LoggerFactory.getLogger(ZookeeperConfigurationRetriever.class);
 
 	public ZookeeperConfigurationRetriever(String id) {
 		this("localhost",2181,id);
@@ -47,7 +51,7 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 		Conf conf = new Conf();
 		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
 		Stat stat = keeper.exists(path, false);
-		if(stat==null) {
+		if(stat == null) {
 			List<String> list = keeper.getChildren( new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), false);
 			throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
 		}
@@ -59,17 +63,22 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 	}
 
 	public Conf retreive() throws Exception {
-		Conf conf = new Conf();
-		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
-		Stat stat = keeper.exists(path, false);
-		if(stat==null) {
-			List<String> list = keeper.getChildren( new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), false);
-			throw new IllegalStateException("Nothing found for " + path + " possible children include " + list);
-		}
-		byte[] data = keeper.getData(path, false, stat );
-		conf = (Conf) ZooKeeperConfigurationRegister.deserialize(data);
+		Conf c = null;
+		String localhost = InetAddress.getLocalHost().getHostName();
 
-		return conf;
+		String[] hosts = { host,"127.0.0.1","localhost",localhost };
+
+		for(int i = 0; i < hosts.length; i++) {
+			try {
+				log.info("Attempting to retreive conf from " + hosts[i]);
+				c = retreive(hosts[i]);
+			}catch(Exception e) {
+
+			}
+		}
+
+
+		return c;
 	}
 
 	public void close() {

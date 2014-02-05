@@ -91,7 +91,7 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 			newInput.putRow(i,list.get(i).getFirst());
 			newOutput.putRow(i,list.get(i).getSecond());
 		}
-		
+
 		setCombinedInput(newInput);
 		setOutcomes(newOutput);
 
@@ -126,17 +126,14 @@ public class WorkerActor extends com.ccc.deeplearning.matrix.jblas.iterativeredu
 	}
 
 	@Override
-	public synchronized UpdateableImpl compute(List<UpdateableImpl> records) {
+	public UpdateableImpl compute(List<UpdateableImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public synchronized UpdateableImpl compute() {
+	public UpdateableImpl compute() {
 		log.info("Training network");
-		synchronized(network) {
-			network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
-
-		}
+		network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
 		return new UpdateableImpl(network);
 	}
 

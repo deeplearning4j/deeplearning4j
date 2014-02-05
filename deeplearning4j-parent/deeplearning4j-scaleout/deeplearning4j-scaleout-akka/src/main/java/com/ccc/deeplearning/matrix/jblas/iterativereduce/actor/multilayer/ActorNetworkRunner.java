@@ -48,6 +48,7 @@ import com.ccc.deeplearning.matrix.jblas.iterativereduce.actor.core.api.EpochDon
 import com.ccc.deeplearning.scaleout.conf.Conf;
 import com.ccc.deeplearning.scaleout.conf.DeepLearningConfigurable;
 import com.ccc.deeplearning.scaleout.iterativereduce.multi.UpdateableImpl;
+import com.ccc.deeplearning.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -224,10 +225,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		else {
 
 			Conf c = conf.copy();
-			//only one iteration per worker; this events out to number of epochs iterated
-			//TODO: make this tunable
-			c.setFinetuneEpochs(1);
-			c.setPretrainEpochs(1);
+	
 
 
 			ActorRef worker = startWorker(masterAddress,c);
@@ -250,6 +248,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 			log.info("Setup worker nodes");
 		}
+		
+		//store it in zookeeper for service discovery
+		conf.setMasterUrl(getMasterAddress().toString());
+
+		//register the configuration to zookeeper
+		ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
+		reg.register();
+		reg.close();
 
 	}
 
