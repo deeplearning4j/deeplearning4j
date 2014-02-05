@@ -40,6 +40,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		MatrixUtil.ensureValidOutcomeMatrix(labels);
+		network.feedForward(network.getInput());
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layerInput = network.getSigmoidLayers()[network.getSigmoidLayers().length - 1].sample_h_given_v();
 		network.getLogLayer().setInput(layerInput);

@@ -89,9 +89,14 @@ public class BatchActor extends UntypedActor {
 
 				@Override
 				public UpdateableImpl call() throws Exception {
-					DataSetIterator iter2 = SerializationUtils.clone(iter);
+					
+					save.get().backProp(0.01, 1000);
+					
+					/*DataSetIterator iter2 = SerializationUtils.clone(iter);
 					iter2.reset();
 					log.info("Finetuning with backprop...");
+					//back prop each model before its saved
+					//this allows a finetuning for each batch
 					while(iter2.hasNext()) {
 						DataSet next = iter2.next();
 						log.info("Next data set");
@@ -99,7 +104,7 @@ public class BatchActor extends UntypedActor {
 						save.get().backProp(0.01, 1000);
 						log.info("Completed backprop");
 						
-					}
+					}*/
 					mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
 							save), mediator);
 					return save;

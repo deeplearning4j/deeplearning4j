@@ -162,13 +162,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			//run the master
 			runner = new ActorNetworkRunner("master",iter);
 			runner.setup(conf);
-			//store it in zookeeper for service discovery
-			conf.setMasterUrl(runner.getMasterAddress().toString());
-
-			//register the configuration to zookeeper
-			ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master",host,2181);
-			reg.register();
-			reg.close();
+			
 
 
 

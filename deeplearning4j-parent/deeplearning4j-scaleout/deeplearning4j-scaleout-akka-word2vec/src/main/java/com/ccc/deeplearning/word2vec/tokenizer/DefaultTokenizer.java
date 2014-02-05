@@ -1,5 +1,7 @@
 package com.ccc.deeplearning.word2vec.tokenizer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class DefaultTokenizer implements Tokenizer {
@@ -25,6 +27,17 @@ public class DefaultTokenizer implements Tokenizer {
 	public String nextToken() {
 		return tokenizer.nextToken();
 	}
+
+	@Override
+	public List<String> getTokens() {
+		List<String> tokens = new ArrayList<String>();
+		while(hasMoreTokens()) {
+			tokens.add(nextToken());
+		}
+		return tokens;
+	}
+	
+	
 
 	
 }

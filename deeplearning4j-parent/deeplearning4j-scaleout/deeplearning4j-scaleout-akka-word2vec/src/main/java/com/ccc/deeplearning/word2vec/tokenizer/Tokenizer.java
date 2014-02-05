@@ -1,5 +1,7 @@
 package com.ccc.deeplearning.word2vec.tokenizer;
 
+import java.util.List;
+
 /**
  * A representation of a tokenizer.
  * Different applications may require 
@@ -15,6 +17,10 @@ public interface Tokenizer {
 	int countTokens();
 	
 	String nextToken();
+	
+	List<String> getTokens();
+	
+	
 	
 	
 	

@@ -20,6 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import com.ccc.deeplearning.scaleout.conf.Conf;
 /**
@@ -93,12 +95,38 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 					Op.create(new ZookeeperPathBuilder().setHost(host).setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
 
 					));
+			log.info("Register at " + host);
+			zk.multi(Arrays.asList(
+					Op.create(new ZookeeperPathBuilder().setHost("127.0.0.1").setPort(port).build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+					Op.create(new ZookeeperPathBuilder().setHost("127.0.0.1").setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+
+					));
+			log.info("Registered at 127.0.0.1");
+			zk.multi(Arrays.asList(
+					Op.create(new ZookeeperPathBuilder().setHost("localhost").setPort(port).build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+					Op.create(new ZookeeperPathBuilder().setHost("localhost").setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+
+					));
+			
+			String localhost = InetAddress.getLocalHost().getHostName();
+			if(!localhost.equals(host)) {
+				zk.multi(Arrays.asList(
+						Op.create(new ZookeeperPathBuilder().setHost(localhost).setPort(port).build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT),
+						Op.create(new ZookeeperPathBuilder().setHost(localhost).setPort(port).addPath("tmp").build(), data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT)
+
+						));
+				log.info("Registered at " + localhost);
+			}
+			
 		}catch(KeeperException.NodeExistsException e) {
 			log.warn("Already exists..");
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		} catch (KeeperException e) {
 			log.error("Error with node creation",e);
+		} catch (UnknownHostException e) {
+			log.error("Error with node creation",e);
+
 		}
 
 

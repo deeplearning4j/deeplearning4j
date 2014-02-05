@@ -2,15 +2,12 @@ package com.ccc.deeplearning.word2vec.loader;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.List;
 import java.util.StringTokenizer;
 
-import org.apache.commons.io.FileUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,28 +23,7 @@ public class Word2VecLoader {
 	public static Word2Vec loadModel(File file) throws Exception {
 		log.info("Loading model from " + file.getAbsolutePath());
 		Word2Vec ret = new Word2Vec();
-		try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
-			int vocabSize = dis.readInt();
-			int layerSize = dis.readInt();
-			ret.setLayerSize(layerSize);
-			for(int i = 0; i < vocabSize; i++) {
-				String word = dis.readUTF();
-				ret.getWordIndex().add(word);
-				ret.getVocab().put(word,new VocabWord().read(dis, layerSize));
-
-			}
-			ret.setSyn0(DoubleMatrix.zeros(vocabSize, layerSize));
-			ret.setSyn1(DoubleMatrix.zeros(vocabSize, layerSize));
-
-			ret.getSyn0().in(dis);
-			ret.getSyn1().in(dis);
-
-			dis.close();
-
-		}
-		catch(IOException e) {
-			log.error("Unable to read file for loading model",e);
-		}
+		ret.load(new BufferedInputStream(new FileInputStream(file)));
 		return ret;
 	}
 

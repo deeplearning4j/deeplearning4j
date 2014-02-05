@@ -100,12 +100,12 @@ public class Word2Vec implements Persistable {
 	public Word2Vec() {}
 
 	/**
-	 * Mainly meant for use with
-	 * static loading methods.
-	 * Please consider one of the other constructors
-	 * That being {@link #Word2Vec(Iterator)} (streaming dataset)
-	 * or         {@link #Word2Vec(Collection)}
-	 * or         {@link #Word2Vec(Collection, int)}
+	 * Specify a sentence iterator
+	 * 
+	 * 
+	 * 
+	 * 
+	 *
 	 */
 	public Word2Vec(SentenceIterator sentenceIter) {
 		createExpTable();
@@ -117,14 +117,7 @@ public class Word2Vec implements Persistable {
 	}
 
 
-	/**
-	 * Mainly meant for use with
-	 * static loading methods.
-	 * Please consider one of the other constructors
-	 * That being {@link #Word2Vec(Iterator)} (streaming dataset)
-	 * or         {@link #Word2Vec(Collection)}
-	 * or         {@link #Word2Vec(Collection, int)}
-	 */
+	
 	public Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
 		createExpTable();
 		oob = new double[layerSize];
@@ -139,6 +132,19 @@ public class Word2Vec implements Persistable {
 		this(sentenceIter);
 		this.tokenizerFactory = factory;
 	}
+	
+	/**
+	 * Specify a custom tokenizer, sentence iterator
+	 * and minimum word frequency
+	 * @param factory
+	 * @param sentenceIter
+	 * @param minWordFrequency
+	 */
+	public Word2Vec(TokenizerFactory factory,SentenceIterator sentenceIter,int minWordFrequency) {
+		this(factory,sentenceIter);
+		this.minWordFrequency = minWordFrequency;
+	}
+
 
 
 	/**
