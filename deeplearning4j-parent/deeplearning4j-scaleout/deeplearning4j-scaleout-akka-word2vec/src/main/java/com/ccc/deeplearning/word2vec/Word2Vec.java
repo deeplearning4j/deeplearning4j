@@ -1,7 +1,5 @@
 package com.ccc.deeplearning.word2vec;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -10,8 +8,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -20,6 +16,8 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.IOUtils;
@@ -57,23 +55,19 @@ public class Word2Vec implements Persistable {
 
 
 	private static final long serialVersionUID = -2367495638286018038L;
-	private Map<String,VocabWord> vocab = new HashMap<String,VocabWord>();
+	private Map<String,VocabWord> vocab = new ConcurrentHashMap<String,VocabWord>();
 	/* all words; including those not in the actual ending index */
-	private Map<String,VocabWord> rawVocab = new HashMap<String,VocabWord>();
-	private Map<Integer,String> indexToWord = new HashMap<Integer,String>();
+	private Map<String,VocabWord> rawVocab = new ConcurrentHashMap<String,VocabWord>();
+	private Map<Integer,String> indexToWord = new ConcurrentHashMap<Integer,String>();
 	private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 	private transient SentenceIterator sentenceIter;
 	private Random rand = new Random(1);
 	private int topNSize = 40;
-	public int EXP_TABLE_SIZE = 500;
 	//matrix row of a given word
 	private Index wordIndex = new Index();
-	/* pre calculated sigmoid table */
-	private double[] expTable = new double[EXP_TABLE_SIZE];
 	private int sample = 1;
 	//learning rate
 	private Double alpha = 0.025;
-	private int MAX_EXP = 6;
 	private int wordCount  = 0;
 	public final static double MIN_ALPHA =  0.001;
 	//number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
@@ -96,6 +90,7 @@ public class Word2Vec implements Persistable {
 	private List<String> stopWords;
 	/* out of vocab */
 	private double[] oob;
+	private boolean shouldReset = true;
 
 	public Word2Vec() {}
 
@@ -108,7 +103,6 @@ public class Word2Vec implements Persistable {
 	 *
 	 */
 	public Word2Vec(SentenceIterator sentenceIter) {
-		createExpTable();
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
 		readStopWords();
@@ -117,9 +111,8 @@ public class Word2Vec implements Persistable {
 	}
 
 
-	
+
 	public Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
-		createExpTable();
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
 		readStopWords();
@@ -132,7 +125,7 @@ public class Word2Vec implements Persistable {
 		this(sentenceIter);
 		this.tokenizerFactory = factory;
 	}
-	
+
 	/**
 	 * Specify a custom tokenizer, sentence iterator
 	 * and minimum word frequency
@@ -173,7 +166,6 @@ public class Word2Vec implements Persistable {
 	 * to be counted in the vocab
 	 */
 	public Word2Vec(Collection<String> sentences,int minWordFrequency) {
-		createExpTable();
 		this.minWordFrequency = minWordFrequency;
 		this.sentenceIter = new CollectionSentenceIterator(sentences);
 
@@ -222,39 +214,60 @@ public class Word2Vec implements Persistable {
 	}
 
 
-	/**
-	 * Precompute the exp() table
-	 * f(x) = x / (x + 1)
-	 */
-	private void createExpTable() {
-		for (int i = 0; i < EXP_TABLE_SIZE; i++) {
-			expTable[i] = Math.exp(((i / (double) EXP_TABLE_SIZE * 2 - 1) * MAX_EXP));
-			expTable[i] = expTable[i] / (expTable[i] + 1);
+
+
+
+	public Collection<String> wordsNearest(String word,int n) {
+		DoubleMatrix vec = this.getWordVectorMatrix(word);
+		if(vec == null)
+			return new ArrayList<String>();
+		Counter<String> distances = new Counter<String>();
+		for(int i = 0; i < syn0.rows; i++) {
+			double sim = similarity(word,wordIndex.get(i).toString());
+			distances.incrementCount(wordIndex.get(i).toString(), sim);
 		}
+
+
+		distances.keepTopNKeys(n);
+		return distances.keySet();
+
 	}
 
 
+	public List<String> analogyWords(String w1,String w2,String w3) {
+		TreeSet<VocabWord> analogies = this.analogy(w1, w2, w3);
+		List<String> ret = new ArrayList<String>();
+		for(VocabWord w : analogies)
+			ret.add(wordIndex.get(w.getIndex()).toString());
+		return ret;
+	}
 
 
 
 
 	private void insertTopN(String name, double score, List<VocabWord> wordsEntrys) {
 		if (wordsEntrys.size() < topNSize) {
-			wordsEntrys.add(new VocabWord(score,layerSize));
+			VocabWord v = new VocabWord(score,layerSize);
+			v.setIndex(wordIndex.indexOf(name));
+			wordsEntrys.add(v);
 			return;
 		}
 		double min = Float.MAX_VALUE;
 		int minOffe = 0;
+		int minIndex = -1;
 		for (int i = 0; i < topNSize; i++) {
 			VocabWord wordEntry = wordsEntrys.get(i);
 			if (min > wordEntry.getWordFrequency()) {
 				min = (double) wordEntry.getWordFrequency();
 				minOffe = i;
+				minIndex = wordEntry.getIndex();
 			}
 		}
 
 		if (score > min) {
-			wordsEntrys.set(minOffe, new VocabWord(score,layerSize));
+			VocabWord w = new VocabWord(score,layerSize);
+			w.setIndex(minIndex);
+			wordsEntrys.set(minOffe,w);
 		}
 
 	}
@@ -416,7 +429,7 @@ public class Word2Vec implements Persistable {
 		DoubleMatrix wv2 = getWordVectorMatrix(word2);
 
 
-		DoubleMatrix wordVector = wv1.sub(wv1).add(wv2);
+		DoubleMatrix wordVector = wv1.sub(wv0).add(wv2);
 
 		if (wv1 == null || wv2 == null || wv0 == null) 
 			return null;
@@ -443,62 +456,102 @@ public class Word2Vec implements Persistable {
 		log.info("Building binary tree");
 		buildBinaryTree();
 		log.info("Resetting weights");
-		resetWeights();
+		if(shouldReset)
+			resetWeights();
 	}
 
 
 	public void buildVocab() {
 		readStopWords();
-		int count = 0;
+
+		if(trainingSystem == null)
+			trainingSystem = ActorSystem.create();
+
+
+		final AtomicInteger count = new AtomicInteger(0);
+		final AtomicBoolean bool = new AtomicBoolean(false);
 		while(sentenceIter.hasNext()) {
 			final String words = sentenceIter.nextSentence();
 			if(words == null) {
 				break;
 			}
 
-			Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
+			Future<Void> f = Futures.future(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
 
 
-			this.allWordsCount += tokenizer.countTokens();
-			count++;
-			if(count % 10000 == 0)
-				log.info("Processed  sentence " + count + " current word count " + allWordsCount);
+					Word2Vec.this.allWordsCount += tokenizer.countTokens();
+					int curr = count.incrementAndGet();
+					if(curr % 10000 == 0)
+						log.info("Processed  sentence " + count + " current word count " + allWordsCount + " with sentence " + words);
 
-			while(tokenizer.hasMoreTokens()) {
-				String token = tokenizer.nextToken();
-				if(stopWords.contains(token))
-					token = "STOP";
-				VocabWord word = rawVocab.get(token);
+					while(tokenizer.hasMoreTokens()) {
+						String token = tokenizer.nextToken();
+						if(stopWords.contains(token))
+							token = "STOP";
+						VocabWord word = rawVocab.get(token);
 
-				//this will also increment the
-				//vocab word at the final level
-				//due to the reference being the same
-				if(word != null)
-					word.increment();
-				else {
-					word = new VocabWord(1.0,layerSize);
-					rawVocab.put(token,word);
-				}
-				//note that for purposes of word frequency, the 
-				//internal vocab and the final vocab
-				//at the class level contain the same references
-				if(word.getWordFrequency() >= minWordFrequency && !matchesAnyStopWord(token)) {
-					if(!this.vocab.containsKey(token)) {
-						word.setIndex(this.vocab.size());
-						this.vocab.put(token, word);
-						wordIndex.add(token);
+						//this will also increment the
+						//vocab word at the final level
+						//due to the reference being the same
+						if(word != null)
+							word.increment();
+						else {
+							word = new VocabWord(1.0,layerSize);
+							rawVocab.put(token,word);
+						}
+						//note that for purposes of word frequency, the 
+						//internal vocab and the final vocab
+						//at the class level contain the same references
+						if(word.getWordFrequency() >= minWordFrequency && !matchesAnyStopWord(token)) {
+							if(!Word2Vec.this.vocab.containsKey(token)) {
+								word.setIndex(Word2Vec.this.vocab.size());
+								Word2Vec.this.vocab.put(token, word);
+								wordIndex.add(token);
+
+							}
+
+
+						}
 
 					}
+					numSentencesProcessed.incrementAndGet();
 
-
+					return null;
 				}
 
-			}
-			numSentencesProcessed.incrementAndGet();
+			}, trainingSystem.dispatcher());
+
+
+
+			f.onComplete(new OnComplete<Void>() {
+
+				@Override
+				public void onComplete(Throwable arg0, Void arg1)
+						throws Throwable {
+					if(arg0 != null)
+						throw arg0;
+					if(!sentenceIter.hasNext())
+						bool.getAndSet(true);
+				}
+
+			}, trainingSystem.dispatcher());
+
+
 
 
 		}
 
+		while(!bool.get()) {
+			try {
+				Thread.sleep(15000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
 
 		setup();
 
@@ -571,15 +624,7 @@ public class Word2Vec implements Persistable {
 		syn0.putRow(w2.getIndex(),updatedInput);
 	}
 
-	public DoubleMatrix toExp(DoubleMatrix input) {
-		for(int i = 0; i < input.length; i++) {
-			double f = input.get(i);
-			f = (f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2);
-			f = expTable[(int) f];
-			input.put(i,f);
-		}
-		return input;
-	}
+
 
 
 	/* Builds the binary tree for the word relationships */
@@ -697,11 +742,6 @@ public class Word2Vec implements Persistable {
 	public void setMinWordFrequency(int minWordFrequency) {
 		this.minWordFrequency = minWordFrequency;
 	}
-	public int getMAX_EXP() {
-		return MAX_EXP;
-	}
-
-
 
 
 	public int getLayerSize() {
@@ -709,29 +749,6 @@ public class Word2Vec implements Persistable {
 	}
 	public void setLayerSize(int layerSize) {
 		this.layerSize = layerSize;
-	}
-	public void setMAX_EXP(int mAX_EXP) {
-		MAX_EXP = mAX_EXP;
-	}
-
-
-	public int getEXP_TABLE_SIZE() {
-		return EXP_TABLE_SIZE;
-	}
-
-
-	public void setEXP_TABLE_SIZE(int eXP_TABLE_SIZE) {
-		EXP_TABLE_SIZE = eXP_TABLE_SIZE;
-	}
-
-
-	public double[] getExpTable() {
-		return expTable;
-	}
-
-
-	public void setExpTable(double[] expTable) {
-		this.expTable = expTable;
 	}
 
 
@@ -849,6 +866,24 @@ public class Word2Vec implements Persistable {
 		this.window = window;
 	}
 
+
+
+
+	public SentenceIterator getSentenceIter() {
+		return sentenceIter;
+	}
+
+	/**
+	 * Note that calling a setter on this
+	 * means assumes that this is a training continuation
+	 * and therefore weights should not be reset.
+	 * @param sentenceIter
+	 */
+	public void setSentenceIter(SentenceIterator sentenceIter) {
+		this.sentenceIter = sentenceIter;
+		this.shouldReset = false;
+	}
+
 	@Override
 	public void write(OutputStream os) {
 		try {
@@ -870,7 +905,6 @@ public class Word2Vec implements Persistable {
 			Word2Vec vec = (Word2Vec) ois.readObject();
 			this.allWordsCount = vec.allWordsCount;
 			this.alpha = vec.alpha;
-			this.expTable  = vec.expTable;
 			this.minWordFrequency = vec.minWordFrequency;
 			this.numSentencesProcessed = vec.numSentencesProcessed;
 			this.oob = vec.oob;
@@ -886,7 +920,7 @@ public class Word2Vec implements Persistable {
 			this.topNSize = vec.topNSize;
 			this.trainWordsCount = vec.trainWordsCount;
 			this.window = vec.window;
-			
+
 		}catch(Exception e) {
 			throw new RuntimeException(e);
 		}
