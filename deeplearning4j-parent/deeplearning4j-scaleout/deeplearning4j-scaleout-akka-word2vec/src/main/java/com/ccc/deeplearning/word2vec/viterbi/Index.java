@@ -1,6 +1,8 @@
 package com.ccc.deeplearning.word2vec.viterbi;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 @SuppressWarnings({"rawtypes","unchecked"})
 public class Index implements Serializable {
 
@@ -8,8 +10,8 @@ public class Index implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 1160629777026141078L;
-	List objects = new ArrayList();
-	Map<Object,Integer> indexes = new HashMap<Object,Integer>();
+	List objects = new CopyOnWriteArrayList();
+	Map<Object,Integer> indexes = new ConcurrentHashMap<Object,Integer>();
 	
 	
 	
