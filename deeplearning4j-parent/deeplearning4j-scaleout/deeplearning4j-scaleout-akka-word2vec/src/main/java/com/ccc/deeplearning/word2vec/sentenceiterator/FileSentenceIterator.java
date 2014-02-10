@@ -82,7 +82,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 	@Override
 	public boolean hasNext() {
-		return currLineIterator != null && currLineIterator.hasNext() && fileIterator.hasNext();
+		return currLineIterator != null && currLineIterator.hasNext() || fileIterator.hasNext();
 	}
 
 
