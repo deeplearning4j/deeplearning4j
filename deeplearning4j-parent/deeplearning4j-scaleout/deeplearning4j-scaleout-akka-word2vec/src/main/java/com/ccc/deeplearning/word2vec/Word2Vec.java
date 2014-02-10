@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -26,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
@@ -82,7 +85,7 @@ public class Word2Vec implements Persistable {
 	//hidden layer
 	private DoubleMatrix syn1;
 	private int allWordsCount = 0;
-	private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
+	private int numSentencesProcessed = 0;
 	private static ActorSystem trainingSystem;
 	private List<String> stopWords;
 	/* out of vocab */
@@ -310,7 +313,7 @@ public class Word2Vec implements Persistable {
 				@Override
 				public Void call() throws Exception {
 					processSentence(sentence,totalWords);
-					numSentencesProcessed.incrementAndGet();
+					numSentencesProcessed++;
 					return null;
 				}
 
@@ -356,9 +359,9 @@ public class Word2Vec implements Persistable {
 					throws Throwable {
 
 
-				if(numSentencesProcessed.get() % 10000 == 0) {
+				if(numSentencesProcessed % 10000 == 0) {
 					alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
-					log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed.get());
+					log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed);
 				}
 
 			}
@@ -465,8 +468,6 @@ public class Word2Vec implements Persistable {
 			trainingSystem = ActorSystem.create();
 
 
-		@SuppressWarnings("unused")
-		final AtomicInteger count = new AtomicInteger(0);
 		final AtomicBoolean bool = new AtomicBoolean(false);
 
 
@@ -483,43 +484,27 @@ public class Word2Vec implements Persistable {
 
 		final Counter<String> rawVocab = new Counter<String>(factory);
 
-		/*
-		 * Use a work queue to dequeue sentences.
-		 * Throttle input to the queue by using a blocking queue with a certain capacity.
-		 * Start a number of futures/threads relative to the throughput of the queue.
-		 * Each future will de queue from the work queue as sentences are added.
-		 * This leads to maximum throughput relative to GC.
-		 */
-		final int capacity = Runtime.getRuntime().availableProcessors() * 4;
-		final java.util.concurrent.ArrayBlockingQueue<String> work = new java.util.concurrent.ArrayBlockingQueue<>(capacity);
-		final AtomicInteger workersSpawned = new AtomicInteger(0);
+	
 		/* all words; including those not in the actual ending index */
-		Future<Void> f1 = Futures.future(new Callable<Void> () {
+		Set<Future<Void>> futures = new HashSet<>();
+		while(sentenceIter.hasNext()) {
 
-			@Override
-			public Void call() throws Exception {
-				while(sentenceIter.hasNext()) {
-					//add more futures as necessary to handle workflow.
-					//whenever the queue is full it is safe to add workers.
-					if(work.remainingCapacity() == 0) {
-						Word2Vec.this.process(bool, work, count, rawVocab);
-						workersSpawned.incrementAndGet();
-					}
-					else {
-						//not maximum throughput
-						if(workersSpawned.get() < capacity)
-							Word2Vec.this.process(bool, work, count, rawVocab);
-
-						work.add(sentenceIter.nextSentence());
-
-					}
+			//not maximum throughput
+			Future<Void> f = process(bool, sentenceIter.nextSentence(), rawVocab);
+			futures.add(f);
+				Future<Iterable<Void>> wait = Futures.sequence(futures, trainingSystem.dispatcher());
+				try {
+					Await.result(wait,Duration.Inf());
+				} catch (Exception e) {
+					Thread.currentThread().interrupt();
 				}
+				futures.clear();
+			
+
+		}
 
 
-				return null;
-			}
 
-		},trainingSystem.dispatcher());
 
 
 
@@ -543,53 +528,48 @@ public class Word2Vec implements Persistable {
 	}
 
 
-	private void process(final AtomicBoolean bool,final Queue<String> work,final AtomicInteger count,final Counter<String> rawVocab)	{
+	private Future<Void> process(final AtomicBoolean bool,final String words,final Counter<String> rawVocab)	{
 		Future<Void> f = Futures.future(new Callable<Void>() {
 
 			@Override
 			public Void call() throws Exception {
 
-				while(!work.isEmpty()) {
-					String words = work.poll();
-					if(words == null)
-						return null;
+				if(words == null)
+					return null;
 
-					Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
+				Tokenizer tokenizer = tokenizerFactory.create(new InputHomogenization(words).transform());
 
-					Word2Vec.this.allWordsCount += tokenizer.countTokens();
-					int curr = count.incrementAndGet();
-					if(curr % 10000 == 0)
-						log.info("Processed  sentence " + count + " current word count " + allWordsCount + " with sentence " + words);
-					words = null;
+				allWordsCount += tokenizer.countTokens();
 
-					while(tokenizer.hasMoreTokens()) {
-						String token = tokenizer.nextToken();
-						if(stopWords.contains(token))
-							token = "STOP";
-						rawVocab.incrementCount(token,1.0);
-						//note that for purposes of word frequency, the 
-						//internal vocab and the final vocab
-						//at the class level contain the same references
-						if(rawVocab.getCount(token) >= minWordFrequency && !matchesAnyStopWord(token)) {
-							if(!Word2Vec.this.vocab.containsKey(token)) {
-								VocabWord word = new VocabWord(rawVocab.getCount(token),layerSize);
-								word.setIndex(Word2Vec.this.vocab.size());
-								Word2Vec.this.vocab.put(token, word);
-								wordIndex.add(token);
-
-							}
-
+				if(allWordsCount % 100000 == 0)
+				        log.info("New number of words " + allWordsCount);
+				while(tokenizer.hasMoreTokens()) {
+					String token = tokenizer.nextToken();
+					if(stopWords.contains(token))
+						token = "STOP";
+					rawVocab.incrementCount(token,1.0);
+					//note that for purposes of word frequency, the 
+					//internal vocab and the final vocab
+					//at the class level contain the same references
+					if(rawVocab.getCount(token) >= minWordFrequency && !matchesAnyStopWord(token)) {
+						if(!vocab.containsKey(token)) {
+							VocabWord word = new VocabWord(rawVocab.getCount(token),layerSize);
+							word.setIndex(Word2Vec.this.vocab.size());
+							vocab.put(token, word);
+							wordIndex.add(token);
 
 						}
 
-						token = null;
 
 					}
 
-					tokenizer = null;
-					numSentencesProcessed.incrementAndGet();
+					token = null;
 
 				}
+
+				tokenizer = null;
+
+
 
 
 				return null;
@@ -611,6 +591,8 @@ public class Word2Vec implements Persistable {
 			}
 
 		}, trainingSystem.dispatcher());
+		
+		return f;
 	}
 
 
