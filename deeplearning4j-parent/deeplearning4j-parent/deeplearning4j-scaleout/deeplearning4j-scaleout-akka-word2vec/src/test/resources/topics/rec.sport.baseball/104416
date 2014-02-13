@@ -1,0 +1,48 @@
+Subject: Re: Braves Pitching UpdateDIR
+From: grabiner@math.harvard.edu (David Grabiner)
+Organization: /etc/organization
+Nntp-Posting-Host: boucher.harvard.edu
+In-reply-to: drw3l@delmarva.evsc.Virginia.EDU's message of Fri, 16 Apr 1993 16:19:23 GMT
+Lines: 41
+
+In article <C5L40C.9LC@murdoch.acc.Virginia.EDU>, David Robert Walker writes:
+
+> In article <8994@blue.cis.pitt.edu> traven@pitt.edu (Neal Traven) writes:
+
+>>One also has to separate offense into batting and baserunning, with the
+>>split probably somewhere around 49.5% and 0.5%.
+
+> I'd give baserunning a little more credit than that, maybe 45-5, or
+> even 40-10. Give a team of Roberto Alomar and a team of John Oleruds
+> identical batting stats (which wouldn't be that unreasonable), and
+> even if you don't let Roberto steal a single base, they'll score a lot
+> more than the Oleruds by going first-to-third more often. (No offense,
+> Gordon).
+
+I wouldn't give baserunning that much value.
+
+The above effect is clear, but there are other effects as well.  If
+Olerud hits a double, any runner on first will score; if Alomar legs an
+extra base onto a hit in the gap, the runner on first may need to hold
+at third.  Thus Olerud's doubles have more advancement value than
+Alomar's.  (Of course, Alomar is more likely to score after hitting a
+double.)
+
+Another reason not to give too much extra value to baserunning is that
+the runs created formulas work for very fast and very slow teams.  No
+team in the 1950's ran much, but some teams certainly had faster players
+than others.  Still, the current runs created formulas work just as well
+in the 1950's for all teams.  
+
+Bill James gives the 1955-1958 Senators as an example.  They used Harmon
+Killebrew regularly as a pinch runner, and in 1957, stole 13 bases with
+38 times caught stealing.  Yet they scored slightly more runs than
+predicted by Runs Created.
+
+
+
+--
+David Grabiner, grabiner@zariski.harvard.edu
+"We are sorry, but the number you have dialed is imaginary."
+"Please rotate your phone 90 degrees and try again."
+Disclaimer: I speak for no one and no one speaks for me.

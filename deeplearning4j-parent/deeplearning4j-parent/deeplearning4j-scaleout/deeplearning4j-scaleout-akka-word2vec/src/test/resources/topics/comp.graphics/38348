@@ -1,0 +1,41 @@
+From: tiang@midway.ecn.uoknor.edu (Tiang)
+Subject: VESA standard VGA/SVGA programming???
+Nntp-Posting-Host: midway.ecn.uoknor.edu
+Organization: Engineering Computer Network, University of Oklahoma, Norman, OK, USA
+Keywords: vga
+Lines: 34
+
+Hi,
+
+	I have a few question about graphics programming in VGA/SVGA :
+
+1. How VESA standard works?  Any documentation for VESA standard?
+
+2. At a higher resolution than 320x200x256 or 640x480x16 VGA mode,
+   where the video memory A0000-AFFFF is no longer sufficient to hold
+   all info, what is the trick to do fast image manipulation?  I
+   heard about memory mapping or video memory bank switching but know
+   nothing on how it is implemented.   Any advice, anyone?  
+
+3. My interest is in 640x480x256 mode.  Should this mode be called
+   SVGA mode?  What is the technique for fast image scrolling for the
+   above mode?  How to deal with different SVGA cards?
+
+
+  Your guidance to books or any other sources to the above questions
+would be greatly appreciated.  Please send me mail.
+
+
+  Thanks in advance!
+
+
+
+************************************************************************
+*                         Tiang   T.    Foo                            *
+*		      tiang@uokmax.ecn.uoknor.edu 		       *
+************************************************************************    
+-- 
+************************************************************************
+*                         Tiang   T.    Foo                            *
+*		      tiang@uokmax.ecn.uoknor.edu 		       *
+************************************************************************    

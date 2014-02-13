@@ -1,0 +1,41 @@
+From: wlsmith@valve.heart.rri.uwo.ca (Wayne Smith)
+Subject: Re: IDE vs SCSI
+Organization: The John P. Robarts Research Institute, London, Ontario
+Nntp-Posting-Host: valve.heart.rri.uwo.ca
+Lines: 35
+
+In article <RICHK.93Apr15075248@gozer.grebyn.com> richk@grebyn.com (Richard Krehbiel) writes:
+>>     Can anyone explain in fairly simple terms why, if I get OS/2, I might 
+>>   need an SCSI controler rather than an IDE.  Will performance suffer that
+>>   much?  For a 200MB or so drive?  If I don't have a tape drive or CD-ROM?
+>>   Any help would be appreciated.
+
+>So, when you've got multi-tasking, you want to increase performance by
+>increasing the amount of overlapping you do.
+>
+>One way is with DMA or bus mastering.  Either of these make it
+>possible for I/O devices to move their data into and out of memory
+>without interrupting the CPU.  The alternative is for the CPU to move
+>the data.  There are several SCSI interface cards that allow DMA and
+>bus mastering.
+ ^^^^^^^^^^^^
+How do you do bus-mastering on the ISA bus?
+
+>IDE, however, is defined by the standard AT interface
+>created for the IBM PC AT, which requires the CPU to move all the data
+>bytes, with no DMA.
+
+If we're talking ISA (AT) bus here, then you can only have 1 DMA channel
+active at any one time, presumably transferring data from a single device.
+So even though you can have at least 7 devices on a SCSI bus, explain how
+all 7 of those devices can to DMA transfers through a single SCSI card
+to the ISA-AT bus at the same time.
+
+Also, I'm still trying to track down a copy of IBM's AT reference book,
+but from their PC technical manual (page 2-93):
+
+"The (FDD) adapter is buffered on the I.O bus and uses the System Board
+direct memory access (DMA) for record data transfers."
+I expect to see something similar for the PC-AT HDD adapter.  
+So the lowly low-density original PC FDD card used DMA and the PC-AT
+HDD controller doesn't!?!?  That makes real sense.

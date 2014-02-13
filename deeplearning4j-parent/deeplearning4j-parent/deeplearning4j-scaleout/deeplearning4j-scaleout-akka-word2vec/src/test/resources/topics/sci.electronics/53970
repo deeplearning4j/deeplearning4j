@@ -1,0 +1,24 @@
+From: ptorre@hardy.u.washington.edu (Phil Torre)
+Subject: Re: Suggestions  on Audio relays ???
+Organization: University of Washington, Seattle
+Lines: 18
+NNTP-Posting-Host: hardy.u.washington.edu
+
+>In article <C5qsBF.IEK@ms.uky.edu> billq@ms.uky.edu (Billy Quinn) writes:
+>>I built a little project using the radio shack 5vdc relays to switch
+>>audio.  I got pretty bad 'clicks' when the thing switched. 
+>
+>>	Is there a good relay/relay circuit that I can use for switching
+>>audio, so that there will be *NO* noise of any kind on the audio lines.
+>
+I missed the first part of this thread; are you switching line level or
+speaker level audio?
+If line level, there's a single chip 4x1 *stereo* audio switch available
+that switches 4 two-channel inputs into 1 two-channel output, and also
+has a mute function, all controllable with ttl inputs.  LM1037, I think?
+
+If speaker level, never mind.  :(
+
+Phil Torre (ptorre@u.washington.edu)
+
+

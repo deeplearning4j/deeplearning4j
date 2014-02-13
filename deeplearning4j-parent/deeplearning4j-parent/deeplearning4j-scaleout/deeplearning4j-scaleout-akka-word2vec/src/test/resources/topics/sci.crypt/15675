@@ -1,0 +1,28 @@
+From: mrr@scss3.cl.msu.edu (Mark Riordan)
+Subject: DOS 6.0 compression API: partial answer
+Organization: Michigan State University
+Lines: 21
+NNTP-Posting-Host: scss3.cl.msu.edu
+X-Newsreader: TIN [version 1.1 PL8]
+
+For those of you looking for information on MS-DOS 6.0's
+file system compression API:
+
+Today I called Microsoft's DOS 6.0 hotline at (800)228-7007.
+They told me that the DOS 6.0 Resource Kit had the specifications
+for the compression interface.  The Resource Kit costs $19.95,
+plus tax and $5 shipping.
+
+I ordered a copy and will post further when I get it and know more
+about it.  I am posting now because the order turnaround is 15 
+working days.  
+
+If anyone knows for sure where's there's a good
+source of info on this API, please speak up.  I am 
+slightly skeptical about the Resource Kit's likelihood
+of having detailed programming info.
+
+Mark R.  mrr@ripem.msu.edu
+
+(posted also to sci.crypt, since the API could presumably also
+be used for file system encryption.)

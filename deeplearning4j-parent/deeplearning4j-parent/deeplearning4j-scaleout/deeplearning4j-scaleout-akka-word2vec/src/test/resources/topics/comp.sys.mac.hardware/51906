@@ -1,0 +1,17 @@
+From: guykuo@carson.u.washington.edu (Guy Kuo)
+Subject: Re: Q700 at 34.5MHz, it's fine...
+Organization: University of Washington
+Lines: 11
+NNTP-Posting-Host: carson.u.washington.edu
+
+>I have had my Q700 running with a 66.666 MHz osc for a few months. I have a
+>number of SCSI devices connected (Quantum LP52, Maxtor 213, Toshiba MK156F via
+>Emulex adapter, Pioneer DRM-600) and have had no trouble.
+
+Is this being done with the motherboard's SCSI interface? If this is possible
+then a bit of experimenting with just plain old clock oscillators may be
+in order. Give us some more details please.
+
+The Mad Clock Chipper in Seattle
+<guykuo@u.washington.edu>
+

@@ -1,0 +1,48 @@
+From: gawne@stsci.edu
+Subject: Re: Vulcan?  (No, not the guy with the ears!)
+Distribution: na
+Organization: Space Telescope Science Institute
+Lines: 42
+
+In article <VNci2B7w165w@inqmind.bison.mb.ca>, victor@inqmind.bison.mb.ca 
+(Victor Laking) writes:
+> Does anyone have any info on the apparent sightings of Vulcan?
+>  
+> All that I know is that there were apparently two sightings at 
+> drastically different times of a small planet that was inside Mercury's 
+> orbit.  Beyond that, I have no other info.
+
+The sightings were apparently spurious.  There is no planet inside of
+the orbit of Mercury.
+
+The idea of Vulcan came from the differences between Mercury's observed
+perihelion precession and the value it should have had according to
+Newtonian physics.  Leverrier made an extensive set of observations
+and calculations during the mid 19th century, and Simon Newcombe later
+improved on the observations and re-calculated using Leverrier's system
+of equations.  Now Leverrier was one of the co-discoverers of Neptune
+and since he had predicted its existence based on anomalies in the orbit
+of Uranus his inclination was to believe the same sort of thing was
+afoot with Mercury.
+
+But alas, 'twere not so.  Mercury's perihelion precesses at the rate
+it does because the space where it resides near the sun is significantly
+curved due to the sun's mass.  This explanation had to wait until 1915
+and Albert Einstein's synthesis of his earlier theory of the electrodynamics
+of moving bodies (commonly called Special Relativity) with Reimanian 
+geometry.  The result was the General Theory of Relativity, and one of
+it's most noteworthy strengths is that it accounts for the precession
+of Mercury's perihelion almost exactly.  (Exactly if you use Newcomb's
+numbers rather than Leverrier's.)
+
+Of course not everybody believes Einstein, and that's fine.  But subsequent
+efforts to find any planets closer to the sun than Mercury using radar
+have been fruitless.
+
+-Bill Gawne
+
+ "Forgive him, he is a barbarian, who thinks the customs of his tribe
+  are the laws of the universe."                       - G. J. Caesar
+
+Any opinions are my own.  Nothing in this post constitutes an official
+statement from any person or organization.

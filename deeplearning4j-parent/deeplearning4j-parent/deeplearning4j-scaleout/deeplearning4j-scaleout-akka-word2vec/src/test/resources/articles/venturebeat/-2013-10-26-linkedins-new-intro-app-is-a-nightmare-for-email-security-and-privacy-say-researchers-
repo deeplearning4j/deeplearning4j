@@ -1,0 +1,14 @@
+4
+If you’re at all concerned about the privacy of your emails, here’s a tip: Don’t use LinkedIn Intro.
+Introduced earlier this week , Intro is aimed at giving users a complete profile of the people they email. But in order to do that, the app needs unfettered access to users’ email accounts — which introduces a host of security and privacy issues.
+The security concerns speak for themselves. For one, Intro works by reworking your iPhone so that all of your emails go through LinkedIn’s servers before they reach you. This is what lets the app scrape your messages for information about who you’re emailing.
+And in our post-Snowden times, that should horrify you.
+This what LinkedIn Intro does to your emails. Worth it?
+As security research company Bishop Fox writes:
+But that sounds like a man-in-the-middle attack!’ I hear you cry. Yes. Yes it does. Because it is. That’s exactly what it is. And this is a bad thing. If your employees are checking their company email, it’s an especially bad thing.
+More, Intro also adds snippets of text to the end of your outgoing emails, and LinkedIn uses your email activity to recommend connections to you via its main website.
+While LinkedIn has pledged to protect the privacy of Intro users, it’s a true wonder that the company was brazen enough to create Intro at all. The last thing people need in their lives is more uncertainly about who might be reading their emails .
+Security researcher Graham Cluley echoes the sentiment. ”To give them credit, from the engineering point of view [Intro] is pretty nifty. But from the security and privacy point of view it sends a shiver down my spine,” he wrote in a blog post this week .
+Again, Bishop Fox:
+Think about it this way.  A vendor tells you they will install a device on your network that monitors all your email so they can insert their data into your emails.  They’ll do this for free – except they want to have unfettered access to all your emails and mine them for information about your users.  They don’t say what exactly they would store from each email, but just trust them to do the right thing.
+Both Bishop Fox and Graham Cluley have the same recommendation for anyone considering using LinkedIn Intro: Don’t use LinkedIn Intro.

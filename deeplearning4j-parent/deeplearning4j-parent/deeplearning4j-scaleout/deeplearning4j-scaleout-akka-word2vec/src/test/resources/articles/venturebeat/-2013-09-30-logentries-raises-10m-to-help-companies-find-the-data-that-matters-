@@ -1,0 +1,9 @@
+0
+Big data startup Logentries , which just announced a $10 million funding round, wants to help you find the needles in your digital haystack.
+The log management and analysis service processes log data for its clients in real time. To separate the most important bits from the deluge of irrelevant data, the company uses a collective intelligence model to filter the information based on telltale “fingerprints” identified by Logentries and its community.
+“For example, if the user is running it on Heroku, we’ve worked with Heroku to pre-identify events and then make that expertise available via our service to the Heroku community,” a Logentries representative told VentureBeat.
+Editor’s note: Our upcoming DataBeat conference , Dec. 4-5 in Redwood City, will focus on the most compelling opportunities for businesses in the area of big data analytics and beyond. Register today!
+The startup has more than 1,000 customers across 100 countries. One client is Parallels Software, a virtualization technology company based in Washington state.
+“Parallels needed a log management and analytics solution that worked in the cloud and on-premise,” the rep added. “It is mainly used by their engineering team to identify and troubleshoot issues based on the log management insights that Logentries provides, before these issues become actual problems.”
+Logentries today announced that it raised a $10 million funding round led by Polaris Partners, with participation from Floodgate, Frontline Ventures, and RRE Ventures. It also named Andrew Burton president and CEO. Burton previously worked at LogMeIn (and before that, Symantec).
+Founded in 2010, Logentries emerged from University College Dublin’s Performance Engineering Laboratory after years of joint research with IBM. It raised a $1.1 million seed round in July 2012.

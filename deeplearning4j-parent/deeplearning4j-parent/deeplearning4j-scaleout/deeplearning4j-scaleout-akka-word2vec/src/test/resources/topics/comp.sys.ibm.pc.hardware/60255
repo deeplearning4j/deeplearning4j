@@ -1,0 +1,50 @@
+From: glang@slee01.srl.ford.com (Gordon Lang)
+Subject: Re: LaserJet IV upgrades to 1200dpi opinions
+Organization: Ford Motor Company Research Laboratory
+Lines: 43
+NNTP-Posting-Host: slee01.srl.ford.com
+X-Newsreader: Tin 1.1 PL5
+
+ (larryhow@austin.ibm.com) wrote:
+: 
+: What are the current products available to upgrade the resolution?
+: Which ones support postscript?
+: 
+: Any experiences with them, either good or bad?
+: 
+: Is the quality difference really noticable?
+: 
+: I'm planning on producing camera ready copy of homes.  Will the higher
+: resolution be noticed for these?
+: 
+If you are talking about laser jet 4 then I believe it has to be postscript.
+I don't see any advantage to using PCL when you have a peice of hardware
+plugged into the LJ4 that is doing the work and it can support any language
+that is suited for the job.  Besides I don't think PCL is even capable of
+handling 1200 dpi specifications.  I only have experience with the Laser
+Master Winjet 1200 which brings the LJ4 up to 1200 dpi and it uses postscript.
+It also has a fast print mode which is not postscript, and it is at a lower
+resolution (600dpi I think), but it is FAST!!!!  This particular product
+uses your host processor to process the postscript, so even with a decent
+PC you know it's going to be slow i.e. slow compared to a high-end workstation
+processed PS.
+
+The quality difference is very noticable and is almost worth the wait (for
+the PS processing) - I'm rather impatient.
+
+We were using it for B&W camera images (RS-170).  The gray scale image was
+accepted by MS Word and handed to the Winjet PS printer driver which converts
+the image into postscript and then hands it off to the Winjets postscript
+processor.  The postscript is rendered into RAM (lots of it) and when it
+is done it shoots it directly to the printer.  The PS processor can also
+accept PS files created from other sources including DOS applications, but
+Windows has to be running at the time of printing.  The PS processor is
+responsible for the halftoning and I'd say it does a pretty good job.  Our
+camera images came out very good in my opinion.  (not as good as Laser Master's
+demo though).
+
+I don't know how many other similar products are out there but I would be
+surprised if there are several.
+
+Gordon Lang
+

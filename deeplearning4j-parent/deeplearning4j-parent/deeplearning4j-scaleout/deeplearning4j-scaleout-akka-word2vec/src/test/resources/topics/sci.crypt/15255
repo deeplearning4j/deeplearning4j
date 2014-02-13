@@ -1,0 +1,187 @@
+From: crypt-comments@math.ncsu.edu
+Subject: Cryptography FAQ 09/10 - Other Miscellany
+Organization: The Crypt Cabal
+Lines: 174
+Expires: 22 May 1993 04:00:07 GMT
+Reply-To: crypt-comments@math.ncsu.edu
+NNTP-Posting-Host: pad-thai.aktis.com
+Summary: Part 9 of 10 of the sci.crypt FAQ, Other Miscellany.
+ National Security agency. US export restrictions. TEMPEST 
+ electromagnetic interference monitoring.  Beale ciphers, a hoax?
+ American Cryptographic Association.  RSA public-key patents.
+X-Last-Updated: 1993/04/16
+
+Archive-name: cryptography-faq/part09
+Last-modified: 1993/4/15
+
+
+FAQ for sci.crypt, part 9: Other Miscellany
+
+This is the ninth of ten parts of the sci.crypt FAQ. The parts are
+mostly independent, but you should read the first part before the rest.
+We don't have the time to send out missing parts by mail, so don't ask.
+Notes such as ``[KAH67]'' refer to the reference list in the last part.
+
+The sections of this FAQ are available via anonymous FTP to rtfm.mit.edu 
+as /pub/usenet/news.answers/cryptography-faq/part[xx].  The Cryptography 
+FAQ is posted to the newsgroups sci.crypt, sci.answers, and news.answers 
+every 21 days.
+
+
+Contents:
+
+* What is the National Security Agency (NSA)?
+* What are the US export regulations?
+* What is TEMPEST?
+* What are the Beale Ciphers, and are they a hoax?
+* What is the American Cryptogram Association, and how do I get in touch?
+* Is RSA patented?
+* What about the Voynich manuscript?
+
+
+* What is the National Security Agency (NSA)?
+
+  The NSA is the official security body of the U.S. government. It
+  was given its charter by President Truman in the late 40's, and
+  has continued research in cryptology till the present. The NSA is
+  known to be the largest employer of mathematicians in the world,
+  and is also the largest purchaser of computer hardware in the
+  world. Governments in general have always been prime employers of
+  cryptologists. The NSA probably possesses cryptographic expertise many
+  years ahead of the public state of the art, and can undoubtedly break
+  many of the systems used in practice; but for reasons of national
+  security almost all information about the NSA is classified.
+
+  Bamford's book [BAMFD] gives a history of the people and operations of
+  the NSA. The following quote from Massey [MAS88] highlights the
+  difference between public and private research in cryptography:
+
+  ``... if one regards cryptology as the prerogative of government,
+  one accepts that most cryptologic research will be conducted
+  behind closed doors. Without doubt, the number of workers engaged
+  today in such secret research in cryptology far exceeds that of
+  those engaged in open research in cryptology. For only about 10
+  years has there in fact been widespread open research in
+  cryptology. There have been, and will continue to be, conflicts
+  between these two research communities. Open research is common
+  quest for knowledge that depends for its vitality on the open
+  exchange of ideas via conference presentations and publications in
+  scholarly journals. But can a government agency, charged with
+  responsibilities of breaking the ciphers of other nations,
+  countenance the publication of a cipher that it cannot break? Can
+  a researcher in good conscience publish such a cipher that might
+  undermine the effectiveness of his own government's code-breakers?
+  One might argue that publication of a provably-secure cipher would
+  force all governments to behave like Stimson's `gentlemen', but one
+  must be aware that open research in cryptography is fraught with
+  political and ethical considerations of a severity than in most
+  scientific fields. The wonder is not that some conflicts have
+  occurred between government agencies and open researchers in
+  cryptology, but rather that these conflicts (at least those of which
+  we are aware) have been so few and so mild.''
+
+* What are the US export regulations?
+
+  In a nutshell, there are two government agencies which control
+  export of encryption software. One is the Bureau of Export
+  Administration (BXA) in the Department of Commerce, authorized by
+  the Export Administration Regulations (EAR). Another is the Office
+  of Defense Trade Controls (DTC) in the State Department, authorized
+  by the International Traffic in Arms Regulations (ITAR). As a rule
+  of thumb, BXA (which works with COCOM) has less stringent
+  requirements, but DTC (which takes orders from NSA) wants to see
+  everything first and can refuse to transfer jurisdiction to BXA.
+
+  The newsgroup misc.legal.computing carries many interesting
+  discussions on the laws surrounding cryptographic export, what
+  people think about those laws, and many other complex issues which
+  go beyond the scope of technical groups like sci.crypt. Make sure to
+  consult your lawyer before doing anything which will get you thrown in
+  jail; if you are lucky, your lawyer might know a lawyer who has at
+  least heard of the ITAR.
+
+* What is TEMPEST?
+
+  TEMPEST is a standard for electromagnetic shielding for computer
+  equipment. It was created in response to the discovery that
+  information can be read from computer radiation (e.g., from a CRT) at
+  quite a distance and with little effort.
+
+  Needless to say, encryption doesn't do much good if the cleartext
+  is available this way.
+
+* What are the Beale Ciphers, and are they a hoax?
+
+  (Thanks to Jim Gillogly for this information and John King for
+  corrections.)
+
+  The story in a pamphlet by J. B. Ward (1885) goes: Thomas
+  Jefferson Beale and a party of adventurers accumulated a huge mass
+  of treasure and buried it in Bedford County, Virginia, leaving
+  three ciphers with an innkeeper; the ciphers describe the
+  location, contents, and intended beneficiaries of the treasure.
+  Ward gives a decryption of the second cipher (contents) called B2;
+  it was encrypted as a book cipher using the initial letters of the
+  Declaration of Independence (DOI) as key. B1 and B3 are unsolved;
+  many documents have been tried as the key to B1.
+
+  Aficionados can join a group that attempts to solve B1 by various
+  means with an eye toward splitting the treasure:
+
+  The Beale Cypher Association
+  P.O. Box 975
+  Beaver Falls, PA 15010
+
+  You can get the ciphers from the rec.puzzles FAQL by including the
+  line:
+
+  send index
+
+  in a message to netlib@peregrine.com and following the directions.
+  (There are apparently several different versions of the cipher
+  floating around. The correct version is based on the 1885 pamphlet,
+  says John King <kingj@hpcc01.corp.hp.com>.)
+
+  Some believe the story is a hoax. Kruh [KRU88] gives a long list of
+  problems with the story. Gillogly [GIL80] decrypted B1 with the DOI
+  and found some unexpected strings, including ABFDEFGHIIJKLMMNOHPP.
+  Hammer (president of the Beale Cypher Association) agrees that this
+  string couldn't appear by chance, but feels there must be an
+  explanation; Gwyn (sci.crypt expert) is unimpressed with this
+  string.
+
+* What is the American Cryptogram Association, and how do I get in touch?
+
+  The ACA is an organization devoted to cryptography, with an emphasis
+  on cryptanalysis of systems that can be attacked either with
+  pencil-and-paper or computers. Its organ ``The Cryptogram'' includes
+  articles and challenge ciphers. Among the more than 50 cipher types in
+  English and other languages are simple substitution, Playfair,
+  Vigenere, bifid, Bazeries, grille, homophonic, and cryptarithm.
+
+  Dues are $15 for one year (6 issues); more outside of North America;
+  less for students under 18 and seniors. Subscriptions should be sent
+  to ACA Treasurer, 18789 West Hickory St., Mundelein, IL 60060.
+
+* Is RSA patented?
+
+  Yes. The patent number is 4,405,829, filed 12/14/77, granted 9/20/83.
+  For further discussion of this patent, whether it should have been
+  granted, algorithm patents in general, and related legal and moral
+  issues, see comp.patents and misc.legal.computing. For information
+  about the League for Programming Freedom see [FTPPF]. Note that one of
+  the original purposes of comp.patents was to collect questions such as
+  ``should RSA be patented?'', which often flooded sci.crypt and other
+  technical newsgroups, into a more appropriate forum.
+
+* What about the Voynich manuscript?
+
+  nelson@reed.edu (Nelson Minar) says there is a mailing list on the
+  subject.  the address to write to subscribe to the VMS mailing list
+  is: <voynich-request@rand.org>
+
+  the ftp archive is: rand.org:/pub/voynich
+
+  There's all sorts of information about the manuscript itself, of
+  course. A good bibliography can be found on the ftp site. Kahn's
+  "The Codebreakers" gives a good introduction.

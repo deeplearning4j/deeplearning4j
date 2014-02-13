@@ -1,0 +1,55 @@
+From: ran@doc.ic.ac.uk (Robert A Nicholls)
+Subject: VB to MSACCESS DDE communications
+Organization: Department of Computing, Imperial College, University of London, UK.
+Lines: 49
+NNTP-Posting-Host: swan.doc.ic.ac.uk
+
+A couple of weeks ago I posted a question concerning
+communicating
+between VB and MSACCESS using DDE. The answers I received at
+that time
+allowed me to get a prototype of my project working. However,
+during
+this process I have come up with new problems.
+
+1) There seems to be a limit of 255 characters for a DDE Topic
+string. Is
+this inherent in all DDE systems or just peculiar to MSACCESS
+or VB?
+
+2) It is easy to query an Access database from VB using the
+DDE SQL command,
+(provided the above limitation is overcome by using short
+field and table
+names) but how is one meant to update a database?
+   a) A DDE SQL UPDATE command does not seem to work.
+   b) Initiating an Access macro using a DDE Execute command
+from VB cannot
+      be used because when the macro requests information from
+VB using a
+      second DDE channel the programs dead lock until time-
+outs occur.
+      (The VB to Access channel has to close before the Access
+to VB channel
+      is initiated, I guess.)
+   c) Access does not allow VB to DDE POKE the information.
+
+
+   The way I eventually managed to update a database was by
+sending key-
+   strokes from VB to Access using the SendKeys command. This
+technique has
+   the problem that Access cannot be minimised and it must
+always be in a
+   state ready to respond to the sequence of key-strokes VB
+sends.
+
+Are all the above statements correct or have I made incorrect
+assumptions?
+Are there any better work arounds to the above? Are there any
+signs of an
+ODBC driver for Access?
+
+Bob
+ran@doc.ic.ac.uk
+

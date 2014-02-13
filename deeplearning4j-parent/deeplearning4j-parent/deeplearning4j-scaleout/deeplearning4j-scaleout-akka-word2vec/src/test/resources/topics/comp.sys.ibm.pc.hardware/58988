@@ -1,0 +1,31 @@
+From: Thomas Dachsel <GERTHD@mvs.sas.com>
+Subject: BOOT PROBLEM with IDE controller
+Nntp-Posting-Host: sdcmvs.mvs.sas.com
+Organization: SAS Institute Inc.
+Lines: 25
+
+Hi,
+I've got a Multi I/O card (IDE controller + serial/parallel
+interface) and two floppy drives (5 1/4, 3 1/2) and a
+Quantum ProDrive 80AT connected to it.
+I was able to format the hard disk, but I could not boot from
+it. I can boot from drive A: (which disk drive does not matter)
+but if I remove the disk from drive A and press the reset switch,
+the LED of drive A: continues to glow, and the hard disk is
+not accessed at all.
+I guess this must be a problem of either the Multi I/o card
+or floppy disk drive settings (jumper configuration?)
+Does someone have any hint what could be the reason for it.
+Please reply by email to GERTHD@MVS.SAS.COM
+Thanks,
+Thomas
++-------------------------------------------------------------------+
+| Thomas Dachsel                                                    |
+| Internet: GERTHD@MVS.SAS.COM                                      |
+| Fidonet:  Thomas_Dachsel@camel.fido.de (2:247/40)                 |
+| Subnet:   dachsel@rnivh.rni.sub.org (UUCP in Germany, now active) |
+| Phone:    +49 6221 4150 (work), +49 6203 12274 (home)             |
+| Fax:      +49 6221 415101                                         |
+| Snail:    SAS Institute GmbH, P.O.Box 105307, D-W-6900 Heidelberg |
+| Tagline:  One bad sector can ruin a whole day...                  |
++-------------------------------------------------------------------+

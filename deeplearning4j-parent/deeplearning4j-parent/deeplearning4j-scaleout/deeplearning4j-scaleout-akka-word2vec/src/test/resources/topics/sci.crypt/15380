@@ -1,0 +1,27 @@
+From: brad@clarinet.com (Brad Templeton)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Organization: ClariNet Communications Corp.
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Lines: 21
+
+In article <1993Apr18.032405.23325@magnus.acs.ohio-state.edu> jebright@magnus.acs.ohio-state.edu (James R Ebright) writes:
+>In article brad@clarinet.com (Brad Templeton) writes:
+>
+>[...]>
+>>The greatest danger of the escrow database, if it were kept on disk,
+>>would be the chance that a complete copy could somehow leak out.  You
+>[...]>
+>>Of course then it's hard to backup.  However, I think the consequences
+>>of no backup -- the data is not there when a warrant comes -- are worse
+>>than the consequences of a secret backup.
+>
+>If the data isn't there when the warrant comes, you effectively have
+>secure crypto.  If secret backups are kept...then you effectively have
+>no crypto.  Thus, this poster is essentialy arguing no crypto is better
+>than secure crypto.
+
+No, the poster (me) has his brain in the wrong gear.  As you can infer
+from the first sentence, I meant the consequences of no backup are *better*
+than the consequences of an easy to copy database.
+-- 
+Brad Templeton, ClariNet Communications Corp. -- Sunnyvale, CA 408/296-0366

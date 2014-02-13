@@ -1,0 +1,176 @@
+Subject: Re: Eck vs Rickey (was Re: Rickey's whining again)
+From: smith@ms.uky.edu (Brian Smith)
+Expires: Sat, 1 May 1993 04:00:00 GMT
+Distribution: usa
+Organization: University Of Kentucky, Dept. of Math Sciences
+Lines: 169
+
+In article <6998@blue.cis.pitt.edu> genetic+@pitt.edu (David M. Tate) writes:
+>I've read all of the followups to this, but I thought I'd go back to the
+>original article to make specific comments about the method:
+>
+>
+>jao@megatest.com (John Oswalt) said:
+>>
+>>He has obtained the play by play records, in computer readable
+>>form, for every major league baseball game for the past several years.
+>>He devised an algorithm which I call "sum-over-situations", and wrote
+>>a computer program to calculate every major league players contribution
+>>using it.  It works like this:
+>>
+>>Look at every "situation" in every game in a baseball season.  A
+>>situation is determined by inning, score, where the baserunners are,
+>>and how many outs there are.  For each situation, count how many
+>>times the team eventually won the game that the situation occured in,
+>>and divide by the number of times the situation came up, to come up with
+>>a "value" for that situation.
+>
+>This was first done by George Lindsey in the late '50s/early '60s, and
+>reported in 
+>
+>	Article:	An Investigation of Strategies in Baseball
+>	Author:		George R. Lindsey
+>	Journal:	Operations Research
+>	Issue:		Volume 11 #4, July-August 1963, pp. 477-501
+>
+>Later, Pete Palmer did the same thing using simulated seasons to generate
+>a larger set of data to avoid the kind of small-sample anomalies that other
+>people have worried about.  He reported this in _The_Hidden_Game_of_Baseball_
+>(with John Thorn).  Gary Skoog modified the method a bit and did some work
+>on what he called a "Value Added" measure based on these situational values.
+>His were based directly on marginal runs, though, not on win probabilities.
+>These results, as applied to the 198? season, were reported in one of the
+>Bill James Baseball Abstract books (1987?  Help me out here, somebody...)
+>
+>>For example, a situation might be inning 3, score 2-0, runner on second
+>>and no outs.  There were 4212 regular season major league games last
+>>year.  (With the Rockies and Marlins, there will be more this year.)
+>>Say this situation came up in 100 of those, and the team ahead won
+>>75 of them.  Then the value of this situation is 0.75.
+>
+>[Description of method: look at change in win probability based on the at bat
+> plus any baserunning, and credit/debit the player by that amount each time
+> he gets a plate appearance.]
+>
+>>Now, for each player, sum up all his at-bat and base-running values
+>>for the season to obtain an overall value for that player.  Obviously
+>>the sum of all players' values for each game, and for the season as a
+>>whole, will be 0.
+>
+>That's only because you always credit +x to the batter and -x to the pitcher;
+>there's no validation involved.
+>
+>OK, there's a very big problem here that nobody has yet commented on: you're
+>adding *probabilities*, and probabilities don't add.  Runs you can add; the
+>total team runs breaks down into how many runs Joe contributed plus how many
+>runs Fred contributed, etc.  But probabilities don't work that way.  If Bob
+>increases his team's chance of winning by 1% in each of 400 PAs, that does
+>not mean that Bob increased his team's chance of winning by 400%.  In fact,
+>it doesn't mean *anything*, because the units are screwy.
+
+I agree and disagree.  John is saying that the batters efforts will result
+in 4 more wins then losses.  While you are probably correct that 400%
+does not mean 4 more wins then losses, it means something.  I would
+rather have a player who increased my teams chances of winning by 1% in
+each of 400 PAs then I would a player who increased my chances of winning
+by .5% in each of 400 PAs.  Thus, there appears to me to be an obvious
+positive association between John's statistic and winning games.  Thus,
+before you disregard this stat, it appears to me that further study must
+go into what sort of relationship there is.
+
+>Consider an example:  Bob hits a 2-out solo HR in the bottom of the first;
+>about .12 on your scale.  He does the same thing again in the fourth, with
+>the score tied, for another .14.  And again, in the seventh, with the score
+>tied, for another .22.  And, finally, in the ninth to win the game by a score
+>of 7-6, for a value of 0.5.  Bob hit 4 solo HR in 4 plate appearances, and
+>was credited by your method with .12 + .14 + .22 + .5 = .98.  But what does
+>that mean?  Was Bob 98% responsible for the win?  Certainly not; the defense
+>is *always* 50% responsible (if you include pitching in that), and Bob wasn't
+>pitching.  In fact, Bob was only 4/7 of the offense (which is a lot, but not
+>even close to 100%).  Furthermore, what about the other 3 team runs?  Say
+>they all came on solo HR by Fred; then Fred was hitting HR to tie up the game,
+>which are just as valuable as HR to take the lead (see Lindsey), and Fred will
+>himself have accrued a good .4 rating or so.  So Fred and Bob combined have
+>amassed 138% of a win IN ONE GAME.  There's clearly a problem here.
+
+The only problem here is an insistance that these number mean exactly
+how many wins the team has.  First, we are using averages over many
+seasons and applying them to one game.  Second, remember some players
+performance take away from the chance of you winning.  That is a
+player who gets an out gets a "negative probability" in most cases.
+Thus, I'm not sure in any given game when you add up all the numbers
+for a team who won that they will add up to 1 in that game.  Sometimes,
+they will add up to more then one sometime, less than one.  Also,
+the pitchers' bad performances (giving up 6 runs) may have given
+them a large negative percentage for that game.  Also, any batter that
+pulled an 0-4 night would give large negatives.  
+
+
+
+>>Greg thinking about the right things, but his intuition is off the
+>>mark.  Closers are enormously important.  The total number of runs
+>>value is outweighed by when they come, or are prevented from comming.
+>>The doubling which Greg allows is not enough.
+>
+>In another article, I proposed a test of this.  We can predict a team's 
+>won/lost record quite accurately by looking at how many runs *total* they
+>score and allow, without regard to when those runs score in the game.  If
+>late runs are really more important than early runs, then looking only at
+>late runs should lead to a *better* predictor, right?
+
+No, but really only because you have a smaller sample size.  I would
+think however, that the number of runs you score in the first inning
+would be just as good as a prediction as how many runs you score 
+in the last inning.  And, realize something else a closer usually
+comes in in a close situation, not a blow out.  It is hard to argue
+that any runs that a closer gives up in a game have equal importance
+to those given up in the first inning.  Look, a closer giving up runs
+often means a team will lose many games.  On, the other hand a starter
+who gives up runs often still leaves his team a chance to win.  The
+offence has many more outs to do something about.  But, I am not
+saying all late inning situations are equally important either.  If
+I am down 8 runs in the ninth, it really does not matter how many
+runs my pitcher gives up in the ninth.       
+
+>Here's another thought experiment: apply this method to basketball.  What
+>you find is that points scored in the first *half* of the game have almost
+>exactly no value, because no lead is safe with an entire half yet to play.
+>Furthermore, the sub in off the bench who sinks the winning free throws with
+>no time on the clock gets a +1.0 for the game, while the star forward who 
+>scored 27 points in the first half before spraining his ankle gets a zero.
+>
+>Does this make sense?
+
+
+No, but why would you assume that the teams probability of winning would
+be 0 before the possesion in which the free throws were made.  Look,
+if you are down 1 point with 5 seconds left, there is a fairly high
+probability that you will win the game if you are in possesion of the
+ball.  And, do not forget that somebody elses missed shots, turnovers,
+fouls, bad defense, etc. caused a "negative chance" that the team
+would win.
+ 
+From reading all of the discussion on this statistic, I feel that those
+who critisize it to a certain extent are doing so out of an agenda.
+At first look this statistic valadates clutchness.  But, it really
+does not.  Cluthness revolves around the idea that certain players
+in crucial situation elevate their performance and others performance
+goes down.  I've never seen convincing proof that this really happens.
+So, if you assume there is no clutchness, then that means that except
+for a lot of noice, this statistic has a positive association to
+player performance.  There is a way to get rid of the noice if you
+do not believe in clutchness.  Certainly, we could find out what
+the average value of a home run is for example.  We may find for
+instance, that a home run increases your chance of winning by 15%
+on average while a strikeout decreases your chance of winning by 5%.
+I bet if this were done we would find that this statistic was just
+as good as other statistics we have for predicting wins and losses.
+
+How do we evaluate relief pitchers?  Say John and Sam have the
+exact same pitching statistics (runs, earned runs, K's, BB's,
+etc.)  Both had exceptional numbers.  John, however only pitched
+in closer situations, while Sam was a Mop up man.  Who was more
+valuble to their team?  Probably John.  Who was the better 
+pitcher?  They were probably about the same.
+
+                                                        Brian Smith

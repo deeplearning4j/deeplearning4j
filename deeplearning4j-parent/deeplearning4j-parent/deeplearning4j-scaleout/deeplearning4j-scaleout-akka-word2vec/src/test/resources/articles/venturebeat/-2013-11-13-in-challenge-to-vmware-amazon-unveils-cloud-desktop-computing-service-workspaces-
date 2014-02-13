@@ -1,0 +1,8 @@
+4
+There’s a new challenger in the desktop virtualization space.
+Amazon just announced Amazon WorkSpaces , a fully managed desktop computing service in the cloud. WorkSpaces sits higher in the stack than Amazon’s cloud infrastructure offerings, providing access to a Windows 7 experience across desktops, laptops, iPads, and Android tablets. And because it’s in the cloud, you can manage a persistent virtual machine across multiple devices — so if you leave the office, for example, you can jump right back into your session from a tablet.
+WorkSpaces represents a major challenge to VMware, which rakes in most of its revenue from desktop virtualization services. Amazon intends to undercut VMware on cost, pricing its cheapest WorkSpaces offering (Standard) at $35 per user, per month.
+WorkSpaces comes in four tiers, from Standard to Performance Plus. Standard offers 1 vCPU, 3.75 GiB of memory, and 50 GB of persistent user storage. All of the bundles include Adobe Reader, Adobe Flash, Firefox, Internet Explorer 9, and 7-Zip, among other utilities.
+“Virtual desktops are difficult to set up, they’re difficult to manage, you have to worry about the hardware, the virtual desktop infrastructure … this business hasn’t really taken off,” said Andy Jassy, senior vice president of Amazon Web Services, onstage at AWS re:Invent in Las Vegas. “We wondered if there were an easier way.”
+WorkSpaces is in limited preview now. Amazon will admit customers in several phases over the next few weeks, according to Jassy. To learn more about WorkSpaces, check out the video below.
+Related articles

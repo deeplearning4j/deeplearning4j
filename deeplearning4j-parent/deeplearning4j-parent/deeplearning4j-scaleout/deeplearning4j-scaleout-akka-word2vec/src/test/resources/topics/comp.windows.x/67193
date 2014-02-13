@@ -1,0 +1,22 @@
+From: hoang1@litwin.com (Ted Hoang)
+Subject: Wcl 2.02
+Organization: Litwin Process Automation
+Lines: 17
+
+Hi,
+I have a problem when compiled Wcl 2.02 in SCO ODT 2.0:
+
+
+        cc -c -Ox  -I.. -I/usr/include Xt4GetResL.c
+Xt4GetResL.c
+Xt4GetResL.c(47) : error C2065: '_XtConstraintBit' : undefined
+*** Error code 1
+
+Although I follow the instructions in file README_BUILD to build Wcl in SCO 
+platform, this problem didn't resolve.
+
+So I have some questions related to this matter:
+
+  1. Does _XtConstraintBit exist in SCO ODT 2.0? ( Does _XtConstraintBit use
+      in X11R3 & X11R4? And What release does SCO ODT 2.0 use, X11R3 or X11R4?)
+  2. If not, Does someone know how to work around? 

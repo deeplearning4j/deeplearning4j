@@ -1,0 +1,44 @@
+0
+MENLO PARK, Calif. — A tour of Facebook’s hardware lab is an experience you don’t want to miss.
+If you’re lucky enough to enter this inner sanctum, you’ll get to see the most dedicated hardware nerds tinkering away at slender server racks to make them smaller, smarter, more efficient, faster, more resilient.
+And if you get that far, sitting down with chief hardware nerd Frank Frankovsky (pictured above) is the inches-thick buttercream icing on the cake.
+High level but hands-on
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring hacker legends like Stallman, DHH, Rasmus Lerdorf, and Alex Payne, it’s a hands-on developer event packed with:
+workshops
+live Ask-Me-Anything
+hardware hacking
+It’s all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+“When you live in the hardware world, you typically see it from the inside,” Frankovsky said in a post-tour interview with VentureBeat.
+“When you jump into the middle of a fast-moving software company, you realize, we’ve got to make hardware move faster.”
+The open-source hardware movement, spearheaded by the Open Compute Project , is attempting to bring some of that speed to hardware innovation — specifically server innovation. Facebook’s big data center in Prineville is built on open-source servers, and they’ve proven to be well worth the investment.
+“It’s one of the core reasons we started Open Compute: to accelerate innovation,” said Frankovsky.
+Jolie O'Dell / VentureBeat
+Facebook’s Open Computer servers at work in Prineville, Ore.
+Servers of servers
+Getting manufacturer and data center owners onboard has been an interesting process — and, depending on which company you’re talking about, an uphill battle.
+“Since the Open Compute Summit [in January 2013], the Summit has informed some of the suppliers about the challenges, specifically around disaggregated design and cold-storage design ,” said Frankovsky.
+“We put a vision out there, and we had some proof points, and it’s been really cool how many suppliers were energized and kickstarted a whole ‘nother wave of activity.”
+In this way, Open Compute gives data center and server suppliers a clear idea of what’s new and what’s coming down the pike in large-scale computing; it also lets them know what their biggest customers are going to be asking for next.
+“They see what Open Compute is doing, and they want their infrastructures to look more like that. They’d say, ‘Well, we need a cloud.’ … They’re looking for a blueprint to make their IT organizations more efficient.”
+Ordinarily, these kinds of clients would have to choose between vendors like HP or Dell, and just as with big enterprise software, they get locked into a single stack.
+“That’s one of the ways the project gives back to the community,” Frankovsky said.
+“Especially if you’re one of the few companies breaking ground on a new data center, … we’re cognizant of the reality of where a lot of our peers in IT are at.”
+Jolie O'Dell / VentureBeat
+Facebook’s first open-source hardware plan, drawn on a napkin
+Open-source everywhere, FUD everywhere else
+Open Compute is also publishing data for co-location and smaller operations, showing that non-enterprise companies don’t necessarily have to run their backend in the cloud. Facebook is sharing optimizations it’s made at its leased facilities that aren’t customized, where customers can deploy open-source hardware in a standardized way.
+“I definitely see that vision of open-source everywhere,” said Frankovsky. “The benefits are just too great to ignore.”
+But open-source hardware has its share of problems, some of them pure FUD , some of them legitimate. And those problems and fears are very similar to the same ones that used to surround and hinder the adoption of open-source software.
+On problem Frankovsky cited is “the relative amount of friction in open-source license agreements that apply to the hardware space.
+“To many suppliers, open-source is still relatively new to them and to their legal teams. They’re still thinking through how this impacts their business in the long term. They see the benefits, but there’s the fear of being overly open and taking undue risk.
+“The friction is all the discussions we have in talking with those suppliers … about the IP policy, what they plan to contribute, and everything else being outside the copyright license agreements.
+“We’ve had that discussion with the largest hardware suppliers in the industry.”
+In the future, he said, he expects lower-friction licenses like Apache that allows for innovation while still protecting intellectual property — a must for large-scale suppliers who otherwise are excited to be involved in Open Compute.
+Another misconception, Frankovsky said, is the idea that open-source hardware only works for Facebook-scale companies.
+“That’s absolutely the wrong way to be thinking about it,” he said. “It’s about empowering end users to build the most powerful hardware for their specific needs. … People are starting to recognize that everyone’s interested in more efficient IT infrastructure. Who wouldn’t want a more efficient server?”
+Jolie O'Dell / VentureBeat
+Facebook’s Open Computer servers at work in Prineville, Ore.
+Courting the wallflowers
+At Open Compute events and conversations, there are a number of big-name bystanders like Google who definitely consider server efficiency a competitive advantage . Frankovsky hopes that as these conversations continue, those companies will feel more comfortable participating.
+“It’s optional whether people want to contribute back or not, but we do hope people will benefit from what we’re doing,” he said. “If they derive benefit from it, they’ll be more likely to give back in the future. … Ultimately, they’ll see this is something they’ll feel good about contributing to over time.”
+As for open-source hardware in general, he said, “Two years ago, it sounded like a crazy mangling of apples and oranges. … We’re just at the beginning of open-source’s impact on the hardware business.”

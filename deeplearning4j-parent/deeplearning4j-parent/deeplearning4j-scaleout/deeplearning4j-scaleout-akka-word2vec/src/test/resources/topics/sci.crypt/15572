@@ -1,0 +1,24 @@
+From: oz@ursa.sis.yorku.ca (Ozan S. Yigit)
+Subject: Re: List of large integer arithmetic packages
+In-Reply-To: mrr@scss3.cl.msu.edu's message of 20 Apr 1993 16: 47:03 GMT
+Organization: York U. Student Information Systems Project
+Lines: 18
+
+Mark Riordan writes:
+
+	[a list of large-integer arithmetic packages elided]
+
+I thought I would note that except Lenstra's packages, none of the
+large-integer packages are in the public domain. As an alternative,
+a straightforward *PD* implementation of Knuth's algorithms may be
+found as a part of Uof Arizona's ICON distribution.
+
+oz
+---
+With diligence, it is possible to make | electric: oz@sis.yorku.ca
+anything run slowly.        --Tom Duff | ph:[416] 736 2100 x 33976
+
+			
+
+
+

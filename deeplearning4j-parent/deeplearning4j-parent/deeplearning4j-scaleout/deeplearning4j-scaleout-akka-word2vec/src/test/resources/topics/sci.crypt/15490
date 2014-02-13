@@ -1,0 +1,45 @@
+From: tuinstra@signal.ece.clarkson.edu.soe (Dwight Tuinstra)
+Subject: (new) reason for Clipper alg'm secrecy
+Reply-To: tuinstra@signal.ece.clarkson.edu.soe
+Organization: Sun Microsystems, Inc.
+Lines: 38
+Nntp-Posting-Host: signal.ece.clarkson.edu
+
+[Apologies for not posting to alt.clipper, or whatever, but it seems it
+may not be in the newsfeed here.]
+
+There may be another reason (good from NSA's point of view, horrible
+from everyone else's) why the algorithm/chip design might be secret.
+
+First, note that the "experts" will only look at "details", and of just 
+the algorithm:
+
+    In addition, respected experts from outside the
+    government will be offered access to the confidential details of
+    the algorithm to assess its capabilities and publicly report
+    their findings.
+
+Why not the chip design?  Well, here's the possiblity:  in addition to
+encryption, the chip pre-processes voice signals to make them easier
+to analyze/transcribe electronically.  The chip, once widespread, might
+effectively be part of a massively parallel computer for "voice-
+grepping" the US phone network (or the criminal & wrong-thinking patrons
+thereof).
+
+I wouldn't put it past the NSA.  Think how much easier it would make life
+for them.
+
+And if this is indeed the case, think of the possible public outcry should
+it become widely known.  Thus the secrecy.
+
+It might be a good idea to have experts in DSP, voice recognition, and
+AI conversation-understanding to be on that panel, and insist they be
+given (authenticatable) design specs and implementation documentation.
+
++========================================================================+
+|  dwight tuinstra             best:  tuinstra@sandman.ece.clarkson.edu  |
+|                         tolerable:  tuinstrd@craft.camp.clarkson.edu   |
+|                                                                        |
+|           Look out, kid, it's something that you did.                  |
+|           God knows when, but you're doin' it again ...                |
++========================================================================+

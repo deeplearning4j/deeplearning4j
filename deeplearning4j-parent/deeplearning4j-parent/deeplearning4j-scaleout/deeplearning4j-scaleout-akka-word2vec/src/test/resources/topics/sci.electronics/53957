@@ -1,0 +1,44 @@
+From: acollins@uclink.berkeley.edu (Andy Collins)
+Subject: Voltage regulation and current limiting
+Organization: University of California, Berkeley
+Lines: 37
+NNTP-Posting-Host: uclink.berkeley.edu
+Summary: Need help!!!
+
+One not-so-quick question to throw out there for you guys...
+
+For our class project, we need to design and build a power supply
+to the following specs:
+
+Voltatge:  adjustable from 1-12V
+Current:   *limited* at 1A
+
+Voltage must stay within 2% of designated value for I from 0-1A
+AC ripple less than 5 mV (rms)
+
+Of course, we can't just use an adjustable voltage, current-limiting
+regulator chip ;^)
+
+Our problem is with the current limiting (i.e. we've found stuff to
+do the rest of the parts of the circuit).  What the supply must do,
+if presented with a load which would draw more than 1A, given the
+supply voltage, is reduce the voltage so that the current will equal
+one amp.  Thus, if we were to short the thing with the ammeter, we
+should read one amp.  If we measure the current through a 1 ohm 
+resistor at 12V, we should read one amp (and the output voltage, by
+necessity, must be 1V.
+
+The only basic idea we have seen for the current limiter involves
+a circuit which will pull current off of the base of the output 
+power transistor, and therefore reduce the output.
+
+So, does anybody have any ideas we could work from?
+
+Thanks in advance.
+
+Andy Collins, KC6YEY
+acollins@uclink.berkeley.edu
+
+ps: If anybody wants to flame this as a stupid project, I agree fully,
+    but I still have to do it, its graded ;^)
+

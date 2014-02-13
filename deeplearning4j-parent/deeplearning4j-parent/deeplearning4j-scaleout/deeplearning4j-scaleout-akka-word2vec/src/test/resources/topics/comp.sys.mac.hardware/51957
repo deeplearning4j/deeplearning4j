@@ -1,0 +1,50 @@
+From: ingemar@isy.liu.se (Ingemar Ragnemalm)
+Subject: Re: Stereo sound problem (?) on mac games
+Organization: Dept of EE, University of Linkoping
+Lines: 45
+
+Steve Bollinger <buzz@apple.com> writes:
+
+
+>Enter game developers. The sound driver and current sound manager are
+>inconveniently lame for making games.
+
+The Sound Driver is pretty ok, since it's fast. Sound Manager used by the
+book is *useless*. Disposing of sound channels as soon as sound has completed
+is out of the question for games with smooth animation. (It's too slow.)
+
+The Sound Driver is so much snappier than Sound Manager. Unfortunately,
+System 7 supports it poorly, making programs crash occasionally.
+
+>The more of the story is to developers: DON'T CHEAT!
+>Really, I am absolutely, positively not allowed to do what I am about to
+>do,
+>but I'm going say it anyway.
+>Stop cheating on sound!
+>Really soon, you will be sorry, as even those without external speakers
+>will be disappointed with your sound on future hardware. The grace period
+>is about to end.
+>The Sound Manager is understandable now, and works pretty well and will
+>work
+>even better soon, so use it.
+
+Well, I want my code to work on old systems too. I don't know about sys 7.1,
+but at least on 6.0.7, there are bugs in the Sound Manager that causes
+channels to hang (with no error message). This happends when I keep a
+channel open for long periods - necessary for performance - and play many
+sounds, stopping sounds halfway. Callbacks seems not to be reliable.
+Then only way I can safely tell if a sound has stopped playing is to
+inspect private variables in the channel (QHead, I think it was), and the
+only way I have found to tell if a channel is hung is to inspect an
+*undocumented* flag and modify it.
+
+Am I happy with this? Nope. I consider writing to SoundBase simply to get
+rid of the bugs.
+
+Any better suggestions? (Silent games is not among the acceptab|e solutions.)
+
+-- 
+Ingemar Ragnemalm
+Dept. of Electrical Engineering	     ...!uunet!mcvax!enea!rainier!ingemar
+                  ..
+University of Linkoping, Sweden	     ingemar@isy.liu.se

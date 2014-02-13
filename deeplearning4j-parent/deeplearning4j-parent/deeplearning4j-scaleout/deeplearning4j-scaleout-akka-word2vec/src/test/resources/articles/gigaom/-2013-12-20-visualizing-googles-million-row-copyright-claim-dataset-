@@ -1,0 +1,15 @@
+A
+Summary:
+Google’s Transparency Reports get a lot of attention for their data on government action, but less so for their insights into copyright takedown requests. I analyzed nearly 1 million takedown requests to find out who’s getting the most URLs removed.
+Google released its latest transparency report on Thursday, and while much coverage of those reports rightfully focuses on governmental actions — requests for user data and requests to remove content — Google is also providing a trove of copyright data. In fact, the copyright section of its transparency report includes a massive, nearly 1-million-row dataset regarding claims of copyright infringement on URLs. (You can download all the data here . Unfortunately, it doesn’t include YouTube data, just search.) Here are some charts highlighting which copyright owners have been the most active since 2011.
+British Recorded Music Industry: The king of URL takedowns
+Here you can see that the British Recorded Music Industry, represented by two names — the big one labeled “BPI LTD Member Companies” and the smaller, dark-green one labeld (BPI (British))– has successfully had more than 45 million URLs removed. The Recording Industry Association of America is a close second, followed by porn copyright owner Froytal Services. Microsoft, listed as both “Microsoft” and “Microsoft Corporation,” has had more than 15 million URLs taken down. View the interactive version here , or click to expand.
+Of the 20 or so largest takers down of URLs, most are in the movie, music and/or pornography industry, as this scatterplot below shows. It also gives a better sense of just how much they stand out from the other approximately 69,000 copyright owners listed in the dataset. View the interactive version here , or click to expand.
+Some are better at this than others
+I’m not sure whether the graph below represents greediness, poor lawyering or just inaccurate processes for identifying URLs with infringing material, but it’s pretty clear that some copyright owners are better than others at getting their way. Among the big requesters, the RIAA is particularly good while NBCUniversal, education software company Lynda.com and Ultimate Fighting Championship parent company Zuffa have relatively low hit rates. View the interactive version here , or click to expand.
+The last three months: Same players, less porn
+Looking at the last three month’s worth of URL removals, we see the names are pretty much the same as the historical leaders, although the number of removals for porn sites RK NetMedia and Froytal began dropping precipitously around the same time in November. Their requests for removal dropped as well. View the interactive version here , or click to expand.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

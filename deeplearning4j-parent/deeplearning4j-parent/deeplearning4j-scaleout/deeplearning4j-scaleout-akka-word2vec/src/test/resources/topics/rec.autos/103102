@@ -1,0 +1,29 @@
+From: al@qiclab.scn.rain.com (Alan Peterman)
+Subject: Re: "ELECTRONIC" ODOMETER
+Organization: SCN Research/Qic Laboratories of Tigard, Oregon.
+Lines: 24
+
+In article <C5Fp8B.2Co@megatest.com> alung@megatest.com (Aaron Lung) writes:
+>If I'm not mistaken, altering the odometer is *illegal*.  Furthermore,
+>I surmise it'll be tough to alter BMW's odometer if you got at it.
+>Some of the newer BMW's have electronic odometers making it even
+>more tamperproof.
+
+On the cars mentioned - 3 series from the late 80's the "electronic"
+odometer is really a mechanical drum type odometer, that is driven
+by pulses from a speed sensor on the rear axle.  These pulses are 
+converted into mechanical pulses that turn the odometer - and speedometer.
+No way changing or erasing an eprom is going to change the mileage
+reading.  It also means the odometer is just as easy (or hard) to
+change as any other mechanical odometer.
+
+On the other hand it is a bit easier to disconnect the speed sensor
+and run the car with no speedometer or odometer reading...a simple
+switch will do the job.  It also will disable the speed limiter,
+which will enable the car to reach it's full speed.  ;-)
+
+
+-- 
+Alan L. Peterman                                 (503)-684-1984 hm & work
+                       al@qiclab.scn.rain.com
+It's odd how as I get older, the days are longer, but the years are shorter!

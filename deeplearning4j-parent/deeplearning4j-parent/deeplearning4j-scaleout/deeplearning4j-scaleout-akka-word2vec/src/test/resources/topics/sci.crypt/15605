@@ -1,0 +1,50 @@
+From: Rick Miller - former spook <rick@ee.uwm.edu>
+Subject: Alternate *legal* wiretaps.
+Organization: Just me.
+Lines: 43
+NNTP-Posting-Host: 129.89.2.33
+Summary: Nothing spooky, it's an Executive Order.
+
+tuinstra@signal.ece.clarkson.edu.soe writes:
+[...]
+>  It would be a strong incentive, as Vesselin points out, for more
+>police agencies to "go rogue" and try to get keys through more efficient
+>(but less Constitutional) means.  Notice what the release said:
+>
+>   Q:   Suppose a law enforcement agency is conducting a wiretap on
+>        a drug smuggling ring and intercepts a conversation
+>        encrypted using the device.  What would they have to do to
+>        decipher the message?
+>
+>   A:   They would have to obtain legal authorization, normally a
+>                                                       ^^^^^^^^^^
+>        court order, to do the wiretap in the first place.
+>        ^^^^^^^^^^^
+
+>The clear implication is that there are "legal" authorizations other
+>than a court order.  Just how leaky are these?  (And who 
+>knows what's in those 7 pages that authorized the NSA?).  There
+[...]
+
+I was a cryptologic tech in the US Navy (CTRSN, nothing big).  All 'spooks'
+in the Navy are required to know the "gist" of "USSID 18", the Navy-way of
+naming a particular Presidential "Executive Order".  It outlines what spooks
+can and can't do with respect to the privacy of US nationals.
+
+The following information is (of course) UNCLASSIFIED.
+
+The whole issue hangs about what you mean by "wiretap".  If the signal can
+be detected by "non-intrusive" means (like radio listening), then it may be
+recorded and it may be "analyzed".  "Analyzed" means that it may be either
+deciphered and/or radio-location may be used to locate the transmitter.
+
+The catch is this:  Any and all record of the signal and its derivatives
+may only be kept for a maximum of 90 days, after which they are destroyed
+unless permission is obtained from the US Attorney General to keep them.
+
+Didn't you ever wonder how Coast Guard cutters *find* those drug-runners
+in all those tens of thousands of square miles of sea, even in the dark?!?
+
+Rick Miller  <rick@ee.uwm.edu> | <ricxjo@discus.mil.wi.us>   Ricxjo Muelisto
+Send a postcard, get one back! | Enposxtigu bildkarton kaj vi ricevos alion!
+          RICK MILLER // 16203 WOODS // MUSKEGO, WIS. 53150 // USA

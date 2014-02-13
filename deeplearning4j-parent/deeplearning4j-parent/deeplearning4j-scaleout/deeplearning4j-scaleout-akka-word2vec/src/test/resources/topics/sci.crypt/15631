@@ -1,0 +1,37 @@
+From: tom@ssd.csd.harris.com (Tom Horsley)
+Subject: Re: Off the shelf cheap DES keyseach machine (Was: Re: Corporate acceptance of the wiretap chip)
+Organization: Harris Computer Systems Division
+Lines: 27
+	<1993Apr20.150531.2059@magnus.acs.ohio-state.edu>
+	<1993Apr20.192105.11751@ulysses.att.com> <C5sy1z.4tD@demon.co.uk>
+	<1993Apr21.132318.16981@ulysses.att.com>
+NNTP-Posting-Host: amber.ssd.csd.harris.com
+In-reply-to: smb@research.att.com's message of Wed, 21 Apr 1993 13:23:18 GMT
+
+>I don't like the unit key generation process any better than you do.
+>However -- S1 and S2 are supposed to be under control of the same
+>escrow agents.  If they can't be trusted to keep the seed values secure,
+>they can't be trusted to keep the half-keys secure.
+
+I hope there is something I don't understand about this system, but can
+someone tell me how these chips are going to be manufactured while maintaining
+each half key under total control of the separate escrow agencies? Don't
+both halfs of the key have to come together (in some form) at the time
+the chip is constructed?
+
+Or is it built like a fusable prom, with the chip being sent to the 1st
+escrow agency to program its 1/2 key, then the 2nd agency to program its
+1/2 key (but who invents the safeguards that prevent the 2nd agency from
+reading the information already programmed by the 1st)?
+
+This isn't intended to be a flame or anything, I am just really curious
+how to manufacture these things while still maintaining the key escrow
+security without simply saying "trust the manufacturer, they won't look".
+--
+======================================================================
+domain: tahorsley@csd.harris.com       USMail: Tom Horsley
+  uucp: ...!uunet!hcx1!tahorsley               511 Kingbird Circle
+                                               Delray Beach, FL  33444
++==== Censorship is the only form of Obscenity ======================+
+|     (Wait, I forgot government tobacco subsidies...)               |
++====================================================================+

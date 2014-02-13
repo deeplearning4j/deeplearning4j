@@ -1,0 +1,36 @@
+From: cmwand@leland.Stanford.EDU (Christopher Wand)
+Subject: Re: Syquest 150 ???
+Organization: DSG, Stanford University, CA 94305, USA
+Distribution: usa
+Lines: 30
+
+In article <93759@hydra.gatech.EDU> gt8798a@prism.gatech.EDU (Anthony S. Kim) writes:
+>I remember someone mention about a 150meg syquest.  Has anyone else
+>heard anything about this?  I'd be interested in the cost per megabyte and the
+>approximate cost of the drive itself and how they compare to the Bernoulli 150.
+
+I think you must be talking about the Syquest 105 (code named Mesa I believe).
+It is a 3.5" Winchester technology drive pretty much like the other Syquest
+drives in terms of how it works. According to the latest MacLeak, the 
+drive has a 14.5 ms access time, 1.9 MB/s sustained throughput (these figures
+are from memory so they could be slightly off, but they give you an idea of
+performance nonetheless). The drive was originally released for the PC
+and just recently was released for the Mac world (don't ask me what the 
+differences are) and through they are currently in limited supply, according
+to a Syquest rep. they are in the process of ramping up for mass production.
+I have already seen them advertised by a number of manufacturers in MacLeak
+including PLI, MassMicro, ClubMac, and MacWarehouse's PowerUser. The PLI
+and MassMicro units are priced at just around $1000; the lesser name brands
+are going for around $750 for an external drive. Cartridges which hold 
+105 MB sell for about $80 each. At these prices, the drives and cartridges
+are cheaper and better performing than the 88MB drives.
+Cost per megabyte compares favorably with other cartridge drives and Bernoulli
+drives, but for large amounts of data optical is still cheaper, and more
+reliable.  Personally, I'm excited by the new drive and look forward to 
+getting my hands on one.
+-Chris Wand
+
+-- 
+
+"Egotism is the anesthetic that dulls the pain of stupidity."
+                                                     - Frank Leahy

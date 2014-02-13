@@ -1,0 +1,40 @@
+From: rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter)
+Subject: Re: Please Recommend 3D Graphics Library For Mac.
+Organization: Boeing
+Lines: 35
+
+In article <1qnm6fINN8tr@tamsun.tamu.edu> brentb@tamsun.tamu.edu (Brent) writes:
+>tsa@cellar.org (The Silent Assassin) writes:
+>>rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter) writes:
+>>
+>>> Can you please offer some recommendations?
+>>
+>>It's really not that hard to do.  There are books out there which explain
+>>everything, and the basic 3D functions, translation, rotation, shading, and
+>>hidden line removal are pretty easy.  I wrote a program in a few weeks witht
+>>he help of a book, and would be happy to give you my source.
+>
+>I think he wanted to avoid reinventing the wheel.
+
+ Yes, I want to concentrate on other development issues - I've created graphics
+ libraries before, it's too time consuming... life's too short!
+
+>>	Also, Quickdraw has a lot of 3D functions built in, and Think pascal
+>>can access them, and I would expect that THINK C could as well.  If you can
+>>find out how to use the Quickdraw graphics library, it would be an excellent
+>>choice, since it has a lot of stuff, and is built into the Mac, so should be
+>>fast.
+>
+>Just to clarify, the 3D routines that are mentioned in various places
+>on the mac are in a libray, not the ROM of the mac.  A few years ago before
+>I knew anything about implementing graphics, I came across a demo of the
+>Apple GrafSys3D library and it actually did a lot.  However, it is quite
+>limited in the sense that it's a low-level 3D library; your code still has
+>to plot individual points, draw each line, etc ad nauseum.  It has nothing
+>on GL, for example, where you can handle objects.
+
+ Thanks for the clarification... Before posting my original request I had looked
+ into the Mac's 3D capabilities and dismissed them as low grade.
+
+BobC
+

@@ -1,0 +1,36 @@
+From: craig@monster.apd.saic.com (Craig Lewis)
+Subject: Re: Please Refresh On Internet Access To CompuServe
+Organization: SAIC, Reston, VA
+Lines: 31
+
+cheong@solomon.technet.sg (SCSTECH admin) writes:
+
+>Hi,
+
+>sometime ago there are some discussions on gaining CompuServe access thru
+>the Internet. But I seem to misplace those articles. Can someone please
+>refresh me where (which site) I can telnet to to gain access.
+
+Try  telnet 128.196.128.234, login TO_CSERVE
+
+This will get you into the CompuServe network. Enter hostname CIS and you'll get
+ the UserID prompt.          
+
+>Hopefully I can download files as well.
+
+ I haven't, if you can figure it out let me know.  Also, let me know if your
+backspace key works :)
+   
+>Thanks,
+
+
+>Arthur Lim
+>Email : arthur@mailhost.scs.com.sg
+
+
+--------------------------
+Craig Lewis
+SAIC
+703-318-4756
+craig@monster.apd.saic.com
+

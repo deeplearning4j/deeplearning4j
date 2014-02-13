@@ -1,0 +1,14 @@
+From: viola@asterix.uni-muenster.de (J”rg Viola)
+Subject: Looking for Xt and Xaw
+Organization: Westfaelischen Wilhelms-Universitaet, Muenster, Germany
+Lines: 8
+NNTP-Posting-Host: asterix.uni-muenster.de
+
+I want to compile Xdvi and later perhaps Emacs 19 on a DEC Ultrix machine with
+X installed. Unfortunately, Xt and Xaw libs and headers are missing. How can I
+get them without having to compile the whole MIT distribution ? 
+
+Pleasy reply by email to: viola@yukawa.uni-muenster.de
+
+Thanks in advance.
+   

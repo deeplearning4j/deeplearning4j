@@ -1,0 +1,23 @@
+From: dsou@btma57.nohost.nodomain
+Subject: Speedstar 24X & Windows Enhanced Mode
+Reply-To: dsou@btma57.nohost.nodomain ()
+Lines: 17
+Nntp-Posting-Host: 7.597
+
+
+Hi,
+
+I have a 486/66MHz SYS based PC with 8M RAM and a problem.
+
+What is the best way to configure high memory with QEMM/386MAX ??
+I have a SPEEDSTAR 24X video card and use Hyperdisk disk cache
+software. The problem is running Windows 3.1 in Enhanced mode and
+having any high memory to load stuff high?
+
+Note :
+I tried, as recommended to exclude the region A000-C7FF but Windows
+insists on starting in Standard mode.
+
+Any suggestions?
+
+Dan

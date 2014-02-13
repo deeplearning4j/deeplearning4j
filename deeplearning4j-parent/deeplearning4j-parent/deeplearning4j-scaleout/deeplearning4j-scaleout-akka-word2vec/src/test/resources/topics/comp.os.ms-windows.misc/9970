@@ -1,0 +1,51 @@
+From: grantk@nosc.mil (Kelly J. Grant)
+Subject: Strange 386 enhanced behavior...
+Keywords: 386 enhanced, Paradox
+Organization: Computer Sciences Corporation
+Lines: 45
+
+Howdy
+
+We have been having a real problem with an AST 386sx/16 machine with
+4mb of RAM.  We installed Paradox for Windows, (but I don't think 
+Paradox is the real problem here), and the installation went ok
+(windows is installed on a local drive, paradox installed on a novell
+network (netware 386 v3.26 or greater), DOS 5, Win 3.1) but the program
+will not load in 386 enchanted mode.  The thermometer bar goes to 60%
+and we then either get a 'invalid command.com' or a windows nastygram
+talking about an illegal instruction.  I've checked out the command.com
+thing, but as a long-time C programmer, I've crashed my share of machines
+with pointer problems and this is a standard behavior :-)
+
+Anyway, paradox will run in standard mode, but not enhanced.  We also have
+quattro pro windows, exhibiting the same behavior.  Spent about 2 hours
+with Borland's tech people, with no avail.  The guy I talked to a microsoft
+didn't want to really dig in and help, as he gave up pretty quickly.
+Somewhat disappointing, really.  I expected more from Microsoft.  You'd think
+with all the millions of windows installations that they would have seen all
+the possible problems, but I guess not...
+
+Microsoft had sent us a 13 page fax on fixing UAE and General
+Protection faults (sorry, I can't fax anything out of here so please
+don't ask, try Microsoft), which we tried.  We did *everything* they
+said, and still no luck.
+
+So.  If you can help, please mail me.  This problem is driving us nuts.
+I will greatly appreciate any information anyone can pass on.
+
+Thanks
+
+Kelly
+--------------------------------------------------------------------------
+THIS IS THE REAL SIGNATURE...Please ignore the following demon signature..
+
+Kelly J. Grant     grantk@nosc.mil
+4045 Hancock St    (619) 225-2562  "The next time someone asks you if you
+San Diego, CA 92110                 are a god, you say YES!"  :-)
+--------------------------------------------------------------------------
+
+-- 
+Kelly Grant        grantk@manta.nosc.mil   (619) 553-0850
+Computer Sciences Corp          ^^^^^^^^ Important: manta.UUCP won't get to me
+4045 Hancock Street      "If you are given lemons.....see if you can trade for
+San Diego, CA 92110       chocolate" - me

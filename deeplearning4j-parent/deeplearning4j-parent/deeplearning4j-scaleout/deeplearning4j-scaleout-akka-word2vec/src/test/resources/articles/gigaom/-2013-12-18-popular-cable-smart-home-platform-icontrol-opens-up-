@@ -1,0 +1,22 @@
+A
+Summary:
+The company behind many popular cable home automation systems  is opening up to outside devices and developers. For now, a limited number of devices work with iControl’s OpenHome Partner Program, but it’s a start.
+Good news for folks who have a home automation system from a cable provider that uses the iControl system, the platform is opening up to more devices after also opening up to developers in July . This means people who subscribe to the Xfinity home automation and security services from Comcast  or the Time Warner Cable connected home product should have the option of using popular devices that didn’t come with their installation.
+The interoperability will be based on devices that use ZigBee radios and are certified through the OpenHome Partner Program. For now these devices are limited to the following:
+Bosch PIR and TriTech Motion Detectors
+CentraLite Touchscreen Thermostat
+Jasco Smart Plugs and In-Wall Switches
+Sercomm Energy Switch
+Sylvania Ultra iQ LED Bulbs
+Yale Door Locks
+Also, when iControl opened its developer platform over the summer, that meant that interested parties could build applications or recipes using the iControl devices. It’s not clear how popular that program is (or isn’t), but it’s a good model for how these serviced home automation efforts will go.
+Companies such as Alarm.com, ISPs, Vivint and others providing home automation as a service for customers as opposed to offering a hub and a list of supported devices, have a higher standard when it comes to ensuring their customers get what they expect from their home automation system.
+The Comcast Xfinity Home camera. There’s motion detector capability too, but it’s not turned on yet.
+In many cases, consumers are paying a monthly service fee and an installer has come in to do the heavy lifting with regards to replacing thermostats, installing cameras and contacts and then even programming the system. Sure, consumers have a dashboard they can use to program the system themselves, but I’m not sure how many take that role on.
+So if a device comes on the market and doesn’t have a supported API or doesn’t meet the security standards of the service provider they are probably not going to let it in the system. You don’t want to support a connected outlet only to find out that it’s been hacked and represents a weak point in the network that your end customer pays $40 a month for. You also need to be sure that if a customer installs the product you can support it if they have questions.
+But at the same time, those same customers are seeing connected locks or lights that seem really cool and worth having, which makes them look at your $40-per-month system as some kind of buzzkill. So iControl and others are walking this line between buzzkill and security/simplicity with a system that is strategically open. I can’t fault them for that, although I personally don’t think that’s worth a monthly service fee.
+This is a debate that will gain ground over the next few months as companies decide how to walk that line. For example, the executives behind the popular Belkin WeMo products are engaging in similar discussion about the openness of their platform. However, I think as the more open platforms evolve they will add some of the ease of installation and security features that the current ISP platforms or alarm companies are staking their service fees on. Then, that should get interesting.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

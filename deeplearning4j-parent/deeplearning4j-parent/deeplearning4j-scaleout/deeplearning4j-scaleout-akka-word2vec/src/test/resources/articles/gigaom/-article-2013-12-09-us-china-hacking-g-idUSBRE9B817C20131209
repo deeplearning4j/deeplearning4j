@@ -1,0 +1,27 @@
+Email
+Print
+Russia's President Vladimir Putin (C), Foreign Minister Sergei Lavrov (R) and Chief of Staff of the Presidential Administration Sergei Ivanov attend a BRICS leaders' meeting at the G20 Summit in Strelna near St. Petersburg, September 5, 2013.
+Credit: Reuters/Alexander Vilf
+BOSTON (Reuters) - Chinese hackers eavesdropped on the computers of five European foreign ministries before last September's G20 Summit, which was dominated by the Syrian crisis, according to research by computer security firm FireEye Inc
+The hackers infiltrated the ministries' computer networks by sending emails to staff containing tainted files with titles such as "US_military_options_in_Syria," said FireEye, which sells virus fighting technology to companies. When recipients opened these documents, they loaded malicious code onto their personal computers.
+For about a week in late August, California-based FireEye said its researchers were able to monitor the "inner workings" of the main computer server used by the hackers to conduct their reconnaissance and move across compromised systems.
+FireEye lost access to the hackers after they moved to another server shortly before the G20 Summit in St. Petersburg, Russia . FireEye said it believes the hackers were preparing to start stealing data just as the researchers lost access.
+The U.S. company declined to identify the nations whose ministries were hacked, although it said they were all members of the European Union. FireEye said it reported the attacks to the victims through the Federal Bureau of Investigation.
+A spokeswoman for the FBI, Jenny Shearer, declined to comment.
+"The theme of the attacks was U.S. military intervention in Syria ," said FireEye researcher Nart Villeneuve, one of six researchers who prepared the report. "That seems to indicate something more than intellectual property theft...The intent was to target those involved with the G20."
+The September 5-6 G20 summit was dominated by discussion of the Syrian crisis, with some European leaders putting pressure on U.S. President Barack Obama to hold off on taking military action against Syrian President Bashar al-Assad.
+Villeneuve said he is confident that the hackers are from China based on a variety of technical evidence, including the language used on their control server, and the machines that they used to test their malicious code.
+Villeneuve said he did not have any evidence, however, that linked the hackers to the Chinese government.
+"All we have is technical data. There is no way to determine that from technical data," Villeneuve said.
+Officials with the Chinese Embassy in Washington could not immediately be reached for comment.
+ONE OF DOZENS
+Western cybersecurity firms monitor several dozen hacking groups operating in China, most of which they suspect of having ties to the government. The firms also suspect the hacking groups of stealing intellectual property for commercial gain.
+China has long denied those allegations, saying it is the victim of spying by the United States. Those claims gained some credibility after former National Security Agency contractor Edward Snowden began leaking documents about U.S. surveillance of foreign countries, including China.
+FireEye said it has been following the hackers behind the Syria-related attack for several years, but this is the first time the group's activites have been publicly documented. The company call the group "Ke3chang," after the name of one of the files it uses in one of its pieces of malicious software.
+FireEye said it believed the hackers dubbed the Syria-related campaign "moviestar" because that phrase was used as a tag on communications between infected computers and the hackers' command-and-control server.
+In 2011, the group ran another operation dubbed "snake," which enticed victims with a file that Fireye said contained nude pictures of Carla Bruni, the Italian-French singer, songwriter and model who in 2008 married then French President Nicolas Sarkozy.
+The host name for that campaign's command-and-control server contained the string "g20news," which might indicate that it was related to the G20 Finance Ministers meeting in Paris in 2011, FireEye said.
+The email address used to send those malicious files had the phrase "consulate" in it, which also bolstered the possibility that the attack was politically motivated, Villeneuve said.
+He said researchers only gathered evidence about "snake" through reviewing emails and malicious code. They did not have access to its command-and-control server, which they did in the case of the "moviestar" attack.
+(Editing by Tiffany Wu and Grant McCool)
+FILED UNDER:

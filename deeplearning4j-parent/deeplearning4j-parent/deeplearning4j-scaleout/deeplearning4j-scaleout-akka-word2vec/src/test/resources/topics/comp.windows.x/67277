@@ -1,0 +1,17 @@
+From: mike@hopper.Virginia.EDU (Michael Chapman)
+Subject: Re: Looking for a filemanager under X11R5
+Organization: ITC/UVA Community Access UNIX/Internet Project
+Lines: 12
+
+In article <1993Apr21.130259.3773@atlastele.com> brians@atlastele.com (Brian Sheets) writes:
+>Does anyone have a file manager that runs under UNIX/X11R5??
+>
+
+xdtm is working looking at, as is ftptool.  There really isn't anything of
+any quality that I've seen though, and I'm seriously considering writing one
+on my own.
+
+-- 
+mike@hopper.acs.virginia.edu 
+
+"I will NOT raise taxes on the middle class." -Unknown

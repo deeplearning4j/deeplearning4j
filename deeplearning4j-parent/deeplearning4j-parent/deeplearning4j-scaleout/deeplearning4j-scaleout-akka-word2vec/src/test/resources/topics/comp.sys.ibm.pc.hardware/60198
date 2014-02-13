@@ -1,0 +1,32 @@
+From: els390r@fawlty1.eng.monash.edu.au (G Chow)
+Subject: Re: ESDI with IDE???
+Organization: Monash University
+Lines: 27
+
+In article <1qegfd$dqi@wsinis03.info.win.tue.nl> monty@wsinis03.info.win.tue.nl (Guido Leenders) writes:
+>Hi,
+>
+>Is it possible to use an ESDI-controller with HDD together with an
+>IDE-harddisk + controller in one ISA-system?
+>
+>I've read stuff about secondary controllers. Does this trick work?
+>
+>Thanx in advance,
+>
+>Guido
+>monty@win.tue.nl
+
+I have the same question as Guido. It is possible to use the ESDI drive as a master and the IDE drive as the slave ? 
+At the moment , I have been using the ESDI drive and recently I bought a IDE drive to use as the 2nd drive . 
+The person in the computer shop told me that it is not possible to run 2 disk controller cards together on the same motherboard ( ESDI AND IDE ) but I think there might be some way of making them work. Can anybody enlighten me on this?
+And it is possible to  run a ESDI HDD using a IDE controller? or vice versa?
+Can anybody please help me out on this?
+Your help will be very much appreciated.
+
+G.Chow
+
+els390r@fawlty1.eng.monash.edu.au
+els390r@mdw013.cc.monash.edu.au
+gtchow@yoyo.cc.monash.edu.au
+
+

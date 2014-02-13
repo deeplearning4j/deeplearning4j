@@ -1,0 +1,26 @@
+From: mahan@TGV.COM (Patrick L. Mahan)
+Subject: RE: need shading program example in X
+Organization: The Internet
+Lines: 20
+To: xpert@expo.lcs.mit.edu, howardy@freud.nia.nih.gov
+
+#
+#Do anyone know about any shading program based on Xlib in the public domain?
+#I need an example about how to allocate correct colormaps for the program.
+#
+#Appreciate the help.
+#
+
+I don't know if this might help, but I've just started playing with a program
+called POVRay (Persistance of Vision Raytracer) that also displays its output
+via X Windows.  It does a fairly good job of allocating the colormap on my
+Psuedo-Color 8-plane display.  I got the source from from a site in Canda.
+The person I retrieved them from was David Buck (dbuck@ccs.carleton.ca).
+
+Patrick L. Mahan
+
+--- TGV Window Washer ------------------------------- Mahan@TGV.COM ---------
+
+Waking a person unnecessarily should not be considered  - Lazarus Long
+a capital crime.  For a first offense, that is            From the Notebooks of
+							  Lazarus Long

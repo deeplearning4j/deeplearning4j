@@ -1,0 +1,37 @@
+From: pierson@cimill.enet.dec.com (Dave Pierson)
+Subject: Re: Swr Meter For Cb Radios
+Organization: Digital Equipment Corporation
+Lines: 31
+Nntp-Posting-Host: cimill
+
+In article <734953838.AA00508@insane.apana.org.au>,
+peter.m@insane.apana.org.au (Peter Tryndoch) writes...
+>AllThe Devil ReincarnateSWR meter for CB radios
+> 
+>TD>From: ssave@ole.cdac.com (The Devil Reincarnate)
+>TD>Organization: CDAC, WA
+>TD>What
+>TD>is a good choice for a CB? 1/4 or 1/8 wave?
+>TD>  I read the installation instructions on a 1/4 wave antenna,
+>TD>and they suggested that I use an SWR to tune it at channel 12
+>TD>and channel 32 for a minimum reading.  Question is, why channel
+>TD>12 and 32?
+
+>The best antenna is one that will let out the most wave (probably not the 
+>best explanation, but the rest makes sense) A one wave will cancell itself 
+>out (BTW no such beastie).
+	Yes there is.  Not common for CB.  The pattern is different (sort of
+	a cloverleaf, with four main lobes.
+
+> The best is a 1/2 wave antenna, followed by 1/4, then 1/8 etc.
+	Use of anything under 1/4 wave for transmitting is very uncommon.  (The
+	usual "rubber duck" uses a coil to fool itself into looking like a
+	quarter wave.
+	I reccomend the ARRL Antenna Handbook, or a good basic book.
+
+thanks
+dave pierson			|the facts, as accurately as i can manage,
+Digital Equipment Corporation	|the opinions, my own.
+40 Old Bolton Rd		|I am the NRA
+Stow, Mass 01775 USA		|pierson@msd26.enet.dec.com
+"He has read everything, and, to his credit, written nothing."  A J Raffles

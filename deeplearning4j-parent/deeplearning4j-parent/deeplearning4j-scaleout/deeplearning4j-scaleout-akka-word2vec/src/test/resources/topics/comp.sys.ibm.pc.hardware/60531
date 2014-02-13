@@ -1,0 +1,42 @@
+From: ebd@fang.att.com (Elliot B Dierksen)
+Subject: Help with DTK I/O Plus II card needed
+Reply-To: e.dierksen@att.com (Elliot Dierksen)
+Organization: AT&T Tax Systems Development, Maitland FL
+Lines: 36
+
+I am trying to help a friend of mine get the second serial port on his DTK
+I/O Plus II card working and it does not want to cooperate. The documentation
+is no help at all. As an example, it says 'The serial port can be changed to
+COM2 from COM1 by moving jumpers.' but does not say what jumpers to move!! :-(
+
+There are 2 banks of jumpers. The first one is labeled as follows:
+C1
+C2
+S2
+P2
+P1
+G
+
+The second bank is labeled "IRQ" and has the following labels:
+5C
+5S
+4
+3
+3S
+2C
+2S
+
+I have determined that the C1 & C2 jumpers tell it to address the first
+serial port as COM1 or COM2. The P1,P2 jumpers tell it to use the printer
+port as LPT1 or LPT2. I am guessing that the "G" enables the game port and
+the "S2" SHOULD enable the second serial port, but I can't get it to work. I
+have tried numerous setting on the IRQ bank without success. I assume that
+this bank must tell the card which IRQ's to use for both ports, but I don;t
+know how.  Any suggestions would be greatly appreciated!!
+
+EBD
+-- 
+Elliot Dierksen   "Is that a real poncho... I mean is that a Mexican poncho or
+                   is that a Sears  poncho?  Hmmm... no foolin'..." -- F. Zappa
+
+W) e.dierksen@att.com  (407) 660-3377     H) elliot@alfred.UUCP  (407) 290-9744

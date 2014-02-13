@@ -1,0 +1,18 @@
+The Structure Show RSS Feed
+The secret to PaaS success: Meeting customers in the middle
+“The failure in the market so far is that’s how everybody’s exclusively positioned themselves,” Schuller said about the about the idea that PaaS is all about building next-generation web and mobile applications. “That’s a really bad play, in my opinion.”
+Schuller hopes to host those types of applications for customers, but Apprenda opted to also support the thousands of existing Java and .NET applications large enterprises presently have so that the company could actually win deals today. No one is going to turn its data centers into a cloud-like environment today in order to host new applications that will take years to start delivering meaningfully to the bottom line, he said.
+The same goes for the decision to start life as private PaaS software that can run anywhere it has a Linux or Windows operating system, as opposed to starting life as a public cloud service. Apprenda wants to help its customers move to the public cloud on their own terms, Schuller said.
+“Ultimately, the end state is hybrid,” he explained. “We’re not private cloud zealots, we don’t believe that the enterprise is going to be private forever. We just believe in private-first. We think that the enterprise, from a friction point of view, can adopt this model in-house first.”
+Schuller (second from left) has been at this awhile. Here he is at Structure 2010.
+Pick your poison and stick with it
+“If you’re a PaaS software vendor, I think you have to decide whether you want to be a software product company or you want to be a services company,” Schuller said. “To try and juggle both tends to be the death knell for most companies, because they’re two very different businesses.”
+Besides, he noted earlier in the interview, trying to do both might not be wise in terms of gaining more workloads. Most customers don’t want to be locked in to one vendor for everything, and they tend to look at different options for public cloud infrastructure versus private if the two can work together. Apprenda, for example, used to be an all-.NET platform but, Schuller said, “We don’t really compete with Azure because in the customer’s mind they’ve already made a public versus private distinction.”
+And a note to all the OpenStack contributors talking about building a OpenStack take on PaaS: “[Th]e up-stack move for them into the PaaS category would be as awkward as someone like Dell or HP moving into the operating system category.”
+Gimme Manhattan over Silicon Valley
+“I actually think being on the west coast is a terrible idea because of … customers,” Schuller said. “I don’t care about being close to other technology companies or investors. The thing we care about is being within a meaningful physical proximity of our customer base.”
+The 60-mile radius surrounding Manhattan commands a significant percentage of the world’s IT budget, and Schuller spends a lot of time in Apprenda’s Manhattan office meeting with customers in person. Hiring for cloud talent is a little harder because the talent pool is shallower, he admitted, but said the company has done pretty well by doing a little extra digging.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

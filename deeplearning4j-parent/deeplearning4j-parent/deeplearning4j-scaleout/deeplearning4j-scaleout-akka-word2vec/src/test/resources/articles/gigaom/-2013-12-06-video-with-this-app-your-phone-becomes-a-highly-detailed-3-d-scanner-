@@ -1,0 +1,11 @@
+A
+Summary:
+A new mobile app from researchers at ETH Zurich can create super-detailed 3-D scans of physical objects by tapping into the phone’s GPU and motion sensors. I’ve seen a number of these apps, but none have shown such detail. Check the video and see.
+I’ve seen a number of 3-D scanning applications for smartphones in the past; the latest one from researchers at ETH Zurich is the most impressive however. The output looks incredibly detailed and the application couldn’t be easier to use. Essentially, you just hold your phone in front of an object and the software will create the 3-D image on the fly, adding more data points as you move your phone around the scanned object.
+Take a peek at this video, found by Ubergizmo , to get a better understanding of the app:
+The software, which is not available for download, taps the smartphone’s GPU to speed up the process of image creation. That’s a smart move, given that a highly detailed scan could require thousands of data points. It’s also clever for the app to simply gather those details without any on-screen interaction; it just keeps adding missing bits as the phone is moved around ever so slightly. The app also leverages the internal sensors of the smartphone to smartly determine phone movement to put the 3-D image together.
+What’s the potential use case here? Apps such as this can be helpful for 3-D printing, when you want to replicate a physical object without trying to design it from scratch for example. Or, as the video explains, it could be used to later study objects seen in a museum or other location.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

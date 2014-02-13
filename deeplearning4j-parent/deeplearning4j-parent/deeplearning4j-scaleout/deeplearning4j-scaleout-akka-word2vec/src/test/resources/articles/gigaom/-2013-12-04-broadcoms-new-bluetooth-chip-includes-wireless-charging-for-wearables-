@@ -1,0 +1,11 @@
+A
+Summary:
+As the market for connected wearable devices set to grow sharply, Broadcom isn’t sitting on the sidelines. The company’s latest chip includes a processor, Bluetooth Smart and wireless charging support, making it an all-in-one choice for makers of smartwatches and other devices.
+A new Bluetooth chip from Broadcom is seeking to be in your next smartwatch or other connected wearable device . On Wednesday, the company announced the BCM20736, a Bluetooth Smart system-on-a-chip which is now available in samples to device makers. What makes this latest silicon different? It has built-in support for wireless device charging as well as wireless data.
+The new Broadcom chip is small enough to power a smartwatch for sure: It measures 6.5 x 6.5 millimeters. And it has a processor on board as well: An ARM Cortex M3 is at its core which also includes an integrated radio frequency and embedded Bluetooth Smart Stack. The wireless charging feature supports the Alliance 4 Wireless Power (A4WP) standard . Essentially, it’s an all-in-one low-power solution for building connected wearables that are simple to recharge.
+Broadcom is already the chip inside many Bluetooth connected devices but the wearables market is just starting to take off — ABI Research predicts 50 million wearable devices will ship in 2013 and 540 million in 2018 — so the company is smartly signaling to device makers that its ready for this growing market.
+Now is the right time to do just that and I’m curious if we’ll see any new wearables at January’s Consumer Electronics Show that are built around Broadcom’s newest chip. Given that people don’t want to plug in yet another device each day, the addition of native wireless charging support on-chip could help relieve that problem and make wearables a bit more attractive to consumers.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

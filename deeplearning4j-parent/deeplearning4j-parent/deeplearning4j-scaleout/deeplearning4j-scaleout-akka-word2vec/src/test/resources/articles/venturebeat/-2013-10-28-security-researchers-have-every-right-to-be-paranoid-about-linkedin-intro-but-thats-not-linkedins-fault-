@@ -1,0 +1,12 @@
+0
+LinkedIn really wants you to know that,  despite what you’ve read , its new Intro app is as secure as the company could make it.
+Announced last week , Intro creates on-the-fly profiles of the people you e-mail. But in order to do its job, the app also has to make it so that all of your e-mail — both incoming and outgoing — goes through LinkedIn’s servers.
+Understandably, that’s got security researchers a bit worked up.
+“To give them credit, from the engineering point of view, [Intro] is pretty nifty. But from the security and privacy point of view it sends a shiver down my spine,” researcher Graham Cluley wrote in a blog post last week .
+But LinkedIn isn’t letting the Intro backlash, which it calls “not correct” and “purely speculative,” go unanswered.
+“When the LinkedIn Security team was presented with the core design of Intro, we made sure we built the most secure implementation we believed possible,” LinkedIn security manager  Cory Scott wrote in a blog post on Saturday , detailing just how far LinkedIn went to ensure that Intro was secure.
+While it’s great to see that LinkedIn gave Intro the security treatment that it completely requires, it’s clear that the fears about Intro are much larger than Intro itself.
+Think about it this way: At the same time Scott was drafting up his Intro rebuttal post, thousands of people rallied in Washington, D.C., to protest NSA surveillance . And that should tell you all you need to know about the security and privacy climate that LinkedIn released Intro into. While LinkedIn objects to researchers’ paranoia about Intro, the fact is that the last few months have given everyone lots of reasons to be paranoid.
+This isn’t about Intro, nor is it about e-mail. The fears about Intro tap into a larger fear about the nature of online communications, which is looking less secure by the day. And it’s going to take much more than a blog post to change that.
+I don’t have much advice for LinkedIn, which was likely right in the middle of developing Intro when Edward Snowden unleashed his initial volley of leaks. But the fears about Intro should be a pretty clear sign to tech companies that surveillance paranoia is here to stay.
+At a time when the NSA can spy on phones of even the world’s most powerful leaders , people are looking for less uncertainty about their online communications, not more. And that’s something LinkedIn needs to recognize in order to understand why Intro worries so may people.

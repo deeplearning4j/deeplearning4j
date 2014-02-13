@@ -1,0 +1,20 @@
+From: rued@daimi.aau.dk (Thomas Rued J|rgensen)
+Subject: Re: .SCF files, help needed
+Organization: DAIMI: Computer Science Department, Aarhus University, Denmark
+Lines: 15
+
+tlc@cx5.com writes:
+
+>Second problem: I can't find any graphics program that will open and display  
+>these files. I have a couple of image conversion programs, none mention .scf  
+>files.
+
+RIX's files with the extension  .sci and .scf are just a RAW file with
+a 256 color palette.
+The first 10 bytes is a kind of header, with the name RIX among 7bytes unknown stuff. The you have 768 bytes of palette info (3*256 for the colors RGB)
+and then you have the picture in raw format.
+If you dont know how to make a viewer of of this description you can get VPIC
+it is able to read the files!
+
+regards
+Thomas 

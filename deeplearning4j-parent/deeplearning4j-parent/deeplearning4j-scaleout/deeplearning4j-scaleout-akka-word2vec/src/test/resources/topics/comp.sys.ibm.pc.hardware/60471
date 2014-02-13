@@ -1,0 +1,32 @@
+From: chang hsu liu <cliu@silver.ucs.indiana.edu>
+Subject: Upgrade from 286 to 486 help needed!!!
+Organization: Indiana University
+Lines: 27
+
+
+Greetings,
+
+        Please forgive me if this is FAQ. If there is source on this kind of info, 
+please let me know. I just got a 286 station (around 21*16.5*7 in dimension),
+and I am thinking about upgrade it to a 486 or 386.
+
+        The station has a power supply, two floppy disk drives, and the big
+case. I have SONY 1304 monitor, SyQuest drive (Mac), and maybe a cd-rom
+reader (Mac) for it. Here are the questions I have so far:
+1) Is there a 486 motherboard at this dimension that I could use the case?
+2) The original owener has the controller for floppy drive and hard disk
+removed. Can I use them to control these devices under 486? How much do I
+have to pay for a new controllers if the old ones won't work?
+3) How can I make SyQuest (SCSI) and cd-rom (SCSI) work on this station? 
+I heard that there is a cheap sound board that has SCSI controller built-in?
+What's quality of this board? How much usually does a SCSI control cost?
+Is there any ftp sites that has SyQuest driver or cd-rom driver for the PC if
+I can have everything hooked up OK?4) What I want is a 486 motherboard, a sound board to make it a MPC- 
+quality station. How much would it cost to do that? Is it worth the hussle
+than just buy a new 486 station? BTW, I need to buy a keyboard for it too.
+
+Any input is welcome.
+
+Thank you.
+
+Peter Liu

@@ -1,0 +1,60 @@
+From: earle@isolar.Tujunga.CA.US (Greg Earle)
+Subject: Re: PEM and MIME
+Organization: Personal Usenet site, Tujunga, CA USA
+Lines: 54
+Distribution: world
+
+In article <1qg8m2$2e5@nigel.msen.com> emv@garnet.msen.com (Edward Vielmetti) writes:
+>W C Newell Jr (wcn@u.washington.edu) wrote:
+>
+>>Before we can have a global multimedia e-mail solution, there must be some
+>>definition of a minimum service level, and MIME does not provide for this
+>>(yet).  
+>
+>Before the Internet will invest in software, people need to see content. 
+>I would suggest that 50 attractive MIME formatted news messages a day would be
+>sufficient to get a few people thinking about adding MIME support to news
+>readers, esp if the content is really worth it.
+>
+>>IMHO, we have a long way to go before the Unix-specific MUAs, newsreaders, etc
+>>reach the service levels of the other commercial platforms.  There ought to be
+>>such a definition, consisting of known object data types and rules for their
+>>handling, included in the transport specification document.
+>
+>Yes.  But there is also a long way to go before most Mac, PC, and Windows
+>MUAs and newsreaders are ready to handle the sheer volume of news and mail
+>that many Unix specific tools are able to cope with.  When the choice is
+>"more feechurs" or "make the damn thing fast enough to keep up with the
+>flood", you have to bet that "fast enough" wins.
+
+Ed, as usual, makes a very good point.
+
+One time a friend of mine at Sun sent me an e-mail.  He composed it using the
+Sun OpenWindows 3 "mailtool" which handles (non-MIME) "attachments" and the
+like.
+
+Since I don't use "mailtool", I had to manually save it, cut & paste, and
+then "uudecode" the actual attachment.  What I got - after a not-inconsiderable
+amount of time spent doing this - was an audio file.  The original message
+was over 32Kb of mail headers and uuencoded data; the resulting audio message
+was a single sentence that I transcribed as a 135 character message.
+
+If he had sent me the sentence in plain text, the e-mail would have been
+around 250 bytes, and it would have taken me about 3 seconds to process it at
+most.  Instead, it was 32k and it took at least a minute.  A complete waste of
+(my) time and bandwidth, as far as I'm concerned.  Sending plain text is still
+the most efficient method of transmission, given the same transport mechanism.
+I shudder to think what would happen if everyone started posting their Usenet
+articles as audio files instead of plain text!  Meltdown of the Net predicted!
+Film at Eleven!
+
+Back to Mono!	(-:
+
+[This sub-thread no longer has anything to do with PEM or administrative]
+[policy, so I've redirected followups back to comp.mail.mime ... - Greg ]
+
+-- 
+	- Greg Earle
+	  Phone: (818) 353-8695		FAX: (818) 353-1877
+	  Internet: earle@isolar.Tujunga.CA.US
+	  UUCP: isolar!earle@elroy.JPL.NASA.GOV a.k.a. ...!elroy!isolar!earle

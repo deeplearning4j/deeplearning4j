@@ -1,0 +1,28 @@
+From: alung@megatest.com (Aaron Lung)
+Subject: Re: Suggestions  on Audio relays ???
+Organization: Megatest Corporation
+Lines: 23
+
+In article <C5qsBF.IEK@ms.uky.edu> billq@ms.uky.edu (Billy Quinn) writes:
+>I built a little project using the radio shack 5vdc relays to switch
+>audio.  I got pretty bad 'clicks' when the thing switched.  I was doing
+>most of the common things one is supposed to do when using relays and
+>nothing seemed to get rid of the clicks.
+>
+>
+>My question is:
+>
+>	Is there a good relay/relay circuit that I can use for switching
+>audio, so that there will be *NO* noise of any kind on the audio lines.
+>
+>
+>I will appreciate any advice or references to advice.  Also, exact part
+>numbers/company names etc. for the relays will help!
+
+Are you switching high level signals or low level signals like pre-amp
+out level signals?  Also, are the clicks you mentioning the big
+clack that happens when it switches or are you refering to contact
+bounce?  How are you driving the relays?  TTL gate output?  Switching
+transistor?  How are the relays connected to what you are driving?
+
+Need more specifics to answer your question!! :-)

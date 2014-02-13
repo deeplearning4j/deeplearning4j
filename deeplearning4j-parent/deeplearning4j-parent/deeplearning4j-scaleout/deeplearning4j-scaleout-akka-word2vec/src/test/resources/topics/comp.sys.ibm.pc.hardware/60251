@@ -1,0 +1,20 @@
+From: misra@matt.ksu.ksu.edu (Yoda)
+Subject: Re: Booting from B drive
+Organization: Kansas State University
+Lines: 14
+NNTP-Posting-Host: matt.ksu.ksu.edu
+
+djweisbe@unix.amherst.edu (David Weisberger) writes:
+
+>I have a 5 1/4" drive as drive A.  How can I make the system boot from
+>my 3 1/2" B drive?  (Optimally, the computer would be able to boot
+>from either A or B, checking them in order for a bootable disk.  But
+>if I have to switch cables around and simply switch the drives so that
+>it can't boot 5 1/4" disks, that's OK.  Also, boot_b won't do the trick
+>for me.)
+
+>Thanks,
+>  Davebo
+	You can try to get into the setup byt pressing CTRL-ALT-INS or 
+	CTRL-ALT-PrintScreen on most PC's. That should give you an option
+	to set regarding the drives to boot from. 

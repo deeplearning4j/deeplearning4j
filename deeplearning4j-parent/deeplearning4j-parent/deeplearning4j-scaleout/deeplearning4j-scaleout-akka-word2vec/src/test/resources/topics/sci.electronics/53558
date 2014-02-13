@@ -1,0 +1,60 @@
+Organization: Queen's University at Kingston
+From: <LEEK@QUCDN.QueensU.CA>
+Subject: Re: ADC card for computer
+Distribution: world
+Lines: 54
+
+In article <1qi8e3$b5e@lll-winken.llnl.gov>, you say:
+>
+>I would like to digitize the output of a SQUID magnetometer (range -10 V
+>to +10 V) and do digital signal processing in a computer, say a Macintosh
+>II or a 486 PC.  I would like a good 16 bit ADC with good linearity and a
+>high conversion speed, at least 50 kHz, preferably 200 kHz.  Other concerns
+>
+>(2)  Must I use an ADC external to my computer to avoid digital noise
+>     feedback into my sensitive SQUID electronics?
+
+Might be a good idea...  The resolution you requested is about 0.3mV
+In order to get what you've paid for, noise level better be lower than
+that.  It is kind of hard to do it in a noisy box like you can expect
+inside a PC.
+
+Before you pay $$$ for a PC card, test it out by sampling a low
+distortion sine wave (I think there is a sine wave on a CD.  Digital
+Domain ?  There are possibly other low THD sources)  Run the digitized
+waveform through a FFT transform and take alook at the noise floor on
+the spectrum.  That's should give you a good indication of the design.
+(That's what I am doing to test a data acquistion system I have designed
+- I got the idea from MAXIM data sheet.)
+
+If you can live with 14 bit resolution, I would recommend looking at
+the MAX121 from MAXIM.  It is a high speed (308KHz) complete
+sampling A/D with DSP interface.  The input range is +/- 5V and it
+uses a serial interface (which can easily be optically isolated
+from the computer to elinimate a major noise source)  The Analog design
+guide I got from them shows a -100db noise level.  They claim a -77db
+max (-85 typ.) THD.  Looks pretty good for the $12 @ 1000 pieces
+
+A evaluation kit is available.  Might want to give these nice folks a
+call.  1-800-998-8800 or fax: (408)737-7194 and (408) 737-7600 ext4000
+for application assistance.
+
+This assumes that you can build your own DAS and write your own software.
+(Hey you can get the MAX121 as a free sample just by calling the 1-800 #)
+
+>I would appreciate discussion of your personal experience with a Mac or PC-
+>based ADC system.
+
+I would recommend you to find out the resolution that can be gotten out
+of your system by looking at the noise level, otherwise you might be
+throwing out your money.
+
+>Charles Cunningham
+>cec@imager.llnl.gov
+
+K. C. Lee
+Elec. Eng. Grad. Student
+
+I have no connection with MAXIM except I do in general recommend
+companies that give samples to students to others.  I feel they
+deserve that for being nice to me.

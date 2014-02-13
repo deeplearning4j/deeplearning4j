@@ -1,0 +1,32 @@
+Subject: Re: Don't fight Clipper Chip, subvert or replace it !
+From: steiner@jupiter.cse.utoledo.edu (Jason 'Think!' Steiner)
+Distribution: na
+Nntp-Posting-Host: jupiter.cse.utoledo.edu
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 25
+
+Marc Thibault (marc@tanda.isis.org) writes:
+> (The Jester) writes: 
+
+> > Proof Windows is a Virus:It is very widespread, It eats up your disk
+> > space, It slows down your computer, It takes control over your
+> > computer, It performs disk access at random times, It displays silly
+> > messages on your screen, It randomly crashes the computer-Vesselin
+
+>         This sounds like a version Unix. Solaris?
+
+as someone who just lived through a switch from SunOS4.x.x. to
+Solaris, i'll heartily agree with this. 
+
+ObCrypt: one of my main gripes with Solaris is its braindead mailx,
+which is -almost- enough like mail to get you hoping, but crashes
+horribly when you try to do anything useful with it. (like use pgp-
+capable sendmail replacements.)
+
+jason
+
+--
+   "I stood up on my van. I yelled, `Excuse me, sir. Ain't nothing wrong
+    with this country that a few plastic explosives won't cure!'"
+              - Steve Taylor, I Blew Up the Clinic Real Good
+`,`,`,`,`,`,`,`,`,`,`,`,`,`,`,`,`,` steiner@jupiter.cse.utoledo.edu `,`,`,`

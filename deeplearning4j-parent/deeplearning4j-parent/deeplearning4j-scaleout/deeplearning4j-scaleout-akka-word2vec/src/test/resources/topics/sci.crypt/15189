@@ -1,0 +1,26 @@
+From: jim@rand.org (Jim Gillogly)
+Subject: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Organization: Banzai Institute
+Lines: 19
+Nntp-Posting-Host: mycroft.rand.org
+
+May as well look at one piece of this at a time.  This paragraph:
+
+>To demonstrate the effectiveness of this new technology, the
+>Attorney General will soon purchase several thousand of the new
+>devices.  In addition, respected experts from outside the
+>government will be offered access to the confidential details of
+>the algorithm to assess its capabilities and publicly report
+>their findings.
+
+means they aren't planning to make it public, as was done with DES.  As it
+says in both sci.crypt FAQs, there's no way we are going to achieve the
+same level of comfort with Clipper that we finally have with DES if we
+can't actually get our hands on the bits and watch them flow around.  Even
+the best experts aren't going to think of everything: look how long it
+took Biham and Shamir to get a handle on just how good DES is... and for
+all we know there's still more to learn.
+-- 
+	Jim Gillogly
+	Trewesday, 25 Astron S.R. 1993, 17:10

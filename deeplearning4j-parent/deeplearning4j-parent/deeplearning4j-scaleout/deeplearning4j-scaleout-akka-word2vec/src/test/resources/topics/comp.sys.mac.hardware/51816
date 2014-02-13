@@ -1,0 +1,40 @@
+From: Sven@Beowulf.JPL.NASA.GOV (Sven U. Grenander)
+Subject: Re: Increasing the number of Serial ports
+Organization: Jet Propulsion Laboratory
+Lines: 33
+Distribution: world
+NNTP-Posting-Host: mac4.jpl.nasa.gov
+
+In article <1993Apr18.134943.16479@bmers95.bnr.ca>, slang@bnr.ca (Steven
+Langlois) wrote:
+> 
+> Does anyone know if there are any devices available for the Mac which
+> will increase the number of serial ports available for use
+> simultaneously?  I would like to connect up to 8 serial devices to my
+> Mac for an application I am working on. I must be able to access each
+> one of the independently.
+> 
+> If such a device exists, are there are any limits to the number of
+> serial devices I can use?
+> 
+> Any information is appreciated.
+> 
+> Steven Langlois
+> slang@bnr.ca
+
+The Quadralink by AE is a possibly problematical solution to your needs.
+I've used one for the last 4 (?) years on my personal system, but a fatal
+bug has crept into their more recent s/w. The bug only shows up during
+heavy serial traffic but completely crashes the system (MacsBug can not
+reboot, time to hit the restart button).
+
+AE told me in January that they were aware of and working on fixing the bug
+which I described to them. Since then they have not answered any of my
+faxes asking them for a status of the bug-fix.
+
+The QL has been great, but for now I have mine sidelined. If you are only
+going to be using 2400 Baud or less, then you may have no, or very
+infrequent problems,
+
+
+-Sven

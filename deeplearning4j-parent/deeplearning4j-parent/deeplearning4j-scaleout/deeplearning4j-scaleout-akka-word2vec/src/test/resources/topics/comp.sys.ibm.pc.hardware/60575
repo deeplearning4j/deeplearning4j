@@ -1,0 +1,26 @@
+From: olson@anchor.esd.sgi.com (Dave Olson)
+Subject: Re: How much should I pay for a SCSI cable (with 3 or 4 connectors)?
+Organization: Silicon Graphics, Inc.  Mountain View, CA
+Lines: 21
+
+In <T83y2B1w164w@hub.parallan.com> danj@hub.parallan.com (Dan Jones) writes:
+| > >Also, I seem to remember a posting saying that the SCSI spec calls for
+| > >1 foot between devices on the cable, but most cables you get (internal)
+| > >don't meet the spec.
+| 
+| SCSI II Draft Proposal, Rev. 10h, Section 4.2.1: Single-Ended 
+| cable, which is in the Cable Requirements Section, has an 
+| implementor's note: " Stub clustering should be avoided. Stubs 
+| should be spaced at least 0.3 meters apart."
+| 
+| For the non-technical, stubs are SCSI devices. :-)
+
+However, also be aware that Implementor's notes are basicly
+recommendations, they are *NOT* part of the spec.  As others have
+noted, many vendors (including SGI) violate this.  Indeed, the main
+point is to reduce impedance changes, and therefore reflections, and
+therefore 'noise' on the bus.
+--
+Let no one tell me that silence gives consent,  |   Dave Olson
+because whoever is silent dissents.             |   Silicon Graphics, Inc.
+    Maria Isabel Barreno                        |   olson@sgi.com

@@ -1,0 +1,34 @@
+From: apland@mala.bc.ca (Ron Apland)
+Subject: Re: W4WG & Novell
+Organization: Malaspina College
+Lines: 29
+
+In article <1993Apr27.102626.1@csc.canterbury.ac.nz>, cctr132@csc.canterbury.ac.nz (Nick FitzGerald, PC Software Consultant, CSC, UoC, NZ) writes:
+> In article <1rh2mi$ea4@msuinfo.cl.msu.edu>, bilan@cps.msu.edu (Thomas J
+> Bilan) writes:
+> 
+>> If I put LASTDRIVE = Z in my config.sys, NETX will run but I can't access
+>> drive f: to log in to Novell.  
+>> If I don't put LASTDRIVE = Z in my config.sys I can't access other W4WG 
+>> drives from the file-manager.
+>>
+>> It seems that there should be a way to make NETX work with the LASTDRIVE = 
+>> statement in my Config.Sys.
+> 
+> First off, I haven't used W4WG (but I think that's about to change!).
+> 
+> The problem is the LASTDRIVE command and the way NetWare in general (and
+> in this case NETX in particular) adds drives to the device chain. 
+> Setting LASTDRIVE=Z means there are no "unassigned" (as opposed to
+> "unused") drive letters for NetWare to use, as it tacks its drive
+> mappings -onto the end- of the existing list of drives.  W4WG obviously
+> attaches its network drives to "existing, unused" drive letters.
+> 
+> I'd guess the next thing I'd try is something like LASTDRIVE=M, which on
+> most machines will leave a fair swathe of drives for W4WG and still
+> allow up to 13 NetWare drive mappings as well.
+
+W4WG requires DOS drives.  I use LASTDRIVE=J which makes my first Novell drive
+K and leaves me drives G, H, I and J for W4WG.  My local DOS drives use A-F.
+
+Ron

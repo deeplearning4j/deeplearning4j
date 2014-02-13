@@ -1,0 +1,20 @@
+From: kevin@kosman.uucp (Kevin O'Gorman)
+Subject: Date is stuck
+Organization: Vital Software Services, Oxnard, CA
+Lines: 15
+
+Anybody seen the date get stuck?
+
+I'm running MS-DOS 5.0 with a menu system alive all the time.  The machine
+is left running all the time.
+
+Suddenly, the date no longer rolls over.  The time is (reasonably) accurate
+allways, but we have to change the date by hand every morning.  This involves
+exiting the menu system to get to DOS.
+
+Anyone have the slightest idea why this should be?  Even a clue as to whether
+the hardware (battery? CMOS?) or DOS is broken?
+-- 
+Kevin O'Gorman ( kevin@kosman.UUCP, kevin%kosman.uucp@nrc.com )
+voice: 805-984-8042 Vital Computer Systems, 5115 Beachcomber, Oxnard, CA  93035
+Non-Disclaimer: my boss is me, and he stands behind everything I say.

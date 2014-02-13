@@ -1,0 +1,1213 @@
+From: ld231782@longs.lance.colostate.edu (L. Detweiler)
+Subject: Privacy & Anonymity on the Internet FAQ (3 of 3)
+Supersedes: <net-privacy/part3_733153240@GZA.COM>
+Organization: TMP Enterprises
+Lines: 1201
+Expires: 21 May 1993 04:00:06 GMT
+Reply-To: ld231782@longs.lance.colostate.edu
+NNTP-Posting-Host: pad-thai.aktis.com
+Summary: Notes on the use, history, and value of anonymous Usenet
+ posting and email remailing services
+X-Last-Updated: 1993/03/04
+
+Archive-name: net-privacy/part3
+Last-modified: 1993/3/3
+Version: 2.1
+
+
+NOTES on ANONYMITY on the INTERNET
+==================================
+
+Compiled by L. Detweiler <ld231782@longs.lance.colostate.edu>.
+
+
+<8.1> What are some known anonymous remailing and posting sites?
+<8.2> What are the responsibilities associated with anonymity?
+<8.3> How do I `kill' anonymous postings?
+<8.4> What is the history behind anonymous posting servers?
+<8.5> What is the value of anonymity?
+<8.6> Should anonymous posting to all groups be allowed?
+<8.7> What should system operators do with anonymous postings?
+<8.8> What is going on with anon.penet.fi maintained by J. Helsingius?
+
+
+* * *
+
+_____
+<8.1> What are some known anonymous remailing and posting sites?
+
+  Currently the most stable of anonymous remailing and posting sites
+  is anon.penet.fi operated by julf@penet.fi for several months, who
+  has system adminstrator privileges and owns the equipment. 
+  Including anonymized mail, Usenet posting, and return addresses 
+  (no encryption).  Send mail to help@penet.fi for information.
+ 
+  Hal Finney has contributed an instruction manual for the cypherpunk
+  remailers on the ftp site soda.berkeley.edu (128.32.149.19):
+  pub/cypherpunks/hal's.instructions. See also scripts.tar.Z (UNIX
+  scripts to aid remailer use) and anonmail.arj (MSDOS batch files to
+  aid remailer use).
+
+  ebrandt@jarthur.claremont.edu
+  -----------------------------
+    Anonymized mail.  Request information from above address.
+    
+  elee7h5@rosebud.ee.uh.edu
+  -------------------------
+    Experimental anonymous remailer run Karl Barrus
+    <elee9sf@Menudo.UH.EDU>, with encryption to the server.  Request
+    information from that address.
+    
+  hal@alumni.caltech.edu
+  ----------------------
+    Experimental remailer with encryption to server and return
+    addresses.  Request information from above address.
+
+  hh@soda.berkeley.edu
+  hh@cicada.berkeley.edu
+  hh@pmantis.berkeley.edu
+  ----------------------
+    Experimental remailer.  Include header `Request-Remailing-To'.
+
+  nowhere@bsu-cs.bsu.edu 
+  ----------------------
+    Experimental remailer allowing one level of chaining.  Run by
+    Chael Hall.  Request information from above address.
+
+  phantom@mead.u.washington.edu 
+  -----------------------------
+    Experimental remailer with encryption to server.  `finger' site
+    address for information.
+
+  Notes
+  =====
+  
+  - Cypherpunk remailers tend to be unstable because they are often
+    running without site administrator knowledge. Liability issues
+    are wholly unresolved.
+  
+  - So far, all encryption is based on public-key cryptography and PGP
+    software (see the question on cryptography). 
+
+  - Encryption aspects (message text, destination address, replies)
+    vary between sites.
+
+  - Multiple chaining, alias unlinking, and address encryption are
+    mostly untested, problematic, or unsupported at this time.
+
+_____
+<8.2> What are the responsibilities associated with anonymity?
+
+  
+  Users
+  -----
+
+  - Use anonymity only if you have to. Frivolous uses weaken the
+    seriousness and usefulness of the capability for others.
+  - Do not use anonymity to provoke, harass, or threaten others.
+  - Do not hide behind anonymity to evade established conventions on
+    Usenet,  such as posting binary pictures to regular newsgroups.
+  - If posting large files, be attentive to bandwidth considerations.
+    Remember, simply sending the posting to the service increases
+    network traffic.
+  - Avoid posting anonymously to the regular hierarchy of Usenet; this
+    is the mostly likely place to alienate readers. The `alt'
+    hierarchy is preferred.
+  - Give as much information as possible in the posting (i.e.
+    references, etc.) Remember that content is the only means for
+    readers to judge the truth of the message, and that any
+    inaccuracies will tend to discredit the entire message and even
+    future ones under the same handle.
+  - Be careful not to include information that will reveal your
+    identity or enable someone to deduce it.  Test the system by
+    sending anonymized mail to yourself.
+  - Be aware of the policies of the anonymous site and respect them. 
+    Be prepared to forfeit your anonymity if you abuse the privilege.
+  - Be considerate and respectful of other's objections to anonymity.
+  - ``Hit-and-run'' anonymity should be used with utmost reservation.
+    Use services that provide anonymous return addresses instead.
+  - Be courteous to the system operator, who may have invested large
+    amounts of time, be personally risking his account, or dedicating
+    his hardware, all for your convenience.
+
+  Operators
+  ---------
+
+  - Document thoroughly acceptable and unacceptable uses in an
+    introductory file that is sent to new users.  Have a coherent and
+    consistent policy and stick to it. State clearly what logging and
+    monitoring is occurring. Describe your background, interest, and
+    security measures. Will the general approach be totalitarian or
+    lassaiz-faire?
+  - Formulate a plan for problematic ethical situations and anticipate
+    potentially intense moral quandaries and dilemmas. What if a user
+    is blackmailing someone through your service? What if a user
+    posts suicidal messages through your service? Remember, your
+    users trust you to protect them.
+  - In the site introductory note, give clear examples  of situations
+    where you will take action and what these actions will be (e.g.
+    warn the user, limit anonymity to email or posting only, revoke
+    the account, 'out' the user, contact local administrator, etc.)
+  - Describe exactly the limitations of the software and hardware.
+    Address the bandwidth limitations of your site. Report candidly
+    and thoroughly all bugs that have  occurred.  Work closely with
+    users to isolate and fix bugs. Address all bugs noted below under
+    ``(in)stability of anonymity''.
+  - Document the stability of the site---how long has it been running?
+    What compromises have occured? Why are you running it? What is
+    your commitment to it?
+  - Include a disclaimer in outgoing mail and messages.  Include an
+    address for complaints, ideally appended to every outgoing item. 
+    Consult a lawyer about your liability.
+  - Be committed to the long-term stability of the site. Be prepared
+    to deal with complaints and `hate mail' addressed to you.  If you
+    do not own the hardware the system runs on or are not the system
+    adminstrator, consult those who do and are.
+  - Be considerate of providing anonymity to various groups.  If
+    possible, query group readers.
+  - Keep a uniformity and simplicity of style in outgoing message
+    format that can be screened effectively by kill files.  Ensure
+    the key text `Anon' is  somewhere in every header.
+  - Take precautions to ensure the security of the server from
+    physical and  network-based attacks and infiltrations.
+
+  Readers
+  -------
+  
+  - Do not complain, attack, or discredit a poster for the sole reason
+    that he is posting anonymously, make blanket condemnations that
+    equate anonymity with cowardice and criminality, or assail
+    anonymous traffic in general for mostly neutral reasons (e.g. its
+    volume is heavy or increasing).
+  - React to the anonymous information unemotionally.  Abusive posters
+    will be encouraged further if they get irrationally irate
+    responses.  Sometimes the most effective response is silence.
+  - Notify operators if very severe abuses occur, such as piracy,
+    harassment, extortion, etc.
+  - Do not complain about postings being inappropriate because they
+    offend you personally.
+  - Use kill files to screen anonymous postings if you object to the
+    idea of anonymity itself.
+  - Avoid the temptation to proclaim that all anonymous postings
+    should be barred from particular groups because no `possible' or
+    `conceivable' need exists.
+
+  References
+  ----------
+  
+  See e.g. ftp.eff.org:/pub/academic/anonymity:
+
+  > This article is an excerpt from an issue of FIDONEWS on individual
+  > privacy and the use of handles.  It accepts the need of a system
+  > operator to know the name of a user; but suggests that the use of
+  > a handle is analogous to a request to withhold the name in a
+  > letter to the editor. The article concludes with a set of
+  > guidelines for preserving the right to be anonymous.
+
+_____
+<8.3> How do I `kill' anonymous postings?
+
+  James Thomas Green <jgreen@zeus.calpoly.edu>:
+
+  > Try putting this in your kill file:
+  >   
+  >   /Anon/h:j
+  >   /Anonymous/h:j
+  > 
+  > This will search the headers of the messages and kill any that
+  > contain `Anon' or `Anonymous' in them.  Not perfect and won't
+  > kill followups. 
+  
+  Note that anonymous server operators have the capability to mask
+  anonymous postings under which the above method will not work; so
+  far this practice is not widespread, but it may become more common
+  as a countermeasure to widespread anonymous filtering.
+  
+_____
+<8.4> What is the history behind anonymous posting servers?
+
+  Originally anonymous posting services were introduced for
+  individual, particularly volatile newsgroups, where anonymity is
+  almost the preferred method of communication, such as talk.abortion
+  and alt.sex.bondage.  One of the first was one by Dave Mack
+  started in ~1988 for alt.sex.bondage. Another early one was
+  wizvax.methuen.ma.us run by Stephanie Gilgut (Gilgut Enterprises)
+  but was disbanded due to  lack of funds.  The system provided
+  anonymous return addresses. n7kbt.rain.com (John Opalko) took up
+  the functions of this server, including reinstating the anonymous
+  alias file. The group ``alt.personals has been chewing through
+  servers like there's no tomorrow.''
+  
+  Spurred by the disappearance of `wizvax' and interested in
+  researching the idea, Karl Kleinpaste
+  <Karl_Kleinpaste@godiva.nectar.cs.cmu.edu> developed his own system
+  from scratch in six hours. By this time the idea of extending the
+  server to new, more `mainstream'  groups was starting to emerge,
+  and he explored the possibility partly at the specific request  by
+  multiple users for anonymity in other groups. ``The intended
+  advantage of my system was specifically to allow multiple group
+  support, with a single anon identifier across all.  This was
+  arguably the single biggest deficiency of previous anon systems.'' 
+  K. Kleinpaste posted a message on rec.nude asking users whether an
+  anonymous service would be welcome there, and judged a consensus
+  against it. 
+
+  K. Kleinpaste introduced what he calls a ``fire extinguisher'' to
+  `squelch' or `plonk' abusive users in response to complaints, and
+  used this in three cases. Nevertheless, after a few months of
+  intense traffic he was eventually overwhelmed by the abuses of his
+  server. ``Even as restricted as it was, my system was subjected to
+  abuses to the point where it was ordered dismantled by the
+  facilities staff here. Such abuses started right after it was
+  created.''
+
+  In ~Nov 1992, Johan Helsingius (julf@penet.FI) set up the most
+  controversial anonymous site to date. anon.penet.fi is based on
+  scripts and C code written by K. Kleinpaste and supports anonymized
+  mail, posting, and return addresses. He initially wanted to confine
+  the service to Scandinavian users but expanded it to worldwide
+  accessability in response to 'lots' of international requests.
+  
+  J. Helsingius policy of allowing anonymous posting to every Usenet
+  newsgroup has been met with strong and serious ideological
+  opposition (e.g. by news adminstrators in news.admin.policy).
+  Because of the relative newness and recent emergence of the medium,
+  abuses by anonymous posters  tend to have higher visibility than
+  ``routine'' abuses. His total commitment to preservation of
+  anonymity is also controversial.
+
+  For example, in a highly controversial and publicized case in ~Feb
+  1993,  an anonymous user posted a supposed transcript of desperate
+  crew dialogue during the Challenger shuttle disaster via
+  anon.penet.fi to sci.astro. Despite that the transcript had been
+  posted in the same place up to a year earlier (then
+  non-anonymously) and actually originated not with the poster but a
+  New York news tabloid, subsequent responses consisted largely of
+  vociferous outrage at the poster's use of anonymity, reverberating
+  through many newsgroups. 
+  
+  The original poster, using the same anonymous handle, later conceded
+  that the story ``seemed likely to have been fabricated,''
+  suggesting the plausible possibility that the original intent was
+  not to provoke outrage but gauge reactions on the authenticity of
+  the story (albeit crudely), free of personal risk from perceived
+  association with the item.  The ensuing commotion generated queries
+  for the original article by late-entering readers. The anonymous
+  user later posted deliberately offensive comments at his
+  detractors.
+
+  Despite piercingly irate and outraged complaints, and even the vocal
+  opposition and verbal abuse of K. Kleinpaste and eminent news
+  operators, J. Helsingius has largely avoided use of the ``fire
+  extingisher'' and the ``group bouncer'' mechanisms that limit the
+  scope of the service. As of ~March 1993 the anon.penet.fi site is
+  best described as `inundated': it has registered over 13,000 users
+  in its initial three months of operation, forwards ~3000 messages a
+  day, and approximately 5% of all Usenet postings are anonymized
+  through the site. The immense popularity is probably largely due
+  to the capability for `global' anonymity which has allowed users to
+  find creative uses in diverse areas not previously envisioned.
+
+  Johan Helsingius has been subject to extraordinary pressure to
+  dismantle his server in ~Feb 1993. At one point K. Kleinpaste
+  threatened publicly to organize a sort of vigilante group of irate
+  news operators to  send out revocation commands on all messages
+  originating from the site.  J. Helsingius has also alluded to
+  threats of flooding the  server.  The server has crashed several
+  times, at least once due to a saturation `mailbombing' through it
+  by an anonymous user.  Mr. Helsingius reports spending up to 5
+  hours per day  answering email requests alone associated with the
+  service's administration. In response to the serious threats he
+  disabled global group access temporarily for one week and
+  encouraged his users to defend the service publicly.
+  
+  Based on fast-moving dialogue and creative suggestions by
+  ``cypherpunks,'' J. Helsingius has identified many security
+  weaknesses and valuable new features for the service, and is
+  currently in the process of code development and testing. He is
+  planning on upgrading the IBM compatible 386 machine to a 486 soon
+  to handle the voluminous load and is  considering integrating a new
+  system with very sophisticated functionality, including multiple
+  email aliases, alias allocation control, public-key encryption,
+  etc.
+
+  A very sophisticated anonymous posting system was set up in Dec.
+  1992 by D. Clunie <dclunie@pax.tpa.com.au> that used cryptography
+  in both directions (to/from) the server for the highest degree of
+  confidentiality seen so far.  However, it was running on a public
+  access account, and he had to shut it down after only several
+  weeks, upon receiving requests and conditions apparently ultimately
+  originating from NSF representatives. D. Clunie has released the
+  software to the public domain.
+
+  Recently the idea of a newsgroup devoted to `whistleblowing' on
+  government abuses has received wide and focused attention, and
+  group formation is currently underway.  In the basic scenario the
+  group would allow people to post pseudonymously using remailers,
+  and even establish reputations based on their authentifiable
+  digital signatures. The traffic may eventually reach reporters in
+  the mainstream news media.  deltorto@aol.com has volunteered to
+  attack multiple aspects of this project, including distributing
+  easy-to-read documentation on posting, anonymization, and
+  encryption.
+
+  See also sections on ``views on anonymous posting'' below and ``what
+  is going on with anon.penet.fi?'' in this document.
+  
+  (Thanks to Carl Kleinpaste
+  <Karl_Kleinpaste@godiva.nectar.cs.cmu.edu>, David Clunie
+  <dclunie@pax.tpa.com.au> and Johan Helsingius <julf@penet.fi> for
+  contributions here.)
+
+
+_____
+<8.5> What is the value of anonymity?
+
+  KONDARED@PURCCVM.BITNET:
+    
+  > I think anonymous posts do help in focusing our attention on the
+  > content of one's message. Sure lot of anonymous posts are abusive
+  > or frivolous but in most cases these are by users who find the
+  > anon facility novel. Once the novelty wears off they are stopping
+  > their pranks...
+
+  morgan@engr.uky.edu (Wes Morgan):
+
+  > I don't mind seeing the miscellaneous hatred/prejudice/racism;
+  > those things are part of our nature.  However,  the notion of
+  > providing anonymity's shield for these ideas repulses me.  If
+  > they have such strong feelings, why can't they put their name(s)
+  > on  their postings? ... Quite frankly, I loathe communication
+  > with people who refuse to use their names.
+
+  dclunie@pax.tpa.com.au (David Clunie)
+   
+  > Many seem to question the value of anonymity. But who are they to
+  > say what risks another individual should take ? There is no
+  > question that in this rather conservative society that we live
+  > in, holding certain views, making certain statements, adopting a
+  > certain lifestyle, are likely to result in public censure,
+  > ridicule, loss of status, employment, or even legal action. Given
+  > the heterogeneity of the legal jurisdictions from where the many
+  > contributors to usenet post, who knows what is legal and what is
+  > not ! Some say that anonymous posters are "cowards" and should
+  > stand up and be counted. Perhaps that is one point of view but
+  > what right do these detractors have to exercise such censorship ?
+
+  From: doug@cc.ysu.edu (Doug Sewell)
+  
+  > Why is it censorship to not expect someone to speak for
+  > themselves, without the cloak of anonymity. This is at best a
+  > lame argument. 
+  > 
+  > You tell me why what you have to say requires anonymity.  And you
+  > tell me why the wishes of a majority of non-anonymous users of a
+  > newsgroup should be disregarded when they don't want anonymous
+  > posts.
+  > 
+  > Anonymous users have LESS rights than any others. They are not
+  > legitimate usenet participants. I would not honor RFDs, CFVs,
+  > control messages, or votes from one.
+
+  brad@clarinet.com (Brad Templeton):
+  
+  > I can think of no disadvantage caused by anon posting sites that
+  > doesn't already exist, other than the fact that they do make more
+  > naive net users who don't know how to post anonymously the old
+  > way more prone to do it.
+
+  From: mandel@netcom.com (Tom Mandel)
+  
+  > I cannot speak for others but I regard anonymous postings in a
+  > serious discussion as pretty much worthless. ... views that hide 
+  > behind the veil of anon are hardly worth the trouble of reading.
+  
+  n8729@anon.penet.fi (Hank Pankey)
+  
+  > Since I began posting anonymously (to show support for general
+  > principles of personal privacy) I have been subject to far more
+  > abuse and attack than I ever received before. People seem to
+  > find it easier to flame and insult someone whose name they don't
+  > know. Perhaps it's easier to pretend that there is no person
+  > behind the email address who feels the sting of abusive comments.
+  > 
+  > Anonymity does hinder some methods of controlling other posters'
+  > actions.  People who seek such control will naturally oppose it.
+
+  From: 00acearl@leo.bsuvc.bsu.edu
+  
+  > Instead of making this a "free-er medium" by allowing posters to
+  > "protect themselves" with anonymity, simply require that all
+  > posters be prepared to discuss their sources of information and
+  > take the heat for unsubstantiated dribble.  This seems to be the
+  > way things are currently done; 
+
+  xtkmg@trentu.ca (Kate Gregory):
+  
+  > In misc.kids there are three threads going on started by anonymous
+  > posters. One was about changing jobs so as to work less hours,
+  > job sharing and so on, from a woman who didn't want anyone at her
+  > current place of work to know she was thinking of looking for
+  > work elsewhere. The next was from a woman who is thinking of
+  > having a baby sometime soon and doesn't want coworkers, friends,
+  > family etc etc to know all about it, but who wants advice. The
+  > third is about sex after parenthood -- actually this was started
+  > by people posting in the usual way but then it was pointed out
+  > that the anonymous posting service might let more people
+  > participate.
+  > 
+  > Misc.kids doesn't seem to be suffering any harm from the presence
+  > of anonymous posters; in fact it seems to have been helped by it.
+
+  hoey@zogwarg.etl.army.mil (Dan Hoey):
+  
+  > While there has never been any real security against anonymous or
+  > forged postings on Usenet, the process has until now been
+  > sufficiently inconvenient, error-prone, and undocumented to limit
+  > its use by persons who have not learned the culture of the net.
+  >
+  > On the other hand, a recent use of the anonymous posting service
+  > on sci.math seemed seemed to be a student asking help on a
+  > homework problem. It has now been attributed to a teacher,
+  > asking for an explanation of a dubious answer in his teaching
+  > guide.  He says his news posting is broken, so he is using the
+  > anonymous service as a mail-to-news gateway.
+
+  Karl Barrus <elee9sf@Menudo.UH.EDU>
+   
+  > Some argue that the opinions of the people who hide behind a veil
+  > of anonymity are worthless, and that people should own up to
+  > their thoughts.  I agree with the latter point - in an ideal
+  > world we would all be sitting around engaging in Socratic
+  > dialogues, freely exchanging our opinions in an effort to
+  > learn.  But in an ideal world nobody will threaten you for your
+  > thoughts, or ridicule you.
+  > 
+  > But we live in a world where the people who don't agree with you
+  > may try to harm you.  Let's face it, some people aren't going to
+  > agree with your opinion no matter how logically you try to
+  > present it, or how reasoned out it may be.  This is sad since it
+  > does restrict people from voicing their opinions.
+
+  red@redpoll.neoucom.edu (Richard E. Depew):
+
+  > The consensus seems to be that a general anonymous posting service
+  > such as that at anon.penet.fi seems sufficiently corrosive of the
+  > trust and civility of the net that this particular experiment
+  > should be ended.  Perhaps the next time the question comes up we
+  > can say: "We tried it - we learned it does more harm than good -
+  > and we stopped it." 
+
+  From: C96@vm.urz.uni-heidelberg.de (Alexander EICHENER)
+
+  > anonymous posting has not created major problems aside from
+  > angering irate people (like you?) who would rather ban
+  > anonymous/pseudonymous posting altogether because "real men can
+  > stand up for what they said" or comparable puerile arguments as
+  > others have brought up.
+
+  dave@elxr.jpl.nasa.gov (Dave Hayes):
+
+  > What a primal example of human nature. I have three questions for
+  > you folks. 
+  > 
+  > Do people really say different things to each other based upon
+  > whether their identity is or isn't known?
+  > 
+  > Are people really so affected by what other people say that the
+  > verbage is labeled "abuse"?
+  > 
+  > Most importantly, on a forum that prizes itself on the freedom of
+  > communication that it enjoys, is there really such a thing as
+  > freedom of communication?
+  
+  From: terry@geovision.gvc.com (Terry McGonigal)
+  
+  > <sigh>...  Just how many anon services are needed?  Will
+  > *everybody* start running one soon?  What's the purpose?  Who
+  > stands to benefit when there are N anon services, then 2*N, then
+  > N^2, out there.  Where *has* this sudden fasination with anon
+  > services come from?
+  > 
+  > For better or (IMHO) worse, it looks like we'er gonna get stuck
+  > with these things, and as much as I don't like the idea (of
+  > services like this becoming the norm) I don't really think
+  > there's much to be done since it's obvious that anyone who wants
+  > to can set one up with a bit of work.
+
+  Karl_Kleinpaste@cs.cmu.edu (Karl Kleinpaste):
+
+  > Weak reasoning.
+  > With freedom comes responsibility.
+
+  dave@elxr.jpl.nasa.gov (Dave Hayes):
+  
+  > Responsibility isn't real if it is enforced. True responsibilty
+  > comes with no coercion. 
+
+_____
+<8.6> Should anonymous posting to all groups be allowed?
+
+  morgan@engr.uky.edu (Wes Morgan):
+  
+  > I will be the first to admit that I hold some controversial
+  > opinions; indeed, I'm sure that none of us are completely
+  > orthodox in our opinions. However,  I've received *hundreds* of
+  > anonymous email messages over the last few years; fewer than 20
+  > of them were "reasonable posts made with good motives." It's 
+  > getting more and more difficult to remember why we need anonymity
+  > at all; the abusers are (once again) lousing things up for those
+  > who truly need the service  (or those who would put it to good
+  > use).
+  > 
+  > I'm not suggesting that we should ban anonymous servers; as I've
+  > said, there are several situations in which anonymity is a Good
+  > Thing (tm). 
+  > 
+  > However, the notion that anonymity's shield should be
+  > automatically extended to every Usenet discussion is ridiculous;
+  > it opens the door to further abuse. 
+
+  twpierce@unix.amherst.edu (Tim Pierce):
+  
+  > Of course, how does one determine whether a "group" requests the
+  > service?  A flat majority of posters voting in favor? A positive
+  > margin of 100 votes?  Or what?  No one speaks for a newsgroup.
+  > 
+  > I'm not convinced by the arguments that an anonymous posting
+  > service for all newsgroups is inherently a bad idea, simply
+  > because it's a diversion from the status quo. Since the status
+  > quo previously permitted anonymous posting to *no* newsgroups,
+  > any anonymous posting service would reject the status quo.
+  
+  hartman@ulogic.UUCP (Richard M. Hartman) writes:
+  
+  > It is facist to suggest that a newsgroup is best able to decide
+  > whether it wants to allow anonymous postings instead of having
+  > them forced upon them by an service administrator?
+
+  ogil@quads.uchicago.edu (Brian W. Ogilvie):
+
+  > The service provides a mechanism for forwarding mail to the
+  > original poster. Since most Usenet readers don't know John Smith
+  > from Jane Doe except by their opinions and their address, the
+  > effect of having an anonymous posting to which mail replies can
+  > be directed is minimal, except for those who personally know the
+  > poster--and ... the lack of anonymity could be serious. Any
+  > mechanism like this is liable to abuse, but the benefits as well
+  > as the costs must be weighed. Limiting the service to alt groups,
+  > or specific groups, would not help those who want advice on
+  > sensitive issues in more 'professional' newsgroups.
+
+  From: tarl@sw.stratus.com (Tarl Neustaedter)
+  
+  > An additional point is that some of us find anonimity in technical
+  > matters to be profoundly offensive; anonimity in different forums
+  > has different meanings. If I get a phone call from someone who
+  > won't identify himself, I hang up. If I get U.S. mail with no
+  > return address, it goes into the garbage unopened. If someone
+  > accosts me in the street while wearing a mask, I back away -
+  > carefully, and expecting violence. In a technical discussion,
+  > anonimity means that the individual isn't willing to associate
+  > himself with the matter being discussed, which discredits his
+  > utterances and makes listening to them a waste of time.
+  >   
+  > Anonimity leads to fun psych experiments; the literature is filled
+  > with all the various things that people will do anonymously that
+  > they won't otherwise. Including one notorious study involving
+  > torture that would not have passed today's ethical standards. Fun
+  > stuff, in any case.
+  > 
+  > FINE. LEAVE US OUT OF IT.
+
+  From: jbuck@forney.berkeley.edu (Joe Buck)
+
+  > You obviously have never submitted an article to a refereed
+  > journal, where you will receive anonymous reviews through a server
+  > (the editor) that behaves much like the one in Finland (e.g. you 
+  > may reply and the editor will maintain the anonymity).  ...  Your
+  > comparison of someone who wants to express him/herself on a 
+  > technical issue anonymously with a person who approaches you on a 
+  > dark street with a ski mask is just emotionally overwrought 
+  > nonsense; such posters pose no physical threat to you.
+ 
+  jik@mit.edu (J. Kamens):
+  
+  > It seems obvious to me that the default should be *not* to allow
+  > anonymous postings in a newsgroup.  The Usenet has always
+  > operated on the principle that the status quo should be kept
+  > unless there's a large number of people who want to change it.
+  > 
+  > If someone REALLY needs to post a message anonymous in a newsgroup
+  > in which this usually isn't done, they can usually find someone
+  > on the net to do this for them. They don't need an automated
+  > service to do it, and the automated service is by its nature
+  > incapable of making the judgment call necessary to decide whether
+  > a particular posting really needs to be anonymous.
+
+  From: twpierce@unix.amherst.edu (Tim Pierce)
+  
+  > For any newsgroup you name, I bet I can envision a scenario
+  > involving a need for secrecy. If an accurate content-based
+  > filter of each anonymous posting could be devised to screen out
+  > those that don't require secrecy, wonderful.  But it can't be
+  > done.
+
+  From: lhp@daimi.aau.dk (Lasse Hiller|e Petersen)
+  
+  > If a newsgroup wants to be noise- and nuisance-free, then it
+  > should call for moderation. This should happen on a per-newsgroup
+  > basis, and not as a general USENET ban on anonymous postings. Of
+  > course one principle of moderation might be to keep out all
+  > anonymous postings, and could be achieved automatically. It would
+  > still be _moderation_. Personally I would prefer moderation
+  > criteria being based on actual content.
+
+  David A. Clunie (dclunie@pax.tpa.com.au)
+  
+  > If a "group" doesn't want to receive certain posts it should
+  > become moderated - there are clearly defined mechanisms on
+  > non-alt groups for this to take place. An automated moderator
+  > excluding posts from certain (eg. anonymous) sites or individuals
+  > could easily be established. If anyone wants to take such a
+  > draconian approach then they are welcome to do so and good luck
+  > to them. I doubt if I will be reading their group !
+
+  From: dave@frackit.UUCP (Dave Ratcliffe)
+  
+  > What possible need would someone have for posting anonymously to a
+  > sci.* group? 
+  > 
+  > Sure most adults are willing to post under their own names. Why
+  > would they want to hide behind an anonymous posting service?
+  > Ashamed of what they have to say or just trying to rile people
+  > without fear of being identified? 
+  > 
+  > Anonymous posting have their place in CERTAIN groups. If I or
+  > anyone else needs to tell you what those groups are then you've
+  > been on another planet breathing exotic gases for too long.
+
+  From: Karl_Kleinpaste@cs.cmu.edu
+  
+  > It's bloody fascinating that (all?) the proponents of unimpeded
+  > universal anon posting access can't seem to find any middle
+  > ground at all.  Why is there such a perception of
+  > absolutism? Where does this instant gratification syndrome come
+  > from, "I want anon access and I want it NOW"?  Who are the
+  > control freaks here?
+  
+  From: 00acearl@leo.bsuvc.bsu.edu
+
+  > Remember, this is a newsgroup for posters writing about SCIENTIFIC
+  > issues. Anonymous discussion of scientific issues leads to bad
+  > science.
+
+  From: noring@netcom.com (Jon Noring)
+  
+  > Though many have personal philosophical arguments against
+  > anonymous posters, their arguments have not been compelling
+  > enough to convince me that omni-newsgroup anonymous posting
+  > should be banned or severely restricted.  Though I cannot prove
+  > it, it seems to me that those who do not like anonymous posting
+  > (in principle) do so for reasons that are personal (read,
+  > psychological discomfort) rather than for reasons related to
+  > maintaining the "integrity" of Usenet.
+  > 
+  > Remember, it is impossible to be able to ascertain all the
+  > conceivable and legitimate motives for anonymous posting to
+  > newsgroups one normally would not deem to be "sensitive". ... in
+  > general, I fear even letting newsgroup readers vote on either
+  > allowing or not allowing anonymous posting, since a priori they
+  > *cannot* know all the motives of *legitimate* posters, and I do
+  > not believe that any system should ever be instituted that would
+  > inhibit the posting of legitimate and informative posts. 
+
+  lestat@wixer.cactus.org (Lyle J. Mackey) writes:
+
+  > I personally don't believe that pseudonymous postings are
+  > appropriate in a serious discussion area.  If there is a
+  > LEGITIMATE reason for concealing the posters' identity, perhaps,
+  > but simply because they're not so sure if they want their name
+  > attached doesn't qualify as LEGITIMATE in my book.  (Oh, and if
+  > you can come up with a legitimate purpose for anonymous postings,
+  > please, enlighten me.)
+
+  sderby@crick.ssctr.bcm.tmc.edu (Stuart P. Derby)
+  
+  > Three of our (the U.S.'s) founding fathers, Madison, Hamilton, and
+  > Jay, seemed to think "anonymous posting" was OK. The Federalist
+  > papers were originally printed in New York newspapers with
+  > authorship attributed to "Publius". I wonder if you would find
+  > their purpose "LEGITIMATE"?
+
+
+_____
+<8.7> What should system operators do with anonymous postings?
+
+  From: emcguire@intellection.com (Ed McGuire)
+  
+  > I would like to know how to junk all articles posted by the
+  > anonymous service currently being discussed.  Ideally I would
+  > actually tell my feed site not to feed me articles posted by the
+  > anonymous service. Assuming the C News Performance Release, what
+  > is a simple way to accomplish this? Or where should I look to
+  > learn how to do it myself?
+  
+  From: dclunie@pax.tpa.com.au (David Clunie)
+  
+  > That's a bit draconian isn't it ? Have your users unanimously
+  > decided that they would like you to do this or have you decided
+  > for them ?
+  
+  From: emcguire@intellection.com (Ed McGuire)
+  
+  > Good question.  Nobody has decided. I have no definite plan to do
+  > this, just wanted the technical data.
+
+  Carl Kleinpaste (Karl_Kleinpaste@godiva.nectar.cs.cmu.edu):
+  
+  > ...were I to be in the position of offering such a service again,
+  > my promises of protection of anonymity would be limited.  Not on
+  > the basis of personal opinion of what gets posted, but on the
+  > basis of postings which disrupt the smooth operation of the
+  > Usenet. The most obvious and direct recourse would be to `out'
+  > the abusive individual. Less drastic possibilities exist -- the
+  > software supports a "fire extinguisher" by which individuals can
+  > be prevented from posting.
+
+  john@iastate.edu (John Hascall):
+  
+  > Since when is Usenet a democracy? If someone wants to run an
+  > anonymous service, that's their business. If you want to put
+  > that host in your killfile, that's your business. If a newsadmin
+  > wants to blanket-drop all postings from that site, that's between
+  > them and the other people at that site. If everyone ignores a
+  > service, the service effectively doesn't exist.
+
+  From: jik@athena.mit.edu (Jonathan I. Kamens)
+  
+  > NNTP servers that allow posting from anyone are NOT "a service to
+  > the net."  They do the net a disservice.
+  > 
+  > Terminal servers have the same problems as open NNTP servers --
+  > they allow people who want to do illegal/immoral/unethical things
+  > on the Internet to do so without accountability.
+  > 
+  > There are, by now, public access sites all over this country, if
+  > not all over the world, that allow very inexpensive access to the
+  > Usenet and the Internet.  There is no reason for NNTP servers to
+  > allow anyone to post messages through them, and there is no
+  > reason for terminal servers to allow anyone to connect to them
+  > and then make outbound connections through them.  Perhaps when it
+  > was harder to get to the Internet or the Usenet, open servers
+  > could be justified, but not now.
+
+  jbotz@mtholyoke.edu (Jurgen Botz): 
+  
+  > I think that what ... these points show clearly is that an
+  > anonymous posting service has a great deal of responsibility,
+  > both towards its clients and towards the Net as a whole.  Such a
+  > service should (IMHO) have a set of well-defined rules and a
+  > contract that its clients should sign, under the terms of which
+  > they are assured anonymity.
+
+  From: an8785@anon.penet.fi
+  
+  > Is the problem that some are used to "punishing" posters who are
+  > upsetting in some vague way by complaining to the (usually
+  > acquiescent) sysadmin or organizations that the poster belongs
+  > to? That surely is the most gutless approach to solving
+  > problems, but my experience on the net shows that the same users
+  > who vilify anonymous postings are the first to write obsessively
+  > detailed grievances to the poster's supervisor when his or her
+  > tranquility is disturbed by some "intrusive" or subversive post
+  > or another.
+  > 
+  > Anonymous postings prevent just this kind of intimidation.
+
+  From: gandalf@cyberspace.org (Eric Schilling)
+  
+  > The main point I would like to make here is that while we can go
+  > through and revise the news sw to "reject anon posts to technical
+  > newsgroups" or some such thing, I think the attempt will prove
+  > futile. Each attempt to modify news can result in a changed
+  > approach by anon service providers to thwart the change.  I think
+  > this would be pointless.
+
+  From: julf@penet.fi (Johan Helsingius)
+
+  > I have tried to stay out of this discussion, and see where the
+  > discussion leads. But now I rally feel like I have to speak up.
+  > ... I have repeatedly made clear ... that I *do* block users if
+  > they continue their abuse after having been warned. In many cases
+  > the users have taken heed of the warning and stopped, and in some
+  > cases even apologized in public. And when the warning has not had
+  > the desired effect, I have blocked a number of users. I have also
+  > blocked access to groups where the readership has taken a vote to
+  > ban anonymous postings, although I feel changing the newsgroup
+  > status to moderated is the only permanent solution for newsgroups
+  > that want to "formalize" discussion.
+ 
+  red@redpoll.neoucom.edu (Richard E. Depew)
+
+  > Does this ... mean that you are volunteering to issue a Request 
+  > For Discussion to ban anonymous postings or to moderate each of 
+  > the 4000+ newsgroups that your server can reach?  I don't think 
+  > so, but this illustrates the trouble that your server is causing!
+  >
+  > please listen to the consensus of the news administrators in this 
+  > group:  any newsgroup should be consulted *before* letting your 
+  > server post messages to that group.
+ 
+  From: C96@vm.urz.uni-heidelberg.de (Alexander EICHENER)
+  
+  > There is no pompous "consensus of *the* news administrators" 
+  > here - maybe you would like to invent one. There is a sizeable 
+  > number of people who are concerned about the possible (and, to a 
+  > minor extent, about the actual abuse of the server as it is 
+  > configured now). These concerns are respectable; Johan is dealing
+  > with them. ... There are some (few) who rage with foam before 
+  > their mouth and condemn the service altogether. And a number who
+  > defend it, pointing out, like Kate Gregory, that even a group 
+  > like misc.kids. can benefit from pseudonymous postings.
+
+  From: julf@penet.fi (Johan Helsingius)
+
+  > I have answered a lot of personal mail related to server abuse,
+  > and as a result of that, blocked a number of abusive users. I
+  > have also withdrawn the service from several newsgroups where the
+  > users have taken a vote on the issue. I have not made any
+  > comments on news.admin.policy, partly because the
+  > newly-implemented password feature (as a emergency measure
+  > against a security hole) has kept me really busy answering user
+  > queries the last two weeks, and partly because I feel it is not
+  > for me to justify the service, but for the users. The problem
+  > with news.admin.policy is that the readership is rather elective,
+  > representing people whith a strong interest in centralised
+  > control.
+
+  From: hartman@ulogic.UUCP (Richard M. Hartman)
+  
+  > This seems to be a rather bigoted attitude.  I would consider that
+  > this group is for anyone who wishes to discuss how the net should
+  > be controlled.  Saying that we only have an interest in
+  > "centralized control" is a clear indication of bias.  You are
+  > perfectly welcome to join in the discussions here to promote your
+  > views on control.
+
+  jbuck@ohm.berkeley.edu
+  
+  > This whole debate is a lot of "sound and fury signifying nothing"
+  > because, even if you all decide to ban anonymous posting servers,
+  > it is not enforceable.  The only people who conceivably could
+  > enforce retrictions are those that control the international
+  > links.
+  > 
+  > Policy changes should be made by cooperation, not by attempting
+  > to dictate. ...you need to persuade those who run the services
+  > to act like this through friendly persuasion, not by trying to
+  > beat them over the head with a stick (especially a stick you
+  > don't even have).
+
+  spp@zabriskie.berkeley.edu (Steve Pope)
+  
+  > I am finding this bias against pseudonymity boring.  Our friend
+  > posting through penet has a point.  The old guard would like to
+  > keep their network the way it always has been... and this new
+  > thing, these pseudonymous servers, cuts into their turf.  So they
+  > whine and bitch about it, and every time there's the slightest
+  > abuse (such as somebody's .sig being too long),  they try to
+  > parlay that into an argument against pseudonymity.
+  > 
+  > I'll go on record as saying: three cheers for the admins at anon
+  > servers like penet, pax, and n7kbt... and for all the  access
+  > service providers who are willing to preserve their clients
+  > privacy.
+  > 
+  > And a pox on those who try to defeat and restrict pseudonymity.
+  
+  mimir@stein.u.washington.edu (Al Billings)
+  
+  > I wouldn't help people get rid of anon postings as a group. If you
+  > don't like what someone says, then you put THAT anon address in
+  > your kill file, not all of them. Of course, if and when I get an
+  > anon site going, I'm just going to assign fake names like
+  > "jsmith" instead of "anon5564" to avoid most of the hassles.
+  > You'll never know it is anonymous will you?
+
+  From: anne@alcor.concordia.ca (Anne Bennett)
+  
+  > I must admit to some astonishment at this argument.  I see the
+  > value of anonymous postings under some circumstances, yet believe
+  > strongly that these should be identified as such, so that people
+  > who do not wish to read material from people who won't identify
+  > themselves, don't have to.
+  > 
+  > I fail to see what good you would be accomplishing, and indeed
+  > surmise that you will cause many people inconvenience and
+  > annoyance, by hiding the anonymity of postings from your
+  > anonymous site.  Would you care to justify where the hell you get
+  > the gall to try to prevent people from effectively filtering
+  > their news as they see fit?
+  
+  From: dclunie@pax.tpa.com.au (David Clunie)
+  
+  > I thought I was out of reach here in Australia too. Unfortunately
+  > one of the US sites involved in the US/Aus feed complained to the
+  > Australian Academic Reasearch Network through whom my site is
+  > connected, not about anything in particular, just the concept of
+  > anonymous mail having no redeeming features and consuming a
+  > narrow bandwidth link (with which I can't argue) and that was
+  > that ... stop the service or face disconnection.
+  >
+  > I consider the demise of [my] service to have been rather
+  > unfortunate, and I wish the Finnish remailer luck ! It is a pity
+  > that there are very few if any similar services provided with in
+  > the US. I guess that's the benefit of having a constitution that
+  > guarantees one freedom of speech and a legal and political system
+  > that conspires to subvert it in the name of the public good.
+
+
+_____
+<8.8> What is going on with anon.penet.fi run by J. Helsingius?
+
+
+  From: Karl_Kleinpaste@cs.cmu.edu
+  
+  > Funny, how beating the rest of the Usenet over the head with a
+  > stick is OK if it's anon.penet.fi and universal anon access.  But
+  > somehow people on the other side of the same equation (not even
+  > arguing to shut it off entirely, but rather just to have some
+  > control applied to the abuses that manifest themselves) aren't
+  > allowed to do that.
+  > 
+  > I have written to Johan several times in the last couple of
+  > weeks.  He used to reply to me quite readily. After all, I was
+  > the source of the software as originally delivered to him -- he
+  > used to be downright _prompt_ about replying to me. Funny, now
+  > he's being an impolite bastard who doesn't answer mail _at_all_,
+  > even when it consists of really very civil queries.
+  
+  From: julf@penet.fi (Johan Helsingius)
+  
+  > In your mail you told me you sent me one or more messages on Feb.
+  > 8th. Feb 7th and 8th the server was down, and the flood of mail
+  > that resulted from the server coming up again crashed my own mail
+  > host. The problem was aggregated by an abusive user sending
+  > thousands of messages to another user, filling up that users
+  > mailbox. The bounce messages ended up in my mailbox, overflowing
+  > my local disk as well.
+  > 
+  > I can only suppose that your message got lost in that hassle, as
+  > I have tried to answer as much as possible of the anon-related
+  > messages I get, from routine mis-addessed messages to complaints
+  > about the service. On the average I spend 4-5 hours per day
+  > answering anon-related messages.
+  
+  From: Karl_Kleinpaste@cs.cmu.edu
+  
+  > Why is it that everybody else has to put up with the impoliteness
+  > and insensitivity of the misuse of anon.penet.fi?  Whose
+  > definitions of "polite" and "sense" apply, and why? Why is
+  > universal anon access considered to be within the realm of this
+  > fuzzy concept of "politeness" in the first place?
+  > 
+  > I think Johan has long since crossed the line into being a rude
+  > bastard, and I told him so in private mail a little while ago.
+  > 
+  > At this point, I deeply regret [a] having created an anonymous
+  > system supporting >1 newsgroup and [b] having given the code to
+  > Johan.  I didn't copyright it, but I thought that some concept of
+  > politeness and good sense might follow it to new
+  > homes.  Interesting that Johan's ideas of politeness and good
+  > sense seem to have nearly no interesection with mine. I could
+  > even cope with universal anon access _if_ Johan would be willing
+  > to engage in abuse control, but somehow that seems to be outside
+  > the range of reality...
+
+  From: julf@penet.fi (Johan Helsingius)
+  
+  > There is no way for me to convey how sad and upset your message
+  > made me. I do, to some extent, understand your feelings, but it
+  > still feels really bad. Running the server requires getting used
+  > to a lot of flames, but mindlessly abusive hate mail is so much
+  > easier to deal with than something like this, as I do respect and
+  > value your views and opinions to a high degree. No, I'm not
+  > asking for sympathy, I just wanted you to know that I am really
+  > giving your views quite a lot of weight.
+  > 
+  > When I asked for the software, I was actually only going to
+  > provide the service to scandinavian users. But a lot of people
+  > requested that I keep the service open to the international
+  > community. I now realize that I ought to have contacted you at
+  > that point to ask how you feel about me using your stuff in such
+  > a context. Again, I really want to apologise. And I will replace
+  > the remaining few pieces of code thet still stem from your
+  > system. Unfortunately there is no way to remove the ideas and
+  > structure I got from you.
+  > 
+  > Again, I am really sorry that the results of your work ended up
+  > being used in a way that you don't approve of. And I will be
+  > giving a lot of hard thought to the possibility of shutting down
+  > the server alltogether.
+  
+  From: Karl_Kleinpaste@cs.cmu.edu
+  
+  > I think I'm feeling especially rude and impolite.  If it's good
+  > for Johan, it's good for me.  After all, he didn't ask the
+  > greater Usenet whether universal anon access was a good idea; he
+  > just did it. ... Yes, I'm a seriously rude pain in the ass now,
+  > and I think I'll arm the Usenet Death Penalty, slightly modified,
+  > not for strategic whole-site attack, but tactical assault, just
+  > "an[0-9]*@anon.penet.fi" destruction. Only outside alt.*, too,
+  > let's say.
+  > 
+  > To parrot this line...people have been doing things like the UDP
+  > (that is, cancelling others' postings) for years, no one could
+  > ever stop them, and it's only politeness and good sense that has
+  > prevented them up to now.
+  > 
+  > In fact, I have 8 people who have expressed privately the desire
+  > and ability to arm the UDP.
+  > 
+  > ...
+  > 
+  > PS- No, in fact there are not 8 newsadmins ready to arm the
+  > UDP.  It would be amusing to know how many people gulped hard
+  > when they read that, though.  I don't see it as any different
+  > from Johan's configuration.
+  > 
+  > PPS- Now that I've calmed some fears by the above PS...  There
+  > are 2 newsadmins ready to arm the UDP.  They've asked for my
+  > code.  I haven't sent it yet. Only one site would be necessary
+  > to bring anon.penet.fi to a screeching halt.  Anyone can
+  > implement the UDP on their own, if they care to.  Politeness and
+  > good sense prevents them from doing so. I wonder how long before
+  > one form of impoliteness brings on another form.
+
+  From: julf@penet.fi (Johan Helsingius)
+  
+  > It would be trivially easy to bring anon.penet.fi to a screeching
+  > halt. In fact it has happened a couple of times already. But as
+  > we are talking threats here, let me make one as well. A very
+  > simple one. If somebody uses something like the UDP or
+  > maliciously brings down anon.penet.fi by some other means, it
+  > will stay down. But I will let the users know why. And name the
+  > person who did it. OK? As somebody said on this thread: "You have
+  > to take personal responsibility for your actions", right?
+  
+  From: avs20@ccc.amdahl.com (  134 Atul V Salgaonkar)
+  
+  > I am very grateful and appreciative of this service , courtesey of
+  > penet.fi.  Some important questions about my personal
+  > life/career/job were resolved due to kind help of other people
+  > who had been thru similar situations. In return, I have also
+  > replied to anon postings where I thought I could make a positive
+  > contribution.
+  > 
+  > In general, anon service is a great, in my opinion, although like
+  > any tool some people will not use it responsibly. I suggest that
+  > it should be kept alive. Wasting bandwidth is less important than
+  > saving lives, I think.
+  
+  From: us273532@mmm.serc.3m.com (Elisa J. Collins)
+  
+  > I have been informed that the anonymous posting service to many
+  > newsgroups has been turned off as a result of discussions in this
+  > newsgroup over people abusing it.
+  > 
+  > I had been posting to a nontechnical misc newsgroup about an
+  > intimate topic for which I felt I required privacy. I have
+  > received immeasurable help from the people in that newsgroup, and
+  > I have never used anonymity to behave in an abusive, immature, or
+  > unethical fashion toward anyone.
+  > 
+  > Please, folks, believe me, I *need* this service.  Please
+  > consider my point of view and permit admin@anon.penet.fi to turn
+  > the service back on...
+  > 
+  > Thank you.
+
+* * *
+
+SEE ALSO
+========
+
+Part 1 (first file)
+------
+
+<1.1> What is `identity' on the internet?
+<1.2> Why is identity (un)important on the internet?
+<1.3> How does my email address (not) identify me and my background?
+<1.4> How can I find out more about somebody from their email address?
+<1.5> Why is identification (un)stable on the internet? 
+<1.6> What is the future of identification on the internet?
+
+<2.1> What is `privacy' on the internet?
+<2.2> Why is privacy (un)important on the internet?
+<2.3> How (in)secure are internet networks?
+<2.4> How (in)secure is my account?
+<2.5> How (in)secure are my files and directories?
+<2.6> How (in)secure is X Windows?
+<2.7> How (in)secure is my email?
+<2.8> How am I (not) liable for my email and postings?
+<2.9> How do I provide more/less information to others on my identity?
+<2.10> Who is my sysadmin?  What does s/he know about me?
+<2.11> Why is privacy (un)stable on the internet?
+<2.12> What is the future of privacy on the internet?
+
+<3.1> What is `anonymity' on the internet?
+<3.2> Why is `anonymity' (un)important on the internet?
+<3.3> How can anonymity be protected on the internet?
+<3.4> What is `anonymous mail'?
+<3.5> What is `anonymous posting'?
+<3.6> Why is anonymity (un)stable on the internet?
+<3.7> What is the future of anonymity on the internet?
+
+Part 2 (previous file)
+------
+
+<4.1> What UNIX programs are related to privacy?
+<4.2> How can I learn about or use cryptography?
+<4.3> What is the cypherpunks mailing list?
+<4.4> What are some privacy-related newsgroups?  FAQs?
+<4.5> What is internet Privacy Enhanced Mail (PEM)?
+<4.6> What are other Request For Comments (RFCs) related to privacy?
+<4.7> How can I run an anonymous remailer?
+<4.8> What are references on privacy in email?
+<4.9> What are some email, Usenet, and internet use policies?
+<4.10> What is the MIT ``CROSSLINK'' anonymous message TV program?
+
+<5.1> What is ``digital cash''?
+<5.2> What is a ``hacker'' or ``cracker''?
+<5.3> What is a ``cypherpunk''?
+<5.4> What is `steganography' and anonymous pools?
+<5.5> What is `security through obscurity'?
+<5.6> What are `identity daemons'?
+<5.7> What standards are needed to guard electronic privacy?
+
+<6.1> What is the Electronic Frontier Foundation (EFF)?
+<6.2> Who are Computer Professionals for Social Responsibility (CPSR)?
+<6.3> What was `Operation Sun Devil' and the Steve Jackson Game case?
+<6.4> What is Integrated Services Digital Network (ISDN)?
+<6.5> What is the National Research and Education Network (NREN)?
+<6.6> What is the FBI's proposed Digital Telephony Act?
+<6.7> What other U.S. legislation is related to privacy on networks?
+<6.8> What are references on rights in cyberspace?
+<6.9> What is the Computers and Academic Freedom (CAF) archive?
+
+<7.1> What is the background behind the Internet?
+<7.2> How is Internet `anarchy' like the English language?
+<7.3> Most Wanted list
+<7.4> Change history
+
+
+* * *
+
+This is Part 3 of the Privacy & Anonymity FAQ, obtained via anonymous
+  FTP to pit-manager@mit.edu:/pub/usenet/news.answers/net-privacy/ or 
+  newsgroups news.answers, sci.answers, alt.answers every 21 days.
+Written by L. Detweiler <ld231782@longs.lance.colostate.edu>.
+All rights reserved.
+
+

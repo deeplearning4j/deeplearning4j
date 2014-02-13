@@ -1,0 +1,15 @@
+From: tso@cephalo.neusc.bcm.tmc.edu (Dan Ts'o)
+Subject: Re: How much memory for WP for Windows?
+Organization: Baylor College of Medicine, Houston,Tx
+Lines: 8
+Distribution: world
+NNTP-Posting-Host: cephalo.neusc.bcm.tmc.edu
+
+In article <1ps6pjINNdua@rave.larc.nasa.gov> jka@air77.larc.nasa.gov writes:
+)  The documentation says that Wordperfect for windows, requires 4 M of ram, but
+)when I try to install it on my laptop I get a not enough memory error message.
+)I've unloaded everything that I possibly could but still, NOT ENOUGH MEMORY.
+)Anyone have any ideas as to why this might be happening. 
+
+	Are you sure you're not running Windows in real mode ? Is it Windows
+3.1 ? Do you have a permanent swapfile built ?

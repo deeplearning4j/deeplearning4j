@@ -1,0 +1,26 @@
+On corporate development and getting acquired
+To take a closer look at the topic, and understand why companies are falling over themselves to recruit a DevOps engineer, I caught up with Dell ‘s Barton George. He works on Dell’s cloud strategy as the director of the company’s cloud developer programs. He also writes a blog, where he frequently discusses the benefits of having a DevOps team.
+VentureBeat: Let’s dive in with a basic question. What is DevOps?
+Barton George: DevOps literally means developers and operations. It’s a contraction. The concept behind it is getting developers and operations folk to work closely together to benefit the business. The goal is to reduce friction and increase velocity.
+VentureBeat: Where did the term emerge from?
+George: It came out of the worlds of huge scale — out of companies like Amazon and Google. They needed people to work together and didn’t have the luxury of having these siloed functions.
+VentureBeat: Don’t developers and operations folks have very different goals?
+George: Yes. They have oppositional goals. Developers are all about innovation, making something cool and new. Operations teams are focused on never letting the site go down. Developers weren’t incentivized to worry about that.
+I witnessed that all change in February 2001 with the release of the “ agile manifesto .” Developers began to wonder how they could get closer to customers themselves. What do customers really want? They started thinking less about cool features and more about rapid cycles, easily implementable code, user experience, and so on.
+The operations guys haven’t had a similar movement, which is where DevOps comes in.
+VentureBeat: What is meant by this term “agile development”? Do you use it to refer simply to speed?
+George: Simply put, it means a lot more iterations: releasing updates to the product early and often. Instead of worrying about making something that is absolutely perfect, let’s just get it out there. It’s that concept of the “perpetual beta” — let’s do quick sprints, develop in 30-day chunks, and see what people think. Agile literally means being able to change quickly.
+And if you are doing these quick releases, you can tweak the product and stay in tune with the market.
+VentureBeat: How does DevOps relate to the open-source movement? 
+George: It’s a parallel program. DevOps is a cultural movement, and a lot of the collaborative concepts from open-source spill over. It’s the culture of working together as a team.
+When we talk about this big scale-out model and open-source, which has allowed for development to be deployed so quickly, DevOps is so important to help underpin that.
+VentureBeat: How do businesses really benefit from all this?
+George: The goal is to automate processes — having code perform functions that were once painstaking manual work. This can lead to a huge cost-savings.
+Ultimately, the promise of DevOps is about increasing your responsiveness to customers. If the site goes down, you are clearly not serving your customer. And the sooner you can catch a problem, the less costly it will be.
+With a DevOps team, you can offer more features that customers want, which won’t crash your site.
+VentureBeat: Is DevOps typically associated with large corporations or scrappy startups? 
+George: It’s more associated with big companies. Small companies will find it easier to work together. But a company like Google or Netflix need to push out lots of code each day. Today, these companies are doing multiple code pushes a day. There’s a good chance in this circumstance that there’s a bug in the code. Developer tools like Puppet and Chef can help systems administrators automate a lot of this and address some of the most difficult infrastructure challenges.
+DevOps brings in monitoring and other sorts of tools to immediately diagnose what the problems are.
+VentureBeat: Any popular myths or misconceptions you often hear about DevOps?
+George: DevOps is not just beneficial for high-tech companies. I listened to a webinar about a year ago about how a Midwest financial firm is doing this as well. It’s also not limited to people here in Silicon Valley.
+DevOps is for anyone who wants to be more nimble. In my opinion, it’s a way for IT to gain relevancy. I see IT being relegated to one side, with the purse strings held by the business team. [With DevOps] IT can assert themselves earlier in the process — they can say to developer teams, “Hey, guys, how can we best implement this? What automation tools can help?” As opposed to tossing a ton of code at a wall and seeing what sticks.

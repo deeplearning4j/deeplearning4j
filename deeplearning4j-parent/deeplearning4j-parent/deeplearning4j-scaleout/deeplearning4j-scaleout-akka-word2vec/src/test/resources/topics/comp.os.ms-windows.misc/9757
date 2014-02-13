@@ -1,0 +1,25 @@
+From: ebosco@us.oracle.com (Eric Bosco)
+Subject: Re: Windows Speaker Sound Driver
+Nntp-Posting-Host: monica.us.oracle.com
+Reply-To: ebosco@us.oracle.com
+Organization: Oracle Corp., Redwood Shores CA
+X-Disclaimer: This message was written by an unauthenticated user
+              at Oracle Corporation.  The opinions expressed are those
+              of the user and not necessarily those of Oracle.
+Lines: 15
+
+In article <1993Apr19.235430.6097@mnemosyne.cs.du.edu>  
+alee@mnemosyne.cs.du.edu (Alec Lee) writes:
+> Is there an ftp site where I can get the MS speaker sound driver?   
+There's
+> a "sound.exe" file that claims to be the driver but I'm suspicious since
+> it's not a .drv file.  
+> 
+> Thanks
+> 
+> Alec Lee
+
+The sound.exe is actually a self extracting script which includes the .drv  
+file.  Works great!
+
+-Eric

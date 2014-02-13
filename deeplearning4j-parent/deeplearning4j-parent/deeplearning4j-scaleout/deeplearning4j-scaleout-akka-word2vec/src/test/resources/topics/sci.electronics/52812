@@ -1,0 +1,30 @@
+From: gerg@netcom.com (Greg Andrews)
+Subject: Re: Radar detector DETECTORS?
+Organization: Netcom Online Communications Services (408-241-9760 login: guest)
+Lines: 25
+
+nhowland@matt.ksu.ksu.edu (Neal Patrick Howland) writes:
+>
+>From what I understand about radar dectectors all they are is a passive
+>device much like the radio in your car.  They work as an antenna picking
+>up that radar signals that the radar gun sends out.  Therefore there would
+>be no way of detecting a radar detector any more than there would be of
+>detecting whether some one had a radio in their car.  
+>
+
+Unfortunately, you're wrong on both counts.  The most common method of
+implementing a tunable receiver is to have a local oscillator.  The
+local oscillator's frequency can be radiated out of the receiver via
+the antenna unless the circuit is designed and constructed with great
+care.
+
+For a reference on detecting radios, get the paperback book _Spy Catcher_.
+The author discovered how to detect radio receivers from their local
+oscillator emissions back in the *1950s* while he worked for British
+Intelligence.
+
+  -Greg
+-- 
+:::::::::::::::::::  Greg Andrews  gerg@netcom.com  :::::::::::::::::::
+Fortune Cookie:  Radioactive cats have 18 half-lives.
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

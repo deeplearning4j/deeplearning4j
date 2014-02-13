@@ -1,0 +1,6 @@
+A
+Strong encryption may still work, despite the best efforts of the NSA, but a new research paper suggests that clever audio analysis can recover users’ private encryption keys. The exploit takes advantage of the fact that processors make noises that can sometimes betray what they’re doing — noises that even a mobile device’s microphone can pick up. Actually doing this would require a very, very specific set of circumstances, but the heavily paranoid might want to make sure they’re using the latest GnuPG RSA encryption software, namely version 2.x.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

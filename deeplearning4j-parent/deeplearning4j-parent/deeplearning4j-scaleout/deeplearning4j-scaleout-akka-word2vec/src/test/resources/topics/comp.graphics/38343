@@ -1,0 +1,10 @@
+From: mdpyssc@fs1.mcc.ac.uk (Sue Cunningham)
+Subject: Fractals? What good are they ?
+Organization: Manchester Computing Centre
+Lines: 5
+
+We have been using Iterated Systems compression board to compress 
+pathology images and are getting ratios of 40:1 to 70:1 without too
+much loss in quality. It is taking about 4 mins per image to compress,
+on a 25Mhz 486 but decompression is almost real time on a 386 in software 
+alone.

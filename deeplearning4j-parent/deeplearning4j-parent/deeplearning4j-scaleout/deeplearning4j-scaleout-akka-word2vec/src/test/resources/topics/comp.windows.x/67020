@@ -1,0 +1,34 @@
+From: mikey@eukanuba.wpd.sgi.com (Mike Yang)
+Subject: Re: Monthly Question about XCopyArea() and Expose Events
+Reply-To: mikey@sgi.com
+Organization: Silicon Graphics, Inc.
+Lines: 27
+Nntp-Posting-Host: eukanuba.wpd.sgi.com
+
+In article <BUZZ.93Apr19125438@lion.bear.com>, buzz@bear.com (Buzz Moschetti) writes:
+|> (2nd posting of the question that just doesn't seem to get answered)
+
+How can we resist a questions that says something like this?
+
+|> The problem, of course, is that no expose event is generated if the window
+|> is already visible and mapped.  What we need to do is somehow "tickle" the
+|> Window so that the expose handler is hit with arguments that will enable
+|> it to render *just* the part of the window that contains the new item.
+|> 
+|> What is the best way to tickle a window to produce this behavior?
+
+If your Expose event handler is truly intelligent about exposed
+rectangle information, then you can use XClearArea to generate an
+Expose event (assuming that your background pixel is not None) for the
+enclosing rectangle of your new item.
+
+This is still not great, since any other items contained within that
+rectangle will still be unnecessarily redrawn.
+
+If your Expose event handler simply redraws everything, you'll be
+doing much more work than just drawing the new item "on top" of the
+existing scene.
+
+-----------------------------------------------------------------------
+                 Mike Yang        Silicon Graphics, Inc.
+               mikey@sgi.com           415/390-1786

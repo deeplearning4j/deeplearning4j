@@ -1,0 +1,26 @@
+From: wongda@eecg.toronto.edu (Daniel Y.H. Wong)
+Subject: Actix video card drivers for windows
+Keywords: actix graphics accelerator 
+Organization: Dept. of Electrical Engineering, University of Toronto, Canada
+Lines: 20
+
+I am looking for the latest drivers for the Actix graphics accelerator card. 
+The driver I am currently using is version 1.21 and doesn't support more 
+than 256 colors in 1024x768 mode even you have 2MB memory. 
+
+The BBS support for Actix is unbelievable! They are still using 2400bps 
+modem! It will take you hours to download the drivers, it hurts when you
+are calling long distance. Is there any ftp site that has a collection
+of video drivers for windows?
+
+BTW, anyone using this card, and how do you like it so far?
+
+Thanks.
+
+
+-- 
+
+
+Daniel Y.H. Wong					UofT:(416)978-1659
+wongda@picton.eecg.toronto.edu				Electrical Engineering
+--

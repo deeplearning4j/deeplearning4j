@@ -1,0 +1,65 @@
+From: rvenkate@ux4.cso.uiuc.edu (Ravikuma Venkateswar)
+Subject: Re: x86 ~= 680x0 ?? (How do they compare?)
+Distribution: usa
+Organization: University of Illinois at Urbana
+Lines: 59
+
+ray@netcom.com (Ray Fischer) writes:
+
+>dhk@ubbpc.uucp (Dave Kitabjian) writes ...
+>>I'm sure Intel and Motorola are competing neck-and-neck for 
+>>crunch-power, but for a given clock speed, how do we rank the
+>>following (from 1st to 6th):
+>>  486		68040
+>>  386		68030
+>>  286		68020
+
+>040 486 030 386 020 286
+
+How about some numbers here? Some kind of benchmark?
+If you want, let me start it - 486DX2-66 - 32 SPECint92, 16 SPECfp92 .
+
+>>While you're at it, where will the following fit into the list:
+>>  68060
+>>  Pentium
+>>  PowerPC
+
+>060 fastest, then Pentium, with the first versions of the PowerPC
+>somewhere in the vicinity.
+
+Numbers? Pentium @66MHz - 65 SPECint92, 57 SPECfp92 .
+	 PowerPC @66MHz - 50 SPECint92, 80 SPECfp92 . (Note this is the 601)
+        (Alpha @150MHz  - 74 SPECint92,126 SPECfp92 - just for comparison)
+
+>>And about clock speed:  Does doubling the clock speed double the
+>>overall processor speed?  And fill in the __'s below:
+>>  68030 @ __ MHz = 68040 @ __ MHz
+
+>No.  Computer speed is only partly dependent of processor/clock speed.
+>Memory system speed play a large role as does video system speed and
+>I/O speed.  As processor clock rates go up, the speed of the memory
+>system becomes the greatest factor in the overall system speed.  If
+>you have a 50MHz processor, it can be reading another word from memory
+>every 20ns.  Sure, you can put all 20ns memory in your computer, but
+>it will cost 10 times as much as the slower 80ns SIMMs.
+
+Not in a clock-doubled system. There isn't a doubling in performance, but
+it _is_ quite significant. Maybe about a 70% increase in performance.
+
+Besides, for 0 wait state performance, you'd need a cache anyway. I mean,
+who uses a processor that runs at the speed of 80ns SIMMs? Note that this
+memory speed corresponds to a clock speed of 12.5 MHz.
+
+>And roughly, the 68040 is twice as fast at a given clock
+>speed as is the 68030.
+
+Numbers?
+
+>-- 
+>Ray Fischer                   "Convictions are more dangerous enemies of truth
+>ray@netcom.com                 than lies."  -- Friedrich Nietzsche
+-- 
+Ravikumar Venkateswar
+rvenkate@uiuc.edu
+
+A pun is a no' blessed form of whit.

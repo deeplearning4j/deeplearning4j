@@ -1,0 +1,49 @@
+From: mike@drd.com (Mike.Rovak)
+Subject: Re: workaround for Citizen drivers
+Keywords: printer driver Citizen PN48 GSX-140
+Organization: DRD Corporation
+Lines: 43
+
+In article <1993Apr26.185033.12279@drd.com> mike@drd.com (Mike.Rovak) writes:
+>I have been experiencing several end-user problems with various commercial
+>software packages (WordPerfect 5.2/WIN, Publish It!/WIN 3.1) and printing
+>landscape mode on a Citizen PN48 (the little guy) or the Citizen GSX-140+.
+>
+>In a nutshell the problem is that I lose the first 0.625 inches of
+>information from my left margin, be it white space or TrueType font
+>output, and margins are not preserved on subsequent pages past the
+>first.
+>
+>WordPerfect had a workaround consisting of using the "Default" location
+>for the printers instead of "Tractor" or "Manual".  They have also filed
+>this as a bug and are continuing to investigate it.
+>
+>MS Write, of course, has no problem with these printer drivers, proving that
+>Microsoft knows something the rest of us don't!  Are you surprised?  I'm
+>not.
+>
+>Publish It!/WIN is still investigating this problem, and while I was consider-
+>my options (rejecting the one about buying an $800 DTP package, for *surely*
+>they wouldn't have this problem, right?) I stumbled onto a global workaround.
+>
+>WORKAROUND
+>----------
+>Go into the Windows 3.1 control panel, select printers, select your Citizen
+>printer driver, select SETUP, and select a custom size of 850 x 1132.  Like
+>magic, all of your problems will go away.
+>
+>Ask me no questions and I'll tell you no lies!
+>
+>-- Mike
+
+
+Excuse me, that's 850 x 1163.
+
+-- Mike
+
+------------------------------------------------------------------------
+Disclaimer: My opinions do not necessarily reflect those of my employer.
+========================================================================
+------------------------------------------------------------------------
+     mike.rovak@drd.com     
+========================================================================

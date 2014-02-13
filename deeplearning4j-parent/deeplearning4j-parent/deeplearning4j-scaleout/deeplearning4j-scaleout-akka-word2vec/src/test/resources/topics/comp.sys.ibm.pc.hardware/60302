@@ -1,0 +1,46 @@
+From: dmoyer@ccscola.Columbia.NCR.COM (Dan Moyer)
+Subject: Re: Changing Motherboards - Messing With Connectors
+Nntp-Posting-Host: ccscola
+Organization: NCR Corp, E&M-Columbia, Columbia, SC
+Lines: 40
+
+In article <93105.073119IP06015@portland.caps.maine.edu> Jozef Slaby <IP06015@portland.caps.maine.edu> writes:
+>When I changed my motherboard I had a lot of trouble getting
+>LED,SPKR,TURBO,TURBOSWITCH,HDD,KLCK,RST, connectors correctly
+>reconnected. For example Turbo Switch had three wires and
+>the motherboard connection only two pins... and so on.
+>
+>Does anyone know a solution to this. Do I need to rewire the
+>connectors or what is the best way to approach this.
+>It is somewhat frustrating. I got it to work somehow but my Turbo
+>switch doesn't work at all.
+>
+
+I just put replaced the motherboard in a system and had similar questions.
+My 2 cents worth:
+
+The speaker connector should have two wires going to the speaker. 
+A speaker being a coil, it's bidirectional and makes no difference
+which way you attach.
+
+Turbo switch.   There are three wires to control how you want turbo
+to become active- with the switch pushed in or the switch out.    I think
+the middle wire is common.   Use an ohm meter to figure out which wire
+connects with the common wire when the switch is pushed in, and which two
+wires are connected when the switch is out.   Place the appropriate
+two wires on the turbo berg connector of the motherboard.
+
+LED's:   (Turbo and HD)  LED's are uni directional.  Depending which
+way the wires are attached the LED will not light.  On my AMI motherboard,
+if the turbo switch wires are not attached to the berg connector on the
+board, the board will power up in default in Turbo mode.   If your motherboard
+is like that... just attace the LED wires to the board.  If the LED doesn't
+light, power off, reverse the connectors and try again.   It should work.
+
+If it does, then attach the turbo switch to the board.
+
+Hope this helps.
+
+Dan Moyer
+Dan.Moyer@ColumbiaSC.NCR.COM 
+

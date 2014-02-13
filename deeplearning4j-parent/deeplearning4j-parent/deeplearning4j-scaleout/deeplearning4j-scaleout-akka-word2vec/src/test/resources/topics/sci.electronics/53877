@@ -1,0 +1,21 @@
+From: stevens@madvlsi.columbia.edu (Andy Stevens)
+Subject: Re: decoupling caps - onboard
+Organization: Columbia University
+X-Posted-From: greece.madvlsi.columbia.edu
+NNTP-Posting-Host: sol.ctr.columbia.edu
+Lines: 14
+
+In article <1993Apr20.173652.762@jarvis.csri.toronto.edu>, ravin@eecg.toronto.edu (Govindan Ravindran) writes:
+|>         I would like to know if any one had any experience with having
+|> on-board decoupling capacitors (inside a cmos chip) for the power
+|> lines. Say I have a lot of space left im my pad limited design.
+|> any data on the effect of oxide breakdown? any info or pointers
+|> are appreciated.
+
+DEC did this on their new alpha chip.  I'm sure you could call them up
+and ask them how they did it (haha).
+
+Actually, there are some details in their article in IEEE Journal of
+Solid-State Circuits.  I think it was sometime around Nov.  1992.
+
+--andy s.

@@ -1,0 +1,66 @@
+From: shc@cbnewsk.cb.att.com (stephen.chu)
+Subject: Application Errors on WIN31
+Organization: AT&T
+Keywords: memory errors
+Lines: 60
+
+
+H E L P !
+
+I have  a problem in which I'm getting increasing frustrated every day...
+
+Some background about my PC:
+
+- American Megatrend BIOS (clone 386 SX) with 32M of RAM
+- config.sys file:
+
+	device=c:\dos\himem.sys
+	dos=high,umb
+	device=c:\windows\emm386.exe noems
+	files=30
+	buffers=30
+	stack=9,256
+
+- autoexec.bat file is using smartdrv.exe +c
+- CMOS set up is running 0 wait state on read and write cache ram.
+
+The problem: APPLICATION ERROR from WIN31
+
+I started off with a newly installed WIN31 and then installed EXCEL.
+Run excel, no problem. A permanent swap file of size 18K was in place
+for windows.
+
+Ok, I then proceed to install Norton Desktop
+for Windows version 2.0. No problem with the installation. I also
+allow NDW to alter my autoexec.bat(with the nav running on c:).
+The problem came when I try to (bring up excel or if excel is running
+and right in the middle of it - like click a selection with the mouse)
+from the desktop.
+First of all, I always get the application error screen followed by
+another application error screen with various different messages. The
+following are some of them:
+
+- Stack fault, by TC1024.DRV at address 0001:XXXX where XXXX is some
+  number. (TC1024.DRV is the VGA driver provided by the manufacture)
+- General protection fault, by ndw.exe at the same address
+- Segment load failure, by ndw.exe at same address
+
+Some how, the address flagged was always 0001:something. What is address
+0001:XXXX means? 
+
+I have absolutely on idea what this mean. I tried commented out the
+TSR programs from autoexec.bat, no help.
+
+Is it something to do with the emm386 setup which is not telling
+WIN31 what it suppose to know. Looks like the application is crossing
+memory boundary when it is being loaded or while it is running.
+
+Please reply if you have any idea or suggestion. I'm willing to try
+anything.
+
+--------------
+Steve Chu
+AT&T Bell Labs
+Holmdel, NJ
+
+

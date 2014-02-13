@@ -1,0 +1,20 @@
+From: ab@nova.cc.purdue.edu (Allen B)
+Subject: Re: thining algorithm
+Organization: Purdue University
+Lines: 15
+
+In article <1q7615INNmi@shelley.u.washington.edu> kshin@stein.u.washington.edu  
+(Kevin Shin) writes:
+> I am trying obtain program to preprocess handwriting characters.
+> Like thining algorithm, graph alogrithm.
+> Do anyone know where I can obtain those?
+
+I usually use "Algorithms for graphics and image processing" by
+Theodosios Pavlidis, but other people here got them same idea and now
+3 of 4 copies in the libraries have been stolen!
+
+Another reference is "Digital Image Processing" by Gonzalez and
+Wintz/Wood, which is widely available but a little expensive ($55
+here- I just checked today).
+
+ab

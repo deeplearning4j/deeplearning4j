@@ -1,0 +1,37 @@
+Then think about how you can exploit those properties to solve the problem at hand.
+Draw a diagram
+We’re visual and physical creatures; we solve problems better when we have something that we can look at and touch. Drawing a diagram can help you find a solution faster by using your entire brain.
+Draw the data structure and step through the algorithm, modifying your diagram and talking out loud about what is happening. Through this, your answer can become self-evident.
+Be the parser & think out loud
+Read each line after you write it. Parse it. Dereference the variables you use. Evaluate the expressions. Through this process, you’ll catch simple mistakes before the interviewer does.
+When you finish a section, explain what it does. This helps the interviewer follow your thought process and can serve to evoke subtle hints if you’re going the wrong direction.
+When your solution is complete, execute the code in your head. Step through it with a sample data set and explain how it works as you go. Point at your diagram, talk out loud, and make it clear that you know exactly how everything works. This shows you can both write code and talk about it, an invaluable skill when you it comes time to onboard future team members.
+Putting it all together
+I often ask the following question:
+How would you implement a stack with push(), pop(), and a fast min() method?
+You can implement push(), pop(), and min() however you like, but all three must be fast.
+Analysis of constraints
+The question puts forth a few constraints, and from those, you can draw a couple of conclusions right off the bat.
+It’s a stack
+Values will be added and removed in first-in, last-out order
+push() and pop() can be implemented “however you like”
+You’ll need to do something clever inside of them
+min() has to be fast
+You shouldn’t check every element in the stack when min() is called
+push() and pop() have to be fast
+You shouldn’t do anything complex inside of them
+The first thing that comes to mind
+Given you can do whatever you want inside of push(), the first thing that comes to mind is to store a variable, min, and with each push to the stack, compare the pushed value to the min value, updating min if it’s smaller.
+This works perfectly until you call pop() and the popped value is the min, at which point you no longer know what the min is.
+A diagram to the rescue
+The data structure will be stack-like, so draw one. Start putting numbers in it, and call out what the min is at every step. Again, it’s a stack, so pop a few numbers off as well and note the min. Through this exercise, you might notice a pattern in the numbers that you call out as the minimum value.
+Circle back to the constraints
+The pattern you find respects the properties of a stack. It turns out you’ll need to keep track of the every minimum value in the order it was added to the stack. A data structure that works great for keeping track of things added in stack-order is, well, another stack.
+With that in mind, the solution then falls easily into place. You’ll have no problem problem explaining it to the interviewer by pointing at your diagrams as you step through it.
+Follow up
+After you’ve nailed the questions, the interview isn’t over. The last few minutes are your chance to impress the interviewer with insightful questions and show them your passion and excitement for the role.
+Ask about the technology stack they’re using. Show you’re savvy by asking why they chose one component over it’s competitor, or better yet, use your knowledge of the company to put forth your own hypothesis.
+If you found a common interest with the interviewer, take this opportunity to chat about it. Maybe you’re both avid mountain bikers, make you both worked for IBM previously — whatever it is, use it to create a connection with your future teammate.
+Finally, close like you’re a salesman. Reiterate why you’re interested in the role and how your background fits it perfectly. Show your interest in the problems the company solves and that you’re exited about addressing them in your role.
+Shake hands and walk out the door with confidence; you nailed it. And don’t forget your jacket.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

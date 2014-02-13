@@ -1,0 +1,30 @@
+From: steve@hcrlgw (Steven Collins)
+Subject: Sphere from 4 points
+Organization: Central Research Lab. Hitachi, Ltd.
+Lines: 24
+Nntp-Posting-Host: hcrlgw
+
+>
+>Another method is to first find the center of the circle defined by 2 sets
+>of 3 points, and intersecting the normals from there.  This would also define
+>the circle center.  However, small numerical imprecisions would make the
+>lines not intersect.  Supposedly 3 planes HAVE to intersect in a unique
+>point if they are not parallel.
+>
+
+Having thought about this, why don't you project the 2 lines onto the 2d
+plane formed by the lines.  Do an intersection calculation in the plane in
+2D, where you're guaranteed a unique solution (unless they're parallel which
+won't happen in this case), and then use parametric distance along the lines
+from the circle centres to determine the exact point of interest.  This
+bypasses the messy error propogation required to do the calculation in 3d.
+
+Hope I haven't put my foot in it again!
+
+steve
+---
+-- 
++---------------------------------------+--------------------------------+
+| Steven Collins			| email: steve@crl.hitachi.co.jp |
+| Visiting Computer Graphics Researcher	| phone: (0423)-23-1111 	 |
+| Hitachi Central Research Lab. Tokyo.	| fax:   (0423)-27-7742		 |

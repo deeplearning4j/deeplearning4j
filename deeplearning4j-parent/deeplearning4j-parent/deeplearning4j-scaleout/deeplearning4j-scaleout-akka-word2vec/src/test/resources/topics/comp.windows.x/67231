@@ -1,0 +1,50 @@
+From: lanzo@tekelec.com (Mark Lanzo)
+Subject: Re: Key definitions in Emacs + X
+Reply-To: lanzo@tekelec.com (Mark Lanzo)
+Organization: Tekelec Inc., Raleigh NC
+Lines: 44
+
+In a prior article ajaffe@oddjob.uchicago.edu (Andrew Jaffe) wrote:
+  > Hi.
+  > 
+  > I use Emacs and I want to customize my keyboard better.
+  > When I set up stuff in my .emacs with a keymap and define-keys,
+  > I can only access certain of the keys on my X-Terminal's
+  > keyboard. I can't get e.g. F10, Home, End, PgUp, PgDn; they all
+  > seem to have either the same or no keycode. I have a feeling
+  > this can't be fixed in emacs itself, but that I need to do some
+  > xmodmap stuff. Can someone help me?
+
+Unfortunately, the key event handling is pretty much hardwired into
+emacs.  I ran into this problem a while back; my solution was to
+change the source code so that all of these special keys generated
+character sequences which basically encoded the keysym and modifier
+state as escape sequences -- for example, the sequence "ESC [ 1 B 7" 
+would indicate that the "HOME" key was pressed, with the shift key
+down.  You could also detect standard keys with odd modifiers, such
+as "shift-Return".
+
+If anybody wants these changes, they're welcome to them, but you'll
+have to have the source available and be comfortable munging with
+it a bit.  Basically you have to replace the keypress handling code
+in the source file "x11term.c".  Maybe if someone at OSF is 
+interested, I can send them the tweaks, but I imagine they've got
+bigger fish to fry (hopefully including the much talked about 
+emacs V19!).  If there's sufficient interest, I'll post the mods 
+somewhere, although this probably isn't the appropriate group for it.
+
+Notes: 
+
+ * This special code will only apply if you let emacs create
+   its own (X11) window.  If you run it in plain old tty mode (which 
+   includes Xterm windows) then it's business as usual.
+
+ * The patches I made were to version 18.58, under Sun OS 4.1.2
+   [I also did this a while back under HP-UX].  The patches are
+   in a chunk of code between '#if sun ... #endif' but could 
+   easily be adapted for anything else.
+
+
++-------------------------------------------------------+------- /// -----+
+| Mark Lanzo   KD4QLZ  lanzo@tekelec.com   919-460-5576 |    \\\///       |
++-------------------------------------------------------+---- \XX/ -------+

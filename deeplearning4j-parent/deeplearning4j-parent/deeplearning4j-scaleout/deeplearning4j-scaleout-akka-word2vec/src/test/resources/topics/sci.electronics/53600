@@ -1,0 +1,50 @@
+From: garyg@warren.mentorg.com (Gary Gendel)
+Subject: Re: A question about 120VAC outlet wiring.
+Organization: Mentor Graphics Corp. -- IC Group
+Lines: 42
+Distribution: world
+Reply-To: garyg@warren.mentorg.com
+NNTP-Posting-Host: garyg.warren.mentorg.com
+
+In article 1834@cmkrnl.com, jeh@cmkrnl.com writes:
+>In article <1993Apr14.172145.27458@ecsvax.uncecs.edu>, crisp@ecsvax.uncecs.edu (Russ Crisp) writes:
+>> SO..  Here's my question.  It seems to me that I'd have the
+>> same electrical circuit if I hooked the jumper from the neutral
+>> over to the ground screw on new 'three prong' grounding outlets.
+>> What's wrong with my reasoning here?  
+>
+>What you CAN do if you want three-prong outlets without additional wiring is 
+>to use a GFCI outlet (or breaker, but the outlet will be cheaper).  In fact,
+>depending on where you are putting your new outlet(s), a GFCI may be *required*.
+
+You still need to supply a proper ground for a Ground Fault Circuit Interrupter!
+So rewiring is still a part of this job, however, the ground may be connected to
+a local earth ground, rather than back at the breaker box.
+
+As Jamie said, GFCI devices are required by code in a number of places, most
+notably: bathrooms, and outside the house.  I do suggest the use of GFCI outlets,
+rather than the breakers.  You will end up with much less headaches.  Noise pickup
+in long cable runs is sometimes enough to cause frequent tripping of the breakers.
+
+GFCI devices do save lives, if you decide to install them, be sure to check them
+regularly (using the test button).
+
+Running the family business (electrical supplies and lighting) for many years, I
+have seen too many seasoned electricians fried, because they forgot to double check
+their common sense list.  Please exercise caution.
+---
+			Gary Gendel
+Vice President:				Current consulting assignment:
+Genashor Corp				Mentor Graphics Corporation
+9 Piney Woods Drive			15 Independence Boulevard
+Belle Mead, NJ 08502			Warren, NJ 07059
+
+phone:	(908) 281-0164			phone:	(908) 604-0883
+fax:	(908) 281-9607			email:	garyg@warren.mentorg.com
+
+
+
+
+
+
+

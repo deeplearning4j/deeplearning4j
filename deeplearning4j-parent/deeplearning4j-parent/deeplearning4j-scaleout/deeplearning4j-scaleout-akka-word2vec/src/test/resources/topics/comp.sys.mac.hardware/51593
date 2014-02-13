@@ -1,0 +1,29 @@
+From: d88-jwa@hemul.nada.kth.se (Jon Wätte)
+Subject: Re: Interesting ADB behaviour on C650
+Nntp-Posting-Host: hemul.nada.kth.se
+Organization: Royal Institute of Technology, Stockholm, Sweden
+Lines: 23
+
+In <1993Apr16.091202.15500@waikato.ac.nz> ldo@waikato.ac.nz (Lawrence D'Oliveiro, Waikato University) writes:
+
+>I have heard of no such warnings from anybody at Apple. Just to be sure, I
+>asked a couple of our technicians, one of whom has been servicing Macs for
+>years. There is *no* danger of damaging logic boards by plugging and unplugging
+>ADB devices with the power on.
+
+The problem is that the pins in the ADB connector 
+are close to each other, and if you happen to bend the
+cable a little while inserting it, you short the ADB
+port. If you take it to an Apple Repair Centre, that
+means a new motherboard (though a component replace IS
+physically possible)
+
+Same goes for serial ports (LocalTalk as well)
+
+Cheers,
+
+					/ h+
+-- 
+ -- Jon W{tte, h+@nada.kth.se, Mac Hacker Deluxe --
+
+   This article printed on 100% recycled electrons.

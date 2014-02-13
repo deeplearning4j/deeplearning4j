@@ -1,0 +1,27 @@
+From: billh@greed.sbil.co.uk (Bill Hodgson)
+Subject: Re: waiting for a specific event/callback
+Reply-To: billh@greed.sbil.co.uk
+Organization: Salomon Brothers, Ltd.
+Lines: 20
+Nntp-Posting-Host: greed
+
+In article 9610@charon.cwi.nl, huub@cwi.nl (Huub Bakker) writes:
+..deleted...
+
+In plain Motify using a dialog 'in-line' like this simply isn't done. You need
+to set callbacks from the buttons/widgets in your dialog and let the callback routines
+do the work. In the callbacks you can then carry on the flow of logic. 
+
+XView from Sun actually supports this very neatly with a 'Notify' box, which can
+return a status in-line, it does actualy ease coding but goes against the event
+driven style of an application.
+
+Summary: Redesign required.
+
+
+---
+    _/       _/  _/ _/     "Delta hedging a long option position also
+   _/           _/ _/	    generates a short gamma exposure and any return
+  _/_/_/_/ _/  _/ _/	    generated from delta hedging options can be thought
+ _/    _/ _/  _/ _/	    of as compensation for assuming gamma risk"
+_/_/_/_/ _/  _/ _/	    -- Radioactive investment management... whew!

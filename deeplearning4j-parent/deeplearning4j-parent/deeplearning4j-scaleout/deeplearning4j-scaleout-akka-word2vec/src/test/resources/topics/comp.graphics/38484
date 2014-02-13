@@ -1,0 +1,35 @@
+From: rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter)
+Subject: Re: Please Recommend 3D Graphics Library For Mac.
+Organization: Boeing
+Lines: 30
+
+In article <1993Apr17.092051.19814@kth.se> d88-jwa@hemul.nada.kth.se (Jon Wtte) writes:
+>In <Z2442B4w164w@cellar.org> tsa@cellar.org (The Silent Assassin) writes:
+>
+>>> I'm building a CAD package and need a 3D graphics library that can handle
+>>> some rudimentry tasks, such as hidden line removal, shading, animation, etc.
+>>> 
+>>> Can you please offer some recommendations?
+>
+>I think APDA has something called MacWireFrame which is a full
+>wire-frame (and supposedly hidden-line removal) library.
+>I think it weighs in at $99 (but I've been wrong on an order
+>of magnitude before)
+>
+
+ I spoke with the author of MacWireFrame earlier today. The cost is $299, but there
+ are no license royalties. His name is Eric Johnson in Sacramento, CA phone
+ 916/737-1550. He doesn't have email. Very nice guy... very knowledgeable about
+ graphics. Seems like he may have a decent package. It's an Object Pascal Framework
+ that supposedly has a fairly complete set of geometry creation classes. 
+ I'm going to check it out and see if it's got what I need for my CAD package.
+
+ I also found another package: 3D Graphic Tools by Micro System Options in Seattle.
+ The number is: 206/868-5418, also no email. The package is strong at ray tracing,
+ I'm not too sure about its geometry creation tools. I also need to look into this
+ package some more. I also spoke with the author, Mark Owens, another nice
+ guy that seems to know his business. The price is $249, no royalties.
+
+BobC
+
+

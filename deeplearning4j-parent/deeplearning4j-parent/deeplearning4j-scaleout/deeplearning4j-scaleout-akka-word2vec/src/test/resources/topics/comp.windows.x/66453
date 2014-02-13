@@ -1,0 +1,58 @@
+From: rik@csc.liv.ac.uk (Rik Turnbull)
+Subject: String to Widget Resource Converter
+Organization: Computer Science, Liverpool University
+Lines: 52
+Nntp-Posting-Host: bobr.csc.liv.ac.uk
+
+Can anybody tell me how to use the Xmu function "XmuCvtStringToWidget". I
+want to specify a widget name in a resource file so that I can connect
+two widgets together on an XmForm. ie.
+
+MyProggy*MyListSW.topWidget:               MainTextSW
+
+However, when I run the program, I get the message:
+
+Warning: No type converter registered for 'String' to 'Window' conversion.
+
+(Just like the manual sez).
+
+I have managed to find this bit of code which seems to be the correct way
+to go about this:
+
+    static XtConvertArgRec parentCvtArgs[] = {
+        {
+            XtWidgetBaseOffset,
+            (XtPointer)XtOffsetOf( CoreRec, core.parent ),
+            sizeof(CoreWidget)
+        }
+    };
+
+    XtSetTypeConverter( XtRString, XtRWidget, XmuCvtStringToWidget,
+                            parentCvtArgs, XtNumber(parentCvtArgs), XtCacheAll,                                NULL );
+
+
+However, I haven't got a clue where to put it! The example code I have seems
+to suggest I can only do this if I am creating my own widget; but elsewhere it
+says that I can add it to a widget's "class_intialize" function. HOW? What's
+one of those? :-(
+
+If anybody has any code to do this, please let me know the trick - I'm sure
+this is a FAQ.
+
+Thanks in advance,
+
+Rik.
+
+PS: What are the header files "CoreP.h" and "IntrinsicsP.h" - should I use
+    these or "Core.h" and "Intrinsics.h" (OK I know RTFM:-)
+
+.=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=.
+|                               |                                       |
+| Richard Turnbull              |                                       |
+|                               |       Dept. Computer Science          |
+| E-mail:                       |       University of Liverpool         |
+| rik@compsci.liverpool.ac.uk   |       Liverpool L69 3BX               |
+|                               |       England                         |
+| Phone: (051) 794 3704         |                                       |
+|                               |                                       |
+.=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=.

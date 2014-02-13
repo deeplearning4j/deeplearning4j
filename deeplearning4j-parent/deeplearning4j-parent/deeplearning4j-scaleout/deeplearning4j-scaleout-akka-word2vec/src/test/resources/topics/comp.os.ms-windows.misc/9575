@@ -1,0 +1,40 @@
+From: gamet@erg.sri.com (Thomas Gamet)
+Subject: keyboard specifications
+Organization: SRI International, Menlo Park, CA
+Lines: 35
+
+To all hardware and firmware gurus:
+
+My current home project is to build a huge paddle keyboard for a 
+physically handicapped relative of mine.  My goal is for this keyboard
+to look exactly like an AT sytle keyboard to its host system.
+This will be a highly endowed keyboard with a Little PCL from Z World
+at its heart.  The only thing I lack is detailed information on the
+hardware signaling that the 486 (with  Windows 3.1  and DOS 5.0) will be 
+expecting.  My project is independant of Windows, my hope is that some of
+you fellow Window's users/programmers will recognize what I need and be 
+willing to point me in the right direction. 
+
+I have The Winn L. Rosch Hardware Bible (2nd edition).  The HB gives
+most (if not all) of the information I will need concerning scan codes 
+and even a wire diagram for the PS/2 style connector I will need, but it 
+leaves a number of important questions unanswered.
+1.  Is it synchronous or asynchronous serial communication?  I'm
+    guessing synchronous since the host is providing a clock.  In either
+    event, how is the data framed?
+2.  Is it half-duplex or truly one way?  I'm guessing half-duplex
+    since the host can turn LEDs on and off.
+3.  Are there any chipsets available for communicating with the "AT
+    keyboard standard" (other than by cannibalizing a real keyboard)?
+
+If anyone knows of a book or article (or any other written source of
+information) on the above, please advise me at gamet@erg.sri.com.
+Whatever I do it must be safe for I cannot afford to replace the 486 in
+the event of a booboo.
+
+Thank you for your time.
+Danke fuer Ihre Zeit.
+
+Thomas Gamet (gamet@erg.sri.com)
+Software Engineer
+SRI International

@@ -1,0 +1,34 @@
+From: nodine@lcs.mit.edu (Mark H. Nodine)
+Subject: Re: Quadra SCSI Problems???
+Keywords: Quadra SCSI APS
+Organization: MIT Laboratory for Computer Science
+Lines: 28
+
+In article <C5L39p.2qz@news.udel.edu>, johnston@me.udel.edu (Bill Johnston) writes:
+|> In article <1993Apr16.144750.1568@mintaka.lcs.mit.edu> nodine@lcs.mit.edu (Mark H. Nodine) writes:
+|> >I don't know about the specific problem mentioned in your
+|> >message, but I definitely had SCSI problems between my
+|> >Q700 and my venerable Jasmine Megadrive 10 cartridge
+|> >drives.  My solution was to get Silverlining.  None of
+|> >the loops that involved blind writes worked to the drives;
+|> >in fact the only loop that worked was the "Macintosh
+|> >Software" loop (whatever that means).
+|> 
+|> I doubt this is a Quadra-specific problem.  I had to get
+|> rid of my "venerable" Bernoulli 20 last year (with enough 
+|> cartridges purchased at ~$90 each to make the whole thing 
+|> worth more than my whole computer ;).  The tech support guys
+|> at Ocean Microsystems suggested that some third-party drivers 
+|> might fix the problem - in my case the cartridges wouldn't 
+|> format/mount/partition for A/UX.  
+
+All I know is that the Megadrives worked perfectly on both my
+Mac Plus and my Powerbook 140.  It was for this reason I assumed
+the problem had something to do with the Quadra.  Even with the
+Quadra, they mostly worked OK.  The problem occurred when I ejected
+a cartridge from a drive: it would start popping up dialog boxes
+saying "This cartridge must be formatted with Jasmine Driveware"
+even though there was no cartridge in the drive.
+
+	--Mark
+

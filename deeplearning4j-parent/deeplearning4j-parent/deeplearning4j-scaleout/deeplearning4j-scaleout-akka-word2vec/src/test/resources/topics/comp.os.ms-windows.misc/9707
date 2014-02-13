@@ -1,0 +1,28 @@
+From: russ@deakin.OZ.AU (Russ Sharp)
+Subject: Character missing in TTF
+Organization: Deakin University, Victoria, Australia
+Lines: 22
+NNTP-Posting-Host: ariel.eng.deakin.oz.au
+
+Word 2.0c doesn't show the period-centred character to indicate
+spaces if I use the TTFonts from CorelDraw.  Our editors need to
+be able to see how many spaces are in text but the character 
+displayed is a large hollow box.  They overlap each other and
+characters on each side, which is useless.
+
+I believe the character used by W4W is the period-centred (0183).
+This character shows up with the windows Charmap display as the
+hollow box which tends to confirm this.  I have edited the corel
+font with Fontmonger and changing the font graphics for the 0183
+character makes no difference to the font output in Charmap or W4W.
+Altering the paragraph (0182) or cedilla (0184) does alter their font
+graphics displayed however!!
+
+Is the W4W character used to indicate spaces the period-centred
+character?  Has anyone been able to get this character displayed
+from a CorelDraw TTF?
+
+--
+                                                                         ____ 
+Russ Sharp    russ@deakin.edu.au    ph (052)27 1141    fax (052)27 2015  \  /
+Deakin University, School of Engineering & Technology, Geelong, Australia \/

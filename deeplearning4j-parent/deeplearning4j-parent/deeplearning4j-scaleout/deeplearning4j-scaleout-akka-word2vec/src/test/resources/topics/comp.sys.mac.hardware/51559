@@ -1,0 +1,20 @@
+Subject: Re: 68LC040 vs. 68RC040 in Centris 650
+From: Bruce@hoult.actrix.gen.nz (Bruce Hoult)
+Lines: 16
+
+Zack T. Smith writes:
+> konpej@eua.ericsson.se (Per Ejeklint) writes:
+> 
+> >Hm, maybe I'm missing something, but the Centris 650 has the '040 with FPU.
+> >At least the ones shipped here in Europe.
+> 
+> You are indeed. The 4/80 model (shipped here) definitely does not have the
+> FPU. I own one; I know.
+
+
+No, he's not missing anything.  You're right that some models of the 650 ship in
+the USA without FPU or Ethernet.  Per Ejeklint is also right -- *all*, I repeat,
+*ALL* Centris 650's sold here in New Zealand and, I assume, Europe have the FPU
+and Ethernet.
+
+I know.  I bought a 650 4/80 and it has both FPU and Ethernet.

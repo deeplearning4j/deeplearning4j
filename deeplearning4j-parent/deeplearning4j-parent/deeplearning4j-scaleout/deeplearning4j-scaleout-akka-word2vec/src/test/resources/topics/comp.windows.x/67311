@@ -1,0 +1,28 @@
+From: nicholas@ibmpcug.co.uk (Nicholas Young)
+Subject: Graphics editor required
+X-Disclaimer: The views expressed in this article are those of the author
+	alone and may not represent the views of the IBM PC User Group.
+Organization: The IBM PC User Group, UK.
+Lines: 21
+
+See subject. An opportunity for sales-people (-persons? -entities?).
+
+I am looking for a commercial/PD graphics editor with fairly limited
+abilities that runs under X and preferably uses Motif widgets. It must
+run on HP-UX version 9, either with or without the PEX extension. The
+sort of things I want are simple drawing, resizing and moving of objects
+such as lines, rectangles and text. Bounding rectangle operations are
+sufficient for object selection. Ideally it should also allow the
+creation and placement of more complex objects such as widgets (e.g.
+text entry fields or labels), but this is not mandatory.
+
+Does anyone have such an animal? If you do, please mail me with details
+including price (especially run-time licensing since it must be
+included in a product). Alternatively, send glossies to me at Logica,
+68 Newman Street, London W1, including technical info please. For PD
+stuff, I have some effort that could be put into porting.
+
+Thanks for any help,
+Nicholas Young.
+-- 
+Nicholas Young (+44 71 637 9111)

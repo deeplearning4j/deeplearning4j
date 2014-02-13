@@ -1,0 +1,30 @@
+From: hal@cco.caltech.edu (Hal Finney)
+Subject: Re: text of White House announcement and Q&As on clipper chip encryption
+Organization: California Institute of Technology, Pasadena
+Lines: 23
+Distribution: na
+NNTP-Posting-Host: alumni.caltech.edu
+
+brad@clarinet.com (Brad Templeton) writes:
+
+>Their strategy is a business one rather than legal one.  They are
+>pushing to get a standard in place, a secret standard, and if they
+>get it as a standard then they will drive competitors out of the market.
+>It will be legal to sell better, untapable encryption that doesn't have
+>registered keys, but it will be difficult, and thus not a plan for
+>most phone companies.
+
+If Brad's analysis is correct, it may offer an explanation for why the
+encryption algorithm is being kept secret.  This will prevent competitors
+from coming out with Clipper-compatible phones which lack the government-
+installed "back door."  The strategy Brad describes will only work as long
+as the only way to get compatible phones is to have ones with the government
+chips.
+
+(It would be nice, from the point of view of personal privacy, if Brad
+turns out to be right.  As long as people still have the power to provide
+their own encryption in place of or in addition to the Clipper, privacy
+is still possible.  But the wording of several passages in the announcement
+makes me doubt whether this will turn out to be true.)
+
+Hal Finney

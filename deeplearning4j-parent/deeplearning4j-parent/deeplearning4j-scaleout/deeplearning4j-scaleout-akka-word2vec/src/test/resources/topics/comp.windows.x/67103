@@ -1,0 +1,35 @@
+From: VANDAMME@NMR.RUG.AC.BE
+Subject: XmScale & XtAddEventHandler
+Organization: The Internet
+Lines: 29
+To: xpert@expo.lcs.mit.edu
+
+Dear Xperts,
+
+I'm developing an application that uses a Motif slider to select
+an image file out of a directory. Now I would like to display the
+name of the file corresponding to the value of the dragged scale
+button (i.e. with the MB1 pressed). As XmNshowValue only displays
+the current value of the scale button and not the actual corresponding
+image file name, I thought of using an XtAddEventHandler to do
+the mapping between the scale value and the file name:
+
+XtAddEventHandler(scaleImage,Button1MotionMask,  FALSE, SliderMoved, NULL);
+
+
+and in the eventhandler do a:
+
+  while (XCheckTypedWindowEvent (display, event->window, MotionNotify, &Return))
+   ;
+  XmScaleGetValue(scaleImage,&value);
+  /*map value to file entry in directory and finally obtain file name to open*/
+
+
+However, when I move the pointer in the scale widget I get callbacks, with of co
+   urse
+a null effect as my MB1 is not pressed to move the scale button. So what is goin
+   g wrong?
+Or is the a wrong approach to this problem?
+Any hints are highly appreciated.
+---
+Phil

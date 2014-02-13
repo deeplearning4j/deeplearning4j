@@ -1,0 +1,58 @@
+From: pmetzger@snark.shearson.com (Perry E. Metzger)
+Subject: Do we need the clipper for cheap security?
+Organization: Partnership for an America Free Drug
+Lines: 53
+
+amanda@intercon.com (Amanda Walker) writes:
+>> The answer seems obvious to me, they wouldn't.  There is other hardware 
+>> out there not compromised.  DES as an example (triple DES as a better 
+>> one.) 
+>
+>So, where can I buy a DES-encrypted cellular phone?  How much does it cost?
+>Personally, Cylink stuff is out of my budget for personal use :)...
+
+If the Clipper chip can do cheap crypto for the masses, obviously one
+could do the same thing WITHOUT building in back doors.
+
+Indeed, even without special engineering, you can construct a good
+system right now. A standard codec chip, a chip to do vocoding, a DES
+chip, a V32bis integrated modem module, and a small processor to do
+glue work, are all you need to have a secure phone. You can dump one
+or more of the above if you have a fast processor. With integration,
+you could put all of them onto a single chip -- and in the future they
+can be.
+
+Yes, cheap crypto is good -- but we don't need it from the government.
+You can do everything the clipper chip can do without needing it to be
+compromised. When the White House releases stuff saying "this is good
+because it gives people privacy", note that we didn't need them to
+give us privacy, the capability is available using commercial hardware
+right now.
+
+Indeed, were it not for the government doing everything possible to
+stop them, Qualcomm would have designed strong encryption right in to
+the CDMA cellular phone system they are pioneering. Were it not for
+the NSA and company, cheap encryption systems would be everywhere. As
+it is, they try every trick in the book to stop it. Had it not been
+for them, I'm sure cheap secure phones would be out right now.
+
+They aren't the ones making cheap crypto available. They are the ones
+keeping cheap crypto out of people's hands. When they hand you a
+clipper chip, what you are getting is a mess of pottage -- your prize
+for having traded in your birthright.
+
+And what did we buy with our birthright? Did we get safety from
+foreigners? No. They can read conference papers as well as anyone else
+and are using strong cryptography. Did we get safety from professional
+terrorists? I suspect that they can get cryptosystems themselves on
+the open market that work just fine -- most of them can't be idiots
+like the guys that bombed the trade center. Are we getting cheaper
+crypto for ourselves? No, because the market would have provided that
+on its own had they not deliberately sabotaged it.
+
+Someone please tell me what exactly we get in our social contract in
+exchange for giving up our right to strong cryptography?
+--
+Perry Metzger		pmetzger@shearson.com
+--
+Laissez faire, laissez passer. Le monde va de lui meme.

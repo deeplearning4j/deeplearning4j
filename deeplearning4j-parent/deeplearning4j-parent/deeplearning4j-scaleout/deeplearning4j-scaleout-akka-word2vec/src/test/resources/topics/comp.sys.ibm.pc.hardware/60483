@@ -1,0 +1,22 @@
+From: ab245@cleveland.Freenet.Edu (Sam Latonia)
+Subject: Re: ISA bus pin question; re: Diamond Speedstar 24X
+Organization: Case Western Reserve University, Cleveland, Ohio (USA)
+Lines: 16
+NNTP-Posting-Host: slc10.ins.cwru.edu
+
+
+The JP5 on the Speedstar 24x is for those systems with boot-up problems.
+If your system fails to boot-up proprtly, please pull off the jumper
+block from jp5. This will not affect the proformance of the SpeedStar 24x.
+ 
+This is what my manual says about jp5. I never knew that it was there
+but the card is a real ask kicker in my book. It beats the hell out
+of my junk Sony 1604s to the point that I can't even use above 648x480
+mode much...Sam
+Some times an upgrage turns out to be a big overkill, like driving a Sony
+with a 24x that the monitor can't handle. Or installing 60ns simms and
+then finding out that your mother board doesn't have a cmos wait state
+adjustment to take advantage of the new 60ns simms that you just bought!
+-- 
+Gosh..I think I just installed a virus..It was called MS DOS6...
+Don't copy that floppy..BURN IT...I just love Windows...CRASH...

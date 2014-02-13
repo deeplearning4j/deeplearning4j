@@ -1,0 +1,28 @@
+0
+SAN FRANCISCO –  PrivateCore won the CloudBeat 2013 Innovation Showdown  competition for the best early-stage cloud startup today.
+At our CloudBeat 2013 event, PrivateCore chief executive Oded Horovitz talked about how his company establishes trust in untrusted environments by securing data-in-use (memory) without requiring changes to applications or hardware infrastructure. The Palo Alto, Calif.-based company has created a secure Hypervisor to provide private computation, even in an environment where an attack comes from the inside.
+You could imagine someone from a government security agency going into a data center and putting a snooping device on a server (or specifically, on a nonvolatile flash memory DIMM module) and intercepting all of the communications happening within a server. PrivateCore creates a software layer known as a Hypervisor that fits inside the memory (known as on-die cache) of a central processing unit and encrypts the data in the memory.
+This provides for the safe execution of virtual machines on commodity servers. This protection works against software-based and hardware-based snooping attacks, such as attacks where a hacker places a snooping device on a storage device or server in the data center.
+PrivateCore places restrictions on how a database uses memory in a server via its vCage platform. By encrypting memory, PrivateCore vCage makes it safe to run any application in outsourced, hosted, or cloud environments.
+The judges for the event included:
+Deepak Jeevan Kumar, principal, General Catalyst
+Robert Abbott, general partner, Norwest Venture Partners
+Matt Ocko, comanaging partner, Data Collective
+Jai Das, managing partner, SAxP Ventures
+Todd Rumberger, partner, Foley & Lardner LLP
+Ravi Belani, managing director, Alchemist Accelerator
+The winner receives:
+Coverage on VentureBeat.com
+A “working lunch” at Norwest Venture Partners with general partner Robert Abbott and other NVP cloud investors
+The other finalists included:
+Airpost
+Shadow IT is a problem for almost any company that uses the Internet. Employees use any number of cloud solutions without the IT department’s permission, creating a blind spot of data leakage that the tech team can’t control. Airpost, however, has created its Airpost Cloud Control Center to shine a little light into those shadows.
+The “C3″ enables IT managers to set permissions on over 2,000 different cloud services. When an employee tries to access a service that has been blocked, they will be redirected to a page that suggests an approved service for their use. IT managers can also approve certain cloud services for “personal use,” which prompt them to accept the company’s terms that the site will only be used for personal data. Onstage, Airpost showed how you can use its service to detect what file services users have, block the ones that aren’t approved, and then redirect them to company-approved services instead. Airpost said you can thus “embrace cloud services without being the bad guy.”
+Mist.io
+Mist.io wants to help you manage all of your servers on your tablet, phone, and computer. Your tech department can register all of your API keys in one place for use and monitoring from the Mist.io dashboard. You can further manage your data center from the dashboard, including the option to destroy virtual machines and query them. Mist.io will also send you alerts. The service is launching in a private beta test today. The company is partnering with cloud providers who can promote the service to existing users.
+Cojoin
+Data is quickly becoming a make-or-break element of many businesses. Properly analyzed data provides insight into the way a company is running, all the way to how the company’s products are being used. Cojoin does just that. It joins cloud data and legacy systems into one analytics platform. Setting up these data streams requires no developers, according to chief executive and founder Matt Weghorst, who says you won’t have to run any queries or write any code. It uses dedicated cloud resources for each customer, enabling them to start with a small size and scale up without reprovisioning. It is targeting analysts and marketers.
+“We are that step between excel, which can’t really process that kind of data and a big data engineering team,” said  Weghorst in an interview with VentureBeat.
+AtomOrbit
+AtomOrbit considers itself the home screen in the cloud. It created one place for their business customers to link together all their different areas of information into one place that user can access. For example, an HR department in an enterprise can create one hub for all the company’s employees to access expense sheets, different forms, and more. It works with both cloud and legacy systems and is device-agnostic. CEO Seth Talbot said users spend less than 40 percent of their time in front of their desktops. Those users want to engage with the cloud, mobile, and PCs. So the company created Team Fusion on browser-based HTML5, granting access to legacy apps, cloud apps, and a single dashboard that you can take wherever you go. The app feels like a native app, but it is browser-based with no plug-ins. The backend is CloudFoundry. “This is how business does BYOD,” Talbot said.
+VentureBeat is creating an index of the top 'arms merchants' of the cloud . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.

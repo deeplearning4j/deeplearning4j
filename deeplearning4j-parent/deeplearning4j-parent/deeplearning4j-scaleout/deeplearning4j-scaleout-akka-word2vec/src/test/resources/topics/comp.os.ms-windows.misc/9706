@@ -1,0 +1,27 @@
+Organization: Arizona State University
+From: James Cassidy <IFJXC@ASUACAD.BITNET>
+Subject:    Norton Desktop Smartcan vs. Norton Util's EP
+Lines: 22
+
+I just purchased The Norton Desktop for windows, and I also have
+Norton Utilities.  When I installed NDW, it wanted to rem out the line
+that installed EP (EP /ON) and the command to invoke the Image utility.
+It replaced the Image command with a new image command that invokes the
+version of Image that came with NDW.  This makes sense, as presumably the
+Image version with NDW is newer than the one with NU.  It did not, however,
+install smartcan in the autoexec.  Now two questions:
+   1:  Will NU use the image data saved by the newer version of image invoked.
+       i.e. Are the two version of Image compatable?
+   2:  Will erase protect use the info from smartcan, and vice versa?
+       I use both dos and windows, and I want to make sure that when I
+       erase files in either environment, they are going to be protected.
+
+From the experiments I have run, The two programs (Erase Protect and
+smart Erase) don't use each others info.
+I currently have both EP and smartcan loading within my autoexec, and
+I don't see any conflicts;
+
+FYI :  Norton Desktop for Windows version 2.2
+       Norton Util's version 6
+
+Thanks for any help.

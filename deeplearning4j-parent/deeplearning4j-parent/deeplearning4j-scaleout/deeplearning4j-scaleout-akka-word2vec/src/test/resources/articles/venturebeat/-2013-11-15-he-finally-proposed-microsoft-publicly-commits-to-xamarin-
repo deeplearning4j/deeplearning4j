@@ -1,0 +1,17 @@
+3
+During the announcements of Visual Studio Online/Visual Studio 2013, Microsoft put Xamarin on the Jumbotron and got down on one knee.
+Less metaphorically, Xamarin, a tool for cross-platform development using Microsoft technologies, got a very public announcement of a real relationship with the folks in Redmond, including a product demo on Microsoft’s stage.
+“For Microsoft to recommend Xamarin is a very big thing. There’s no stronger endorsement possible,” said Xamarin CEO Nat Friedman in a recent phone call with VentureBeat.
+“There’s a large number of Microsoft developers who’ve heard of Xamarin. With the Microsoft collaboration, they’ll be able to take us seriously and give us a try. For the people who’ve never heard of Xamarin, they’ll hear about it from this announcement from Microsoft’s megaphone.”
+Previously, he said, “We had no official relationship [with Microsoft]. There was always an enlightened soul here or there to help Xamarin out.”
+So why now?
+Friedman said, “I would speculate that they want to give their developers what they want. Their developers want to build mobile apps that reach the more than a billion users on iOS and Android.”
+Straight from the horse’s mouth, we also got this comment from Microsoft VP S. “Soma” Somasegar: “I feel very good about our partner ecosystem. It’s thriving and vibrant, and it extends us to other platforms and devices. … We want to make it easy for developers to use their skills and also extend their reach.”
+And Xamarin does exactly that, helping C#/.NET shops build for the modern mobile ecosystem through the magic of compiled code. With the company’s latest offering, Friedman revealed, devs will get a smoother experience for code-sharing with Windows apps. Also, they’ll have portable class libraries to easily drop in libraries they’ve written for Windows and use them to make iOS or Android apps.
+“It gives Microsoft developers a bridge to a million users using their existing skills and teams,” said Friedman. ”That is the role we play, helping people build really great native apps but to make it especially easy for people who come from the Microsoft world.”
+And speaking of the Microsoft world, Xamarin is also good for Microsoft because it closes the gap between mobile developers and Windows Phone applications.
+“Imagine you’re a Microsoft developer and you want to build a mobile app,” Friedman said. “Your priority is to build an iOS or Android app with a great native experience. You might have to write 50,000 lines of code to make a nice iPad app, then you port it to Android, so now you have two codebases. A Windows phone app on top of that means a lot more work for a very small market.
+“With Xamarin, you just build it all in C#, and 75 percent of the Windows app is done. You just have to tweak the user interface … and the resulting app will be much better because it will be native.”
+As the relationship between the startup, which has taken $28 million in funding to date, and the Goliath grows closer, we’re tempted to speculate on an acquisition opportunity. Friedman, however, quickly squashes that line of thought.
+“We really like being an independent company,” he said.
+“We work with a lot of partners — Salesforce, a lot of other communities. It makes us really credible with developers, too. [An acquisition] is not what we’re aiming for.”

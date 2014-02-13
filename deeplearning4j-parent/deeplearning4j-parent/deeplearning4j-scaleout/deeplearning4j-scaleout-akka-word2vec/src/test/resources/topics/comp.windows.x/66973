@@ -1,0 +1,43 @@
+From: thomas@aeon.in-berlin.de (Thomas Wolfram)
+Subject: Re: Title for XTerm
+Keywords: XTerm
+Organization: Cities in Dust
+Lines: 37
+
+In <1993Apr17.170907.25718@samba.oit.unc.edu> naoumov@physics.unc.edu (Sergei Naoumov) writes:
+
+>Hey guys!
+>I work on many stations and would like this name and current logname
+>to be in a title of Xterm when it's open and a machine name only
+>when it's closed. In other words, I want $HOST and $LOGNAME to appear
+>as a title of opened XTerm and $HOST when XTerm is closed.
+>How can I do it?
+
+>Thnsks in advance,
+>	Serge
+>	serge@gluttony.astro.unc.edu
+
+Almost all window managers (twm, mwm, olwm and their derivates) support
+escape sequences for it. For your purpose put following into your
+.login (if you're using csh or tcsh), for sh you have to modify it.
+
+if ( "$term" == "xterm" ) then
+	echo "^[]2;${LOGNAME}@${HOST}^G^[]1;${HOST}^G"
+endif
+
+Note, ^[ stands for <Esc>, in vi you can enter it by pressing
+Ctrl-V and the <Esc>. Same for ^G, it means Ctrl-G. In vi:
+press Ctrl-V and then Ctrl-G.
+The first sequence puts the string into the title bar the second
+in the icon.
+
+BTW, you can also put the current working directory in the
+title bar if you make an alias for cd:
+
+alias cd 'cd \!* ; echo "^[]2;${LOGNAME}@${HOST}: ${cwd}^G"'
+
+greetings,
+Thomas
+-- 
+Thomas Wolfram, thomas@aeon.in-berlin.de
+EANTC, TU Berlin, wolf@prz.tu-berlin.de, +49 030 31421294
