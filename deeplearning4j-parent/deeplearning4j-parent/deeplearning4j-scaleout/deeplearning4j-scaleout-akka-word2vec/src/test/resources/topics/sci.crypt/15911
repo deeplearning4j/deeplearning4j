@@ -1,0 +1,29 @@
+From: gtoal@gtoal.com (Graham Toal)
+Subject: Re: Do we need the clipper for cheap security?
+Lines: 25
+
+: There are chips which perform the voice compression/expansion.  They can't
+: be expensive, because they exist in many phones connected to PBXs or on the
+: PBX line cards, as well as in a lot of equipment which compresses
+: voice-grade circuits to save the cost of long-distance, leased T1s or
+: satellite circuits.
+
+: I can't remember the generic term for these chips.  My impression is that
+: this was a big deal 10 years ago, but circuits have gotten so cheap that
+: it isn't done much now.
+
+Codecs.  They have to get about 6:1 compression on 8 bit samples to squeeze
+them down v32bis.  I played around with the lossless 'shorten' program
+last night, but it only managed 2.5:1.  I've got some specimen CELP code
+but it's not obvious that it runs in real time; I think it's just proof-of-
+concept code, and I have some mucking about with file formats to do before
+I can put my own sample through it.
+
+Looks like the current option is to use a voice-mail modem with built-in
+DSP chip to do this in hardware.  That means two modems for a system,
+putting the cost at $600 upwards.  Ouch.  Maybe soon we'll be able to
+do it in software on high-powered games consoles - isn't the 3DO an
+Acorn RISC machine inside?  That cpu runs like shit off a shovel... and
+will be nicely mass-market too.
+
+G

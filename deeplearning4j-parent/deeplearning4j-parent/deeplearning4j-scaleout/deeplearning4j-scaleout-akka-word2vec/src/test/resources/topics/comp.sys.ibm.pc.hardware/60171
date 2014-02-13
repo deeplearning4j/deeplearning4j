@@ -1,0 +1,31 @@
+From: korenek@ferranti.com (gary korenek)
+Subject: Re: 80486DX-50 vs 80486DX2-50
+Organization: Network Management Technology Inc.
+Lines: 26
+
+In article <1qd5bcINNmep@golem.wcc.govt.nz> hamilton@golem.wcc.govt.nz (Michael Hamilton) writes:
+>I have definitly seen a
+>mother board with 2 local bus slots which claimed to be able to
+>support any CPU, including the DX2/66 and DX50.  Can someone throw
+>some more informed light on this issue?
+>[...]
+>Michael Hamilton
+
+Some motherboards support VL bus and 50-DX CPU.  There is an option
+(BIOS I think) where additional wait(s) can be added with regard to
+CPU/VL bus transactions.  This slows the CPU down to a rate that gives
+the VL bus device(s) time to 'do their thing'.  These particular wait(s)
+are applied when the CPU transacts with VL bus device(s).  You want to
+enable these wait(s) only if you are using a 50-DX with VL bus devices.
+
+This is from reading my motherboard manual, and these are my interpre-
+tations.  Your mileage may vary.
+
+Strictly speaking, VL and 50mhz are not compatable.  And, there is at
+least one 'fudge' mechanism to physically allow it to work.
+
+-- 
+Gary Korenek   (korenek@ferranti.com)
+Network Management Technology Incorporated
+(formerly Ferranti International Controls Corp.)
+Sugar Land, Texas       (713)274-5357

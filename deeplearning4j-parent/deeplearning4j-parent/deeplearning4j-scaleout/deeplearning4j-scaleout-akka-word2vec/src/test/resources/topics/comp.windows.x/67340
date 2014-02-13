@@ -1,0 +1,13 @@
+From: moore@halley.est.3m.com (Richard Moore)
+Subject: Using message passing with XtAddInput 
+Organization: 3M Company, 3M Center, Minnesota, USA
+Distribution: comp.windows.x
+Lines: 7
+
+In the past, I have used named pipes to communicate between processes using
+the XtAddInput function to set up the event handling in Motif. Does anybody
+know of a way to do this with message passing ( IPC ) ? I tried it here and
+no luck so far.
+
+Thanks
+

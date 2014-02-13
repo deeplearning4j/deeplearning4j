@@ -1,0 +1,44 @@
+From: heke@stekt.oulu.fi (Heikki Paananen)
+Subject: Re: How do DI boxes work?
+In-Reply-To: lancer@oconnor.WPI.EDU's message of 15 Apr 93 15:02:28
+Lines: 38
+Organization: University of Oulu, Dept. of EE, Finland
+
+In article <LANCER.93Apr15150228@oconnor.WPI.EDU> lancer@oconnor.WPI.EDU (Stephe Lewis Foskett) writes:
+
+>   I'm doing sound for a couple of bands around here and we need Direct
+>   Input boxes for the keyboards.  These are the little boxes that take a
+>   line level out of the keyboard and transform it into low-Z for the run
+>   to the mixer.  Sadly they cost like $50 (or more) each and I'm going
+>   to need like 5 or 10 of them!  I looked inside one (belonging to
+>   another band) and it looks like just a transformer.  Does anyone have
+>   any plans for building them?  Perhaps in Anderton's "Electronic
+>   Projects for Musicians" book (which I am having a hell of a time
+>   tracking down...)?
+
+An Easy way to solve the problem is to use two op-amps to form the
+balanced low-Z output, but this solution does not provide any
+galvanic isolation between keyboard (or whatever plugged) and
+mixer. If no tight requiremets are demanded and some hum, snap,
+crackle and pop sounds (formed by ground loops) can be tolerated,
+the op-amp solution is just what you are looking for! (It is
+cheap...somewhat $10/DI-box).
+Not sure, but Craig Anderton did introduce one DI-box project
+in Guitar Player mag years ago (transformerless).....
+
+>   Thanks a lot!
+
+Hope this helps. Email, if more details wanted....
+
+>   - lancer@wpi.wpi.edu -                    - 0{{  MoDiMiDoFrSaSo: -
+>   -   Mein Kopf ist ein Labyrinth, mein Leben ist ein Minenfeld    -
+
+-----------------------------------------------------------------------
+Heikki Paananen                           heke@stekt.oulu.fi
+The University of Oulu                  
+Department of electrical engineering      -Just a student
+Finland
+-----------------------------------------------------------------------
+               Home is where the heart lies,
+            but if the heart lies where is home?
+                                           -Fish

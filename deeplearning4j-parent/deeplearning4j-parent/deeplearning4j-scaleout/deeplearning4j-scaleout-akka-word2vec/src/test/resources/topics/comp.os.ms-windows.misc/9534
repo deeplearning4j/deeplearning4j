@@ -1,0 +1,32 @@
+From: dkmiller@unixg.ubc.ca (Derek K. Miller)
+Subject: Gatewaying Microsoft Mail/Workgroups via 9600 modem?
+Organization: University of British Columbia, Vancouver, B.C., Canada
+Lines: 25
+Distribution: world
+NNTP-Posting-Host: unixg.ubc.ca
+
+Our student association runs a small Novell network which has a subnetwork
+of Windows for Workgroups and Microsoft Mail. The Director of Finance, en
+electrical engineering student, would like to gateway this system, either
+via SLIP or not, into the University's network and thus the Internet, at
+the very least to exchange e-mail, but possibly also to do ftp's etc. For
+now, this would be done via a 9600 bps modem.
+
+He would like to set it up so that it would periodically call in to check
+mail, but would otherwise connect whenever needed.
+
+What is the best way to do this? Gatewaying software is available, but
+what works best?
+
+Please reply to me: dkmiller@unixg.ubc.ca
+ or the D of F    : dleung@ee.ubc.ca
+
+with a cc: to the other. I don't read all of these groups regularly, so mail
+is best. If this is a common question, please pot me to a FAQ or ftp site.
+
+      :=:=> Derek K. Miller                 dkmiller@unixg.ubc.ca
+      Researcher, Alma Mater Society        thegrodd@tz.ucs.sfu.ca
+      University of British Columbia, Canada
+      Room 230B - 6138 SUB Blvd., Vancouver, B.C. V6T 1Z1
+      Campus Mail Zone 1  phone (604) 822-6868  fax (604) 822-9019
+

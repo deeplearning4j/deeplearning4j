@@ -1,0 +1,40 @@
+Subject: Re: Utility for updating Win.ini and system.ini
+From: Stephen.Gibson@sonoma.edu <Stephen Gibson>
+Distribution: world
+Organization: Sonoma State University
+Nntp-Posting-Host: computer_ctr.sonoma.edu
+X-UserAgent: Nuntius v1.1.1d1
+Lines: 32
+
+
+
+In article <1993Apr20.220556.19652@news.uit.no> Svein Pedersen,
+sp@odin.fna.no writes:
+>Sorry, I did`nt tell exactly what I need.
+>
+>I need a utility for automatic updating (deleting, adding, changing) of
+*.ini 
+>files for Windows. 
+>The program should run from Dos batchfile or the program run a script
+under Windows.
+>
+>I will use the utility for updating the win.ini (and other files) on
+meny PC`s.  
+>
+>Do I find it on any FTP host?
+>
+> Svein
+>
+
+If you are managing PC's on a Novell network, get the network management
+tools provided by either Sabre Software or Automated Design Systems. 
+Among the many features, you'll find utilities that can help you to
+manage .INI files stored on users' workstations or home directories. 
+This is commercial software and well worth the money.  To date, I have
+not found ANYTHING available via FTP that could compare.  Reply to the
+address in my .SIG for more info.
+----------------------------------
+Stephen Gibson, System Support Specialist
+Sonoma State University
+eMAIL:	gibsonst@sonoma.edu
+						Stephen.Gibson@sonoma.edu

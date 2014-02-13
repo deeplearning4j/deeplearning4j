@@ -1,0 +1,13 @@
+A
+Summary:
+The company, which has won adherents in the devops realm, really wants to push beyond configuration management to full-boat IT configuration, deployment and management. It now has more money to do so, and new name.
+Opscode, the company behind the popular Chef configuration management tool set, has a new name (it’s Chef, duh); a new CFO in Microsoft alum Curt Anderson and $32 million in new Series D funding to make the most of that new identity and to promote itself as an IT management “platform.”
+Seattle-based Chef plans to staff up both sales/marketing and engineering, with plans to nearly double total headcount from just over 100 now to 200 all in service promoting its tool set as a “platform” for management of all IT functions, not just server configuration.
+The new investment was led by Scale Venture Partners with contributions from Citi Ventures, the venture investment arm of Citigroup), Amplify Partners, Battery Ventures, DFJ, and Ignition Partners.  This brings total funding in Opscode — um, Chef — to about $63 million, including a $19.5 million C round in March 2012.
+The news comes a week after arch rival Puppet Labs (see disclosure) announced the hire of its own CFO , Bill Koefoed, also a former Microsoft finance exec.  While Puppet and Chef are the go-go configuration management tools of choice among most devops practitioners, they’re facing new competition from a range of upstarts including SaltStack and Ansibleworks . The holy grail most of these players is to offer IT configuration, deployment and management.
+Chef also brought on a new VP of enterprise in Tucker Calloway, who was formerly a VP at CA.
+Disclosure: Puppet Labs is backed by True Ventures, a venture capital firm that is an investor in the parent company of this blog, Giga Omni Media. Om Malik, founder of Giga Omni Media, is also a venture partner at True.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

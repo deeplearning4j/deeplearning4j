@@ -1,0 +1,58 @@
+From: hamish@cloud.apana.org.au (Hamish Moffatt)
+Subject: Re: Mouse on Com3OM3 or COM4 in Windows
+Organization: Cloud Nine BBS, Melbourne, Australia.
+Lines: 53
+
+jpaparel@cs.ulowell.edu (Joseph Paparella) writes:
+
+> I am having a problem configuring the mouse in windows to use COM3
+> with IRQ5.
+
+I don't believe IRQ5 is the problem. I tried a mouse on COM3, IRQ4 (the
+usual place) and it still did not like it. Simply, Windows seems to only
+support mice on COM1 or COM2. The funny part is, though, that
+Microsoft's own mouse driver (8.xx) was quite happy with my mouse
+sitting on COM3. Why can't Windows use the mouse driver, or at least
+support COM3? :-)
+
+> COM2Irq=3
+> COM3Irq=5
+> COM4Irq=7
+> MaxComPort=4
+
+I've tried this too. Actually, I wanted to be able to use my second
+modem (COM3/IRQ5) from Windows. It still will not talk to that modem. I
+created two profiles, AMSTRAD (for my Amstrad modem on COM1/IRQ4) and
+MAESTRO (for my Maestro on COM3/IRQ5). It will not talk to the Maestro
+at all.
+
+> (1,5106830617) that their driver does not support COM3 and COM4 in windows.
+> Their suggestion was that the 'MicroSoft or PS/2' setting in windows
+> setup would work. It does not.
+
+Nor here. (Windows 3.0).
+
+> I can not believe that it is not possible. At worst, you would need a special
+> version of 'a' mouse driver that looked at COM3 and COM4 instead of COM1
+> and COM2. I know that IRQ5 and IRQ7 are normally printer port IRQs, but I
+
+I've seen nothing like that. I've experimented with Logitech's mouse
+driver too, with no sucess.
+
+> have no printers attached. A side note is that I would really like to assign
+> COM4 to some higher IRQ, because my SoundBlaster board uses IRQ7 (right now,
+> I'm not using COM4), but no modem that I know of allows settings other than
+> IRQs 2,3,4,5, and 7.
+
+If you have a SoundBlaster Pro, it should support IRQ10 as well.
+Finally, a board that supports IRQs >9. The only one I have (except my
+IDE controller).
+
+hamish
+
+
+Hamish Moffatt,      hamish@cloud.apana.org.au  APANA: The Australian Public
+Cloud Nine BBS,      3:635/552@fidonet          Access Network Association.
+Melbourne Australia  58:4100/43@intlnet         Mail info@apana.org.au
+Titanic Software.    Voice: +61-3-803-1326      for information.
+

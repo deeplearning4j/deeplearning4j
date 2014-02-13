@@ -1,0 +1,70 @@
+From: kudla@acm.rpi.edu (Robert Kudla)
+Subject: Re: Can I Change "Licensed To" Data in Windows 3.1?
+Nntp-Posting-Host: hermes.acm.rpi.edu
+Lines: 65
+
+In <0096B130.473B17C0@vms.csd.mu.edu> 2a42dubinski@vms.csd.mu.edu writes:
+>	ahh, yes, this is a fun topic.  No, once the name is incribed on the
+>disk, that is it, it is encoded.  Not even a HEX editor will find it.  You can
+
+But a disk compare utility (old versus new) will.  And Windows 3.1 is
+also flexible enough at install time that you can copy all the files
+onto your hard disk, which greatly speeds things up and makes them
+less annoying, if you can spare the 7 or so compressed megs.
+
+>write over the "Licensed to:", but you can't change the name underneth it.  I
+>think if you wish to change this you would have to be a pirate, and we're not
+>going to promote that here.
+
+No, we're not.  But we're also not going to promote pandering to
+corporate paranoia when the real issue is convenience.  I don't *like*
+dealing with floppies.  Personally, I have no use for changing the
+registration info, but I see it as a valid need, and one that ought to
+be solved using a quick little utility rather than a half-hour
+reinstall that's just about guaranteed to mess up your settings in one
+way or another.
+
+So, while I'm not going to put much time into it myself, here's the
+procedure for getting on your way to finding the encoded information:
+
+1.  Copy all your Windows disks into the directory from which you want
+to install it.  I've been using c:\WINSTALL myself.
+
+2.  From there, copy that directory to something like c:\WINORIG.
+
+3.  Install from c:\winstall.
+
+4.  comp the two directories to determine changes.  
+    i.e., comp *.* \winorig\*.* >\report.txt
+
+5.  Look in the report file for the file(s) that change.  Assuming
+they didn't cover themselves covering their own tracks, at least one
+file should have a difference noted at a particular offset.  Locate
+said offset in the original directory and see what's there using a hex
+editor, and do the same for the modified one.
+
+6.  You're on your own as far as breaking the code goes; I don't
+really do cryptography.  It's probably just an xor key or something; I
+think MS is more concerned with Joe Schmoe at the office personalizing
+his copy than with "real pirates" who will probably just disassemble
+the damned thing anyway.  This technique should work with just about
+any obnoxious corporate product that tries to write to the original
+floppies when you install; in some extreme cases you may not be able
+to back the floppies up to hard disk, and will be stuck doing a
+compare on floppies (Lotus stuff is probably like that).
+
+As I noted before, if you can afford the space on the hard disk, and
+don't do much in the way of customization, reinstalling from one
+directory to another may be less arduous.  Doing some of the stuff
+I've mentioned here may well void your license with Microsoft, as if
+they'd ever find out.  If you aren't careful with the disk editor, you
+could also mung something important... duh.  I guess that's a
+disclaimer.
+
+Have at it....
+
+Rob
+--
+Rob kudla@acm.rpi.edu Keywords - Oldfield Jane's Leather Yes Win3.1 Phish
+light blue right Bondage r.e.m. DTP Steely Dan DS9 FNM OWL Genesis In the
+spaceship, the silver spaceship, the lion takes control..... 

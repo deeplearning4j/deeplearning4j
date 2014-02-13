@@ -1,0 +1,24 @@
+From: begolej@csgrad.cs.vt.edu (James Begole)
+Subject: Wincmd - trouble with string variables
+Organization: VPI&SU Computer Science Department, Blacksburg, VA
+Lines: 19
+
+Has anyone else been playing with that wincmd utility from PC Magazine?
+If so, I am having trouble concatenating string variables together and
+need your help.  For example:
+temp = "path"
+temp2 = "file.ext"
+fullpath = temp+"/"
+say fullpath			// output = 'th/'
+fullpath = fullpath+temp2
+say fullpath			// output = 'h/file.ext'
+
+So, it seems to be dropping the first few characters with each
+concatenations.  Is it that I am out of memory -- I only have maybe 20
+variables total -- the article didn't mention memory limits. 
+
+email me if you have an idea or would like to see the actual source and
+output.  Thanks for your help.
+		-Bo
+-- 
+	--James "Bo" Begole		begolej@csgrad.cs.vt.edu

@@ -1,0 +1,43 @@
+From: mwm+@cs.cmu.edu (Mark Maimone)
+Subject: How to read sci.space without netnews
+Summary: Space Digest address
+Nntp-Posting-Host: a.gp.cs.cmu.edu
+Organization: School of Computer Science, Carnegie Mellon
+Lines: 36
+
+In article <734975852.F00001@permanet.org> Mark.Prado@p2.f349.n109.z1.permanet.org (Mark Prado) writes:
+>If anyone knows anyone else who would like to get sci.space,
+>but doesn't have an Internet feed (or has a cryptic Internet
+>feed), I would be willing to feed it to them.	
+
+	Kudos to Mark for his generous offer, but there already exists a
+large (email-based) forwarding system for sci.space posts:  Space Digest.
+It mirrors sci.space exactly, and provides simple two-way communication.
+
+	TO SUBSCRIBE:
+	   Send the following message in the *body* (not subject) of an
+	   email message:
+
+		subscribe space John Q Public
+
+	   to one of these addresses:
+
+		listserv@uga
+		listserv@uga.cc.uga.edu
+		listserv@finhutc
+		listserv@finhuc.hut.fi
+		space-request@isu.isunet.edu
+
+	   You'll receive all the posts in "digest" form once a day.  Please
+	   use a listserv if you can, the "space-request" address is handled
+	   manually.
+
+	TO POST MESSAGES:
+	   Send your message (with a reasonable Subject line) to:
+
+		space@isu.isunet.edu
+
+Questions, comments to space-request@isu.isunet.edu
+-- 
+Mark Maimone				phone: +1 (412) 268 - 7698
+Carnegie Mellon Computer Science	email: mwm@cmu.edu

@@ -1,0 +1,40 @@
+From: amanda@intercon.com (Amanda Walker)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Organization: InterCon Systems Corporation - Herndon, VA  USA
+Lines: 30
+Distribution: world
+Reply-To: amanda@intercon.com (Amanda Walker)
+NNTP-Posting-Host: chaos.intercon.com
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+X-Newsreader: InterCon TCP/Connect II 1.1
+
+jhesse@netcom.com (John Hesse) writes:
+> Oh great. Wonderful news. Nobody can listen in--except the feds. 
+
+Hey, it's better than the status quo.
+
+I am far less worried about "the feds" tapping my phone than high school 
+scanner surfers who get their kicks out of eavesdropping on cellular and 
+cordless phone calls.
+
+It would be stupid to rely on even a "Clipperized" channel for truly 
+sensitive material, but it *does* seem to finally offer a reasonable way to 
+guard against casual eavesdropping.  For example, even with my strong "right 
+to bear arms" view of the private right to possess and use strong 
+cryptosystems, the system as described provides enough security that I would 
+actually buy a cordless phone, and would be much less wary of using cellular 
+phones, walkie-talkies, and so on.  As long as it's only used for mass-market 
+voice scrambling, I actually don't see a problem with it.
+
+If you want more security than it offers, use something different.  Use PKCS 
+for electronic mail, CELP over DES or triple DES with Diffie-Hellman key 
+exchange for your voice traffic, or whatever.
+
+And yes, I'd rather just see all crypto restrictions lifted, but this is at 
+least an incrememental improvement for certain applications...
+
+
+Amanda Walker
+InterCon Systems Corporation
+
+

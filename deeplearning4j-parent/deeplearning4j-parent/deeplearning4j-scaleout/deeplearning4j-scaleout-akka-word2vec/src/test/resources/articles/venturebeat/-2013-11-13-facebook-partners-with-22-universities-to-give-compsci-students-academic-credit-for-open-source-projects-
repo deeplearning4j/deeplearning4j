@@ -1,0 +1,11 @@
+5
+It’s Christmas-comes-early for geeks.
+Facebook announced this morning that it has partnered with MIT, Stanford, University of Waterloo, Carnegie Mellon, University of California, Los Angeles, and many other colleges to pair up computer science students with open source projects that need help — for academic credit. There’s no additional cost, a Facebook representative told me, and the classes are small: just 4-10 students per school.
+“We believe that contributing to open source projects is one of the best ways a student can prepare for a job in the industry,” Facebook said today in a post on its Facebook Engineering page.
+The program has existed for some time in a sort of private beta — very appropriate for a computer engineering project. Today it’s seeing the light of day and expanding to new universities such as UC Berkeley, Purdue, the University of Warsaw, and the University of Pennsylvania.
+First, Facebook engineers talk to computer science professors and other faculty members at a university. They work together to launch a new course that matches students with good, active open source projects and ensure that students can get academic credit for their work. To launch the program, students and mentors from the open source project get together for a “weekend of learning and hacking,” after which students continue working on the project from their universities, meeting with their instructors regularly.
+Facebook piloted the program at Stanford in 2012 and expanded it this year.
+Student have worked on MongoDB, Mozilla Open Badge, Ruby on Rails, and Freeseer. In initial tests, the students have contributed significantly to reducing bugs, improving efficiency, and reducing latency in the open source projects, Facebook says.
+CompSci students who are interested in participating can visit Facebook’s Open Academy Program page .
+This is one of the ways Facebook is giving back to open source — and establishing connections to fresh talent coming up. The company uses Corona and Presto to manage Hadoop data warehouses and has released Buck, a mobile build tool, as well as HHVM, a tool to improve PHP runtimes.
+Participating universities include:

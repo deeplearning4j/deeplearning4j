@@ -1,0 +1,18 @@
+16
+The Kindle Fire is a great little cheap tablet, but out of the box it doesn’t run a modern version of Android, doesn’t connect to your Google account, and doesn’t have access to all of Google Play’s million or so apps .
+Except mine does.
+I have a Kindle Fire in my hands. It’s $150, light, feels great, and has a 1.2Ghz processor and 8GB of storage. And thanks to the magic of a $20 app from N2A OS , it runs a full and complete and modern version of Android and, yes, can download and play Candy Crush Saga.
+Essentially, it’s a jailbroken Kindle.
+“We all like to break the rules a little bit,” N2A OS’s Dave Vinzant told me. “The number one reason is Google Play.”
+John Koetsier
+N2A OS firing up when your Kindle starts
+Amazon Kindles, of course, don’t have Google Play. In fact, although they’re built on Google’s Android operating system, they don’t have a lot that Google has. Amazon has very deliberately stripped the connections to Google out of Android and replaced them with connections to itself. So on an Amazon Kindle Fire, you’re connected to Amazon’s books, Amazon’s music, Amazon’s store, Amazon’s ads, and Amazon’s apps.
+The only problem, of course, is there aren’t as many — books, music, ads, or apps.
+“I get it that Amazon has to subsidize for their hardware,” Vizant says. “But their ecosystem is not as advanced as Google’s … and a lot of people want to play Candy Crush [Saga].”
+In other words, buying a Kindle and jailbreaking it is a great way to get a cheap but well-built tablet and jailbreak it to standard Android, Google’s cloud goodies — and no Amazon ads. Jailbreaking can be a perilous business — “I can’t tell you how many Kindles I ruined building this,” Vinzant sighs — but N2A OS does it step by step for you.
+I asked Vinzant how it works.
+Essentially, you download N2A OS for Windows or Mac and connect your tablet. Then the N2A OS sends the precisely correct commands to the Kindle device in precisely the correct order to essentially erase what is on the Kindle and replace it. N2A OS uses a version of Android called CyanogenMod , a community-built version of Android that connects to Google’s universe while offering, Vinzant says, a lot of little tweaks to make it faster and easier to use.
+While jailbreaking risks bricking a device — making it completely unusable — Vinzant says that’s never happened with N2A OS, mentioning that he offers a compatibility checker that customers run first to ensure that it supports their computer and tablet. Still, he says, most people who are technical could probably do it themselves.
+“Anyone who’s technical could do this in probably a day … but who’s got time for that?”
+Jailbreaking Kindles is just the beginning, apparently.
+“Android’s just a blank slate, you can paint whatever you want with it,” Vinzant told me. “Eventually, I want to have a children’s ROM so I can offer a dual-boot tablet with a kids version as one of them. And that’s just the beginning …  I want to take this onto smartphones and watches, and whatever else comes.”

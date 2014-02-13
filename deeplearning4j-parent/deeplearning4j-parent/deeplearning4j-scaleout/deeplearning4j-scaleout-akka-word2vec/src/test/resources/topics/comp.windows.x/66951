@@ -1,0 +1,12 @@
+From: fkk@stasys.sta.sub.org (Frank Kaefer)
+Subject: Re: xterm build problem in Solaris2.1
+Organization: Stasys News Server, Starnberg, Germany
+Lines: 22
+Distribution: inet
+NNTP-Posting-Host: stasys.sta.sub.org
+
+dla@se05.wg2.waii.com (Doug Acker) writes:
+
+|..continuing on my build problems, I got stuck here build xterm...
+
+|gcc -fpcc-struct-return -o xterm main.o input.o charproc.o cursor.o util.o tabs.o  screen.o scrollbar.o button.o Tekproc.o misc.o  VTPrsTbl.o TekPrsTbl.o data.o menu.o -O2   -R/usr/wgep/X11R5.sos5/lib${LD_RUN_PATH+\:$LD_RUN_PATH} -L../.././lib/Xaw

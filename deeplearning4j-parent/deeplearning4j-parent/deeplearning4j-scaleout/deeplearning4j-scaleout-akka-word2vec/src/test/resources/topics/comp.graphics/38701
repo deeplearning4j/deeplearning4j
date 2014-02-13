@@ -1,0 +1,332 @@
+From: spl@dim.ucsd.edu (Steve Lamont)
+Subject: Re: Finding equally spaced points on a sphere.
+Organization: University of Calif., San Diego/Microscopy and Imaging Resource
+Lines: 326
+NNTP-Posting-Host: dim.ucsd.edu
+
+In article <4615trd@rpi.edu> deweeset@ptolemy2.rdrc.rpi.edu (Thomas E. DeWeese) writes:
+>  Hello, I know that this has been discussed before.  But at the time
+>I didn't need to teselate a sphere.  So if any kind soul has the code
+>or the alg, that was finally decided upon as the best (as I recall it
+>was a nice, iterative subdivision meathod), I would be very 
+>appreciative.
+
+Here is one by Andrew "Graphics Gems" Glassner that I got from a
+collegue of mine.  I think I fiddled with it a little bit to make it
+deal with whatever bizarre problem I was working on at the time but it
+is known to work.
+
+							spl
+			       - - - -
+/* spheres
+    ASG     9 Feb 85
+    spl Thu Mar  8 17:17:40 EST 1990
+*/
+#include <stdio.h>
+#include <math.h>
+
+#define PI 3.141592654
+
+struct Point_struct {
+        double x, y, z;
+};
+
+static double radius;
+static double xorg;
+static double yorg;
+static double zorg;
+
+do_sphere( r, freq, x, y, z )
+
+  double r;
+  int freq;
+  double x;
+  double y;
+  double z;
+
+  {
+
+    int pole;
+    double northy, southy, poley;
+    double rtheta, rtheta2, ntheta, ntheta2, magicangle;
+    double theta, thetastart, thisy, den, t;
+    struct Point_node *pnp;
+    struct Point_struct p1, p2, p3, p4, n1, n2, n3, n4, pt;
+
+    radius = r;
+    xorg = x;
+    yorg = y;
+    zorg = z;
+
+/* north pole */
+
+    magicangle = 30.0*PI/180.0;
+    northy = radius*sin(magicangle);
+    southy = -radius*sin(magicangle);
+    for (pole=0; pole<2; pole++) {
+
+      if (pole==0) {
+
+        poley=radius;   
+        thisy=northy; 
+        thetastart=0.0; 
+
+      }
+      else { 
+
+        poley= -radius; 
+        thisy=southy; 
+        thetastart=36.0; 
+
+      }
+      for ( theta = thetastart; theta < 360.0; theta += 60.0 ) {
+
+        rtheta = theta*PI/180.0;
+        rtheta2 = (theta+60.0)*PI/180.0;
+        p1.x = 0.0;  
+        p1.y = poley;  
+        p1.z = 0.0;  
+        p2.x = radius*cos(rtheta);
+        p2.y = thisy;
+        p2.z = radius*sin(rtheta);
+        p3.x = radius*cos(rtheta2);
+        p3.y = thisy;
+        p3.z = radius*sin(rtheta2);
+
+        if (pole==0) {
+
+/* make ring go the other way so normals are right */
+
+          pt.x = p3.x;  
+          pt.y = p3.y;  
+          pt.z = p3.z;  
+          p3.x = p2.x;  
+          p3.y = p2.y;  
+          p3.z = p2.z;  
+          p2.x = pt.x;  
+          p2.y = pt.y;  
+          p2.z = pt.z;  
+
+        }
+
+        den = (p1.x*p1.x)+(p1.y*p1.y)+(p1.z*p1.z);  
+        den = sqrt(den);
+
+        if (den != 0.0) {
+
+          t = radius / den; 
+          p1.x *= t;  
+          p1.y *= t;  
+          p1.z *= t;
+
+        }
+
+        den = (p2.x*p2.x)+(p2.y*p2.y)+(p2.z*p2.z);  
+        den = sqrt(den);
+
+        if (den != 0.0) {
+
+          t = radius / den; 
+          p2.x *= t;  
+          p2.y *= t;  
+          p2.z *= t;
+
+        }
+
+        den = (p3.x*p3.x)+(p3.y*p3.y)+(p3.z*p3.z);  
+        den = sqrt(den);
+
+        if (den != 0.0) {
+
+          t = radius / den; 
+          p3.x *= t;  
+          p3.y *= t;  
+          p3.z *= t;
+
+        }
+
+        subdivide_tri(&p1,&p2,&p3,freq);
+
+      }
+
+    }
+
+/* now the body */
+
+    for (theta=0.0; theta<360.0; theta += 60.0) {
+
+      rtheta = theta*PI/180.0;  
+      rtheta2 = (theta+60.0)*PI/180.0;
+      ntheta = (theta+36.0)*PI/180.0; 
+      ntheta2 = (theta+96.0)*PI/180.0;
+      p1.x = radius*cos(rtheta);   
+      p1.y = northy;  
+      p1.z = radius*sin(rtheta);
+      p2.x = radius*cos(rtheta2);  
+      p2.y = northy;  
+      p2.z = radius*sin(rtheta2);
+      p3.x = radius*cos(ntheta);   
+      p3.y = southy;  
+      p3.z = radius*sin(ntheta);
+      p4.x = radius*cos(ntheta2);  
+      p4.y = southy;  
+      p4.z = radius*sin(ntheta2);
+
+      den = (p1.x*p1.x)+(p1.y*p1.y)+(p1.z*p1.z);  
+      den = sqrt(den);
+
+      if (den != 0.0) {
+
+        t = radius / den; 
+        p1.x *= t;  
+        p1.y *= t;  
+        p1.z *= t;
+
+      }
+
+      den = (p2.x*p2.x)+(p2.y*p2.y)+(p2.z*p2.z);  
+      den = sqrt(den);
+
+      if (den != 0.0) {
+
+        t = radius / den; 
+        p2.x *= t;  
+        p2.y *= t;  
+        p2.z *= t;
+
+      }
+      den = (p3.x*p3.x)+(p3.y*p3.y)+(p3.z*p3.z);  
+      den = sqrt(den);
+      if (den != 0.0) {
+
+        t = radius / den; 
+        p3.x *= t;  
+        p3.y *= t;  
+        p3.z *= t;
+
+      }
+      den = (p4.x*p4.x)+(p4.y*p4.y)+(p4.z*p4.z);  
+      den = sqrt(den);
+      if (den != 0.0) {
+
+        t = radius / den; 
+        p4.x *= t;  
+        p4.y *= t;  
+        p4.z *= t;
+
+      }
+
+      subdivide_tri(&p1,&p2,&p3,freq);
+      subdivide_tri(&p3,&p2,&p4,freq);
+
+    }
+
+    return;
+
+  }
+
+#define norm_pt(v) { register double r = sqrt( ( ( v )->x * ( v )->x ) + \
+                                               ( ( v )->y * ( v )->y ) + \
+                                               ( ( v )->z * ( v )->z ) ); \
+                     ( v )->x /= r; \
+                     ( v )->y /= r; \
+                     ( v )->z /= r; \
+                    }
+
+subdivide_tri(p1,p2,p3,a)
+
+  struct Point_struct *p1, *p2, *p3;
+  int a;
+
+  {
+
+    struct Point_struct n1, n2, n3;
+    struct Point_struct p12, p13, p23;
+    double den, t;
+
+    if (a>0) {
+
+      p12.x = (p1->x+p2->x)/2.0;
+      p12.y = (p1->y+p2->y)/2.0;
+      p12.z = (p1->z+p2->z)/2.0;
+      den = (p12.x*p12.x)+(p12.y*p12.y)+(p12.z*p12.z);  
+      den = sqrt(den);
+      if (den != 0.0) {
+
+        t = radius / den;
+        p12.x *= t;  
+        p12.y *= t;  
+        p12.z *= t;
+
+      }
+      p13.x = (p1->x+p3->x)/2.0;
+      p13.y = (p1->y+p3->y)/2.0;
+      p13.z = (p1->z+p3->z)/2.0;
+      den = (p13.x*p13.x)+(p13.y*p13.y)+(p13.z*p13.z); 
+      den = sqrt(den);
+      if (den != 0.0) {
+
+        t = radius / den;
+        p13.x *= t;  
+        p13.y *= t;  
+        p13.z *= t;
+
+      }
+      p23.x = (p2->x+p3->x)/2.0;
+      p23.y = (p2->y+p3->y)/2.0;
+      p23.z = (p2->z+p3->z)/2.0;
+      den = (p23.x*p23.x)+(p23.y*p23.y)+(p23.z*p23.z);  
+      den = sqrt(den);
+      if (den != 0.0) {
+
+        t = radius / den;
+        p23.x *= t;  
+        p23.y *= t;  
+        p23.z *= t;
+
+      }
+      subdivide_tri(p1,  &p12,&p13,a-1);
+      subdivide_tri(&p12, p2, &p23,a-1);
+      subdivide_tri(&p13,&p23, p3, a-1);
+      subdivide_tri(&p12,&p23,&p13,a-1);
+
+    } else {
+
+      n1.x = p1->x;  
+      n1.y = p1->y;  
+      n1.z = p1->z;  
+      norm_pt(&n1);
+      n2.x = p2->x;  
+      n2.y = p2->y;  
+      n2.z = p2->z;  
+      norm_pt(&n2);
+      n3.x = p3->x;  
+      n3.y = p3->y;  
+      n3.z = p3->z;  
+      norm_pt(&n3);
+
+/* nothing special about this poly */
+
+      printf( "%f %f %f  %f %f %f\n", p1->x + xorg,
+                                      p1->y + yorg,
+                                      p1->z + zorg,
+                                      n1.x, n1.y, n1.z );
+      printf( "%f %f %f  %f %f %f\n", p2->x + xorg,
+                                      p2->y + yorg,
+                                      p2->z + zorg,
+                                      n2.x, n2.y, n2.z );
+      printf( "%f %f %f  %f %f %f\n", p3->x + xorg,
+                                      p3->y + yorg,
+                                      p3->z + zorg,
+                                      n3.x, n3.y, n3.z );
+
+    }
+
+    return;
+
+  }
+-- 
+Steve Lamont, SciViGuy -- (619) 534-7968 -- spl@szechuan.ucsd.edu
+San Diego Microscopy and Imaging Resource/UC San Diego/La Jolla, CA 92093-0608
+"My other car is a car, too."
+                 - Bumper strip seen on I-805

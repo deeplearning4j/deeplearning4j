@@ -1,0 +1,15 @@
+From: shenx@helium.gas.uug.arizona.edu (xiangxin shen  )
+Subject: Re: IDE Low Level Format
+Organization: University of Arizona, Tucson
+Lines: 10
+
+In article <C5H3yL.F66@news.cso.uiuc.edu> mandel@romulus.ehs.uiuc.edu (Hector Mandel) writes:
+>I accidentally tried to low level format my Western Digital Caviar 280 drive.
+>Is there a public domain or shareware utility available that will allow 
+>me to fix it?
+>
+>Thanks.
+
+I am no expert on this.  But I am pretty sure there is no way to recover this.  IDE drive has mapping information written directly on drives.  When you  low level format it, the information itself is gone as well, I don't think you can get it back unless you send it back to Western Digital and ask them to refurbish it for you.
+
+Jim

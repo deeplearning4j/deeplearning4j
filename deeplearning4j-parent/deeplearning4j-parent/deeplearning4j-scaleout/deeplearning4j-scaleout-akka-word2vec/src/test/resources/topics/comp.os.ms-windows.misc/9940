@@ -1,0 +1,44 @@
+Subject: Re: FAST DOS'VGA and 1024x768x256 windows video card info needed.
+From: edowdy@vax1.umkc.edu
+Organization: University of Missouri - Kansas City
+NNTP-Posting-Host: vax1.umkc.edu
+Lines: 38
+
+In article <1993Apr25.220320.26510@doug.cae.wisc.edu>, leo@cae.wisc.edu (Leo Lim) writes:
+> ok, i have a 486dx50(ISA) w/ Diamond Stealth VRAM 1MB.
+> I was really satisfied w/ its performance in windows.
+> but now more and more games needs higher frame rates in DOS' VGA,
+> especially this new Strike Commander. ;-)
+> this stealth vram can only give me 17.5 fps. ;-( (i use 3dbench).
+> my winmark was 6.35 million, i think.
+> 
+> so right now i'm considering to replace it w/ a new card, which hopefully
+> can perform approx same w/ my current VRAM in windows and also
+> can perform DOS' VGA preferably >30fps.
+> 
+
+I am ordering the Actix graphicsengine ultra plus. It is the same price
+as the stealth card. Plus it is also based on S3 928 chip the newest and
+fastest chip from s3. 
+Everyone, if you are looking for a card, SEE THE APRIL ISSUE OF PC MAGAZINE
+FOR THEIR REVIEW.  
+They noted this person's problem with dos. The stealth card is not a very good
+dos performer. The Actix card is rated the best in this chip class (non local
+bus). It got glowing reports from the magazine (was a best buy) and I called
+them directly and they just updated their windows drivers last week! They have
+a bulletin board to get the latest drivers. 
+Though somone posted that this bbs was at 2400. 
+
+AT any rate, the Actix graphics engine ultra outperforms all the other cards
+in the 928 class (based on the winmark results).
+
+If you are looking for the all around best dos/windows performance  check out
+the actix card. Their 1-800 number is 927-5557.
+
+P.S. The article in pc magazine noted that if you are a regular dos user (ie:
+games) then you should also check out the 801 chip from s3. It apparently
+scores just as well and in many cases slightly better in dos than the 928 chip
+(ie: stealth and actix cards.) They have "comparable" windows performance and
+are cheaper to buy.
+
+Eric

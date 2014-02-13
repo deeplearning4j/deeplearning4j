@@ -1,0 +1,18 @@
+From: fragante@unixg.ubc.ca (Gv Fragante)
+Subject: VESA LB - what is bus mastering
+Organization: The University of British Columbia
+Lines: 12
+NNTP-Posting-Host: unixg.ubc.ca
+
+I read an article about the benefits of a VLB motherboard. It said that a 
+true VLB board supports bus mastering, otherwise it is just as good as an ISA
+motherboard.
+
+Doesn't all VLB motherboard support bus mastering? I just bought a 486-33 VLB
+and the tech manual does not explicitly state the words "local bus mastering"
+but it said it "supports bus master and slave modes". Are these terms
+synonymous?
+
+Thanks.
+
+PS. - please reply by e-mail as I don't read this newgroup often.

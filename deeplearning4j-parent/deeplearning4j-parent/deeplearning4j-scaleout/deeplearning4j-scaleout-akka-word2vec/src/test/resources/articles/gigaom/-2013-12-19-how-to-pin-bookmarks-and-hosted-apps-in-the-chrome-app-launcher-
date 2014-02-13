@@ -1,0 +1,13 @@
+A
+Summary:
+Want to bookmark a website in Chrome and “pin” it somewhere? You can’t just yet, but this experimental feature shows how it could be done in the future.
+A common complaint about the Chrome OS user interface looks to be getting addressed. Google’s
+François Beaufort pointed out a new experimental feature in Chromium that lets users save a website shortcut to the Chrome App Launcher. The feature can be enabled in the developer channel of Chrome OS, Chromium and in Chrome Canary.
+I reverted my Chromebook Pixel from the Stable to Dev channel to check this out and it works as advertised. After typing chrome://flags in my address bar, I enabled the enable-streamlined-hosted-apps option. Now, whenever I want to save a site shortcut to the App Launcher, I simply click the “Create App from this website” option under the Tools menu. Here’s one I created for Amazon, now in the bottom left of my launcher:
+Clicking on the new Amazon icon takes me to a new Chrome window for Amazon but it’s more like a standalone browser window — similar to a Chrome app — than a traditional browser tab.
+While the Chrome browser still has traditional bookmarks, this potential feature would be a nice addition; and not just for web sites. Web apps that you don’t install through the Chrome Web Store are another good candidate.
+This approach certainly isn’t new: I remember using Prism and Fluid to do this in 2007 . Since Chrome OS doesn’t have a traditional desktop to store shortcuts for sites and web apps, it will be nice to see the function accomplish the same in the App Launcher.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,22 @@
+From: k4bnc@cbnewsh.cb.att.com (john.a.siegel)
+Subject: Can't set COM4
+Organization: AT&T
+Distribution: usa
+Keywords: G2K
+Lines: 15
+
+I have been unable to get COM 4 to work - diagnostic programs such as msd show
+nothing installed.  I think the software options are OK - is there a known
+hardware conflict and/or workaround for this problemand CD ROM
+System is a G2K 486DX2/66 tower with ATI video card
+Ports are set as follows 
+  On board COMa = COM1 IRQ4 to external device
+  Internal modem = COM 3 IRQ5
+  DFIO port card primary port = COM 2 IRQ3  mouse
+  On board COM B = COM 4 IRQ 9  <--- DOES NOT WORK
+I have run this from a boot disk with only command.com to eliminate softwar
+
+Any suggestions before I call technical support?
+John Siegel
+k4bnc@cbnewsh.att.com
+jas@hrollie.hr.att.com

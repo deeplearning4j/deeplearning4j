@@ -1,0 +1,32 @@
+From: hurh@fnal.fnal.gov (Patrick Hurh)
+Subject: Cache Card and Optimum Memory Settings?
+Organization: fnal
+Lines: 25
+Distribution: world
+NNTP-Posting-Host: phurh.fnal.gov
+
+Here's a question that may be simple enough to answer, but has stumped
+myself and a few others:
+
+What does an external RAM cache card do for you if you already have a large
+cache set (through control panel) in your SIMMs?
+
+EX:  I have a Mac IIci with 20 meg RAM, an external video card (so I don't
+rob my SIMM's), and the default Apple cache card (I believe this is 32K?). 
+Say I have my cache set at 2 MEG, what good does a measly 32K do me on the
+cache card?  Could it actually slow things down by dividing the cache
+between the card and the SIMM's?  Or does it still speed things up by
+providing a 'secondary staging' area for data normally passed directly into
+the SIMM RAM cache?
+
+I'm confused because it seems like cache cards are so low in memory to
+really do any good compared to what you can set yourself.  Yet, Daystar
+FastCache has numbers which show around a 30% performance boost on some
+operations.  Are the chips on the cache card simply faster than most SIMM
+accesses?
+
+Please help, I'm trying to find the optimum memory settings for the IIci
+system described in the EX above.
+
+--patrick
+hurh@fnal.fnal.gov

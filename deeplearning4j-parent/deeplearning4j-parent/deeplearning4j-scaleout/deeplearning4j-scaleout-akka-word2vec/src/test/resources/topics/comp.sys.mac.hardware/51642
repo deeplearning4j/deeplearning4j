@@ -1,0 +1,27 @@
+From: tpd6908@yak.COM (Tom Dickens)
+Subject: Re: iisi clock upgrades
+Organization: Boeing Computer Services
+Lines: 22
+
+I too have been watching the IIsi speedup reports and plan to upgrade in
+the next few weeks.  The plan I have is to build a small board with a few
+different crystals on it and to be able to switch between the different
+speeds using a front pannel switch.  This way I can get the speed when
+I want but I can also run at slower (stock) speeds it I experience any
+compatability problems with any applications.  I don't expect to be able
+to switch clock speeds with the system running, but if I can switch
+without any lock-up problems, then I could switch to 33MHz when needed
+and put it back to idle (20 MHz) when not needeed.  This would further
+reduce the wear-and-tear on the CPU even with a heat sink.  Of course
+I would not want to run the different clock signals through the switch
+but use a chip or two on the board to select the frequency desired and
+route it directly to the mother board.
+
+I haven't started probing around inside my si yet.  Does anyone know the
+voltage level to power the crystal oscilators?  
+
+Thanks.
+   <<< Tom Dickens:  Boeing Computer Services  tpd6908@yak.ca.boeing.com >>>
+   <<< These statements are mine and not Boeing's >>>
+
+

@@ -1,0 +1,43 @@
+From: jcl@bdrc.bd.com (John C. Lusth)
+Subject: Kentucky Fried CMOS beats Hardees!
+Organization: Becton Dickinson Research Center; RTP, N.C.
+Lines: 37
+Nntp-Posting-Host: otis.bdrc.bd.com
+
+Hey folks.
+
+Is it possible to short out your CMOS chip?  I think mine is fried.
+These are the symptoms...
+
+I have to do the following to get my computer (a Gateway 486DX33)
+to boot...
+
+    Turn the power off
+
+    Disconnect the battery to the CMOS chip
+
+    Turn the power on
+
+    Get into setup upon getting the CMOS configuration error
+
+    Set up the CMOS
+
+    Exit the setup with [F10]  (phoenix bios)
+
+    Ignore the diskette 0 seek error and press [F1]
+
+The computer then boots normally.  Both hard drives are accessible
+but the floppy drives are not.
+
+I can back up over the network and such, but if I need to reboot,
+I have to turn off the computer and repeat the steps above.  If I
+simply <Ctl>-<Alt>-<Del>, the computer hangs after the memory test.
+
+Does this sound like the CMOS chip is fried?  Can I buy another one?
+Where?
+
+Thank you for your kind attention.
+
+john
+-- 
+John C. Lusth, Becton Dickinson Research Center, RTP, NC, USA  jcl@bdrc.bd.com

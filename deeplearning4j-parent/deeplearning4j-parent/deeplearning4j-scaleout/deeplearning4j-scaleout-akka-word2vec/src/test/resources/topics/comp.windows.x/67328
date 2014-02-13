@@ -1,0 +1,50 @@
+From: lehors@koala.inria.fr (Arnaud Le_Hors)
+Subject: ** Xpm 3.2g is available **
+Keywords: XPM
+Organization: Koala Project, Bull Research France
+Lines: 44
+
+On export.lcs.mit.edu directory contrib, and avahi.inria.fr directory pub/xpm:
+xpm-3.2f-to-3.2g.patch.Z
+xpm-3.2g.tar.Z
+
+/* Copyright 1990-93 GROUPE BULL -- See license conditions in file COPYRIGHT */
+/**************************************************************************\
+* 									   *
+*  			HISTORY of user-visible changes			   *
+* 									   *
+\**************************************************************************/
+
+3.2g	(93/04/26)
+
+    ENHANCEMENTS:
+	- much faster close colors
+	- piping from/to compressed files now handles GNU's gzip (.z)  format
+	- added XpmColorKey attribute - ability to specify which visual's
+	  colors to use (ie: now it's possible to read in a pixmap in a
+	  color visual, but use the colors specified for monochrome).
+	- added -mono, -grey4, -grey and -color options to sxpm to demonstrate
+	  the XpmColorKey attribute.
+		- Jason Patterson <jasonp@fitmail.qut.edu.au>
+
+    BUGS CORRECTED:
+	- fixed bug where redefining "None" as a pixel stopped mask generation
+	- minor SVR4 defines for <string.h>
+	- fixed annoying closecolor bug related to read/write color cells
+	- fixed minor bug in color value -> pixel overloading
+	- manual updated to include new red/green/blue closeness attributes
+		- Jason Patterson <jasonp@fitmail.qut.edu.au>
+
+	- the top Imakefile was missing the depend target
+	- sxpm/Imakefile fixed so that -L../lib is set before the standard
+	  library location.
+		- Vivek Khera <khera@cs.duke.edu>
+
+	- lib/xpmP.h now defines bcopy as memcpy for VMS (required by recent
+	  versions of VMS)
+		- J. Daniel Smith <dsmith@ann-arbor.applicon.slb.com>
+
+	- the lib/Imakefile didn't work with X11R4.
+
+-- 
+ Arnaud LE HORS - lehors@sophia.inria.fr - BULL Research France, Koala Project

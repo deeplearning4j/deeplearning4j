@@ -1,0 +1,28 @@
+From: btbg1194@uxa.cso.uiuc.edu (Bradley T Banko)
+Subject: DOS Quick C 2.5 crashes Windows 3.1?
+Reply-To: b-banko@uiuc.edu
+Organization: University of Illinois at Urbana
+Lines: 22
+
+I am using DOS Quick C 2.5 in a DOS window under Windows 3.1, and the other
+day while I was running the compiler, I got a general protection fault
+immediately followed by a "serious disk error".  When I rebooted, I found
+that about 15 files had gotten "cross-linked" which is a pretty serious
+corruption of the hard drive file system.
+
+I am concerned that Quick C in a DOS window has somehow strayed outside
+its protected mode world and corrupted the smartdrv.exe disk cache and
+that is what caused the disk problem.
+
+I thought that DOS programs run in DOS windows were pretty well-contained 
+by Windows.  If that is true, then maybe the Quick C compiler has nothing 
+to do with it.  Has anybody else had this type of problem?
+
+(I only recently "upgraded" from Quick C 2.0 to 2.5.)
+
+Brad Banko
+ 
+-- 
+Brad Banko;  Dept of Physics;  U of Illinois;  b-banko@uiuc.edu
+=========================================================================
+See one.  Do one.  Teach one.			73 de kb8cne @ n9lnq.il

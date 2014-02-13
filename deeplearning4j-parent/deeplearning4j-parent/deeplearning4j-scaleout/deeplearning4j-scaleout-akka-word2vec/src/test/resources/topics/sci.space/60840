@@ -1,0 +1,78 @@
+From: eder@hsvaic.boeing.com (Dani Eder)
+Subject: Re: Guns for Space
+Keywords: Sopa Gun, Space Launcer
+Organization: Boeing AI Center, Huntsville, AL
+Lines: 72
+
+
+Okay, lets get the record straight on the Livermore gas gun.  
+The project manager is Dr. John Hunter, and he works for the
+Laser group at Livermore.  What, you may ask, does gas guns
+have to do with lasers? Nothing, really, but the gun is physically
+located across the road from the Free Electron Laser building,
+and the FEL building has a heavily shielded control room (thick walls)
+from which the gun firings are controlled.  So I suspect that the
+office he works for is an administrative convenience.
+
+I visited Hunter at the beginning of Feb. and we toured the gun.
+At the time I was working on gas gun R&D at Boeing, where I work,
+but I am now doing other things (helping to save the space station),
+
+The gun uses a methane-air mixture, which is burned in a chamber
+about 200 ft long by 16 inch ID (i.e. it looks like a pipe).
+The chamber holds a 1 ton piston which is propelled at several
+hundred m/s down the chamber.  On the other side of the piston
+is hudrogen gas, initially at room temperature andsome tens
+of atmospheres.
+
+The piston compresses and heats the hydrogen ahead of it until
+a stainless steel burst diaphragm ruptures, at around 50,000 psi.
+The barrel of the gun is about 100 feet long and has a 4 inch
+bore.  It is mounted at right angles to the chamber (i.e. they
+intersect).  This was done so that in the future, the barrel
+could be raised and the gun fired into the air without having to
+move the larger and heavier chamber.  The projectile being used
+in testing is a 5 kg cylinder of Lexan plastic, 4 in in diameter
+and about 50 cm long.
+
+All of the acceleration comes from the expansion of the hydrogen
+gas from 50,000 psi downwards until the projectile leaves the
+barrel.  The barrel is evacuated, and the end is sealed with a
+sheet of plastic film (a little thicker than Saran wrap).  The
+plastic is blown off by the small amount of residual air trapped
+in the barrel ahead of the projectile.  
+
+The gun is fired into a bunker filled with sandbags and plastic
+water jugs.  In the early testing fragments of the plastic
+projectile were found.  At the higher speeds in later testing,
+the projectile vaporizes.
+
+The testing is into a bunker because the Livermore test range is
+about 3 miles across, and the projectile would go 100-200 km
+if fired for maximum range.  The intent is to move the whole gun
+to Vandenberg AFB after the testing is complete, where they can
+fire into the Pacific Ocean, and use the tracking radar at VAFB
+to follow the projectiles.
+
+The design goal of the gun is to throw a 5 kg projectile at 4
+km/s (half of orbital speed).  So far they have reached 2 km/s,
+and the gun is currently down for repairs, as on the last test
+they blew a seal and damaged some of the hardware (I think it
+had to do with the methane-air more detonating than burning, but
+I haven't had a chance to talk to Hunter directly on this).
+
+There are people waiting to test scramjet components in this
+gun by firing then out of the gun into the air (at Mach 12=
+4 km/s), since the most you can get in wind tunnels is Mach 8.
+
+This gun cost about 4 million to develop, and is basically
+a proof-of-concept for a bigger gun capable of firing useful-
+sized payloads into space.  This would require on the order of
+100 kg projectiles, which deliver on the order of 20 kg
+useful payload to orbit.
+
+Dani Eder
+
+-- 
+Dani Eder/Meridian Investment Company/(205)464-2697(w)/232-7467(h)/
+Rt.1, Box 188-2, Athens AL 35611/Location: 34deg 37' N 86deg 43' W +100m alt.

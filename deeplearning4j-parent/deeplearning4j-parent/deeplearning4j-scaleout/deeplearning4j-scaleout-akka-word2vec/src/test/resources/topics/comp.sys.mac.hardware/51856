@@ -1,0 +1,51 @@
+From: ryanph@mrl.dsto.gov.au
+Subject: Re: SE rom
+Organization: Defence Science and Technology Organisation
+Lines: 45
+NNTP-Posting-Host: mrl.dsto.gov.au
+
+Gosh, I wish people would read the postings that they are 'following up' to.
+
+In article <C5pMsv.Jtp@wyvern.wyvern.com>, dashley@wyvern.wyvern.com (Doug Ashley) writes:
+> seanmcd@ac.dal.ca writes:
+> 
+>>In article <wgwC5pDL4.43y@netcom.com>, wgw@netcom.com (William G. Wright) writes:
+>>> 
+>>> 	Anyway, I was hoping someone knowledgeable
+>>> about Mac internals could set me straight: is it simply
+>>> impossible for a mac SE to print grayscale, or could
+>  	
+>>To use the grayscale features, I believe you need a Mac equipped
+>>with colour quickdraw. I was told this somewhere or other, but it's
+> 
+> I think you will find that the Mac SE can PRINT grayscale images, loaded
+> with the proper software. However, the Mac SE cannot DISPLAY grayscale on
+
+The original poster (W G Wright) posted an item saying that he had bought a new
+wizz-bang Laser Printer from Apple (a Select 300 I think) which can print
+GrayScale. He then said that he CANNOT PRINT GRAYSCALE from his SE computer
+(and also that all the 'experts' he has dealt with agree that it is not
+possible).
+
+This is the one major bugbear about doing a 3rd party SE upgrade (compared to
+Apple's SE to SE/30 upgrade): you will never be able to run Color Quickdraw. It
+is Color Quickdraw that controls Color AND Grayscale.
+
+SEs CAN print some COLOUR: this is because Quickdraw - the original, non-colour
+version, has the right hooks for eight colours. Some of you will remember the
+'SCSIgraph' solution to getting a colour screen for your SE (I think that it
+gave you sixteen colours by dithering or something).
+
+There is no reason that Apple couldn't release software patches for older
+computers (there are lots of Mac Pluses, Classics and SEs that have been
+upgraded to 68020 and 68030 processors which should be perfectly able to deal
+with Color Quickdraw) - but they wont, and 3rd parties are having a difficult 
+time in duplicating the Mac's ROMs (i.e. Nutek et al.).
+
+Just one Caveat: I would have thought that if you were printing a POSTSCRIPT
+Grayscale image onto a POSTSCRIPT Grayscale printer, that you would be able to
+do so, whatever Mac you were using. (And I am pretty sure that the Select 300
+is NOT a POSTSCRIPT printer [? correct me if I'm wrong?]).
+
+Phil Ryan
+Melbourne, Australia

@@ -1,0 +1,36 @@
+From: paladin@world.std.com (Thomas G Schlatter)
+Subject: Re: ?Order of files written when exitting windows?
+Organization: The World Public Access UNIX, Brookline, MA
+Lines: 31
+
+In article <1993Apr22.001934.14921@ucsu.Colorado.EDU> hayesj@rintintin.Colorado.EDU (HAYES JAMES MICHAEL JR) writes:
+>
+>Trying to pin point a hardware problem with my disk, Maxtor
+>7213AT.  Group files get corrupted on a regular basis.
+>Only happens on this drive, D had only one corrupt file
+>in over a year and it was under the control of winword on C.
+>32-bit disk access and smartdrive are off.  Since installation
+>of dblspace problem has turned from an annoyance to a reason for
+>murder.
+
+Are you using Fastopen?  If you are, disable it.  We had a lot
+of problems with fastopen corrupting weird things (including
+the Windows permanent swap file) when we were using it.
+
+>
+>Since the most frequent files corrupted are the *.grp files,
+>are these the last thing written to when exitting Windows?
+
+Indeed they are.  Advanced Personal Measure tells me they are accessed
+just before shell.dll
+
+>
+>Also, are there any pd/shareware utilities available that do
+>a more thorough job than dos 6, NDD 4.5, etc?  DOS 6 and 
+>Win 3.1 compatable.
+
+I really like Spinrite and QA Plus
+
+Tom
+paladin@world.std.com
+

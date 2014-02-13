@@ -1,0 +1,26 @@
+From: baden@sys6626.bison.mb.ca (baden de bari)
+Subject: **] A/D board quiry:
+Organization: System 6626 BBS, Winnipeg Manitoba Canada
+Lines: 21
+
+ 
+        On an A/D board I've got, I'm using the A/D lines.  It measures 
+the voltages properly, ie: with a 7v power supply it reg's 7v and with 
+5v, it reg's 5v.  Problem is when I've got the input voltage, and I wish 
+to lower it via a resistor.  The sensitivity of the board is so great 
+that I can triger it with holding the 5/7v wire in one hand, and touch 
+the probe and it will register the full input voltage.  A 1m resistor 
+only lowers voltage by .1v so this is not too feesable. 
+ 
+                What could the problems be and what else could I use
+to lower the input voltage?  (btw I've got it grounded correctly)
+ 
+ 
+  _________________________________________________
+  Inspiration  |   ___                             |
+  comes to     |  \   o  baden@sys6626.bison.mb.ca |
+  those who    | (  ^  ) baden@inqmind.bison.mb.ca |
+  seek the     |   /-\      =] Baden de Bari [=    |
+  unknown.     |                                   |
+  ------------------------------------------------- 
+ 

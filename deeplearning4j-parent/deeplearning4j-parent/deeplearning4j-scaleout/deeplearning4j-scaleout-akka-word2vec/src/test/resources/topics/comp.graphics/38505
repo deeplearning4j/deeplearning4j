@@ -1,0 +1,42 @@
+From: ricardo@rchland.vnet.ibm.com (Ricardo Hernandez Muchado)
+Subject: Re: Rumours about 3DO ???
+Disclaimer: This posting represents the poster's views, not necessarily those of IBM
+Nntp-Posting-Host: rs43873.rchland.ibm.com
+Organization: IBM Rochester
+Lines: 35
+
+In article <1993Apr19.121925.14451@microware.com>, jejones@microware.com (James Jones) writes:
+|> In article <1993Apr15.164940.11632@mercury.unt.edu> Sean McMains <mcmains@unt.edu> writes:
+|> >In article <1993Apr15.144843.19549@rchland.ibm.com> Ricardo Hernandez
+|> >Muchado, ricardo@rchland.vnet.ibm.com writes:
+|> >>   And CD-I's CPU doesn't help much either.  I understand it is
+|> >>a 68070 (supposedly a variation of a 68000/68010) running at something
+|> >>like 7Mhz.  With this speed, you *truly* need sprites.
+|> >
+|> >Wow! A 68070! I'd be very interested to get my hands on one of these,
+|> >especially considering the fact that Motorola has not yet released the
+|> >68060, which is supposedly the next in the 680x0 lineup. 8-D
+|> 
+|> Don't get too excited; Signetics, not Motorola, gave the 68070 its number.
+|> The 68070, if I understand rightly, uses the 68000 instruction set, and has
+|> an on-chip serial port and DMA.  (It will run at up to 15 MHz--I'm typing
+|> at a computer using a 68070 running at that rate, so I know that it can
+|> do so--so I seriously doubt the clock rate that ricardo@rchland.vnet.ibm.com
+|> claims.)
+|> 
+|> 	James Jones
+
+   Just because the 68070 can run upto 15Mhz doesn't mean the CD-I
+is running at that speed.  I said -> I understand it is a 68070 running
+at something like 7Mhz.  I am not sure, but I think I read this a long
+time ago.
+
+   Anyway, still with 15Mhz, you need sprites for a lot of tricks for
+making cool awesome games (read psygnosis).
+
+--------------------------------------
+Raist  New A1200 owner   320<->1280 in x, 200<->600 in y
+in 256,000+ colors from a 24-bit palette.  **I LOVE IT!**<- New Low Fat .sig
+*don't e-mail me* -> I don't have a valid address nor can I send e-mail
+
+  

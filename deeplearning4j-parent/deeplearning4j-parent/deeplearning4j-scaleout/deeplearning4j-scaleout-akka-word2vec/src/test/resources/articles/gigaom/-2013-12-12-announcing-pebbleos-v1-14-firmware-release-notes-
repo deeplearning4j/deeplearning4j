@@ -1,0 +1,19 @@
+We’ve been working hard (like elves in a workshop) on fresh firmware for Pebblers to enjoy. We’re pleased to announce the release of PebbleOS v1.14.1. This Update includes new features, improvements, and fixes.
+Photo by @granddiamondwit
+What’s New
+Do Not Disturb. Block notifications for a set period of time (from Pebble: Settings » Notifications » Do Not Disturb).
+Alarms app update. Create multiple Alarms, toggle Alarms on/off, and edit existing Alarms.
+New “Snooze Alarm.” Customizable via the Pebble Alarms app.
+Improved Notification Control. Specify what notifications are displayed (Notifications On, Phone Calls Only, or Notifications Off). Notification settings are now accessible more quickly through a dedicated menu (Settings » Notifications).
+Improved iOS performance. Notifications are now sent more quickly from your iOS device to Pebble. After exiting Airplane Mode, Pebble will now search for connectable iOS devices immediately, instead of waiting one minute.
+Do Not Disturb-y goodness!
+Bug Fixes
+Fixed an issue where Pebble may enter “Recovery Mode” immediately after updating to 1.13 firmware.
+Fixed an issue affecting some iOS Pebblers experiencing dropped Bluetooth connections, a few seconds after connecting.
+Fixed an issue where Caller ID data would not display on Pebble after receiving a missed call.
+Fixed Bluetooth data transfer reliability issues, particularly during a firmware update.
+Fixed an issue where Pebble would sometimes keep vibrating after dismissing or answering a phone call.
+For Developers
+We recently released Beta 3 of Pebble SDK 2.0, featuring bug fixes, stability improvements, and new features.
+To update your Pebble firmware, simply open the Pebble iOS or Android app to begin the process ( extra help can be found on our Support page, if needed ).
+Of course, you’ll need to have a Pebble to enjoy all the fun new features and updates

@@ -1,0 +1,29 @@
+From: straw@cam.nist.gov (Mike_Strawbridge_x3852)
+Subject: need help with Athena Text Widget
+Organization: National Institute of Standards & Technology, Gaithersburg, MD
+Lines: 24
+
+I want to create a single-line Text widget for entering a small amount of text.
+
+I want it to be of fixed width, but have a horizontal scrollbar that scrolls
+automatically when the user types in order to keep the insertion point
+visible.
+
+In trying to do this I have two problems:
+
+ - The addition of the horizontal scrollbar does not make the text widget
+   taller, but instead it seems to cover part of the text.
+
+ - The scrollbar does not scroll automatically as the user types in text
+   in order to keep the insertion point visible.
+
+Any help is appreciated.
+
+Mike
+
+-----------------------------------------------------------------------
+NAME:   Michael Strawbridge             	TELE: (301) 975-3852
+USMAIL: National Institute of Standards 	ARPA: straw@cam.nist.gov
+		and Technology            	UUCP: uunet!cme-durer!straw
+        Rm. B-146, Bldg. 225
+        Gaithersburg, MD  20899

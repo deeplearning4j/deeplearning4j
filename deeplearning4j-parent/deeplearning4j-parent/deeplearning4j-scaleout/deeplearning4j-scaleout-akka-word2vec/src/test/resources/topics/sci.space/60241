@@ -1,0 +1,140 @@
+From: dbm0000@tm0006.lerc.nasa.gov (David B. Mckissock)
+Subject: NASA "Wraps"
+News-Software: VAX/VMS VNEWS 1.41    
+Nntp-Posting-Host: tm0006.lerc.nasa.gov
+Organization: NASA Lewis Research Center / Cleveland, Ohio
+Lines: 133
+
+In the April edition of "One Small Step for a Space Activist",
+Allen Sherzer & Tim Kyger write:
+  "Another problem is what are called 'wraps' (or sometimes
+   the 'center tax'). When work for a large program like
+   Freedom or Shuttle is performed at a NASA center, the
+   center skims off a portion which goes into what amounts
+   to a slush fund. This money is used to fund work the
+   center manager wants to fund. This sum is estimated to
+   be over a third of the funds allocated. Think about
+   that: Of the $30 billion cost of Freedom, fully $10
+   billion won't be spent on anything having anything
+   to do with Space Stations! Now, maybe that $10 billion
+   was wisely spent (and maybe it wasn't), but the work done
+   with it should stand on its own merits, not distorting
+   the cost of other projects. Congress has no idea of the
+   existense of these wraps; Congress has never heard the
+   term 'center tax'. They look at the Station they are
+   getting and the price they are paying and note that
+   it doesn't add up. They wonder this blissfully unaware
+   that a third of the money is going for something else."
+
+My dear friends, your mixing fact and fiction here. A couple
+of weeks ago, when I first read this in your posting, I
+talked with one of the cost experts here in Space Station
+at Headquarters [if you wondering why I didn't post a
+response immediately, I do have a real job I'm supposed
+to be doing here at Headquarters, & digging up old 20 kHz
+data & looking into Sherzer/Kyger claims rates pretty low
+on the totem pole of priority. Also, I spent last weekend
+in Kansas City, at the National Science Teachers 
+Association conference, extolling the virtues of SSF
+to 15,000 science teachers.]
+
+First off, yes, the concept of 'center tax', or 'wrap' does
+exist. If I recall the numbers correctly, the total 'tax'
+for the SSF program for this fiscal year is around $40 Million.
+This was computed by adding up the WP-1, WP-2, and WP-4
+center 'taxes'. With the SSF budget for this fiscal year at
+$2.2 Billion, my calculater says the tax percentage is
+04/2.2 = 1.8%
+
+Over the life of the SSF program, using your figure of $30
+billion for the cost of SSF, a tax at a 1.8% rate comes to
+$540 million. This is alot less than $10 billion, but I
+will concede it's still an appreciable amount of pocket
+change.
+
+I should note that your estimate of the tax rate at 1/3 could
+be close to the actual rate. The tax is only charged on funds
+that are spent at the center (kind of like McDonalds at some
+states, where you do have to pay sales tax if you eat
+the food at the restaurant, but you don't if you get it
+take-out). For example, at WP-4, the vast bulk of the funds
+we receive go to the Rocketdyne Contract, and are *NOT*
+subject to the center tax (I don't have the numbers in
+front of me, but I'd guess at least 95% of the WP-4 funds
+go to Rocketdyne). So, you could be right about a tax
+rate of 1/3, but it's only applied to funds spent at the
+center, and not to the prime contracts.
+
+This leads to the obvious question "What is the government
+doing with SSF funds that don't go to the prime contractors?
+(i.e. ok, WP-4 gets a slice of the $30 billion pie. A
+big portion of this slice goes to Rocketdyne. What happens
+to the balance of the funds, which aren't eaten
+up by the center tax?)"
+
+At WP-4, we call these funds we spend in-house supporting
+development funds (as they are supporting the development
+work done by Rocketdyne). We have used these funds to
+setup our own testbed, to checkout the electrical
+power system architecture. Our testbed has a real life
+solar array field (left over from solar cell research
+research a few years back), with lead-acid car batteries
+(to simulate the Nickel-Hydrogen batteries on SSF), DC
+switchgear, DC-DC converter units, and simulated
+loads. Data from the testbed was used in a recent
+change evaluation involving concerns about the stability
+of the power system.
+
+We have also used the supporting development money to
+purchase Nickel Hydrogen batteries, which are on life
+testing at both Lewis and the Crane Naval facility in
+Indiana. As a side point, 6 of the battery cells on
+test recently hit the four year life test milestone.
+38 cells have completed 18,552 to 23,405 cycles (the
+on-orbit batteries go through 5,840 cycles per year).
+
+As a final example, my 'home' division at Lewis used
+the supporting development funds to purchase personal
+computers and work stations, for performing system
+analyses (like modeling of the performance of the
+electrical power system, availability calculations
+using a Monte-Carlo simulation, setting up a 
+database with information on weight of the power
+system elements).
+
+Finally, the money raised by the 'tax' does not all
+go into a 'slush fund.' At Lewis, the director
+does control a small discretionary fund. Each year,
+any individual at Lewis can submit a proposal to
+the director to get money from this fund to look
+at pretty much anything within the Lewis Charter.
+
+Most of the tax, however, goes to fund the 'general'
+services at the Center, like the library, the 
+central computer services division, the Contractor 
+who removes the snow, etc. Thus, it is rather
+difficult to determine what percentage of the
+SSF budget doesn't go for SSF activities. To get
+an accurate figure, you would have to take
+the annual expenditure for the library (for example),
+and then divide by the amount of the library funds
+used to support SSF (which would be hard to
+compute by itself - how would you figure out
+what percentage of the bill for Aviation Week for
+1 year is 'billable' to SSF, would you base it on
+the person-hours SSF employees spend reading AV-week
+versus the rest of the center personnel). You would
+then have to compare this estimate of the SSF
+portion of the library expense with the portion of
+the tax that goes to support the library. Who knows,
+maybe SSF overpays on the tax to run the library, but
+we underpay for snow removal? Talk about
+a burecratic nightmare!
+
+My last point is that I can't believe your claim that
+Congress has never heard of the term 'center tax.'
+Unfortunately, all of the NASA testimony before
+Congress isn't on a computer, so I can't do a simple
+word search someplace to prove you wrong. But surely,
+in some GAO audit somewhere, these NASA cost methods
+were documented for Congress?

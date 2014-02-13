@@ -1,0 +1,16 @@
+From: dick@ahold.nl (Dick Heijne)
+Subject: Re: xdm and Solaris2.1
+Organization: Ahold NV, Zaandam, Netherlands, EEC
+Lines: 11
+
+The XDM on Solaris 2.1 *WAS* broke. Since two weeks, Sun distributes
+a patched release, which works fine (supports /etc/shadow and all).
+We have it up and running ever since and have not experienced any
+problems. Call your local Sun rep.
+
+Dick.
+-- 
++==============================Ahold NV===============================+
+| Room 146 , Ankersmidplein 2, 1506 CK Zaandam,  The Netherlands, EEC |
+| Dick.Heijne@ccsds.ahold.nl - Tel: +31 75 592151, Fax: +31 75 313030 |
++=====================================================================+

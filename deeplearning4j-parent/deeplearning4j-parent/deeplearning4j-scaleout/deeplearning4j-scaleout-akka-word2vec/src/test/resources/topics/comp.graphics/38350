@@ -1,0 +1,27 @@
+Organization: Stanford Linear Accelerator Center
+From: <RCB@SLACVM.SLAC.STANFORD.EDU>
+Subject: Re: Sphere from 4 points?
+Distribution: world
+Lines: 21
+
+
+> From: bolson@carson.u.washington.edu (Edward Bolson)
+
+> Given 4 points (non coplanar), how does one find the sphere, that is,
+> cnter and radius, exactly fitting those points?
+
+The equation of the sphere through the 4 points (x1,y1,z1),...,(x4,y4,z4) is
+  | x^2+y^2+z^2  x1^2+y1^2+z1^2  ...  x4^2+y4^2+z4^2 |
+  |      x             x1        ...        x4       |
+  |      y             y1        ...        y4       | = 0
+  |      z             z1        ...        z4       |
+  |      1             1         ...        1        |
+When this 5 by 5 determininant is expanded on its first column you get the
+equation in the form
+  A(x^2+y^2+z^2) + Bx + Cy + Dz + E = 0
+If you need the center and radius, jyst divide through by A (it cannot be
+zero if the 4 given points form a non-degenerate tetrahedron) and complete
+the square on x, y, and z to obtain
+  (x-xc)^2 + (y-yc)^2 + (z-zc)^2 = r^2
+
+rcb@slacvm.slac.stanford.edu (Bob Beach)

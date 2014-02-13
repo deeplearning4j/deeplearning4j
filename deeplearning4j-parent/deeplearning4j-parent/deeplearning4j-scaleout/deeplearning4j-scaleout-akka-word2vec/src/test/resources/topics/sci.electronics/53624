@@ -1,0 +1,26 @@
+From: tomb@hplsla.hp.com (Tom Bruhns)
+Subject: Re: A question about 120VAC outlet wiring..
+Organization: HP Lake Stevens, WA
+Lines: 21
+
+crisp@ecsvax.uncecs.edu (Russ Crisp) writes:
+
+>SO..  Here's my question.  It seems to me that I'd have the
+>same electrical circuit if I hooked a jumper from the neutral
+>over to the ground screw on new 'three prong' grounding outlets.
+>What's wrong with my reasoning here?  
+
+May I respectfully suggest you NOT do this??  The ground is
+supposed to be a protective ground, and though what you suggest
+looks good on paper, it's dangerous to rely on the same wire for
+power and protection.  It'd never meet code, and if you now own
+the property and later sell it, you may end up with liabilities
+you don't want, and if you _don't_ now own it, well...
+
+There's a "wiring" FAQ that I think addresses this.  I believe
+an alternative is use of a GFCI, but I'm really not sure what
+current code allows in this area.  The GFCI senses alternate
+(unwanted) current paths, and doesn't rely on a specific
+protective ground wire, at least not beyond the GFCI in the
+protected circuit.  GFCI breakers are available (but expensive).
+

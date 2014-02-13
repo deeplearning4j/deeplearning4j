@@ -1,0 +1,54 @@
+From: guyd@austin.ibm.com (Guy Dawson)
+Subject: Re: Why VESA Local-Bus ????
+Originator: guyd@pal500.austin.ibm.com
+Organization: IBM Austin
+Lines: 48
+
+
+In article <1993Apr15.133138.17369@cc.umontreal.ca>, gregof@JSP.UMontreal.CA (Grego Filippo) writes:
+> Hi fellow netters,
+> 
+> I have a question for you... I am gonna buy a 486DX2-66 MHz
+> with VESA Local-Bus. IS the speed benefit that great ? 
+> Would it be wise to spend on a local-bus system (HD controller 
+> and graphic card) for normal use ( I mean I won't use it for a
+> server !!) ?
+> 
+> Also, I read an article from someone ( sorry, I can't remember your
+> name ) and he said that even though you have a local-bus hard-disk
+> controller, your performances won't be that much greater because
+> of the disk's throughtput !!! 
+> So what is the use of having a fast bus if the peripherals can't 
+> cope with it ???
+
+Something to bear in mind is what the V in VLB stands for!
+
+V for Video - the origional intention of the bus was to speed up
+the bus so that large memory to memory transfers would be faster.
+This is espically useful in transfering data from main memory to
+video memory.
+
+Since there are usually 3 VLB slots card makers have been making 
+cards to fit in the other two. 
+
+How about an VLB ethernet card? Move the data into the card at
+130 odd MB/s and then wait for it to tickle onto the net at
+just over 1Mb/s.
+
+[ Do do however free the local bus for other cards ]
+
+Some times you need fast busses and sometimes you don't!
+
+> 
+> Thank you ...
+> 
+> gregof@jsp.umontreal.ca
+> 
+> 
+
+Guy
+-- 
+-- -----------------------------------------------------------------------------
+Guy Dawson - Hoskyns Group Plc.
+        guyd@hoskyns.co.uk  Tel Hoskyns UK     -  71 251 2128
+        guyd@austin.ibm.com Tel IBM Austin USA - 512 838 3377

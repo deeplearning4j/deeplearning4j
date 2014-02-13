@@ -1,0 +1,57 @@
+From: bambi@kirk.bu.oz.au (David J. Hughes)
+Subject: Re: Motif vs. [Athena, etc.]
+Organization: Bond University, AUSTRALIA
+Lines: 52
+
+berry@durian.citr.uq.oz.au (Andrew Berry) writes:
+
+>My impression is that most people use Motif because their OS vendor
+>supplies it with X (SunOS users excluded), and because it is similar in
+>"look and feel" to MS-Windows and OS/2 PM.  Personally, I also prefer
+>the "look and feel" of Motif (no flames please -- just an opinion).
+
+Seeing as Motif has been adopted by Sun, IBM, HP +++ (can't remeber the
+other members in the recent announcement), I'm sure you'll see it on
+virtually every workstation (ie. Sun, IBM, HP and DEC must make up the
+**VAST** majority of all hardware).
+
+
+>I am also concerned by this prevalence of Motif, particularly from the
+>point of view of writing and obtaining free software.  As the Linux and
+>386BSD communities grow, however, I think that Motif will lose some of
+>its grip, at least in the non-commercial marketplace.  
+
+
+Ports of Motif to both 386BSD and Linux are available for a fee of about
+$100.  This is cost recovery for the person who bought the rights to
+redistribute.  The activity in both the BSD and Linux news groups
+pertaining to Motif has been high.
+
+
+>I just wonder if this will also cause a divergence between commercial
+>and non-commercial software (ie. you will only get free software using
+>Athena or OpenLook widget sets, and only get commercial software using
+>the Motif widget sets).  
+
+
+I can't see why.  If just about every workstation will come with Motif
+by default and you can buy it for under $100 for the "free" UNIX
+platforms, I can't see this causing major problems.
+
+
+Side Note :
+---------
+All the X based code I am writing (and will distribute freely when
+completed) is based on Motif because from a programmatic and also "look
+and feel" point of view I like it the best (no flames on this one
+please).
+
+
+
+bambi
+
+   ___                                 David J. Hughes     bambi@bu.oz.au
+  /   \                /  /    /        
+ /  __/ __   __   ____/  /    / __          Senior Network Programmer
+/    \ /  \ /  \ /   /  /    / /  \  /    Comms Development & Operation
+\____/ \__//   / \__/   \___/ /   / /       AUSTRALIA  (+61 75 951450)

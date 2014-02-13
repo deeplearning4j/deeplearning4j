@@ -1,0 +1,28 @@
+From: mcovingt@aisun3.ai.uga.edu (Michael Covington)
+Subject: Ungrounded GFCIs; was: Re: A question about 120VAC outlet wiring.
+Nntp-Posting-Host: aisun3.ai.uga.edu
+Organization: AI Programs, University of Georgia, Athens
+Lines: 22
+
+In article <1qmisf$odp@sdl.Warren.MENTORG.COM> garyg@warren.mentorg.com writes:
+>>
+>>What you CAN do if you want three-prong outlets without additional wiring is 
+>>to use a GFCI outlet (or breaker, but the outlet will be cheaper).  In fact,
+>>depending on where you are putting your new outlet(s), a GFCI may be *required*.
+>
+>You still need to supply a proper ground for a Ground Fault Circuit Interrupter!
+
+Oddly enough, you don't, at least according to the wiring FAQ that
+is regularly posted on misc.consumers.house.
+
+A GFCI senses discrepancies between the live and neutral wire currents,
+and cuts them both off if a discrepancy is found.  No ground connection
+is needed for it to function.
+
+
+
+-- 
+:-  Michael A. Covington, Associate Research Scientist        :    *****
+:-  Artificial Intelligence Programs      mcovingt@ai.uga.edu :  *********
+:-  The University of Georgia              phone 706 542-0358 :   *  *  *
+:-  Athens, Georgia 30602-7415 U.S.A.     amateur radio N4TMI :  ** *** **  <><

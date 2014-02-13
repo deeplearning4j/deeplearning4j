@@ -1,0 +1,27 @@
+From: S903146@mailserv.cuhk.hk
+Subject: Re: DOS6 - no boot disk required if you don't want EMM386 to load
+Nntp-Posting-Host: wksa16.csc.cuhk.hk
+Organization: Computer Services Centre, C.U.H.K.
+Distribution: usa
+Lines: 20
+
+In article <ls91poINNsvf@levelland.cs.utexas.edu> sms@cs.utexas.edu (Stephen Mark Sanderson) writes:
+>From: sms@cs.utexas.edu (Stephen Mark Sanderson)
+>Subject: DOS6 - no boot disk required if you don't want EMM386 to load
+>Date: 8 Apr 1993 15:12:40 -0500
+>Everybody, DOS 6 users in particular, take note:  if you want to play games
+>that hate/use their own upper memory manager, DOS 6 is not a problem.  No
+>boot disks required.  As your system starts up, hit the F5 key.  This tells
+>it to bypass config and autoexec altogether.  You get a plain, generic session
+>of DOS, with nothing loaded.  <there's another function key that actually
+>steps thru config.sys asking if you want to execute each line, but I've
+>forgotten it at the moment...you can try finding it - I think it's F9...>
+
+     No, you need not bypass the config.sys, in Dos 6.0, there is a function 
+of multi-config, have you tried BOOT.SYS ? the multi-config is the kind that 
+you can choose you config.sys at the startup. And I find that is very good. 
+It has no conflict to QEMM. (I have problem when using BOOT.SYS)
+    The key you say is F8, which is trace the config.sys step by step.
+    Sorry, if any error :)
+
+Phillip   (phillipau@cuhk.hk)

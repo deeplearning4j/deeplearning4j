@@ -1,0 +1,17 @@
+From: peter.m@insane.apana.org.au (Peter Tryndoch)
+Subject: What'S A Good Ic For Rs23
+Lines: 13
+
+AllTall Cool OneWhat's a good IC for RS23
+
+TC>From: rky57514@uxa.cso.uiuc.edu (Tall Cool One )
+TC>Organization: University of Illinois at Urbana
+TC>I'm looking for an IC that will convert RS232 voltage levels to TTL vo
+TC>levels.  Something relatively inexpensive would be nice, too.  Anyone 
+TC>a suggestion??  Thanks.
+
+Try a Maxim "MAX232CPE" 8 pin dil, converts 5V to 12V for 232commms.
+What a clever little gizmo!
+
+Peter T.
+

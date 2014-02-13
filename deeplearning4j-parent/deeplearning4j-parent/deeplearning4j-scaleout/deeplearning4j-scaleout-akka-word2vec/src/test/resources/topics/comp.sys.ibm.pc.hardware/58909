@@ -1,0 +1,60 @@
+From: pschneid@rzu.unizh.ch ()
+Subject: Problem: Maxtor LXT340S spins down with no reason
+Keywords: Maxtor 340, Adaptec 1542, SCSI
+Organization: University of Zurich, Switzerland
+X-Newsreader: TIN [version 1.1 PL8]
+Lines: 53
+
+Please help if you can with the following strange problem:
+
+  The Maxtor 340 drive in my 386 clone would from time to
+  time, for no obvious reason spin down completely (one can
+  tell by the sound) and simply refuse to be accessed. DOS
+  reacts with an error (Drive D: cannot be accessed or
+  something the like). Unfortunately, I cannot just reproduce
+  the error. Sometimes it occurs more often, sometimes
+  less. The last time it happened was when I wanted to 
+  demonstrate some software to a colleague.
+    I would like to know if anybody has experienced similar
+  problems. I don't like to take the thing to the dealer
+  only to be told that there's nothing wrong with it. I
+  checked the other post in this group about Maxtor, and
+  I don't seem to be the only one who has problems. However,
+  no one describes the same problem, and I also have a 
+  different configuration.
+
+  Thanx in advance for any e-mailed help. 
+  
+  Peter
+
+LIST OF EQUIPMENT
+  Computer "Mandax" Mainboard 386-33, 2MB
+  Adaptec 1542 SCSI Master
+  Maxtor LXT340S SCSI-II Hard Drive
+  NEC CDR-83 CD-ROM Reader (problem remains with CD-ROM removed)
+  ET4000 VGA Card
+
+CONFIG.SYS
+  files=30
+  device=C:\dos\setver.exe
+  device=C:\windows\himem.sys
+  device=C:\system\aspi4dos.sys
+  device=C:\system\aswcdnec.sys /d:neccd
+  DOS=HIGH
+  COUNTRY=041,,C:\dos\country.sys
+  device=C:\dos\display.sys CON=(EGA,,1)
+
+AUTOEXE.BAT
+  C:\windows\smartdrive.sys
+  PATH=C:\windows;c:\dos
+  SET TEMP=C:\dos
+  MODE CON CODEPAGE PREPARE=((437) C:\DOS\EGA.CPI)
+  MODE CON CODEPAGE SELECT=437
+  KEYB SG,,C:\DOS\KEYBOARD.SYS
+  C:\SYSTEM\MSCDEX /D:NECCD /L:d /v
+
+--
+/ Peter Schneider              []  Englisches Seminar         \
+| E-Mail: pschneid@es.unizh.ch []  Universitaet Zurich        |
+|  Phone: (41 1) 257 3554      []  Plattenstrasse 47          | 
+\    Fax: (41 1) 262 1204      []  CH-8032 Zurich/Switzerland /

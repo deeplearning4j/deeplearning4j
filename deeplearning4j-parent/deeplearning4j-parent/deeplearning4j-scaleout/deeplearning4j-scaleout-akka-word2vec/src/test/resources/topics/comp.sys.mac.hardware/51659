@@ -1,0 +1,52 @@
+From: lumpkin@corvus.nas.nasa.gov (Forrest E. Lumpkin III)
+Subject: HELP - SCSI Woes on Mac IIfx
+Keywords: SCSI, IIfx
+Organization: NASA Ames Research Center 
+Lines: 46
+
+I am having trouble with SCSI on a Mac IIfx. The machine is 3 years old
+and I have been using the same hard drive (internal Maxtor LXT-200S) for
+two and a half years. The disk recently crashed. I reformatted (Silverlining
+5.42), but during the reformat I received random write errors during testing.
+The error message reported was like:
+
+Sector 0: Write error detected after testing good - sector not mapped out.
+
+This occurred randomly all over the hard disk (which makes me suspect the
+diagnostic's reference to Sector 0 ??? ). On the third reformat and after
+reinstalling the SCSI read/write loops I was able to get through passes
+2,3, and 4 with no errors. (Pass 1 for some reason reported a lot of errors,
+but still mapped out no sectors.) I decided to go ahead and try to resinstall
+System 7 and reload my data from a backup. This proceded normally; however,
+I now have sub-optimal performance. Symptoms include:
+
+   o Frequent crashes
+   o Instances of extremely sluggish disk access requiring a reboot to
+       correct.
+   o Instances of not finding the disk on the SCSI chain on reboot.
+       - If I boot from Norton Utl. after this occurs, it cannot find the
+         disk either.
+       - The only thing that fixes this is recycling the power. It sometimes
+         requires several attempts.
+
+QUESTIONS:
+
+   1) Has anyone had this type of problem before?
+   2) Is the problem with the fx motherboard (And its non-standard
+      SCSI implementation) or with my Maxtor Disk? Is there some
+      diagnostic software that would help me make this determination?
+   3) Is it a termination problem? I currently have external Syquest
+      and an external DataFrame XP60 on the chain. The XP60 is at the
+      end, and has internal termination; so I am not using the IIfx
+      terminator. I do have the SCSI filter installed on the internal
+      drive. I have run with this exact steup for 2 1/2 years with
+      one previous disk crash requiring a reformat (about a year ago).
+      I also have symptoms if I disconnect the external devices;
+      so I don't see how SCSI termination would now be an issue. Of
+      course who knows :-<
+
+Help would be much appreciated.
+
+Forrest E. Lumpkin III
+NASA Ames Research Center
+lumpkin@corvus.arc.nasa.gov

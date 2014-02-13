@@ -1,0 +1,18 @@
+From: Dale_Adams@gateway.qm.apple.com (Dale Adams)
+Subject: Re: Adding VRAM to Quadra 800 ?
+Organization: Apple Computer, Inc.,  Cupertino, CA
+Lines: 13
+
+In article <wstuartj.735273842@lucky.ecn.purdue.edu> 
+wstuartj@lucky.ecn.purdue.edu (W Stuart Jones) writes:
+> I want to go from 512K to 1M VRAM on my Quadra 800.  How many 512K SIMMS 
+> do I
+> need to buy?  Is the current 512K soldered on the board or do I need to take
+> out the current VRAM before I add more?
+
+You need to add two 256K VRAM SIMMs;  512K VRAM SIMMs will not work in any 
+of the Quadra or Centris machines.  There is already 512K of VRAM soldered 
+to the logic board.  You add the two 256K SIMMs to this to give you a 
+total of 1 MB.
+
+- Dale Adams

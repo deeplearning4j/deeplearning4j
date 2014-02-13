@@ -1,0 +1,16 @@
+photo: Getty Images / Justin Sullivan
+Summary:
+Although LinkedIn and Slashdot had no knowledge of it, the GCHQ agency used fake versions of their webpages as way of sneaking malware onto the networks of major mobile connection exchanges. Here’s how that worked.
+photo: Getty Images / Justin Sullivan
+Back in September, the Belgian telecommunications firm Belgacom said it suspected an intelligence agency had hacked into its systems . This was notable for a couple of reasons: firstly, Belgacom supplies connectivity to major EU institutions that are based in Brussels; and secondly, the firm operates a so-called global roaming exchange (GRX), a hub for connections between different mobile networks.
+It turned out that the UK’s GCHQ agency, a counterpart and partner to the NSA, was the culprit. And now, based on a document from NSA leaker Edward Snowden, Der Spiegel has shed more light on the incident and others like it.
+The purpose of this hacking can be fairly summed up as “access all the connections”, but here’s a breakdown of the ingenious techniques that were used. This is also apparently how the NSA and GCHQ targeted the oil body OPEC and many others.
+Groundwork: The spies identified Belgacom employees working in network security and maintenance, figuring out who uses LinkedIn and reads Slashdot. According to Der Spiegel, the research undertaken at this stage was extensive, to the point where the spooks accessed the cookies on the target’s computer.
+Attack: Similarly to how the Chinese government implements its online censorship regime, the NSA and GCHQ then performed a form of “man-in-the-middle” attack that fooled the target into thinking he or she was talking with a genuine web service. In reality, they were talking to an impersonator. In this case, the technique is called “quantum insert” and it can only be performed by an agency that has managed to sneak its own boxes into the internet backbone. That way, a target calling up a LinkedIn page can be served a near-exact copy before the real LinkedIn page has a chance to arrive.
+Infection: And what’s the difference between the copy and genuine article? The copy also has malware hidden in it, and that’s how the intelligence networks get into the networks they’re targeting.
+According to the leak, GCHQ used the same quantum insert technique to worm its way into the systems of international mobile billing clearinghouses, in an operation called “Wylekey”. These clearinghouses, including Comfone and Mach (since split into two firms), have large amounts of mobile connection data and yielded “knowledge of and access to encrypted links between the clearinghouses and various mobile network operators.”
+The article also quoted a GCHQ internal briefing document as saying the agency hoped to use mobile phones’ unique identifiers to infect them with “implants” – or, as Der Spiegel put it, to turn them into “bugging devices.” None of the companies mentioned in the piece said they had any idea what had been happening, and there’s no reason to doubt them. After all, better for all concerned if they remained in the dark.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

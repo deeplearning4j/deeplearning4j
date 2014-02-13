@@ -1,0 +1,54 @@
+From: jim@n5ial.mythical.com (Jim Graham)
+Subject: Re: Possible FAQ question about a UART
+Keywords: 16550
+Organization: what, ME???  you must be joking.
+Lines: 48
+
+thought I'd post this as well as e-mail it, just in case anyone else is
+interested in this info.....
+
+In article <1993Apr15.054552.14548@henson.cc.wwu.edu>
+n9110338@henson.cc.wwu.edu (dan jordan) writes:
+
+>   Hello, my question is could someone E-mail me the names of manufactures
+>of the 16550 and predecsor UARTs.   I have only seen them refered to by
+>number, however i would like to find a technical manual for these ICs.
+
+>  any where i can find out the technical specs for these UARTs would be
+>appreciated: prefereably the 16450 as well as the 16550 however one will do.
+
+I suggest that you go direct to the original (and preferred...best quality)
+source for all of this, just as you would (at least, should) for the chips
+themselves:  National Semiconductor.  you can reach them at 1-800-272-9959.
+they no longer package the data sheets in a book, as they did when I got
+mine, but you can get them as individual sets of data sheets.  you want, as
+a minimum, the following:
+
+   *) 2 sets of data sheets:
+      *) NS16450/INS8250A/NS16C450/INS82C50A
+      *) NS16550AF
+
+   *) 2 application notes (yes, GET THESE!):
+      *) AN-491 The NS16550A: UART Design and Application Considerations
+      *) AN-493 A Comparison of the INS8250, NS16450 and NS16550AF Series
+         of UARTs
+
+both of the application notes I listed have proven to be AT LEAST as
+valuable as the data sheets themselves (more, actually).  AN-491, in
+particular, is an exceptionally well-written application note that goes
+into detail about how and why the 16550 does what it does, and how best
+to take advantage of it.
+
+btw, they send these out free, as long as you don't abuse it.
+
+later,
+   --jim
+
+--
+#include <std_disclaimer.h>                                 73 DE N5IAL (/4)
+------------------------------------------------------------------------------
+INTERNET: jim@n5ial.mythical.com  |  j.graham@ieee.org     ICBM: 30.23N 86.32W
+AMATEUR RADIO: n5ial@w4zbb (Ft. Walton Beach, FL)          AMTOR SELCAL: NIAL
+------------------------------------------------------------------------------
+E-mail me for information about KAMterm (host mode for Kantronics TNCs).
+

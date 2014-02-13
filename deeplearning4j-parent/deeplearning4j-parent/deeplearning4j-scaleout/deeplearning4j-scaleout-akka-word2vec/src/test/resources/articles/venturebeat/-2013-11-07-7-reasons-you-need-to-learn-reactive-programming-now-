@@ -1,0 +1,26 @@
+20
+ R. Paul Singh is the founder and chairman of Documents.Me.
+In the now infamous “Lost Interview,” Steve Jobs said , “Everybody in this country should learn how to program a computer, because it teaches you how to think.” We all know that learning to code is one of the most hyped skills right now – and for good reason, considering the insatiable demand for developers.
+The U.S. Bureau of Labor Statistics projects a 22 percent growth in programming jobs in by 2020. Programming “bootcamps” have sprung up in over two-dozen schools . In May, Hubspot made headlines by offering $30,000 for anyone who could help them hire a software developer.
+And now the newest trend – reactive programming – is rocking the developer community, exciting tech giants like Netflix and inspiring a whole new crop of innovative startups.
+What is reactive programming?
+Spreadsheet cell formulas are hands-down the best example of reactive programming. Cells react to changes in the data they reference automatically. For example, A=B+C means that no matter what happens to B and C, A will change accordingly. Don’t you wish you could program anything the same way, without worrying about dependencies?
+Whether you’re a software developer, a manager, or an architect, you need to get savvy about how reactive programming concepts are going to radically transform the industry. Consider these seven reasons:
+Editor’s note: Developers! If you’re good and want to be great, our upcoming DevBeat conference , Nov. 12-13 in San Francisco, is a hands-on event packed with master classes, presentations, Q&As, and hackathons, all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+1. Declarative vs. procedural
+It all comes down to the difference between an imperative system and a reactive one. You already know how traditional procedural programming (imperative) works. A business user has a need and creates a spec for the programmer. The programmer figures out how to best create a system to produce the desired result and then constantly updates it as things change.
+Whereas a declarative system (reactive) asks the business user to simply describe what they want. Then using that description the system delivers the desired end result, of course with the help of the programmer. The focus is on what the system should do and not how to do it.
+2. Get to market ten times faster
+When implemented correctly, reactive programming lets computers take care of dependency management rather than leaving that work to the programmers. As a result, the code size reduces drastically. That means 500 lines of old-school coding shrinks to five lines using reactive programming.
+3. Keep up with changes
+In our hyper-competitive environment, the old model of waiting months to accommodate changes just doesn’t work. Reactive programming means changes can be made without worrying about logic ordering. Ordering is the main cost-component of traditional programming, requiring significant analysis for each change. Just like the simplest spreadsheet, reactive programming means logic is automatically ordered based on dependencies,
+4. Improve code quality
+Traditional code is error prone. It must not only be correct; it must be called. Reactive logic is automatically applied to all changes – it’s the next level up in reuse beyond object-oriented programming.
+5. The big kids are into it
+Microsoft led the effort by releasing Rx extensions to its .NET framework. Since then, companies like Facebook, Netflix, and Twitter have followed suit, adopting the model to slash their development time. And now Gartner has included reactive programming in its newest report on the hottest application development trends of 2013.
+6. It’s not just for the frontend
+While Microsoft laid the foundation with the release of reactive extensions to .NET called RxJS, now many implementations including FlapJax, Bacon JS, and Elm are gaining popularity for front-end development. Today, startups are even starting to apply these concepts to development of the backend, which means delivering the backend part of the app in a fraction of the usual time.
+7. Links business and IT
+Imagine IT teams and business users being able to look at the same document and discuss how to build the systems. That’s how simple it is. Think of it like an executable cocktail napkin, where business users describe what they want and that specification is close enough to what IT uses to simply execute. Reactive programming opens up a whole new era of communication and collaboration between IT and business users.
+When implemented correctly, reactive programming is the ultimate nirvana. Those 500 lines of code are distilled away, maintenance almost disappears, and developers are empowered to operate at unprecedented speed. It’s still in its infancy and I’m sure we’ll see some very cool implementations in 2014 as it picks up steam. Considering the explosive demand for developers with the latest and greatest coding toolkit, this is one trend you should jump on now.
+And if you’re already using reactive programming for your business, I’d love to hear about it.

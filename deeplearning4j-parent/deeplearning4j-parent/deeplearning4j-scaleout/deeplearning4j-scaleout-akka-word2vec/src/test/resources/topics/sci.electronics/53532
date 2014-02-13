@@ -1,0 +1,49 @@
+From: alung@megatest.com (Aaron Lung)
+Subject: Re: What are some good Suppliers of Chips?
+Organization: Megatest Corporation
+Lines: 44
+
+In article <1qihcl$9ri@usenet.INS.CWRU.Edu> ae454@cleveland.Freenet.Edu (Paul Simundza) writes:
+>
+>
+>anyone know of any good supplier's of chips, one that could have almost
+>any chip i need? I don't want to hunt down all the chips I may need so
+>it would be greatly appreciated if anyone knows of a good distributor
+>..
+>thankyou
+>
+
+Paul,
+
+Unfortunately, there are not too many retail outlets that'll stock
+just about every chip made.  The stuff they will stock are the ones
+that'll sell, like standard DRAM's, 80386's, 68000's, etc,etc.
+i.e.  I cna't think of any 'one-stop-shopping' store.
+
+The closest you can get is to pick up a copy of Byte magazine or
+the Circuit Cellar, Popular Electronics, and the like and flip
+through them.
+
+Distributors like Wyle Electronics, Hamilton Avnet, Pioneer Electronics,
+etc, etc, don't normally deal with end-users like ourselves where
+we only a couple of everything...they only deal with people who buy
+by the hundreds or more.  Each distributor represents and sells a variety of
+different non-competing manufacturers.  What do I mean by this?
+Suppose ABC Electronics sells Intel 80386's.  It's a pretty good
+bet that they won't be selling any of AMD's 386's, or vice-versa.
+They also can obtain just about *any* chip you want from a manufacturer
+they represent.
+
+Who knows?  You might be lucky to be able to buy from one of them.
+But I'd be suprised if you do.  ALso bear in mind that the 1 or 2
+qty prices they will charge you will be *much* greater than what
+a mail order outlet will charge.
+
+My advice?  If you're gonna be designing anything, try to stick
+with off-the-shelf stuff.  You're going to get stuck if you use
+too many esoteric parts sooner or later.
+
+good luck,
+
+aaron
+

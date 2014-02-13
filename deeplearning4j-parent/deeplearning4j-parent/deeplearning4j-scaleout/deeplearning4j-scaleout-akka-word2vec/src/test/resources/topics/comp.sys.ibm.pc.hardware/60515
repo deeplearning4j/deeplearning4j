@@ -1,0 +1,45 @@
+From: s106275@ee.tut.fi (Anssi Saari)
+Subject: Re: 80386 and 80486: What's the difference?
+Organization: Tampere University of Technology, Computing Centre
+Lines: 38
+Distribution: inet
+NNTP-Posting-Host: ee.tut.fi
+
+In <joedal.735221221@dfi.aau.dk> joedal@dfi.aau.dk (Lars Joedal) writes:
+
+>Except from clock frequency, what are the differences between the
+>various types of 386 and 486 processors?
+>The following is a list with what I know (or perhaps only what I
+>think I know!). Can anybody extend & correct?
+
+
+>80386:  True 32 bit processor.
+>        (cache?)
+No cache.
+
+>80386SX:  Emulates 80386 with a 16 bit bus.
+
+>80486:  True 32 bit processor.
+>        Internal mathematical coprocessor (Correct?)
+Correct.
+>        Internal cache (Correct? How big?)
+8kB.
+>        (extended instruction set in any way?)
+Was it six instructions?
+
+>80486SX:  Probably sorta like 80486...
+80486DX without the mathematical coprocessor (FPU).
+>80486DX:  Probably sorta like 80386...
+
+Actually, the 80486 you described above is 80486DX.
+(There is no separate 80486 nor 80386, either).
+
+This is for Intel processors. Does anyone have a complete
+list with Cyrix and Ibm products?
+
+Anssi
+-- 
+Anssi Saari s106275@ee.tut.fi                
+Tampere University of Technology 
+Finland, Europe                  
+

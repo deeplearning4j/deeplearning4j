@@ -1,0 +1,42 @@
+From: andrew@calvin.dgbt.doc.ca (Andrew Patrick)
+Subject: Any Interest in a Mailing List on Epilepsy and Seizures?
+Nntp-Posting-Host: calvin.dgbt.doc.ca
+Organization: Communications Research Centre, Ottawa, Canada
+Lines: 36
+
+
+I have seen a fair bit of traffic recently concerning Epilepsy and
+seizures.  I am also interested in this subject -- I have a son with
+Epilepsy and I am very active with the local association.  I posted a
+message like this a few months ago and received no replies, but here it
+is again.
+
+Is anyone interested in participating in a mailing list on Epilepsy and
+seizures?  This would allow us to hold discussions and share
+information via electronic mail.  I already run a Listserver for two
+other groups, so the mechanics would be easy.
+
+If you are interested, mail me a note.  If I get enough replies, I will
+make it happen and provide you with the details.
+
+BTW, I have also started a database on Epilepsy.  This is part of my
+research on natural language question answering systems.  Users of this
+service are able to ask questions about Epilepsy and the program
+searches the database and retrieves its best response.  The technology
+works by comparing your question against a set of questions that have
+been seen before.  All new questions that are not answered are recorded
+and used to improve the system.
+
+This database is still small and sparse, but we are adding new
+information.  To try it out, do the following
+
+	telnet debra.dgbt.doc.ca
+	login: chat
+
+	Then select the Epilepsy item from the menu of databases.
+
+-- 
+Andrew Patrick, Ph.D.       Communications Research Centre, Ottawa, CANADA
+                       andrew@calvin.dgbt.doc.CA
+                       
+  For a good time, run "telnet debra.dgbt.doc.ca" and login as "chat".

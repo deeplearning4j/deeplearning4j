@@ -1,0 +1,109 @@
+From: pmetzger@snark.shearson.com (Perry E. Metzger)
+Subject: Facinating facts: 30 bit serial number, possibly fixed S1 and S2
+In-Reply-To: denning@guvax.acc.georgetown.edu's message of 19 Apr 93 18:23:27 -0400
+Reply-To: pmetzger@lehman.com
+Organization: Lehman Brothers
+Lines: 102
+
+
+denning@guvax.acc.georgetown.edu (Vidkun Abraham Lauritz Quisling) writes:
+
+   Each chip includes the following components:
+
+      the Skipjack encryption algorithm
+      F, an 80-bit family key that is common to all chips
+      N, a 30-bit serial number
+      U, an 80-bit secret key that unlocks all messages encrypted with the chip
+
+Hmmm. A thirty bit serial number. And, we are told, the unit key U is
+derived deterministically from this serial number. That means that
+there are only one billion possible unit keys.
+
+   To generate the unit key for a serial number N, the 30-bit value N is
+   first padded with a fixed 34-bit block to produce a 64-bit block N1.
+   S1 and S2 are then used as keys to triple-encrypt N1, producing a
+   64-bit block R1:
+
+	   R1 = E[D[E[N1; S1]; S2]; S1] .
+
+   Similarly, N is padded with two other 34-bit blocks to produce N2 and
+   N3, and two additional 64-bit blocks R2 and R3 are computed:  
+
+	   R2 = E[D[E[N2; S1]; S2]; S1] 
+	   R3 = E[D[E[N3; S1]; S2]; S1] .
+
+   R1, R2, and R3 are then concatenated together, giving 192 bits. The
+   first 80 bits are assigned to U1 and the second 80 bits to U2.  The
+   rest are discarded.  The unit key U is the XOR of U1 and U2.  U1 and U2
+   are the key parts that are separately escrowed with the two escrow
+   agencies.
+
+Hmmm. We must assume that generating the unit key U from the serial
+number N rather than generating it from a randomly selected U1 and U2
+is an intentional way of assuring a "fail safe" for the government --
+U is completedly determined given S1, S2 and N. If S1 and S2 do not
+change they constitute effective "master keys" (along with F), the
+theft of which (or the possession of which by various authorities)
+completely obviates the security of the system. However, more
+interestingly, we know, for a fact that if S1 and S2 are fixed no
+matter what the keyspace for U is no more than 2^30. Why not pick U1
+and U2 at random? Why this interesting restriction of they key space
+if it NOT to provide an additional back door?
+
+I find it disturbing that at the very best my security is dependant on
+approximately 30 bytes worth of information that could be written on
+the back of a napkin.
+
+Even if S1 and S2 change periodically, the rationale behind this
+restriction in the size of the keyspace seems strange if one is
+assuming that the goal is security -- and makes perfect sense if the
+goal is an illusion of security.
+
+If S1 and S2 do not change, even if they remain secret I wonder if
+they can somehow be back-derived given enough unit key/serial number
+pairs. We are assured that this cannot happen -- but no one
+understands how Skipjack works outside of government officials and,
+soon, foreign intelligence services that gain the information via
+espionage. Presumably we will eventually have the information as well
+-- reverse engineering gets more and more advanced every year -- but
+by the time we know it may be too late.
+
+   As a sequence of values for U1, U2, and U are generated, they are
+   written onto three separate floppy disks.  The first disk contains a
+   file for each serial number that contains the corresponding key part
+   U1.  The second disk is similar but contains the U2 values.  The third
+   disk contains the unit keys U.  Agent 1 takes the first disk and agent
+   2 takes the second disk.  The third disk is used to program the chips.
+   After the chips are programmed, all information is discarded from the
+   vault and the agents leave.  The laptop may be destroyed for additional
+   assurance that no information is left behind.
+
+None of this makes me feel the least bit secure. The silly notion of
+"destroying the laptop" appears to be yet another bizarre distraction.
+We all know that you can't read data from DRAM that has been turned
+off for more than a few moments. On the other hand, what we don't know
+is why there is a need to generate the unit keys from S1 and S2 in the
+first place other than to weaken the system. We don't know if the
+agents in question would resist a million in cash a piece for their
+information -- its probably worth hundreds of million, so you can make
+the bribe arbitrarily hard to resist. And to tell you the truth, doing
+this in a "vault" rather than in Joe Random Tempest-shielded Room
+with a laptop computer seems like melodrama designed to make
+high-school dropouts from Peoria impressed -- but it does very little
+for most of the rest of us.
+
+   The protocol may be changed slightly so that four people are in the
+   room instead of two.  The first two would provide the seeds S1 and S2,
+   and the second two (the escrow agents) would take the disks back to
+   the escrow agencies.
+
+What would this provide? Lets say the escrow agencies are the ACLU and
+the NRA and their agents personally take back the disks and are always
+honest. Who cares? The NSA must be laughing out loud, because they
+have the algorithm to regenerate U given N and likely don't need to
+steal they keys as they effectively already have them.
+
+--
+Perry Metzger		pmetzger@shearson.com
+--
+Laissez faire, laissez passer. Le monde va de lui meme.

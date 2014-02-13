@@ -1,0 +1,46 @@
+From: rgasch@nl.oracle.com (Robert Gasch)
+Subject: Re: Expose Events
+Organization: Oracle Europe
+Lines: 40
+X-Newsreader: TIN [version 1.1 PL8]
+
+I posted about this a while ago but without code excerpts noone was 
+able to help me.
+
+The problem is that main_win.win is doing fine, but when I create 
+detail_win.win, it does not receive it's initial expose events until 
+main_win.win receives an event. Here are the relevent calls:
+
+main_win.win = XCreateSimpleWindow (mydisplay, DefaultRootWindow(mydisplay),
+                myhint.x, myhint.y, myhint.width, myhint.height,
+                main_win.line_thick, fg, bg);
+XSetStandardProperties(mydisplay, main_win.win, main_win.text,
+                main_win.text, None, argv, argc, &myhint);
+main_win.gc = XCreateGC (mydisplay, main_win.win, 0, 0);
+XMapRaised (mydisplay, detail_win.win);
+XMapSubwindows (mydisplay, main_win.win);
+The event mask for main_win is:
+	PPosition | PSize | StructureNotifyMask | ExposureMask| KeyPressMask | 
+	EnterWindowMask | LeaveWindowMask;
+The flags are
+	PPosition | PSize
+
+I then create detail_win.win with the following calls (hints has new values):
+detail_win.win = XCreateSimpleWindow (mydisplay, DefaultRootWindow(mydisplay),
+                myhint.x, myhint.y, myhint.width, myhint.height,
+                detail_win.line_thick, fg, bg);
+XSetStandardProperties(mydisplay, main_win.win, detail_win.text,
+                detail_win.text, None, argv, argc, &myhint);
+detail_win.gc = XCreateGC (mydisplay, detail_win.win, 0, 0);
+XMapRaised (mydisplay, detail_win.win);
+Event Mask and flags are identical to main_win's flags and event mask.
+
+
+If anybody has any idea why the initial expose events of detail_win.win 
+are not received until main_win.win receives an event I'd love to hear 
+from them. Other that that everything works great so there must be some 
+detail I'm overseeing.
+
+Thanks for any tips
+---> Robert
+rgasch@nl.oracle.com

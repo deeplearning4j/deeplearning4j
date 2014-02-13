@@ -1,0 +1,34 @@
+From: ccgwt@trentu.ca (Grant Totten)
+Subject: Re: MS-Windows Screen Grabber (summary)
+Lines: 28
+Reply-To: ccgwt@trentu.ca (Grant Totten)
+Organization: Trent University
+
+
+Hi again,
+
+Many thanks to all the people who responded to my request for a MS-
+Windows screen grabber.  It proves to me AGAIN that the net is a 
+wonderful thing.  :-)
+
+So, in summary:
+
+There are two choices:
+
+1)	Various screen grabber packages (Corel Draw has one, there are
+a couple on simtel and cica).
+
+2)	Use the built-in PrintScreen and Alt-PrintScreen functionality
+to paste the screen (or window) to the clipboard.  Then paste the 
+clipboard to your application.  Cool!
+
+Again, thanks for the info...
+
+Grant (the MS-Windows newbie -- Unix and X are my bag ;-)
+
+--
+Grant Totten, Programmer/Analyst, Trent University, Peterborough Ontario
+GTotten@TrentU.CA            Phone: (705) 748-1653   FAX: (705) 748-1246
+========================================================================
+A woman's place is in the wrong.
+		-- James Thurber

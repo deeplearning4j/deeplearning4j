@@ -1,0 +1,40 @@
+From: pm860605@longs.LANCE.ColoState.Edu (Peter J. McKinney)
+Subject: Re: PC keyboard
+Summary: location of cap lock and ctrl keys on PC keyboard
+Keywords: cap lock and ctrl key
+Article-I.D.: longs.pm860605.143.734052152
+Organization: Colorado State University
+Lines: 31
+Nntp-Posting-Host: hercules.lance.colostate.edu
+
+In article <hxg5nxl@rpi.edu> wen@yingyang.ral.rpi.edu (John Wen) writes:
+>From: wen@yingyang.ral.rpi.edu (John Wen)
+>Subject: PC keyboard
+>Summary: location of cap lock and ctrl keys on PC keyboard
+>Keywords: cap lock and ctrl key
+>Date: Mon, 5 Apr 1993 19:23:35 GMT
+>Does anyone know of a software that can exchange caps lock and ctrl
+>keys on the AT-style keyboard?  I'm looking for a memory resident
+>program that can work with other programs, rather than a feature in a
+>specific program (I am aware of a shareware program "back and forth"
+>that provides this feature within that program).  Thanks.
+
+   A program in the archive keymap00.zip on simtel and mirror sites in the 
+msdos/keyboard directory will do this.  It is written in assembler and it 
+best if you have a compiler to create a new keyboard map.  It is possible, 
+however, to use a binary editor to edit the provided compiled keyboard 
+driver if you do not have a compiler.  I used hexed100.zip, also available 
+on simtel.  Simply serach for the codes 00 01 02 03 to locate the biginning 
+of the "normal" keyboard map.  Then swap the codes for the keys that you 
+wish to swap.  See the keyboard directory of simtel for programs that report 
+the scancode for each key to you (some bios programs also have this info).
+Good luck,
+
+- Pete
+____________________________________________________________________________
+| Peter J. McKinney                     pm860605@longs.LANCE.ColoState.Edu |
+| Electrohydrodynamic Laboratory                                           |
+| Fluid Mechanics and Wind Engineering Program                             |
+| Civil Engineering Department                                             |
+| Colorado State University                                                |
+----------------------------------------------------------------------------

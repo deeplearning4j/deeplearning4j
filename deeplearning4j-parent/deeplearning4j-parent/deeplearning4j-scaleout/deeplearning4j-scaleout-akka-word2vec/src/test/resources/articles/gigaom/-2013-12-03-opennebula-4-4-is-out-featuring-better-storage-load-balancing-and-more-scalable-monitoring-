@@ -1,0 +1,11 @@
+A
+Summary:
+The new version of the open-source cloud management platform, codenamed “Retina”, introduces the ability to define scheduling policies for storage load-balancing.
+The OpenNebula project just released the nineteenth version of its open-source enterprise cloud management platform, OpenNebula “Retina” 4.4.
+The big feature of this release is its support for multiple system data stores, which means administrators can add a second datastore if the first gets full, and which also allows defined scheduling policies for the distribution of virtual machines across multiple data stores, VMware DRS -style.
+OpenNebula 4.4 also features a new monitoring driver that employs a push rather than pull model , where hosts send monitoring data to the front-end rather than the front-end having to ask. This should make OpenNebula’s monitoring subsystem more scalable.
+The other big changes are on the Amazon interaction front. Cloud bursting to Amazon is apparently more efficient now, partly due to a switch from Amazon API Tools to the AWS software development kit for Ruby, and partly because OpenNebula users can now define various EC2 hosts. The OpenNebula econe-server, a component that interprets Amazon EC2 API calls, has also been tweaked.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

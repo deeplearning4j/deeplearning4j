@@ -1,0 +1,25 @@
+From: gtoal@gtoal.com (Graham Toal)
+Subject: Re: Do we need the clipper for cheap security?
+Lines: 21
+
+: From: pmetzger@snark.shearson.com (Perry E. Metzger)
+
+: Indeed, were it not for the government doing everything possible to
+: stop them, Qualcomm would have designed strong encryption right in to
+: the CDMA cellular phone system they are pioneering. Were it not for
+: the NSA and company, cheap encryption systems would be everywhere. As
+: it is, they try every trick in the book to stop it. Had it not been
+: for them, I'm sure cheap secure phones would be out right now.
+
+In the UK, it's impossible to get approval to attach any crypto device
+to the phone network.  (Anything that plugs in to our BT phone sockets
+must be approved - for some reason crypto devices just never are...)
+
+I was wondering some time ago how big a market there was for good old-
+fashion acoustic coupler technology to build a secure phone :-) ... is
+it possible to mask out all the real voice well enough so that none of
+it strays into the mouthpiece?  Perhaps a well-sealed coupler attachment
+that was as well blocked as possible, then a white noise generator on
+the outside to muffle any real speech?
+
+G

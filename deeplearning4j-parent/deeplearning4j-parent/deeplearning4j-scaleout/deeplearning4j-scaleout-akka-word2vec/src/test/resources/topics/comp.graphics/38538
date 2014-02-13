@@ -1,0 +1,16 @@
+From: "danny hawrysio" <danny.hawrysio@canrem.com>
+Subject: radiosity
+Reply-To: "danny hawrysio" <danny.hawrysio@canrem.com>
+Organization: Canada Remote Systems
+Distribution: comp
+Lines: 9
+
+
+-> I am looking for source-code for the radiosity-method.
+
+ I don't know what kind of machine you want it for, but the program
+Radiance comes with 'C' source code - I don't have ftp access so I
+couldn't tell you where to get it via that way.
+--
+Canada Remote Systems - Toronto, Ontario
+416-629-7000/629-7044

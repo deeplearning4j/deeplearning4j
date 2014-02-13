@@ -1,0 +1,45 @@
+From: dyoung@media.mit.edu (David Young)
+Subject: Drawing Lines (inverse/xor)
+Organization: MIT Media Laboratory
+Lines: 40
+
+I'm trying to write some code that lets me draw lines and do rubber-band
+boxes in Motif/X.  I'm running on an 8-bit display for which I've created a
+colormap and am using almost all of the colors.  I want to draw the lines
+in a drawing area widget -- a widget in which I'm displaying a bitmap using
+XPutImage().  If doesn't matter if the lines I draw interactively stay
+around when the window is refreshed.
+
+Currently, to draw interactively, I begin with:
+
+   /* drawIndex is an colortable index I reserve for the Foreground */
+   /* my_default_bg_color is the color index for the background of my image */
+   palette_colors[drawIndex].red =   palette_colors[my_default_bg_color].red;
+   palette_colors[drawIndex].green = palette_colors[my_default_bg_color].green;
+   palette_colors[drawIndex].blue =  palette_colors[my_default_bg_color].blue;
+   XStoreColors( myDisplay, my_cmap, &palette_colors[DrawIndex], 1);
+   XFlush( myDisplay);
+
+   XSetFunction( myDisplay, gc, GXxor);
+   XSetForeground( myDisplay, gc, drawIndex);
+
+Then to draw I do:
+
+   XDrawLine( myDisplay, XtWindow( drawingArea1), gc, x1, y1, x2, y2);
+   XFlush( myDisplay);
+
+And when I'm all done, to return things to normal I do:
+
+   XSetFunction( myDisplay, gc, GXcopy);
+
+
+What I'd like to happen is for the lines I draw to be the inverse of
+whatever I'm drawing over.  Instead what happens is I get white lines.  If
+the lines are over a white background - nothing shows up.  If the lines are
+over a black area - nothing shows up!  It's very strange.  But the GXxor
+function seems right - since if I do a rubber-banding box, it erases and
+redraws itself correctly (ie. not disturbing the underlying image).
+
+Any suggestions what I'm doing wrong?
+
+david

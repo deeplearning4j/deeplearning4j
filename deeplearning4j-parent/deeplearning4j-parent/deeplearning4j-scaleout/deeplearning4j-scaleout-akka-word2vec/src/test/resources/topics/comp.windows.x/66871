@@ -1,0 +1,54 @@
+From: beck@irzr17.inf.tu-dresden.de (Andre Beck)
+Subject: Re: MS Windows VS Motif (GUI design differences), was Re: Future of Unix
+Organization: Dept. of Computer Science, TU Dresden, Germany.
+Lines: 46
+Distribution: usa
+Reply-To: Andre_Beck@IRS.Inf.TU-Dresden.DE
+NNTP-Posting-Host: irzr17.inf.tu-dresden.de
+
+
+In article <IK.93Apr9075401@sneaker.ctt.bellcore.com>, ik@sneaker.ctt.bellcore.com (Ik Su Yoo ) writes:
+|> >>>>> "aab" == Andy Burgess <aab@cichlid.com> writes:
+|> 
+|>   aab> In <1993Apr7.200950.16856@texhrc.uucp> pyeatt@Texaco.com (Larry D. Pyeatt) writes:
+|> 
+|>   aab> <some deleted>
+|> 
+|>     >If you
+|>     >look closely at Motif, you will see that it is just MS-Windows
+|>     >with more eye-pleasing color and texture.  The only real difference
+|>     >is that an MS application window can "contain" other toplevel children, 
+|>     >while a Motif application window "launches" its children out onto the
+|>     >desktop.
+|> 
+|>   aab> To those of you familiar with both GUIs, is this correct? My experience
+|>   aab> with X makes me think that this MSW behavior is easily duplicated
+|>   aab> with X11. But I don't know MSW...
+|> 
+|> Another important difference is that MSW doesn't have any window that
+|> handle sophisticated geometry management (like XmForm). Also, I believe
+|> that in Windows 3.x you're limited to 64K of resources (windows, menus,
+|> icons, etc.).
+
+IMHO this whole discussion named "Motif looks like MS-Windogs" is totally
+stupid. The only thing remotely influenced here can be the Motif Window
+Manager, that features an arrangement of buttons and menus somewhat
+similiar to this of the MS-W windowmanaging agent, however its name is.
+But MWM is only a SMALL part of Motif, in fact, MWM and Motif can work
+without each other, and if one doesn't like MWMs outfit for some reason,
+he switches to another windowmanager. All this doesn't influence Motif,
+which is a toolkit of widgets to write applications, and this toolkit
+is IMHO uncomparable to MS-W, because it is much more wellorganized and
+features alot of goodies more than the MS-W interface.
+
+You cannot say "A Porsche looks like a VW Käfer" ONLY because they have the
+wheel and the gear at the same position. Motif and MS-W are complete
+different worlds, only one element of the Motif world has some gear and wheel
+at the same position as MS-W.
+
+--
++-o-+--------------------------------------------------------------+-o-+
+| o |                \\\-  Brain Inside -///                       | o |
+| o |                    ^^^^^^^^^^^^^^^                           | o |
+| o | Andre' Beck (ABPSoft) mehl: Andre_Beck@IRS.Inf.TU-Dresden.de | o |
++-o-+--------------------------------------------------------------+-o-+

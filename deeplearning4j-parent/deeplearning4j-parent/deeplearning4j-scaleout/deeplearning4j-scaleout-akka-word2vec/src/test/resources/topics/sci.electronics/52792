@@ -1,0 +1,63 @@
+From: gmc@cthulhu.semi.harris.com 
+Subject: Re: What is Zero dB????
+Nntp-Posting-Host: cthulhu.mlb.semi.harris.com
+Organization: Analog
+Lines: 57
+
+In article <1993Apr6.132429.16154@bnr.ca>
+      moffatt@bnr.ca (John Thomson) writes:
+
+ >Joseph Chiu (josephc@cco.caltech.edu) wrote:
+ >
+ >: Thus, a deciBell (deci-, l., tenth of + Bell) is a fractional part of the
+ >: original Bell.  For example, SouthWestern Bell is a deciBell.
+ >
+ >Out of what hat did you pull this one?  dB is a ratio not an RBOC!
+ >
+ >: And the measure of current, Amp, is actually named after both the AMP company
+ >: and the Amphenol company.  Both companies revolutionized electronics by
+ >: simulatenously realizing that the performance of connectors and sockets
+ >: were affected by the amount of current running through the wires.
+ >
+ >Sorry.  The unit for current is the AMPERE which is the name of a french-man
+ >named AMPERE who studied electrical current.  The term AMP is just an abbreviation
+ >of it.  The company AMP came after the AMPERE unit was already in use.
+ >
+ >: The Ohmite company was the first to characterize resistances by numbers,
+ >: thus our use of the Ohms...
+ >
+ >I don't know about this one, but it doesn't sound right.
+ >
+ >:
+ >: Alexander Graham Bell, actually, is where Bell came from...
+ >Well you got one thing right!
+ >:
+
+Actually, I think J. Chiu knows the score and is just being
+silly. However, "decibel" is in fact 1/10th of a bel. He is
+right on that one, but I don't know if it was accidental or not.
+
+Strictly defined, a bel is the ratio of the log of two power levels,
+and a decibel is 1/10th of a bel so you have 10X decibels for every bel,
+hence bel=log(P2/P1) and decibel=10Xlog(P2/P1).
+
+The bel, ohm, volt, farad, ampere, watt, hertz, henry, etc. are
+all named for pioneers in the field. It's a traditional and fine
+way to honor researchers who discover new knowledge in a new field.
+Hertz was one of the most important of the early electronics explorers,
+but had been left out in having a term or unit named after him
+until recently, (1960's, prior to that what is now a hertz was a cps.)
+All the other units were defined many decades earlier.
+
+
+ 
+
+
+-- 
+----------------------------------------------------------------------
+
+
+
+
+----------------------------------------------------------------------
+

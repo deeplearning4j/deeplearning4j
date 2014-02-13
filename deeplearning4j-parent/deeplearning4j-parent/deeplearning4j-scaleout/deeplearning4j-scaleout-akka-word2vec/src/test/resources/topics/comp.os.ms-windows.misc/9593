@@ -1,0 +1,43 @@
+From: tdarugar@cs.ucsd.edu (Tony Darugar)
+Subject: Fahrenheit 1280+ problems, help!
+Organization: CSE Dept., U.C. San Diego
+Lines: 37
+Nntp-Posting-Host: tartarus.ucsd.edu
+
+
+Hi,
+
+  I recently bought an Orchid Fahrenheit 1280+. It's a real nice card,
+but I'm having very big problems with it.
+
+  The basic problem is that vertical lines are missing from the display
+in windows. Something like every other line or so.
+Also, when I use a DOS gif viewer, namely vpic 6.0c, in Fahrenheit 1280
+mode, vertical lines are swapped. It's very strange looking.
+If it uses VESA standards, however, it works great! only it thinks there's
+only 512K on the card. (There's 1MB on there).
+
+  I have contacted Orchid support, and they tried to be helpful, but didn't
+have the answer. I don't think the card is the problem, since it works great
+on my friend's computer.
+
+  Here is my setup:
+Fahrenheit 1280+, 1MB, bios 1.1
+386-25, Opti-chipset2, AMI bios 1990, 5MB ram.
+Maxtor 120MB harddrive, (slave)
+Maxtor 40Mb harddrive (master)
+Panasonic c1381 monitor,
+version 4.6 windows drivers.
+windows 3.1
+I tried taking all memory managers, etc off, and took all other cards
+(besides disk controller) off.
+
+  My friend's setup is 386sx-16, shamrock monitor.
+
+If anyone has seen anything like this, or can otherwise help, I will be very
+greatful.
+
+Please send e-mail to tdarugar@tartarus.ucsd.edu or
+			tdarugar@ebon.ucsd.edu
+
+Tony.

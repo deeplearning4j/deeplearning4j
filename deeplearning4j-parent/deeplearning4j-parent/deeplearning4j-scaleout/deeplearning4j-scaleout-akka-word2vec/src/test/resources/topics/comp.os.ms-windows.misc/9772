@@ -1,0 +1,14 @@
+Organization: University of Central Florida - Computer Services
+From: Mark Woodruff <CDA90038@UCF1VM.BITNET>
+Subject: Many people on one machine
+Lines: 9
+
+I have several people sharing my machine and would like to set up separate
+environments under Windows for each of them.  Is there some way of setting
+things up separate desktops/directories for each of them?  Ideally,
+I'd like totally separate virtual machines.  I'd be willing to settle for
+less, and may end up having batch files that copy .ini files around
+depending on who wants to use the machine.
+
+mark
+Alas, Setup/n doesn't work if you don't have a network.

@@ -1,0 +1,24 @@
+From: neideck@nestvx.enet.dec.com (Burkhard Neidecker-Lutz)
+Subject: Re: Rumours about 3DO ???
+Organization: CEC Karlsruhe
+Lines: 17
+NNTP-Posting-Host: NESTVX
+Keywords: 3DO ARM QT Compact Video
+
+In article <2BD07605.18974@news.service.uci.edu> rbarris@orion.oac.uci.edu (Robert C. Barris) writes:
+>I'm not sure how a Centris/20MHz 040 stacks up against the 25 MHz ARM in
+>the 3DO box. Obviously the ARM is faster, but how much?
+
+Why would it have to be much faster (it probably is) ? Assuming an ARM
+is about as efficient as a MIPS R3000 for integer calculations, doing
+a Compact-Video-like digital video codec is an easy task. For Software
+Motion Pictures (which is a lot like Compact Video, though it predates
+it), we get 48 frames/sec. at 320x240 on a DECstation 5000/200. That
+machine has a 25 Mhz MIPS R3000. 
+
+		Burkhard Neidecker-Lutz
+
+Distributed Multimedia Group, CEC Karlsruhe          EERP Portfolio Manager
+Software Motion Pictures & BERKOM II Project         Multimedia Base Technology
+Digital Equipment Corporation
+neidecker@nestvx.enet.dec.com

@@ -1,0 +1,15 @@
+From: balog@eniac.seas.upenn.edu (Eric J Balog)
+Subject: Re: Diamond Stealth 24 giving 9.4 Winmarks?
+Organization: University of Pennsylvania
+Lines: 9
+Nntp-Posting-Host: eniac.seas.upenn.edu
+
+Hi!
+
+When posting Winmark results, it is a good idea to give the version of 
+WinBench that you used to obtain the scores, as well as the resolution that
+you tested and the version of the drivers.
+
+Eric Balog
+balog@eniac.seas.upenn.edu
+

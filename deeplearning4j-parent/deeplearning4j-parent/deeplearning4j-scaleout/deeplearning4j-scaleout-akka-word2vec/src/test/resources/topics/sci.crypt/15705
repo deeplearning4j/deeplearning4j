@@ -1,0 +1,46 @@
+From: TSOS@uni-duesseldorf.de (Detlef Lannert)
+Subject: Re: Facinating facts: 30 bit serial number, possibly fixed S1 and S2
+Organization: Universitaetsrechenzentrum, Heinrich-Heine-Universitaet, Duesseldorf
+Lines: 40
+NNTP-Posting-Host: lannert.rz.uni-duesseldorf.de
+
+In article <PMETZGER.93Apr20065402@snark.shearson.com> pmetzger@snark.shearson.com (Perry E. Metzger) writes:
+
+>Hmmm. We must assume that generating the unit key U from the serial
+>number N rather than generating it from a randomly selected U1 and U2
+>is an intentional way of assuring a "fail safe" for the government --
+>U is completedly determined given S1, S2 and N. 
+ [...]
+>If S1 and S2 do not change, even if they remain secret I wonder if
+>they can somehow be back-derived given enough unit key/serial number
+>pairs. [...]
+
+Maybe 300 such pairs suffice to reconstruct S1 and S2? By such a back-
+door (in the encryption algorithm perhaps) it would be possible (for  
+the manufacturer) to get the keys of all chips that were programmed in 
+one session. This would not, btw, enable anybody else to retrieve the 
+keys in the same way because they'll never get a bunch of 300 (N,U) 
+pairs with identical S1 and S2. (Note that these have to be constant 
+for the whole batch by the very nature of the procedure, i.e., they 
+have to be typed in manually by the `random number supplying agents'!)
+
+And I was wondering why they'll always do 300 chips in one session ... 
+Since the procedure described by Ms Denning imposes high costs on the 
+production of every chip (at least three persons for one hour each, 
+plus the cost of a laptop finally blown to pieces in a spectacular, 
+Hollywood-like bonfire; add travelling expenses, drinks and lighting, 
+divide the sum by 300) there won't be a larger demand -- not from the 
+private sector anyway. 
+
+And let me mention one other thought that certainly has occurred to all 
+the notoriously paranoid people in this group before: Who is going to 
+verify that _no_ interested party will perform tempest attacks on the 
+vault?? 
+
+Where there's so much smoke and mirrors -- there can't be a nice, honest 
+fire but something really worth hiding ... 
+--
+Detlef Lannert       DC3EK       E-Mail: tsos@rz.uni-duesseldorf.de
+PGP 2.2 key via server or finger lannert@clio.rz.uni-duesseldorf.de
+"I am Psmith." - "Oh, you're Smith, are you?" - "With a preliminary
+P. Which, however, is not sounded."                   P.G.Wodehouse

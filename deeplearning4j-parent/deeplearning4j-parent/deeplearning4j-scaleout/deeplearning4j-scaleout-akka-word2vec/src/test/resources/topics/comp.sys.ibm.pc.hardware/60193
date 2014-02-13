@@ -1,0 +1,60 @@
+From: kxn3796@hertz.njit.edu (Ken Nakata CIS stnt)
+Subject: Re: Help with SIMMs
+Keywords: SIMM questions answers
+Organization: New Jersey Institute of Technology, Newark, N.J.
+Lines: 53
+Nntp-Posting-Host: hertz.njit.edu
+
+In article <C5Fu1u.pxx@austin.ibm.com> guyd@austin.ibm.com (Guy Dawson) writes:
+>
+>In article <10998@lhdsy1.lahabra.chevron.com>, jjctc@lhdsy1.lahabra.chevron.com (James C. Tsiao) writes:
+>> In article <1993Apr12.172751.27270@fct.unl.pt> fcm@diana.fct.unl.pt (Fernando Correia Martins (MEI 1)) writes:
+>> >Spectre (spectre@nmt.edu) wrote:
+>> >: When I look at a magazine ad that says:
+[deleted]
+>> >: what exactly do the numbers mean?  (i.e.  which is the MB, ns...)
+>> >
+>> >The numbers 60, 70 and 80 refers to nanoseconds. Could someone explain
+>> >*exactly* what this numbers means? (Time spent bettwen processor's request
+>> >and answer retrieved (in case of reading)? )
+>> 
+>> It means the time required for the memory to refresh,  i.e. a 1x9-60
+>> needs 60ns before it is ready to be read again.
+>
+>Nope! It's the time taken to read data from memory. It's the read time.
+>The memory will still have to be refreshed. The whole phase is called
+>a cycle, the cycle time being about twice the access time.
+
+I'm sorry if I'm misunderstanding your post, but DRAM *does not* have to
+be refreshed on *each access cycle*.  So cycle time does *not* have to be
+twice the access time *because of refresh phase*.
+
+The access time usually means the delay time from falling edge of raw
+address strobe (RAS) to data bus driven.
+
+DRAM access cycle timing chart can be roughly shown as following (some
+signals are intentionally omitted);
+
+ADDR --<RA><CA>-------<RA><CA>--------- RA=Raw Address, CA=Column Address
+RAS  ~~~~\________/~~~~~\________/~~~~~		~=High, _=Low, -=Floating
+CAS  ~~~~~~~\_______/~~~~~~\_______/~~~		<..>=driven either H or L
+DATA ---------<VALID>--------<VALID>---
+         |-------+------|
+         |-+--|  |
+           |     +----------- cycle time
+           +---- access time (or RAS access time)
+
+Yes, the cycle time is more than twice as the access time but *not*
+because of the refresh phase.  The refresh can be done either as a
+trailing phase of normal access cycle or as an individual cycle.
+
+>
+[other stuff deleted]
+>
+
+Ken Nakata
+-- 
+/* I apologize if there are incorrect, rude, and/or impolite expressions in
+this mail or post. They are not intended. Please consider that English is a
+second language for me and I don't have full understanding of certain words
+or each nuance of a phrase.  Thank you. -- Ken Nakata, CIS student, NJIT */

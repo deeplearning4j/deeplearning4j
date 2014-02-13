@@ -1,0 +1,16 @@
+Advanced Micro Devices is announcing new support from hardware and software companies today for a new kind of data center computing, dubbed heterogenous system architecture (HSA).
+AMD
+Heterogenous system architecture makes it easy for CPUs and GPUs to share resources.
+The architecture makes it easy for a program to use the available computing power in a system, whether it comes in the form of a traditional central processing unit, or CPU, or a graphics processing unit (GPU), which can be programmed to handle non-graphics tasks. The idea is to help servers in data centers to keep up with demands on the cloud from mobile devices.
+“A lot of these new devices are straining the economics of the data center,” said John Williams, vice president of server marketing and business development, in an interview with VentureBeat. “To handle this, you need different approaches. With this announcement, we’re addressing the software side of things.”
+The company is announcing the support at the AMD Developer Summit  in San Jose, Calif. As you can see in the graphic, CPUs are good at handling beefy tasks in a serial fashion, or one after another. GPUs have lots of small processors, or cores, that can handle many tasks at once, or in parallel.
+With HSA, computers can handle old workloads, but they can also be applied to tasks such as big data analytics, image searches, face recognition, high-performance computing, and cloud gaming. Big data center operators like Amazon are increasingly embracing GPUs in their clouds in order to handle these new workloads at lower and lower cost levels.
+“It really takes a re-imagining of the data center, on the server level, the software level, and the silicon level,” Williams said. “You need a data center architecture that is more efficient.”
+Servers are being designed in more dense racks with more attention paid for power consumption. GPUs are part of the infrastructure that can operate on more data with lower power usage.
+“With HSA, we move the right tasks to the right processing element,” Williams said.
+Supporters include ARM, Imagination, Mediatek, Qualcomm, Samsung, Texas Instruments, LG, Sony, and others.
+But Intel and Nvidia haven’t joined yet. Intel usually doesn’t follow initiatives headed by AMD. And Nvidia has its own rival technology in CUDA, a programming environment for using GPUs to do non-graphics tasks.
+AMD is offering accelerated processing units (APUs), or chips that have CPUs and GPUs on the same piece of silicon. Those components have to share system resources such as memory more efficiently. Next year, AMD is offering new versions of its Opteron X series APUs with code names such as Berlin and Seattle. Hewlett-Packard is embracing these kinds of chips (including the AMD Opteron X2150 ) with its Moonshot server.
+HSA Foundation
+HSA Foundation members
+VentureBeat is creating an index of the top 'arms merchants' of the cloud . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.

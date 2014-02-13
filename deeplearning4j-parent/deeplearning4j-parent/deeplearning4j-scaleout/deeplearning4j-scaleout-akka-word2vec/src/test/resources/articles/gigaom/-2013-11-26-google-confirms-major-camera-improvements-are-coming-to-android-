@@ -1,0 +1,16 @@
+A
+Summary:
+Android cameras are set to get a lot better, starting with the Nexus 5, thanks to a new API.
+Code uncovered last week suggested that Google was at work on a new Android camera API. It looks like that code was correct, as Google spokeswoman Gina Scigliano confirmed the forthcoming update to CNet on Monday.
+“Android’s latest camera HAL (hardware abstraction layer) and framework supports raw and burst-mode photography… We will expose a developer API [application programming interface] in a future release to expose more of the HAL functionality,” Scigliano said.
+This means that support for features like burst-mode and capturing in RAW file formats is already built into Android. An update to the camera API will make these functions available to makers of camera apps.
+The code uncovered last week also showed support for face detection and “removable” cameras. Scigliano didn’t touch on those features, but it looks like burst-mode will be a major focus. According to Scigliano:
+The core concept of the new HAL and future API is centered around burst-mode photography… The basic idea is instead of taking a single shot with a given set of parameters, you instead have the power to queue up a request to take multiple shots each with different parameter settings such as exposure gain. The camera subsystem captures a the burst of shots, which can be subsequently post-processed by the application layer.
+Some manufacturers have already added features like burst-mode to their cameras. But by building it into the software by default, it should open the feature up to many additional users.
+When asked about the lackluster image quality of the new Nexus 5 , Scigliano said, “The team is aware of the issues and is working on a software update that will be available shortly.”
+One thing that should help is support for shooting RAW images. This will allow users to capture actual image sensor data alongside the traditional compressed JPEG image files. And because RAW files use very little processing or compression, your post-processing options expand dramatically.
+Google didn’t offer a date to expect the Nexus update or the new API to be made available. Scigliano only said that it will be available “in a future release.”
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

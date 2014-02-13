@@ -1,0 +1,71 @@
+From: dpb@sdchemw2.ucsd.edu (Doug P. Book)
+Subject: Stereo sound problem (?) on mac games
+Organization: UC San Diego Chemistry
+Lines: 62
+Distribution: world
+Reply-To: dpb@sdchemw2.ucsd.edu (Doug P. Book)
+NNTP-Posting-Host: sdchemw2.ucsd.edu
+Keywords: sound stereo, Quadra, 900, PowerBook, 170
+
+
+Hi.  I think I have a problem with the stereo sound output on my Quadra
+900, but I am not totally sure because my roomate has the same problem
+on his PowerBook 170.  Any info or experience anyopne has would be
+greatly appreciated.
+
+When I hook my Quadra up to my home stereo system, the following types
+of sounds (mono, as far as I can tell) all play fine through BOTH
+speakers:
+
+system beeps  (already provided ones such as Indigo and ones I record)
+
+Armor Alley
+Spectre
+Spaceward Ho!
+
+
+But, the following games only play out of the left channel:
+
+Lemmings
+Out of This World  (awesome game, BTW)
+Glider 4.0
+OIDS
+
+
+But still, STEREO system beeps do play in stereo, through BOTH speakers.
+(The one I'm specifically referrring to is Apocolyptic Beginning, which
+my roommate downloaded from some ftp site (sumex?))
+
+
+All of the symptoms are the same on my rommates 170 (he can't run
+OOTW because he doesn't have color).
+
+We're both running system 7.1
+
+
+
+Does anyone with Lemmings or the other three games I mentioned above get
+sound out of both speakers on a Mac II class, Quadra, LC, PowerBook 140 or
+greater, Centris, SE/30, etc... (stereo) machine?
+
+I used to have a Mac II, and I sort of rememeber Lemmings playing in
+stereo on that machine, not just on the left channel.  (I could be
+mistaken, though.  If there were a problem with the Quad 900's and PB
+170's, I am wondering why the system beeps still play in stereo?  If there
+isn't a problem with our machines, I wonder why the 4 games above are
+apparantly written to support only one channel of stereo when they
+could just use mono sounds so the mono sound would at least come out of
+both speakers  (like Spectre, etc. do)?
+
+Quadra 900's and PowerBook 170's have the same ROMS (to my knowledge),
+so maybe this is a ROM problem?  (if so, though, why wouldn't System 7.1
+patch over this problem?)
+
+
+
+
+Thanks for any help you can provide!
+
+
+Doug Book
+dpb@sdchemw2.ucsd.edu

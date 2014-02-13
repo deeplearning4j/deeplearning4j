@@ -1,0 +1,9 @@
+Azure customers can feel little (little) safer today as Microsoft is plugging in multifactor authentication for the cloud platform.
+But you’ll have to pay for it.
+Multifactor authentication, or two-factor authentication, is almost becoming an expected option when logging in. Two-factor adds an extra step that puts just a little more distance between you and the person trying to get into your account.
+That extra step often comes in the form of a code that you retrieve either through an app such as Google Authenticator, a text message, or a piece of hardware like a keychain dongle. The code supplements the username and password, and expires after some time so that it cannot be reused.
+Another form of two-factor include providing a biometric element (such as a fingerprint or retina scan).
+It makes sense to offer this for free as it provides that extra layer of security for both the customer and the company, but it seems Microsoft will charge per user or per authentication amount. It will cost you $2 a month per user or per every 10 authentications. “Windows Azure Active Directory Global Administrators” can use two factor for free, but any other person working in the system will have to be covered.
+Competitor Amazon Web Services also offers multifactor authentication , but it only charges should you buy one of its “keyfob” devices.
+As we keep saying, though, it’s not impossible to crack two factor authentication. Many companies let these codes live for a long period of time in order to make signing in a more fluid process. If a person is able to trick you into giving them your two factor code and then accesses your account, they could turn off two-factor and change your password, locking you out.
+We have reached out to Microsoft for comment and will update this post upon hearing back.

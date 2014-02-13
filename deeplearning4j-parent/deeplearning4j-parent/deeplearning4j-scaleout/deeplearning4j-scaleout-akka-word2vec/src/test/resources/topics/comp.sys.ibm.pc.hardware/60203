@@ -1,0 +1,47 @@
+From: ronaldm@extro.ucc.su.OZ.AU (Ron Mastus)
+Subject: Problem with Adaptec 1542B SCSI and Jumbo Tape Drive
+Summary: Problem getting Jumbo Tape drive and Adaptec SCSI working together
+Keywords: SCSI CMS Jumbo Adaptec 1542B Tape
+Nntp-Posting-Host: extro.ucc.su.oz.au
+Organization: Sydney University Computing Service, Sydney, NSW, Australia
+Lines: 39
+
+
+Hi,
+
+    I've just replaced my existing DTC SCSI controller with an Adaptec 1542B,
+and am now having trouble restoring from a Jumbo 250 tape drive.
+
+    I had no trouble installing the Adaptec and DOS recognises both the SCSI
+drive and an existing IDE drive - however when I went to restore the backups
+from the Jumbo tape I found that it was extremely slow (estimated time 3 mins
+actual time 15 min!) I have no trouble restoring from the same tape to the IDE
+drive.
+
+    I seem to remember reading that some settings had to be changed to 
+enable the Jumbo drive and the Adaptec to work together but I can't find any
+mention of it in the manuals.
+
+ My system config is:
+   i486DX/33 4Mb 
+   Adaptec 1542B running 180Mb Fujitsu SCSI
+   IDE Controller running 200Mb IDE
+   Jumbo 250 running off floppy controller on IDE
+
+  Any help would be appreciated 
+
+   Thanks,
+
+   Ron. (ronaldm@extro.ucc.su.oz.au)
+
+-------------------------------------------------------------------------------
+Ron Mastus		        		    ronaldm@extro.ucc.su.oz.au
+ 						    41 Mariposa Rd
+Phone +61 2 ???-???? (work)		            Bilgola Plateau 2107
+      +61 2 918-8152 (home)			    Australia
+
+-- 
+-------------------------------------------------------------------------------
+Ron Mastus		        		    ronaldm@extro.ucc.su.oz.au
+ 						    41 Mariposa Rd
+Phone +61 2 ???-???? (work)		            Bilgola Plateau 2107

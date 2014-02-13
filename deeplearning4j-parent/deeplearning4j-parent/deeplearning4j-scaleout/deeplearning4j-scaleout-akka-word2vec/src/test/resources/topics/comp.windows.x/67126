@@ -1,0 +1,19 @@
+From: webster@ucssun1.sdsu.EDU (paolini p)
+Subject: ftp:UNIX-dos-UNIX
+Organization: The Internet
+Lines: 13
+To: xpert@expo.lcs.mit.edu
+
+
+I'm an new to this.  Having found some files (public) to look into, I
+ftp'ed them to a system I have access to.  I then used kermit to transmit
+them via modem to my host computer, a PC-based file system.  I access
+internet through modem access to a university mainframe.  From the PC
+file server, I pull the files to a disk, and then pull them from disk
+to a SGI Indigo (the SGI is not networked yet).  When I try to uncompress
+and un-tar the files, they either come out as garbage or I get an error
+in the tar process about directories being invalid.
+What I'm wondering about is the transfer of UNIX files (compressed,
+binary,ascii) about multiple platforms.  My guess is that it is the copy
+to a 'dos' disk that is screwing things up.  Any help is appreciated.
+bob

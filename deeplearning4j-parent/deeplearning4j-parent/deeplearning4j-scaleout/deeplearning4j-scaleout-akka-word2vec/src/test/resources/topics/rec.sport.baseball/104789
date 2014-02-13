@@ -1,0 +1,54 @@
+From: hbrooks@uiatma.atmos.uiuc.edu (Harold_Brooks)
+Subject: RBI, RISP, and SLG
+Organization: Bill's Safety Cab and Record Bar, Chickasha, OK
+Lines: 49
+
+Off and on over the last several months, threads about RBIs and
+related topics have gotten me to thinking about how well we can 
+predict a player's RBIs using information about his overall
+performance and the number of runners in scoring position (RISP)
+that he bats with.  In the Brock2 model, Bill James calculated
+predicted RBIs as RBI=.235*(Total Bases) + Home Runs.  This 
+completely ignores the context, which was all that Brock2 
+could do, since context was unknown to it.  So I thought I'd
+take that idea as a starting point and look how good a fit to
+the data you get by comparing (RBI-Home Runs) to SLG*RISP.
+
+I've started with team data, using data from the Elias's that
+I've picked up over the years when a) I could afford them and
+b) I could stomach the thought of increasing Elias's profits.
+That gave me the years 1984-1986, 1988, and 1990.  (I don't 
+have team RBIs for '87 or I could add that year.)  If you
+run a simple least squares fit to the data you get 
+
+(RBI-Home Runs) = 0.81*SLG*RISP.
+
+The correlation between the LHS and the RHS is 0.86, which is
+significant at a ridiculously high level.  So, I feel like the
+fit is good at the team level.  I've no started to move on to 
+the player level and have looked at 4 players (Will Clark,
+Ozzie Smith, Joe Carter, and Don Mattingly).  I hope to 
+add quite a few more during my copious free time this year.
+
+It doesn't do too badly, except the equation underpredicts the
+low HR hitter (Smith), which may be a fault of the model or it
+could just be Ozzie.  The results:
+
+                           RBI-HR
+         Years        Actual   Predicted
+Carter  (84-88,90)     400       402.6
+Clark   (87,88,90,92)  269       269.6
+Matt'ly (84-88,90)     471       460.8
+Smith   (84-88,90)     317       280.6
+
+I think we can make a case (and I hope to make it stronger) that
+RBIs can be predicted simply from knowing how a player slugs overall
+and how many men are in scoring position when he comes up.
+
+More later,
+Harold
+-- 
+Harold Brooks                    hbrooks@uiatma.atmos.uiuc.edu
+National Severe Storms Laboratory (Norman, OK)
+"I used to work for a brewery, too, but I didn't drink on the job."
+-P. Bavasi on Dal Maxvill's view that Florida can win the NL East in '93

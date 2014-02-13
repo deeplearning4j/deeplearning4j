@@ -1,0 +1,15 @@
+From: surfer@world.std.com (Internet Surfer)
+Subject: 6551A and 6551 compatibility
+Organization: Boston Computer Society / ISIG
+Lines: 10
+
+Does any one know if the 6551 is timing/pin compatible with the 6551.. 
+It seems the 6551 has in iheirent bug with cts/rts handshaking and i need
+a suitable pin replacement to put in my serial card... possibly a buffered
+version perhaps?
+
+
+-- 
+jolt@gnu.ai.mit.edu	      |    Its not impossible, just improbable
+johnp@pro.angmar.uucp         |            (Zaphod Beeblbrox)
+bl298@cleveland.freenet.edu   |   N1NIG@amsat.org (Being a Ham is so grand)

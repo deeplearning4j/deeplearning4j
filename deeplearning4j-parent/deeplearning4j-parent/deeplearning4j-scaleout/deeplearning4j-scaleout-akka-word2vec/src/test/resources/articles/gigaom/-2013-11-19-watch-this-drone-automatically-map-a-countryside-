@@ -1,0 +1,11 @@
+photo: Nicolas Halftermeyer
+Mapping is hard work. The Open Source mapping community, largely centered around the work of OpenStreetMap , doesn’t have access to the camera cars and satellite imagery that Google has been able to take advantage of in developing its own proprietary maps. So often, mapping comes down to a good old fashioned drive (or bike or walk) with a GPS to geographically mark an area.
+That is, unless you have a drone.
+The people at custom map service MapBox posted an eye-opening look into how they mapped 100 acres in 40 minutes utilizing one very methodical drone.
+The company worked with mapping drone company Sensefly’s eBee model , programming a pattern that turns the drone into what the blog post describes as, “less like an RC plane and more like a  Roomba .” With less than an hour of air time later, the eBee landed to transform more than 220 images taken at roughly 400 feet in the air into a map.
+Check out the process in the video below:
+The images were then processed through MapBox’s free TileMill software and then traced into OpenStreetMap — all in all, a much more cost and time-efficient process that shows how far open source mapping processes have come from working on foot.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

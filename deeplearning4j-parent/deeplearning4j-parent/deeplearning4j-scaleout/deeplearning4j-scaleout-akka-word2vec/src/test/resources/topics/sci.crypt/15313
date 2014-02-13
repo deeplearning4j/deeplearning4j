@@ -1,0 +1,78 @@
+From: tuinstra@sunspot.ece.clarkson.edu.soe (Dwight Tuinstra)
+Subject: re: WH announcement
+Reply-To: tuinstra@sunspot.ece.clarkson.edu.soe
+Organization: Sun Microsystems, Inc.
+Lines: 70
+Nntp-Posting-Host: sunspot.ece.clarkson.edu
+Cc: tuinstra
+
+
+Q:   Who was consulted?  The Congress?  Industry?
+
+A:   We have on-going discussions with Congress and industry on
+     encryption issues, and expect those discussions to intensify
+     as we carry out our review of encryption policy.  We have
+     briefed members of Congress and industry leaders on the
+     decisions related to this initiative.
+
+Congress??  So we're playing politics before we talk to CPSR, academia,
+the public, internet users?  I`ve heard of top-down design, but top-down 
+democracy?? [Just whose state/district are the chip manufacturers in?]
+
+Q:   If the Administration were unable to find a technological
+     solution like the one proposed, would the Administration be
+     willing to use legal remedies to restrict access to more
+     powerful encryption devices?
+
+A:   This is a fundamental policy question which will be
+     considered during the broad policy review. [...bs about
+     the wonderfulness of the key escrow system...]
+
+     The Administration is not saying, "since encryption
+     threatens the public safety and effective law enforcement,
+     we will prohibit it outright" (as some countries have
+     effectively done); 
+
+They'll just provide an easily-compromised version to JQ Public.
+
+                         nor is the U.S. saying that "every
+     American, as a matter of right, is entitled to an
+     unbreakable commercial encryption product."  
+
+Maybe we need a CRA -- Cryptographic Rights Amendment.
+
+                                                  There is a
+     false "tension" created in the assessment that this issue is
+     an "either-or" proposition.  Rather, both concerns can be,
+     and in fact are, harmoniously balanced through a reasoned,
+     balanced approach such as is proposed with the "Clipper
+     Chip" and similar encryption techniques.
+
+Nice lullaby.  But why am I not soothed?
+
+----------------
+Also, 
+
+In article 15472@leland.Stanford.EDU, arc@leland.Stanford.EDU (Andrew Richard Conway) writes:
+>P.S. I can't work out why the US government doesn't want to sell
+>them overseas. After all, they are rather easy for US interests to decode,
+>so make a perfect tool for industrial/military espionage...lulling 
+>anyone stupid enough to buy it into a false sense of security. You will
+>notice that there is NO mention anywhere about safety for non-Americans.
+>
+
+Why repeat themselves?  It appears to some (and the story looks pretty
+convincing to me, too) that the Justice Department stole a case-tracking
+system, modified it, and distributed it to "friendly" police and suchlike
+agencies around the world, eg. the Canadian Mounties.  Of course, I have 
+no doubt they swore Scout's Honor that there were no backdoors.
+
+With that kind of intelligence, who'd want to be swamped with terabytes
+of commercial traffic?
+
++========================================================================+
+|  dwight tuinstra             best:  tuinstra@sandman.ece.clarkson.edu  |
+|                         tolerable:  tuinstrd@craft.camp.clarkson.edu   |
+|                                                                        |
+|        "Homo sapiens: planetary cancer??  ...  News at six"            |
++========================================================================+

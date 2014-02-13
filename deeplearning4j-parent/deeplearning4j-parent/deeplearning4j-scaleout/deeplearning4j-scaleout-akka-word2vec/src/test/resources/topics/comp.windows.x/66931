@@ -1,0 +1,23 @@
+From: hsteve@carina.unm.edu ()
+Subject: Re: Changing dpy->max_request_size ?
+Organization: University of New Mexico, Albuquerque
+Lines: 17
+NNTP-Posting-Host: carina.unm.edu
+
+In article <C55zLo.7wA@world.std.com> oj@world.std.com (Oliver Jones) writes:
+<In article <118590@netnews.upenn.edu> mcclenne@dingdong.cis.upenn.edu (nennelccM nodroG) writes:
+<>
+<>Does anyone out there know how to change the maximum request size for
+<>a server 
+<
+<It is ordinarily set to the highest value the underlying OS can
+
+Yes, and you don't want to change this value if you're running Image type
+applications.  
+
+
+-- 
+    _---_     Steve  
+   / o o \    hsteve@hydra.unm.edu, hsteve@carina.unm.edu
+  | \___/ |   
+              Just say NO to VMS!!

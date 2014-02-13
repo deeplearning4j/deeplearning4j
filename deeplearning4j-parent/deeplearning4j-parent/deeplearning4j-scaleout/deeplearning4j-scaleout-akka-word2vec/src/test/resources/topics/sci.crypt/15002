@@ -1,0 +1,34 @@
+From: cme@ellisun.sw.stratus.com (Carl Ellison)
+Subject: Re: Licensing of public key implementations
+Organization: Stratus Computer, Software Engineering
+Lines: 28
+NNTP-Posting-Host: ellisun.sw.stratus.com
+
+In article <1993Apr4.221640.8104@magnus.acs.ohio-state.edu> jebright@magnus.acs.ohio-state.edu (James R Ebright) writes:
+>I guess we will have to wait for the time in the far future
+>when everyone uses such good crypto that the NSA has no job.  Then the
+>agency will be disbanded and its files opened after the approprate
+>historical delay.  ;)
+
+You've overlooked a fundamental Truth:
+
+	both headcount and budget of any government agency are
+	monotonic increasing functions.
+
+Given that Truth, you need to look for what the agency can do to occupy
+all those people and spend all that money when crypto is unbreakable.
+
+Perhaps they could talk the world's telephone companies into making equipment
+they could break into and tap.
+
+Maybe they could convince people that distributed computing was a good idea
+so that even the internal state of a process would be available for access
+by wiretapping.
+
+Maybe....
+
+-- 
+ - <<Disclaimer: All opinions expressed are my own, of course.>>
+ - Carl Ellison                                        cme@sw.stratus.com
+ - Stratus Computer Inc.       M3-2-BKW                TEL: (508)460-2783
+ - 55 Fairbanks Boulevard ; Marlborough MA 01752-1298  FAX: (508)624-7488

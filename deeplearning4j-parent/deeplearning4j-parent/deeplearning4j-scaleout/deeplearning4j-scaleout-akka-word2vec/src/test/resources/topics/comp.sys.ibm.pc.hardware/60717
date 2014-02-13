@@ -1,0 +1,18 @@
+From: rxg3321@ultb.isc.rit.edu (R.X. Getter)
+Subject: How do I put an HD on an XT?
+Nntp-Posting-Host: ultb-gw.isc.rit.edu
+Organization: Rochester Institute of Technology
+Lines: 12
+
+This may be a dumb question, but I need to put a hard drive on my father's
+PC/XT, either MFM, RLL, or IDE. I know how to hook it up, but how do I tell
+the computer the geometry of the drive. On my 386, you set it in the BIOS, but
+I doubt that's how it's done on an XT. I thought it might be software with
+the controller card, but the IDE card for XT's that I saw didn't come with
+any. Also, how do I low level format it once it's on the computer? (Assuming
+a drive which needs formatting)
+
+advTHANKSance,
+
+Rob
+rxg3321@ultb.isc.rit.edu

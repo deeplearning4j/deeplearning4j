@@ -1,0 +1,46 @@
+From: ak333@cleveland.Freenet.Edu (Martin Linsenbigler)
+Subject: Re: Permanent Swap File
+Organization: Case Western Reserve University, Cleveland, OH (USA)
+Lines: 39
+Reply-To: ak333@cleveland.Freenet.Edu (Martin Linsenbigler)
+NNTP-Posting-Host: hela.ins.cwru.edu
+
+
+In a previous article, mlipsie@rdm09.std.com (Mike Lipsie MPU) says:
+
+>In article <C54yFD.6LD@sunfish.usd.edu> pwiseman@salmon.usd.edu (Cliff) writes:
+>>
+>>Your swap file is purged every time you exit windows. If you shut off your 
+>>computer without exiting windows your swap file remains. 20 Mb is on the large
+>>side, are you running more applications than you really need to at the same time?
+>
+>This is, of course, not true.  The *temporary* swap file is purged
+>every time you exit windows.  The permanent file is permanent and
+>can only be changed by adjusting the virtual memory.
+>
+>I suspect that either the original poster was "tinkering" and
+>adjusted the swap file to 20MB (and then forgot about it) or 
+>somebody "helped" him.
+>
+>-- 
+>Mike Lipsie                                (work) mlipsie@ca.merl.com
+>Mitsubishi Electronic Research Laboratory  (home) mikel@dosbears.UUCP
+>
+When I first setup windows using the self load mode It grabbed about
+20 megs of swap file space, my 120 meg HD was nearly empty at that time.
+I deleted windows for a time and recently reloaded, now my HD is nearly full
+and windows just took 4 megs.
+I have read somewhere that the best rule of thumb is have your
+permanent swap file the same size as your regular RAM size.  I have 4 megs
+of RAM and windows took 4 meg perm swap file.  Works very well.
+In fact with my available HD space, about 20 megs it won't let me make
+the swap file any bigger.
+You should change your virtual mem swap file to 8 megs I think
+that is what you said your RAM was.
+
+C-ya..... /\/\artin
+-- 
+  This communication is sent by    /\/\artin   University of Arizona Tucson
+  =========================================================================
+  ak333@cleveland.freenet.edu   mlinsenb@ccit.arizona.edu  mlinsenb@arizvms
+  DEATH HAS BEEN DEAD FOR ABOUT 2,000 YEARS ****** FOLLOW THE KING OF KINGS

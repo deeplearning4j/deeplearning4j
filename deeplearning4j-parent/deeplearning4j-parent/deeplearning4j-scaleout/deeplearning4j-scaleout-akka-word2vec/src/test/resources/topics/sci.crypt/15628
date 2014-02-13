@@ -1,0 +1,47 @@
+From: ptrei@bistromath.mitre.org (Peter Trei)
+Subject: Re: Screw the people, crypto is for hard-core hackers & spooks only
+Nntp-Posting-Host: bistromath.mitre.org
+Organization: The MITRE Corporation
+Lines: 41
+
+In article <strnlghtC5t4o3.K5p@netcom.com> strnlght@netcom.com (David Sternlight) writes:
+>Actually the govrnment is telling you that if you want to use their
+>"product" the manufacturer (actually better yet, some "trusted" pair
+>of escrow agencies) has to have the key.
+>
+>Most of us already are in this situation--our car makers have keys to our
+>cars (or can get them quickly from the VIN  number), and I have no doubt
+>that if presented with a court order, they'd surrender copies to the
+>government.
+
+>Chances are that many locksmiths have the code numbers for house locks
+>they've installed, and in an emergency can cut keys; thus they'd also
+>provide such keys to the government pursuant to a court order.
+
+    Of course, nothing prevents you from buying a new lock with cash
+and installing it yourself. Even modifying the core to match some
+arbitrary key is not difficult to do at home. I once knew someone who
+had fixed his locks in this way - his house, office and cars all took
+the same key (which he took GOOD care of :-)
+
+>The state has no difficulty gaining access to your safe deposit box if they
+>have a court order.
+
+>Bad analogy.
+
+    Very bad (yours, that is). Have you ever had a safety deposit box?
+They work on a two-key system. The bank clerk has one, and you have
+the other (they are different keys). The bank does NOT keep a copy of
+your key. If you lose it, they have to drill out the lock, and replace
+the door. This is a time consuming and expensive process (which they
+will be happy to charge to your account :-).
+
+     This process is exactly analogous to having a private key which
+is NOT in a escrow system, and the state having to crack your cipher
+to get the data.
+
+     Please do not use false analogies.
+
+							Peter Trei
+							ptrei@mitre.org
+

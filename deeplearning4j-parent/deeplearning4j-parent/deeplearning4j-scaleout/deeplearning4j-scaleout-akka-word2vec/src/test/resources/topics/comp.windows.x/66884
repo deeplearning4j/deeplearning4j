@@ -1,0 +1,45 @@
+From: jbore@cosmos.shearson.com (Joe Bore)
+Subject: Re: iconize a running application?
+In-Reply-To: doomer@teal.csn.org's message of Thu, 15 Apr 1993 05:35:22 GMT
+Organization: Lehman Brothers
+Lines: 39
+
+it doesnt matter what window mgr you running under, you can use the X
+routine:
+	XIconfiyWindow(display, w, screen_number)
+		Display *display;
+		Window w;
+		int screen_number;
+
+as in
+
+	XiconifyWindow( XtDisplay(w), XtWindow(w), 0);
+
+does that perform what you want??
+
+
+In article <C5IFJ0.F2u@csn.org> doomer@teal.csn.org (John Dumais) writes:
+
+   Newsgroups: comp.windows.x
+   Path: shearson.com!uupsi!psinntp!uunet!haven.umd.edu!darwin.sura.net!wupost!zaphod.mps.ohio-state.edu!magnus.acs.ohio-state.edu!csn!teal.csn.org!doomer
+   From: doomer@teal.csn.org (John Dumais)
+   Sender: news@csn.org (news)
+   Nntp-Posting-Host: teal.csn.org
+   Organization: Colorado SuperNet, Inc.
+   X-Newsreader: Tin 1.1 PL4
+   Date: Thu, 15 Apr 1993 05:35:22 GMT
+   Lines: 8
+
+   I've been trying to figure a way to programmatically iconize 
+   an application running under a Motif window manager.  I have tried
+   several approaches includeing sending events to the application's
+   border window, but to no avail?  Anyone done this before?
+
+   Thanks,
+
+   doomer '85
+--
+-------------------------------------------------------------------------------
+Joe Bore					 | "Life is Short...Code Hard"
+jbore@Shearson.COM | ...!uunet!shearson.com!jbore| 
+(212)464-3431, Beeper:  (212)396-4248		 |

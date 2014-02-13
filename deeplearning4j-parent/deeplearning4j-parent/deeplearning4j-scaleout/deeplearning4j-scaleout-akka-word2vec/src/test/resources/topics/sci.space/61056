@@ -1,0 +1,66 @@
+From: rouben@math9.math.umbc.edu (Rouben Rostamian)
+Subject: Re: Sunrise/ sunset times
+Organization: University of Maryland, Baltimore County Campus
+Lines: 60
+NNTP-Posting-Host: math9.math.umbc.edu
+
+In article <1993Apr21.141824.23536@cbis.ece.drexel.edu> jpw@cbis.ece.drexel.edu (Joseph Wetstein) writes:
+>
+>Hello. I am looking for a program (or algorithm) that can be used
+>to compute sunrise and sunset times.
+
+Here is a computation I did a long time ago that computes the length
+of the daylight.  You should be able to convert the information here
+to sunrise and sunset times.
+
+--
+Rouben Rostamian                          Telephone: 410-455-2458
+Department of Mathematics and Statistics  e-mail:
+University of Maryland Baltimore County   bitnet: rostamian@umbc.bitnet
+Baltimore, MD 21228, USA                  internet: rouben@math.umbc.edu
+======================================================================
+Definitions:
+
+z = the tilt of the axis of the planet away from the normal to its
+orbital plane.  In case of the Earth z is about 23.5 degrees, I think.
+I do not recall the exact value.  In case of Uranus, z is almost
+90 degrees.
+
+u = latitude of the location where the length of the day is measured.
+Paris is at about 45 degrees.  North pole is at 90.
+
+a = angular position of the planet around the sun.  As a goes from
+0 to 360 degrees, the planet makes a full circle around the sun.
+The spring equinox occurs at a=0.
+
+L = daylight fraction = (duration of daylight)/(duration of a full day).
+On the equator (u=0) L is always 1/2.  Near the north pole (u=90 degrees)
+L is sometimes one and sometimes zero, depending on the time of the year.
+
+Computation:
+Define the auxiliary angles p and q by:
+sin p = sin a sin z
+cos q = h ( tan u tan p ),       (0 < q < 180 degrees)
+
+Conclusion:
+L = q / 180   (if q is measured in degrees)
+L = q / pi    (if q is measured in radians)
+
+Wait!  But what is h?
+The cutoff function h is defined as follows:
+
+h (s) = s    if  |s| < 1
+      = 1    if   s > 1
+      = -1   if   s < 1
+
+As an interesting exercise, plot L versus a.   The graph will shows
+how the length of the daylight varies with the time of the year.
+Experiment with various choices of latitudes and tilt angles.
+Compare the behavior of the function at locations above and below
+the arctic circle.
+
+--
+Rouben Rostamian                          Telephone: 410-455-2458
+Department of Mathematics and Statistics  e-mail:
+University of Maryland Baltimore County   bitnet: rostamian@umbc.bitnet
+Baltimore, MD 21228, USA                  internet: rouben@math.umbc.edu

@@ -1,0 +1,65 @@
+From: gerard@dps.co.UK (Gerard O'Driscoll)
+Subject: Re: Creating 8 bit windows on 24 bit display.. How?
+Organization: The Internet
+Lines: 58
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xpert@expo.lcs.mit.edu
+
+
+stolk@fwi.uva.nl writes:
+
+>> 
+>> A problem occurs when I try to create a window with a visual that is different
+>> from the visual of the parent (which uses the default visual which is TC24).
+>> 
+
+You've got to set border_pixel in your window attributes. The default
+is CopyFromParent which gives the BadMatch. Do this:
+
+   ...
+   unsigned long valuemask;
+   ...
+   /*
+    * if border_width is non-zero you'd better alloc a colour from cmap
+    * rather than use any old pixel value. Also, use valuemask, it makes
+    * the code more obvious.
+    */
+   attr.colormap = cmap;
+   attr.border_pixel = 0;
+   valuemask = CWColormap | CWBorderPixel;
+   win = XCreateWindow(
+           dpy,
+           DefaultRootWindow(dpy),
+           10,10,
+           width,height,
+           0,		         /* border width. see comment below */
+           8,                    /* depth */
+           InputOutput,          /* class */
+           vinfo.visual,         /* visual */
+           valuemask,
+           &attr
+         );
+
+A note on border_width: your code looked like this:
+
+>>   win = XCreateWindow(
+>>           dpy,
+>>           DefaultRootWindow(dpy),
+>>           10,10,
+>>           width,height,
+>>           CopyFromParent,       /* border width */
+>>           8,                    /* depth */
+>>           InputOutput,          /* class */
+>>           vinfo.visual,         /* visual */
+>>           CWColormap,
+>>           &attr
+>>         );
+
+border_width set to CopyFromParent works but doesn't make sense.
+border_width should be an unsigned int. You get away with it because
+CopyFromParent is #define'ed to be zero in X.h. If it happened to be
+defined as -1 you'd get a very interesting looking window!
+
+ 	Gerard O'Driscoll (gerard.odriscoll@dps.co.uk)
+ 	Du Pont Pixel Systems Ltd.
+ 

@@ -1,0 +1,28 @@
+From: brad@clarinet.com (Brad Templeton)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Article-I.D.: clarinet.1993Apr17.090731.18680
+Organization: ClariNet Communications Corp.
+Lines: 21
+
+Interestingly enough, in designing the escrow, we may want to use some
+rather unusual technology, such as sealed boxes of paper, or
+destructive read memory, rather than typical computer databases, which
+is fun for a database of hundreds of millions of keys.
+
+The greatest danger of the escrow database, if it were kept on disk,
+would be the chance that a complete copy could somehow leak out.  You
+can design lots of protection, but with enough corruption a complete
+copy is always possible.   Storing it on paper or something very hard
+to copy at once may actually make sense.  Or a medium that can't be
+copied -- for example, something with very slow access times or which
+leaves a destructive trail if it is even read.
+
+Of course then it's hard to backup.  However, I think the consequences
+of no backup -- the data is not there when a warrant comes -- are worse
+than the consequences of a secret backup.
+
+An audit trail that reveals when data has been access, that *can't* be
+erased by the humans involved, is also necessary.
+-- 
+Brad Templeton, ClariNet Communications Corp. -- Sunnyvale, CA 408/296-0366

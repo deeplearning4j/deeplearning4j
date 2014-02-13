@@ -1,0 +1,10 @@
+0
+Hewlett-Packard is introducing self-healing computing startup software that can repair itself after a malware attack.
+The new HP BIOSphere with SureStart technology is a new kind of startup software that runs when a personal computer is turned on. The BIOS — basic input output software — runs on startup, before an operating system loads.
+Hackers have been able to compromise OS security protections by gaining root access, or compromising the BIOS software underneath the OS. To protect against that, HP has created its own BIOS software. The system can heal itself by comparing the BIOS that loads in a computer to an image of the BIOS that is supposed to be running. If the loaded BIOS is different from the copy of the BIOS that is embedded in the hardware, the computer will load the correct version of the BIOS instead.
+“Microsoft has done a pretty good job securing the OS,” said Michael Park, the vice president of strategy and product development in the commercial systems division at HP. “But there’s a lot of malware will come in under the OS and take over the underlying BIOS. Then bad stuff starts to happen.”
+HP Labs, the company’s central research arm, created the software.
+“If the BIOS is different, the computer will initiate a sequence to rewrite the BIOS, so that you get a secure BIOS,” Park said. “If you have a power outage while the BIOS is loading, you may get a blue screen. That won’t happen with this.”
+Park said the user won’t suffer an interruption with SureStart, and IT managers won’t have to deal with the problem.
+“The end user won’t see it or feel it, but they will benefit from it,” Park said.
+HP SureStart will be shipping in computers this fall.

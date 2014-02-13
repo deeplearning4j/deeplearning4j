@@ -1,0 +1,24 @@
+From: marc@ccvi.ccv.FR (Marc Bassini)
+Subject: [jb@sgihbtn.sierra.com: Re: Xlib for MS/WINDOWS not an XSERVER!!!]
+Organization: The Internet
+Lines: 16
+NNTP-Posting-Host: enterpoop.mit.edu
+To: jb@sgihbtn.sierra.com
+Cc: tech-staff@jekyll.ccvi.ccv.fr, xpert@expo.lcs.mit.edu
+
+>I think you may find that either Quarterdeck (Deskview/X) or
+>Hummingbird (eXceed) provide an Xlib for DOS.  Perhaps they also have
+>an Xlib for MS-Windows?  It's a possibility.
+>
+ Yes, eXceed has windows version. Have ported some games like tetris, 
+works fine.
+
+Si c'est vrai, ce serait bien de se le procurer car a ce moment la, le
+portage Xt... Suis-je en train de perdre mon temps avec la toolkit c++
+?
+
+		Marc Bassini (marc@ccv.fr, marc@cnam.cnam.fr)
+			Computers, Communications & Visions (C2V)
+			82 bd Haussmann, 75008 Paris FRANCE
+			Phone 40.08.07.07, Fax 43.87.35.99
+

@@ -1,0 +1,31 @@
+From: mahan@TGV.COM (Patrick L. Mahan)
+Subject: Re: How do I find by AppContext
+Organization: The Internet
+Lines: 24
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xpert@expo.lcs.mit.edu, masc0442@gondor.sdsu.edu
+
+# 
+# 
+# Is there an Xt call to give me my application context?
+# I am fixing up an X/Motif program, and am trying to use XtAppAddTimeOut,
+# whose first argument is the app_context.  What call can I use
+# to give me this value?
+# 
+
+Use XtDisplayToApplicationContext() to retreive the application context.
+
+Patrick L. Mahan
+
+--- TGV Window Washer ------------------------------- Mahan@TGV.COM ---------
+
+Waking a person unnecessarily should not be considered  - Lazarus Long
+a capital crime.  For a first offense, that is            From the Notebooks of
+							  Lazarus Long
+Patrick L. Mahan
+
+--- TGV Window Washer ------------------------------- Mahan@TGV.COM ---------
+
+Waking a person unnecessarily should not be considered  - Lazarus Long
+a capital crime.  For a first offense, that is            From the Notebooks of
+							  Lazarus Long

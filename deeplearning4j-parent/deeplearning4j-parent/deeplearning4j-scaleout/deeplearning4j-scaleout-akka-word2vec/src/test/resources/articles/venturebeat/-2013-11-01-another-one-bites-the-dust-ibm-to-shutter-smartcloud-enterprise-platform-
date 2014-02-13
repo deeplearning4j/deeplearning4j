@@ -1,0 +1,13 @@
+0
+These are the end days for IBM’s legacy cloud platform.
+IBM plans to shut down its SmartCloud Enterprise cloud computing platform by Jan. 31, 2014, according to a letter the company sent its SmartCloud customers earlier this week. An IBM representative confirmed the news for VentureBeat Friday morning.
+Big Blue will migrate those customers to its SoftLayer cloud computing platform, which has been far better received than SmartCloud. IBM acquired SoftLayer in July  to better compete with Amazon Web Services, Microsoft Azure, Rackspace, and other cloud vendors.
+“In making this move, IBM will provide its clients the best capabilities and technologies to help achieve better business performance,” the IBM rep told VentureBeat.
+IBM’s SmartCloud Enterprise+ will continue to operate normally, according to the IBM rep, who called the product “a critical element of [IBM's] cloud portfolio strategy.”
+SmartCloud isn’t the only major cloud service to dissipate in recent months. Cloud storage service Nirvanix shut down at the end of September . Nirvanix had a partnership with IBM, which helped some Nirvanix customers transition to SoftLayer.
+Like most cloud computing platforms, SoftLayer offers pay-per-use virtual machines and storage, but it also rents bare-metal servers.
+SoftLayer “also [has] a dark-fiber layer,” said Mac Devine, IBM’s cloud services division chief technology officer, in a recent chat with VentureBeat. “Whenever you have any congestion in the network, if you can avoid it end-to-end, you can avoid issues where your performance gets progressively worse as the endpoints re-transmit.”
+A number of SoftLayer services are based on CloudStack, the open source cloud computing software. It also uses OpenStack — a competing open source cloud solution — for its object storage service. IBM has thrown a significant amount of support behind OpenStack in recent months, which prompted SoftLayer to begin investigating how it can more deeply integrate OpenStack into its other offerings.
+Before the IBM acquisition, SoftLayer focused primarily on servicing small- to medium-sized businesses, but lately it’s been tapped by more large enterprises and organizations.
+Last week, IBM signed a $30 million contract with the U.S. General Services Administration (GSA) to provide cloud infrastructure for a new order management system powered by IBM’s SmartCloud for Government service. (Presumably, SmartCloud for Government is also unaffected by the SmartCloud Enterprise shutdown, but we’re waiting for confirmation from an IBM rep.)
+Related articles

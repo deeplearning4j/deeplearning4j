@@ -1,0 +1,75 @@
+From: peter@memex.co.uk (Peter Ilieve)
+Subject: Re: Clipper Chip and crypto key-escrow
+Organization: Memex Information Systems Ltd, East Kilbrde, Scotland
+Lines: 70
+
+Excerpts from the Clipper announcement, with some questions:
+
+>     --   the ability of authorized officials to access telephone
+>          calls and data, under proper court or other legal
+>          order, when necessary to protect our citizens;
+
+>Q:   Suppose a law enforcement agency is conducting a wiretap on
+>     a drug smuggling ring and intercepts a conversation
+>     encrypted using the device.  What would they have to do to
+>     decipher the message?
+>
+>A:   They would have to obtain legal authorization, normally a
+>     court order, to do the wiretap in the first place.  They
+>     would then present documentation of this authorization to
+>     the two entities responsible for safeguarding the keys and
+>     obtain the keys for the device being used by the drug
+>     smugglers.  The key is split into two parts, which are
+>     stored separately in order to ensure the security of the key
+>     escrow system.
+
+In these two sections the phrases `or other legal order' and `normally a
+court order' imply there is some other way or ways of doing a legal
+wiretap. What is/are these? How do they affect the way people who trust the
+system of court orders to protect them feel about this escrow system?
+
+The second section shows the sequence of events.
+The law enforcer, armed with his warrant, attaches his headphones to the
+line with his croc-clips (remember, these are the folk who couldn't cope
+with digital telephony) and hears a load of modem-like tones (we are
+talking analogue telephony here).
+What next? What modulation scheme do these Clipper boxes use?
+Is it possible to record the tones for use after the keys are obtained?
+I thought it was quite difficult to record a modem session at some
+intermediate point on the line. Maybe they have taken a crash course
+in data comms and have a unit that demodulates the tones and stores the
+digital stream for decryption later. This would still suffer from the
+same problems as trying to record the tones as the demodulator would not
+be at one end of the line. If calls can't be recorded for decryption later
+it would be quite easy to foil the system by buying lots of Clipper units
+(these are supposed to be cheap mass market items) and using them in turn.
+
+How tolerant is the modulation scheme to errors? These things are proposed
+for use by US corporations to secure their foreign offices, where phone
+line quality may well be poor. It seems hard enough to me to get digitised
+speech of any quality into something a modem can handle without having to
+add lots of error correction to keep the decryption in sync.
+
+>Q:   Will the devices be exportable?  Will other devices that use
+>     the government hardware?
+>
+>A:   Voice encryption devices are subject to export control
+>     requirements.  ...  One of the
+>     attractions of this technology is the protection it can give
+>     to U.S. companies operating at home and abroad.  With this
+>     in mind, we expect export licenses will be granted on a
+>     case-by-case basis for U.S. companies seeking to use these
+>     devices to secure their own communications abroad.
+>     ...
+
+This raises an intersting question in the UK. Here it is illegal to connect
+anything to a public telecomms network without it being approved by a body
+called BABT. It has been stated, either here or in the uk.telecom group,
+that they will not approve equipment that does encryption. I don't know
+if this is true or not, but this would make a good test case.
+Perhaps `friendly' countries, and the UK may still qualify, will get
+to fish in the escrowed key pool as well.
+
+
+		Peter Ilieve		peter@memex.co.uk
+

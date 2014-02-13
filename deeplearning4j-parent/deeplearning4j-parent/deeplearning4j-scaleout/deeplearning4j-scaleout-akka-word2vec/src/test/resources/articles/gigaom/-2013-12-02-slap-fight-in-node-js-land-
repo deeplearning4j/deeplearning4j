@@ -1,0 +1,19 @@
+A
+Summary:
+Two key contributors to the popular server-side language are disagreeing publicly  over the use of gender-specific pronouns in the project.
+Isn’t life supposed to be all copacetic and cooperative in the open-source world of Node.js? That’s not the case lately, as a dispute over the use of gender pronouns caused quite a flap.
+Two major contributors to the popular server-side language are squabbling over whether they can nuke gender pronouns in the Node code and project, in general. The spat, because of the nature of open-source projects, spilled over on this Github thread . Long story short is that one major Node.js contributor, Ben Noordhuis, rejected a pull request that gender pronouns be eliminated. Project lead Issac Schlueter, a Joyent employee, over-rode that move.
+Joyent SVP of engineering Bryan Cantrill weighed in on all of this in a  “Power of a Pronoun”  blog post over the weekend because he said Joyent was being blamed for Noordhuis’ move even though he is not a Joyent employee. Joyent launched and nurtured Node.js, so it is often associated with any and all moves involving the language. Cantrill backed up what Schlueter did and added that had Noordhuis been a Joyent employee, he would have been fired.
+Cantrill wrote:
+While we would fire Ben over this, node.js is an open source project and one doesn’t necessarily have the same levers. Indeed, one of the challenges of an open source project that depends on volunteer effort is  dealing with a**holes , and fortunately in this regard, node.js is in Isaac’s very capable hands. Isaac is one of the most inclusive, empathetic engineers that I have ever had the privilege to work with, and I know that he will deal with Ben’s unacceptable behavior accordingly and in the best interests of node.js.”
+Noordhuis is one of the founders of  StrongLoop , a startup founded to bring  commercial support to Node.js  in Red Hat Enterprise Linux, Mac OS and Windows environments. And there have been  signs of friction  between it and Joyent over the project in the past. Now more of that friction is bubbling to the surface.
+Update: StrongLoop CEO Isaac Roth responded with a post of his own , stating that a lot of this whole kerfuffle boiled down to a language problem — for Noordhuis, for whom English is a second language. Roth wrote:
+“Ben made a mistake by not understanding how important the gender pronoun change was in the pull request. But he was trying to interpret the commit rules, and he did write 28% of the current libuv codebase. This is more than any other contributor by far except Bert and 3x more than all of Joyent’s sponsored contributions combined to that library.”
+The flap highlights emotion-freighted issues around high-tech’s male-centric culture , and between folks who prefer the status to remain quo and others who want to make the business more inclusive.
+Or, it’s just a straight-out power struggle.
+As one source close to the action put it: “This is totally a food fight in Node land. StrongLoop and Joyent have been going at each other hard for a while over Node … The StrongLoop business crew comes from Red Hat and they want to turn Node into a Red Hat model.”
+Note: This story was updated at  10:00 a.m. December 2 with Roth’s comments.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

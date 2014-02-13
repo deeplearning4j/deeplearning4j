@@ -1,0 +1,54 @@
+From: mor@expo.lcs.mit.edu (Ralph Mor)
+Subject: Re: Tom Gaskins Pexlib vs Phigs Programming Manuals (O'Reilly)
+Organization: X Consortium, MIT Laboratory for Computer Science
+Lines: 49
+
+merlin@neuro.usc.edu (merlin) writes:
+
+>Could someone explain the difference between Tom Gaskins' two books:
+
+>  o  PEXLIB Programming Manual
+>  o  PHIGS Programming Manual
+
+>Why would I want to buy one book vs the other book?  I have an 80386
+>running SCO UNIX (X11R4) on my desktop, a SUN IV/360 in my lab, and 
+>access to a variety of other systems (Alliant FX/2800, Cray Y/MP) on
+>the network.  Mostly, we would like to do 3D modeling/visualization
+>of rat, rabbit, monkey, and human brain structure.
+
+Rather than decide which book you want to buy, you need to decide which
+programming interface you want to use, then buy the appropriate book.
+
+I wrote an article for the X Resource which discusses the differences
+between PHIGS and PEXlib (it will appear in Issue 6 which should be out
+pretty soon).  But here's a brief summary...
+
+PHIGS is a graphics API which was designed to be portable to many
+devices.  Most implementations support the X Window System and take
+advantage of a 3D extension to X called "PEX".  PEXlib is a slightly
+"lower" level API which was designed to efficiently support the PEX
+extension to X.
+
+Some advantages of using PEXlib...
+- Integrates with Xlib,Xt,Motif,etc. better than PHIGS
+- Provides immediate mode capabilities
+- Is free of "policy"
+- PEX supports PHIGS, but is currently being extended to support
+  features not found in PHIGS (like texture mapping, anti-aliasing).
+  PEXlib will give you access to all of these features.
+
+Some advantages of using PHIGS...
+- Support for multiple devices, not just X based ones
+- Support for archiving, metafiles, hardcopy output
+- PHIGS has predefined input devices to make input easier
+- PHIGS can handle exposure events and resizing for you
+- PHIGS can help you with colormap selection/creation.
+
+If you're working strictly in X and don't care about things like
+archiving, I would go with PEXlib.  Either way, you will find that
+both API's have a lot in common.
+
+Ralph Mor
+MIT X Consortium
+
+

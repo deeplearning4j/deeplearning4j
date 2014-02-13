@@ -1,0 +1,34 @@
+From: sundboe@bgibm1.nho.hydro.com (Terje Thoegersen)
+Subject: Re: Problems with Toshiba 3401 CDROM
+Organization: Norsk Hydro a.s
+Lines: 26
+Distribution: world
+Reply-To: hktth@nho.hydro.com
+NNTP-Posting-Host: bgibm1.nho.hydro.com
+
+In article <1993Apr20.191255.10115@news.columbia.edu>, imj1@cunixa.cc.columbia.edu (Imad M Jureidini) writes:
+|> Hi!
+|> 	I recently purchased the Toshiba 3401 CDROM.  I own an Adaptec 1542B
+|> SCSI card, and I have so far failed to get the CDROM to work under DOS.  It
+|> works very well under OS/2, so I know that the drive is not faulty.
+|> In my config.sys, I have aspi3dos.sys, aspidisk.sys, aspicd.sys.  In my 
+|> autoexec.bat, I have MSCDEX, which came with DOS 6.0.  MSCDEX seems to find
+|> and install the drive as drive F:, but when I switch to that drive and try a
+|> dir, I get an error message telling me the drive is not ready or something
+|> like that.  The CDROM is locked too, and the adaptec utilities don't seem to
+|> recognize that I have a CDROM at that point.
+|> 	Has anyone ever had this problem?  Is there something abvious that I
+|> am missing?  And finally, I was wondering if anyone using this setup could 
+|> kindly post his/her config.sys and autoexec.bat.
+|> 
+
+Hi!
+
+One of the ASPI-drivers (I think it's the ASPICD) supports a /NORST
+paramter, which means to not reset the SCSI bus when it loads. This
+fixed the problem a friend of mine was having with his adaptec+tosh 
+3401.
+
+Regards,
+
+  -Terje

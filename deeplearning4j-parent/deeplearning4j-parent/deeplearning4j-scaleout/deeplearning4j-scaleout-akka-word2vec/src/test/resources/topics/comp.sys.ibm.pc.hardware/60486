@@ -1,0 +1,15 @@
+From: junaid@monu6.cc.monash.edu.au (Mr A. Walker)
+Subject: 2 Sound Blasters in 1 machine
+Organization: Monash University, Melb., Australia.
+Lines: 10
+
+	Is it possible to have 2 Sound Blasters in 1 machine?
+Would give your the equivalent of a SB Pro but with stereo Digitized sound.
+The way Creative Labs price Pro's in Oz, the price is equal.
+
+	I suppose you could set the I/O addresses to 220 and 240H
+but what about the DMA channels?
+	Any way what is this DMA channel sharing hype?  Does it share the
+SB and hardisk DMA channels or something more esoteric?
+ 
+

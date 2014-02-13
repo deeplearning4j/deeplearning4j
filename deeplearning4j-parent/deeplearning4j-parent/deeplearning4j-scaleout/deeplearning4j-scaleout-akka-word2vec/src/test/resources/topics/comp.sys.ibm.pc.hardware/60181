@@ -1,0 +1,43 @@
+From: donyee@athena.mit.edu (Donald Yee)
+Subject: S3 86c805 w/2MB = 1024x768x32k colors = Orchid Pipe Dream?
+Organization: Massachusetts Institute of Technology
+Lines: 36
+Distribution: world
+NNTP-Posting-Host: pesto.mit.edu
+
+Hi
+	I have an Orchid Fahrenheit VLB with 2MB of DRAM.  It is an S3
+86c805 based card.  I had a problem for a while after installing my
+second meg of DRAM for the video, and thanks to Orchid, I got a fix
+from their tech support (it was jumper settings not given in the
+ordinary manual.  I assume it would come with memory ordered from
+them, so I guess I should be glad they didn't just say "Buy the memory
+from us" or something like that.)
+
+	The one thing that I was puzzled by was why there was not a
+1024x768x32k color mode on the thing, either in full screen or
+enlarged desktop mode.  My ATI Ultra Plus can handle that, given 2MB
+of memory.  All the 2MB buys you on the Fahrenheit is 1280x1024x256.
+Just ONE more mode.  GEEZ.  Had I known, I wouldn't have bothered.  I
+asked them why, and all I got was "Your point is well taken, but
+Orchid's software developers are busy with other projects."
+
+	So, to get to the point, finally, ARE there any s3 86c805
+drivers out there that can handle high res hicolor modes?  I'd love to
+get another card, but perhaps it will have to wait until the next
+generation of cards comes out, since this card came bundled with my
+system and it's not so easy to exchange these things unless they're
+broken.
+
+	If you want these modes, steer away from Orchids s3 86c805
+cards (ie. VLB or VA/VLB), at least until their developers are "less
+busy".  If the magazines are to believed, I've only seen one s3 86c805
+product thus far which can handle 1024x768x32k color (Genoa?),
+although evenn that might be a misprint.
+
+	Please, if there are generic or semi-generic drivers out
+there, let me know where I can get them.  800x600x32k is OK, but I
+coulda gotten that with my ATI VGA Wonder XL.
+
+Thanks.
+donyee@athena.mit.edu

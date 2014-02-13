@@ -1,0 +1,33 @@
+From: HK.MLR@forsythe.stanford.edu (Mark Rogowsky)
+Subject: Re: IINTX Upgrade?
+Organization: Stanford University
+Lines: 27
+NNTP-Posting-Host: morrow.stanford.edu
+
+In article <1pqprtINNf2@escargot.xx.rmit.OZ.AU>,
+s912013@minyos.xx.rmit.OZ.AU (Douglas Barry Mcpherson) writes:
+>Could someone please tell me what a
+>
+>LaserWriter IINTX upgrade kit is.
+>
+>Its a small box, which has a bag inn it , seemingly
+>containing 6 chips (look like ROMS) and a IINTX manual.
+>The installation instructions are most informative and say, in full,
+>"This product must be installed by an Apple ........."
+>
+>SO what does this do ? At first I thought it might be a NT to NTX
+>upgrade, but I thought that required an entirely new board.
+>
+>Any info appreciated.
+>
+>Doug.
+
+The kit is for an already existing Laserwriter IINTX. It is a ROM
+upgrade that replaces the font rasterizer code with the more
+efficient, speedier code that first became available in Adobe Type
+Manager 1.0.
+
+That software came out after the original NTXes and the so-called
+ATM rasterizer is now standard on Postscript printers.
+
+Mark

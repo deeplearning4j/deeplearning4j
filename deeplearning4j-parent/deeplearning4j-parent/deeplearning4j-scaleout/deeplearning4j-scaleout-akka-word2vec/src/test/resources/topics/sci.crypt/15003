@@ -1,0 +1,37 @@
+From: ray@ole.cdac.com (Ray Berry)
+Subject: Re: Hard drive security for FBI targets
+Organization: Cascade Design Automation
+Lines: 32
+
+rja14@cl.cam.ac.uk (Ross Anderson) writes:
+
+>In article <1993Apr2.050451.7866@ucsu.Colorado.EDU>, cuffell@spot.Colorado.EDU 
+>(Tim Cuffel) writes:
+
+>This suggests a new PC security product design approach - first fill the hard
+>drive with 50% random files and 50% files encrypted under a number of known 
+>keys. Then whenever a new secret file is created, you delete a random file and
+>replace it with real encrypted data. New non-secret files are encrypted under
+>a known key.
+
+   Better yet, instead of thrashing around on the DOS file system, take
+it a step further.  Write yourself a minimal "file system" program that
+is used to create/delete files, en/decrypt them to ramdisk, list a
+directory. Put the util, password protected, on a floppy.
+
+   The catch is that the storage space used by this util is NOT part
+of the DOS file system.  Instead, defrag your disk, thus packing all
+allocated clusters into clusters 0-n.  Then use the back end of the
+partition to hold your 'stealth' file system.  Or, leave a small 2nd
+partition on the disk that is not assigned to DOS.  Another approach
+might be to use a directory that contains a set of invariant files (DOS
+system files, for instance).  Due to DOS allocating a minimum storage 
+unit of a "cluster" there is unused physical space on the disk between
+the tail end of each file and the end of its associated cluster. These
+dead spaces could be concatenated and used to hold your stealth file
+system.
+
+   Now you have a situation where no encrypted data "appears" on your
+disk at all :-). 
+-- 
+Ray Berry kb7ht ray@ole.cdac.com  rjberry@eskimo.com  73407.3152@compuserve.com

@@ -1,0 +1,38 @@
+From: leebr@ecf.toronto.edu (LEE BRIAN)
+Subject: Re: WP-PCF, Linux, RISC?
+Organization: University of Toronto, Engineering Computing Facility
+Lines: 33
+
+In article <1qu8ud$2hd@sunb.ocs.mq.edu.au> eugene@mpce.mq.edu.au writes:
+>In article <C5o1yq.M34@csie.nctu.edu.tw> ghhwang@csie.nctu.edu.tw (ghhwang) writes:
+>>
+>>Dear friend,
+>>  The RISC means "reduced instruction set computer". The RISC usually has 
+>>small instruction set so as to reduce the circuit complex and can increase 
+>>the clock rate to have a high performance. You can read some books about
+>>computer architecture for more information about RISC.
+>
+>hmm... not that I am an authority on RISC ;-) but I clearly remember
+>reading that the instruction set on RISC CPUs is rather large.
+>The difference is in addressing modes - RISC instruction sets are not
+>as orthogonal is CISC.
+>
+>-- 
+>+-----------------------------------------------------------------------------+
+>|            Some people say it's fun, but I think it's very serious.         |
+>|                         eugene@macadam.mpce.mq.edu.au                       |
+>+-----------------------------------------------------------------------------+
+
+Theoretically supposed to be reduced.... not any longer.  That's why everyone
+is arguing about RISC v.s. CISC.  Personally, I think CISC will win out.
+Just take a look at the Pentium!  (Not that I like Intel architectures either,
+but that's another story...)
+
+bye!
+
+
+-------------------------------------------------------------------------------
+Brian "Hojo" Lee       | "Hey, excuse me miss, could I have a .GIF of you?"
+leebr@ecf.toronto.edu  |
+leebr@eecg.toronto.edu | (try Linux... the best and free UN*X clone!)
+-------------------------------------------------------------------------------

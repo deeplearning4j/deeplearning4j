@@ -1,0 +1,21 @@
+From: rgooch@rp.CSIRO.AU (Richard Gooch)
+Subject: Re: X11R5 and Open Look
+Organization: CSIRO Division of Radiophysics/Australia Telescope National Facility
+Lines: 16
+
+In article <1993Apr12.155820.82@aedc-vax.af.mil>, bonds@aedc-vax.af.mil writes:
+> I am reposting this because I am not sure my first post ever made it out.
+> I have built and installed X11R5 on my SPARCstation 2.  My aim is to run
+> the MIT X server but retain the OpenLook Window Manager.  I am sure this
+> is not uncommon, but I just want to make sure that I change and/or delete
+> everything that I need to.  For instance, I can start xdm in rc.local, but
+> how do I get rid of Xnews?
+> 
+
+  The OpenLook window manager source is available on the MIT contrib tapes
+  or from  export.lcs.mit.edu  .I would suggest building this too, rather than
+  using the version from OpenWindows. It is  olwm  v3.
+
+				Regards,
+
+					Richard Gooch....

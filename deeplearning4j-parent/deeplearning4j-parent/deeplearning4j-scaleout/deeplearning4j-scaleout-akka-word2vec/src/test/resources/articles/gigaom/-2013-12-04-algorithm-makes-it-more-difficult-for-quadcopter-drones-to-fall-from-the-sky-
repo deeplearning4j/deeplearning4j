@@ -1,0 +1,14 @@
+photo: Mark Mueller / ETH Zurich
+Summary:
+Right now, drones need more than four propellers to stay airborne when one fails. New research could allow quadcopters to recover from what would have been a catastrophic failure.
+photo: Mark Mueller / ETH Zurich
+Drones come in all kinds of shapes, from aerodynamic pods with huge wingspans to tiny multicopters with eight propellers. Generally, the more propellers you add, the more stable a drone is going to be, but the trade off is it sucks up more energy.
+Swiss Federal Institute of Technology in Zurich researchers have developed a safeguard to prevent quadcopters–which have four propellers–from falling out of the sky if one or more propellers fail. Right now, drones must be built with at least five propellers in order to be able to stay aloft when one fails.
+The researchers built an algorithm that shifts more responsibility to keep the drone in the air to its other propellers. When one or more fails, the drone begins spinning in a circle. The algorithm tilts it to an angle that ensures it stays airborne. The pilot can then land it on the ground as usual.
+“Our failsafe technology requires no additional hardware, it’s a software-only upgrade. This means that it could be easily implemented on existing multicopters,” PhD student Mark Mueller said in a release . “The software allows multicopters to remain airborne and perform a controlled emergency landing with as little as three, two, or even just one motor intact.”
+With public concern growing about the use of drones, it will become increasingly important for drone manufacturers to prove their products are safe to fly. Having a safety feature like this would also be a big plus for personal use.  When I flew  the Phantom 2 Vision quadcopter in late November, it would have been a big relief to know there was no chance of the drone spinning wildly out of control.
+Amazon CEO Jeff Bezos said in a 60 Minutes interview this week that Amazon’s planned delivery drones would be incapable of landing on someone’s head–likely a reference to the sturdy octocopters the company has been developing. He also emphasized how green they will be, considering that they are electric. Safer quadcopters could be an even greener option.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

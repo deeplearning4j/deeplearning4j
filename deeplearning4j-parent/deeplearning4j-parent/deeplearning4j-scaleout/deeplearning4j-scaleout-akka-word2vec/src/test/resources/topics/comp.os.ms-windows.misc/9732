@@ -1,0 +1,21 @@
+From: downs@helios.nevada.edu (Lamont Downs)
+Subject: Re: ATM
+Lines: 15
+Nntp-Posting-Host: cat.lv-lib.nevada.edu
+Organization: UNLV
+
+>>So good that there isn't any diff whether or not ATManager is turned
+>>on or not. Is it worth it to run ATM at all? Especially with these
+>>better printer technologies ... and TT?
+>
+>There are some fonts that are only available as PS fonts.  If you
+>have a PS font that you want to use, use ATM.  Otherwise, it is
+>a waste of system resources.
+>
+-----Or, if you need to use a service bureau and they're only set up to use
+Type 1 fonts. From what I've heard (pure hearsay) the results of outputting
+TT fonts as Type 1 is _not_ as good as using high-quality Type 1 fonts in
+the first place.
+
+Lamont Downs
+downs@nevada.edu

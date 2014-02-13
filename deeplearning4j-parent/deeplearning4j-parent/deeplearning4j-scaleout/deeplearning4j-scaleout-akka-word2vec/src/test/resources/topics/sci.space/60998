@@ -1,0 +1,59 @@
+From: nickh@CS.CMU.EDU (Nick Haines)
+Subject: Re: Level 5?
+In-Reply-To: 18084TM@msu.edu's message of Tue, 20 Apr 1993 21:37:55 GMT
+Originator: nickh@SNOW.FOX.CS.CMU.EDU
+Nntp-Posting-Host: snow.fox.cs.cmu.edu
+Organization: School of Computer Science, Carnegie Mellon University
+Distribution: sci
+Lines: 50
+
+In article <C5sy4s.4x2.1@cs.cmu.edu> 18084TM@msu.edu (Tom) writes:
+
+   Nick Haines sez;
+   >(given that I've heard the Shuttle software rated as Level 5 in
+   >maturity, I strongly doubt that this [having lots of bugs] is the case).
+
+   Level 5?  Out of how many?  What are the different levels?  I've never
+   heard of this rating system.  Anyone care to clue me in?
+
+This is a rating system used by ARPA and other organisations to
+measure the maturity of a `software process' i.e. the entire process
+by which software gets designed, written, tested, delivered, supported
+etc.
+
+See `Managing the Software Process', by Watts S. Humphrey, Addison
+Wesley 1989. An excellent software engineering text. The 5 levels of
+software process maturity are:
+
+1. Initial
+2. Repeatable
+3. Defined
+4. Managed
+5. Optimizing
+
+The levels are approximately characterized as follows:
+
+1. no statistically software process control. Have no statistical
+   basis for estimating how large software will be, how long it will
+   take to produce, how expensive it will be, or how reliable it will
+   be.  Most software production is at this level.
+
+2. stable process with statistical controls, rigorous project
+   management; having done something once, can do it again. Projects
+   are planned in detail, and there is software configuration
+   management and quality assurance.
+
+3. The process is defined and understood, implementation is
+   consistent. This includes things like software inspection, a
+   rigorous software testing framework, more configuration management,
+   and typically a `software engineering process group' within the
+   project.
+
+4. Statistical information on the software is systematically gathered
+   and analysed, and the process is controlled on the basis of this
+   information. Software quality is measured and has goals.
+
+5. Defects are prevented, the process is automated, software contracts
+   are effective and certified.
+
+Nick Haines nickh@cmu.edu
