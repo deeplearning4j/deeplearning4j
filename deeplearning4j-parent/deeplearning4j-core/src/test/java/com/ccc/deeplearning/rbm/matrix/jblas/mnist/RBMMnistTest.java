@@ -34,7 +34,7 @@ public class RBMMnistTest {
 
 		da.input = first.getFirst();
 
-		da.trainTillConvergence(first.getFirst(), 0.01, new Object[]{1});
+		da.trainTillConvergence(first.getFirst(), 0.01, new Object[]{1,0.01,1000});
 		DoubleMatrix reconstruct = da.reconstruct(first.getFirst());
 
 		for(int j = 0; j < first.numExamples(); j++) {

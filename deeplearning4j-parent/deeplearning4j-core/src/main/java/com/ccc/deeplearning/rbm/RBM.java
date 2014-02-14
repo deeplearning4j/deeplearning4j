@@ -43,6 +43,7 @@ public class RBM extends BaseNeuralNetwork {
 	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
 		super(nVisible, nHidden, W, hbias, vbias, rng,fanIn);
+		
 	}
 
 

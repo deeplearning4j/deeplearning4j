@@ -105,6 +105,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.nVisible = nVisible;
 		if(dist != null)
 			this.dist = dist;
+		else
+			this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 		this.nHidden = nHidden;
 		this.fanIn = fanIn;
 		this.input = input;
@@ -141,7 +143,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		if(this.nHidden < 1)
 			throw new IllegalStateException("Number of hidden can not be less than 1");
 
-
+		if(this.dist == null)
+			dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 		/*
 		 * Initialize based on the number of visible units..
 		 * The lower bound is called the fan in
