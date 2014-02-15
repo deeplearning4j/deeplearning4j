@@ -10,12 +10,12 @@ public class Index implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 1160629777026141078L;
-	List objects = new CopyOnWriteArrayList();
-	Map<Object,Integer> indexes = new ConcurrentHashMap<Object,Integer>();
+	List objects = new ArrayList();
+	Map<Object,Integer> indexes = new HashMap<Object,Integer>();
 	
 	
 	
-	public boolean add(Object o) {
+	public synchronized boolean add(Object o) {
 		Integer index = indexes.get(o);
 		if (index == null) {
 			index = objects.size();
@@ -26,13 +26,13 @@ public class Index implements Serializable {
 		return false;
 	}
 
-	public int indexOf(Object o) {
+	public synchronized int indexOf(Object o) {
 		Integer index = indexes.get(o);
 		if (index == null) { return -1; }
 		else { return index; }
 	}
 
-	public Object get(int i) {
+	public synchronized Object get(int i) {
 		return objects.get(i);
 	}
 

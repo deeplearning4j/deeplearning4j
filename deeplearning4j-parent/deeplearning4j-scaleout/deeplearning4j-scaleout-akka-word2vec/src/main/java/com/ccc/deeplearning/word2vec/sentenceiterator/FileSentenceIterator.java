@@ -73,7 +73,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 			if(!cache.isEmpty())
 				ret = cache.poll();
 			else
-				throw new IllegalStateException("Ret cant be null");
+				return null;
 		}
 		return ret;
 
@@ -85,10 +85,18 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 		if(fileIterator.hasNext()) {
 			try {
 				File next = fileIterator.next();
-				if(next.getAbsolutePath().endsWith(".gz"))
+				if(next.getAbsolutePath().endsWith(".gz")) {
+					if(currLineIterator != null)
+						currLineIterator.close();
 					currLineIterator = IOUtils.lineIterator(new BufferedInputStream(new GZIPInputStream(new FileInputStream(next))), "UTF-8");
-				else
+
+				}
+				else {
+					if(currLineIterator != null)
+						currLineIterator.close();
 					currLineIterator = FileUtils.lineIterator(next);
+
+				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

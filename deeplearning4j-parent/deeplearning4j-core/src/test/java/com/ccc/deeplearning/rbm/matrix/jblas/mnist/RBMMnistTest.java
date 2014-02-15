@@ -25,7 +25,7 @@ public class RBMMnistTest {
 		
 		DataSet first = fetcher.next();
 
-		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand).renderWeights(1000)
+		RBM da = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand)
 				.useRegularization(false)
 				.withMomentum(0).build();
 
