@@ -1,14 +1,22 @@
 package com.ccc.deeplearning.word2vec.actor;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ccc.deeplearning.word2vec.Word2Vec;
 
 import akka.actor.UntypedActor;
+import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
 import akka.japi.Creator;
 
 public class SentenceActor extends UntypedActor {
 
 	private Word2Vec vec;
-
+	private static Logger log = LoggerFactory.getLogger(SentenceActor.class);
 	
 	public SentenceActor(Word2Vec vec) {
 		super();
@@ -19,11 +27,31 @@ public class SentenceActor extends UntypedActor {
 
 
 	@Override
-	public void onReceive(Object message) throws Exception {
+	public void onReceive(final Object message) throws Exception {
 		if(message instanceof SentenceMessage) {
-			SentenceMessage m2 = (SentenceMessage) message;
-			vec.processSentence(m2.getSentence(), m2.getCounter());
-			m2.getChanged().set(System.currentTimeMillis());
+			scala.concurrent.Future<SentenceMessage> f = Futures.future(new Callable<SentenceMessage>() {
+
+				@Override
+				public SentenceMessage call() throws Exception {
+					SentenceMessage m2 = (SentenceMessage) message;
+					vec.processSentence(m2.getSentence(), m2.getCounter());
+					return m2;
+				}
+				
+			},context().dispatcher());
+			
+			f.onComplete(new OnComplete<SentenceMessage>() {
+
+				@Override
+				public void onComplete(Throwable arg0, SentenceMessage m2)
+						throws Throwable {
+
+					log.info("Processed sentence");
+					m2.getChanged().set(System.currentTimeMillis());
+										
+				}
+				
+			}, context().dispatcher());
 			
 		}
 		

@@ -22,11 +22,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.IOUtils;
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import scala.concurrent.Future;
+
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -40,14 +42,13 @@ import com.ccc.deeplearning.berkeley.Triple;
 import com.ccc.deeplearning.nn.Persistable;
 import com.ccc.deeplearning.util.MatrixUtil;
 import com.ccc.deeplearning.word2vec.actor.SentenceActor;
-import com.ccc.deeplearning.word2vec.actor.SentenceMessage;
 import com.ccc.deeplearning.word2vec.actor.VocabActor;
-import com.ccc.deeplearning.word2vec.actor.VocabMessage;
 import com.ccc.deeplearning.word2vec.sentenceiterator.CollectionSentenceIterator;
 import com.ccc.deeplearning.word2vec.sentenceiterator.SentenceIterator;
 import com.ccc.deeplearning.word2vec.tokenizer.DefaultTokenizerFactory;
 import com.ccc.deeplearning.word2vec.tokenizer.Tokenizer;
 import com.ccc.deeplearning.word2vec.tokenizer.TokenizerFactory;
+import com.ccc.deeplearning.word2vec.util.Util;
 import com.ccc.deeplearning.word2vec.viterbi.Index;
 
 /**
@@ -84,7 +85,7 @@ public class Word2Vec implements Persistable {
 	private int size = 0;
 	private int words = 0;
 	//input layer
-	private DoubleMatrix syn0;
+	private DoubleMatrix syn0,syn0Norm;
 	//hidden layer
 	private DoubleMatrix syn1;
 	private int allWordsCount = 0;
@@ -187,7 +188,16 @@ public class Word2Vec implements Persistable {
 	}
 
 
+	public double[] getWordVectorNormalized(String word) {
+		int i = this.wordIndex.indexOf(word);
+		if(i < 0) {
+			i = wordIndex.indexOf("STOP");
+			if(i < 0)
+				return oob;
+		}
 
+		return syn0Norm.getRow(i).toArray();
+	}
 
 	public double[] getWordVector(String word) {
 		int i = this.wordIndex.indexOf(word);
@@ -210,6 +220,14 @@ public class Word2Vec implements Persistable {
 			return new DoubleMatrix(oob);
 		return syn0.getRow(i);
 	}
+
+	public DoubleMatrix getWordVectorMatrixNormalized(String word) {
+		int i = this.wordIndex.indexOf(word);
+		if(i < 0)
+			return new DoubleMatrix(oob);
+		return syn0.getRow(i);
+	}
+
 
 
 	public VocabWord getWord(String key) {
@@ -287,40 +305,62 @@ public class Word2Vec implements Persistable {
 			readStopWords();
 		log.info("Training word2vec multithreaded");
 
-		MapFactory<String,Double> factory = new MapFactory<String,Double>() {
+		
 
-			private static final long serialVersionUID = 5447027920163740307L;
+		final Counter<String> totalWords = Util.parallelCounter();
 
-			@Override
-			public Map<String, Double> buildMap() {
-				return new java.util.concurrent.ConcurrentHashMap<String,Double>();
-			}
-
-		};
-
-		final Counter<String> totalWords = new Counter<String>(factory);
-
-		sentenceIter.reset();
+		getSentenceIter().reset();
 
 		final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
 
 
-		ActorRef sentenceActor  = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(Props.create(new SentenceActor.SentenceActorCreator(this))));
+		ActorRef sentenceActor  = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 ).props(Props.create(new SentenceActor.SentenceActorCreator(this)).withDispatcher("akka.actor.worker-dispatcher")));
 
 
 		if(syn0.rows != this.vocab.size())
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
+		int numSentences = 0;
 
-
-		while(sentenceIter.hasNext()) {
+		while(getSentenceIter().hasNext()) {
 			final String sentence = sentenceIter.nextSentence();
+			if(sentence != null) {
+				Future<Void> f = Futures.future(new Callable<Void>() {
+
+					@Override
+					public Void call() throws Exception {
+						processSentence(sentence, totalWords);
+						return null;
+					}
+
+				},trainingSystem.dispatcher());
+				f.onComplete(new OnComplete<Void>() {
+
+					@Override
+					public void onComplete(Throwable arg0, Void arg1)
+							throws Throwable {
+						if(arg0 != null)
+							throw arg0;
+						numSentencesProcessed++;
+						changed.set(System.currentTimeMillis());
+
+					}
+
+				}, trainingSystem.dispatcher());
+
+			}
+
+			/*
 			sentenceActor.tell(new SentenceMessage(totalWords, sentence, changed),sentenceActor);
+			numSentences++;
+			if(numSentences % 10000 == 0) {
+				log.info("Sent " + numSentences + " for training");
+			}*/
 		}
 
 
 		boolean done = false;
-		long fiveMinutes = TimeUnit.MINUTES.toMillis(5);
+		long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
 		while(!done) {
 			long curr = System.currentTimeMillis();
 			long lastChanged = changed.get();
@@ -346,13 +386,15 @@ public class Word2Vec implements Persistable {
 
 	}
 
-	public synchronized void processSentence(final String sentence,final Counter<String> totalWords) {
+	public void processSentence(final String sentence,final Counter<String> totalWords) {
 		trainSentence(sentence, totalWords);
 		if(numSentencesProcessed % 10000 == 0) {
 			alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
 			log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed);
 		}
 	}
+
+
 
 
 	public List<VocabWord> trainSentence(String sentence,Counter<String> totalWords) {
@@ -370,7 +412,7 @@ public class Word2Vec implements Persistable {
 			totalWords.incrementCount(next, 1.0);
 
 		}
-		
+
 		trainSentence(sentence2);
 		return sentence2;
 	}
@@ -452,76 +494,35 @@ public class Word2Vec implements Persistable {
 			trainingSystem = ActorSystem.create();
 
 
-		final ActorRef vocabActor = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(Props.create(VocabActor.class)));
 
-		MapFactory<String,Double> factory = new MapFactory<String,Double>() {
-
-			private static final long serialVersionUID = 5447027920163740307L;
-
-			@Override
-			public Map<String, Double> buildMap() {
-				return new java.util.concurrent.ConcurrentHashMap<String,Double>();
-			}
-
-		};
-
-		final Counter<String> rawVocab = new Counter<String>(factory);
+		final Counter<String> rawVocab = Util.parallelCounter();
 		final AtomicLong semaphore = new AtomicLong(System.currentTimeMillis());
 		final AtomicInteger numSentences = new AtomicInteger(0);
 		int queued = 0;
+
+		final ActorRef vocabActor = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(Props.create(VocabActor.class,tokenizerFactory,wordIndex,minWordFrequency,vocab,layerSize,stopWords,rawVocab,semaphore)));
+
 		/* all words; including those not in the actual ending index */
-		while(sentenceIter.hasNext()) {
+		while(getSentenceIter().hasNext()) {
+			String sentence = getSentenceIter().nextSentence();
+			if(sentence == null)
+				continue;
 
-			Future<Void> f = Futures.future(new Callable<Void>() {
-
-				@Override
-				public Void call() throws Exception {
-					String sentence = sentenceIter.nextSentence();
-					Tokenizer t = tokenizerFactory.create(sentence);
-					List<String> tokens = new ArrayList<String>();
-					while(t.hasMoreTokens())
-						tokens.add(t.nextToken());
-
-					vocabActor.tell(new VocabMessage(rawVocab, tokens, stopWords, minWordFrequency, wordIndex, vocab, layerSize,semaphore), vocabActor);
-					numSentences.incrementAndGet();
-					if(numSentences.get() % 10000 == 0)
-						log.info("Sent " + numSentences);
-					return null;
-				}
-
-			},trainingSystem.dispatcher());
-
-			f.onComplete(new OnComplete<Void>() {
-
-				@Override
-				public void onComplete(Throwable arg0, Void arg1)
-						throws Throwable {
-					if(arg0 != null)
-						throw arg0;
-				}
-
-			},trainingSystem.dispatcher());
-
+			vocabActor.tell(sentence, vocabActor);
+			log.info("Sent " + queued);
 			queued++;
-			if(queued % 100000 == 0) {
-				log.info("Queued " + queued + " sentences");
-				try {
-					Thread.sleep(15000);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
 
-			}
 
 
 		}
 
 		boolean done = false;
-		long fiveMinutes = TimeUnit.MINUTES.toMillis(5);
+		long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
 		while(!done) {
 			long curr = System.currentTimeMillis();
 			long lastChanged = semaphore.get();
 			long diff = Math.abs(curr - lastChanged);
+			log.info("Waiting on setup...");
 			//hasn't changed for 5 minutes
 			if(diff >= fiveMinutes) {
 				done = true;	
@@ -666,7 +667,6 @@ public class Word2Vec implements Persistable {
 	/* reinit weights */
 	private void resetWeights() {
 		syn1 = DoubleMatrix.zeros(vocab.size(), layerSize);
-		//self.syn0 += (random.rand(len(self.vocab), self.layer1_size) - 0.5) / self.layer1_size
 		syn0 = DoubleMatrix.zeros(vocab.size(),layerSize);
 		org.jblas.util.Random.seed(1);
 		for(int i = 0; i < syn0.rows; i++)
@@ -685,13 +685,14 @@ public class Word2Vec implements Persistable {
 	public double similarity(String word,String word2) {
 		if(word.equals(word2))
 			return 1.0;
-
-		double[] vector = getWordVector(word);
-		double[] vector2 = getWordVector(word2);
+		if(syn0Norm == null)
+			this.syn0Norm = syn0.div(SimpleBlas.nrm2(syn0));
+		DoubleMatrix vector = getWordVectorMatrixNormalized(word);
+		DoubleMatrix vector2 = getWordVectorMatrixNormalized(word2);
 		if(vector == null || vector2 == null)
 			return -1;
-		DoubleMatrix d1 = MatrixUtil.unitVec(new DoubleMatrix(vector));
-		DoubleMatrix d2 = MatrixUtil.unitVec(new DoubleMatrix(vector2));
+		DoubleMatrix d1 = MatrixUtil.unitVec(vector);
+		DoubleMatrix d2 = MatrixUtil.unitVec(vector2);
 		double ret = d1.dot(d2);
 		if(ret <  0)
 			return 0;
@@ -829,8 +830,14 @@ public class Word2Vec implements Persistable {
 		return stopWords;
 	}
 
-	public SentenceIterator getSentenceIter() {
+	public synchronized SentenceIterator getSentenceIter() {
 		return sentenceIter;
+	}
+
+
+
+	public synchronized TokenizerFactory getTokenizerFactory() {
+		return tokenizerFactory;
 	}
 
 	/**

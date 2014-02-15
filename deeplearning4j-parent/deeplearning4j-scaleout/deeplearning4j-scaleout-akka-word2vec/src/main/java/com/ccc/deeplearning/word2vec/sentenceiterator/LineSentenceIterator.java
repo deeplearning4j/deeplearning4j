@@ -6,6 +6,11 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
+/**
+ * Each line is a sentence
+ * @author Adam Gibson
+ *
+ */
 public class LineSentenceIterator extends BaseSentenceIterator {
 
 	
@@ -40,6 +45,8 @@ public class LineSentenceIterator extends BaseSentenceIterator {
 	@Override
 	public void reset() {
 		try {
+			if(iter != null)
+				iter.close();
 			iter = FileUtils.lineIterator(file);
 		} catch (IOException e) {
 			throw new RuntimeException(e);

@@ -681,7 +681,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				Class<?>[] classes = curr.getParameterTypes();
 
 				//input matrix found
-				if(classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
+				if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen,fanIn,dist);
@@ -705,7 +705,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				Constructor<?> curr = c[i];
 				Class<?>[] classes = curr.getParameterTypes();
 				//input matrix found
-				if(classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
+				if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
 					try {
 						ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
 						ret.sparsity = this.sparsity;
