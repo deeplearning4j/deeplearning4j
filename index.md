@@ -21,7 +21,7 @@ The documentation below will show you how to set up, and train with sample data,
 
 * [Overview](../index.html)
 * [Single Layer Networks](/multilayer.html)
-    * [Single Network/Restricted Boltzmann Machine]({{ site.baseurl }}/restrictedboltzmannmachine.html)
+    * [Single Network/Restricted Boltzmann Machine]("{{ site.baseurl }}"/restrictedboltzmannmachine.html)
     * [Single Network/Denoising Autoencoder]({{ site.baseurl }}/denoisingautoencoder.html)
 * [Multi Layer Networks]({{ site.baseurl }}/multinetwork.html)
     * [Multinetwork/Deep Belief Network]({{ site.baseurl }}/deepbeliefnetwork.html)
