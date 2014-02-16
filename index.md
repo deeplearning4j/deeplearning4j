@@ -20,9 +20,9 @@ Deep-learning networks end in an output layer: a logistic, or softmax, classifie
 The documentation below will show you how to set up, and train with sample data, several types of deep-learning networks, including single- and multithread versions of the networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
 
 * [Overview](../index.html)
-* [Single Layer Networks](/multilayer.html)
-    * [Single Network/Restricted Boltzmann Machine]("{{ site.baseurl }}"/restrictedboltzmannmachine.html)
-    * [Single Network/Denoising Autoencoder]({{ site.baseurl }}/denoisingautoencoder.html)
+* [Single Layer Networks](../multilayer.html)
+    * [Single Network/Restricted Boltzmann Machine](../restrictedboltzmannmachine.html)
+    * [Single Network/Denoising Autoencoder](../denoisingautoencoder.html)
 * [Multi Layer Networks]({{ site.baseurl }}/multinetwork.html)
     * [Multinetwork/Deep Belief Network]({{ site.baseurl }}/deepbeliefnetwork.html)
     * [Multinetwork/Stacked Denoising Autoencoder]({{ site.baseurl }}/stackedenoisingautoencoder.html)
