@@ -1,3 +1,8 @@
+---
+title: Data Sets
+layout: default
+---
+
 DataSets
 ====================================
 
@@ -14,4 +19,4 @@ Data Set Iterators know how to compose and turn an input such as text or an imag
 
 by a neural network.
 
-Typical operations performed in data set iterators include data etl, transforms (binarization,normalization)
+Typical operations performed in data set iterators include data etl, transforms ([binarization](../glossary.html#binarization),[normalization](../glossary.html#normalization))
