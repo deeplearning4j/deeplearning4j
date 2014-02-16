@@ -19,12 +19,12 @@ Deep-learning networks end in an output layer: a logistic, or softmax, classifie
 
 The documentation below will show you how to set up, and train with sample data, several types of deep-learning networks, including single- and multithread versions of the networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
 
-* [Overview]({{site.baseurl}}/index.html)
-* [Single Layer Networks]({{site.baseurl}}/multilayer.html)
-    * [Single Network/Restricted Boltzmann Machine]({{site.baseurl}}/restrictedboltzmannmachine.html)
-    * [Single Network/Denoising Autoencoder]({{site.baseurl}}/denoisingautoencoder.html)
-* [Multi Layer Networks]({{site.baseurl}}/multinetwork.html)
-    * [Multinetwork/Deep Belief Network]({{site.baseurl}}/deepbeliefnetwork.html)
-    * [Multinetwork/Stacked Denoising Autoencoder]({{site.baseurl}}/stackedenoisingautoencoder.html)
-* [Word2vec]({{site.baseurl}}/word2vec.html)
-* [Motivating Examples]({{site.baseurl}}/examples.html)
+* [Overview](../index.html)
+* [Single Layer Networks](../multilayer.html)
+    * [Single Network/Restricted Boltzmann Machine](../restrictedboltzmannmachine.html)
+    * [Single Network/Denoising Autoencoder](../denoisingautoencoder.html)
+* [Multi Layer Networks](../multinetwork.html)
+    * [Multinetwork/Deep Belief Network](../deepbeliefnetwork.html)
+    * [Multinetwork/Stacked Denoising Autoencoder](../stackedenoisingautoencoder.html)
+* [Word2vec](../word2vec.html)
+* [Motivating Examples](../examples.html)
