@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title margin-left="55px";>deeplearning4j</title>
+        <title margin-left="55px";></title>
         <meta name="viewport" content="width=device-width">
 
         <!-- syntax highlighting CSS -->
@@ -16,46 +16,56 @@
     </head>
 
     <body>
-
-        <div class="site">
-          <div class="header" style="margin-left:55px;">
-            <h1 class="title" ><a href="/">deeplearning4j</a></h1>
-            <a class="extra" href="/">home</a>
-            <a class="extra" style="margin-left:10px;" href="/">about</a>
-            <a class="extra" style="margin-left:10px;" href="/">contact</a>
+        <nav id="navigation">
+          <div class="container">
+            <h1><a href="/">deeplearning4j</a></h1>
           </div>
+        </nav>
+
           <br /><br /><br />
           <div class="span3">
                 <br />
                 <ul>
-                   <li>
+                   <li><a href="//index.html">Neural Nets Overview</a></li>
                     <ul>
-                    <li><a href="/restrictedboltzmannmachine.html">Single Network/Restricted Boltzmann Machine</a></li>
-                    <li><a href="/stackeddenoisingautoencoder.html">Single Network/Denoising Autoencoder</a></li>
-                    <li><a href="/multinetwork.html">Multinetwork/Deep Belief Network</a></li>
-                    <li><a href="/multinetwork.html">Multinetwork/Stacked Denoising Autoencoder</a></li>
-                    </ul></li>
-                    <li><a href="/word2vec.html">Word2vec</a></li>
-                    <li><a href="/examples.html">Motivating Examples</a></li>
+                        <li><a href="//restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
+                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann</a></li>
+                        <li><a href="//denoisingautoencoder.html">Denoising Autoencoder</a></li>
+                    </ul>
+                   <li>Multilayer Neural Nets</li>
+                    <ul>
+                        <li><a href="//deepbeliefnetwork.html">Deep-Belief Network</a></li>
+                        <li><a href="//continuousdeepbeliefnetwork.html">Continuous Deep-Belief Network</a></li>
+                        <li><a href="//stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
+                    </ul>
+                    <li><a href="//word2vec.html">Word2vec</a></li>
+                    <li><a href="//data-sets.html">Data Sets and Machine Learning</a></li>
+                    <li><a href="//examples.html">Motivating Examples</a></li>
+                    <li><a href="//glossary.html">Glossary</a></li>
+                    <li><a href="//about.html">About</a></li>
                 </ul>
                     </div>
           <div class="span8">
 
-    <h1>deeplearning4j</h1>
+    <h1></h1>
 
-    <h3>Multinetwork/Continuous Deep Belief Net</h3>
+    <h1>continuous deep-belief net</h1>
 
 <p>Deep belief networks are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous deep belief networks accept decimals. That is the only difference. </p>
 
-<h3>PARAMETERS  Please also see <a href="../multinetwork.html">the multi layer network parameters common to all multi layer networks</a></h3>
+<h3>parameters</h3>
 
-<h4>k - The number of times to run <a href="//glossary.html#contrastivedivergence">contrastive divergence</a>. Each time contrastive divergence is run, it is a sample of the markov chain</h4>
+<p>Please also see <a href="../multinetwork.html">the multi layer network parameters common to all multi layer networks</a>.</p>
+
+<h4>k</h4>
+
+<p>The number of times to run <a href="//glossary.html#contrastivedivergence">contrastive divergence</a>. Each time contrastive divergence is run, it is a sample of the Markov chain.</p>
 
 <p>composing the restricted boltzmann machine. A typical value of 1 is fine.</p>
 
-<p>INPUT</p>
+<h3>input</h3>
 
-<h3>Initiating a continuous deep-belief network</h3>
+<h3>initiating a continuous deep-belief network</h3>
 
 <p>Setting up a single-thread continuous deep-belief network is easy. </p>
 
@@ -99,7 +109,7 @@
     </body>
     <div class="footer">
 
-             <div class="span8">
+             <div class="span12">
                             
             <div class="contact" style="text-align:right">
               <p>

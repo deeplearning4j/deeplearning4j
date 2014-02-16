@@ -16,27 +16,33 @@
     </head>
 
     <body>
-
-        <div class="site">
-          <div class="header" style="margin-left:55px;">
-            <h1 class="title" ><a href="/">{{ site.name }}</a></h1>
-            <a class="extra" href="/">home</a>
-            <a class="extra" style="margin-left:10px;" href="/">about</a>
-            <a class="extra" style="margin-left:10px;" href="/">contact</a>
+        <nav id="navigation">
+          <div class="container">
+            <h1><a href="/">{{ site.name }}</a></h1>
           </div>
+        </nav>
+
           <br /><br /><br />
           <div class="span3">
                 <br />
                 <ul>
-                   <li>
+                   <li><a href="{{site.baseurl}}/index.html">Neural Nets Overview</a></li>
                     <ul>
-                    <li><a href="{{site.baseurl}}/restrictedboltzmannmachine.html">Single Network/Restricted Boltzmann Machine</a></li>
-                    <li><a href="{{site.baseurl}}/stackeddenoisingautoencoder.html">Single Network/Denoising Autoencoder</a></li>
-                    <li><a href="{{site.baseurl}}/multinetwork.html">Multinetwork/Deep Belief Network</a></li>
-                    <li><a href="{{site.baseurl}}/multinetwork.html">Multinetwork/Stacked Denoising Autoencoder</a></li>
-                    </ul></li>
+                        <li><a href="{{site.baseurl}}/restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
+                        <li><a href="{{site.baseurl}}/continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann</a></li>
+                        <li><a href="{{site.baseurl}}/denoisingautoencoder.html">Denoising Autoencoder</a></li>
+                    </ul>
+                   <li>Multilayer Neural Nets</li>
+                    <ul>
+                        <li><a href="{{site.baseurl}}/deepbeliefnetwork.html">Deep-Belief Network</a></li>
+                        <li><a href="{{site.baseurl}}/continuousdeepbeliefnetwork.html">Continuous Deep-Belief Network</a></li>
+                        <li><a href="{{site.baseurl}}/stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
+                    </ul>
                     <li><a href="{{site.baseurl}}/word2vec.html">Word2vec</a></li>
+                    <li><a href="{{site.baseurl}}/data-sets.html">Data Sets and Machine Learning</a></li>
                     <li><a href="{{site.baseurl}}/examples.html">Motivating Examples</a></li>
+                    <li><a href="{{site.baseurl}}/glossary.html">Glossary</a></li>
+                    <li><a href="{{site.baseurl}}/about.html">About</a></li>
                 </ul>
                     </div>
           <div class="span8">

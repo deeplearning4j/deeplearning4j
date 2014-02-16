@@ -1,30 +1,24 @@
 ---
-title: deeplearning4j
+title: 
 layout: default
 ---
 
 
-
-
-
-### Multinetwork/Continuous Deep Belief Net
+# continuous deep-belief net
 
 Deep belief networks are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous deep belief networks accept decimals. That is the only difference. 
 
-### PARAMETERS  Please also see [the multi layer network parameters common to all multi layer networks](../multinetwork.html)
+### parameters  
+Please also see [the multi layer network parameters common to all multi layer networks](../multinetwork.html).
 
-####k - The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the markov chain
+#### k 
+The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
 composing the restricted boltzmann machine. A typical value of 1 is fine.
 
+### input
 
-
-
-
-
-INPUT
-
-### Initiating a continuous deep-belief network
+### initiating a continuous deep-belief network
 
 Setting up a single-thread continuous deep-belief network is easy. 
 
