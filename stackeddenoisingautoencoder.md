@@ -1,11 +1,11 @@
 ---
-title: deeplearning4j
+title: 
 layout: default
 ---
 
 
 
-### Multinetwork/Stacked Denoising Autoencoder
+# stacked denoising autoencoder
 
 A [stacked denoising autoencoder](http://deeplearning.net/tutorial/SdA.html) is to a denoising autoencoder what a deep-belief network is to a [restricted Boltzmann machine](../restrictedboltzmannmachine.html). A key function of SDAs, and deep learning more generally, is their capacity for unsupervised pre-training, layer by layer, as input is fed through. Once each layer is pre-trained to conduct feature selection and extraction on the input from the preceding layer, a second stage of supervised fine tuning can follow. 
 

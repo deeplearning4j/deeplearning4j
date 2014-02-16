@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title margin-left="55px";>deeplearning4j</title>
+        <title margin-left="55px";></title>
         <meta name="viewport" content="width=device-width">
 
         <!-- syntax highlighting CSS -->
@@ -16,46 +16,56 @@
     </head>
 
     <body>
-
-        <div class="site">
-          <div class="header" style="margin-left:55px;">
-            <h1 class="title" ><a href="/">deeplearning4j</a></h1>
-            <a class="extra" href="/">home</a>
-            <a class="extra" style="margin-left:10px;" href="/">about</a>
-            <a class="extra" style="margin-left:10px;" href="/">contact</a>
+        <nav id="navigation">
+          <div class="container">
+            <h1><a href="/">deeplearning4j</a></h1>
           </div>
+        </nav>
+
           <br /><br /><br />
           <div class="span3">
                 <br />
                 <ul>
-                   <li>
+                   <li><a href="//index.html">Neural Nets Overview</a></li>
                     <ul>
-                    <li><a href="/restrictedboltzmannmachine.html">Single Network/Restricted Boltzmann Machine</a></li>
-                    <li><a href="/stackeddenoisingautoencoder.html">Single Network/Denoising Autoencoder</a></li>
-                    <li><a href="/multinetwork.html">Multinetwork/Deep Belief Network</a></li>
-                    <li><a href="/multinetwork.html">Multinetwork/Stacked Denoising Autoencoder</a></li>
-                    </ul></li>
-                    <li><a href="/word2vec.html">Word2vec</a></li>
-                    <li><a href="/examples.html">Motivating Examples</a></li>
+                        <li><a href="//restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
+                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann</a></li>
+                        <li><a href="//denoisingautoencoder.html">Denoising Autoencoder</a></li>
+                    </ul>
+                   <li>Multilayer Neural Nets</li>
+                    <ul>
+                        <li><a href="//deepbeliefnetwork.html">Deep-Belief Network</a></li>
+                        <li><a href="//continuousdeepbeliefnetwork.html">Continuous Deep-Belief Network</a></li>
+                        <li><a href="//stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
+                    </ul>
+                    <li><a href="//word2vec.html">Word2vec</a></li>
+                    <li><a href="//data-sets.html">Data Sets and Machine Learning</a></li>
+                    <li><a href="//examples.html">Motivating Examples</a></li>
+                    <li><a href="//glossary.html">Glossary</a></li>
+                    <li><a href="//about.html">About</a></li>
                 </ul>
                     </div>
           <div class="span8">
 
-    <h1>deeplearning4j</h1>
+    <h1></h1>
 
-    <h2>Multinetwork/Deep Belief Network</h2>
+    <h1>deep-belief network</h1>
 
 <p>For our purposes, a <a href="http://www.scholarpedia.org/article/Deep_belief_networks">deep-belief network</a> can be defined as a stack of restricted Boltzmann machines in which each layer communicates with its previous and subsequent layers, while the nodes of any single layer do not communicate with each other laterally. With the exception of the  first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes before, and as the input layer to the lower nodes after. It is a network of networks. </p>
 
 <p>Deep belief networks are used to recognize and generate images, video sequences and motion-capture data. </p>
 
-<h3>PARAMETERS  Please also see <a href="//multinetwork.html">the multi layer network parameters common to all multi layer networks</a></h3>
+<h3>parameters</h3>
 
-<h4>k - The number of times to run <a href="//glossary.html#contrastivedivergence">contrastive divergence</a>. Each time contrastive divergence is run, it is a sample of the markov chain</h4>
+<p>Please also see <a href="//multinetwork.html">the multilayer network parameters common to all multilayer networks</a></p>
+
+<h4>k</h4>
+
+<p>The number of times to run <a href="//glossary.html#contrastivedivergence">contrastive divergence</a>. Each time contrastive divergence is run, it is a sample of the Markov chain.</p>
 
 <p>composing the restricted boltzmann machine. A typical value of 1 is fine.</p>
 
-<h3>Initiating a deep-belief network</h3>
+<h3>initiating a deep-belief network</h3>
 
 <p>Setting up a single-thread deep belief network is easy. </p>
 
@@ -99,7 +109,7 @@
     </body>
     <div class="footer">
 
-             <div class="span8">
+             <div class="span12">
                             
             <div class="contact" style="text-align:right">
               <p>

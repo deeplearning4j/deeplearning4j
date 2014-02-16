@@ -1,5 +1,5 @@
 ---
-title: deeplearning4j
+title: 
 layout: default
 ---
 
@@ -7,7 +7,7 @@ layout: default
 
 
 
-Single Layer Neural Network
+single-layer neural network
 ======================================
 
 
