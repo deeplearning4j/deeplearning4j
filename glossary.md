@@ -19,3 +19,8 @@ Glossary
 
 ###<a name="reconstructionentropy"></a> Reconstruction Entropy: After applying gaussian noise (think white noise) to the data. This objective function punishes anything not closer to the original input. This allows a network to learn how to reconstruct the input and thus learning different features. 
 
+###<a name="etl"></a> ETL: Extract, transform, load: Data is loaded from disk in to memory with the proper transforms such as [binarization](#binarization) and [normalization](#normalization)
+
+###<a name="binarization"></a> Binarization: The process of transforming data in to a set of zeros and 1s. An example would be grayscaling an image by tranforming a picture from the 0-255 spectrum to a zero or 1 spectrum. 
+
+###<a name="normalization"></a> Normalization: The process of transforming the data in to a range of 0 to 1. 
