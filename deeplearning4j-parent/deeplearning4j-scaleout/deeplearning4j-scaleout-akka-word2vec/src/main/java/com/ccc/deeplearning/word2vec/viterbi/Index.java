@@ -1,10 +1,18 @@
 package com.ccc.deeplearning.word2vec.viterbi;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import com.ccc.deeplearning.nn.Persistable;
+import com.ccc.deeplearning.util.SerializationUtils;
 @SuppressWarnings({"rawtypes","unchecked"})
-public class Index implements Serializable {
+public class Index implements Serializable,Persistable {
 
 	/**
 	 * 
@@ -52,5 +60,27 @@ public class Index implements Serializable {
 		buff.append("]");
 		return buff.toString();
 
+	}
+
+	@Override
+	public void write(OutputStream os) {
+		try {
+			ObjectOutputStream os2 = new ObjectOutputStream(os);
+			os2.writeObject(this);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+	@Override
+	public void load(InputStream is) {
+		try {
+			Index i = (Index) new ObjectInputStream(is).readObject();
+			this.indexes = i.indexes;
+			this.objects = i.objects;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
