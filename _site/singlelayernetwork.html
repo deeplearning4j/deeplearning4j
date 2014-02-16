@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title margin-left="55px";>deeplearning4j</title>
+        <meta name="viewport" content="width=device-width">
+
+        <!-- syntax highlighting CSS -->
+  <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap-responsive.min.css">
+  <link rel="stylesheet" type="text/css" media="all" href="css/global.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script type="text/javascript" language="javascript" charset="utf-8" src="js/bootstrap.min.js"></script>
+
+    </head>
+
+    <body>
+
+        <div class="site">
+          <div class="header" style="margin-left:55px;">
+            <h1 class="title" ><a href="/">deeplearning4j</a></h1>
+            <a class="extra" href="/">home</a>
+            <a class="extra" style="margin-left:10px;" href="/">about</a>
+            <a class="extra" style="margin-left:10px;" href="/">contact</a>
+          </div>
+          <br /><br /><br />
+          <div class="span3">
+                <br />
+                <ul>
+                   <li>
+                    <ul>
+                    <li><a href="/restrictedboltzmannmachine.html">Single Network/Restricted Boltzmann Machine</a></li>
+                    <li><a href="/stackeddenoisingautoencoder.html">Single Network/Denoising Autoencoder</a></li>
+                    <li><a href="/multinetwork.html">Multinetwork/Deep Belief Network</a></li>
+                    <li><a href="/multinetwork.html">Multinetwork/Stacked Denoising Autoencoder</a></li>
+                    </ul></li>
+                    <li><a href="/word2vec.html">Word2vec</a></li>
+                    <li><a href="/examples.html">Motivating Examples</a></li>
+                </ul>
+                    </div>
+          <div class="span8">
+
+    <h1>deeplearning4j</h1>
+
+    <h1>Single Layer Neural Network</h1>
+
+<p>A single layer neural network with respect to deep learning is a neural network composed of an input (visible) layer and a hidden (output layer).</p>
+
+<p>The single layer network&#39;s goal, or <a href="../glossary.html#objectivefunction">objective function</a>, is to learn features by minimizing <a href="../glossary.html#reconstructionentropy">reconstruction entropy</a></p>
+
+<p>This allows it to auto learn features of the input which leads to finding good correlations and higher accuracy on finding discriminatory features. </p>
+
+<p>From there, a multi layer network leverages this to do accurate classification of data. This is called the pretraining step in the literature.</p>
+
+<p>Each Single Layer Network has the following attributes:</p>
+
+<p>Hidden bias: The bias for the output</p>
+
+<p>Visible Bias: The bias for the input.</p>
+
+<p>Weight Matrix: The weights for the machine.</p>
+
+<h3>Training a single layer network:</h3>
+
+<p>Train a network by clamping the input vector on to the input. Distort the input with some gaussian noise.</p>
+
+<p>Depending on the network, this noise function will be different. Then minimize reconstruction entropy</p>
+
+<p>to do pretraining until the network learns good features for reconstructing the input data.</p>
+
+<h2>PARAMETERS</h2>
+
+<h3>Learning Rate: Typical value is between 0.001 and 0.1. The learning rate, or step rate, is the rate</h3>
+
+<p>at which a function steps within a search space. Smaller learning rates mean higher training times,</p>
+
+<p>but may lead to more precise results.</p>
+
+<h3>Momentum: An extra factor in determining how fast an optimization algorithm converges.</h3>
+
+<h3>L2: L2 Regularization constant: This is the lambda discussed in the equation <a href="http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm">here</a></h3>
+
+<p>If you are curious about the internals of the dj4j implementation, please see <a href="../doc/com/ccc/deeplearning/nn/BaseNeuralNetwork.html">BaseNeuralNetwork</a></p>
+
+<p>Below are the different kinds of Single Layer Networks:</p>
+
+<p><a href="../restrictedboltzmannmachine.html">Restricted Boltzmann Machines</a>
+<a href="../continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann Machine</a>
+<a href="../denoisingautoencoder.html">Denoising AutoEncoder</a></p>
+
+
+<br /><br /><br />
+          </div> 
+          <br /><br /><br />
+          <div class="span2">
+                    </div>
+          
+        </div>
+
+    </body>
+    <div class="footer">
+
+             <div class="span8">
+                            
+            <div class="contact" style="text-align:right">
+              <p>
+                <a href="https://github.com/agibsonccc">github.com/agibsonccc</a><br />
+                <a href="https://twitter.com/dl4j1">twitter.com/dl4j1</a><br />
+                <a href=="mailto:0@blix.io">0@blix.io</a><br />
+              </p>
+            </div>
+            </div>
+           <div class="span2">
+                    </div>
+          </div>
+</html>
