@@ -3,7 +3,7 @@ title: deeplearning4j
 layout: default
 ---
 
-# MNIST
+# mnist
 
 The MNIST database is a large set of handwritten digits that are used to train neural networks and other algorithms in image recognition. MNIST has 60,000 images in its training set and 10,000 in its test set. 
 

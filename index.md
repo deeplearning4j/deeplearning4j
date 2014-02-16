@@ -1,9 +1,8 @@
 ---
-title: deeplearning4j
 layout: default
 ---
 
-# Overview 
+# neural nets overview 
 
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. Deep learning is a name for a certain type of stacked neural network composed of several node layers. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
@@ -18,13 +17,3 @@ In the process, these networks come to recognize correlations between certain re
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome. That is, given raw data, a deep-learning network might generate output indicating that the input data is 90 percent likely to represent a person. 
 
 The documentation below will show you how to set up, and train with sample data, several types of deep-learning networks, including single- and multithread versions of the networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
-
-* [Overview](../index.html)
-* [Single Layer Networks](../multilayer.html)
-    * [Single Network/Restricted Boltzmann Machine](../restrictedboltzmannmachine.html)
-    * [Single Network/Denoising Autoencoder](../denoisingautoencoder.html)
-* [Multi Layer Networks](../multinetwork.html)
-    * [Multinetwork/Deep Belief Network](../deepbeliefnetwork.html)
-    * [Multinetwork/Stacked Denoising Autoencoder](../stackedenoisingautoencoder.html)
-* [Word2vec](../word2vec.html)
-* [Motivating Examples](../examples.html)
