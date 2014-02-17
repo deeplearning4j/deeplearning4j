@@ -1,8 +1,0 @@
-54
-After an 18-month preview period, Google’s Compute Engine (GCE) is finally ready for prime time.
-On Monday, Google announced “general availability” for its cloud compute project, which now includes a service level agreement that guarantees it’ll be available 99.95 percent of the time. The American tech giant also introduced a few new GCE features, including 16-core instances and faster persistent disks, as well as price cuts for its standard instances and persistent disk storage. (If we’ve already lost you, think of cloud “instances” as virtual servers that can run applications.)
-Widespread commercial availability should reassure customers that Google won’t suddenly shutter Compute Engine as it did with Google Reader or Google Wave.
-“We’ve been working to improve the developer experience across our services to meet the standards our own engineers would expect here at Google,” said Google vice president Ari Balogh, who oversees the company’s data storage, network infrastructure, and cloud-computing efforts.
-Google has operated its App Engine platform-as-a-service since 2008, but it’s a latecomer to cloud infrastructure. It originally introduced Google Compute Engine in June 2012, long after Amazon released its Elastic Cloud Compute (EC2) service in August 2006. Amazon Web Services is the unquestioned leader in cloud computing in terms of overall market share, towering over competing vendors like Google, Microsoft (Azure), and IBM (SoftLayer).
-Current Google Compute Engine customers include Snapchat, Evite, and Wix. To learn more about the service and its official launch, check out the video below.
-Related articles

@@ -1,7 +1,0 @@
-On Nov. 5, BitTorrent Sync, the free “private cloud” solution to syncing files between your desktop, laptop, and mobile devices, hit one million users . Today, the company announced that it has hit two million users.
-And the company says it’s growing twice as fast as Dropbox.
-BitTorrent Sync is encrypted file-syncing that BitTorrent (the company) explicitly presents as a counter to the clear lack of data privacy we all now have thanks to the NSA, PRISM, FBI, and other government organizations and programs. It offers an API for developers who want to create apps that sync individual files, collections of files, or even a common datastore for use on multiple platforms. And it’s used much, much more than other file-sharing and cloud storage services.
-According to BitTorrent, the average user moves 20 GBs with BitTorrent Sync — over 40 times the data people store with Dropbox. That’s not surprising, of course, given that Dropbox offers a free account with just 2 GB of data storage, and its Pro and Business plans, which offer up to 1 TB of storage and transfer, are paid accounts.
-The company says it syncs faster than other tools, too.
-Sync, probably because it goes directly from device to device, operates at an average of 107.2 megabytes/second, the company says, when networks with appropriate speed are available. That compares to FileZilla at 86.5 megabytes/second, Dropbox at just 14.5 megabytes/second, and Skype at a miserable 9.4.
-BitTorrent Sync works for  Android and iOS  and has desktop versions for Windows, Mac, Linux, and FreeBSD.
