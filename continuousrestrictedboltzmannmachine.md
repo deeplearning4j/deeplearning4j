@@ -5,7 +5,7 @@ layout: default
 
 # continuous restricted boltzmann
 
-A continuous Restricted Boltzmann Machine is a form of RBM that accepts continuous input via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word count vectors that are normalized to probabilities.
+A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word count vectors that are normalized to probabilities.
 
 ### parameters 
 
@@ -15,7 +15,7 @@ Please also see [the single-layer network parameters common to all single-layer 
 
 K is number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
-Composing the restricted boltzmann machine. A typical value of 1 is fine.
+Composing the restricted Boltzmann machine. A typical value of 1 is fine.
 
 ### initiating a continuous restricted Boltzmann machine
 
