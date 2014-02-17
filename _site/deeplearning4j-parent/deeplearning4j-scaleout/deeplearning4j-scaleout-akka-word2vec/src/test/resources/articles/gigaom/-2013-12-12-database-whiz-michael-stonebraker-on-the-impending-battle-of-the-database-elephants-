@@ -1,8 +1,0 @@
-A
-Summary:
-There’s still a place for relational databases, it’s just that it’s is getting much smaller over time, and that’s a big problem for Oracle, IBM, and Microsoft. So is SAP’s HANA. Tune in this week’s Structure Show.
-If you’re a database geek, or are just interested in the field, you’ll want to listen up this week as Michael Stonebraker sounds off on the shrinking opportunities for legacy relational database vendors. Stonebraker, who helped create Ingres, Postgres, Vertica  is now founding CTO of VoltDB and an a djunct professor at MIT.
-The fact that the Obamacare web site launched on a NoSQL database (and that’s not a knock on that choice, he quickly added) shows that “mainstream systems are now being deployed on DBMS technology that’s other than the standard relational database stuff.”
-He’s also awaiting a battle royale shaping up between Oracle and SAP, which is now a database company. “Among the elephants there’s going to be a duke it out between Oracle and SAP and I’m delighted to look on from the side.”
-But first, Derrick Harris and I sum up a big week in the hotly contested file-sync-and-share world — Box launched a new enterprise push ; and there was apparently some money left over from big Box and Dropbox rounds because  Egnyte and ownCloud got funding.
-Also Facebook, the repository of all our personal data, hired a deep learning expert from NYU to make better use of all that stuff.
