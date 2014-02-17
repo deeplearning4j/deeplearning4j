@@ -1,0 +1,44 @@
+From: brinton@icd.teradyne.com (Chris Brinton)
+Subject: Re: Recommendations for a Local BUS (Cache
+Reply-To: brinton@icd.teradyne.com
+Organization: Teradyne, Inc. Boston MA
+Lines: 38
+
+In article 6819@sol.ctr.columbia.edu, penev@rockefeller.edu (Penio Penev) writes:
+>On 15 Apr 1993 20:14:20 GMT Divya Sundaram (sundaram@egr.msu.edu) wrote:
+>
+>| I would like to hear the net.wisdom and net.opinions on IDE Controllers.
+>| I would liek to get a IDE controller card for my VLB DX2 66 Motherboard.
+>| What are good options for this (preferably under $200). It MUST also work
+>| under OS/2 and be compatible with Stacker (and other Disk Compression S/W).
+>
+>I have a Maxtor 212MB on an ISA IDE controller, although my machine is
+>DX2/66 VLB. I has the save transfer rate of 0.647 MB/s regardless of
+>the variations of the ISA bus speed. I tested it with speed between
+>5.5MHz and 8.33MHz. Not _any_ difference. The problem is not the
+>interface between the controller and the memory.
+>
+>My advice: Buy 4Megs of RAM, save $70 and enjoy performance.
+>
+>--
+>Penio Penev  x7423 (212)327-7423 (w) Internet: penev@venezia.rockefeller.edu
+>
+>Disclaimer: All oppinions are mine.
+
+
+I also have a DX2/66 and a Maxtor 212. I have a local bus IDE controller (generic) and I get
+985 KB/s. I tried swapping my local bus IDE controller for an ISA IDE controller and my
+transfer rate went to 830 KB/s. The specs for this drive show a maximum platter to controller
+transfer rate of 2.83 MB/s. I dont know how to get there from here. The local bus interface
+got me a little, but certainly not as much as I had hoped. I am also looking for a way to 
+improve my disk performance, but Im not convinced that the controller is the bottleneck
+(although Im willing to entertain the possibility that it is). I am already running a big
+main memory disk cache, so Im not really interested in this solution either.
+
+---
+Chris Brinton
+Teradyne, Inc.
+brinton@icd.teradyne.com
+
+"My opinions are my own, but you're welcome to them."
+

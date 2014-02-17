@@ -1,0 +1,46 @@
+From: turpin@cs.utexas.edu (Russell Turpin)
+Subject: Re: Placebo effects
+Organization: CS Dept, University of Texas at Austin
+Lines: 39
+NNTP-Posting-Host: im4u.cs.utexas.edu
+Summary: Yes, researcher bias is a great problem.
+
+-*-----
+In article <735157066.AA00449@calcom.socal.com> Daniel.Prince@f129.n102.z1.calcom.socal.com (Daniel Prince) writes:
+> Is there an effect where the doctor believes so strongly in a 
+> medicine that he/she sees improvement where the is none or sees 
+> more improvement than there is?  If so, what is this effect 
+> called?  Is there a reverse of the above effect where the doctor 
+> doesn't believe in a medicine and then sees less improvement than 
+> there is?  What would this effect be called?  Have these effects 
+> ever been studied?  How common are these effects?  Thank you in 
+> advance for all replies. 
+
+These effects are a very real concern in conducting studies of new
+treatments.  Researchers try to limit this kind of effect by 
+performing studies that are "blind" in various ways.  Some of these
+are:
+
+  o  The subjects of the study do not know whether they receive a 
+     placebo or the test treatment, i.e., whether they are in the
+     control group or the test group.
+
+  o  Those administering the treatment do not know which subjects 
+     receive a placebo or the test treatment.
+
+  o  Those evaluating individual results do not know which subjects
+     receive a placebo or the test treatment.
+
+Obviously, at the point at which the data is analyzed, one has to 
+differentiate the test group from the control group.  But the analysis
+is quasi-public: the researcher describes it and presents the data on
+which it is based so that others can verify it.  
+
+It is worth noting that in biological studies where the subjects are
+animals, such as mice, there were many cases of skewed results because
+those who performed the study did not "blind" themselves.  It is not
+considered so important to make mice more ignorant than they already
+are, though it is important that in all respects except the one tested,
+the control and test groups are treated alike.
+
+Russell

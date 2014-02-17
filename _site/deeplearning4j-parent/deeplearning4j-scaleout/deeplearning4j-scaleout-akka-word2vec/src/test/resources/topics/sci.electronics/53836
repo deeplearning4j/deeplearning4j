@@ -1,0 +1,30 @@
+From: monta@image.mit.edu (Peter Monta)
+Subject: Re: MC SBI mixer
+In-Reply-To: musone@acsu.buffalo.edu's message of 19 Apr 93 21:10:14 GMT
+Organization: MIT Advanced Television Research Program
+Lines: 24
+
+musone@acsu.buffalo.edu (Mark J. Musone) writes:
+
+> P.S. any REALLY GOOD BOOKS on AM/FM theory ALONG WITH DETAILED
+> ELECTRICAL DIAGRAMS would help a lot.
+> I have seen a lot of theory books with no circuits and a lot of
+> circuit books with no theory, but one without the other does not help.
+
+Mixers have a wide variety of implementations; the Mini-Circuits
+part you mention is a doubly-balanced diode mixer, but active ones
+(BJT, FET) seem more popular in consumer receivers.  You might
+call MCL; they have a nice catalog.
+
+The universal answer for wide-coverage, theory+practice, RF design
+is the _ARRL Handbook_, published by the American Radio Relay
+League, the radio amateur organization.  Any technical bookstore
+can order you one.  The book is superb, with lots of accessible
+theory, construction projects, and generally interesting stuff.
+
+You might also check out _Solid State Design for the Radio Amateur_
+(I think), by Hayward and <someone>.  This has sharper design
+and test information about subsystems like mixers.
+
+Peter Monta   monta@image.mit.edu
+MIT Advanced Television Research Program

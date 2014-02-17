@@ -1,0 +1,44 @@
+From: bsardis@netcom.com (Barry Sardis)
+Subject: Re: Date is stuck
+Organization: NETCOM On-line Communication Services (408 241-9760 guest)
+Lines: 39
+
+jamesc@netcom.com (James Chuang) writes:
+
+
+>When you leave your radio on at night, it may not be doing anything useful.
+>But computers can do something useful even when YOU are not in front of it.
+>Just because MS-DOS and WINDOZE does not know how to schedule tasks does
+>not mean that all computers hould be shut down every night.
+
+>I bet starting up NT every morning means a good coffee break....  
+>jamesc
+
+
+>-- 
+>=========================================
+>If someone asks if you are a God, you say... YES!
+
+In addition to startup time, I leave things running because my PC doubles as 
+a fax machine. 
+
+However, this is off the original subject. I didn't get the replies on BIOS, 
+CMOS, and DOS clock/date logic. All I know is that I've been running this way 
+for many months and it is only recently, the last month, that I have noticed 
+the intermittent clock problem. As I stated, it is not always the date that 
+doesn't roll forward, sometimes I notice that the clock is several minutes 
+behind where it ought to be. 
+
+When unattended, the following are generally running minimized in Win 3.1:
+
+Clock, WinFax Pro 3.0, Print Manager, MS-Word 1.1, File Manager, Program 
+Manager
+
+A random screen saver is generally running too.
+
+
+-- 
+Barry Sardis		| Home:   (408) 448-1589
+1241 Laurie Avenue	| Office: (408) 448-7404
+San Jose, CA 95125	| Fax:    (408) 448-7404
+Email: bsardis@netcom.COM or 70105.1210@compuserve.COM

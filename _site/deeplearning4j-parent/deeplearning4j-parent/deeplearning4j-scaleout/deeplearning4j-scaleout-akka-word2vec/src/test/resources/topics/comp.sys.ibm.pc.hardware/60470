@@ -1,0 +1,28 @@
+From: storm@cs.mcgill.ca (Marc WANDSCHNEIDER)
+Subject: Re: Know anything about EISA-2?
+Nntp-Posting-Host: mnementh.cs.mcgill.ca
+Organization: SOCS, McGill University, Montreal, Canada
+Lines: 22
+
+In article <1qt5nk$8o6@agate.berkeley.edu> bing@zinc.cchem.berkeley.edu (Bing Ho) writes:
+>I read about the development of EISA-2 some time ago but dismissed it
+>in light of the intense interest in VESA and PCI.  However, I recently
+>was disheartened to hear that ISA cannot address more than 16mb of RAM,
+>a limit that too many of us will hit all too soon.
+>
+>I recall that EISA-2 will support 64-bit transfer among other enhancements.
+>Is there such a standard being developed?
+
+	Very possibly, but if it's still going to be backwards compatible
+with the ISA bus, it's going to be the same tripe that the current EISA
+implementation really is.
+
+	From what I've seen, the PCI bus will just be a new 32bit 33MHz
+intelligent bus (ie, bus controller takes care of interrupts and the like,
+not jumpers...)  Hopefully it'll get somewhere up there with the AMIGA 
+Zorro III bus....
+
+	VL Bus is a bit too much of a hack for my liking...
+
+	Toodlepip!
+	Marc 'em.

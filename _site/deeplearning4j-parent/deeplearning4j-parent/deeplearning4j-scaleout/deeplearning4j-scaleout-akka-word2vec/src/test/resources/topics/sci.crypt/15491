@@ -1,0 +1,112 @@
+From: ameline@vnet.IBM.COM (Ian Ameline)
+Subject: Facinating facts: 30 bit serial number, possibly fixed S1 and S2
+Organization: C-Set/2 Development, IBM Canada Lab.
+Disclaimer: This posting represents the poster's views, not those of IBM
+Lines: 106
+
+>Hmmm. We must assume that generating the unit key U from the serial
+>number N rather than generating it from a randomly selected U1 and U2
+>is an intentional way of assuring a "fail safe" for the government --
+>U is completedly determined given S1, S2 and N. If S1 and S2 do not
+>change they constitute effective "master keys" (along with F), the
+>theft of which (or the possession of which by various authorities)
+>completely obviates the security of the system. However, more
+>interestingly, we know, for a fact that if S1 and S2 are fixed no
+>matter what the keyspace for U is no more than 2^30. Why not pick U1
+>and U2 at random? Why this interesting restriction of they key space
+>if it NOT to provide an additional back door?
+>
+>I find it disturbing that at the very best my security is dependant on
+>approximately 30 bytes worth of information that could be written on
+>the back of a napkin.
+>
+>Even if S1 and S2 change periodically, the rationale behind this
+>restriction in the size of the keyspace seems strange if one is
+>assuming that the goal is security -- and makes perfect sense if the
+>goal is an illusion of security.
+>
+>If S1 and S2 do not change, even if they remain secret I wonder if
+>they can somehow be back-derived given enough unit key/serial number
+>pairs. We are assured that this cannot happen -- but no one
+>understands how Skipjack works outside of government officials and,
+>soon, foreign intelligence services that gain the information via
+>espionage. Presumably we will eventually have the information as well
+>-- reverse engineering gets more and more advanced every year -- but
+>by the time we know it may be too late.
+
+Perhaps the trusted escrow agencies can be the ones who come up with
+S1 and S2, and if these agencies are really trusted (ACLU & NRA is an
+interesting example), we can hope that they'll use some physical
+process to come up with truly random numbers. If the NSA comes up with
+the numbers, that's a trap door you could drive a truck through.
+
+>None of this makes me feel the least bit secure.
+
+Me either.
+
+   It seems from the following that the CPSR is atleats starting to
+question this bogosity:
+
+    ----------------------------------------------------------------
+April 16, 1993
+Washington, DC
+
+               COMPUTER PROFESSIONALS CALL FOR PUBLIC
+           DEBATE ON NEW GOVERNMENT ENCRYPTION INITIATIVE
+
+        Computer Professionals for Social Responsibility (CPSR)
+today called for the public disclosure of technical data
+underlying the government's newly-announced "Public Encryption
+Management" initiative.  The new cryptography scheme was
+announced today by the White House and the National Institute
+for Standards and Technology (NIST), which will implement the
+technical specifications of the plan.  A NIST spokesman
+acknowledged that the National Security Agency (NSA), the super-
+secret military intelligence agency, had actually developed the
+encryption technology around which the new initiative is built.
+
+        According to NIST, the technical specifications and the
+Presidential directive establishing the plan are classified.  To
+open the initiative to public review and debate, CPSR today
+filed a series of Freedom of Information Act (FOIA) requests
+with key agencies, including NSA, NIST, the National Security
+Council and the FBI for information relating to the encryption
+plan.  The CPSR requests are in keeping with the spirit of the
+Computer Security Act, which Congress passed in 1987 in order to
+open the development of non-military computer security standards
+to public scrutiny and to limit NSA's role in the creation of
+such standards.
+
+        CPSR previously has questioned the role of NSA in
+developing the so-called "digital signature standard" (DSS), a
+communications authentication technology that NIST proposed for
+government-wide use in 1991.  After CPSR sued NIST in a FOIA
+lawsuit last year, the civilian agency disclosed for the first
+time that NSA had, in fact, developed that security standard.
+NSA is due to file papers in federal court next week justifying
+the classification of records concerning its creation of the
+DSS.
+
+        David Sobel, CPSR Legal Counsel, called the
+administration's apparent commitment to the privacy of
+electronic communications, as reflected in today's official
+statement,  "a step in the right direction."  But he questioned
+the propriety of NSA's role in the process and the apparent
+secrecy that has thus far shielded the development process from
+public scrutiny.  "At a time when we are moving towards the
+development of a new information infrastructure, it is vital
+that standards designed to protect personal privacy be
+established openly and with full public participation.  It is
+not appropriate for NSA -- an agency with a long tradition of
+secrecy and opposition to effective civilian cryptography -- to
+play a leading role in the development process."
+
+        CPSR is a national public-interest alliance of computer
+industry professionals dedicated to examining the impact of
+technology on society.   CPSR has 21 chapters in the U.S. and
+maintains offices in Palo Alto, California, Cambridge,
+Massachusetts and Washington, DC.  For additional information on
+CPSR, call (415) 322-3778 or e-mail <cpsr@csli.stanford.edu>.
+      -----------------------------------------------
+Regards,
+Ian Ameline.

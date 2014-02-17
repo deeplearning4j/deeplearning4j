@@ -1,0 +1,46 @@
+From: rick@sundance.SJSU.EDU (Richard Warner)
+Subject: Re: ATM or Truetype-which to choose? (TT for True-Effects for windows)
+Organization: San Jose State University - Math/CS Dept.
+Lines: 41
+
+games@max.u.washington.edu writes:
+
+>In article <1993Apr3.174759.15377@seas.gwu.edu>, lai@seas.gwu.edu (William Y. Lai) writes:
+>> In article <1ov6rj$gev@gabriel.keele.ac.uk> csd25@keele.ac.uk (C.M. Yearsley) writes:
+>>>I've just bought a PC which came with a bundle of Lotus stuff, including
+>>>Adobe Type Manager version 1.15. As a newcomer to Windows, I'm
+>>>confused about which I should be using, ATM or Truetype. 
+>>>
+>> ...
+
+>There is a program called true-effects for windows, that allows you to define
+>attributes for true-type fonts, and have them look like new fonts.  It will
+>give your font different backgrounds, or shadows, or reverse, etc...
+
+>It ONLY works with TT fonts.
+
+Yes, and the idea was ripped off from Adobe, which has had a program
+called  TypeAlign for a few years now.  TypeAlign does the same thing
+for Adobe Type 1 fonts; *and* Adobe has said that the next version
+will work with both Adobe Type 1 and TrueType.
+
+And TypeAlign does some things that TrueEffects does not - including
+some things you apparently want ...
+
+>If you want to use it, you best not want to use it with an ATM type font.
+
+>(Oh, yeah... lest you think this is a really cool program, none of the 
+>effects are scalable  (like the brick background pattern is the same size
+>whether your font is 10 point of 100 point.), and it is not extensible,
+>I.E. you CAN NOT add pattern of your own.
+>And you can't rorate the background pattern...
+>And you can't make the pattern extend beyond one character
+>	(Every character in that new font has the entire pattern in it,
+>	As opposed to having the SAME pattern run contiguously through
+>	a couple of characters)
+
+>It is however cheap.
+>Maybe I will buy a copy when the next version comes out, if they fix some of
+>these gripes...
+
+>			John.

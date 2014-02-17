@@ -1,0 +1,22 @@
+From: dale@odetics.com (Dale Pischke)
+Subject: Re: More Diamond SS 24X
+Organization: Odetics, Inc., Anaheim, CA
+Lines: 17
+
+In article <1993Apr20.195853.16179@samba.oit.unc.edu> dil.admin@mhs.unc.edu (Dave Laudicina) writes:
+>Has anyone experienced a faint shadow at all resolutions using this
+>card. Is only in Windows. I have replaced card and am waiting on 
+>latest drivers. Also have experienced General Protection Fault Errors
+>in WSPDPSF.DRV on Winword Tools Option menu and in WINFAX setup.
+
+I had the exact same failure with the 24X and Word for Windows.
+A quick call to Microsoft indicated it was problem with the
+24X drivers. You need to call Diamond and get the new drivers,
+I think version 2.03 fixes the above problem, there may be later
+versions that I'm unaware of...
+
+ 
+-- 
+Dale R. Pischke           dale@odetics.com  or  uunet!odetics!dale
+Senior Software Engineer
+Odetics, Gyyr Division

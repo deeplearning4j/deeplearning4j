@@ -1,0 +1,31 @@
+From: galen@picea.CFNR.ColoState.EDU (Galen Watts)
+Subject: Re: Suggestions  on Audio relays ???
+Nntp-Posting-Host: storm.cfnr.colostate.edu
+Organization:  Colorado Concert Sound
+Lines: 25
+
+In article <1993Apr20.102756.1709@mala.bc.ca> wagner@mala.bc.ca (TOM WAGNER, Wizzard of old Audio/Visual Equipment........Nanaimo Campus) writes:
+>In article <C5r60r.4ID@megatest.com>, alung@megatest.com (Aaron Lung) writes:
+>> In article <C5qsBF.IEK@ms.uky.edu> billq@ms.uky.edu (Billy Quinn) writes:
+>>>I built a little project using the radio shack 5vdc relays to switch
+>>>audio.  I got pretty bad 'clicks' when the thing switched.  I was doing
+>>>My question is:
+>>>	Is there a good relay/relay circuit that I can use for switching
+>>>audio, so that there will be *NO* noise of any kind on the audio lines.
+>> 
+>> Are you switching high level signals or low level signals like pre-amp
+>A novel circuit I used to build was a primitive "optical isolator".. It consists
+>of a resistive photocell and a lamp, all packaged in a tube.  When the lamp is
+>off the cell is high resistance.  Turn the lamp on and the resistance lowers
+
+I use an H11F1   FET optoisolater to switch microphone level signals.
+There is no click, since I put a .1uF cap across the LED.  Distortion
+measurement are very low with mic level, and they went up to 0.03% at a
++ 14 dB line level.  All I did was put the FET in series with one leg
+of the balanced line.  No hums, pops, just audio jumping out of silence.
+The FET runs about 100 million ohms with the LED dark and drops to 150-200
+ohms with it on.
+
+Hey, it works, and works well.
+Galen Watts, KF0YJ
+

@@ -1,0 +1,29 @@
+From: timhu@ico.isc.com (Timothy Hu)
+Subject: Re: Hard disk question
+Organization: Interactive Systems Corp., Boulder CO
+Lines: 24
+
+In article <Aovai.0bp4@qube.OCUnix.On.Ca> Aovai@qube.OCUnix.On.Ca (Aovai) writes:
+>Hi,
+>
+>I just disassembled my old XT and get 2 disk drives - 30M hard drive and a 
+>360K floppy drive.  My questions are:
+>
+> -can I use these 2 drives as drives D & E on my 386SX25 ?  This 386SX25
+>  currently has 80M hard drive, 1.2M & 1.44M floppy drives.
+>
+> -if I can, what s/w or h/w do I need ?
+>
+
+I would doubt that you would be able to use the hard drive. XT drives
+usually came in MFM or RLL flavors. I bet your 386SX has IDE drives. The
+two are not compatible on the same controller. However, you might be
+able to use the drive *with its controller* in your 386SX. You should be
+able to plug your 360K drive into your existing 386SX controller (I
+think). You might have to use the floppy controller that was used in the
+XT.
+-- 
+Timothy Hu timhu@ico.isc.com     | The intelligence (or lack of) expressed
+Interactive Systems Corporation  | above does not necessarily reflect
+Resource Solutions International | that of anyone else.
+also:thu@grips0.uwyo.edu

@@ -1,0 +1,55 @@
+From: estaucl@csv.warwick.ac.uk (Mr I Coggins)
+Subject: Beyond 640K, Trident 8900, and lots more 8)
+Organization: Computing Services, University of Warwick, UK
+Lines: 48
+NNTP-Posting-Host: nutmeg.csv.warwick.ac.uk
+Keywords: Ram,Trident,Interrupts
+
+Hi,
+
+I have a few enquiries about PC's and compatibles in general.. Some software
+others hardware orientated.. (Probably the wrong newsgroup .... as everyone 
+claims..)
+
+Anyway..
+
+1) Does any one happen to have the board jumper details for a Trident 8900
+SVGA graphics card (1MB) or even what the dip switches do on the end.. Mine
+already works fine (albeit slow) and after having blown up a monitor I found 
+out which switch controlled the interlace/non interlace facility.. 
+
+But I'm curious as to why there are 8 dip switches on the card with apparantly
+little use..
+
+2) Secondly, does anyone know why Commodore had to be so crazed in their design
+of the PC-40 motherboard with respect to the RAM.. (IE 512 + 512 or 640 +0K) ??
+
+3) Can anyone supply pin details for the expansion ports for a pc (8 or 16 bit
+) .. or even a sample circuit to cause an irq when a button is pressed...
+(Yeah I know its a piece of cake.. I'm lazy 8)
+
+4) Software wise.. Anyone care to divulge some tips on accessing expanded RAM
+on a PC (from a program written in Turbo C++).... 
+
+For instance, using farcoreleft() and coreleft() return only memory available
+from the base 640K regardless of combinations of EMM386 etc etc...
+What I want is to be able to use the RAM above and beyond the 1MB boundary...
+
+I'm not certain whether farmalloc / new actually uses it anyway but I'll 
+suspect not .. 
+
+5) Also.. what half brained wit created DOS so as not to be re-entrant??????
+   As a follow on, does anyone have any comments about the use of DOS calls
+   0 to 0C from within a DOS interrupt? Ie will changing the stack size on
+   entry be of use.. Two articles I've read on the subject have given 
+   conflicting views... Does anyone have any views on writing direct to
+   screen memory in terms of portability?
+
+Many thanks..
+Gotta go, bars closing soon 8)
+Cheers
+Ian
+
+	
+
+

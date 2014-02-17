@@ -1,0 +1,48 @@
+From: Alexander Samuel McDiarmid <am2o+@andrew.cmu.edu>
+Subject: Re: Centris 610 Video Problem - I'm having it also!
+Organization: Sophomore, Mechanical Engineering, Carnegie Mellon, Pittsburgh, PA
+Lines: 40
+Distribution: comp
+NNTP-Posting-Host: po3.andrew.cmu.edu
+In-Reply-To: <PUSH.93Apr16221745@media-lab.media.mit.edu>
+
+From: push@media.mit.edu (Pushpinder Singh)
+Subject: re: Centris 610 Video Problem - I'm having it also!
+Date: Sat, 17 Apr 1993 03:17:45 GMT
+ 
+> When the computer is set for 256 colors and certain operations are done,
+> particularly vertical scrolling through a window, horizontal white lines
+> appear on the monitor (which generally but not always spare open
+> windows).  These lines accummulate as the operation is continued.  If a
+> window is moved over the involved area of the screen and then moved away
+> the line disappear from that area of the screen.  This problem is not
+> observed if the monitor is configured for 16 colors or a 14 inch Apple
+> monitor with 256 colors is used. 
+> 
+> I suspect a bad video RAM chip but cannot be certain.  The problem has
+> been apparent since day 1 but has gotten worse.
+ 
+I'm having exactly the same problem.  Again, it's fine when I switch to 16
+colors or a smaller monitor.  My configuration is:
+ 
+Model: Centris 610 with 4 MB/80 HD, 512 VRAM, no cards
+Monitor: MAG MX15F with 16" monitor adaptor (for resolution of 832*624)
+ 
+I just discovered the problem a little while ago after plugging in my
+new MAG monitor.  It seems to appear either when scrolling through a
+window or when using Alpha or Word and I enter <return>.
+ 
+My guess is bad VRAMs as well.  I really hope it isn't a design flaw.  Is
+anyone at Apple listening?
+ 
+Pushpinder Singh
+push@media.mit.edu
+ 
+***********************************
+
+    Try finding an init called Basic color monitor.  This should clear
+up some probs with Centris 610's and vga type monitors.  I know it
+exists, somewhere I have a binhexed copy, but I don't know where and
+never got around to installing it.  I have this problem on my sony 1604.
+
+                                                                    -A.

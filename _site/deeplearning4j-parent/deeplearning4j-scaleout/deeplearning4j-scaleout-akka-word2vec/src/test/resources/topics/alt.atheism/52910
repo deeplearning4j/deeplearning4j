@@ -1,0 +1,155 @@
+From: mathew <mathew@mantis.co.uk>
+Subject: Alt.Atheism FAQ: Overview for New Readers
+Summary: Hi.  Please read this before you post.
+Keywords: FAQ, atheism
+Expires: Thu, 20 May 1993 10:52:53 GMT
+Distribution: world
+Organization: Mantis Consultants, Cambridge. UK.
+Supersedes: <19930413094109@mantis.co.uk>
+Lines: 145
+
+Archive-name: atheism/overview
+Alt-atheism-archive-name: overview
+Last-modified: 5 April 1993
+Version: 1.2
+
+                                   Overview
+
+Welcome to alt.atheism and alt.atheism.moderated.
+
+This is the first in a series of regular postings aimed at new readers of the
+newsgroups.
+
+Many groups of a 'controversial' nature have noticed that new readers often
+come up with the same questions, mis-statements or misconceptions and post
+them to the net.  In addition, people often request information which has
+been posted time and time again.  In order to try and cut down on this, the
+alt.atheism groups have a series of five regular postings under the following
+titles:
+
+   1.  Alt.Atheism FAQ: Overview for New Readers
+   2.  Alt.Atheism FAQ: Introduction to Atheism
+   3.  Alt.Atheism FAQ: Frequently Asked Questions (FAQ)
+   4.  Alt.Atheism FAQ: Constructing a Logical Argument
+   5.  Alt.Atheism FAQ: Atheist Resources
+
+This is article number 1.  Please read numbers 2 and 3 before posting.  The
+others are entirely optional.
+
+If you are new to Usenet, you may also find it helpful to read the newsgroup
+news.announce.newusers.  The articles titled "A Primer on How to Work With
+the Usenet Community", "Answers to Frequently Asked Questions about Usenet"
+and "Hints on writing style for Usenet" are particularly relevant.  Questions
+concerning how news works are best asked in news.newusers.questions.
+
+If you are unable to find any of the articles listed above, see the "Finding
+Stuff" section below.
+
+
+                                   Credits
+
+These files could not have been written without the assistance of the many
+readers of alt.atheism and alt.atheism.moderated.  In particular, I'd like to
+thank the following people:
+
+kck+@cs.cmu.edu (Karl Kluge)
+perry@dsinc.com (Jim Perry)
+NETOPRWA@ncsuvm.cc.ncsu.edu (Wayne Aiken)
+chpetk@gdr.bath.ac.uk (Toby Kelsey)
+jkp@cs.HUT.FI (Jyrki Kuoppala)
+geoff.arnold@East.Sun.COM (Geoff Arnold)
+torkel@sics.se (Torkel Franzen)
+kmldorf@utdallas.edu (George Kimeldorf)
+roe2@quads.uchicago.edu (Greg Roelofs)
+arromdee@jyusenkyou.cs.jhu.edu (Ken Arromdee)
+madhaus@netcom.com (Maddi Hausmann)
+J5J@psuvm.psu.edu (John A. Johnson)
+dgraham@bmers30.bnr.ca (Douglas Graham)
+mayne@open.cs.fsu.edu (William Mayne)
+ajr@bigbird.hri.com (Andy Rosen)
+stoesser@ira.uka.de (Achim Stoesser)
+bosullvn@unix1.tcd.ie (Bryan O'Sullivan)
+lippard@ccit.arizona.edu (James J. Lippard)
+s1b3832@rigel.tamu.edu (S. Baum)
+ydobyns@phoenix.princeton.edu (York H. Dobyns)
+schroede@sdsc.edu (Wayne Schroeder)
+baldwin@csservera.usna.navy.mil (J.D. Baldwin)
+D_NIBBY@unhh.unh.edu (Dana Nibby)
+dempsey@Kodak.COM (Richard C. Dempsey)
+jmunch@hertz,elee.calpoly.edu (John David Munch)
+pdc@dcs.ed.ac.uk (Paul Crowley)
+rz@mips.complang.tuwien.ac.at (Richard Zach)
+tycchow@math.mit.edu (Tim Chow)
+simon@dcs.warwick.ac.uk (Simon Clippingdale)
+
+...and countless others I've forgotten.
+
+These articles are free.  Truly free.  You may copy them and distribute them
+to anyone you wish.  However, please send any changes or corrections to the
+author, and please do not re-post copies of the articles to alt.atheism; it
+does nobody any good to have multiple versions of the same document floating
+around the network.
+
+
+                                Finding Stuff
+
+All of the FAQ files *should* be somewhere on your news system.  Here are
+some suggestions on what to do if you can't find them:
+
+1. Check the newsgroup alt.atheism.  Look for subject lines starting with
+   "Alt.Atheism FAQ:".
+
+2. Check the newsgroup news.answers for the same subject lines.
+
+   If you don't find anything in steps 1 or 2, your news system isn't set up
+   correctly, and you may wish to tell your system administrator about the
+   problem.
+
+3. If you have anonymous FTP access, connect to rtfm.mit.edu [18.172.1.27].
+   Go to the directory /pub/usenet/alt.atheism, and you'll find the latest
+   versions of the FAQ files there.
+
+   FTP is a a way of copying files between networked computers.  If you
+   need help in using or getting started with FTP, send e-mail to
+   mail-server@rtfm.mit.edu with
+
+      send usenet/news.answers/ftp-list/faq
+
+   in the body.
+
+4. There are other sites which also carry news.answers postings.  The article
+   "Introduction to the news.answers newsgroup" carries a list of these
+   sites; the article is posted regularly to news.answers.
+
+5. If you don't have FTP, send mail to mail-server@rtfm.mit.edu
+   consisting of the following lines:
+
+      send usenet/news.answers/finding-sources
+      send usenet/alt.atheism/faq
+      send usenet/alt.atheism/introduction
+      send usenet/alt.atheism/logic
+      send usenet/alt.atheism/resources
+
+5. (Penultimate resort)  Send mail to mail-server@mantis.co.uk consisting of
+   the following lines:
+
+      send atheism/faq/faq.txt
+      send atheism/faq/logic.txt
+      send atheism/faq/intro.txt
+      send atheism/faq/resource.txt
+
+   and our poor overworked modems will try and send you a copy of the files.
+   There's other stuff, too; interesting commands to try are "help" and
+   "send atheism/index".
+
+6. (Last resort)  Mail mathew@mantis.co.uk, or post an article to the
+   newsgroup asking how you can get the FAQ files.  You should only do this
+   if you've tried the above methods and they've failed; it's not nice to
+   clutter the newsgroup or people's mailboxes with requests for files.
+   it's better than posting without reading the FAQ, though!  For instance,
+   people whose email addresses get mangled in transit and who don't have 
+   FTP will probably need assistance obtaining the FAQ files.
+
+
+mathew
+ÿ

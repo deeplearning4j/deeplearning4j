@@ -1,0 +1,54 @@
+From: randyd@csd4.csd.uwm.edu (Randall Elton Ding)
+Subject: Re: ADCOM GTP500II IR sensor & repeater spec's?
+Organization: Computing Services Division, University of Wisconsin - Milwaukee
+Lines: 48
+NNTP-Posting-Host: 129.89.7.4
+
+In article <1r1996INNijp@hp-col.col.hp.com> johnr@col.hp.com (John T. Rasper) writes:
+>Does anyone know the details of the interface (5 wire din) for the
+>IR remote sensor & (2 wire IR repeater) for the ADCOM GTP-500II
+>preamp?  The ADCOM part numbers are the XR-500II, SPM-500II, and 
+>IRA-500II.
+>
+>A cursory physical examination of the pre-amp connector indicates
+>that the connector (5 pin din) may provide: (Viewed from connector front)
+>
+>      |
+>   5     1     (pin ?) +?v @ ???mA
+>    4   2      (pin ?) +/-?v @ ???mA
+>      3        (pin 3) Signal Ground
+>               (pin ?) Demodulated signal ?V-pp, ? polarity, ? mA drive
+>               (pin ?) Signal to drive repeater LED (drives through 150ohm
+>                       resistor) ?V-pp
+>
+>I assume that the repeater connectors (mini-plugs) drive the IR repeater
+>LED's directly.  True?
+>
+>Can anyone fill in the ?'s.  Thanks.
+>
+
+Here's the scoop.  When you get your home brew receiver working, would
+you be willing to share it with the rest of us?  I always wanted to
+build my own but never have the time to fool around and design it.
+
+pin 1:  signal ground
+pin 2:  signal
+pin 3:  always hot +6 volts
+pin 4:  +6 volts, hot only when preamp is turned on
+pin 5:  infrared repeater connectors
+
+The infrared repeater jacks on the back of the preamp are not connected
+to anything inside the preamp except the 5 pin connector pin #5.  There
+is a 150 ohm resistor between the two jacks, with a 1.5K from pin 5 to
+ground.
+
+The signal pin #2 in the preamp is summed with the built in IR receiver.
+They use a chip called CX20106A and a BJT to amplify the signal.  I would
+imagine the logical way would be to duplicate this circuit and use
+it as the external receiver.
+
+If you need more info, let me know.
+
+Randy      randyd@csd4.csd.uwm.edu
+
+

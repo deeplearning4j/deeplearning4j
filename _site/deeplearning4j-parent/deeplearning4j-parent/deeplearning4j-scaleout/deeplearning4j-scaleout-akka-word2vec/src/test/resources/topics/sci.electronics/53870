@@ -1,0 +1,35 @@
+From: umlangston@msuvx1.memst.edu (Mark C. Langston)
+Subject: _negative_ logic high?
+Summary: help!!!
+Distribution: world
+Organization: Memphis State University
+Lines: 28
+
+  This may sound like a simple-minded question, but this is the first time
+I've ever had a need for this:
+
+I've been designing some relatively simple chip circuits based on things
+like photoresistors (you know, no light to photoresistor, emit a logic
+high, etc.).
+
+Anyway, I've got some servos lying around, and I wanted to do some things
+with them using digital logic.  I know all about having to pulse the signal
+and everything, I just have one problem:  I'm assuming I need a negative
+(yes, negative) logic high to get the thing to turn in the direction 
+opposite the direction it would turn under normal logic high.
+
+Is a negative logic high (I've seen this in schematics) the same thing as
+an active low, or what?  I'm not using a bi-polar power source, so how
+would I get a negative logic high out of this thing?  I need to have all
+three signals available:  Logic high, logic low, and negative logic high.
+
+Any help would be greatly appreciated.  Also, please reply via email, as I
+never seem to have time to read this (or any other) group lately.
+
+Thanks much,
+-mark
+
+umlangston@memstvx1.memst.edu
+
+
+

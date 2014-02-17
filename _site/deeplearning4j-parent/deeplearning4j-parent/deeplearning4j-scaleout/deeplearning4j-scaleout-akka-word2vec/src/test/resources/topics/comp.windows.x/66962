@@ -1,0 +1,25 @@
+From: srivasta@pilgrim.umass.edu (Manoj Srivastava)
+Subject: [REQUEST] Need tvtwm sources with mods from R. J. Caley
+Organization: Project Pilgrim, University of Massachusetts at Amherst
+Lines: 17
+Distribution: world
+Reply-To: srivasta@pilgrim.umass.edu
+NNTP-Posting-Host: mecca.pilgrim.umass.edu
+
+
+Hello, 
+
+	way back in the mists of time, I had a set of patches written
+by Richard Caley (I believe to the standars distribution, patch level
+6) which added regular expressions in the .tvtwmrc file, multiple icon
+regions, squeezable icons, and f.deleteordestroy function. I still
+have the patches, however, I can no longer find the sources to which
+they applied ;-). 
+
+	I'd appreciate if some kind soul could send me a pointer to
+where I could find the sources. Has anyone updated the patches for R5?
+(Richard? are you out there? pretty please?)
+
+	Thanks in advance.
+
+		manoj

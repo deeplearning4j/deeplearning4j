@@ -1,0 +1,48 @@
+From: hal@cco.caltech.edu (Hal Finney)
+Subject: Re: How does it really work? (was Re: text of White House announcement and Q&As on clipper chip encryption)
+Organization: California Institute of Technology, Pasadena
+Lines: 41
+Distribution: na
+NNTP-Posting-Host: alumni.caltech.edu
+
+Marc VanHeyningen <mvanheyn@cs.indiana.edu> writes:
+
+>The main thing I just don't get is whether this chip implements
+>symmetric or asymmetric cryptographic techniques.  Anybody know?
+
+I don't know, but I'm as willing to speculate as anyone.
+
+Several people have suggested that the chips use public-key cryptography.
+Another possibility is to use Diffie-Hellman key exchange, or some other
+algorithm which has a similar effect.  DH allows both ends to agree on
+a session key which they use with symmetric cryptography (something
+like DES) for the encryption.
+
+How could the "back door" keys work in this system?  I can see a few
+possibilities.  One is that the DH-like algorithm has the property that
+the session key can be deduced by an eavesdropper who knows the back door
+keys for one (or possibly both) communicants.  Perhaps the random numbers
+used in the DH are seeded by the back door key, or some such.
+
+Another possibility, as was suggested here earlier, is that the chips
+simply broadcast the session key, encrypted with the chip's own
+internal secret key.  In this system the back door keys are secret keys
+usable for decrypting this session key broadcast.  Actually the chip's
+secret key doesn't need to be a public key in this usage, but can be
+identical to the secret back-door key.  (This proposal seems most
+straightforward to me.)
+
+Still another possibility is that the encryption algorithm used for the
+message itself has a "dual key" property, that possession of either of
+two keys can be used to decrypt it.  One key would be the session key from
+the DH exchange, and the other would be the back door key for the chip.
+
+It's worth noting that one of the proposals Dorothy Denning raised
+during her amazingly prescient on-line discussion last November and
+December was a variation on Diffie-Hellman in which a third party would
+participate in deriving the session keys.  This doesn't quite fit into
+what we know of how Clipper works but it hints that those who had early
+knowledge of Clipper (or whose thinking was somehow synchronized with
+Clipper designers) may have had Diffie-Hellman on their minds.
+
+Hal Finney

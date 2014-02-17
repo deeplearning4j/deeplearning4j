@@ -1,0 +1,47 @@
+From: dtodd@titan.ucs.umass.edu (David M. Todd)
+Subject: What video board for my system?
+Organization: University of Massachusetts, Amherst
+Lines: 40
+Reply-To: David.Todd@Psych.UMass.EDU
+NNTP-Posting-Host: titan.ucs.umass.edu
+
+I'd appreciate any advice about a video card for my system:
+
+486-33 DX, 16 mb of ram
+on a Novell 3.11 network
+Monitor:  NEC 4FGe, capable of 76 Hz vertical refresh rate
+
+Major considerations:
+
+I expect I will work mostly in windows, but with some DOS
+applications and I would want decent speed in DOS.  I do mostly word
+processing, database and communications--not much intensive graphics.
+
+With a 15" monitor, I expect I will work mostly in 800X600 and 256
+colors seems plenty, but I'd like like the image to be sharp, fast,
+and rock solid.
+
+Other considerations:
+
+I sometimes run a Unix clone (Coherent) and I understand that some
+companies (e.g. Diamond?) don't encourage the third-party
+development of drivers.
+
+I might move to OS/2 if I decide I need better speed and reliability
+than I get with Windows for my database work and multitasking.
+
+I don't have a local bus motherboard--I'm not sure how much to invest
+in an ISA video board (versus getting something less expensive now and
+upgrading to local bus later).
+
+I like buying things from companies that treat their customers well.
+
+If you have any advice for me, I'd love to hear it via email or post.
+
+Thanks.
+
+
+|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ David M. Todd ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+|Department of Psychology, University of Massachusetts, Amherst, MA 01003 USA|
+|Phone: 413/545-0158 ___ <David.Todd@Psych.UMass.EDU> ____  Fax: 413/545-0996|
+

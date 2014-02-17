@@ -1,0 +1,28 @@
+From: ccraig@nmt.edu (Catherine Craig)
+Subject: Re: Trying to view POV files.....
+Organization: New Mexico Tech
+Lines: 23
+
+In article <1993Apr11.132604.13400@ornl.gov> ednobles@sacam.OREN.ORTN.EDU (Edward d Nobles) writes:
+>
+>I've been trying to view .tga files created in POVRAY.  I have the Diamond
+>SpeedStar 24 Video board (not the _24X_).  So far I can convert them to
+>jpeg using cjpeg and view them with CVIEW but that only displays 8 bit color.
+>
+>I'm looking for some way to convert and/or view them in 24 bit.
+>
+>
+>Just want to see the darn things in real color...
+>
+>Thanks,
+>
+>Jim Nobles
+>
+
+The best program I've seen for viewing such files is VPIC.  You'll want version 5.9 or later.  (6.0x is current.)  It allows you to view in 15 and 24 bit modes.  It really is QUITE nice.
+
+Now, for a return question:  Do you run Windows?  If so, what are the dates on your drivers?  The newest ones *I* can find are from around 4-??-92!!  My problem is they conflict with Star Trek: After Dark, and other things as well.  I'm willing to bet that it's the drivers, and NOT the programs.  Anyone out there have info on newer SS24 (NOT X) drivers for windows or OS/2?
+
+Thanks,
+	Justin
+

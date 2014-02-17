@@ -1,0 +1,1555 @@
+From: jeh@cmkrnl.com
+Subject: Electrical wiring FAQ (was: A question about 120VAC outlet wiring..
+Reply-To: wirefaq@ferret.ocunix.on.ca
+Keywords: 120 240 AC outlets wiring power shock gfci
+Expires: 15 May 93 21:35:16 PDT
+Distribution: world
+Organization: Kernel Mode Systems, San Diego, CA
+Lines: 1547
+
+Since electrical wiring questions do turn up from time to time on
+sci.electronics (and the answers aren't always apparent, even to those skilled
+in electronics), I am hijacking the following FAQ and posting a copy here. 
+I've asked the writers to cross-post to sci.electronics in the future. 
+
+	--- jeh@cmkrnl.com
+
+
+X-NEWS: cmkrnl news.answers: 6685
+Newsgroups: misc.consumers.house,rec.woodworking,news.answers,misc.answers,rec.answers
+Subject: Electrical Wiring FAQ
+Message-ID: <wirefaq_733900891@ecicrl>
+From: clewis@ferret.ocunix.on.ca (Chris Lewis)
+Date: 4 Apr 93 05:21:49 GMT
+Reply-To: wirefaq@ferret.ocunix.on.ca (Wiring FAQ commentary reception)
+Followup-To: poster
+Expires: 2 May 93 05:21:31 GMT
+Organization: Elegant Communications Inc., Ottawa, Canada
+Summary: A series of questions and answers about house wiring
+Supersedes: <wirefaq_732691289@ecicrl>
+Lines: 1524
+
+Archive-name: electrical-wiring
+Last-modified: Sun Feb 21 16:56:10 EST 1993
+
+	    Frequently Asked Questions on Electrical Wiring
+
+		Steven Bellovin (smb@ulysses.att.com)
+		Chris Lewis (clewis@ferret.ocunix.on.ca)
+
+	    Comments to (automatic if you reply to this article):
+		    wirefaq@ferret.ocunix.on.ca
+
+This FAQ is formatted as a digest.  Most news readers can
+skip from one question to the next by pressing ^G.
+
+Answers to many other topics related to houses can be obtained from
+the misc.consumers.house archive; send an empty piece of mail to
+house-archive@dg-rtp.dg.com for information.
+
+Changes to previous issue marked with "|" in left column.  Watch
+particularly for "NEW" in the Questions list for new or substantively
+changed answers.
+
+Note that this is now a registered FAQ - cross-posted to news.answers
+and should appear in the FAQ list of lists.
+
+Subject: Questions answered in this FAQ
+
+	Introduction/Disclaimers
+	What is the NEC?  Where can I get a copy?
+	What is the CEC?  Where can I get a copy?
+	Can I do my own wiring?  Extra pointers?
+	What do I need in the way of tools?
+	What is UL listing?
+	What is CSA approval?
+	Are there any cheaper, easier to read books on wiring?
+	Inspections how and what?  Why should I get my wiring inspected?
+	My house doesn't meet some of these rules and regulations.
+	A word on voltages: 110/115/117/120/125/220/240
+	What does an electrical service look like?
+	What is a circuit?
+	"grounding" versus "grounded" versus "neutral".
+	What does a fuse or breaker do?  What are the differences?
+	Breakers?  Can't I use fuses?
+	What size wire should I use?
+	Where do these numbers come from?
+	What does "14-2" mean?
+	What is a "wirenut"/"marrette"/"marr connector".  How are they used?
+	What is a GFI/GFCI?
+	Where should GFCIs be used?
+	Where shouldn't I use a GFCI?
+	What is the difference between a GFCI outlet and a GFCI breaker?
+	What's the purpose of the ground prong on an outlet, then?
+	Why is one prong wider than the other?  Polarization
+	What kind of outlets do I need in a kitchen?
+	Where must outlets and switches be in bathrooms?
+	What is Romex/NM/NMD?  What is BX?  When should I use each?
+	Should I use plastic or metal boxes?
+	Junction box positioning?
+	Can I install a replacement fixture?
+	What does it mean when the lights brighten when a motor starts?
+	What is 3 phase power?  Should I use it?  Can I get it in my house?
+	Is it better to run motors at 110 or 220?
+	What is this nonsense about 3HP on 110V 15A circuits?
+	How do I convert two prong receptacles to three prong?
+	Are you sure about GFCIs and ungrounded outlets?
+	    Should the test button work?
+	How should I wire my shop?
+	Underground wiring
+	Aluminum wiring
+	I'm buying a house!  What should I do?
+	What is this weird stuff?  Old style wiring
+	Where do I buy stuff?
+
+
+Subject: Introduction/Disclaimers
+
+	Although we've done a fair bit of wiring, we are not
+	electricians, and we cannot be responsible for what you do.  If
+	you're at all uncertain about what is correct or safe, *don't
+	do it*.  Contact someone qualified -- a licensed electrician,
+	or your local electrical inspector.  Electricity is no joke;
+	mistakes can result in shocks, fires, or electrocution.
+
+	Furthermore, our discussion is based on the U.S. National
+	Electrical Code (NEC) and the Canadian Electrical code (CEC).
+	To the best of our abilities, we have confirmed every detail
+	with the electrical code, but we don't quote sections
+	simply to keep this thing readable.  If you think we're wrong,
+	we invite you to correct us, but please - quote references!
+
+	The NEC and the CEC do not, in and of themselves, have the
+	force of law.  Many municipalities adopt it en toto.  Others,
+	however, do not.  Check your with your local building
+	department (and <provincial> Hydro Inspection Offices in
+	Canada) to find out what applies in your area.  Also,
+	your local electrical utility may also have special requirements
+	for electrical service installation.  Bear in mind, too, that
+	we say here applies primarily to ordinary single-family
+	residences.  Multi-family dwellings, mobile homes, commercial
+	establishments, etc., are sometimes governed by different
+	rules.
+
+	Also note that, contrary to popular belief in the U.S. (and in
+	some parts of Canada), Canada is not a wholly-owned subsidiary
+	of the U.S.  Consequently, the NEC does not apply in Canada.
+	Lots of things are the same, including voltages, line
+	frequencies, and the laws of physics.  But there are a number
+	of crucial differences in the regulations.  Where we can, we've
+	noted them, flagging the relevant passages with ``NEC'' or
+	``CEC''.
+
+	Remember that the CEC and NEC are minimal standards.  It is often
+	smart to go beyond their minimal requirements.
+
+Subject: What is the NEC?  Where can I get a copy?
+
+	The NEC is a model electrical code devised and published by the
+	National Fire Protection Association, an insurance industry group.
+	It's revised every three years.  The 1993 version has been released.
+	You can buy a copy at a decent bookstore, or by calling them directly
+	at 800-344-3555.  The code exists in several versions.  There's the
+	full text, which is fairly incomprehensible.  There's an abridged
+	edition, which has only the sections likely to apply to most houses.
+	And there's the NEC Handbook, which contains the ``authorized
+	commentary'' on the code, as well as the full text.  That's the
+	recommended version.  Unfortunately, there's no handbook for
+	the abridged edition.  And the full handbook is expensive --
+	US$65 plus shipping and handling.
+
+Subject: What is the CEC?  Where can I get a copy?
+
+	The Canadian Standards Association is an organization made up
+	of various government agencies, power utilities, insurance
+	companies, electrical manufacturers and other organizations.
+	The CSA publishes CSA Standard C22.1 which is updated every two
+	or three years.  Each province adopts, with some amendments,
+	this standard and publishes a province-specific code book.
+	Since each province publishes its own slightly modified
+	standard, it would be somewhat confusing to obtain the CSA
+	standard itself.  In this FAQ, "CEC" really means the
+	appropriate provincial standard.  In particular, this FAQ is
+	derived from the Ontario Hydro Electrical Safety Code, 20th
+	edition (1990).  Which is in turn based on CSA C22.1-1990 (16th
+	edition).  While differences exist between the provinces, an
+	attempt has been made to avoid specific-to-Ontario detail.
+
+	The appropriate provincial code can be obtained from electrical
+	inspection offices of your provincial power authority.  In
+	Ontario, it's Ontario Hydro.  The Ontario Hydro book isn't
+	overly fat.  It's about C$25, and includes mailed updates.  I
+	hear that these standards are somewhat easier to read than the
+	equivalent NEC publications.
+
+	Don't bother asking in Quebec - DIY wiring is banned throughout
+	the province.
+
+Subject: Can I do my own wiring?  Extra pointers?
+
+	In most places, homeowners are allowed to do their own wiring.
+	In some, they're not.  Check with your local electrical
+	inspector.  Most places won't permit you to do wiring on other's
+	homes for money without a license.  Nor are you permitted to do
+	wiring in "commercial" buildings.  Multiple dwellings (eg: duplexes)
+	are usually considered "semi-commercial" or "commercial".  However,
+	many jurisdictions will permit you to work on semi-commercial
+	wiring if you're supervised by a licensed electrician - if you can
+	find one willing to supervise.
+
+	If you do your own wiring, an important point:
+
+	Do it NEAT and WELL!  What you really want to aim for is a better
+	job than an electrician will do.  After all, it's your own home,
+	and it's you or your family that might get killed if you make
+	a mistake.  An electrician has time pressures, has the skills
+	and knows the tricks of the trade to do a fast, safe job.
+	In this FAQ we've consciously given a few recommendations that
+	are in excess of code, because we feel that it's reasonable,
+	and will impress the inspector.
+
+	The inspector will know that you're an amateur.  You have to
+	earn his trust.  The best way of doing this is to spend your
+	time doing as neat a job as possible.  Don't cut corners.
+	Exceed specifications.  Otherwise, the inspector may get extremely
+	picky and fault you on the slightest transgressions.
+
+	Don't try to hide anything from the inspector.
+
+	Use the proper tools.  Ie: don't use a bread knife to strip
+	wires, or twist wires with your fingers.  The inspector
+	won't like it, and the results won't be that safe.  And it
+	takes longer.  And you're more likely to stick a hunk of
+	12ga wire through your hand that way.
+
+	Don't handle house wire when it's very cold (eg: below -10C
+	or 16F).  Thermoplastic house wire, particularly older types
+	become very brittle.
+
+Subject: What do I need in the way of tools?
+
+	First, there's the obvious -- a hammer, a drill, a few
+	screwdrivers, both straight and Phillips-head.  If you're 
+	lucky enough to live in Canada (or find a source of CSA-approved
+	devices) you need Robertson ("square recess") screwdrivers
+	(#1 and #2) instead of phillips.
+
+	For drilling a few holes, a 3/4" or 1" spade bit and 1/4" or
+	3/8" electric drill will do.  If you're doing a lot, or
+	are working with elderly lumber, we recommend a 1/2" drill
+	(right-angle drills are wonderful.  Can be rented) and
+	3/4" or 1" screw-point auger drill bits.  These bits pull
+	you through, so they're much faster and less fatiguing, even
+	in 90 year old hardwood timbers.
+
+	Screw-driver bits are useful for drills, expecially if you
+	install your electrical boxes using screws (drywall screws
+	work well).
+	
+	For stripping wire, use a real wire stripper, not a knife or
+	ordinary wire cutters.  Don't buy the $3 K-mart "combo stripper,
+	crimper and bottle opener" types.  You should expect to pay
+	$15 to $20 for a good "plier-type" pair.  It will have sized
+	stripping holes, and won't nick or grab the wire - it should
+	be easy to strip wire with it.  One model has a small hole in the
+	blade for forming exact wire loops for screw terminals.  There
+	are fancier types (autostrip/cut), but they generally aren't
+	necessary, and pros usually don't use them.
+
+	A pair of diagonal side cutter pliers are useful for clipping ends
+	in constricted places.  Don't use these for stripping wire.
+
+	You will need linesman pliers for twisting wires for wire nuts.
+
+	You should have a pair of needle-nose pliers for fiddling
+	inside boxes and closing loops, but it's better to form wire
+	loops with a "loop former hole" on your wire stripper - more
+	accurate.
+
+	If you're using non-metallic cable, get a cable stripper for
+	removing the sheath.  Or, do what some pros do, they nick the
+	end of the sheath, grab the ground wire with a pair of pliers,
+	and simply rip the sheath back using the ground wire as a
+	"zipper", and cut the sheath off.  You shouldn't try to strip
+	the sheath with a knife point, because it's too easy to
+	slash the insulation on the conductors.  Apparently Stanley
+	utility knives fitted with linoleum cutters (hooked blades)
+	can be used to strip sheath, but there is still the possibility
+	that you'll gouge the conductors.
+
+	For any substantial amount of work with armored cable, it's well
+	worth your while to invest in a rotary cable splitter (~US$ 18).
+	Hack saws are tricky to use without cutting into the wire
+	or the insulation.
+
+	Three-prong outlet testers are a quick check for properly-wired
+	outlets.  About $6.  Multimeters tell you more, but are a lot more
+	expensive, and probably not worth it for most people.  A simple
+	voltage sensor, which can detect potential through an insulated
+	wire not supplying any devices, is extremely helpful; they cost
+	about US$ 10 at Radio Shack.
+
+	You should have a voltage detector - to check that the wires are
+	dead before doing work on them.  Neon-bulb version are cheap ($2-3)
+	and work well.  If you get more serious, a "audible alarm" type is
+	good for tracing circuits without a helper.  (Though I've been known
+	to lock the drill on, and hit breakers until the scream stops ;-)
+
+	For running wires through existing walls, you need fish tape.
+	Often, two tapes are needed, though sometimes, a bent hanger or
+	a length of thin chain will suffice.  Fish tapes can be rented.
+
+	Electrical tape.  Lots of it ;-)  Seriously, a good and competent
+	wiring job will need very little tape.  The tape is useful for
+	wrapping dicy insulation in repair work.  Another use is to wrap 
+	around the body of outlets and switches to cover the termination
+	screws - I don't do this, but drywall contractors prefer it (to
+	prevent explosions when the drywall knife collides with a live outlet
+	that has no cover plate).
+
+Subject: What is UL listing?
+
+	The UL stands for "Underwriters Laboratory".  It used to be
+	an Insurance Industry organization, but now it is independent
+	and non-profit.  It tests electrical components and equipment
+	for potential hazards.  When something is UL-listed, that means
+	that the UL has tested the device, and it meets their requirements
+	for safety - ie: fire or shock hazard.  It doesn't necessarily
+	mean that the device actually does what it's supposed to, just
+	that it probably won't kill you.
+
+	The UL does not have power of law in the U.S. -- you are
+	permitted to buy and install non-UL-listed devices.  However,
+	insurance policies sometimes have clauses in them that will
+	limit their liability in case of a claim made in response to
+	the failure of a non-UL-listed device.  Furthermore, in
+	many situations the NEC will require that a wiring component
+	used for a specific purpose is UL-listed for that purpose.
+	Indirectly, this means that certain parts of your wiring
+	must be UL-listed before an inspector will approve it and/or
+	occupancy permits issued.
+	
+Subject: What is CSA approval?
+
+	Every electrical device or component must be certified by the
+	Canadian Standards Association before it can be sold in
+	Canada.  Implicit in this is that all wiring must be done
+	with CSA-approved materials.  They perform testing similar to
+	the UL (a bit more stringent), except that CSA approval is
+	required by law.
+
+	Again, like the UL, if a fire was caused by non-CSA-approved
+	equipment, your insurance company may not have to pay the
+	claim.
+
+	In Canada, there is a branch organization of the UL, called ULC
+	(UL of Canada).  ULC does not have power of law, and seems to
+	be more a liason group between the CSA and insurance
+	companies.
+
+Subject: Are there any cheaper, easier to read books on wiring?
+
+	USA: The following three books were suggested by our readers
+
+	    Residential Wiring
+	    by Jeff Markell,
+	    Craftsman Books,
+	    Carlsbad CA for $18.25. ISBN 0-934041-19-9.
+
+	    Practical Electrical Wiring
+	    Residential, Farm and Industrial,  Based on the National
+	    Electrical Code    ANSI/NFPA 70
+	    Herbert P. Richter and W. Creighton Schwan
+	    McGraw-Hill Book Co.
+
+	    Wiring Simplified
+	    H. P. Richter and W. C. Schwan
+	    Park Publishing Co.
+	
+	Try to make sure that the book is based on the latest NEC
+	revision.  Which is currently 1990.
+
+	Canada: P.S. Knight authors and publishes a book called
+	"Electrical Code Simplified".  There appears to be a version
+	published specific to each province, and is very tied into the
+	appropriate provincial code.  It focuses on residential wiring,
+	and is indispensible for Canadian DIY'ers.  It is better to get
+	this book than the CEC unless you do a lot of wiring (or answer
+	questions on the net ;-).
+
+	It is updated each time the provincial codes are.  This book is
+	available at all DIY and hardware stores for less than C$10.
+
+Subject: Inspections how and what?  Why should I get my wiring inspected?
+
+	Most jurisdictions require that you obtain a permit and
+	inspections of any wiring that is done.  Amongst other more
+	mundane bureaucratic reasons (like insurance companies not
+	liking to have to pay claims), a permit and inspections
+	provides some assurance that you, your family, your neighbors
+	or subsequent owners of your home don't get killed or lose
+	their homes one night due to a sloppy wiring job.
+
+	Most jurisdictions have the power to order you to vacate your
+	home, or order you to tear out any wiring done without a
+	permit.  California, for instance, is particularly nasty about
+	this.
+
+	If fire starts in your home, and un-inspected wiring is at
+	fault, insurance companies will often refuse to pay the damage
+	claims.
+
+	In general, the process goes like this:
+		- you apply to your local inspections office or building
+		  department for a permit.  You should have a sketch or
+		  detailed drawing of what you plan on doing.  This is
+		  a good time to ask questions on any things you're not
+		  sure of.  If you're doing major work, they may impose
+		  special conditions on you, require loading
+		  calculations and ask other questions.  At this point
+		  they will tell you which inspections you will need.
+		- If you're installing a main panel, you will need to
+		  have the panel and service connections inspected
+		  before your power utility will provide a connection.
+		  This is sometimes done by the local power authority
+		  rather than the usual inspectors.
+		- After installing the boxes and wiring, but before
+		  the insulation/walls go up, you will need a
+		  "rough-in" inspection.
+		- After the walls are up, and the wiring is complete,
+		  you will need a "final inspection".
+
+Subject: My house doesn't meet some of these rules and regulations.
+	Do I have to upgrade?
+
+	In general, there is no requirement to upgrade older dwellings,
+	though there are some exceptions (ie: smoke detectors in some
+	cases).  However, any new work must be done according to the
+	latest electrical code.  Also, if you do ``major'' work, you
+	may be required to upgrade certain existing portions or all
+	of your system.  Check with your local electrical inspector.
+
+Subject: A word on voltages: 110/115/117/120/125/220/240
+
+	One thing where things might get a bit confusing is the
+	different numbers people bandy about for the voltage of
+	a circuit.  One person might talk about 110V, another 117V
+	or another 120V.  These are all, in fact, exactly the same
+	thing...  In North America the utility companies are required
+	to supply a split-phase 240 volt (+-5%) feed to your house.
+	This works out as two 120V +- 5% legs.  Additionally, since there
+	are resistive voltage drops in the house wiring, it's not
+	unreasonable to find 120V has dropped to 110V or 240V has dropped
+	to 220V by the time the power reaches a wall outlet.  Especially
+	at the end of an extension cord or long circuit run.  For a number
+	of reasons, some historical, some simple personal orneryness,
+	different people choose call them by slightly different numbers.
+	This FAQ has chosen to be consistent with calling them "110V" and
+	"220V", except when actually saying what the measured voltage will
+	be.  Confusing?  A bit.  Just ignore it.
+
+	One thing that might make this a little more understandable
+	is that the nameplates on equipment ofen show the lower (ie: 110V
+	instead of 120V) value.  What this implies is that the device
+	is designed to operate properly when the voltage drops that
+	low.
+
+	208V is *not* the same as 240V.  208V is the voltage between
+	phases of a 3-phase "Y" circuit that is 120V from neutral to any
+	hot.   480V is the voltage between phases of a 3-phase "Y"
+	circuit that's 277V from hot to neutral.
+
+	In keeping with 110V versus 120V strangeness, motors intended
+	to run on 480V three phase are often labelled as 440V...
+
+Subject: What does an electrical service look like?
+
+	There are logically four wires involved with supplying the
+	main panel with power.  Three of them will come from the utility
+	pole, and a fourth (bare) wire comes from elsewhere.
+
+ 	The bare wire is connected to one or more long metal bars pounded
+ 	into the ground, or to a wire buried in the foundation, or sometimes
+ 	to the water supply pipe (has to be metal, continuous to where
+	the main water pipe entering the house.  Watch out for galvanic
+	action conductivity "breaks" (often between copper and iron pipe)).
+	This is the "grounding conductor".  It is there to make sure that
+	the third prong on your outlets is connected to ground.  This wire
+	normally carries no current.
+
+	One of the other wires will be white (or black with white or
+	yellow stripes, or sometimes simply black).  It is the neutral wire.
+	It is connected to the "centre tap" (CEC; "center tap" in the
+	NEC) of the distribution transformer supplying the power.  It
+	is connected to the grounding conductor in only one place (often
+	inside the panel).  The neutral and ground should not be connected
+	anywhere else.  Otherwise, weird and/or dangerous things may happen.
+
+	Furthermore, there should only be one grounding system in
+	a home.  Some codes require more than one grounding electrode.
+	These will be connected together, or connected to the neutral
+	at a common point - still one grounding system.  Adding additional
+	grounding electrodes connected to other portions of the house
+	wiring is unsafe and contrary to code.
+
+	If you add a subpanel, the ground and neutral are usually
+	brought as separate conductors from the main panel, and are
+	not connected together in the subpanel (ie: still only one
+	neutral-ground connection).  However, in some situations 
+	(certain categories of separate buildings) you actually do
+	have to provide a second grounding electrode - consult your
+	inspector.
+
+	The other two wires will usually be black, and are the "hot"
+	wires.  They are attached to the distribution transformer as
+	well.
+
+	The two black wires are 180 degrees out of phase with each
+	other.  This means if you connect something to both hot wires,
+	the voltage will be 220 volts.  If you connect something to the
+	white and either of the two blacks you will get 110V.
+
+	Some panels seem to only have three wires coming into them.
+	This is either because the neutral and ground are connected
+	together at a different point (eg: the meter or pole) and one
+	wire is doing dual-duty as both neutral and ground, or in some
+	rare occasions, the service has only one hot wire (110V only
+	service).
+
+Subject: What is a circuit?
+
+	Inside the panel, connections are made to the incoming wires.
+	These connections are then used to supply power to selected
+	portions of the home.  There are three different combinations:
+		1) one hot, one neutral, and ground: 110V circuit.
+		2) two hots, no neutral, and ground: 220V circuit.
+		3) two hots, neutral, and ground: 220V circuit + neutral,
+		   and/or two 110V circuits with a common neutral.
+
+	(1) is used for most circuits supplying receptacles and
+	lighting within your house.  (3) is usually used for supplying
+	power to major appliances such as stoves, and dryers - they
+	often have need for both 220V and 110V, or for bringing several
+	circuits from the panel box to a distribution point.  (2) is
+	usually for special 220V motor circuits, electric heaters, or
+	air conditioners.
+
+	[Note: In the US, the NEC frequently permits a circuit similar
+	to (2) be used for stoves and dryers - namely, that there
+	are two hot wires, and a wire that does dual duty as neutral
+	and ground, and is connected to the frame as well as providing
+	the neutral for 110V purposes - three prong plugs instead
+	of four (*only* for stoves/dryers connected to the main panel.
+	When connected to most sub-panels, 4 prong plugs and receptacles
+	are required).  In our not-so-humble opinion this is crazy, but
+	the NFPA claims that this practice was re-evaluated for the 1992 NEC,
+	and found to be safe.  Check your local codes, or inquire as to
+	local practice -- there are restrictions on when this is
+	permissible.]
+
+	(1) is usually wired with three conductor wire: black for hot,
+	white for neutral, and bare for grounding.
+
+	(2) and (3) have one hot wire coloured red, the other black, a
+	bare wire for grounding, and in (3) a white wire for neutral.
+
+	You will sometimes see (2) wired with just a black, white and ground
+	wire.  Since the white is "hot" in this case, both the NEC and CEC
+	requires that the white wire be "permanently marked" at the ends
+	to indicate that it is a live wire.  Usually done with paint, nail
+	polish or sometimes electrical tape.
+
+	Each circuit is attached to the main wires coming into the
+	panel through a circuit breaker or fuse.
+
+	There are, in a few locales, circuits that look like (1), (2)
+	or (3) except that they have two bare ground wires.  Some places
+	require this for hot tubs and the like (one ground is "frame ground",
+	the other attaches to the motor).  This may or may not be an
+	alternative to GFCI protection.
+
+Subject: "grounding" versus "grounded" versus "neutral".
+
+	According to the terminology in the CEC and NEC, the
+	"grounding" conductor is for the safety ground, i.e., the green
+	or bare wire.  The word "neutral" is reserved for the white when
+	you have a circuit with more than one "hot" wire.  Since the white
+	wire is connected to neutral and the grounding conductor inside the
+	panel, the proper term is "grounded conductor".  However, the
+	potential confusion between "grounded conductor" and "grounding
+	conductor" can lead to potentially lethal mistakes - you should
+	never use the bare wire as a "grounded conductor" or white wire
+	as the "grounding conductor", even though they are connected
+	together in the panel.
+
+	[But not in subpanels - subpanels are fed neutral and ground
+	separately from the main panel.  Usually.]
+
+	In the trade, and in common usage, the word "neutral" is used
+	for "grounded conductor".  This FAQ uses "neutral" simply to
+	avoid potential confusion.  We recommend that you use "neutral"
+	too.  Thus the white wire is always (except in some light
+	switch applications) neutral.  Not ground.
+
+Subject: What does a fuse or breaker do?  What are the differences?
+
+	Fuses and circuit breakers are designed to interrupt the power
+	to a circuit when the current flow exceeds safe levels.  For
+	example, if your toaster shorts out, a fuse or breaker should
+	"trip", protecting the wiring in the walls from melting.  As
+	such, fuses and breakers are primarily intended to protect the
+	wiring -- UL or CSA approval supposedly indicates that the
+	equipment itself won't cause a fire.
+
+	Fuses contain a narrow strip of metal which is designed to melt
+	(safely) when the current exceeds the rated value, thereby
+	interrupting the power to the circuit.  Fuses trip relatively
+	fast.  Which can sometimes be a problem with motors which have
+	large startup current surges.  For motor circuits, you can use
+	a "time-delay" fuse (one brand is "fusetron") which will avoid
+	tripping on momentary overloads.  A fusetron looks like a
+	spring-loaded fuse.  A fuse can only trip once, then it must be
+	replaced.
+
+	Breakers are fairly complicated mechanical devices.  They
+	usually consist of one spring loaded contact which is latched
+	into position against another contact.  When the current flow
+	through the device exceeds the rated value, a bimetallic strip
+	heats up and bends.  By bending it "trips" the latch, and the
+	spring pulls the contacts apart.  Circuit breakers behave
+	similarly to fusetrons - that is, they tend to take longer to
+	trip at moderate overloads than ordinary fuses.  With high
+	overloads, they trip quickly.  Breakers can be reset a finite
+	number of times - each time they trip, or are thrown
+	when the circuit is in use, some arcing takes place, which
+	damages the contacts.  Thus, breakers should not be used in
+	place of switches unless they are specially listed for the
+	purpose.
+
+	Neither fuses nor breakers "limit" the current per se.  A dead
+	short on a circuit can cause hundreds or sometimes even
+	thousands of amperes to flow for a short period of time, which
+	can often cause severe damage.
+
+Subject: Breakers?  Can't I use fuses?
+
+	Statistics show that fuse panels have a significantly higher
+	risk of causing a fire than breaker panels.  This is usually
+	due to the fuse being loosely screwed in, or the contacts
+	corroding and heating up over time, or the wrong size fuse
+	being installed, or the proverbial "replace the fuse with a
+	penny" trick.
+
+	Since breakers are more permanently installed, and have better
+	connection mechanisms, the risk of fire is considerably less.
+
+	Fuses are prone to explode under extremely high overload.  When
+	a fuse explodes, the metallic vapor cloud becomes a conducting
+	path.  Result? from complete meltdown of the electrical panel,
+	melted service wiring, through fires in the electrical
+	distribution transformer and having your house burn down.
+	Breakers don't do this.
+
+	Many jurisdictions, particularly in Canada, no longer permit
+	fuse panels in new installations.  The NEC does permit new
+	fuse panels in some rare circumstances (requiring the special
+	inserts to "key" the fuseholder to specific size fuses)
+
+	Some devices, notably certain large air conditioners, require fuse
+	protection in addition to the breaker at the panel.  The fuse
+	is there to protect the motor windings from overload.  Check the
+	labeling on the unit.  This is usually only on large permanently
+	installed motors.  The installation instructions will tell you
+	if you need one.
+
+Subject: What size wire should I use?
+
+	For a 20 amp circuit, use 12 gauge wire.  For a 15 amp circuit,
+	you can use 14 gauge wire (in most locales).  For a long run,
+	though, you should use the next larger size wire, to avoid
+	voltage drops.  12 gauge is only slightly more expensive than
+	14 gauge, though it's stiffer and harder to work with.
+
+	Here's a quick table for normal situations.  Go up a size for
+	more than 100 foot runs, when the cable is in conduit, or
+	ganged with other wires in a place where they can't dissipate
+	heat easily:
+
+		Gauge		Amps
+		14		15
+		12		20
+		10		30
+		8		40
+		6		65
+	
+	We don't list bigger sizes because it starts getting very dependent
+	on the application and precise wire type.
+
+Subject: Where do these numbers come from?
+
+	There are two considerations, voltage drop and heat buildup.
+	The smaller the wire is, the higher the resistance is.  When
+	the resistance is higher, the wire heats up more, and there is
+	more voltage drop in the wiring.  The former is why you need
+	higher-temperature insulation and/or bigger wires for use in
+	conduit; the latter is why you should use larger wire for long
+	runs.
+
+	Neither effect is very significant over very short distances.
+	There are some very specific exceptions, where use of smaller
+	wire is allowed.  The obvious one is the line cord on most
+	lamps.  Don't try this unless you're certain that your use fits
+	one of those exceptions; you can never go wrong by using larger
+	wire.
+
+Subject: What does "14-2" mean?
+
+	This is used to describe the size and quantity of conductors
+	in a cable.  The first number specifies the gauge.  The second
+	the number of current carrying conductors in the wire - but
+	remember there's usually an extra ground wire.  "14-2" means
+	14 gauge, two insulated current carrying wires, plus bare ground.
+
+	-2 wire usually has a black, white and bare ground wire.  Sometimes
+	the white is red instead for 220V circuits without neutral.  In
+	the latter case, the sheath is usually red too.
+
+	-3 wire usually has a black, red, white and bare ground wire.
+	Usually carrying 220V with neutral.
+
+Subject: What is a "wirenut"/"marrette"/"marr connector"?  How are they
+	used?
+
+	A wire nut is a cone shaped threaded plastic thingummy that's used
+	to connect wires together.  "Marrette" or "Marr connector"
+	are trade names.  You'll usually use a lot of them in DIY wiring.
+
+	In essence, you strip the end of the wires about an inch, twist them
+	together, then twist the wirenut on.
+
+	Though some wirenuts advertise that you don't need to twist the
+	wire, do it anyways - it's more mechanically and electrically
+	secure.
+
+	There are many different sizes of wire nut.  You should check
+	that the wire nut you're using is the correct size for the
+	quantity and sizes of wire you're connecting together.
+
+	Don't just gimble the wires together with a pair of pliers or
+	your fingers.  Use a pair of blunt nose ("linesman") pliers,
+	and carefully twist the wires tightly and neatly.  Sometimes
+	it's a good idea to trim the resulting end to make sure it
+	goes in the wirenut properly.
+
+	Some people wrap the "open" end of the wirenut with electrical
+	tape.  This is probably not a good idea - the inspector may
+	tear it off during an inspection.  It's usually done because
+	a bit of bare wire is exposed outside the wire nut - instead
+	of taping it, the connection should be redone.
+
+Subject: What is a GFI/GFCI?
+
+	A GFCI is a ``ground-fault circuit interrupter''.  It measures
+	the current current flowing through the hot wire and the
+	neutral wire.  If they differ by more than a few milliamps, the
+	presumption is that current is leaking to ground via some other
+	path.  This may be because of a short circuit to the chassis of
+	an appliance, or to the ground lead, or through a person.  Any
+	of these situations is hazardous, so the GFCI trips, breaking
+	the circuit.
+
+	GFCIs do not protect against all kinds of electric shocks.  If,
+	for example, you simultaneously touched the hot and neutral
+	leads of a circuit, and no part of you was grounded, a GFCI
+	wouldn't help.  All of the current that passed from the hot
+	lead into you would return via the neutral lead, keeping the
+	GFCI happy.
+
+	The two pairs of connections on a GFCI outlet are not symmetric.
+	One is labeled LOAD; the other, LINE.  The incoming power feed
+	*must* be connected to the LINE side, or the outlet will not be
+	protected.  The LOAD side can be used to protect all devices
+	downstream from it.  Thus, a whole string of outlets can be
+	covered by a single GFCI outlet.
+
+Subject: Where should GFCIs be used?
+
+	The NEC mandates GFCIs for 110V, 15A or 20A single phase
+	outlets, in bathrooms, kitchens within 6' of the sink, garages,
+	unfinished basements or crawl spaces, outdoors, near a pool, or
+	just about anywhere else where you're likely to encounter water
+	or dampness.  There are exceptions for inaccessible outlets,
+	those dedicated to appliances ``occupying fixed space'',
+	typically refrigerators and freezers, and for sump pumps and
+	laundry appliances.
+
+	The CEC does not mandate as many GFCIs.  In particular, there
+	is no requirement to protect kitchen outlets, or most garage or
+	basement outlets.  Basement outlets must be protected if you
+	have a dirt floor, garage outlets if they're near the door to
+	outside.  Bathrooms and most exterior outlets must have GFCIs.
+
+	Even if you are not required to have GFCI protection, you may
+	want to consider installing it anyway.  Unless you need a GFCI
+	breaker (see below), the cost is low.  In the U.S., GFCI
+	outlets can cost as little as US$8.  (Costs are a bit higher in
+	Canada:  C$12.)  Evaluate your own risk factors.  Does your
+	finished basement ever get wet?  Do you have small children?
+	Do you use your garage outlets to power outdoor tools?  Does
+	water or melted snow ever puddle inside your garage?
+
+Subject: Where shouldn't I use a GFCI?
+
+	GFCIs are generally not used on circuits that (a) don't pose a
+	safety risk, and (b) are used to power equipment that must run
+	unattended for long periods of time.  Refrigerators, freezers,
+	and sump pumps are good examples.  The rationale is that GFCIs
+	are sometimes prone to nuisance trips.  Some people claim that
+	the inductive delay in motor windings can cause a momentary
+	current imbalance, tripping the GFCI.  Note, though, that most
+	GFCI trips are real; if you're getting a lot of trips for no
+	apparent reason, you'd be well-advised to check your wiring
+	before deciding that the GFCI is broken or useless.
+
+Subject: What is the difference between a GFCI outlet and a GFCI breaker?
+
+	For most situations, you can use either a GFCI outlet as the
+	first device on the circuit, or you can install a breaker with
+	a built-in GFCI.  The former is generally preferred, since GFCI
+	breakers are quite expensive.  For example, an ordinary GE
+	breaker costs ~US$5; the GFCI model costs ~US$35.  There is one
+	major exception:  if you need to protect a ``multi-wire branch
+	circuit'' (two or more circuits sharing a common neutral wire),
+	such as a Canadian-style kitchen circuit, you'll need a
+	multi-pole GFCI breaker.  Unfortunately, these are expensive;
+	the cost can range into the hundreds of dollars, depending on
+	what brand of panel box you have.  But if you must protect such
+	a circuit (say, for a pool heater), you have no choice.
+
+	One more caveat -- GFCI outlets are bulky.  You may want to use
+	an oversize box when installing them.  On second thought, use
+	large (actually deep) boxes everywhere.  You'll thank yourself for it.
+
+	Incidentally, if you're installing a GFCI to ensure that one
+	specific outlet is protected (such as a bathroom), you don't
+	really have to go to all of the trouble to find the first
+	outlet in the circuit, you could simply find the first outlet
+	in the bathroom, and not GFCI anything upstream of it.  But
+	protecting the whole circuit is preferred.
+
+	When you install a GFCI, it's a good idea to use the little
+	"ground fault protected" stickers that come with it and mark
+	the outlets downstream of the GFCI.  You can figure out which
+	outlets are "downstream", simply by tripping the GFCI with the
+	test button and see which outlets are dead.
+
+Subject: What's the purpose of the ground prong on an outlet, then?
+
+	Apart from their use in electronics, which we won't comment on,
+	and for certain fluorescent lights (they won't turn on without
+	a good ground connection), they're intended to guard against
+	insulation failures within the device.  Generally, the case of
+	the appliance is connected to the ground lead.  If there's an
+	insulation failure that shorts the hot lead to the case, the
+	ground lead conducts the electricity away safely (and possibly
+	trips the circuit breaker in the process).  If the case is not
+	grounded and such a short occurs, the case is live -- and if
+	you touch it while you're grounded, you'll get zapped.  Of
+	course, if the circuit is GFCI-protected, it will be a very
+	tiny zap -- which is why you can use GFCIs to replace
+	ungrounded outlets (both NEC and CEC).
+
+	There are some appliances that should *never* be grounded.  In
+	particular, that applies to toasters and anything else with
+	exposed conductors.  Consider:  if you touch the heating
+	electrode in a toaster, and you're not grounded, nothing will
+	happen.  If you're slightly grounded, you'll get a small shock;
+	the resistance will be too high.  But if the case were
+	grounded, and you were holding it, you'd be the perfect path to
+	ground...
+
+Subject: Why is one prong wider than the other?  Polarization
+
+	Nowadays, many two-prong devices have one prong wider than the
+	other.  This is so that the device could rely (not guaranteed!)
+	on one specific wire being neutral, and the other hot.
+	This is particularly advantageous in light fixtures, where the
+	the shell should neutral (safety), or other devices which want to
+	have an approximate ground reference (ie: some radios).
+
+	Most 2-prong extension cords have wide prongs too.
+
+	This requires that you wire your outlets and plugs the right
+	way around.  You want the wide prong to be neutral, and the
+	narrow one hot.  Most outlets have a darker metal for the
+	hot screw, and lighter coloured screw for the neutral.
+	If not, you can usually figure out which is which by which
+	prong the terminating screw connects to.
+
+Subject: What kind of outlets do I need in a kitchen?
+
+	The NEC requires at least two 20 amp ``small appliance
+	circuits'' for kitchens.  The CEC requires split-duplex
+	receptacles.  Outlets must be installed such that no point is more
+	than 24" (NEC) (900 mm CEC) from an outlet.  Every counter wider
+	than 12" (NEC) or 300 mm (CEC) must have at least one outlet.
+	The circuit these outlets are on may not feed any outlets except
+	in the kitchen, pantry, or dining room.  Furthermore, these circuits
+	are in addition to any required for refrigerators, stoves, microwaves,
+	lighting, etc.  Non-dedicated outlets within 6' of a sink *must* be
+	protected by a GFCI (NEC only).
+
+	Split duplex receptacles are fed with a 220V circuit.  The tab
+	is broken on the hot side of the outlet, and one hot goes to
+	the upper outlet, and the other hot goes to the lower outlet.
+	The neutral connects to both outlets through one screw.  When
+	"carrying through" to another outlet, the neutral must be
+	pigtailed, such that removing the outlet, or having the neutral
+	connection fall off doesn't cause the neutral to disconnect
+	from downstream outlets.
+
+Subject: Where must outlets and switches be in bathrooms?
+
+	There must be at least one outlet in each bathroom, adjacent to
+	the sink, in addition to any outlet that may be incorporated in
+	the light fixture.  All such outlets *must* be GFCI-protected.
+
+Subject: What is Romex/NM/NMD?  What is BX?  When should I use each?
+
+	Romex is a brand name for a type of plastic insulated wire.
+	Sometimes called non-metallic sheath.  The formal name is NM.
+	This is suitable for use in dry, protected areas (ie: inside
+	stud walls, on the sides of joists etc.), that are not subject
+	to mechanical damage or excessive heat.  Most newer homes are
+	wired almost exclusively with NM wire.  There are several
+	different categories of NM cable.
+
+	BX cable -- technically known as armored cable or "AC" has a
+	flexible aluminum or steel sheath over the conductors and is
+	fairly resistant to damage.
+
+	TECK cable is AC with an additional external thermoplastic
+	sheath.
+	
+	Protection for cable in concealed locations: where NM or AC cable
+	is run through studs, joists or similar wooden members, the outer
+	surface of the cable must be kept at least 32mm/1.25" (CEC & NEC)
+	from the edges of the wooden members, or the cable should be protected
+	from mechanical injury.  This latter protection can take the form of
+	metal plates (such as spare outlet box ends) or conduit.
+
+	[Note: inspector-permitted practise in Canada suggests that armored
+	cable, or flexible conduit can be used as the mechanical protection,
+	but this is technically illegal.]
+
+	Additional protection recommendations (these are rules in the
+	Canadian codes - they are reasonable answers to the vague
+	references to "exposed to mechanical damage" in both the NEC
+	and CEC):
+
+	    - NM cable should be protected against mechanical damage
+	      where it passes through floors or on the surface of walls
+	      in exposed locations under 5 feet from the floor.
+	      Ie: use AC instead, flexible conduit, wooden guards etc.
+	    - Where cable is suspended, as in, connections to furnaces
+	      or water heaters, the wire should be protected.  Canadian
+	      practise is usually to install a junction or outlet
+	      box on the wall, and use a short length of AC cable
+	      or NM cable in flexible conduit to "jump" to the appliance.
+	      Stapling NM to a piece of lumber is also sometimes used.
+	    - Where NM cable is run in close proximity to heating
+	      ducts or pipe, heat transfer should be minimized by
+	      means of a 25mm/1" air space, or suitable insulation
+	      material (a wad of fiberglass).
+	    - NM cable shall be supported within 300mm/1' of every box
+	      or fitting, and at intervals of no more than 1.5m/5'.
+	      Holes in joists or studs are considered "supports".
+	      Some slack in the cable should be provided adjacent to
+	      each box.  [while fishing cable is technically in violation,
+	      it is permitted where "proper" support is impractical]
+	    - 2 conductor NM cable should never be stapled on edge.
+	      [Knight also insists on only one cable per staple, referring
+	      to the "workmanship" clause, but this seems more honoured
+	      in the breach...]
+	    - cable should never be buried in plaster, cement or
+	      similar finish.
+	    - cable should be protected where it runs behind baseboards.
+	    - Cable may not be run on the upper edge of ceiling joists
+	      or the lower edges of rafters where the headroom is more
+	      than 1m (39").
+
+	Whenever BX cable is terminated at a box with a clamp, small
+	plastic bushings must be inserted in the end of the cable to
+	prevent the clamps forcing the sharp ends of the armor through
+	the insulation.
+
+	BX is sometimes a good idea in a work shop unless covered by
+	solid wall coverings.
+
+	In places where damage is more likely (like on the back wall of
+	a garage ;-), you may be required to use conduit, a
+	UL- (or CSA-) approved metal pipe.  You use various types of
+	fittings to join the pipe or provide entrance/exit for the
+	wire.
+
+	Service entrances frequently use a plastic conduit.
+
+	In damp places (eg: buried wiring to outdoor lighting) you will
+	need special wire (eg: CEC NMW90, NEC UF).  NMW90 looks like
+	very heavy-duty NMD90.  You will usually need short lengths of
+	conduit where the wire enters/exits the ground.  [See underground
+	wiring section.]
+
+ 	Thermoplastic sheath wire (such as NM, NMW etc.) should not be
+ 	exposed to direct sunlight unless explicitly approved for that
+ 	purpose.
+
+	Many electrical codes do not permit the routing of wire through
+	furnace ducts, including cold air return plenums constructed
+	by metal sheeting enclosing joist spaces.   The reason for this
+	is that if there's a fire, the ducting will spread toxic gasses
+	from burning insulation very rapidly through the building.
+	Teflon insulated wire is permitted in plenums in many areas.
+	
+ 	Canada appears to use similar wire designations to the US,
+ 	except that Canadian wire designations usually include the
+ 	temperature rating in Celsius.  Eg: "AC90" versus "AC".
+	In the US, NM-B is 90 degrees celcius.
+
+	NOTE: local codes vary.  This is one of the items that changes
+	most often.  Eg: Chicago codes require conduit *everywhere*.
+	There are very different requirements for mobile homes.
+	Check your local codes, *especially* if you're doing anything
+	that's the slightest out of the ordinary.
+
+	Wire selection table (incomplete - the real tables are enormous,
+	uncommon wire types or applications omitted)
+
+	Condition			Type	CEC	NEC
+
+	Exposed/Concealed dry		plastic	NMD90	NM
+					armor	AC90	AC
+						TECK90
+
+	Exposed/Concealed damp		plastic	NMD90	NMC
+					armor	ACWU90
+						TECK90
+
+	Exposed/Concealed wet		plastic	NMWU90
+					armor	ACWU90
+						TECK90
+	
+	Exposed to weather		plastic	NMWU
+						TW etc.
+					armor	TECK90
+	
+	Direct earth burial/		plastic	NMWU*	UF
+	Service entrance			RWU
+						TWU
+					armor	RA90
+						TECK90
+						ACWU90
+	[* NMWU not for service entrance]
+
+Subject: Should I use plastic or metal boxes?
+
+	The NEC permits use of plastic boxes with non-metallic cable
+	only.  The reasoning is simple -- with armored cable, the box
+	itself provides ground conductor continuity.  U.S. plastic
+	boxes don't use metal cable clamps.
+
+	The CEC is slightly different.  The CEC never permits cable
+	armor as a grounding conductor.  However, you must still
+	provide ground continuity for metallic sheath.  The CEC also
+	requires grounding of any metal cable clamps on plastic boxes.
+
+	The advantage of plastic boxes is comparatively minor even for
+	non-metallic sheathed cable -- you can avoid making one ground
+	connection and they sometimes cost a little less.  On the other
+	hand, plastic boxes are more vulnerable to impacts.  For
+	exposed or shop wiring, metal boxes are probably better.
+
+Subject: Junction box positioning?
+
+	A junction box is a box used only for connecting wires together.
+
+	Junction boxes must be located in such a way that they're accessible
+	later.  Ie: not buried under plaster.  Excessive use of junction
+	boxes is often a sign of sloppy installation, and inspectors may
+	get nasty.
+
+Subject: Can I install a replacement light fixture?
+
+	In general, one can replace fixtures freely, subject to a few
+	caveats.  First, of course, one should check the amperage
+	rating of the circuit.  If your heart is set on installing half
+	a dozen 500 watt floodlights, you may need to run a new wire
+	back to the panel box.  But there are some more subtle
+	constraints as well.  For example, older house
+	wiring doesn't have high-temperature insulation.  The excess
+	heat generated by a ceiling-mounted lamp can and will cause the
+	insulation to deteriorate and crack, with obvious bad results.
+	Some newer fixtures are specifically marked for high
+	temperature wire only.  (You may find, in fact, that your
+	ceiling wiring already has this problem, in which case
+	replacing any devices is a real adventure.)
+
+	Other concerns include providing a suitable ground for some
+	fluorescent fixtures, and making sure that the ceiling box and
+	its mounting are strong enough to support the weight of a heavy
+	chandelier or ceiling fan.  You may need to install a new box
+	specifically listed for this purpose.  A 2x4 across the ceiling
+	joists makes a good support.  Metal brackets are also available
+	that can be fished into ceilings thru the junction box hole and
+	mounted between the joists.
+
+	There are special rules for recessed light fixtures such as
+	"pot" lamps or heat lamps.  When these are installed in insulated
+	ceilings, they can present a very substantial fire hazard.
+	The CEC provides for the installation of pot lamps in insulated
+	ceilings, provided that the fixture is boxed in a "coffin" (usually
+	8'x16"x12" - made by making a pair of joists 12" high, and covering
+	with plywood) that doesn't have any insulation.  (Yes, that's 8 *feet*
+	long)
+
+	NEC rules are somewhat less stringent.  They require at least 3"
+	clearance between the fixture and any sort of thermal insulation.
+	The rules also say that one should not obstruct free air movement,
+	which means that a CEC-style ``coffin'' might be worthwhile.
+	Presumably, that's up to the local inspector.  [The CEC doesn't
+	actually mandate the coffin per-se, this seems to be an inspector
+	requirement to make absolutely certain that the fixture can't get
+	accidentally buried in insulation.  Ie: if you have insulation blown
+	in later.]
+
+	There are now fixtures that contain integral thermal cutouts and
+	fairly large cases that can be buried directly in insulation.  They are
+	usually limited to 75 watt bulbs, and are unfortunately, somewhat
+	more expensive than the older types.  Before you use them, you should
+	ensure that they have explicit UL or CSA approval for such uses.
+	Follow the installation instructions carefully; the prescribed location
+	for the sensor can vary.
+
+	There does not yet appear to be a heat lamp fixture that is approved
+	for use in insulation.  The "coffin" appears the only legal approach.
+
+Subject: What does it mean when the lights brighten when a motor starts?
+
+	This usually means that the neutral wire in the panel is
+	loose.  Depending on the load balance, one hot wire may end up
+	being more than 110V, and the other less than 110V, with
+	respect to ground.  This is a very hazardous situation - it can
+	destroy your electronic equipment, possibly start fires, and in
+	some situations electrocute you (ie: some US jurisdictions
+	require the stove frame connected to neutral).
+
+	If this happens, contact your electrical authority immediately
+	and have them come and check out the problem.
+
+	Note: a brief (< 1 second) brightening is sometimes normal with
+	lighting and motors on the same 220V with neutral circuit.  A
+	loose main panel neutral will usually show increased brightness
+	far longer than one second.  In case of doubt, get help.
+
+Subject: What is 3 phase power?  Should I use it?  Can I get it in my house?
+
+	Three phase power has three "hot" wires, 120 degrees out of
+	phase with each other.  These are usually used for large motors
+	because it is more "efficient", provides a bit more starting torque,
+	and because the motors are simpler and hence cheaper.
+
+	You're most likely to encounter a 3 phase circuit that shows
+	110 volts between any hot and ground, and 208 volts between
+	any two hots.  The latter shows the difference between a normal
+	220V/110V common neutral circuit, which is 240 volts between the
+	two hots.  There are 3 phase circuits with different voltages.
+
+	Bringing in a 3 phase feed to your house is usually
+	ridiculously expensive, or impossible.  If the equipment you
+	want to run has a standard motor mount, it is *MUCH* cheaper to
+	buy a new 110V or 220V motor for it.  In some cases it is
+	possible to run 3 phase equipment on ordinary power if you have
+	a "capacitor start" unit, or use a larger motor as a
+	(auto-)generator.  These are tricky, but are a good solution if
+	the motor is non-standard size, or too expensive or too big to
+	replace.  The Taunton Press book ``The Small Shop'' has an
+	article on how to do this if you must.
+
+	Note that you lose any possible electrical efficiency by using
+	such a converter.  The laws of thermodynamics guarantee that.
+
+Subject: Is it better to run motors at 110 or 220?
+
+	Theoretically, it doesn't make any difference.  However, there
+	is a difference is the amount of power lost in the supply
+	wiring.  All things being equal, a 220V motor will lose 4 times
+	less power in the house wiring than a 110V motor.  This also
+	means that the startup surge loss will be less, and the motor
+	will get to speed quicker.  And in some circumstances, the
+	smaller power loss will lead to longer motor life.
+
+	This is usually irrelevant unless the supply wires are more
+	than 50 feet long.
+
+Subject: What is this nonsense about 3HP on 110V 15A circuits?
+
+	It is a universal physical law that 1 HP is equal to 746
+	watts.  Given heating loss, power factor and other inefficiencies,
+	it is usually best to consider 1 HP is going to need 1000-1200
+	watts.  A 110V 15A circuit can only deliver 1850 watts to a motor,
+	so it cannot possibly be more than approximately 2 HP.  Given rational
+	efficiency factors, 1.5HP is more like it.
+
+	Some equipment manufacturers (Sears in particular, most router
+	manufacturers in general ;-) advertise a HP rating that is far
+	in excess of what is possible.  They are giving you a "stall
+	horsepower" or similar.  That means the power is measured when
+	the motor is just about to stop turning because of the load.
+	What they don't mention is that if you kept it in that
+	condition for more than a few seconds hopefully your breaker
+	will trip, otherwise the motor will melt -- it's drawing far
+	more current than it can continuously.
+
+	When comparing motors, compare the continuous horsepower.  This
+	should be on the motor nameplate.  If you can't find that figure,
+	check the amperage rating, which is always present.
+
+Subject: How do I convert two prong receptacles to three prong?
+
+	Older homes frequently have two-prong receptacles instead
+	of the more modern three.  These receptacles have no safety
+	ground, and the cabling usually has no ground wire.  Neither
+	the NEC or CEC permits installing new 2 prong receptacles anymore.
+
+	There are several different approaches to solving this:
+	    1) If the wiring is done through conduit or BX, and the
+	       conduit is continuous back to the panel, you can connect
+	       the third prong of a new receptacle to the receptacle
+	       box.  NEC mainly - CEC frowns on this practise.
+	    2) If there is a copper cold water pipe going nearby, and
+	       it's continuous to the main house ground point, you can
+	       run a conductor to it from the third prong.
+	    3) Run a ground conductor back to the main panel.
+	    4) Easiest: install a GFCI receptacle.  The ground lug
+	       should not be connected to anything, but the GFCI
+	       protection itself will serve instead.  The GFCI
+	       will also protect downstream (possibly also two prong
+	       outlets).  If you do this to protect downstream outlets,
+	       the grounds must not be connected together.  Since it
+	       wouldn't be connected to a real ground, a wiring fault
+	       could energize the cases of 3 prong devices connected
+	       to other outlets.  Be sure, though, that there aren't
+	       indirect ground plug connections, such as via the sheath
+	       on BX cable.
+
+	The CEC permits you to replace a two prong receptacle with a three
+	prong if you fill the U ground with a non-conducting goop.
+	Like caulking compound.  This is not permitted in the NEC.
+
+Subject: Are you sure about GFCIs and ungrounded outlets?
+	Should the test button work?
+
+	We're sure about what the NEC and CEC say.  Remember, though,
+	that your local codes may vary.  As for the TEST button -- there's
+	a resistor connecting the LOAD side of the hot wire to the LINE
+	side of the neutral wire when you press the TEST button.  Current
+	through this resistor shows up as an imbalance, and trips the GFCI.
+	This is a simple, passive, and reliable test, and doesn't require
+	a real ground to work.  If your GFCI does not trip when you press
+	the TEST button, it is very probably defective or miswired.  Again:
+	if the test button doesn't work, something's broken, and potentially
+	dangerous.  The problem should be corrected immediately.
+
+	The instructions that come with some GFCIs specify that the ground
+	wire must be connected.  We do not know why they say this.  The
+	causes may be as mundane as an old instruction sheet, or with the
+	formalities of UL or CSA listing -- perhaps the device was never
+	tested without the ground wire being connected.  On the other hand,
+	UL or CSA approval should only have been granted if the device
+	behaves properly in *all* listed applications, including ungrounded
+	outlet replacement.  (One of us called Leviton; their GFCIs are
+	labeled for installation on grounded circuits only.  The technician
+	was surprised to see that; he agreed that the NEC does not require
+	it, and promised to investigate.)
+
+Subject: How should I wire my shop?
+
+	As with any other kind of wiring, you need enough power for all
+	devices that will be on simultaneously.  The code specifies
+	that you should stay under 80% of the nominal capacity of the
+	circuit.  For typical home shop use, this means one circuit for
+	the major power tools, and possibly one for a dust collector or
+	shop vac.  Use at least 12 gauge wire -- many power tools have
+	big motors, with a big start-up surge.  If you can, use 20 amp
+	breakers (NEC), though CEC requires standard 20A receptacles
+	which means you'd have to "replug" all your equipment.  Lights
+	should either be on a circuit of their own -- and not shared
+	with circuits in the rest of the house -- or be on at least two
+	separate circuits.  The idea is that you want to avoid a
+	situation where a blade is still spinning at several thousand
+	RPM, while you're groping in the dark for the OFF switch.
+
+	Do install lots of outlets.  It's easier to install them in the
+	beginning, when you don't have to cut into an existing cable.
+	It's useful if at least two circuits are accessible at each
+	point, so you can run a shop vac or a compressor at the same
+	time as the tool you really want.  But use metal boxes and
+	plates, and maybe even metal-sheathed cable; you may have
+	objects flying around at high speeds if something goes a bit
+	wrong.
+
+	Note that some jurisdictions have a "no horizontal wiring"
+	rule in workshops or other unfinished areas that are used
+	for working.  What this means is that all wiring must be
+	run along structural members.  Ie: stapled to studs.
+
+	Other possible shop circuits include heater circuits, 220V
+	circuits for some large tools, and air compressor circuits.
+	Don't overload circuits, and don't use extension cords if you
+	can help it, unless they're rated for high currents.  (A coiled
+	extension cord is not as safe as a straight length of wire of
+	the same gauge.  Also, the insulation won't withstand as much
+	heat, and heat dissipation is the critical issue.)
+
+	If your shop is located at some remove from your main panel,
+	you should probably install a subpanel, and derive your shop
+	wiring from it.  If you have young children, you may want to
+	equip this panel with a cut-off switch, and possibly a lock.
+	If you want to install individual switches to ``safe''
+	particular circuits, make sure you get ones rated high enough.
+	For example, ordinary light switches are not safely able to
+	handle the start-up surge generated by a table saw.  Buy
+	``horsepower-rated'' switches instead.
+
+	Finally, note that most home shops are in garages or unfinished
+	basements; hence the NEC requirements for GFCIs apply.  And
+	even if you ``know'' that you'd never use one of your shop
+	outlets to run a lawn mower, the next owner of your house might
+	have a different idea.
+
+	Note: Fine Woodworking magazine often carries articles on shop
+	wiring.  April 1992 is one place to start.
+
+Subject: Underground Wiring
+
+	You will need to prepare a trench to specifications, use
+	special wire, protect the wire with conduit or special plastic
+	tubing and possibly lumber (don't use creosoted lumber, it rots
+	thermoplastic insulation and acts as a catalyst in the corrosion
+	of lead).  The transition from in-house to underground wire is
+	generally via conduit.  All outdoor boxes must be specifically
+	listed for the purpose, and contain the appropriate gaskets,
+	fittings, etc.  If the location of the box is subject to immersion
+	in water, a more serious style of water-proof box is needed.  And
+	of course, don't forget the GFCIs.
+
+	The required depths and other details vary from jurisdiction to
+	jurisdiction, so we suggest you consult your inspector about
+	your specific situation.
+
+	A hint: buy a roll of bright yellow tape that says "buried power
+	line" and bury it a few inches above where the wire has been placed.
+
+Subject: Aluminum wiring
+
+	During the 1970's, aluminum (instead of copper) wiring became
+	quite popular and was extensively used.  Since that time,
+	aluminum wiring has been implicated in a number of house fires,
+	and most jurisdictions no longer permit it in new installations.
+	We recommend, even if you're allowed to, that do not use it for new
+	wiring.
+
+	But don't panic if your house has aluminum wiring.  Aluminum
+	wiring, when properly installed, can be just as safe as copper.
+	Aluminum wiring is, however, very unforgiving of improper
+	installation.  We will cover a bit of the theory behind potential
+	problems, and what you can do to make your wiring safe.
+
+	The main problem with aluminum wiring is a phenomenon known as
+	"cold creep".  When aluminum wiring warms up, it expands.  When
+	it cools down, it contracts.  Unlike copper, when aluminum goes
+	through a number of warm/cool cycles it loses a bit of tightness each
+	time.  To make the problem worse, aluminum oxidises, or corrodes
+	when in contact with certain types of metal, so the resistance
+	of the connection goes up.  Which causes it to heat up and corrode/
+	oxidize still more.  Eventually the wire may start getting very hot,
+	melt the insulation or fixture it's attached to, and possibly even
+	cause a fire.
+
+	Since people usually encounter aluminum wiring when they move
+	into a house built during the 70's, we will cover basic points of
+	safe aluminum wiring.  We suggest that, if you're considering purchasing
+	a home with aluminum wiring, or have discovered it later, that you
+	hire a licensed electrician or inspector to check over the wiring
+	for the following things:
+
+	    1) Fixtures (eg: outlets and switches) directly attached to
+	       aluminum wiring should be rated for it.  The device will
+	       be stamped with "Al/Cu" or "CO/ALR".  The latter supersedes
+	       the former, but both are safe.   These fixtures are somewhat
+	       more expensive than the ordinary ones.
+
+	    2) Wires should be properly connected (at least 3/4 way around
+	       the screw in a clockwise direction).  Connections should be
+	       tight.  While repeated tightening of the screws can make the
+	       problem worse, during the inspection it would pay off to snug
+	       up each connection.
+
+	       Note that aluminum wiring is still often used for the
+	       main service entrance cable.  It should be inspected.
+
+	    3) "push-in" terminals are an extreme hazard with aluminum wire.
+	       Any connections using push-in terminals should be redone with
+	       the proper screw connections immediately.
+
+	    4) There should be no signs of overheating: darkened connections,
+	       melted insulation, or "baked" fixtures.  Any such damage should
+	       be repaired.
+	    
+	    5) Connections between aluminum and copper wire need to be
+	       handled specially.  Current Canadian codes require that the
+	       wire nut used must be specially marked for connecting
+	       aluminum to copper.  The NEC requires that the wire be
+	       connected together using special crimp devices, with an
+	       anti-oxidant grease.  The tools and materials for the latter
+	       are quite expensive - not practical to do it yourself unless
+	       you can rent the tool.
+
+	    6) Any non-rated receptacle can be connected to aluminum wiring
+	       by means of a short copper "pigtail".  See (5) above.
+	    
+	    7) Shows reasonable workmanship: neat wiring, properly stripped
+	       (not nicked) wire etc.
+    
+	If, when considering purchasing a home, an inspection of the wiring
+	shows no problems or only one or two, we believe that you can consider
+	the wiring safe.  If there are signs of problems in many places,
+	we suggest you look elsewhere.  If the wrong receptacles are used,
+	you can replace them with the proper type, or use pigtails - having
+	this professionally done can range from $3 to $10 per receptacle/switch.
+	You can do this yourself too.
+
+Subject: I'm buying a house!  What should I do?
+
+	Congratulations.  But...  It's generally a good idea to hire
+	an inspector to look through the house for hidden gotchas.
+	Not just for wiring, but plumbing and structural as well.  If an
+	inspection of the wiring shows no problems or only one or two minor
+	ones, we believe that you can consider the wiring safe (after any
+	minor problems are fixed).  If there are signs of problems in many
+	places, we suggest you look elsewhere.
+
+	Here's some hints on what to look for:
+
+	Obvious non-code wiring can include:
+
+		- Zip cord wiring, either concealed or nailed to walls
+		- Hot wiring on the identified (neutral) conductor without
+		  proper marking.
+		- Ungrounded grounding outlets (except when downstream of
+		  a GFCI)
+		- Splices hanging in mid-air (other than proper knob-and-tube)
+		- Switched neutrals
+		- Unsecured Romex swinging about like grapevines
+
+	Certain wiring practises that are actually to code (or were at one
+	time) sometimes reveal DIY wiring that may have hidden violations:
+
+		- Switches that seem to control nothing (abandoned, perhaps
+		   not properly terminated wiring)
+		- A wall switch that shuts off a group of lights that are
+		  separately controlled by other wall switches.  (except when
+		  it's *really* convenient ;-)
+		- Switches and outlets in bizarre locations
+		- Great numbers of junction boxes without outlets or lamps
+		- Junction boxes with great numbers of wires going into them
+		- Wiring that passes through a closet instead of a wall or
+		  ceiling
+		- Backwrapped grounding wires
+
+Subject: What is this weird stuff?  Old style wiring
+	
+	In the years since Edison "invented" electricity, several different
+	wiring "styles" have come and gone.  When you buy an older home you
+	may encounter some of this stuff.  This section describes the old 
+	methods, and some of their idiosyncrasies.
+
+	The oldest wiring system you're likely to encounter is called
+	"knob and tube" (K&T).  It is made up of individual conductors with
+	a cloth insulation.  The wires are run along side structural
+	members (eg: joists or studs) using ceramic stand-offs (knobs).
+	Wire is run through structural members using ceramic tubes.  Connections
+	were made by twisting the wire together, soldering, and wrapping
+	with tape.  Since the hot and neutral were run separately,
+	the wiring tends to be rather confusing.  A neutral often runs
+	down the centre of each room, with "taps" off to each fixture.
+	The hot wire tended to run from one fixture to the next.  In some
+	cases K&T isn't colour-coded, so the neutral is often the same
+	colour as the hot wires.
+
+	You'll see K&T in homes built as late as the 40's.
+
+	Comments on K&T:
+
+		- the people installing K&T were pretty paranoid about
+		  electricity, so the workmanship tends to be pretty good.
+		- The wire, insulation and insulators tend to stand up
+		  very well.  Most K&T I've seen, for example, is in
+		  quite good condition.
+		- No grounding.  Grounding is usually difficult to install.
+		- boxes are small.  Receptacle replacement (particularly with
+		  GFCI) can be difficult.  No bushing on boxes either,
+		  so wiring changes need special attention to box entry.
+		- Sometimes the neutral isn't balanced very well between
+		  separately hot circuits, so it is sometimes possible to
+		  overload the neutral without exceeding the fusing on
+		  any circuit.
+		- Building code does not permit insulation in walls
+		  that contain K&T.
+		- Connection to existing K&T from new circuits can be
+		  tricky.  Consult your inspector.
+		- Modern wiring practise requires considerably more
+		  outlets to be installed than K&T systems did.
+	
+	Since K&T tends to be in pretty decent condition it generally isn't
+	necessary to replace it simply because it's K&T.  What you should
+	watch out for is renovations that have interfered with it and
+	be cautious about circuit loading.  In many cases it's perfectly
+	reasonable to leave existing K&T alone, and add new fixtures on
+	new circuits using modern techniques.
+	
+	After K&T, they invented multi-conductor cable.  The first type
+	you will see is roughly a cloth and varnish insulation.  It looks
+	much like the romex cable of the last decade or two.  This stuff was
+	used in the 40's and 50's.  Again, no grounding conductor.
+	It was installed much like modern wiring.  Its major drawback
+	is that this type of insulation embrittles.  We've seen whole
+	systems where the insulation would fracture and fall off at
+	a touch.  BX cable of the same vintage has similar problems.
+
+	This stuff is very fragile, and becomes rather hazardous if
+	the wires become bare.  This wiring should be left untouched as
+	much as possible - whenever an opportunity arises, replace it.
+	A simple receptacle or switch replacement can turn into a several
+	hour long frustrating fight with electrical tape or heat-shrink
+	tubing.
+
+	After this wiring technique, the more modern romex was invented.
+	It's almost a asphalt impregnated cloth.  Often a bit sticky.
+	This stuff stands up reasonably well and doesn't present a hazard
+	and is reasonably easy to work with.  It does not need to be
+	replaced - it should be considered as safe as the "modern" stuff -
+	thermoplastic insulation wire.  Just don't abuse it too much.
+
+Subject: Where do I buy stuff?
+
+	Try to find a proper electrical supply outlet near you.  Their
+	prices will often be considerably better than chain hardware stores or
+	DIY centres, have better quality materials, have wider variety
+	including the "odd" stuff, and have people behind the counter that
+	know what you're talking about.  Cultivate friendly knowledgeable
+	sales people.  They'll give you much valuable information.
+-- 
+Chris Lewis; clewis@ferret.ocunix.on.ca; Phone: Canada 613 832-0541
+Psroff 3.0 info: psroff-request@ferret.ocunix.on.ca
+Ferret list: ferret-request@ferret.ocunix.on.ca

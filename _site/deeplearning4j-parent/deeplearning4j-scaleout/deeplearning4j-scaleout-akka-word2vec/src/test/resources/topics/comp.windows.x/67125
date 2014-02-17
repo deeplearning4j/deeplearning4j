@@ -1,0 +1,47 @@
+From: sdennis@osf.org
+Subject: REPOST: Accelerators/Translations
+Apparently-To: motif-talk@osf.org
+Originator: root@postman
+Keywords: Accelerator, case
+Lines: 36
+Reply-To: sdennis@osf.org
+Organization: Applicon, Inc.; Ann Arbor, MI (USA)
+Return-Path: <sdennis@ann-arbor.applicon.slb.com>
+Lines: 36
+
+I posted this a while ago and didn't recieve one reply, and now we
+have another bug report on the same subject. Can anybody help me out?
+
+How can you ensure that accelerators work the same independent of
+case?  What I want is Ctrl+O and Ctrl+o to both be accelerators on one
+menu entry.
+
+In ORA Vol. 6, in the section on accelerators it says "For information
+on how to specify translation tables see Vol. 4...", this is so you
+know what to put for the XmNaccelerator resource.  If you go to
+Vol. 4 it says, "Likewise, if a modifier is specified, there is
+nothing to prohibit other modifiers from being present as well. For
+example, the translation:
+
+	Shift<Key>q:	quit()
+
+will take effect even if the Ctrl key is held down at the same time as
+the Shift key (and the q key).
+
+This implies to me that setting XmNaccelerator to Ctrl<Key>o should do
+what I want, but it doesn't, it doesn't work if the user presses the
+control key, the shift key, and the o key.
+
+Is it possible to supply > 1 accelerator for a menu entry? Keep in
+mind when answering this question that when using Motif you can't use
+XtInstallAccelerators().
+
+I am using Motif 1.1.3 on a DECstation 5000 but I have also tried it
+on an HP using Motif 1.1.3 and 1.2.
+
+
+-- 
+**********************************************************************
+Steve Dennis              Internet: sdennis@ann-arbor.applicon.slb.com
+Software Engineer         Applicon Inc.            Ann Arbor, Michigan
+Hail To The Victors!!!

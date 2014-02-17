@@ -1,0 +1,144 @@
+From:  Club@spektr.msk.su (Koltovoy Nikolay Alexeevich)
+Subject: [NEWS]Re:List or image processing systems?
+Distribution: eunet
+Reply-To: Club@spektr.msk.su
+Organization: Moscow Scientific Industrial Ass. Spectrum
+Lines: 137
+
+
+       Moscow Scientific Inductrial Association "Spectrum" offer
+       VIDEOSCAN vision system for PC/AT,wich include software and set of
+       controllers.
+
+                     SOFTWARE
+
+            For support VIDEOSCAN family program kit was developed. Kit
+       includes more then 200 different functions for image processing.
+            Kit works in the interactive regime, and has include Help for
+       non professional users.
+            There are next possibility:
+       - input frame by any board of VIDEOSCAN family;
+       - read - white image to - from disk;
+       - print image on the printer;
+       - makes arithmetic with 2 frames;
+       - filter image;
+       - work with gistogramme;
+       - edit image.
+       - include users exe modules.
+
+                     CONTROLLER VS9
+
+       The function of VS-9 controller is to load TV-images into  PC/AT.
+       VS-9 controller allows one to load a fragment of the TV-frame from
+       a field of 724x600 pixels.
+       The clock rate is 14,7 MHz when loading an image with 512 pixel in
+       the line and 7,4 MHz when loading a 256 pixels image. This
+       provides the equal pixel size of input image in both horizontal
+       and vertical directions.
+       The number of gray levels in any input modes is 256.
+       Video signal capture time - 2.5s.
+
+                     CONTROLLER VS52
+
+       The purpose of the controller is to enter the TV images into a IBM
+       PC AT or any other machine of that type. The controller was
+       created on the base of modern elements, including user
+       programmable gate arrays.
+       The controller allows to digitize a input signal with different
+       resolutions. Its flexible architecture makes possible to change
+       technical parameters. Instead of TV signal one can process any
+       other analog signal (including signals from slow-speed scanning
+       devices).
+       The controller has the following technical characteristics:
+       - memory volume - from 256 K to 2 Mb ;
+       - resolution when working with standard video signal - from 64x64
+       to 1024x512 pixels ;
+       - resolution when working in slow input regime - up to 2048x1024
+       pixels;
+       - video signal capture time - 40 ms.
+       - maximum size of a screen when memory volume is 2Mb - 2048x1024
+       pixels ;
+       - number of gray level - 256 ;
+       - clock rate for input - up to 30 MHz ;
+       - 4 input video multiplexer ;
+       - input/output lookup table (LUT);
+       - possibility to realize "scroll" and "zoom";
+
+
+
+
+
+
+
+
+
+
+
+
+
+       - 8 lines for external synchronization (an input using external
+       controlling signal) ;
+       - electronic adjustment of black and white reference for analog -
+       digital converter;
+       - possibility output image to the color RGB monitor.
+       One can change all listed above functions and parameters of the
+       controller by reprogramming it.
+
+
+              IMAGE PROCESSOR VS100
+
+
+            Image processor VS100 allows to digitize and process TV
+       signal in real time. It is possible digitize TV signal with
+       512*512*8 resolution and realize arithmetic and logic operation
+       with two images.
+            Processor was created on the base of modern elements
+       including user programmable gate arrays and designed as a board
+       for PC.
+            Memory volume allows write to the 256 frames with 512*512*8
+       format. It is possible to accumulate until 16 images.
+            The processor has the following technical characteristics:
+       - memory volume to 64 Mb;
+       - number of the gray level - 256;
+       - 4 input video multiplexer;
+       - input/output lookup table;
+       - electronic adjustment for black and white ADC reference;
+       - image size from 256*256 to 8192*8192;
+       - possibility color and black / white output;
+       - possibility input from slow-scan video sources.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

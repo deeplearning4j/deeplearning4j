@@ -1,0 +1,488 @@
+From: shavlik@cs.wisc.edu (Jude Shavlik)
+Subject: Program & Reg Forms: 1st Int Conf on Intell Sys for Molecular Biology
+Keywords: computational biology, artificial intelligence
+Organization: U of Wisconsin CS Dept
+Lines: 482
+
+[For those attending the AAAI conf this summer, note that
+this conference is immediately preceding it.]
+
+
+         PRELIMINARY PROGRAM AND REGISTRATION MATERIALS
+
+              First International Conference on
+          Intelligent Systems for Molecular Biology
+
+                       Washington, D.C.
+                        July 6-9, 1993
+
+Sponsored by:
+  The National Institutes of Health, 
+     National Library of Medicine
+
+  The Department of Energy, 
+     Office of Health and Environmental Research
+
+  The Biomatrix Society
+
+  The American Association for Artificial Intelligence (AAAI)
+
+Poster Session and Tutorials:  
+  Bethesda Ramada Hotel
+
+Technical Sessions:
+  Lister Hill Center Auditorium, National Library of Medicine
+
+For more information contact ISMB@nlm.nih.gov or FAX (608)262-9777
+
+                           PURPOSE
+This, the First International Conference on Intelligent Systems 
+for Molecular Biology, is the inaugural meeting in a series 
+intended to bring together scientists who are applying the 
+technologies of artificial intelligence, robotics, machine 
+learning, massively parallel computing, advanced data modelling, 
+and related methods to problems in molecular biology.  The scope 
+extends to any computational or robotic system supporting a 
+biological task that is cognitively challenging, involves a 
+synthesis of information from multiple sources at multiple levels, 
+or in some other way exhibits the abstraction and emergent 
+properties of an "intelligent system."  
+
+                          FACILITIES
+The conference will be held at
+   Lister Hill Center 
+   National Library of Medicine
+   8600 Rockville Pike
+   NIH, Building 38A
+   Bethesda MD 20894
+Seating in the conference center is strictly limited, so 
+registrations will be accepted on a first-come, first-serve basis. 
+Accomodations, as well as a reception and poster session, will be 
+at the
+   Bethesda Ramada Hotel 
+   8400 Wisconsin Avenue
+   Bethesda MD 20814
+A special room rate has been negotiated with the hotel, of $92/day 
+(expires 6/21).  Attendees must make their own reservations, by 
+writing the hotel or calling (800)331-5252 and mentioning the 
+ISMB conference.  To participate in a roommate-matching service, 
+e-mail opitz@cs.wisc.edu.
+
+                         TRANSPORTATION
+The two facilities are within easy walking distance, convenient to 
+the subway (Metro Red Line, Medical Center stop), and from there 
+to the Amtrak station.  Nearby airports include Dulles, National, 
+and Baltimore-Washington International. 
+
+                           PROCEEDINGS
+Full-length papers from both talks and posters will be published in
+archival proceedings.  The citation is: 
+
+  Proceedings of the First International 
+  Conference on Intelligent Systems for 
+  Molecular Biology (eds. L. Hunter, 
+  D. Searls, and J. Shavlik) AAAI/MIT
+  Press, Menlo Park CA, 1993.  
+
+Copies will be distributed at the conference to registered 
+attendees, and will be available for purchase from the publisher 
+afterwards.
+
+                             TALKS
+Wednesday, July 7, 1993
+-----------------------------------------------------------------
+8:00-9:00am     Continental Breakfast
+
+9:00-9:15am     Opening Remarks
+
+9:15-10:30am    Invited Talk
+ "Statistics, Protein Cores, and Predicted Structures"
+ Prof. Temple Smith (Boston University)
+
+10:30-11:00am	Break
+
+11:00am	"Constructive Induction and Protein Structure Prediction"
+ T.R. Ioerger, L. Rendell, & S. Surbramaniam
+
+11:30am	"Protein Secondary-Structure Modeling with Probabilistic 
+ Networks"  A.L. Delcher, S. Kasif, H.R. Goldberg, & W. Hsu
+
+12:00-1:30pm	Lunch
+
+1:30pm	"Protein Secondary Structure using Two-Level Case-Based 
+ Reasoning"  B. Leng, B.G. Buchanan, & H.B. Nicholas
+
+2:00pm 	"Automatic Derivation of Substructures Yields Novel 
+ Structural Building Blocks in Globular Proteins" 
+ X. Zhang, J.S. Fetrow, W.A. Rennie, D.L. Waltz, & G. Berg
+
+2:30pm 	"Using Dirichlet Mixture Priors to Derive Hidden Markov 
+ Models for Protein Families" M. Brown, R. Hughey, A. Krogh, 
+ I.S. Mian, K. Sjolander, & D. Haussler
+
+3:00-3:30pm	Break
+
+3:30pm	"Protein Classification using Neural Networks" 
+ E.A. Ferran, B. Pflugfelder, & P. Ferrara
+
+4:00pm	"Neural Networks for Molecular Sequence Classification"
+ C. Wu, M. Berry, Y-S. Fung, & J. McLarty
+
+4:30pm	"Computationally Efficient Cluster Representation in 
+ Molecular Sequence Megaclassification"  D.J. States, N. Harris, 
+ & L. Hunter
+
+7:00-7:30pm     Poster Setup
+7:30-10:00pm    Reception & Poster Session 
+
+Thursday, July 8, 1993
+-----------------------------------------------------------------
+8:00-9:00am     Continental Breakfast
+
+9:00-10:15am    Invited Talk
+ "Large-Scale DNA Sequencing:  A Tale of Mice and Men"
+ Prof. Leroy Hood (University of Washington)
+
+10:15-10:45am	Break
+
+10:45am	"Pattern Recognition for Automated DNA Sequencing: 
+ I. On-Line Signal Conditioning and Feature Extraction for 
+ Basecalling"  J.B. Bolden III, D. Torgersen, & C. Tibbetts
+
+11:15am	"Genetic Algorithms for Sequence Assembly" 
+ R. Parsons, S. Forrest, & C. Burks
+
+11:45am	"A Partial Digest Approach to Restriction Site Mapping"
+ S.S. Skiena & G. Sundaram
+
+12:15-2:00pm	Lunch
+
+2:00pm	"Integrating Order and Distance Relationships from 
+ Heterogeneous Maps"  M. Graves 
+
+2:30pm	"Discovering Sequence Similarity by the Algorithmic 
+ Significance Method"  A. Milosavljevic
+
+3:00pm	"Identification of Human Gene Functional Regions Based on 
+ Oligonucleotide Composition"  V.V. Solovyev & C.B. Lawrence
+
+3:30pm	"Knowledge Discovery in GENBANK"
+ J.S. Aaronson, J. Haas, & G.C. Overton
+
+4:00-4:30pm	Break
+
+4:30pm	"An Expert System to Generate Machine Learning 
+ Experiments: Learning with DNA Crystallography Data"
+ D. Cohen, C. Kulikowski, & H. Berman 
+
+5:00pm 	"Detection of Correlations in tRNA Sequences with 
+ Structural Implications"  T.M. Klingler & D. Brutlag
+
+5:30pm	"Probabilistic Structure Calculations: A Three-
+ Dimensional tRNA Structure from Sequence Correlation Data" 
+ R.B. Altman
+
+Friday, July 9, 1993
+-----------------------------------------------------------------
+8:00-9:00am     Continental Breakfast
+
+9:00-10:15am    Invited Talk
+ "Artificial Intelligence and a Grand Unified Theory of 
+ Biochemistry" Prof. Harold Morowitz (George Mason University)
+
+10:15-10:45am	Break
+
+10:45am	"Testing HIV Molecular Biology in in silico Physiologies" 
+ H.B. Sieburg & C. Baray
+
+11:15am	"Identification of Localized and Distributed Bottlenecks 
+ in Metabolic Pathways"  M.L. Mavrovouniotis
+
+11:45am	"Fine-Grain Databases for Pattern Discovery in Gene 
+ Regulation"  S.M. Veretnik & B.R. Schatz
+
+12:15-2:00pm	Lunch
+
+2:00pm	"Representation for Discovery of Protein Motifs"
+ D. Conklin, S. Fortier, & J. Glasgow
+
+2:30pm	"Finding Relevant Biomolecular Features"  
+ L. Hunter & T. Klein
+
+3:00pm	"Database Techniques for Biological Materials and 
+ Methods"  K. Baclawski, R. Futrelle, N. Fridman, 
+ & M.J. Pescitelli
+
+3:30pm	"A Multi-Level Description Scheme of Protein 
+ Conformation"  K. Onizuka, K. Asai, M. Ishikawa, & S.T.C. Wong
+
+4:00-4:30pm	Break
+
+4:30pm	"Protein Topology Prediction through Parallel Constraint 
+ Logic Programming"  D.A. Clark, C.J. Rawlings, J. Shirazi, 
+ A. Veron, & M. Reeve
+
+5:30pm	"A Constraint Reasoning System for Automating Sequence-
+ Specific Resonance Assignments in Multidimensional Protein
+ NMR Spectra"  D. Zimmerman, C. Kulikowski, & G.T. Montelione
+
+5:30-5:45pm	Closing Remarks
+
+                         POSTER SESSION
+The following posters will be on display at the Bethesda Ramada 
+Hotel from 7:30-10:00pm, Wednesday, July 7.
+
+[1] "The Induction of Rules for Predicting Chemical
+ Carcinogenesis in Rodents"  D. Bahler & D. Bristol
+
+[2] "SENEX: A CLOS/CLIM Application for Molecular Pathology"  
+ S.S. Ball & V.H. Mah
+
+[3] "FLASH: A Fast Look-Up Algorithm for String Homology"
+ A. Califano & I. Rigoutsos
+
+[4] "Toward Multi-Strategy Parallel Learning in Sequence 
+ Analysis"  P.K. Chan & S.J. Stolfo
+
+[5] "Protein Structure Prediction: Selecting Salient Features 
+ from Large Candidate Pools"  K.J. Cherkauer & J.W. Shavlik
+
+[6] "Comparison of Two Approaches to the Prediction of Protein 
+ Folding Patterns"  I. Dubchak, S.R. Holbrook, & S.-H. Kim
+
+[7] "A Modular Learning Environment for Protein Modeling"
+ J. Gracy, L. Chiche & J. Sallantin
+
+[8] "Inference of Order in Genetic Systems" 
+ J.N. Guidi & T.H. Roderick
+
+[9] "PALM - A Pattern Language for Molecular Biology"
+ C. Helgesen & P.R. Sibbald
+
+[10] "Grammatical Formalization of Metabolic Processes"  
+ R. Hofestedt
+
+[11] "Representations of Metabolic Knowledge"  
+ P.D. Karp & M. Riley
+
+[12] "Protein Sequencing Experiment Planning Using Analogy"
+ B. Kettler & L. Darden
+
+[13] "Design of an Object-Oriented Database for Reverse Genetics"  
+ K.J. Kochut, J. Arnold, J.A. Miller, & W.D. Potter
+
+[14] "A Small Automaton for Word Recognition in DNA Sequences"
+ C. Lefevre & J.-E Ikeda
+
+[15] "MultiMap:  An Expert System for Automated Genetic Linkage 
+ Mapping"  T.C. Matise, M. Perlin & A. Chakravarti
+
+[16] "Constructing a Distributed Object-Oriented System with 
+Logical Constraints for Fluorescence-Activated Cell Sorting"
+ T. Matsushima
+
+[17] "Prediction of Primate Splice Junction Gene Sequences with 
+ a Cooperative Knowledge Acquisition System"
+ E.M. Nguifo & J. Sallantin
+
+[18] "Object-Oriented Knowledge Bases for the Analysis of 
+ Prokaryotic and Eukaryotic Genomes" 
+ G. Perriere, F. Dorkeld, F. Rechenmann, & C. Gautier
+
+[19] "Petri Net Representations in Metabolic Pathways"
+ V.N. Reddy, M.L. Mavrovouniotis, & M.L. Liebman
+
+[20] "Minimizing Complexity in Cellular Automata Models of 
+ Self-Replication"  J.A. Reggia, H.-H. Chou, S.L. Armentrout, 
+ & Y. Peng
+
+[21] "Building Large Knowledge Bases in Molecular Biology"
+ O. Schmeltzer, C. Medigue, P. Uvietta, F. Rechenmann, 
+ F. Dorkeld, G. Perriere, & C. Gautier
+
+[22] "A Service-Oriented Information Sources Database for the 
+ Biological Sciences"  G.K. Springer & T.B. Patrick
+
+[23] "Hidden Markov Models and Iterative Aligners: Study of their 
+ Equivalence and Possibilities" H. Tanaka, K. Asai, M. Ishikawa,
+ & A. Konagaya
+
+[24] "Protein Structure Prediction System Based on Artificial 
+ Neural Networks"  J. Vanhala & K. Kaski
+
+[25] "Transmembrane Segment Prediction from Protein Sequence 
+ Data"  S.M. Weiss, D.M. Cohen & N. Indurkhya
+
+                      TUTORIAL PROGRAM
+Tutorials will be conducted at the Bethesda Ramada Hotel on 
+Tuesday, July 6.
+
+12:00-2:45pm "Introduction to Molecular Biology for Computer 
+ Scientists"  Prof. Mick Noordewier (Rutgers University)
+
+This overview of the essential facts of molecular biology is 
+intended as an introduction to the field for computer scientists 
+who wish to apply their tools to this rich and complex domain.  
+Material covered will include structural and informational 
+molecules, the basic organization of the cell and of genetic 
+material, the "central dogma" of gene expression, and selected 
+other topics in the area of structure, function, and regulation as 
+relates to current computational approaches.  Dr. Noordewier has 
+appointments in both Computer Science and Biology at Rutgers, and 
+has extensive experience in basic biological research in addition 
+to his current work in computational biology.
+
+12:00-2:45pm "Introduction to Artificial Intelligence for 
+ Biologists"  Dr. Richard Lathrop (MIT & Arris Corp.)
+
+An overview of the field of artificial intelligence will be 
+presented, as it relates to actual and potential biological 
+applications.  Fundamental techniques, symbolic programming 
+languages, and notions of search will be discussed, as well as 
+selected topics in somewhat greater detail, such as knowledge 
+representation, inference, and machine learning.  The intended 
+audience includes biologists with some computational background, 
+but no extensive exposure to artificial intelligence.  Dr. 
+Lathrop, co-developer of ARIADNE and related technologies, has 
+worked in the area of artificial intelligence applied to 
+biological problems in both academia and industry.
+
+3:00-5:45pm "Neural Networks, Statistics, and Information Theory 
+ in Biological Sequence Analysis" Dr. Alan Lapedes (Los Alamos 
+ National Laboratory) 
+
+This tutorial will cover the most rapidly-expanding facet of 
+intelligent systems for molecular biology, that of machine 
+learning techniques applied to sequence analysis.  Closely 
+interrelated topics to be addressed include the use of artifical 
+neural networks to elicit both specific signals and general 
+characteristics of sequences, and the relationship of such 
+approaches to statistical techniques and information-theoretic 
+views of sequence data.  Dr. Lapedes, of the Theoretical 
+Division at Los Alamos, has long been a leader in the use of such 
+techniques in this domain.
+
+3:00-5:45pm "Genetic Algorithms and Genetic Programming" 
+ Prof. John Koza (Stanford University)
+
+The genetic algorithm, an increasingly popular approach to highly 
+non-linear multi-dimensional optimization problems, was originally 
+inspired by a biological metaphor.  This tutorial will cover both 
+the biological motivations, and the actual implementation and 
+characteristics of the algorithm.  Genetic Programming, an 
+extension well-suited to problems where the discovery of the size 
+and shape of the solution is a major part of the problem, will 
+also be addressed.  Particular attention will be paid to 
+biological applications, and to identifying resources and software 
+that will permit attendees to begin using the methods.  Dr. Koza, 
+a Consulting Professor of Computer Science at Stanford, has taught 
+this subject since 1988 and is the author of a standard text in 
+the field.
+
+3:00-5:45pm "Linguistic Methods in Sequence Analysis" 
+ Prof. David Searls (University of Pennsylvania) 
+ & Shmuel Pietrokovski (Weizmann Institute)
+
+Approaches to sequence analysis based on linguistic methodologies 
+are increasingly in evidence.  These involve the adaptation of 
+tools and techniques from computational linguistics for syntactic 
+pattern recognition and gene prediction, the classification of 
+genetic structures and phenomena using formal language theory, the 
+identification of significant vocabularies and overlapping codes 
+in sequence data, and sequence comparison reflecting taxonomic and 
+functional relatedness.  Dr. Searls, who holds research faculty 
+appointments in both Genetics and Computer Science at Penn, 
+represents the branch of this field that considers higher-order 
+syntactic approaches to sequence data, while Shmuel Pietrokovski 
+has studied and published with Prof. Edward Trifinov in the area 
+of word-based analyses.
+
+                      REGISTRATION FORM
+Mail, with check made out to "ISMB-93", to:
+
+               ISMB Conference, c/o J. Shavlik
+               Computer Sciences Department
+               University of Wisconsin
+               1210 West Dayton Street
+               Madison, WI 53706  USA
+
+        ================================================
+
+        Name____________________________________________
+	
+        Affiliation_____________________________________
+	
+        Address_________________________________________
+
+        ________________________________________________
+
+        ________________________________________________
+
+        ________________________________________________
+
+        Phone___________________________________________
+
+        FAX_____________________________________________
+
+        Electronic Mail_________________________________
+	
+        Registration Status: ____ Regular   ____ Student
+
+        Presenting?          ____ Talk      ____  Poster
+        ================================================
+        TUTORIAL REGISTRATION 
+
+        ____"Molecular Biology for Computer Scientists"
+         or
+        ____"Artificial Intelligence for Biologists"
+         -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - 
+        ____"Neural Networks, Statistics, and 
+         or     Information Theory in Sequence Analysis"
+        ____"Genetic Algorithms and Genetic Programming"
+         or 
+        ____"Linguistic Methods in Sequence Analysis"
+        ================================================
+        PAYMENT       (Early Registration Before June 1)
+
+        Registration:  Early   Late	    $___________
+              Regular  $100    $125	
+              Student  $75     $100	
+        Tutorials:     One      Two         $___________
+              Regular  $50      $65	
+              Student  $25      $35	
+        Total:                              $___________
+        ================================================
+        Registration fees include conference proceedings, 
+        refreshments, and general program expenses. 
+
+
+                      ORGANIZING COMMITTEE
+        Lawrence Hunter                              NLM 
+        David Searls                  U. of Pennsylvania
+        Jude Shavlik                     U. of Wisconsin
+
+                        PROGRAM COMMITTEE
+        Douglas Brutlag                      Stanford U.
+        Bruce Buchanan                  U. of Pittsburgh
+        Christian Burks          Los Alamos National Lab
+        Fred Cohen                    U.C.-San Francisco
+        Chris Fields           Inst. for Genome Research
+        Michael Gribskov                  U.C.-San Diego
+        Peter Karp                     SRI International
+        Toni Kazic                         Washington U.
+        Alan Lapedes             Los Alamos National Lab
+        Richard Lathrop                MIT & Arris Corp.
+        Charles Lawrence                          Baylor 
+        Michael Mavrovouniotis            U. of Maryland
+        George Michaels                              NIH
+        Harold Morowitz                  George Mason U.
+        Katsumi Nitta                               ICOT
+        Mick Noordewier                       Rutgers U.
+        Ross Overbeek               Argonne National Lab
+        Chris Rawlings                              ICRF
+        Derek Sleeman                     U. of Aberdeen
+        David States                       Washington U.
+        Gary Stormo                       U. of Colorado
+        Ed Uberbacher             Oak Ridge National Lab
+        David Waltz              Thinking Machines Corp.
+

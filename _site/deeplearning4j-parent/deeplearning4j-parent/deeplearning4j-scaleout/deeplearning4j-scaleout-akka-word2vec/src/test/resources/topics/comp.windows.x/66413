@@ -1,0 +1,31 @@
+From: etxmesa@eos.ericsson.se (Michael Salmon)
+Subject: Re: Help building X11R5 with gcc
+Keywords: X11R5, gcc
+Nntp-Posting-Host: eos6c02.ericsson.se
+Reply-To: etxmesa@eos.ericsson.se (Michael Salmon)
+Organization: Ericsson Telecom AB
+Lines: 23
+
+In article <1993Apr6.024257.8480@etrog.se.citri.edu.au>
+tim@kimba.catt.citri.edu.au (Tim Liddelow) writes:
+|> Can people please send me any hints on building X11R5 with gcc 2.3.3 ?  Is
+|> there any pitfalls to be avoided ?  Any hints ?  I would appreciate hearing other
+|> peoples' stories on this.
+
+I have been building X11 with gcc since 2.1 and the only time I had
+trouble was when the position independant code option broke (so I
+couldn't use gcc to build Sun shared libraries). The important thing to
+do is to follow the tips given in the gcc release. Gcc generates code
+that requires libgcc2 and you should take that into account when
+deciding which compiler to use for the libraries.
+
+-- 
+
+Michael Salmon
+
+#include	<standard.disclaimer>
+#include	<witty.saying>
+#include	<fancy.pseudo.graphics>
+
+Ericsson Telecom AB
+Stockholm

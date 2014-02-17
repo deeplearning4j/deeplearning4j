@@ -1,0 +1,35 @@
+From: aa894@Freenet.carleton.ca (Terry MacLean)
+Subject: How Do I Modify Key Map?
+Organization: National Capital Freenet, Ottawa, Canada
+Lines: 35
+
+
+Hello folks,
+
+I'm seeing these errors when I try to modify my key map:
+
+mwm: invalid accelerator specfication, line x
+
+I've added a line in the start up file before the line
+that starts mwm. It looks like the following:
+
+xmodmap keymapfile
+mwm
+
+I think that the problem has to do with a conflict between
+function keys F1 through F7 which already have assigned
+functions (e.g. Move, Minimize, etc).
+
+The odd thing is that I don't see these errors if I run
+
+xmodmap keymapfile
+
+from an xterm.
+
+Can anyone suggest a way to modify the key map, specifically
+F1 through F7 AND not have mwm (Motif Window Manager) complain.
+
+I realize this is a bit stupid, but we only have time to
+implement, not time to learn how to implement.
+
+Terry

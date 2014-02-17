@@ -1,0 +1,42 @@
+From: "Altan J. Stalker" <astalker@nickel.ucs.indiana.edu>
+Subject: SE/30 Hard Drive Problem
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Organization: Indiana University
+Mime-Version: 1.0
+Content-Length: 1161      
+Lines: 33
+
+
+I have an SE/30 with a 80 meg HD which dates back to April 1989.  When I
+originally purchased it, I experienced the failure to boot problem.  This
+was fixed soon after by a ROM upgrade on the hard drive.
+
+Lately a similar problem has been occuring.  When the computer is
+powered on the HD light flashes a few times and then I am given
+the "no disk to boot from" icon.  However, upon turing the
+computer off and on again the drive ALWAYS boots up just fine.  
+Furthermore, if instead of turning the power on and off I press the reboot 
+button the same problem occurs.  But, as I said, turning the power
+off and on always works.
+
+This problem is different from the 1989 boot problem in that before
+it often required several power off and ons to get it to boot.
+
+Does anybody have any suggestions as to what the problem is or how
+it can be fixed?
+
+I'm wondering if it's getting old and requires more time to 
+"come up to speed" now.  Is there a PRAM or SCSI setting that
+allows me to tell the computer to wait a little longer before 
+trying to access the HD?
+
+Thanks!
+
+
+Altan J. Stalker
+astalker@nickel.ucs.indiana.edu
+Indiana University
+Computer Science Dept.
+
+

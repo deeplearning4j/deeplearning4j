@@ -1,0 +1,37 @@
+From: ejbehr@rs6000.cmp.ilstu.edu (Eric Behr)
+Subject: Asante EN/SC hangs SCSI devices
+Reply-To: behr@math.ilstu.edu (Eric Behr)
+Organization: Central Illinois Surfing Club
+Lines: 31
+
+I just hooked up my Mac IIsi to a relatively old (1 year?) Asante EN/SC
+adapter. The 10Base-T connection works like a charm. I installed the
+newest drivers from Asante's ftp server.
+
+The problem begins when I attach one more device to the SCSI chain -
+specifically a 50MB drive. I power up the drive, then the Mac. The Mac
+tests memory, etc. Just before the "happy Mac face" normally shows up, the
+power light on the EN/SC goes out, and the boot process stops. So I can use
+the network, or the external drive, but not both at once. This makes the
+Asante box pretty much unusable.
+
+It doesn't look like a purely electrical SCSI problem, because if I turn
+on the drive just a second or so too late, so that it doesn't get noticed
+during the initial SCSI polling, the Mac boots normally and the adapter
+works, even though the hard disk is powered on and connected. The Mac has
+*never* once failed to boot from its internal drive up to now (and I've had
+it for over a year).
+
+Here is what I tried: changing the SCSI ID's of the EN/SC and the disk --
+several permutations; changing the order of devices, i.e. the EN/SC at the
+head or tail of the chain; overterminating with an external terminator
+(both devices have internal ones); underterminating, i.e. removing internal
+resistors from the hard disk; trying another EN/SC box; trying another
+identical drive; trying several different SCSI cables.
+
+Has anybody seen this? More importantly, does anyone have a solution?
+Thanks a lot.    E.
+
+-- 
+Eric Behr, Illinois State University, Mathematics Department
+behr@math.ilstu.edu   or   behr@ilstu.bitnet  (please avoid!)

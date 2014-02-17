@@ -1,0 +1,34 @@
+From: oecjtb@oec4.orbital.dialix.oz.au (John Bongiovanni)
+Subject: Re: Date is stuck
+Organization: Orbital Engine Company
+Lines: 29
+
+bsardis@netcom.com (Barry Sardis) writes:
+
+>kevin@kosman.uucp (Kevin O'Gorman) writes:
+
+>>Anybody seen the date get stuck?
+
+>>I'm running MS-DOS 5.0 with a menu system alive all the time.  The machine
+>>is left running all the time.
+
+>>Suddenly, the date no longer rolls over.  The time is (reasonably) accurate
+>>allways, but we have to change the date by hand every morning.  This involves
+>>exiting the menu system to get to DOS.
+
+>I've started to notice the same thing myself. I'm running DOS 5 and Win 3.1 so
+>I can fix it from the Windows Control Panel. At times it is the date, at
+>others the clock seems to be running several minutes behind where it should
+>be.
+
+Did I once hear that in order for the date to advance, something, like a 
+clock, *has* to make a Get Date system call? Apparently, the clock
+hardware interrupt and BIOS don't do this (date advance) automatically. The
+Get Date call notices that a "midnight reset" flag has been set, and then
+then advances the date.
+
+Anybody with more info?
+-- 
+John Bongiovanni, Systems Analyst, Orbital Engine Company, Perth, Australia
+oecjtb@oec4.orbital.dialix.oz.au, bongo@alumni.caltech.edu
+Opinions expressed are my own and not those of my organisation.

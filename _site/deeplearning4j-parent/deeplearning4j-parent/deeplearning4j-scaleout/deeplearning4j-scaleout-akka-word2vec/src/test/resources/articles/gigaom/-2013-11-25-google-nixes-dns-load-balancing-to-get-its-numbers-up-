@@ -1,0 +1,11 @@
+A
+Summary:
+By using simple APIs and a single IP address to serve traffic, Google Compute Engine claims it can now handle 1 million requests per second.
+In case you’ve forgotten, Google would like to remind you that it’s fielding a very scalable cloud — one that can handle a ton of simultaneous requests for service. On Monday it claimed that the Google Compute Engine can now serve a million load-balanced requests per second. According to the Google Compute Engine blog : “Within 5 seconds after the setup and without any pre-warming, our load balancer was able to serve 1 million requests per second and sustain that level.”
+Joey Imbasciano, cloud platform engineer at Stackdriver, read this as a challenge to Amazon Web Service’s Elastic Load Balancing.  ”ELBs must be pre-warmed or linearly scaled to that level while GCE’s ELBs come out of the box to handle it, supposedly,” he said via email.  Given that Google wants to position GCE as a competitor to AWS for business workloads, I’d say that’s a pretty good summation.
+Google also put the price tag of that workload at a whopping $10.
+In any case, Google positioned this as a response to the “C10k problem” which is about setting up network sockets to handle a large number of simultaneous client requests — in the C10K case, 10,000 such requests. Clearly, 1 million is a (much) bigger number. Google also said it’s able to handle more simultaneous hits with new load balancing that uses simple APIs and a single IP address to serve the traffic as opposed to the more complex and more expensive  DNS load balancer it used last year to handle the Eurovision Song Contest.
+ 
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

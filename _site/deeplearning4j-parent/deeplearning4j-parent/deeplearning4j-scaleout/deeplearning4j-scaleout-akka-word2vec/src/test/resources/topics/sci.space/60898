@@ -1,0 +1,27 @@
+From: nickh@CS.CMU.EDU (Nick Haines)
+Subject: Re: Shuttle Launch Question
+In-Reply-To: jcm@head-cfa.harvard.edu's message of Sun, 18 Apr 1993 22:44:14 GMT
+Originator: nickh@SNOW.FOX.CS.CMU.EDU
+Nntp-Posting-Host: snow.fox.cs.cmu.edu
+Organization: School of Computer Science, Carnegie Mellon University
+	<1993Apr18.224414.784@head-cfa.harvard.edu>
+Distribution: sci
+Lines: 17
+
+In article <1993Apr18.224414.784@head-cfa.harvard.edu> jcm@head-cfa.harvard.edu (Jonathan McDowell) writes:
+
+   My understanding is that the 'expected errors' are basically
+   known bugs in the warning system software - things are checked
+   that don't have the right values in yet because they aren't
+   set till after launch, and suchlike. Rather than fix the code
+   and possibly introduce new bugs, they just tell the crew
+   'ok, if you see a warning no. 213 before liftoff, ignore it'.
+
+Good grief. And I thought the Shuttle software was known for being
+well-engineered. If this is actually the case, every member of the
+programming team should be taken out and shot.
+
+(given that I've heard the Shuttle software rated as Level 5 in
+maturity, I strongly doubt that this is the case).
+
+Nick Haines nickh@cmu.edu

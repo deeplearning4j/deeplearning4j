@@ -1,0 +1,25 @@
+From: butzerd@maumee.eng.ohio-state.edu (Dane C. Butzer)
+Subject: Re: Once tapped, your code is no good any more.
+Organization: The Ohio State University Dept of Electrical Engineering
+Distribution: na
+Lines: 19
+
+In article <1993Apr20.034724.3748@colnet.cmhnet.org> res@colnet.cmhnet.org (Rob Stampfli) writes:
+>>>	With E-Mail, if they can't break your PGP encryption, they'll just
+>>>call up one of their TEMPEST trucks and read the electromagnetic emmisions
+>>>from your computer or terminal.  Note that measures to protect yourself from
+>>
+>>2. I could independently invent about half a dozen right off
+>>the top of my head. If I had studied Advanced E & M a little better,
+>>I could probably come up with a _very_ good system.
+>
+>Wouldn't a a second monitor of similar type scrolling gibberish and adjacent
+>to the one being used provide reasonable resistance to tempest attacks?
+
+Actually, old video games and pinball machines are supposed to work pretty
+good (at blocking EM eavesdropping), too.  Those things put out a LOT of EM
+noise.  Back in the 80's, I read about computer companies putting bunches
+of games in their buildings for just this purpose (not to mention the $$$).
+
+
+Dane

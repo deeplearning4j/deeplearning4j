@@ -1,0 +1,65 @@
+From: davet@interceptor.cds.tek.com (Dave Tharp CDS)
+Subject: Re: Rejetting carbs..
+Keywords: air pump
+Distribution: na
+Organization: Tektronix - Colorado Data Systems, Englewood, CO
+Lines: 58
+
+In article <jburney.734756216@hydra.nodc.noaa.gov> jburney@hydra.nodc.noaa.gov (Jeff Burney) writes:
+>
+>If we are only talking about 4-stroke (I think I can understand exhaust
+>pulse affect in a 2-stroke), the intake valve is closed on the
+>exhaust stroke and the gas is pushed out by the cyclinder.  I guess
+>there is some gas compression that may affect the amount pushed out
+>but the limiting factor seems to be the header pipe and not the 
+>canister.  Meaning: would gases "so far" down the line (the canister)
+>really have an effect on the exhaust stroke?  Do the gases really 
+>compress that much?
+
+    For discussion purposes, I will ignore dynamic effects like pulses
+in the exhaust pipe, and try to paint a useful mental picture.
+
+1.  Unless an engine is supercharged, the pressure available to force
+air into the intake tract is _atmospheric_.  At the time the intake
+valve is opened, the pressure differential available to move air is only
+the difference between the combustion chamber pressure (left over after
+the exhaust stroke) and atmospheric.  As the piston decends on the
+intake stroke, combustion chamber pressure is decreased, allowing
+atmospheric pressure to move more air into the intake tract.  At no time
+does the pressure ever become "negative", or even approach a good
+vacuum.
+
+2.  At the time of the exhaust valve closing, the pressure in the
+combustion chamber is essentially the pressure of the exhaust system up
+to the first major flow restriction (the muffler).  Note that the volume
+of gas that must flow through the exhaust is much larger than the volume
+that must flow through the intake, because of the temperature
+difference and the products of combustion.
+
+3.  In the last 6-8 years, the Japanese manufacturers have started
+paying attention to exhaust and intake tuning, in pursuit of almighty
+horsepower.  At this point in time, on high-performance bikes,
+substitution of an aftermarket free-flow air filter will have almost
+zero affect on performance, because the stock intake system flows very
+well anyway.  Substitution of an aftermarket exhaust system will make
+very little difference, unless (in general) the new exhaust system is
+_much_ louder than the stocker.
+
+4.  On older bikes,  exhaust back-pressure was the dominating factor.
+If free-flowing air filters were substituted, very little difference
+was noted, unless a free-flowing exhaust system was installed as well.
+
+5.  In general, an engine can be visualized as an air pump.  At any
+given RPM, anything that will cause the engine to pump more air, be it
+on the intake or exhaust side, will cause it to produce more horsepower.
+Pumping more air will require recalibration (rejetting) of the carburetor.
+
+-----------------------------------------------------------------------------
+| Dave Tharp                      | DoD #0751   | "You can't wear out       |
+| davet@interceptor.CDS.TEK.COM   | MRA #151    |   an Indian Scout,        |
+| '88 K75S  '48 Indian Chief      | AHRMA #751  |  Or its brother the Chief.|
+| '75 R90S(#151) '72 TR-2B(#751)  | AMA #524737 |  They're built like rocks |
+| '65 R50/2/Velorex  '57 NSU Max  |             |   to take the knocks,     |
+|       1936 BMW R12              | (Compulsive | It's the Harleys that     |
+| My employer has no idea.        |   Joiner)   |   give you grief."        |
+-----------------------------------------------------------------------------

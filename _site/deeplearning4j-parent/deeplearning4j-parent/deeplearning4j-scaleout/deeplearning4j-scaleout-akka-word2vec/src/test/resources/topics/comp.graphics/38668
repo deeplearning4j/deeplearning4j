@@ -1,0 +1,39 @@
+From: ferdinan@oeinck.waterland.wlink.nl (Ferdinand Oeinck)
+Subject: Re: detecting double points in bezier curves
+Organization: My own node in Groningen, NL.
+Lines: 34
+
+renner@adobe.com (John Renner) writes:
+
+> In article <19930420.090030.915@almaden.ibm.com> capelli@vnet.IBM.COM (Ron Ca
+> >In <ia522B1w165w@oeinck.waterland.wlink.nl> Ferdinand Oeinck writes:
+> >>I'm looking for any information on detecting and/or calculating a double
+> >>point and/or cusp in a bezier curve.
+> >
+> >See:
+> >   Maureen Stone and Tony DeRose,
+> >   "A Geometric Characterization of Parametric Cubic Curves",
+> >   ACM TOG, vol 8, no 3, July 1989, pp. 147-163.
+> 
+> I've used that reference, and found that I needed to go to their
+> original tech report:
+> 
+> 	Maureen Stone and Tony DeRose,
+> 	"Characterizing Cubic Bezier Curves"
+> 	Xerox  EDL-88-8, December 1988
+> 
+
+First, thanks to all who replied to my original question.
+
+I've implemented the ideas from the article above and I'm very satisfied
+with the results. I needed it for my bezier curve approximation routine.
+In some cases (generating offset curves) loops can occur. I now have a
+fast method of detecting the generation of a curve with a loop. Although
+I did not follow the article above strictly. The check if the fourth control
+point lies in the the loop area, which is bounded by two parabolas and
+one ellips is too complicated. Instead I enlarged the loop-area and
+surrounded it by for straight lines. The check is now simple and fast and
+my approximation routine never ever outputs self-intersecting bezier curves
+again!
+Ferdinand.
+

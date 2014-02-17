@@ -1,0 +1,34 @@
+photo: Flickr / Thomas Leuthard
+Summary:
+Twitter quickly reversed the changes it made to its blocking policy on Thursday, but the uproar it triggered highlights a tension at the core of the service: How do you ensure privacy on a network that is built to be public?
+photo: Flickr / Thomas Leuthard
+In case you missed all the sturm und drang on Thursday night, Twitter introduced — with no advance notice or warning — a new policy on what happens when a user blocks another user, a policy that significantly changed how that feature had functioned in the past. After an outpouring of criticism from victims of harassment, the company reversed the changes and restored the old policy. But the issue at the heart of this uproar isn’t likely to go away any time soon, because it’s baked into the way that Twitter works.
+In a nutshell, Twitter is a hybrid of public and private: tweets are public by default, and the “asymmetric following” model that underpins the network means anyone can follow you whether you like it or not — something that is impossible with Facebook. Blocking was an attempt to bolt on privacy protections, but it has never really worked all that well, as even critics of the latest change will admit.
+@ glennf I get that it's worse, but I think there's some fantasy about how good it was before — it wasn't—
+Jason Snell (@jsnell) December 12, 2013
+Being public is part of the company’s DNA, to the point where it fights for the free-speech rights of its users even when they say terrible things — as it did during a lawsuit over homophobic and anti-Semitic comments made by some users in France, where such activity is illegal. Some see this commitment as a positive thing ( as I do ), but it has a downside as well, and that emerges when harassment and abuse occur. Balancing those two competing forces is not an easy task.
+An attempt to make blocking less obvious
+It’s not clear how much advance planning or discussion with users went into the new blocking policy (I’ve asked Twitter for comment, and will update if and when I get some) and that seemed to be part of the problem many users had with it. It emerged fully-formed, with no consultation, to the point where some users compared it to the unilateral actions Twitter took against third-party developers.
+According to CEO Dick Costolo and communications officer Jim Prosser, both on Twitter and in comments made to Forbes magazine, one of the main goals with the new policy was to make it more difficult for those who were blocked to know that they had been blocked. Under the old approach, users were notified of the block, and this often resulted in retaliatory behavior that increased the harassment or abuse — and Costolo suggested that some users who had been abused had specifically requested this change.
+@ MatthewKnell now when you block a user, they cannot tell that you've blocked them. It was a longstanding request from users of block…—
+dick costolo (@dickc) December 12, 2013
+At the same time, however, the new policy changed the way that blocking affected the blocked user in some fairly significant ways — ways that many of those who have been subjected to harassment and abuse thought made the feature worse . For example, under the old policy a blocked user couldn’t interact with the tweets of the person who blocked them, either by retweeting or favoriting or adding them to lists, etc. All of these things became possible under the new policy, however.
+How do you control who sees what?
+As a number of people pointed out during the fierce Twitter debate over the changes, blocked users could see the tweets of the person who blocked them before too — all they had to do was log out — and they could interact with them fairly easily by just setting up a new account.
+Storify co-founder Xavier Damman, for example, compared Twitter to blogging and noted that you can’t control whether someone reads your blog post or not: you simply publish it, and then anyone can do whatever they want with it. Since Twitter is a public network by default, the only real option if you want to block people completely is to protect your tweets by making your account private.
+"Just quit twitter or go private" So @ twitter wants the same things that my haters want? Interesting… #RESTORETHEBLOCK —
+Suey Park (@suey_park) December 13, 2013
+As John Hermann noted in a post at BuzzFeed, the kind of blocking that Twitter’s new policy envisioned wasn’t really a block at all, but more like what some online forums have called “hellbanning” or “shadow banning,” since the person who is banned may not even realize that anything has changed. Some of those commenting on the changes said this was the most elegant way of implementing a block, and that it accomplished the goals of the network much better than the previous blocking policy.
+A desire for privacy on a public network
+For many of those who complained about the change, however — including Kathy Sierra, who was the victim of sustained online abuse to the point where she removed herself from the internet completely for a time — the idea that a blocked user could continue to see and retweet and favorite their updates seemed to exacerbate the abusive effect of their behavior rather than lessening it. As online-community expert Derek Powazek noted, the changes seemed designed to pacify the harassers rather than making life easier for the harassed.
+I adore Twitter, but the new blocking mimics rape culture: REQUIRE THE TARGET TO ACCOMMODATE THE BEHAVIOR OF THE ABUSERS. #RestoreTheBlock —
+Nina L. Diamond (@ninatypewriter) December 13, 2013
+More than one person pointed out during the debate that Twitter might have a significant economic interest in changing the way that blocking works — since under the old policy users would be able to block branded accounts or advertisers sending promoted tweets, something advertisers might not like. Whether this was a factor in deciding to make the change isn’t clear, however (if someone at Twitter clarifies this, I will add it to this post).
+What is clear is that the source of the outrage over Twitter’s policy change — that is, the tension between Twitter as an open and public network where anyone can follow and see your updates, and the desire for privacy and/or control that victims of harassment want to have — has yet to be solved. Can it be solved? That’s likely to be a topic of discussion at Twitter for some time to come.
+Now, then. Let's talk bout how blocking SHOULD work. And what other tools a real community needs.—
+Ebenezer Powazek (@fraying) December 13, 2013
+Post and thumbnail photos courtesy of Flickr user Thomas Leuthard
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

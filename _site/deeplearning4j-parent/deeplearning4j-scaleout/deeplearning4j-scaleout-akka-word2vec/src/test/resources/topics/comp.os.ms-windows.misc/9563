@@ -1,0 +1,61 @@
+From: tomh@metrics.com (Tom Haapanen)
+Subject: Re: Hercules Graphite?
+Organization: Software Metrics Inc.
+Lines: 56
+
+> tomh@metrics.com (Tom Haapanen) writes:
+>> Has anyone used a Hercules Graphite adapter?  It looks good on paper, and
+>> Steve Gibson gave it a very good review in Infoworld.  I'd love to get a
+>> real-world impression, though -- how is the speed?  Drivers?  Support?
+
+ntaib@silver.ucs.indiana.edu (Iskandar Taib) writes:
+> The PC World reviewers found out that the Herc people had hard-coded
+> Winbench text into the driver. Clever, no? In any case, the Winbench
+> results are pretty much inflated.
+
+Two things that annoyed me about the PC Magazine review:
+
+1.  Their benchmarking technique is seriously flawed, as was clearly shown
+    by the Graphite and #9GXE's "cheating".  Can't they just admit that
+    their benchmark is to easy to optimize for and/or cheat on?  WinTach
+    is much harder to beat...
+
+2.  The big "cheat" that Hercules/IIT used was overlappipping BitBlit and
+    PolyLine optimization, and Hercules sent them a new driver which didn't
+    do this -- but produced almost identical scores.  Yet, the only thing
+    PC Magazine says is that scores are not "legitimate" -- couldn't they
+    at least make some comment about its real-world performance?
+
+I'm not so much going by WinBench for performance, but, rather, by Steve
+Gibson's results, which are more real-world based (like using Micrografx
+Draw to benchmark).  If you believe Gibson, that is ... :)  He writes:
+
+    "Despite these documented cheats, I have to say that in real-world
+     applications the Hercules Graphite adapter actually draws faster than
+     any other display adapter in the industry.   [...]  Even though it's
+     just a modest ISA bus card, it outperformed every local bus adapter I
+     have, including the Stealth 24 VLB, the Fahrenheit 1280VA/VLB, the
+     ATI VLB Mach32 and even the Weitek P9000-based Diamond Viper VLB."
+
+This kind of praise is enough for me to be interested in it, bogus WinBench
+or not!  :)
+
+> When and if you get one send me mail.. I might buy that ATI GU+ off
+> you.. 9-)
+
+I already returned the ATI GU+.  My dealer had sold eight of them, and 
+seven were returned to him.  I'm now (temporarily) back to running an
+original ATI GU, until I get my Graphite.  And, yes, the GU is faster in
+my 16 MB system than the GU+, especially in bitmap handling (that's where
+you use BitBlits).
+
+Hercules has a promotion available for VARs and software developers: you
+can buy one Graphite or Graphite VLB for 50% off list to try it out.  At
+just $199 for Graphite or $249 for the VLB version I decided it was worth
+trying (I'm supposed to get the VLB board within two weeks).  I'll post
+my impressions when I get it...
+
+-- 
+[ /tom haapanen -- tomh@metrics.com -- software metrics inc -- waterloo, ont ]
+[       "stick your index fingers into both corners of your mouth.  now pull ]
+[          up.  that's how the corrado makes you feel."  -- car, january '93 ]

@@ -1,0 +1,25 @@
+From: oj@world.std.com (Oliver Jones)
+Subject: Re: Q: How to avoid XOpenDisplay hang?
+Keywords: Xlib
+Article-I.D.: world.C531A0.M3I
+Organization: Shawsheen Software
+Lines: 18
+
+In article <C512xr.3oy@skates.gsfc.nasa.gov> andy@ice.stx.com writes:
+>I'm writing 'xwall', a simple X version of 'wall', and I want it to
+>put a message up on each of a default list of displays.  The problem
+>is that XOpenDisplay hangs if one of the displays is currently
+>controlled by xdm (login screen). 
+
+xdm does XGrabServer when it's running in secure mode (so do some
+screen-locks).  There's really no simple way to tell this is the case.
+
+You can take xdm out of secure mode;  probably not too cool.
+
+You can wrap your call to XOpenDisplay in some code which solicts
+a future SIGALRM and longjmps past the XOpenDisplay from the signal
+handler.  An example of this can be seen in the xdm sources.
+
+Note that longjmping out of XOpenDisplay probably causes a memory
+leak;  any program functioning this way probably needs to exit() 
+regularly.

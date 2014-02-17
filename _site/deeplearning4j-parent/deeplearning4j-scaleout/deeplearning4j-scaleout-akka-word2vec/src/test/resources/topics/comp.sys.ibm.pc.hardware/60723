@@ -1,0 +1,43 @@
+From: schauf@iastate.edu (Brian J Schaufenbuel)
+Subject: Re: HINT 486 VLB/ISA/EISA motherboard
+Keywords: 486, motherboard
+Organization: Iowa State University, Ames, IA
+Distribution: usa
+Lines: 36
+
+In article <id.XNFZ.VJ8@nmti.com> korenek@nmti.com (gary korenek) writes:
+>In article <C5ovwv.LMo@news.iastate.edu> schauf@iastate.edu (Brian J Schaufenbuel) writes:
+>>I am looking at buying some Companion brand VLB/ISA/EISA motherboards with
+>>HINT chipsets.  Has anybody had any experience with this board (good or bad)?
+>>Any information would be helpful!
+>>thanks
+>>Brian J Schaufenbuel
+>
+>
+>I believe that any VL/EISA/ISA motherboard that uses the HINT chipset
+>is limited to 24-bit EISA DMA (where 'real' EISA DMA is 32-bit).  The
+>HINT EISA DMA has the 16 mb ram addressing limitation of ISA.  For this
+>reason I would pass.  I own one of these (HAWK VL/EISA/ISA) and am look-
+>ing to replace it for exactly this reason.
+>
+>Please double-check me on this.  In other words, call the motherboard
+>manufacturer and ask them if the motherboard supports true 32-bit EISA
+>DMA.
+>
+>Other than this limitation, the motherboard works quite well (I am using
+>mine with DOS 5, Windows 3.1, and UNIX S5R3.2).  Also with Adaptec 1742a
+>EISA SCSI host adapter.
+>
+>-- 
+>Gary Korenek   (korenek@nmti.com)
+>Network Management Technology Incorporated
+>Sugar Land, Texas       (713) 274-5357
+
+
+You are correct!  The motherboard manufacturer where I usually buy boards says
+that they will have this problem fixed in about two weeks...
+-- 
+_______________________________________- Brian Schaufenbuel____________________
+| Brian J Schaufenbuel [ "There is no art which one government sooner learns  ]
+| Helser 3644 Halsted  [  than that of draining money from the pockets of the ]
+| Ames, Ia  50012      [  people [especially college students]." - Adam Smith ]

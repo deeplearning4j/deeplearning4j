@@ -1,0 +1,33 @@
+From: especkma@reed.edu (Erik. A Speckman)
+Subject: Re: PDS vs. Nubus (was Re: LC III NuBus Capable?)
+Article-I.D.: reed.1993Apr19.184256.8664
+Distribution: usa
+Organization: Reed College, Portland, Oregon
+Lines: 26
+
+In article <1qt3vd$802@morrow.stanford.edu> HK.MLR@forsythe.stanford.edu (Mark Rogowsky) writes:
+
+>Second Wave makes NuBus card cages that work on the PDS slots of at
+>least three Macs: the SE/30, IIsi and Centris 610. They have not, to
+>my knowledge, announced such a device for the LCII, but they could
+>make one, technologically.
+>
+>The PDS card that goes to the cage simply needs the NuBus controller
+>circuitry present on NuBus Macs.
+>
+>Why, though, does anyone care about this? dgr has a three-PDS
+>adapter for the LC/LCII. They will soon have one for the LCIII. PDS
+>is better than NuBus for most people in most applications. Granted,
+>there are more NuBus cards. But, most applications that require a
+>NuBus card (like full-motion video capture) shouldn't be done on an
+>LC/LCII/LCIII anyway.
+>
+>Mark
+
+
+NuBus is a much more robust system for system for installing multiple
+cards without configuration problems.  I know that when I was checking
+into expasion options for an SI there were a number of PDS video cards
+that would not work with certian Dual slot cache adapters.
+
+_Erik Speckman

@@ -1,0 +1,36 @@
+From: ardie@ux1.cso.uiuc.edu (Ardie Mack)
+Subject: Re: does dos6 defragment??
+Article-I.D.: ux1.ardie.272.734097933
+Organization: Department of Plant Pathology
+Lines: 30
+
+In article <1993Apr6.040254.8443@cs.brown.edu> ksl@engin1.NoSubdomain.NoDomain (Kiseok Lee  ) writes:
+>From: ksl@engin1.NoSubdomain.NoDomain (Kiseok Lee  )
+>Subject: Re: does dos6 defragment??
+>Date: Tue, 6 Apr 1993 04:02:54 GMT
+>In article <C51H9M.46p@news.cso.uiuc.edu>, rhc52134@uxa.cso.uiuc.edu (Richard) writes:
+>|> Geoffrey S. Elbo writes:
+>|> 
+>|> >Yes, and it is the fastest defrag I've ever watched.  It did a 170MB 
+>|> >hard disk in 20 minutes.
+>|> 
+>|> 	I found the MS defrag looks very much like Norton Speedisk.
+>|> Is it just a strip-down version of the later?
+>|> 
+>|> 	I have both Norton Speedisk and Backup, so I was wondering 
+>|> if I need to install MS Backup?
+>|> 
+>|> Richard
+>|> 
+>
+>Yes, defragger IS come from Norton.
+>If you have Norton Utility, don't bother.
+
+
+     Don't bother if you have CPBackup or Fastback.  They all offer options 
+not available in the stripped-down MS version (FROM CPS!).  Examples - no 
+proprietary format (to save space), probably no direct DMA access, and no 
+tape drive!
+
+     You NEED MS Defrag if you use doublespace to work on the compressed 
+volume.

@@ -1,0 +1,31 @@
+From: mike@avon.demon.co.uk ("Mike H.")
+Subject: Re: Another data hiding scheme... 
+Distribution: world
+Organization: boring
+Reply-To: mike@avon.demon.co.uk
+X-Mailer: Simple NEWS 1.90 (ka9q DIS 1.19)
+Lines: 23
+
+In article <1993Apr13.225348.6511@colorado.edu> bear@tigger.cs.Colorado.EDU writes:
+
+>since the price of 1.44 M 3.5" floppies were still high until the last
+>few years.  If you store "old" data, with old file times, in the public
+>filesystem the casual observer may miss the "HD"... especially if you 
+>"accidently" cover it with something).
+>
+>-- 
+>Bear Giles
+>bear@cs.colorado.edu/fsl.noaa.gov
+>
+
+It has been done already!
+
+In the UK the Atari ST box was shipped with 360K disks in the first few
+years and then later 720K disks. In order to make life less complicated,
+many freebie disks on mags were double formatted like this. Side 0 of the
+disk had 360K on it and could be read  by any ST. It also had a flip-side
+program. This would swap the sides around so that side 1 became side 0.
+
+-- 
+
+                        Mike (mike@avon.demon.co.uk)

@@ -1,0 +1,51 @@
+From: ebosco@us.oracle.com (Eric Bosco)
+Subject: Windows 3.1 keeps crashing: Please HELP
+Nntp-Posting-Host: monica.us.oracle.com
+Reply-To: ebosco@us.oracle.com
+Organization: Oracle Corp., Redwood Shores CA
+X-Disclaimer: This message was written by an unauthenticated user
+              at Oracle Corporation.  The opinions expressed are those
+              of the user and not necessarily those of Oracle.
+Lines: 41
+
+
+As the subjects says, Windows 3.1 keeps crashing (givinh me GPF) on me of  
+late.  It was never a very stable package, but now it seems to crash every  
+day.  The worst part about it is that it does not crash consistently: ie I  
+can't reproduce crashes, and they are not always GPF's in the same  
+application. Sometimes I can recover by simply closing the application  
+that caused an error, but other times, windows acts very strange, and I  
+need to re-boot.
+
+Some background:  I have a Leading Edge 486sx25 with Phoenix BIOS.  When I  
+first got it it had 4Mg of memory.  It ran windows fine (not too many  
+GPF's).  Then, a couple of weekends ago, I installed Lotus 123 for windows  
+(with ATM), a game card and an additional 4  1Mg SIMMS.  The Leading edge  
+machine is kind of strange, in that it has the IDE controler built into  
+the motherboard, the CPU is actually on a sparate board that plugs into  
+the motherboard and the SIMMS it uses are Macintosh SIMMS! Apparently I  
+was told that the Leading Edge had the parity bit built into the mother  
+board.  The original 4Mg 80ns SIMMS where of the 2 chip variety from  
+SAMSUNG, and the ones I installed are 8 chip SIMMS. They are recognized  
+fine by the BIOS RAM check. The game card is a generic $20 gamecard.
+
+The reason why I mention the hardware like this is that sometimes  
+rebooting the machine using the reset button or ctl-alt-del still leaves  
+the machine kind of flaky, but turning it on and off doesn't. 
+
+I haven't tried taking out the RAM or the game card, because as I said  
+these GPF are not reproducible at will.  I have gone through and entire  
+day using the computer with no problems and then I might get 5 or so GPF's  
+in the sppace of 20 minutes?
+
+What can I do.  This situation is most annoying... Are there any good  
+diagnostic tools for hardware? Do you think that this might be a software  
+problem (ie EMM386 etc.)? If it helps, i have manage to get GPF's on After  
+Dark, quicken, Paint shop pro. A lot of them have been in user.exe or  
+gdi.exe.
+
+Any help is truly appreciated.....
+
+-Eric
+
+ebosco@us.oracle.com

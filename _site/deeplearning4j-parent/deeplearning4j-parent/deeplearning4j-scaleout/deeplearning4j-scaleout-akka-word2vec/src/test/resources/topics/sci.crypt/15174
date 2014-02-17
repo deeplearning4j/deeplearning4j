@@ -1,0 +1,47 @@
+From: kadie@cs.uiuc.edu (Carl M Kadie)
+Subject: Re: Fifth Amendment and Passwords
+Organization: University of Illinois, Dept. of Comp. Sci., Urbana, IL
+Lines: 42
+
+ashall@magnus.acs.ohio-state.edu (Andrew S Hall) writes:
+
+>I am postive someone will correct me if I am wrong, but doesn't the Fifth
+>also cover not being forced to do actions that are self-incriminating?
+[...]
+
+[From Mike Godwin <mnemonic@eff.org>, posted with permission - Carl]
+
+Sadly, it does not. Suspects can be compelled to give handwriting and
+voice exemplars, and to take blood and DNA tests.
+
+> e.g. The police couldn't demand that you silently take them to where the
+> body is buried or where the money is hidden.
+
+No, but they could compell you to produce the key to a safe where, as it
+happens, evidence that will convict you is stored. 
+
+The crypto-key disclosure issue hasn't come up yet, but current law
+suggests that it's a loser for the defendant--he'll be compelled to turn
+over the key.
+
+The test for compelled self-incrimination is whether the material to 
+be disclosed *in itself* tends to inculpate the discloser. In the example
+I gave above, the safe key itself has no testimonial value--ergo, it can
+be disclosed under compulsion (e.g., subpoena duces tecum).
+
+Moreover, the government can always immunize the disclosure of a crypto
+key--compelling you to disclose the key at the price of not using the fact
+of your disclosure as evidence in the case against you. Of course, they
+can use whatever they discover as a result of this disclosure against
+you.
+
+
+--Mike
+
+
+
+
+
+-- 
+Carl Kadie -- I do not represent any organization; this is just me.
+ = kadie@cs.uiuc.edu =

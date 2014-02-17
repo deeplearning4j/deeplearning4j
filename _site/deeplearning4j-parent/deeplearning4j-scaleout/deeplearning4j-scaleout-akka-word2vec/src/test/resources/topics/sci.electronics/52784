@@ -1,0 +1,50 @@
+From: jgd@dixie.com (John De Armond)
+Subject: Re: Help with ultra-long timing
+Article-I.D.: dixie.8#_v!0a
+Organization: Dixie Communications Public Access.  The Mouth of the South.
+Lines: 44
+
+wellison@kuhub.cc.ukans.edu writes:
+
+>I have a project that was drooped in my lap that is somewhat a pain to design.
+>What I am looking for is a stable ultra-long solid state timer. What they want
+>to do is to place this thing on the Antartic ice shelf and measure the amount
+>of snow fall over a period of six weeks. Every two weeks, they want to trip a
+>selonoid to discharge different colored pellets by gas pressure out across the
+>snow. Then by digging down into the snow, the snow fall amount can be measured
+>as they come to the different color pellets.
+
+>The problem is trying to build a timer that would stand the cold (-40 degrees)
+>and a power source that wouldn't drain. I have looked at the XR-2204 timers and
+>the standard NE556 dual timers, but thier temp specs won't go that low. Also,
+>two weeks equates to 1,209,600 seconds per firing, which means one big timing
+>cap ! I have found 2.2 farad (yes, Farad !) caps that have a working voltage of
+>5 volts and are small in size. 
+
+Why are you fooling around with analog for this job?  A single chip
+micro and a crystal will do the job reliably and easily.  An 8748 only
+costs about $5.  That and a $1 crystal and you're in business.  Embed
+the whole thing in a foam insulated blanket, power it from a solar cell,
+use the excess power to heat the assembly during the day and rely
+on the insulation to hold the heat during darkness.  If you don't want
+to try thermal management, contact someone like ICL and have them cut
+you a special low temperature crystal.  It'll cost at most $20.
+
+If you use a single chip micro, you're looking at a parts count of 
+maybe 7.  A processor, a crystal, two caps on the crystal, a power FET
+to fire the solenoid a flyback diode and a battery.  This is fewer parts than 
+you can build an analog timer for and is infinitely more reliable.  Add
+a power zener diode (for heat) and a solar cell and the parts count
+screams up to 9.
+
+PD assemblers are available for all the common single chip micros.  This
+application is so trivial you could even look up the op codes in the 
+programmer's guide and create the binary with a hex editor.
+
+John
+-- 
+John De Armond, WD4OQC               |Interested in high performance mobility?  
+Performance Engineering Magazine(TM) | Interested in high tech and computers? 
+Marietta, Ga                         | Send ur snail-mail address to 
+jgd@dixie.com                        | perform@dixie.com for a free sample mag
+Need Usenet public Access in Atlanta?  Write Me for info on Dixie.com.

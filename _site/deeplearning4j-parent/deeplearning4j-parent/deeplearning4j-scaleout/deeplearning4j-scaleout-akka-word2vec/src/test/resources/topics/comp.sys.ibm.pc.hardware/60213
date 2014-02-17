@@ -1,0 +1,59 @@
+From: d12751@tanus.oz.au (Jason Bordujenko)
+Subject: DAC Circuit
+Organization: Pro-Net Australia
+Lines: 54
+
+G'day All,
+
+I was looking to build a Parallel Port Digital to Analogue Converter the other
+day and came across this schematic which I promptly threw together on a piece
+of VeroBoard:
+
+
+     P2----22k----+
+     P3----48k----|
+     P4----100k---|
+     P5----200k---|
+     P6----400k---|
+     P7----800k---|    10uf electrolytic
+     P8----1M6----|  +
+     P9----3M2----+---||--+----------
+                          |            +
+            47nF ceramic  -   
+                          -
+                          |            -
+     P25------------------+----------
+
+
+(Please excuse the obvious limits of the Lower ASCII char set :=)
+
+I have it all constructed here and sitting inside a nice little grey ABS box.
+
+Unfortunately I can't get it to work... I have a little demo here by the name
+of Cronologia (Which the schematic came from) and all I can get it to pump
+out of the box is data type hash/static with a small amount of music signal
+behind it - it's even worse than the speaker inside the machine.
+
+Does anybody out in net.colourful.computer.world have any ideas/suggestions/
+better designs/improvements/wastepaper bin... etc?
+
+Many thanks for a reply via this conference or email.
+
+  //
+\X/  Regards, Jason.
+---
+
++-------------------------------------------------------------------------+
+| Jason Bordujenko                                    Computer Department |
+| InterNet/UseNet: d12751@tanus.oz.au           Townsville Grammar School |
+| FidoNet Node   : 3:640/702 (Grammar BBS)               45 Paxton Street |
+| Data Phone No. : +61 77 72 6052 (Int.)       Townsville Queensland 4810 |
+|                : (077) 72 6052 (Aust.)                        Australia |
+| Facsimilie     : +61 77 72 2340 (Int.)                                  |
+|                : (077) 72 2340 (Aust.)                                  |
++-------------------------------------------------------------------------+
+|                           God made him simple,                          |
+|                           science made him god                          |
+|                                                                         |
+|                    -Stephen King's `The LawnMower Man'                  |
++-------------------------------------------------------------------------+

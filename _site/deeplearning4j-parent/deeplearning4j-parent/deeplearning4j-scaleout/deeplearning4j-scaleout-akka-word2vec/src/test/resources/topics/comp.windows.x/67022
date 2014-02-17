@@ -1,0 +1,45 @@
+From: graham@sparc1.ottawa.jade.COM (Jay Graham)
+Subject: Mix GL with X (Xlib,Xt,mwm)
+Organization: The Internet
+Lines: 38
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xpert@expo.lcs.mit.edu
+
+
+I am developing an X (Xt,Xm) application that will include a graphics window
+of some sort with moving symbols among other things.  A pure X application
+could be implemented with Motif widgets, one of which would be an 
+XmDrawingArea for drawing with Xlib.  But I would like to take advantage of
+the Graphics Library (GL) available on our IBM RS/6000 (SGI's GL i believe).
+
+Is it possible to mix X and GL in one application program?
+Can I use GL subroutines in an XmDrawingArea or in an X window opened by me
+with XOpenWindow?
+
+I have never used GL before, but the doc on GL winopen() says that the first
+time winopen() is called it opens a connection to the server.   Also, most of
+the GL calls do not require a Display or GC, unlike most X calls.  From this
+initial information it appears that X and GL cannot be mixed easily.   Is this
+true?
+
+Does PEX (graPHIGS?) have the same functionality of GL?
+
+
+Environment:
+     AIXwindows X11R4
+     Motif 1.1
+     GL is available
+     AIX Sys V 3.2
+     IBM RS/6000 360
+
+
+Thanks in advance.
+
+Jay Graham
+Jade Simulations International Corp.
+14 Colonnade Road, Suite 150
+Nepean, Ontario, Canada
+613-225-5900 x226
+
+graham@ottawa.jade.com
+

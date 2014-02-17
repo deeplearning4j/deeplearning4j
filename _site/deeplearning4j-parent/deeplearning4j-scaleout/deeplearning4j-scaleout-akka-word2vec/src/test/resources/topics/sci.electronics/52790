@@ -1,0 +1,61 @@
+From: dtmedin@catbyte.b30.ingr.com (Dave Medin)
+Subject: Re: Oscilloscope triggering
+Reply-To: dtmedin@catbyte.b30.ingr.com
+Organization: Intergraph Corporation, Huntsville AL
+Lines: 55
+
+In article <C4vs0G.5ux@murdoch.acc.Virginia.EDU>, dgj2y@kelvin.seas.Virginia.EDU (David Glen Jacobowitz) writes:
+|> >>Can someone out there explain exactly what the 'trigger'
+|> >>feature found on oscilloscopes does?
+|> >
+|> 	{ lots og good explanation deleted}
+
+<lots more deleted>
+|> 	Is it just me, or does anybody else out there NOT like digital
+|> scopes. My school has some beauutful 100Mhz HP that are digital with
+|> all the bells and whistles, including soft-keys, which I think are a
+|> loveley touch. ( that is, software keys. ) You don't forget that you
+|> are dealing with a computer. Those scopes even with all their
+|> neatness, still make the ickyest looking waves. Lotsa features, but
+|> ugly output. And those are the best digitals I have ever seen. I've
+|> seen a lot of cheaper digitals and they look terrible.
+
+I think the hangup with digital scopes is that you have to know so much
+more about them and how they work on a scope-by-scope basis, and
+some of the functions are typically presented, in my opinion,
+in a counter-intuitive fashion (HP has made some strides in their
+54600 series, IMO). Automatic setups are fine for simple,
+repetitive waveforms, but can give you some crazy results on more
+complex events where you need to understand how the scope is
+actually measuring/processing the event. For example, is the scope
+in "equivalent time" or in "real time" sampling mode (equivalent time
+being a mode where samples are built-up slowly by adding a delay to
+the trigger event each sweep)? What was the scope's actual sampling
+rate at the time? How is the data being massaged after capture but
+before display, etc. One common misconception is the speed of the scope.
+
+Is the HP scope you're using really a 100 MHz scope? Or is it a 20 MHz
+sample rate scope (~5 MHz single shot significance) whose front
+end including S/H can support 100 MHz waveforms (important for
+equivalent time sampling)? The 100 MHz input in this case really
+only helps you when your waveform is repetitive, or on a single
+sample, when you get lucky and hit a transient event during a sample time.
+
+So, there are a lot more variables in understanding how to get
+useful information from a digital scope. I prefer an analog scope for
+general use and the digital for events where I need storage for
+later analysis or comparison, when the event is within the capability
+of the scope. Now, for the price of true 100 MHz digital scopes to
+fall...
+
+-- 
+--------------------------------------------------------------------
+       Dave Medin			Phone:	(205) 730-3169 (w)
+    SSD--Networking				(205) 837-1174 (h)
+    Intergraph Corp.
+       M/S GD3004 		Internet: dtmedin@catbyte.b30.ingr.com
+  Huntsville, AL 35894		UUCP:  ...uunet!ingr!b30!catbyte!dtmedin
+
+   ******* Everywhere You Look (at least around my office) *******
+
+ * The opinions expressed here are mine (or those of my machine)

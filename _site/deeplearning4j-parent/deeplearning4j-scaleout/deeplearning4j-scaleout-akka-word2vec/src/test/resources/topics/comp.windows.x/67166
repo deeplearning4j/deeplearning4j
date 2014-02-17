@@ -1,0 +1,57 @@
+From: dcr@mail.ast.cam.ac.uk (Derek C. Richardson)
+Subject: Re: Animation with XPutImage()?
+Nntp-Posting-Host: ioas09.ast.cam.ac.uk
+Reply-To: dcr@mail.ast.cam.ac.uk
+Organization: Institute of Astronomy, Cambridge
+Lines: 50
+
+In article 4867@mlb.semi.harris.com, jmartin@egret.imagesRus (John Martin) writes:
+> Animation is most frequently done by copying the the client resident XImages into 
+> server resident Pixmap(s) using XPutImage.  Once this is done, the original XImages
+> can be deleted and the animation loop can be performed using XCopyArea from the Pixmaps to the windows drawable.
+> 
+> Hope this is helpfull.
+> 
+> John
+> 
+
+I just implemented this and it seems I can just about achieve the display
+rates (20 400x400x8 frames / sec on IPX) that I get with Sunview, though
+it's a bit "choppy" at times. Also, loading the data, making an XImage,
+then XPut'ing it into a pixmap is a bit cumbersome, so the animation is
+slower to load than with Sunview. Is there a better way to load in the
+data?
+
+rgooch@rp.CSIRO.AU (Richard Gooch) writes:
+>  If you need speed, and your client can run on the same host as the X server,
+>  you should use the shared memory extension to the sample X server (MIT-SHM).
+>  xdpyinfo  will tell you if your server has this extension. This is certainly
+>  available with the sample MIT X server running under SunOS.
+>  A word of warning: make sure your kernel is configured to support shared
+>  memory. And another word of warning: OpenWindows is slower than the MIT
+>  server.
+>  I have written an imaging tool (using XView for the GUI, by the way) which
+>  yields over 10 frames per second for 512*512*8 bit images, running on a Sparc
+>  IPC (half the cpu grunt of an IPX). This has proved quite sufficient for
+>  animations.
+>
+>				Regards,
+>
+>					Richard Gooch....
+
+Shared memory PutImage (also mentioned by nkissebe@delphi.beckman.uiuc.edu,
+Nick Kisseberth) looks interesting, but I need someone to point me to some
+documentation. Is this method likely to give better results than server-
+resident pixmaps? I'd also be interested in looking at the XView code
+mentioned above...
+
+Thanks for the help so far. If I get something decent put together, I'll
+definitely post it to the Net.
+
+-----------------------------------------------------------
+| Derek C. Richardson    | Tel: (0223) 337548 x 37501     |
+| Institute of Astronomy | Fax: (0223) 337523             |
+| Cambridge, U.K.        |                                |
+| CB3 0HA                | E-mail: dcr@mail.ast.cam.ac.uk |
+-----------------------------------------------------------
+

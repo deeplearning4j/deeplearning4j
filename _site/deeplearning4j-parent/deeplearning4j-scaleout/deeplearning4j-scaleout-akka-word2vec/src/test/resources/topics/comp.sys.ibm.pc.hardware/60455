@@ -1,0 +1,40 @@
+From: himb@iniki.soest.hawaii.edu (Liz Camarra)
+Subject: Re: Which high-performance VLB video card?
+Organization: School of Ocean and Earth Science and Technology
+Lines: 35
+
+In article <hcbfp4e@zola.esd.sgi.com> blean@rwb.esd.sgi.com (Bob Blean) writes:
+>
+>Someone in this group posted a little while back that they were getting an
+>Orchid V9000 card -- has that card arrived?  What do the benchmarks look
+>like?
+
+  The one I got only does about 4kb/s in text and 320x200 (VGA/MCGA) mode,
+which is almost identical to the other W5186 based cards (ATI 68800
+does about 6kb/s).  This is weird since the Orchid supposedly should
+be much faster (and I was told by someone that it can do almost 16 kb/s),
+since the VGA chip is covered by the Orchid label, I can't really tell
+for sure if it uses a 5286 chip, but the spec. sheet that comes with
+the board (no docs!) did say it has 1 meg dram and uses a 5286 chip.
+Winmarks (3.11) is about 4 mil. slower than a Viper (34 vs ~38) using
+standard palette.
+
+  BTW if anyone is insterested, I'm trying to sell a Diamond Viper (2 megs
+vram) for a friend for $300, email if interested (I'm too broke to
+take it myself).
+
+>Also, is the AMI P9000-based card real?  What does it use for VGA?  Speed?
+
+  I think it's available in limited quantites.  No idea of what VGA
+chip it uses though.
+
+  Be very careful with OEM P9000 boards though, the Orchid I got
+for example only has a readme file on disk that serve as 
+documentation, and conflicts the hell with my VLB controller 
+card (or maybe it's my motherboard, an A.I.R. 486 VLB)
+
++----------------------------------------------------------------+
+Stephen Lau, Elec. Engineering, Univ. of Hawaii
+*Using a friend's account while waiting for my new grad. account*
++              Death to FM synthesis! Go Gus!                    +
+

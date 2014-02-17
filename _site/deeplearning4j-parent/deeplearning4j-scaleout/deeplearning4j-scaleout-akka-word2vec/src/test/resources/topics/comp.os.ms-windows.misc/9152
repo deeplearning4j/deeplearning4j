@@ -1,0 +1,37 @@
+From: mpalmer@encore.com (Mike Palmer)
+Subject: Re: Windows On A RAMDRIVE??? Help...
+Organization: Encore Computer Corporation
+Nntp-Posting-Host: sysgem1.encore.com
+Lines: 31
+
+f_langleyrh@ccsvax.sfasu.edu writes:
+
+
+>[...] Stuff del'd for bandwidth's sake.
+
+>Why?  *sigh*  If you don't have more than 16MBs of memory using a RAMDrive
+>with windows is a _waste_ of memory.  Windows will access upto 16MB RAM better
+>as memory.  As to why what you did didn't work, it is because driveletters
+>and paths are stored inside the group/pif/ini files.  All of the sudden things
+>went from drive c: to drive e:!  However, if you wanted to copy an application
+>up to the RAMDrive and re-setup it up, that should work normally, but as
+>previously stated, this will only hurt things unless you've got more than 16MBs
+>of RAM and are using whats above 16 as the RAMDrive.
+
+>I personally have 20MB's of RAM and run a ~4MB RAMDrive with a great deal of
+>success.  However, if you are looking to speed up windows, the three things
+>I've noted that work the best are:
+>	1) A graphics accellerator card
+>	2) A co-processor (Even an emulator helps!)
+>	3) Some other disk-cache besides Smartdrive (I've tried several,
+>	   and Lightning for Windows and Norton Cache give me major
+>	   headaches as well.).
+
+I think the purpose the original poster was trying to serve is to avoid the
+SIGNIFICANT amount of disk access that Windows does on startup.  It's like
+it's trying to it's bit in wearing the damn drive out.  I estimate it's only
+reading a Mb of programs & data, but from the performance the drive gives, it
+sounds like they are scattered all over the drive (my drive is however
+regularily compressed).  What is it that takes so much fuss.  Perhaps if MS 
+would take the trouble to optimize this startup process, less people would 
+be wanting to find a solution themselves.

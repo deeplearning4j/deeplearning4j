@@ -1,0 +1,22 @@
+From: lewism@aix.rpi.edu (Michael C. Lewis)
+Subject: Re: Delaunay Triangulation
+Nntp-Posting-Host: aix.rpi.edu
+Organization: Rensselaer Polytechnic Institute, Troy, NY
+Lines: 16
+
+In article <lsk1v9INN93c@caspian.usc.edu> zyeh@caspian.usc.edu (zhenghao yeh) writes:
+>
+>Does anybody know what Delaunay Triangulation is?
+>Is there any reference to it? 
+>Is it useful for creating 3-D objects? If yes, what's the advantage?
+
+It is used to create a TIN (triangulated irregular network), which is
+basically a bunch of triangles which form a surface over a group of
+points.  What is special about it is that the triangles formed are the 
+most equalateral possible.  Check out "Proceedings of AutoCarto N" where
+N is 8..10.  Sorry, I don't have a specific reference describing the
+process.
+-Michael
+
+
+

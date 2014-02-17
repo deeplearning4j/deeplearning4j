@@ -1,0 +1,82 @@
+From: brucet@extro.ucc.su.OZ.AU (Bruce Tulloch)
+Subject: Re: HELP! Duo 230 problems
+Nntp-Posting-Host: extro.ucc.su.oz.au
+Organization: Sydney University Computing Service, Sydney, NSW, Australia
+Lines: 76
+
+bcherkas@netcom.com (Brian Cherkas) writes:
+>chess@cats.ucsc.edu (Brian Vantuyl Chess) writes:
+>>  I just got a Duo 230, and I'm having some difficulties.
+>>If the machine is plugged in to the wall adapter, put to sleep,
+>>unplugged from the wall, and woken up, it crashes 75% of the time.
+>>(There's nothing but the original system software on the machine.)
+>>The battery has plenty of life - I think this must be a power manager
+>>problem, but I don't know what to do about it.
+>>Also, the speaker occasionally makes a high-pitched hiss.  The noise
+>>is irregular, but seems to favor sleep and restart commands.
+
+>I've had my Duo 230 for a few weeks now and suffer from both
+>of the above problems. I reinstalled my system software twice
+>in an effort to combat the problems - thinking they were
+>system software problems. Initially reinstalling the system
+>seemed to help but not anymore. Occasionally when I try to
+>wake up the Duo I get a solid screen of horizontal lines on
+>the screen - it freezes.
+
+>I also get the high-pitched hiss occasionally - but only at
+>startup.
+
+>I've called the apple hotline (800 SOS-APPL) three times
+>already and finally they agreed something is astray after my
+>Duo's screen would go dim and the hard drive spun down by
+>itselft and put itself to sleep. This problem only occured
+>twice. Apple sent me a box to ship my Duo to be looked at in
+>New York but the problem now is intermittent and I can't
+>afford to be without my Duo at this time.
+
+>Anyone out there with these same problems?
+
+>-- 
+>Brian Cherkas     * *    bcherkas@netcom.com
+>                   I   
+>AOL/BrianC22      \_/    compuserve/71251,3253
+>Netcom - Online Communication Services San Jose, CA
+
+Yes, quite a number of people it seems from discussions I've had (me
+included). I bought my machine a couple of weeks ago as well and
+started to experience these problems.
+
+Apple Australia via my dealer said that this problem has a number of
+potential causes - Faulty applications, faulty third party hardware
+(modems, memory etc), system software, PRAM corruption and power
+manager corruption, and the Duo hardware itself.
+
+None of the above are relevant in my case except the last two maybe
+(no applications were running, the system software was re-installed, I
+have no additional hardware). I have found that clearing PRAM appears
+to help for a while at least (hold down command option P and R on
+startup). Unfortunately the problem returns suggesting that PRAM is
+being corrupted by something (system software bug ? - I don't have any
+non-issue inits in my system). Apparently the Power Manager can be
+reset by "holding the reset and interrupt buttons while powering up" -
+Apple's advice - but since the Duo does not have an interrupt button
+I'm not sure what they mean in this case. This may also help if
+someone can decipher Apple's advice for me.
+
+Beyond this Apple suggest that " you should follow the technical
+procedures to check the hardware of this Duo". Since so many others
+appear to be having the same problem it would seem to me that there
+has been a system software bug introduced somewhere along the line -
+and quite recently too - since it only seems to be recent Duo 230
+purchasers who have this problem.
+
+Any more comments from others in the same boat are welcome,
+particularly Apple Duo engineers :-)
+
+cheers
+
+brucet
+
+-- 
+          bruce tulloch sydney australia - brucet@extro.ucc.su.oz.au
+***complex problems have straight forward, easy to understand wrong answers***

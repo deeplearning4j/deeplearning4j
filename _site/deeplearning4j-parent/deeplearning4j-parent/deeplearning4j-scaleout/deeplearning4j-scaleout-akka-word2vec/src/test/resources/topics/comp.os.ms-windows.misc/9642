@@ -1,0 +1,156 @@
+From: btbg1194@uxa.cso.uiuc.edu (Bradley T Banko)
+Subject: Save my hard disk?!  (allocation error, cross-linked)
+Reply-To: b-banko@uiuc.edu
+Organization: University of Illinois at Urbana
+Lines: 150
+
+Hi.
+
+While running the MS Quick C compiler in a DOS window under Windows 3.1 
+this evening, I got a "program has violated system integrity... close all 
+applications, exit windows and restart your computer" error.
+
+I started to do this when I immediately got a "Serious disk error" message
+from Windows.  "hit return to retry".  I did that about 5 times and then
+rebooted to find that quite a few files have been corrupted somehow.
+(I am including the chkdsk output below.)
+
+Questions:
+
+1)  Is there an easy way to restore everything to working order?
+What might be some better approaches?
+
+2)  What might have caused this?  Does the SMARTDRV cache make me more
+vulnerable?  (I'm suspicious of hard drive caches especially when they
+cache data writing.)
+
+The straightforward approach would be to run chkdsk with the /f option to 
+fix the disk and then it looks like I would probably have to reinstall Windows
+and a few other things.
+
+Thanks for your comments and suggestions.
+
+Brad Banko
+
+ps:  this is a 386sx machine with a 40Mb hard drive and 2 Mb of RAM.
+
+
+chkdsk output:
+======================================================================
+Volume Serial Number is 1159-09D3
+Errors found, F parameter not specified
+Corrections will not be written to disk
+
+C:\GFX\VPIC46\CVPIC.EXE
+   Allocation error, size adjusted
+C:\GFX\VPIC46\VPIC.TXT
+   Allocation error, size adjusted
+C:\GFX\VPIC46\VIDEO7.CFG
+   Allocation error, size adjusted
+C:\GFX\VPIC46\ORCPRO2.CFG
+   Allocation error, size adjusted
+C:\GFX\VPIC46\VGA.CFG
+   Allocation error, size adjusted
+C:\GAME\GOOSE\BIRD2.X
+   Allocation error, size adjusted
+C:\WINMISC\ADV21\WINADV.EXE
+   Allocation error, size adjusted
+
+   316 lost allocation units found in 224 chains.
+    647168 bytes disk space would be freed
+
+C:\GFX\VPIC46\CVPIC.EXE
+   Is cross linked on allocation unit 16133
+C:\GFX\VPIC46\GENO5400.CFG
+   Is cross linked on allocation unit 16138
+C:\GFX\VPIC46\TRI8800B.CFG
+   Is cross linked on allocation unit 16139
+C:\GFX\VPIC46\TS4000HI.CFG
+   Is cross linked on allocation unit 16140
+C:\GFX\VPIC46\CONFIG.DOC
+   Is cross linked on allocation unit 16141
+C:\GFX\VPIC46\VPIC.TXT
+   Is cross linked on allocation unit 16146
+C:\GFX\VPIC46\VIDEO7.CFG
+   Is cross linked on allocation unit 16151
+C:\GFX\VPIC46\DEFINCON.CFG
+   Is cross linked on allocation unit 16152
+C:\GFX\VPIC46\ATIWONDR.CFG
+   Is cross linked on allocation unit 16153
+C:\GFX\VPIC46\GENO6400.CFG
+   Is cross linked on allocation unit 16154
+C:\GFX\VPIC46\OAK.CFG
+   Is cross linked on allocation unit 16155
+C:\GFX\VPIC46\HIRES.CFG
+   Is cross linked on allocation unit 16156
+C:\GFX\VPIC46\AHEADA.CFG
+   Is cross linked on allocation unit 16157
+C:\GFX\VPIC46\VPIC.DOC
+   Is cross linked on allocation unit 16208
+C:\GFX\VPIC46\ORCPRO2.CFG
+   Is cross linked on allocation unit 16184
+C:\GFX\VPIC46\EVERX673.CFG
+   Is cross linked on allocation unit 16185
+C:\GFX\VPIC46\WAIT.COM
+   Is cross linked on allocation unit 16186
+C:\GFX\VPIC46\MAXXON.CFG
+   Is cross linked on allocation unit 16187
+C:\GFX\VPIC46\WAIT.DOC
+   Is cross linked on allocation unit 16188
+C:\GFX\VPIC46\EVERX678.CFG
+   Is cross linked on allocation unit 16189
+C:\GFX\VPIC46\EGA.CFG
+   Is cross linked on allocation unit 16190
+C:\GFX\VPIC46\CONFIG.EXE
+   Is cross linked on allocation unit 16191
+C:\GFX\VPIC46\README.1ST
+   Is cross linked on allocation unit 16199
+C:\GFX\VPIC46\VGA.CFG
+   Is cross linked on allocation unit 16201
+C:\GAME\GOOSE\BIRD2.X
+   Is cross linked on allocation unit 16382
+C:\WINDOWS\SYSTEM\SOUND.DRV
+   Is cross linked on allocation unit 16380
+C:\WINDOWS\GAMES0.GRP
+   Is cross linked on allocation unit 16367
+C:\WINDOWS\MAD79-11.BMP
+   Is cross linked on allocation unit 16341
+C:\MAGE\DEMO2_2A.KIN
+   Is cross linked on allocation unit 16151
+C:\MAGE\DEMO2_2B.KIN
+   Is cross linked on allocation unit 16257
+C:\MAGE\PKIN_2_2.EXE
+   Is cross linked on allocation unit 16339
+C:\WINMISC\GAMES\DIALWORD.EXE
+   Is cross linked on allocation unit 16184
+C:\WINMISC\GAMES\DIALWORD.TXT
+   Is cross linked on allocation unit 16201
+C:\WINMISC\ADV21\WINADV.WRI
+   Is cross linked on allocation unit 16257
+C:\WINMISC\ADV21\ADV.KEY
+   Is cross linked on allocation unit 16265
+C:\WINMISC\ADV21\ADV.REC
+   Is cross linked on allocation unit 16275
+C:\WINMISC\ADV21\FREEZER
+   Is cross linked on allocation unit 16339
+C:\386SPART.PAR
+   Is cross linked on allocation unit 16133
+C:\BNG2.MBX
+   Is cross linked on allocation unit 16146
+
+  42366976 bytes total disk space
+   3958784 bytes in 4 hidden files
+    153600 bytes in 67 directories
+  36042752 bytes in 1496 user files
+   1564672 bytes available on disk
+
+      2048 bytes in each allocation unit
+     20687 total allocation units on disk
+       764 available allocation units on disk
+
+    655360 total bytes memory
+    579712 bytes free
+-- 
+Brad Banko;  Dept of Physics;  U of Illinois;  b-banko@uiuc.edu
+=========================================================================
+See one.  Do one.  Teach one.			73 de kb8cne @ n9lnq.il

@@ -1,0 +1,23 @@
+Organization: University of Central Florida - Computer Services
+From: Mark Woodruff <CDA90038@UCF1VM.BITNET>
+Subject: Why I'm not using Dos 6 anymore
+Lines: 18
+
+I've been running Dos 6 for about a month.  I was generally impressed with
+the improvements:  the multiple boot configurations were great, the
+new commands were nice, and DoubleSpace worked fine (twice as slow for
+large data transfers, twice as fast for small with SmartDrv).
+
+Until now.
+
+This morning at 4 am while I was working on my research paper, I had to
+reboot a hung Dos program (that did no disk i/o) from within Windows 3.1.
+When my machine finished rebooting, I found my windows directory and about two
+thirds of my other directories were irreversibly corrupted.
+
+I cannot afford problems like this.  I'm returning to Dos 5.
+
+mark
+
+P.S.  I've also noticed bad sector errors from DoubleSpace where none should
+      exist.

@@ -1,0 +1,27 @@
+photo: Signe Brewster
+Summary:
+A family member asked me to make a custom part for a costume. The process was relatively easy, with one major snag.
+photo: Signe Brewster
+We’ve all heard the “computer guy” cliché: One person has special computer knowledge, and suddenly they are asked to fix every single problem with their extended social circle’s computers.
+Soon after I started tinkering with the Noisebridge Ultimaker , I sort of became that person, but for 3D printing. Luckily, no one I know has a 3D printer yet, so it’s more been people asking me to print them things. I don’t mind it. I like hearing the interesting applications people come up with (best so far: a cup-like instrument), and it’s great knowing more people are being exposed to the technology.
+It also gives me a good excuse to practice making unexpected things. Recently, a family member made a special request for a District 12 badge for part of a “Hunger Games” costume. This was ahead of the debut of the latest movie in the trilogy, which came out today.
+Just in case, I did a quick search on Thingiverse to make sure a 3D badge design did not already exist. It didn’t, which is unsurprising considering Hunger Games paraphernalia is likely protected.
+So I would have to design the badge myself. I found plenty of 2D drawings of the badge online, which I wondered if I could turn into a 3D object and print.
+Shapeways offers a very handy service where they can turn a 2D image–even a drawing–into a 3D print for you. But you can’t export the file after you go from 2D to 3D, which means you need to print through Shapeways or you are out of luck.
+I read that 123D Design , a computer aided design program I have been working with, can turn an SVG vector file into a 3D shape. I used one of the many slightly shady sites available online to turn my JPG into an SVG and then loaded that into 123D.
+It worked! The 2D image appeared. I used the “pull” tool to grab it and drag up its walls, turning it into a virtual 3D object
+From the white space in the image, you can see that the black parts, which are what would be printed, aren’t all connected. So the badge needed to printed on a solid layer of plastic in order to stay together. I created two solid disks and slid them under the badge design to give it a solid bottom.
+Made in 123D Design
+Then it was time to print. I loaded the file into Slic3r and then Pronterface. Slic3r noted I had some holes in my design, but it seemed like it had exported a file as usual, so I decided to go ahead and ignore the warning.
+Then something went wrong — it “finished” the print job after only completing the bottom solid layer. I couldn’t figure out what was wrong so I turned to a Noisebridger (did I mention it’s embarrassing to explain you are working on something Hunger Games-related to a full-blown hacker?). He took a look at the file and said I had some holes in the print, which prevented the printer from continuing. He fixed it up for me in a software program called Blender.
+I started reprinting. It took a long time–nearly two hours–to finish because of the fine details. Here’s a video of the final touches being printed:
+Hunger Games District 12 badge 3D printing
+►
+<p>JavaScript required to play <a hreflang="en" type="video/mp4" href="http://videos.videopress.com/nP5S4lnr/img_2608_std.mp4">Hunger Games District 12 badge 3D printing</a>.</p>
+Note the stringiness within the open spaces. That’s a result of working with an older printer. You can clean it up with a little bit of nail polish remover.
+Overall, it was a fairly simple process. The hole problem was troublesome though, as I would have failed on my own without help at that step. As I mentioned a couple weeks ago , this whole process is so reliant on software. I’m eager to learn it, but there’s a lot to know.
+This print job also exposed a lot of legal gray areas with which 3D printing is dealing. It was easy for me to make my own replica of a District 12 badge. But that’s something I could also print on a 2D printer and glue onto a badge. Would the entertainment industry really care I went ahead and made it 3D?
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

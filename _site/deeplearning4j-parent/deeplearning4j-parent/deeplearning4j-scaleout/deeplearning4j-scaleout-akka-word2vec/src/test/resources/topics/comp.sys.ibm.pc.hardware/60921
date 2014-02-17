@@ -1,0 +1,20 @@
+From: pburry@manitou.cse.dnd.ca (Paul Burry)
+Subject: Re: IDE vs SCSI
+Organization: Canadian System Security Centre
+Lines: 15
+
+In article <C5L6E7.2Dz4@austin.ibm.com> guyd@austin.ibm.com (Guy Dawson) writes:
+|> int eh same article the PC would will get plug and play SCSI {from the
+|> article it seems you get plug and play SCSI-1 only since SCSI-2 in FULL
+|> implimentation has TEN NOT 7 devices.}
+|
+|I beleive this last bit is just plain wrong!
+
+I believe you are right.  Both SCSI and SCSI-2 support 8 devices on the bus
+(normally that would be the host controller and 7 targets) each of which
+may have up to 8 logical units (LUNs).
+-- 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Paul Burry			
+Voice: (613)-991-7325		Internet: pburry@cse.dnd.ca
+Fax:   (613)-991-7323		UUCP:	  ..!{uunet,cunews}!cse.dnd.ca!pburry

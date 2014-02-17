@@ -1,0 +1,43 @@
+From: jeh@cmkrnl.com
+Subject: Re: Need help with car stereo....
+Organization: Kernel Mode Systems, San Diego, CA
+Lines: 38
+
+In article <1qih53$9ho@usenet.INS.CWRU.Edu>, ae454@cleveland.Freenet.Edu
+ (Paul Simundza) writes:
+> My friend has a nice Alpine car stereo, and it only has 2 channels,
+> but one of them does not work. It does not put out any current or voltage
+> at all, is that channel therefore blown?  I then shut the radio off and
+> ran continuity into the two speaker ouputs of the channel, and it charged
+> and discharged so I know the wires just aint bad.... 
+
+This probably only tells you that the DC blocking capacitor that's in series
+between the one-chip, single-ended audio amp and the speaker terminal is there.
+
+> any Ideas? 
+
+Open it up and look for the power amp "ICs".  They'll be fairly obvious. 
+Replace the one connected to the dead output. 
+
+> also,
+> how would I locate where the signal of the radio/tape unit is BEFORE it
+> gets amplified, because then couldn't I hook up RCA outputs to that signal
+> so then he could just use a little amplifier? 
+
+Well, one thing you should do is poke around the terminals of the power amp
+chips.  Use a probe with a 10M resistor (like a scope probe) connected to the
+input of a small audio amp w/speaker.  If you find line-level input to both
+chips, one of the chips is bad and can probably replaced pretty easily.  
+
+If you want to pick off a near-line-level signal, suitable for feeding to an
+outboard amp, the outer legs of the volume control pot will often be good
+enough.  This is *before* the volume control (and usually before the tone and
+balance controls too).  If you take off from the center and ground legs of
+the volume pot, this will be after the volume control (but again, probably 
+before the other controls).  
+
+If the unit is a modern type with an electronic volume control chip, you should
+probably forget the whole thing. 
+
+	--- Jamie Hanrahan, Kernel Mode Systems, San Diego CA
+Internet:  jeh@cmkrnl.com  Uucp: uunet!cmkrnl!jeh  CIS: 74140,2055

@@ -1,0 +1,34 @@
+From: Sammons@mailer.acns.fsu.edu (David Sammons)
+Subject: Re: Monitor turning off on its own
+Organization: FSUACNS
+Lines: 29
+
+In article <gcohen.164.734712474@mailer.acns.fsu.edu>,
+gcohen@mailer.acns.fsu.edu (Gregory Cohen) wrote:
+> 
+> In article <1993Apr13.142129.9491@rhrk.uni-kl.de> staudt@physik.uni-kl.de (Willi Staudt AG-Linder) writes:
+> >From: staudt@physik.uni-kl.de (Willi Staudt AG-Linder)
+> >Subject: Re: Monitor turning off on its own
+> >Date: Tue, 13 Apr 1993 14:21:29 GMT
+> >kayc@leland.Stanford.EDU (K C Ku) writes:
+> >|>
+> >|>I have a strange problem with my Apple 13" monitor which hopefully
+> >|>someone can shed some light on. 
+> >|>
+> >|>I would be using my computer for 5 minutes and then the screen would
+> >|>go blank as if someone has switch the monitor off. After the screen
+> >|>went off, I would not be able to turn the monitor off even if I turn
+> >|>the power off and back on. I will have to let the monitor sit over
+> >|>night and it usually turns on, although it doesnt stay on for very
+> >|>long.
+> >|>
+> >|>Dooes anybody has similar experience with such a problem before? Is
+> >|>there some fuse in the monitor that prevents it from turning on? When
+> >|>I try to turn the monitor on, it seems that the monitor tries to turn
+> >|>on but it prevented by some mechamism.
+> 
+	In certain Apple 13" RGB monitors there has been a problem with
+	the HIGH VOLTAGE CAPASITOR. Apple knows about this problem and is
+	replacing the cap at no cost if it falls into the bad batch that
+	they got from their supplier. Your local repair shop should know about
+	REPAIR EXTENSION 3L0218.

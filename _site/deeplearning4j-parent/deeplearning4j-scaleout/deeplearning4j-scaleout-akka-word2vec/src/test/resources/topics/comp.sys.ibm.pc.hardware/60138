@@ -1,0 +1,48 @@
+From: buckel@winx06.informatik.uni-wuerzburg.de (bernhard buckel)
+Subject: Re: HELP! MY HARD DRIVE ID MESSED!
+Organization: University of Wuerzburg, Germany
+X-Newsreader: TIN [version 1.1 PL8]
+Lines: 42
+
+Dave (david@c-cat.UUCP) wrote:
+: vazzag@vccnw13.its.rpi.edu (Gregory Anthony Vazzana) writes:
+
+: {> 
+: {> 	Howdy,
+: {> 
+: {> 	The other day I was using Norton's SpeedDisk to optimize my Seagate(125MB) h
+: {> problem persisted.  I backed up all essential data and decided to reformat
+: {> my hard drive.  When I attempted this it got to the 279th clylinder 8th
+: {> head and gave me an error message saying that it "Could not find the sector"
+: {> I have tried everything I can think of.  Now I can't even access my hard driv
+: {> to write information to it.  I tried to boot up with my MS-DOS disks but MS-D
+: {> tries to reformat my hard drive and gets 29% of the way through to say "Error
+: {> formatting hard drive. Press f3 to exit"  I tried to scan my hard drive
+: {> for viruses but I can;t access it and I get a message (When I try to do a dir
+: {> saying "Error INT 24"  Can anyone Help me?  I have no idea what to do. 
+: {> 
+: {> Thanks in advance for any help!
+: {> 
+: {> 				Greg
+
+: try a bios level format via the debug command.
+: -G=xxxx:5  where xxxx is the Hex address of the hd controller bios
+: location.
+: if this will not work, a last resort would be to take a large magnet
+: to the hard disk, but this has to be done properly or you will cause
+: or could cause more damage than has been done already.
+
+: disclaimer: I am not responsible for your actions by directly applying
+: a large magnet to your hard disk.
+
+: if done correctly the magnet trick will wipe out everything on the
+: hard disk _COMPLETELY_ and a low level BIOS format might succeed
+
+
+:                                                        -David
+
+: =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+: China Cat BBS                               c-cat!david@sed.csc.com
+: (301)604-5976 1200-14,400 8N1               ...uunet!mimsy!anagld!c-cat!david 
+: =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

@@ -1,0 +1,63 @@
+From: rogerskm@eplrx7.es.duPont.com (Karen Rogers)
+Subject: Remapping <return> key in a dialog
+Organization: DuPont Central Research & Development
+Lines: 58
+
+I am new to X programming, so please bear with me....
+
+I am trying to have a dialog box that returns it's value upon the
+user entering a new value and hitting the <return> key. (don't want
+to have a "done" button).  The piece of code below will work if
+I exclude the XtNvalue argument but will not work as is. Can someone
+shed some light on this or suggest a better way?  Ultimately I will
+have several areas active at the same time to allow a user to modify
+parameters in the program.  
+
+
+Thanks for your help,
+
+Karen Rogers
+Dupont
+rogerskm@pluto.es.dupont.com
+
+######### Code starts here ################
+void doit()
+{
+printf("Entered the doit function\n");
+exit();
+}
+
+main(argc, argv)
+int argc;
+char **argv;
+{
+Widget toplevel;
+Widget outer;
+XtAppContext app_con;
+Widget samples;
+Arg args[3];
+static XtActionsRec key_actions[]= 
+    {
+    {"doit", doit},
+    };
+
+toplevel = XtVaAppInitialize(&app_con, "TEST", NULL, 0,
+	                       &argc, argv, NULL, NULL);
+
+outer = XtCreateManagedWidget( "paned", panedWidgetClass, toplevel,
+					NULL, ZERO);
+
+XtAppAddActions(app_con, key_actions, XtNumber(key_actions));
+
+XtSetArg(args[0], XtNlabel, "Enter value");
+XtSetArg(args[1], XtNvalue, "0");
+
+samples = XtCreateManagedWidget("samples", dialogWidgetClass,outer,args,2);
+
+XtOverrideTranslations(samples, 
+	  XtParseTranslationTable("<Key>Return: doit()"));
+   
+XtRealizeWidget(toplevel);
+XtAppMainLoop(app_con);
+}
+

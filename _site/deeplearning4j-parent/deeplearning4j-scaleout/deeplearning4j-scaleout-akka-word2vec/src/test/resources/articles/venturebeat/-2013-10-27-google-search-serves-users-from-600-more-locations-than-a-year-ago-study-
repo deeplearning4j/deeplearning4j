@@ -1,0 +1,14 @@
+4
+Google search serves users from six times as many locations than a year ago.
+The University of Southern California conducted a study which found that Google has dramatically increased the number of sites around the world from which its serves search queries.
+The search giant repurposed its existing content infrastructure into search infrastructure, which the study’s lead author Matt Calder said “abruptly expanded” the way they use their client networks.
+From October 2012 to the end of July 2013, Google increased the locations serving its search infrastructure from under 200 to more than 1400, and the number of ISPs grew from just over 100 to more than 850.
+Search requests now go to regional networks first, and from there to the Google data center, rather than directly. This apparently speeds up the searches, even though it technically adds in a step.
+“Data connections typically need to “warm up” to get to their top speed – the continuous connection between the client network and the Google data center eliminates some of that warming up lag time,” the report said. “In addition, content is split up into tiny packets to be sent over the Internet – and some of the delay that you may experience is due to the occasional loss of some of those packets. By designating the client network as a middleman, lost packets can be spotted and replaced much more quickly.”
+Google already used client networks, such as Time Warner Cable, to host some content (like videos on YouTube). Now it is using those same networks to relay and speed up search requests.
+“Delayed web responses lead to decreased user engagement, fewer searches, and lost revenue,” said Ethan Katz-Bassett, an assistant professor at USC Viterbi. “Google’s rapid expansion tackles major causes of slow transfers head-on.”
+This strategy means users get quick responses, and ISPs lower their operational costs by keeping more traffic local.
+Sometimes it is easy to forget, as we effortlessly search for recipes and share YouTube videos with our friends, that there is an incredible amount of physical technology enabling these digital experiences. Part of what makes Google, Google is its ability to build, organize, and operate a huge network of servers and fiber-optic cables, and process massive amounts of data at warp speed.
+It has about a dozen data centers around the world, making up a multibillion dollar infrastructure. There are even rumors now that Google is building a floating data center on Treasure Island.  
+The USC team stumbled on this discovery somewhat accidentally. Graduate student Xun Fan said that they developed techniques to locate the servers, and “it just so happened we exposed this rapid expansion.”
+The research was funded by the National Science Foundation, the Department of Homeland Security, and the Air Force Research Laboratory.

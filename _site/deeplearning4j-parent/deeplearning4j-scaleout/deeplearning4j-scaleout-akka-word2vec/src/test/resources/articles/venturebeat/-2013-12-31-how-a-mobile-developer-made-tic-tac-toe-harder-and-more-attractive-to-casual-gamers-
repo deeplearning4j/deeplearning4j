@@ -1,0 +1,28 @@
+0
+Tic-tac-toe is kind of a joke, but I can’t stop playing a new version of it on my smartphone.
+It’s called Tic Tactics from developer Hidden Variable Studios, and it takes the universally recognized rules of tic-tac-toe and messes it all up with deep strategic thinking and slick design. The asynchronous head-to-head puzzler is available now on Android and iOS as a free download.
+On Android, Tic Tactics already has more than 100,000 downloads, which is impressive for a game based on something so simple that most people give it up when they learn to tie their shoelaces by themselves. The truth is that Tic Tactics is the chess to tic-tac-toe’s checkers, and Hidden Variable worked to optimize its game for mobile platforms and gamers.
+“Tic-tac-toe has this stigma of being a stalemate-fest,” Hidden Variable cofounder Nick Ahrens told GamesBeat. “Everyone’s familiar with it and becomes a master of it when they’re 5 years old, but then it dwindles in interest after that.”
+Helping tic-tac-toe grow up
+Jeff Grubb/GamesBeat
+A finished match in Tic Tactics.
+So how is Tic Tactics any different? Well, instead of playing on a single 3-by-3 grid, matches take place on a “megaboard” made up of nine separate tic-tac-toe games. To win, players must get three in a row on three consecutive boards. On top of that, every move each player makes dictates where the opponent can move next.
+“If I were to go through and make a move in the center square of the lower-right board, then my opponent must make their move on the center board for their turn,” Ahrens said.
+This opens up a number of strategies that players can implement. Players can constrain and funnel their opponents into previously won boards or coax them into placing an X in one board as part of a grand scheme.
+The thing about Tic Tactics’ rules is that it isn’t fully original. The developers of Hidden Variable picked it up from a friend, and they fell in love with it after playing it casually on a whiteboard in their studio. When the studio decided to turn it into a mobile app, the company was able to put its design and development expertise into play to make Tic Tactics a viable smartphone gaming product.
+“We were thinking that we wanted to make this an asynchronous multiplayer game, but we needed to figure out the upsides and downsides of that,” said Ahrens. “For example, there are some early moves that players can exploit and the game is pretty slow to ramp up, so we added a few additional rules in Tic Tactics where you make your first nine moves to start a match.”
+Players can’t claim a board in this phase, but it helps matches get into the deeper strategy much more quickly.
+“This means that with your first move you already have an organically populated board,” said Ahrens. “That makes gameplay interesting from moment one, which is obviously very important when you’re dealing with the fickle and impatient mobile-gaming audience.”
+Building a game that consistently holds a player’s attention
+Hidden Variable built everything about Tic Tactics with casual, mobile gamers in mind. The studio knows that most people playing on smartphones only have 30 seconds here and there to play games, and they won’t waste those fleeting moments with clunky games that don’t respect their time.
+“One of the big thing with any mobile title is that you need to sell people on your game really, really quickly,” Hidden Variable cofounder Charlie Price told GamesBeat. “They need to be into it into the first 30 seconds, then the first minute, and first two, five, and beyond.”
+To accomplish that, Hidden Variable worked on optimizing every aspect of Tic Tactics for mobile. That includes the rule changes to get games going quicker, but it also includes the visual and user-experience design.
+Everything about Tic Tactics is clean and fast. The design is simple and easy to look at it. Whether you are Xs or Os, you are always green, and your opponent is always red. That makes it easy to quickly make sense of the board if you haven’t looked at it for a while. While Hidden Variable used a simple visual style, Tic Tactics pops with animation flares and feels alive.
+The result is an attractive package that is easy to spend time with.
+A free game with a premium feel
+While Tic Tactics is free, players can spend money to get coins to play more games at one time. Gamers will get a certain number of free coins each day and will earn some when they win a match, but those that want to have games going at one time can purchase coin packs.
+Ahrens and Price believe that the path to getting players to spending is to first present them with a product that already feels like a premium experience.
+“When players download something for free, they still expect a certain level of value,” said Ahrens. “They act like they’ve already paid, and we feel like we need to fulfill that on a certain level as soon as possible.”
+“Developers have a much smaller margin for error on mobile,” said Price. “If a player gets distracted and clicks away from your game, there’s a million and a half other free games that they can go and download.”
+Hidden Variable’s developers hope that by making something familiar, attractive, and premium, they can keep players’ attention for a long time.
+Related articles

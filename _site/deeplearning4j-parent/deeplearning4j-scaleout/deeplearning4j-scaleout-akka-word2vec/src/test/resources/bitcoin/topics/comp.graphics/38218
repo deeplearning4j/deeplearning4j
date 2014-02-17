@@ -1,0 +1,29 @@
+From: rob@rjck.UUCP (Robert J.C. Kyanko)
+Subject: Re: Weitek P9000 ?
+Distribution: world
+Organization: Neptune Software Inc
+Lines: 23
+
+abraxis@iastate.edu writes in article <abraxis.734340159@class1.iastate.edu>:
+> 
+> Anyone know about the Weitek P9000 graphics chip?
+> Micron is selling it with their systems They rank them at 50 winmarks...
+> Any info would help...
+> thanks.
+
+It's supposedly a high-performance chip based upon workstation graphics
+accelerators.  It's quite fast (I have 7), but as usual with new boards/chips
+the drivers are buggy for Windows.  As far as Winmarks go, it depends upon
+the version.  I think I got 42M winmarks with version 3.11.  2.5 yielded the
+50+ number.  I've also benchmarked this with Wintach at over 65 (from memory
+as well).
+
+As far as the low-level stuff goes, it looks pretty nice.  It's got this
+quadrilateral fill command that requires just the four points.
+
+It's very fast, but beware of buggy drivers, and otherwise no non-windows
+support.
+
+--
+I am not responsible for anything I do or say -- I'm just an opinion.
+             Robert J.C. Kyanko (rob@rjck.UUCP)

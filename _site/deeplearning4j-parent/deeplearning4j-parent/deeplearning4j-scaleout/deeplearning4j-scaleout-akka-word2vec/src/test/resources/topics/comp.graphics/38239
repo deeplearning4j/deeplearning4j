@@ -1,0 +1,19 @@
+From: john@goshawk.mcc.ac.uk (John Heaton)
+Subject: POV reboots PC after memory upgrade
+Reply-To: john@nessie.mcc.ac.uk
+Organization: MCC Network Unit
+Lines: 13
+
+Up until last week, I have been running POVray v1.0 on my 486/33 under DOS5
+without any major problems.  Over Easter I increased the memory from 4Meg to
+8Meg, and found that POVray reboots the system every time under DOS5.  I had
+a go at running POVray in a DOS window when running Win3.1 on the same system
+and it now works fine, even if a lot slower.  I would like to go back to 
+using POVray directly under DOS, anyone any ideas???
+
+John
+-- 
+                 John Heaton   -   NRS Central Administrator
+      MCC Network Unit, The University, Oxford Road, Manchester,  M13-9PL
+            Phone: (+44) 61 275 6011   -   FAX: (+44) 61 275 6040
+                   Packet: G1YYH @ G1YYH.GB7PWY.#16.GBR.EU

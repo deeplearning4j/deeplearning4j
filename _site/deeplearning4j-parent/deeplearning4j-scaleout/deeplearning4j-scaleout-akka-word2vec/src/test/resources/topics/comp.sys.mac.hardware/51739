@@ -1,0 +1,22 @@
+From: meharg@kits.sfu.ca (Gersham William Meharg)
+Subject: Re: Centris 610 Video Problem - I'm having it also!
+Organization: Simon Fraser University, Burnaby, B.C., Canada
+Distribution: comp
+Lines: 16
+
+I also suffer from these video "artefacts". My configuration is a
+Centris 610, 4/160, 1MB VRAM with a NEC 4FG. It only happens at
+832x624, in 8bit colour with virtual memory off during scrolling. This
+occurs when the VRAM SIMMS are installed as well as removed.
+It seems that the 610 does not like 832x624.
+
+Does anyone *not* have these problems in the above mentioned
+conditions?
+
+-Gersham Meharg
+SFU Canada.
+
+-- 
+Gersham Meharg :  meharg@sfu.ca : SFU-Vancouver-Canada
+
+  

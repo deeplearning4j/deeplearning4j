@@ -1,0 +1,18 @@
+From: srowe@fulcrum.co.uk (Simon Rowe)
+Subject: Re: exit codes (dos--sorry for wrong group : (
+Organization: Fulcrum Communications
+Lines: 13
+
+Internal DOS commands (certainly 3.3 and before) do not set the exit
+code. This is a royal pain if you want to do anything which checks for
+successful deletions etc. The best suggestion is to use 4dos which
+does return you exit codes. It also has move command,
+
+	Simon.
+
+-------------------------------------------------------------------------------
+Simon Rowe,                                   srowe@fulcrum.co.uk
+Fulcrum Communications Ltd,
+Birmingham,			         Condition "BRAIN_OVERLOAD$" raised at
+ENGLAND.				 5412(0)/12234
+------------------------------------------------------------------------------

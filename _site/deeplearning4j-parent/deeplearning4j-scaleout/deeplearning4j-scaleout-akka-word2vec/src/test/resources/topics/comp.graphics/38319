@@ -1,0 +1,33 @@
+From: steve@hcrlgw (Steven Collins)
+Subject: Re: Sphere from 4 points?
+Organization: Central Research Lab. Hitachi, Ltd.
+Lines: 27
+Nntp-Posting-Host: hcrlgw
+
+In article <1qkgbuINNs9n@shelley.u.washington.edu> bolson@carson.u.washington.edu (Edward Bolson) writes:
+>Boy, this will be embarassing if it is trivial or an FAQ:
+>
+>Given 4 points (non coplanar), how does one find the sphere, that is,
+>center and radius, exactly fitting those points?  I know how to do it
+>for a circle (from 3 points), but do not immediately see a 
+>straightforward way to do it in 3-D.  I have checked some
+>geometry books, Graphics Gems, and Farin, but am still at a loss?
+>Please have mercy on me and provide the solution?  
+
+Wouldn't this require a hyper-sphere.  In 3-space, 4 points over specifies
+a sphere as far as I can see.  Unless that is you can prove that a point
+exists in 3-space that is equi-distant from the 4 points, and this may not
+necessarily happen.
+
+Correct me if I'm wrong (which I quite possibly am!)
+
+steve
+---
+
+
+
+-- 
++---------------------------------------+--------------------------------+
+| Steven Collins			| email: steve@crl.hitachi.co.jp |
+| Visiting Computer Graphics Researcher	| phone: (0423)-23-1111 	 |
+| Hitachi Central Research Lab. Tokyo.	| fax:   (0423)-27-7742		 |

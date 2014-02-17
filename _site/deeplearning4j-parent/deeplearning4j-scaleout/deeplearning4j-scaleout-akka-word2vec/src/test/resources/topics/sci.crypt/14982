@@ -1,0 +1,19 @@
+From: Jim-Miller@suite.com
+Subject: Certifying Authority question answered.
+Organization: Suite Software
+Lines: 12
+Reply-To: Jim-Miller@suite.com
+NNTP-Posting-Host: nimrod.suite.com
+
+>>If you have access to FTP, try FTPing to rsa.com, login as anonymous.
+>>There are several documents there, including a "frequently asked questions
+>>about today's cryptography" document.  It has FAQ in its name.
+>>I believe this document explains the idea behind the certifying authorities.
+>>
+>>Good luck
+>>
+>>--John Kelsey, c445585@mizzou1.missouri.edu
+
+Thanks.  I've ftp'ed the FAQ file and it is just what I was looking for.
+
+Jim-Miller@suite.com

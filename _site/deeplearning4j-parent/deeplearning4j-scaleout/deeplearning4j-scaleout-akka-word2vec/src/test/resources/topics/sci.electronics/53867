@@ -1,0 +1,61 @@
+From: sehari@iastate.edu (Babak Sehari)
+Subject: Re: How to the disks copy protected.
+Originator: sehari@du139-213.cc.iastate.edu
+Organization: Iowa State University of Science and Technology, Ames, Iowa.
+Lines: 55
+
+In <1993Apr20.230749.12821@reed.edu> mblock@reed.edu (Matt Block) writes:
+
+>In article <sehari.735331566@marge.ecss.iastate.edu> sehari@iastate.edu (Babak Sehari) writes:
+>>---
+>>
+>>I was wondering, what copy protection techniques are avaliable, and how
+>>effective are they?  Has anyone have any experience in this area?
+>>
+>>                      With highest regards,
+>>                           Babak   Sehari.
+
+>	Uh oh...
+>	Umm, there are a number of copy protection schemes.  Some involve
+>modifying the physical media, and some involve encryption schemes, &c.
+>	All of the ones that have existed over the course of computing have
+>been successful for a time.  I recall, however, near monthly releases of new
+>ways to "crack" the copy protection scheme of the latest releases.  The fact
+>is, none of them are completely secure, or anywhere near it.  Some are more or
+>less difficult to crack, and some have already been cracked.
+>	I guess what I am saying is that your question is difficult, if not
+>impossible, to answer.  What exactly do you want to know?  Do you need a good
+>one for a project you are working on?  How secure must it be?  Are you trying
+>to crack one that someone else has used?  I can probably make suggestions,
+>assuming the activity is strictly legal.  (In general, it is a BAD idea,
+>legally, to tamper with copy protection.  It can also lead to corruption of
+>files which you necessarily do not have back ups of (being as they are copy
+>protected,) which can be devestating.)  Do you have absolutely no ideas for
+>practical applications, and are merely curious?
+>	Please clear up those questions, and I'll try to help as much as I
+>can.
+
+>	Incidentally, the "Uh oh..." at the top is indicative of the dread
+>anyone who has watched their friends hacking equipment be carted off feels
+>when they are asked how to hack.  The area you are broaching is wrought with
+>dangers, many of which include breaking the law, or at least addressing it
+>(from one side or the other.)
+
+>Matt
+
+I have written a program and I want to market it.  I would like certain degree
+of protection, since my main custmers are individuals and not the 
+cooperations.   I know laser hole burning method, and hardware key method,
+however, my  software is going to cost only $15.00, so I can not afford that.
+Also, at this low price I can not afford people make too many copy of my
+software. Well, I guess say upto %20 illigal copying is ok by me.
+
+However, I do not want someone to get a copy of PCTools and copy my software.  
+Off course, I never meant to forbid the true hackers from copying, since they
+can develope a better program anyway.
+
+                      With highest regards,
+                           Babak   Sehari.
+
+
+-- 

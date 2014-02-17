@@ -1,0 +1,25 @@
+Nntp-Posting-Host: 134.58.96.14
+From: wimvh@liris.tew.kuleuven.ac.be (Wim Van Holder)
+Distribution: world
+Organization: K.U.Leuven - Applied Economic Sciences Department
+Subject: Trumpet for Windows & other news readers
+Lines: 18
+
+I'm looking for a decent Windows news reader. I've given up on winvn 0.76
+since it doesn't work very well with the winsock.dll of the IBM TCP/IP for
+DOS 2.1.
+
+What the status of Trumpet for Windows? Will it use the Windows sockets ?
+I liked it in DOS but had to abandon it since I started using NDIS to access
+our token ring (results in invalid class error :(
+
+
+Bye!
+
+Wim Van Holder
+Katholieke Universiteit Leuven          Tel: ++32 (0)16/28.57.16
+Departement T.E.W.                      FAX: ++32 (0)16/28.57.99
+Dekenstraat 2
+B-3000 Leuven                           E-mail: wimvh@liris.tew.kuleuven.ac.be
+BELGIUM                                         fdbaq03@cc1.kuleuven.ac.be
+

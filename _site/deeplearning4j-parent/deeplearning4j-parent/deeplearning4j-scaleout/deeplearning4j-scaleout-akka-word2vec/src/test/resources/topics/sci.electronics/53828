@@ -1,0 +1,24 @@
+From: wtm@uhura.neoucom.edu (Bill Mayhew)
+Subject: Re: help: How to reduce the RPMs of a Boxer fan ?
+Organization: Northeastern Ohio Universities College of Medicine
+Distribution: na
+Lines: 18
+
+Yes, you increase the RPM slip of a "boxer" type fan by installing
+a capacitor in series with the fan's power supply.  The air flow of
+small 3.5 inch fans can be reduced by about 50% by using a 1 to 4
+uF capacitor.  Use a good grade nonpolarized unit with working
+voltage rating around 250 volts.  Note that some impriical study is
+usually required to experimentally determine the best size
+capacitor for a given application.
+
+For DC powered applications, try the Radio Shack 12 volt box fan.
+It can run and start reliably from as low as about 4.5 VDC.  It is
+exceptionally quiet, but at admittedly low flow.  I wish I knew who
+made the fans for Radio Shack.
+
+
+-- 
+Bill Mayhew      NEOUCOM Computer Services Department
+Rootstown, OH  44272-9995  USA    phone: 216-325-2511
+wtm@uhura.neoucom.edu (140.220.1.1)    146.580: N8WED

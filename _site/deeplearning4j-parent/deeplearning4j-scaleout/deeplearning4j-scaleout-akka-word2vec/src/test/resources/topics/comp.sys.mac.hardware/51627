@@ -1,0 +1,14 @@
+From: chen@nuclear.med.bcm.tmc.edu (ChenLin)
+Subject: Re: Can I get more than 640 x 480 on 13" monitor?
+Organization: Baylor College of Medicine
+Lines: 5
+Distribution: na
+Reply-To: chen@nuclear.bcm.tmc.edu
+NNTP-Posting-Host: nuclear.med.bcm.tmc.edu
+Keywords: 13" monitor, 8*24 resolution
+
+
+Try MaxAppleZoom ( a shareware init ) if your monitor is not driven by internal
+video.
+
+chen

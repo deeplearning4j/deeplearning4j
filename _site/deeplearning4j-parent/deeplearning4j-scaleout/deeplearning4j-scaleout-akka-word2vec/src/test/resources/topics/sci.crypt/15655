@@ -1,0 +1,41 @@
+From: ifarqhar@laurel.ocs.mq.edu.au (Ian Farquhar)
+Subject: Re: Screw the people, crypto is for hard-core hackers & spooks only
+Organization: Macquarie University, Sydney Australia
+Lines: 35
+NNTP-Posting-Host: laurel.ocs.mq.edu.au
+
+In article <19930419.155204.305@almaden.ibm.com> ameline@vnet.IBM.COM (Ian Ameline) writes:
+>  I also believe that someone will reverse engineer the clipper chip,
+>and knowlege of the algorithm will likely be fairly widespread. Any back-
+>doors or weaknesses would further discredit the scheme, and help grow
+>the market demand for a secure alternative.
+
+I must admit that this point has been running through my mind for most of
+the discussion: one the dice are out there, it won't be long before someone
+decaps it and, after a bit of work, has full details of the Clipper
+algorythm.  This isn't trivial to do, but then again, it is not impossibly
+difficult either.  Any half way decent VLSI design student should be able
+to take a photograph of a technology s/he is familiar with, and given a
+description of the input, output, control and supply lines, figure out 
+the function of various subsystems on the die.  Indeed, this is not an
+uncommon exercise performed during training (because it makes you think
+about design decisions made by other designers.
+
+I could speculate that these chips are going to be manufactured using
+"tamperproof" carriers (unlikely - such techniques are *very* expensive
+and this thing is supposed to be relatively cheap to produce), or that
+there will be some legal or legislative framework to prevent publication
+of the algorythm (unlikely - please correct me if I am wrong but aren't these
+supposed to be sold internationally?).  I suppose that the most likely
+reason the algorythm is remaining secret for the moment is that some idiot
+bureaucrat, untrammeled by the realities of the situation, decided that
+"well, we should keep it a secret because it is supposed to be secret,
+isn't it?"
+
+Just some random thoughts...
+
+--
+Ian Farquhar                      Phone : + 61 2 805-9400
+Office of Computing Services      Fax   : + 61 2 805-7433
+Macquarie University  NSW  2109   Also  : + 61 2 805-7420
+Australia                         EMail : ifarqhar@laurel.ocs.mq.edu.au.

@@ -1,0 +1,22 @@
+From: djb@silverton.berkeley.edu (D. J. Bernstein)
+Subject: Re: Clipper chip -- technical details
+Organization: IR
+Lines: 17
+
+In article <1993Apr19.052005.20665@ulysses.att.com> smb@research.att.com (Steven Bellovin) writes:
+> Nothing was said about where K_P comes from.
+
+Oh? Hellman said ``each user will get to choose his or her own key.''
+That's the key which I called K_P, the session key. According to
+Hellman, if Alice and Bob are communicating with the Clipper Chip,
+then Alice chooses ``her own key'' and Bob chooses ``his own key.''
+This is incompatible with the suggestion that when Alice and Bob are
+talking, they use a _common_ K_P, chosen by classical or public-key
+approaches.
+
+The protocol/key-management description published so far is either
+incomplete or incorrect. It leaves me with no idea of how the system
+would actually _work_. I hope the CPSR FOIA request succeeds so that
+we get full details.
+
+---Dan

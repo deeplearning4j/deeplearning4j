@@ -1,0 +1,27 @@
+From: fisk@cvdv99.mayo.edu (Tom Fisk | 2D-337 STM | 5-4341)
+Subject: Re: ATI ultra pro Drivers?
+News-Software: VAX/VMS VNEWS 1.41    
+Reply-To: fisk@mayo.edu
+Organization: University of Arizona MIS Department - Mosaic Group
+Lines: 20
+
+In article <C5JLDC.HL9@news.cso.uiuc.edu>, jroberts@ux4.cso.uiuc.edu (Robertson) writes...
+>Does anybody know the FTP site with the latest Windows drivers for the ATI
+>GUP?
+>Thanks
+> 
+The latest driver release is 59 and can be found at ftp.cica.indiana.edu
+in the pub/pc/win3/... directory structure as pro59.zip.  I checked with ATI's
+BBS last nite and there were no releases past 59.
+
+We have the ATI Local Bus card and I noticed that I get garbage around the
+edges of a window when I move it.  Has anybody else noticed this also?
+
+Tom.
+-------------------------------------------------------------------------------
+Thomas B. Fisk          +----------------------------+  Internet: fisk@mayo.edu
+Mayo Clinic             |   If you don't know where  |  Voice: (507) 255-4341
+200 First Street SW     |  you're going you'll never |  FAX: (507) 255-5484
+Mail Stop 2D-337 STM    |         get there.         |
+Rochester, MN  55905    +----------------------------+
+-------------------------------------------------------------------------------

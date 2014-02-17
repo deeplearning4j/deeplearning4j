@@ -1,0 +1,31 @@
+From: Sean McMains <mcmains@unt.edu>
+Subject: Re: Rumours about 3DO ???
+X-Xxmessage-Id: <A7F2FC4E8B01023C@seanmac.acs.unt.edu>
+X-Xxdate: Thu, 15 Apr 93 17: 49:34 GMT
+Organization: University of North Texas
+X-Useragent: Nuntius v1.1.1d20
+Lines: 23
+
+In article <1993Apr15.144843.19549@rchland.ibm.com> Ricardo Hernandez
+Muchado, ricardo@rchland.vnet.ibm.com writes:
+>   And CD-I's CPU doesn't help much either.  I understand it is
+>a 68070 (supposedly a variation of a 68000/68010) running at something
+>like 7Mhz.  With this speed, you *truly* need sprites.
+
+Wow! A 68070! I'd be very interested to get my hands on one of these,
+especially considering the fact that Motorola has not yet released the
+68060, which is supposedly the next in the 680x0 lineup. 8-D
+
+Ricardo, the animation playback to which Lawrence was referring in an
+earlier post is plain old Quicktime 1.5 with the Compact Video codec.
+I've seen digitized video (some of Apple's early commercials, to be
+precise) running on a Centris 650 at about 30fps very nicely (16-bit
+color depth). I would expect that using the same algorithm, a RISC
+processor should be able to approach full-screen full-motion animation,
+though as you've implied, the processor will be taxed more with highly
+dynamic material.
+========================================================================
+Sean McMains              | Check out the Gopher    | Phone:817.565.2039
+University of North Texas | New Bands Info server   | Fax  :817.565.4060
+P.O. Box 13495            | at seanmac.acs.unt.edu  | E-Mail:
+Denton TX 76203           |                         |  McMains@unt.edu

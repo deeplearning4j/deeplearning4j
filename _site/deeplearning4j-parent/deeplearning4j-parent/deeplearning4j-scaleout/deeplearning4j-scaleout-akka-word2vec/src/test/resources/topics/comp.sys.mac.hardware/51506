@@ -1,0 +1,26 @@
+From: DJCOHEN@YaleVM.YCC.Yale.Edu (Daniel Cohen)
+Subject: Re: Interesting ADB behaviour on C650
+Nntp-Posting-Host: yalevm.ycc.yale.edu
+Organization: Yale University
+Lines: 20
+
+In article <1993Apr15.181440.15490@waikato.ac.nz>
+ldo@waikato.ac.nz (Lawrence D'Oliveiro, Waikato University) writes:
+ 
+>I've noticed an interesting phenomenon on my Centris 650. If I unplug the
+>keyboard and mouse and plug them in again without turning the power off,
+>the mouse suddenly switches to about half its normal movement speed. I check
+>the "Mouse" control panel, and there's no change in its setting there--it's
+>still on full speed, the way I like it. Restarting the machine restores the
+>normal mouse speed.
+>
+>By the way, it happens with both the newer-style mouse that came with the
+>Centris, and the older-style mouse from my IIfx at work. Thus I don't think
+>it has anything to do with the resolution setting in the mouse--it's
+>definitely a quirk of the ADB interface (either hardware or software) in the
+>Centris itself.
+ 
+I have noticed this exact same phenomenon occurs with my LCIII.  Perhaps it is
+a quirk of the new machines?
+ 
+--Dan

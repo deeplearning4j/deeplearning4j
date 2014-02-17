@@ -1,0 +1,215 @@
+Subject: NHL Summary parse results for games played Sun, April 4, 1993
+From: c5ff@jupiter.sun.csd.unb.ca (COOK  Charlie)
+Organization: University of New Brunswick
+Lines: 210
+
+NY Rangers                       3 1 0--4
+Washington                       0 0 0--0
+First period
+     1, NY Rangers, Graves 33 (Turcotte, Lowe) 9:13.
+     2, NY Rangers, Gartner 44 (Messier) 11:21.
+     3, NY Rangers, Olczyk 21 (Messier, Amonte) 14:57.
+Second period
+     4, NY Rangers, Beukeboom 2 (unassisted) 3:30.
+Third period
+     No scoring.
+
+NY Rangers: 4    Power play: 4-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Amonte             0    1    1
+Beukeboom          1    0    1
+Gartner            1    0    1
+Graves             1    0    1
+Lowe               0    1    1
+Messier            0    2    2
+Olczyk             1    0    1
+Turcotte           0    1    1
+
+Washington: 0    Power play: 3-0
+No scoring
+
+-----------------------------------------
+Boston                           0 2 1--3
+Buffalo                          0 0 0--0
+First period
+     No scoring.
+Second period
+     1, Boston, Leach 24 (Wesley, Oates) pp, 1:03.
+     2, Boston, Oates 44 (Douris, Poulin) 9:00.
+Third period
+     3, Boston, Douris 4 (Bourque) sh, 0:55.
+
+Boston: 3    Power play: 5-1   Special goals:  pp: 1  sh: 1  Total: 2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bourque            0    1    1
+Douris             1    1    2
+Leach              1    0    1
+Oates              1    1    2
+Poulin             0    1    1
+Wesley             0    1    1
+
+Buffalo: 0    Power play: 6-0
+No scoring
+
+-----------------------------------------
+Pittsburgh                       1 3 1--5
+New Jersey                       0 1 1--2
+First period
+     1, Pittsburgh, Francis 23 (Lemieux, Tocchet) pp, 13:25.
+Second period
+     2, Pittsburgh, Murphy 21 (Francis, Mullen) sh, 0:38.
+     3, Pittsburgh, Francis 24 (Tocchet, Lemieux) pp, 7:14.
+     4, Pittsburgh, Jagr 33 (Tocchet, Francis) pp, 15:22.
+     5, New Jersey, Zelepukin 17 (Driver, Lemieux) pp, 19:07.
+Third period
+     6, New Jersey, MacLean 23 (Nicholls, Stevens) 6:45.
+     7, Pittsburgh, Lemieux 62 (Jagr) en, 19:51.
+
+Pittsburgh: 5    Power play: 9-3   Special goals:  pp: 3  sh: 1  en: 1  Total: 5
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Francis            2    2    4
+Jagr               1    1    2
+Lemieux            1    2    3
+Mullen             0    1    1
+Murphy             1    0    1
+Tocchet            0    3    3
+
+New Jersey: 2    Power play: 9-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Driver             0    1    1
+Lemieux            0    1    1
+MacLean            1    0    1
+Nicholls           0    1    1
+Stevens            0    1    1
+Zelepukin          1    0    1
+
+-----------------------------------------
+Toronto                          0 0 0--0
+Philadelphia                     2 1 1--4
+First period
+     1, Philadelphia, Dineen 31 (Beranek, Hawgood) 8:10.
+     2, Philadelphia, McGill 3 (Lindros, Recchi) 19:55.
+Second period
+     3, Philadelphia, Lindros 38 (Recchi, Galley) 7:55.
+Third period
+     4, Philadelphia, Dineen 32 (Hawgood, Galley) pp, 18:39.
+
+Philadelphia: 4    Power play: 4-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Beranek            0    1    1
+Dineen             2    0    2
+Galley             0    2    2
+Hawgood            0    2    2
+Lindros            1    1    2
+McGill             1    0    1
+Recchi             0    2    2
+
+Toronto: 0    Power play: 6-0
+No scoring
+
+-----------------------------------------
+Vancouver                        0 2 1--3
+Ottawa                           0 0 0--0
+First period
+     No scoring.
+Second period
+     1, Vancouver, Plavsic 6 (Craven) 13:05.
+     2, Vancouver, Momesso 17 (Nedved, Plavsic) pp, 15:52.
+Third period
+     3, Vancouver, Bure 57 (unassisted) 13:27.
+
+Vancouver: 3    Power play: 4-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bure               1    0    1
+Craven             0    1    1
+Momesso            1    0    1
+Nedved             0    1    1
+Plavsic            1    1    2
+
+Ottawa: 0    Power play: 5-0
+No scoring
+
+-----------------------------------------
+St. Louis                        2 0 2--4
+Chicago                          4 0 1--5
+First period
+     1, Chicago, Sutter 18 (Murphy, Chelios) pp, 1:08.
+     2, St. Louis, Janney 20 (Shanahan, J.Brown) pp, 6:49.
+     3, Chicago, Roenick 44 (Chelios, Smith) pp, 8:20.
+     4, Chicago, Roenick 45 (Sutter, Chelios) pp, 13:14.
+     5, Chicago, Graham 19 (Gilbert, Ruuttu) 13:42.
+     6, St. Louis, Janney 21 (Shanahan, Crossman) 19:38.
+Second period
+     No scoring.
+Third period
+     7, Chicago, Murphy 5 (Chelios, Belfour) 0:20.
+     8, St. Louis, Miller 21 (Hull, Janney) pp, 7:04.
+     9, St. Louis, Janney 22 (Miller, Shanahan) 19:32.
+
+Chicago: 5    Power play: 8-3
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Belfour            0    1    1
+Chelios            0    4    4
+Gilbert            0    1    1
+Graham             1    0    1
+Murphy             1    1    2
+Roenick            2    0    2
+Ruuttu             0    1    1
+Smith              0    1    1
+Sutter             1    1    2
+
+St. Louis: 4    Power play: 4-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Brown J            0    1    1
+Crossman           0    1    1
+Hull               0    1    1
+Janney             3    1    4
+Miller             1    1    2
+Shanahan           0    3    3
+
+-----------------------------------------
+Calgary                          1 2 1--4
+San Jose                         1 0 2--3
+First period
+     1, Calgary, Otto 19 (Yawney, Ashton) pp, 5:29.
+     2, San Jose, Odgers 10 (Pederson, Wilkinson) 18:33.
+Second period
+     3, Calgary, Nieuwendyk 34 (Johansson, Reese) 2:03.
+     4, Calgary, Reichel 35 (Skrudland, Berube) 12:22.
+Third period
+     5, Calgary, Ashton 7 (Otto, Fleury) 1:30.
+     6, San Jose, Pederson 9 (Odgers, Evason) 2:24.
+     7, San Jose, Odgers 11 (Gaudreau, Evason) pp, 19:30.
+
+Calgary: 4    Power play: 5-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Ashton             1    1    2
+Berube             0    1    1
+Fleury             0    1    1
+Johansson          0    1    1
+Nieuwendyk         1    0    1
+Otto               1    1    2
+Reese              0    1    1
+Reichel            1    0    1
+Skrudland          0    1    1
+Yawney             0    1    1
+
+San Jose: 3    Power play: 5-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Evason             0    2    2
+Gaudreau           0    1    1
+Odgers             2    1    3
+Pederson           1    1    2
+Wilkinson          0    1    1
+
+-----------------------------------------

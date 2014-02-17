@@ -1,0 +1,25 @@
+From: rknight@stiatl.salestech.com (Ray Knight)
+Subject: Re: CView answers
+Keywords: Stupid Programming
+Organization: Sales Technologies, Inc.
+Lines: 19
+
+uk02183@nx10.mik.uky.edu (bryan k williams) writes:
+
+>re: majority of users not readding from floppy.
+>Well, how about those of us who have 1400-picture CD-ROMS and would like to use
+>CVIEW because it is fast and it works well, but can't because the moron lacked
+>the foresight to create the temp file in the program's path, not the current
+>didrectory?
+
+
+  Actually the most flexible way to create temp files is to check for a TEMP or
+TMP environment variable and create the files on the drive and directory pointedto by the variable.  This is pretty much a standard for DOS, Windows and OS/2
+applications.
+
+
+-- 
+What I have to say is my own opinion and has no bearing on any other person or
+organization including my employer.
+-----------------------------------------------------------------------------
+rknight@salestech.com        (404) 841-5316           Sales Technologies, Inc.

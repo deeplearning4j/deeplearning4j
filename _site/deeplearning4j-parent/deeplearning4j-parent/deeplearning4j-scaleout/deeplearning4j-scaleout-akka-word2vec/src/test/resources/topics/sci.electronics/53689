@@ -1,0 +1,33 @@
+From: cyberman@toz.buffalo.ny.us (Cyberman)
+Subject: CRT driver transistors
+Lines: 28
+X-Maildoor: WaflineMail 1.00r
+
+Device........ LT1839   @ IC (mA)..... 50
+V(BR)CEO (V).. 70       CCB (pF)...... 2.5
+V(BR)CBO (V).. 120      VCE (V)....... 15
+IC (mA) max... 300      Polarity...... NPN
+hFE min....... 20       Package....... 79-04
+hFE max....... 60       Material...... Metal
+fT (GHz)...... 1        Price (100+)..
+
+Device........ LT5839   @ IC (mA)..... 60
+V(BR)CEO (V).. 65       CCB (pF)...... 1.5
+V(BR)CBO (V).. 80       VCE (V)....... 10
+IC (mA) max... 300      Polarity...... PNP
+hFE min....... 15       Package....... 79-04
+hFE max....... 60       Material...... Metal
+fT (GHz)...... 1.5      Price (100+)..
+@ VCE (V)..... 10
+
+Anyone know of a source for these parts (other than straight from
+Motorolla)?  I need 4 Lt1839's and 2 Lt5839 I've tried standard
+and they said "We are out!"
+
+                Stephen Cyberman@Toz.Buffalo.NY.US
+             Mangled on Fri  04-16-1993  at 13:50:28
+
+... If there's one thing I can't stand, it's intolerance.
+---
+ * Blue Wave/QWK v2.12 *
+                                                       

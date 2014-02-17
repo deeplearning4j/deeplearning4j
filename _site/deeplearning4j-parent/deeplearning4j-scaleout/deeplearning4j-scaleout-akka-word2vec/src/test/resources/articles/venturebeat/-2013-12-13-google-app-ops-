@@ -1,0 +1,12 @@
+Google recently released and took back one of the biggest privacy features for Android since its launch.
+And we’re a little bummed.
+Yesterday, the Electronic Frontier Foundation wrote about a new and extremely important privacy tool in Android. Today, it realized the tool had actually been removed in an update to the mobile operating system earlier this week. After chatting with Google, the privacy advocacy group isn’t satisfied with why it was pulled.
+“A moment ago, it looked as though Google cared about this massive privacy problem. Now we have our doubts,” said EFF technology projects director Peter Eckersley, in a blog post .
+The tool was called Ad Ops Launcher, which let you set your app privacy settings with a fine tooth comb. Google says it should never have been released because it could break the functionality of apps.
+It listed out all of the apps you have downloaded. When you clicked on one of the apps it further listed out the variety of information the app wanted to collect to “enhance its service.” This includes things like location, mobile identifiers, send text messages on your behalf, keep your phone away, and more. You could then go through the list and choose “yes” or “no” for each individual permission request.
+As the EFF notes, it was a huge improvement to the system which otherwise dictates that if you use the app, you accept all of its data collection efforts as well.
+“The disappearance of App Ops is alarming news for Android users. The fact that they cannot turn off app permissions is a Stygian hole in the Android security model, and a billion people’s data is being sucked through. Embarrassingly, it is also one that Apple managed to fix in iOS yeas ago.”
+Apple doesn’t have exactly the same model, but it does demand that applications push notifications to a user before they start collecting things like location information.
+Google explained to the EFF that it was released accidentally and was still in testing mode. As it is, some apps can’t function without having some permissions allowed. However, being able to download the app, remove the permission, and later realize that the app doesn’t work without it is better than downloading an app and having it immediately start collecting information you might not be aware it collects.
+We have reached out to Google to find out if the feature will be re-released. We will update this post upon hearing abck.
+ 

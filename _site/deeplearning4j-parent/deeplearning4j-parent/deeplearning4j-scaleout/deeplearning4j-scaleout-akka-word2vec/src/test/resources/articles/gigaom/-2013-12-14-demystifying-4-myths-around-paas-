@@ -1,0 +1,27 @@
+A
+Summary:
+One of the problems with the term “Platform as a Service” is that it means different things to different people.  Here we sort through some of the myths surrounding it.
+The last year has been a whirlwind in the Platform as a Service (PaaS) space. Traditional middleware vendors finally released long-awaited offerings. Some early PaaS players, like Google and Microsoft, have since exposed Infrastructure-as-a-Service (IaaS) offerings directly. And traditional hosting providers like CenturyLink( s ctl), have realized that PaaS helps them connect with developers.
+There is clearly still a lot of PaaS learning going on, and it’s very difficult for those not embedded in all-things-cloud to figure it all out. With that in mind, here are some major myths we’ve encountered in the PaaS market.
+Myth #1: All PaaS platforms are the same
+Choosing a PaaS today is simply not a feature checkbox comparison process. The offerings were created from widely differing visions, and thus may be biased toward a particular problem space. For example:
+A PaaS may be based on a specific language; Heroku started out as a Ruby-focused PaaS for example but has since added multiple languages.
+Some are closer to the infrastructure, like Microsoft Windows Azure, while some strive to keep you away from infrastructure, like Heroku.
+Others, like Amazon Web Services’ Elastic Beanstalk, call themselves PaaS, but are really elaborate infrastructure orchestration technologies, rather than an actual “platform.”
+Some vendors, like Red Hat with OpenShift are really providing packaged software – which you install and maintain, while others deliver their platform as a service, like CloudBees.
+Others layer on top of public cloud IaaS, while some are primarily installed in your data center, like CloudFoundry .
+How can anyone not be confused?
+Myth#2: PaaS vs. DevOps
+While PaaS can be a useful tool in the ops toolbox as a way to automate away operational overhead, no solution involves a world devoid of operations issues.
+The PaaS and devops worlds intersect at delivery, especially when an organization tries to implement continuous delivery. Some organizations approach a solution from an ops, or operations, standpoint, thus their viewpoint tends to be focused on infrastructure orchestration and the automation surrounding it.
+Others start from a developer- or QA-oriented perspective which tends to be more application-centric and development platform-focused. In both cases, the objective is to deliver to end-users and continuous delivery is where the two views intersect. One of the more thoughtful commenters on this subject is Jeff Sussna ,  founder and principal of Ingineering.IT, a consultancy.
+Myth #3: PaaS is about simplifying app deployment
+The first PaaS offerings were about simplifying application deployment. But, in our view, PaaS today is about upgrading the entire way you create, deliver and manage applications. A PaaS ecosystem is about an integrated experience, weaving together multiple services and making custom application logic simple and seamless. PaaS is able to modernize and streamline development, testing and delivery processes. PaaS is about the evolution of platforms and the associated tool chain needed to deliver applications in the cloud world.
+Myth #4: I can just implement a PaaS myself
+Let’s dissect this myth in two parts. First, do you “implement” a service or do you deliver it? Well, someone has to provide the service to end-users and the end-users of PaaS are developers/ops people and the demanding management structure that surrounds them. Running a service organization that delivers a PaaS 24×7 is fundamentally different from managing a team of sysadmins and support personnel. The organizational challenges of dealing with this problem are at least as hard as the technology problems.
+The second part of this misconception is about the degree of implementation difficulty. A big part of the problem is how you deliver the Platform as a Service at scale. “At scale,” means designing things in a way that the team can grow as needed to support many apps, many users, many versions and many combinations of services while keeping everything running at all times, with no interruption. That’s the kind of problem ops people and platform people have been dealing with forever. They live, eat and breathe it. Underestimate it at your peril.
+Steven G. Harris is senior vice president of products at CloudBees, which provides a managed continuous delivery platform as a hosted service — some would call it a PaaS. He can be reached at  sharris@cloudbees.com .
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

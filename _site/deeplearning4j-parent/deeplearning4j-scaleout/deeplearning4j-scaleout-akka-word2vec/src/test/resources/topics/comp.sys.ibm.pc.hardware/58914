@@ -1,0 +1,37 @@
+From: robert.desonia@hal9k.ann-arbor.mi.us (Robert Desonia) 
+Subject: 486DX-50 vs. 486DX2-50 ?
+Distribution: world
+Organization: HAL 9000 BBS, W-NET HQ, Ann Arbor, Michigan, USA
+Reply-To: robert.desonia@hal9k.ann-arbor.mi.us (Robert Desonia) 
+Lines: 30
+
+
+AY>  In many recent advertisements I have seen both "486DX-50" and "486DX
+AY>based systems. Does the first really exists and does it imply that all
+AY>circuitry on the motherboard with it works at that speed, as opposite 
+AY>latter, where only the internals of the CPU are working at 50MHz?
+AY>
+AY> Many thanx in advance!
+AY>
+AY>Andrew.
+
+Andrew, yes there is a DX and DX2 version of the 50MHz 486.  If you are 
+considering buying one or the other, definitely go for the DX with a nice 
+size external cache!  The performance is far greater.
+
+The DX2 only has the internal 8k cache to work with at 50MHz, while the DX 
+has a potentially much larger cache to work at 50MHz with.  Neither 
+systems could actually run a program out of main memory, since DRAM is 
+still too slow for that high of bus speed ( 60ns = 16.66MHz < 50MHz ).
+
+-rdd
+
+---
+ . WinQwk 2.0b#0 . Unregistered Evaluation Copy
+ * KMail 2.95d W-NET HQ, hal9k.ann-arbor.mi.us, +1 313 663 4173 or 3959
+                                                               
+----
+| HAL 9000 BBS:  QWK-to-Usenet gateway  | Four 14400 v.32bis dial-ins    |
+| FREE Usenet mail and 200 newsgroups!  | PCBoard 14.5aM * uuPCB * Kmail |
+| Call +1 313 663 4173 or 663 3959      +--------------------------------+
+| Member of EFF, ASP, ASAD  * 1500MB disk * Serving Ann Arbor since 1988 |

@@ -1,0 +1,24 @@
+From: fish@daacdev1.stx.com (John Vanderpool)
+Subject: anybody have patched version of xroach for tvtwm???
+Organization: NASA Goddard Space Flight Center - Greenbelt, MD USA
+Lines: 19
+
+i read about the code you can put in to most applications so that
+the virtual desktop stuff in tvtwm doesn't confuse them (or is the
+application confusing the virtual-ness? [chicken & the egg?]
+
+but wanted to see if it has been applied to a version of xroach
+
+i never could quite get ssetroot to work either? any suggestions.
+luckily xv -root -quit does the trick for the most part
+
+also, i'ld be quite interested in hearing more about the icon region
+for each virtual window under tvtwm that i read a thread on last week
+here
+	thanx,
+		fish
+--
+John R. Vanderpool     INTERNET: fish@eosdata.gsfc.nasa.gov
+NASA/GSFC/HSTX         VOX: 301-513-1683                
+"So you run, and you run, to catch up with the sun, but it's sinking,
+ racing around to come up behind you again." -rw/dg

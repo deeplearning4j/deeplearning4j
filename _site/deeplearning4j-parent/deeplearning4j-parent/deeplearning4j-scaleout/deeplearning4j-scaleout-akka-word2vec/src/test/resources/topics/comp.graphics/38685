@@ -1,0 +1,16 @@
+From: bernard@cs.su.oz.au (Bernard Gardner)
+Subject: Re: Fast polygon routine needed
+Organization: Basser Department of Computer Science
+Keywords: polygon, needed
+Lines: 10
+
+For some reason I never saw the original post on this thread, but if you are
+looking for fast polygon routines on vga on a PC, you really can't go past
+the mode X stuff from Dr Dobbs. This code is all p.domain (as far as I know),
+and in the original articles, the routines were all presented as dumb vga
+routines, and then optimised to modeX with some interesting discussion along
+the way.
+If you are interested, I could find out more details of the issues in question,
+(I have them at home).
+
+Bernard.

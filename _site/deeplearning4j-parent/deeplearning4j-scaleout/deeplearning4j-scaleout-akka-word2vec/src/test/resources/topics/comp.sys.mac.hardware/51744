@@ -1,0 +1,62 @@
+From: chyang@engin.umich.edu (Chung Hsiung Yang)
+Subject: Re: x86 ~= 680x0 ??  (How do they compare?)
+Organization: University of Michigan Engineering, Ann Arbor
+Lines: 55
+Distribution: world
+NNTP-Posting-Host: leghorn.engin.umich.edu
+
+In article <27837.2BD08C3A@zeus.ieee.org> Michael.Ameres@f204.n2603.z1.fidonet.org (Michael Ameres) writes:
+>I believe it goes or will go:
+>680060
+>powerPC
+>Pentium
+>680040
+>486
+>680030
+>386
+>680020
+>286=680000
+>
+
+
+	I think this kind of comparison is pretty useless in general.  The
+processor is only good when a good computer is designed around it adn the
+computer is used in its designed purpose.  Comparing processor speed is
+pretty dumb because all you have to do is just increase the clock speed
+to increase speed among other things.
+
+	I mean how can you say a 040 is faster than a 486 without 
+giving is operational conditions?  Can you say the same when 
+you are running a program that uses a lot of transidental functions.
+Knowing that 040 does not have transidental functions building in to 
+its FPU and 486 does, can you say that 040 is still faster?
+
+	Anyway, I hope people do not decided upon wether a computers
+is good or not solely on its processor.  Or how fast a processor is
+based on its name, because one can alway do a certain things to a
+processor to speed it up.  
+
+	But if we restrict our arguements to, for example, pure
+processor architectural issues.  Or how one processor will work
+well and another will not based on its design, then we can get
+somewhere with our discussions.  
+
+- Chung Yang
+
+>In a resent article in one of the macMags I think a 50mHz 030 accelerator was
+> slightly slower than a 25mHz 040 accel. But, this is using a system designed
+> for the 030. So, It stands to reason that a system designed for an 040 ie
+> quadra) would do better. So overall I'd figure 040 = 030 * 2.5 or so.
+>    Along the same lines the new POwerPC stuff is supposed to run the system
+> at the level of a fast quadra, but system 8 or whatever will allow 3 times the
+> speed of a 040 in the powerPC based systems. and wait for the 680060. I think
+> it laps the pentium.
+>
+>pro-life pro-women
+>
+>
+>--  
+>=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
+> Michael Ameres - Internet: Michael.Ameres@f204.n2603.z1.fidonet.org
+
+

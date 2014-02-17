@@ -1,0 +1,60 @@
+From: gjp@sei.cmu.edu (George Pandelios)
+Subject:  Help me select a Backup Solution
+Organization: The Software Engineering Institute
+Lines: 55
+
+
+Hi Netters!
+
+I'm looking at purchasing some sort of backup solution.  After you read about
+my situation, I'd like your opinion.  Here's the scenario:
+
+1.  There are two computers in the house.  One is a small 286 (40MB IDE drive).
+    The other is a 386DX (213 SCSI drive w/ Adaptec 1522 controller).  Both 
+    systems have PC TOOLS and will use Central Point Backup as the backup / 
+    restore program.  Both systems have 3.5" and 5.25" floppies.
+
+2.  The computers are not networked (nor will they be anytime soon).
+
+From what I have seen so far, there appear to be at least 4 possible
+solutions (I'm sure there are others I haven't thought about).  For these 
+options, I would appreciate hearing from anyone who has tried them or sees 
+any flaws (drive type X won't coexist with device Y, etc.) in my thinking 
+(I don't know very much about these beasts):
+
+1.  Put 2.88MB floppy drives (or a combination drive) on each system.
+    Can someone supply cost and brand information?  What's a good brand?
+    What do the floppies themselves cost?
+
+
+2.  Put an internal tape backup unit on the 386 using my SCSI adapter, and
+    continue to back up the 286 with floppies.  Again, can someone recommend a
+    few manufacturers?  The only brand I remember is Colorado Memories.  Any
+    happy or unhappy users (I know about the compression controversy)?
+ 
+
+3.  Connect an external tape backup unit on the 386 using my SCSI adapter, and
+    (maybe?) connect it to the 286 somehow (any suggestions?)
+
+
+4.  Install a Floptical drive in each machine.  Again, any gotcha's or 
+    recommendations for manufacturers?  
+
+I appreciate your help.  You may either post or send me e-mail.  I will
+summarize all responses for the net.
+
+Thanks,
+
+George
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  George J. Pandelios				Internet:  gjp@sei.cmu.edu
+  Software Engineering Institute		usenet:	   sei!gjp
+  4500 Fifth Avenue				Voice:	   (412) 268-7186
+  Pittsburgh, PA 15213				FAX:	   (412) 268-5758
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Disclaimer:  These opinions are my own and do not reflect those of the
+	     Software Engineering Institute, its sponsors, customers, 
+	     clients, affiliates, or Carnegie Mellon University.  In fact,
+	     any resemblence of these opinions to any individual, living
+	     or dead, fictional or real, is purely coincidental.  So there.
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

@@ -1,0 +1,21 @@
+From: salmon@cwis.unomaha.edu (David Salmon)
+Subject: Re: HELP - SCSI Woes on Mac IIfx
+Organization: University of Nebraska at Omaha
+Lines: 16
+
+According to the official documentation, failure to use the IIfx terminator
+can not only affect SCSI bus performance but can also damage the bus.
+Whether this is your problem or not I don't know. I have had sporadic SCSI
+problems with my IIfx since I bought it. (I cannot connect more than three
+devices, fourth one causes major problems).
+
+First thing to do is to try to reformat your drive on someone elses system.
+If you continue to get errors it is probably the drive. If it formats fine
+then I would try to format it on your system with no externals. If this 
+fails then the SCSI controller on your IIfx needs repair/replacement.
+
+Hope this helps.
+ 
+-- 
+David C. Salmon
+salmon@unomaha.edu

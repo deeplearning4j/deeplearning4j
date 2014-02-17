@@ -1,0 +1,25 @@
+From: hgn@pmw1.nuclint.NL (Hans Geurtsen)
+Subject: Cursors
+Organization: The Internet
+Lines: 19
+To: motif@alfalfa.com, xpert@expo.lcs.mit.edu
+
+According to the OSF/Motif Style Guide, one should use cursor shapes to give
+the user a visual clue of what is happening or what is expected of him. So
+a "hourglass" cursor should be shown when the application is busy, or a
+"caution" cursor should be shown over an area when input is expected in
+another. Defining cursors for widgets has to be done at rather low level.
+So defining a cursor for all widgets in an application but not for a certain
+subpart of it, is a rather complicated matter. When cursors have been defined
+for some windows, e.g. a "crosswire" cursor for a DrawingArea, things get even
+more complicated. My intuition says that things should be easier, but is this
+so? If anyone has a solid and complete solution to my problem, please let me
+know. The topics on "busy cursors" in the several FAQ's are not helpful, since
+they only work for applications where all windows have the cursor window
+attribute set to 'None'.
+-----------------------------------------------------------------
+Hans Geurtsen                       Phone: (31) (0) 8385 - 33157
+Nucletron Research BV.             e-mail: hgn@nuclint.nl
+                                  Surface: Waardgelder 1
+                                           NL-3905 TH  Veenendaal
+

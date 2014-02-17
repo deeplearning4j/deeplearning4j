@@ -1,0 +1,61 @@
+From: mccoy@ccwf.cc.utexas.edu (Jim McCoy)
+Subject: Re: Fifth Amendment and Passwords
+Reply-To: mccoy@ccwf.cc.utexas.edu (Jim McCoy)
+Organization: The University of Texas - Austin
+Lines: 53
+NNTP-Posting-Host: tramp.cc.utexas.edu
+Originator: mccoy@tramp.cc.utexas.edu
+
+
+In article <1993Apr19.180049.20572@qualcomm.com>, karn@unix.ka9q.ampr.org (Phil Karn) writes:
+> In article <1993Apr18.233112.24107@colnet.cmhnet.org>, res@colnet.cmhnet.org (Rob Stampfli) writes:
+> |> >Sadly, it does not. Suspects can be compelled to give handwriting and
+> |> >voice exemplars, and to take blood and DNA tests.
+> |> 
+> |> I am sure that Mike is correct on this point.  I am also pretty sure that
+> |> administering "truth serum" would be ruled a violation of your right
+> |> not to incriminate yourself.  But, what is the salient difference?
+> 
+> You can find the salient difference in any number of 5th amendment
+> related Supreme Court opinions. The Court limits 5th amendment
+> protections to what they call "testimonial" evidence, as opposed to
+> physical evidence.
+
+I have a question that is a slight variation on the previously mentioned
+examples that perhaps people could give me some pointers on (it has been a
+couple of years since my Con Law class in college so I hope I am not
+missing something obvious here...)
+
+Basic Scenario:
+
+	I set up a bbs that uses public-key encryption and encryption of
+	files on disk.  The general setup is designed so that when users 
+	connect they send a private key encrypted using the system public
+	key and the user's public-private keypair is used to wrap the
+	one-time session keys used for encrypting the files on disk.  The
+	result of this is that even if I reveal the system private key it
+	is impossible for anyone to gain access to the files stored on the
+	machine.  What is possible is for someone to use the revealed
+	system private key to entice users into revealing thier personal
+	private keys during the authentication sequence.
+
+Questions:
+
+	Does the fact that the system private key does not provide any
+	information useful for a search give me any protection as far as
+	being coerced to reveal the key?  (I doubt it myself..)
+
+	It seems providing the system private key does not mean that I am
+	assisting in "entrapment" (the users would send thier key anyway
+	and are not being enticed into doing something they would not
+	otherwise do) but is there any other hook that can be used?
+
+	Would the user private-key enticement require wiretap approval?
+
+Any answers or general musings on the subject would be appreciated...
+
+jim
+-- 
+Jim McCoy                |  UT Unix Sysadmin Tiger Team
+mccoy@ccwf.cc.utexas.edu |  #include <disclaimer.h>
+j-mccoy@nwu.edu          |  pgp key available via finger or upon request

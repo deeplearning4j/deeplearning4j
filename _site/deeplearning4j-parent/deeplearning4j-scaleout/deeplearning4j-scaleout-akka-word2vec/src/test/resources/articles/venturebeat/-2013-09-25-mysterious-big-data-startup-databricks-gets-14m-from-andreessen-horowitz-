@@ -1,0 +1,9 @@
+2
+Venture firm Andreessen Horowitz quietly invested $14 million in a mysterious new venture called Databricks .
+General partner Ben Horowitz appears on a Form D filed with the Securities and Exchanges Commission  (SEC), and the Databricks website lists him as a board member.
+It’s still early stages, but I’m intrigued by Databricks. The website doesn’t disclose much information about the technology beyond that it’s “next-generation software for analyzing and extracting value from data.”
+However, the founding team and board looks extremely promising. Scott Shenker, founder and former CEO of Nicira , sits on the board with Horowitz. The cofounders are Ion Stoica, CTO of video stream optimizing company Conviva , and Matei Zaharia, creator of Apache Shark.
+The team are all serious heavyweights in open source circles. The website states that they are all “deeply committed” to proliferating open source software.
+Editor’s note: Our upcoming DataBeat conference , Dec. 4-5 in Redwood City, will focus on the most compelling opportunities for businesses in the area of big data analytics and beyond. Register today!
+This company appears to be focused on helping developers increase the speed of  in-memory and on-disk queries. Apache Shark claims it can run SQL queries up to 100 times faster than Apache Hive, and machine learning programs up to 100 times faster than Hadoop.
+A spokesperson for Andreessen Horowitz declined to disclose further information about the investment, as the company is still in “stealth mode.” We’ll keep an eye on this company and update you as we learn more.

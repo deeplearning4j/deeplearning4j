@@ -1,0 +1,21 @@
+From: buck@granite.ma30.bull.com (Ken Buck)
+Subject: Re: Do trains have radar?
+Organization: Bull Information Systems Inc.
+Lines: 16
+
+hhtra@usho72.hou281.chevron.com (T.M.Haddock) writes:
+> I came upon a 
+> train parked on a trestle with its locomotive sitting directly over
+> the northbound lanes. [...] Just as I passed from underneath the trestle,
+> my radar detector went into full alert - all lights lit and all chirps,
+> beeps, and buzzes going strong.
+> Could this have been caused by the train's radio or what?
+
+recently-manufactured locomotives have wheel-slip detection systems
+that use frequencies shared with police radar (i forget which band).
+these will set off your radar detector if you get close enough, though
+i believe the range is pretty short.
+
+BTW, railroad police sometimes use radar to check for speeding trains
+(just like regular police check for speeding cars), although the
+intent here is for safety, not revenue collection (unlike with cars).

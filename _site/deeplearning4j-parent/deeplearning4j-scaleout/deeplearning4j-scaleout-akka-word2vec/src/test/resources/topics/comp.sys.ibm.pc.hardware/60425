@@ -1,0 +1,32 @@
+From: bq274@cleveland.Freenet.Edu (Andy J. Berkvam)
+Subject: How to detect mouse at hardware level?
+Organization: Case Western Reserve University, Cleveland, OH (USA)
+Lines: 25
+Reply-To: bq274@cleveland.Freenet.Edu (Andy J. Berkvam)
+NNTP-Posting-Host: hela.ins.cwru.edu
+
+
+'lo all,
+
+  I am writting a program that checks a computer for its configuration.
+It's going to be run everytime a computer boots up to our campus
+network.  (Actually, it already is running, it's just not getting all
+the info I want it to yet...)  Anyway, I want to check for a mouse.  I
+already check for a mouse driver (using the code in Microsoft's Mouse
+book).  But there is no guarantee that the driver is loaded when my
+program runs, or that they ever load the driver.
+
+  Since I am interested in what hardware is attached to the machine, how
+do I detect is a mouse is attached?  I know it can be done because the
+mouse driver can do it.
+
+  Thanks in advance,
+
+Andy
+
+
+-- 
+Andy Berkvam                          |  Few are wholly dead:
+U of Wisconsin - Stevens Point        |  Blow on a dead man's embers
+Cleveland Freenet: bq274              |  And a live flame will start.
+Internet: aberkvam@spu1.uwsp.edu      |                -Robert Graves

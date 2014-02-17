@@ -1,0 +1,78 @@
+From: adriene_nazaretian@qm.yale.edu (ALN - Go NY Giants!)
+Subject: Re: RE: Win NT - what is it???
+Nntp-Posting-Host: gorgon.cis.yale.edu
+Organization: Yale University; New Haven, Connecticut   USA
+Lines: 72
+
+In article <16APR93.02170289@vax.clarku.edu>, rmohns@vax.clarku.edu says:
+>
+>In a previous article, alanchem@csd4.csd.uwm.edu (Alan Scott Olson) wrote:
+>>Two-part question:
+>> 
+>>1)  What is Windows NT - a 'real' windows OS?
+>> 
+>>2)  This past weekend, a local 'hacker' radio show metioned a new product
+>>    from Microsoft called 'Chicago' if I recall.  Anyone know what this is?
+>> 
+>>That is it -
+>> 
+>>Thanks a heap.
+>> 
+>>- Alan
+>
+>Windows NT is a giant Windows Operating System.  Unline Win3.1, it does not 
+>run on top of DOS.  It is its own OS, with (Billy Gates assures us) true 
+>multi-tasking/multithreading, meets DOD security specs, will run win3.1 
+>programs as well as DOS programs, has multi-processor support, and is
+>primarily a Server program.  It's overhead is too high for it to be
+>economical for most users.
+
+It also runs OS/2 character based apps and POSIX apps.  The DOS, 16bit
+and 32 bit windows apps run in a windows 32 bit subsystem.
+
+If you consider the fact that NT has:
+ the Lanman redirectors,
+ built in support for TCP/IP
+ built in support for NETBEUI
+ comes with TCP utils like ping and an ftp client, etc
+ applications like schedule+ and a 32 bit version of msmail
+
+the storage argument isnt an issue.
+
+>        Speaking of overhead, it requires at least a 386 with 16 megs of RAM.  
+>It iwll run with 12, but that's like running OS/2 2.0 with 4 megs.  And that's 
+>just to run it.  Also, I have heard that the system files take up 30-50 Megs, 
+>and it is recommended that your drive be a half gig!  The SKD is distributed 
+>on CD-ROM.
+>
+
+I ran it on a 486 with 8MRAM and it did a ton of disk swapping, with a 19M
+virtual memory paging file.  It functioned but it crawled.  (this was the OCT
+build)
+
+I upgraded the machine to 16M and the performance is good,
+At that point I installed the March Build.  Consider they
+are probably still working on the feature set, and havent done a lot of fine
+tuning to the code yet.
+
+>Chicogo is what I want to use.  It is, like NT, a true OS with thrue 
+>multitasking and multithreading, but has much smaller hardware requirements, 
+>and does not meet DOD security specs (but that's okay since it will probably 
+>be more of a client OS).  there are a few otehr differences, but those are the 
+>main ones.  There was an article about Chicogo in PC Week last August.
+>        The Chicogo and NT development groups at Micro$oft are in intense 
+>competition, so it is said.  However, I think a different relationship will 
+>arise: NT will be the server (*N*etowrk *T*echonology), Chicogo will be the 
+>client machine.  It is entirely possible for different OS's to work together, 
+>partly because Chicogo is just a small NT (think of it that way, anyway).  
+>(Novell Netware creates an OS on the server that is truly not DOS, so don't
+>scorn the concept.)
+>        Anyway, don't expect it soon.  Windows 4 and DOS 7 are supposed to be 
+>released next year (read: see it in 95), so I expect that Chicogo won't be out 
+>til '96.
+
+I have little info on Chicago so I cant make a comparison.  Is it in Beta?  Is
+there anyone out there who has tested both and cares to make a comparison?
+Just my $0.02  
+
+/ALN

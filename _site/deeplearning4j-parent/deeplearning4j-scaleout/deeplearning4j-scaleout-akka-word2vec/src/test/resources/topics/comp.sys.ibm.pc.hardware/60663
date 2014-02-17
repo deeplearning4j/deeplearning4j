@@ -1,0 +1,34 @@
+From: mulvey@blurt.oswego.edu (Allen Mulvey, SUNY, Oswego, NY)
+Subject: Re: Can't set COM4
+Distribution: usa
+Organization: SUNY College at Oswego, Oswego, NY
+Lines: 28
+
+In article <C5rAJn.67@cbnewsh.cb.att.com>, k4bnc@cbnewsh.cb.att.com (john.a.siegel) writes:
+> I have been unable to get COM 4 to work - diagnostic programs such as msd show
+> nothing installed.  I think the software options are OK - is there a known
+> hardware conflict and/or workaround for this problemand CD ROM
+> System is a G2K 486DX2/66 tower with ATI video card
+> Ports are set as follows 
+>   On board COMa = COM1 IRQ4 to external device
+>   Internal modem = COM 3 IRQ5
+>   DFIO port card primary port = COM 2 IRQ3  mouse
+>   On board COM B = COM 4 IRQ 9  <--- DOES NOT WORK
+> I have run this from a boot disk with only command.com to eliminate softwar
+> 
+> Any suggestions before I call technical support?
+> John Siegel
+> k4bnc@cbnewsh.att.com
+> jas@hrollie.hr.att.com
+
+I had this problem some time ago.  Some BIOSes do not automatically install 
+COM3 or COM4 in the port tables. Programs like most modem programs which 
+write directly to the port work fine but anything that uses a BIOS call 
+fails. Find a BBS or FTP site where you can get a copy of PORT FINDER. Put 
+"device=pf.sys" in your config.sys or run pf.com from your autoexec.bat. 
+This little program will locate all existing ports and make sure the BIOS 
+tables are updated. It works great. PF will also let you swap ports and 
+such also if that is of any value to you.
+
+			Allen Mulvey
+			mulvey@blurt.oswego.edu

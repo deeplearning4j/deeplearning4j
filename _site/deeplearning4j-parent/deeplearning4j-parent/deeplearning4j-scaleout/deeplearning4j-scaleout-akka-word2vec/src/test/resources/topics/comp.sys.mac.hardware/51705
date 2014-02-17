@@ -1,0 +1,38 @@
+From: lingeke2@mentor.cc.purdue.edu (Ken Linger)
+Subject: 32 Bit System Zone
+Organization: Purdue University
+X-Newsreader: TIN [version 1.1 PL8]
+Lines: 32
+
+A week or so ago, I posted about a problem with my SE/30:  I have 20 megs
+or true RAM, yet if I set my extensions to use a large amount of memory
+(total of all extensions) then my system will crash before the finder
+comes up.  What I meant was having a large amount of fonts load, or
+sounds, or huge disk caches with a control panel other than Apple's
+memory control panel.  Apple's cache is at 64K, mode 32 is on, and
+so is 32 bit addressing.  All extensions work by themselves or with the
+others until I increase the memory used by some of them (with methods
+mentioned above).
+
+Well, here's my latest followup...  I ran NOWs System Profile and got
+this information:
+
+%%% Memory info %%%
+
+Physical RAM size: 20480K.
+Logical RAM size: 20480K.
+Size of Low Memory Area: 8K.
+Virtual Memory: Inactive.
+Addressing mode: 32bit mode in use.
+32 bit System zone: Absent.
+Parity RAM: Not capable.
+Growable System Heap: True.
+Temporary memory support: Present.
+Tempory Memory Support: Real and tracked.
+
+Note that 32 bit System zone is absent.  Could this be the problem?
+How can I turn this on?  Any ideas?
+
+Can anyone help?
+
+Ken

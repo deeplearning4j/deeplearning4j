@@ -1,0 +1,22 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: Keeping Spacecraft on after Funding Cuts.
+Organization: U of Toronto Zoology
+Lines: 17
+
+In article <1993Apr20.204335.157595@zeus.calpoly.edu> jgreen@trumpet.calpoly.edu (James Thomas Green) writes:
+>Why do spacecraft have to be shut off after funding cuts.  For
+>example, Why couldn't Magellan just be told to go into a "safe"
+>mode and stay bobbing about Venus in a low-power-use mode and if
+>maybe in a few years if funding gets restored after the economy
+>gets better (hopefully), it could be turned on again.  
+
+One consideration to remember is that if you don't turn it off now,
+you may not be able to later.  This isn't a case of reaching over and
+flipping a switch; much of the spacecraft has to be working correctly
+to execute a "turn off" command successfully.  Spacecraft do malfunction
+in their old age.  The big concern is not radio clutter from idle
+spacecraft, but radio clutter from malfunctioning spacecraft that can
+no longer be turned off.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

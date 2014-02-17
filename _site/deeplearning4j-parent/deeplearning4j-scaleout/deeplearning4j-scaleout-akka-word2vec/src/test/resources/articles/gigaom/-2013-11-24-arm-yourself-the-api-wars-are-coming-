@@ -1,0 +1,30 @@
+A
+Summary:
+The arms merchants of the cloud and a new wave of developers armed with APIs are going to cause massive technology disruption.
+There is a war coming soon. The arms merchants of the cloud and a new wave of developers armed with APIs are going to cause massive technology disruption. And APIs are the ammunition fueling this change.
+Antony Falco described recently how developers, armed with APIs, will radically change enterprise IT. Everything from banking systems to payment platforms, from airline systems to e-commerce platforms, from automotive systems to medical devices, will all soon have developer API access and it’s going to turn our world upside down.
+ What impact will this proliferation of APIs have on product development, competition and how we approach software engineering?
+Micro-SaaS APIs & Pluggable Features
+SaaS is the fastest growing software industry we’ve ever seen. There are more than 2,100 SaaS companies today in a market expected to grow to $120 billion by 2020. By 2015, 85 percent of all new software is expected to be SaaS.
+Today, SaaS companies generally deliver a complete product or broad layer of functionality via the cloud – like CRM or billing. However, as more and more companies focus on building APIs we’re going to see a new type of SaaS company emerge that focuses on micro features that they do really well. Imagine a payment company that solely focuses on an API for high speed payment transfers or a travel company that provides an API that can notify you of hotel rooms opening up in your area in real-time or an insurance company that has an API offering a low-cost car insurance policy whose premium drops in real-time based on your good driving behavior captured from a device connected your car.
+These micro-features do something very specific, very well, and other developers will want to incorporate it into their products to build even better applications. This will also fuel something else, Disruptive Applications.
+Disruptive Applications
+As APIs proliferate, a radical new business model for building applications is emerging. One where companies and developers choose micro features via public and private APIs that can be integrated and discarded with relative ease.
+As easy as Amazon Web Services has made it to provision new servers, leverage storage in the cloud and integrate large-scale search into your application, APIs will make it as simple for developers to build new applications, both inside the enterprise and in the cloud.
+Not only will it be easy to get a new application out the door, it will be cheaper and faster. We will see a whole slew of micro-startups emerging who are able to deploy new applications on the web in days or weeks, not months or years.
+These companies will get MVPs for their product idea out the door in record time and be able to test the market with minimal investment. They will cause a never-ending stream of new competition.
+Companies that already have a lot of IP and technology built up will assume they have huge leverage over the competition, including startups competing against them. But it will be a fallacy as all this “pre-existing IP advantage” quickly evaporates in an API-driven world. A startup can just plug-in and swap-out features with ease from other vendors and get a feature-rich product out the door at light speed and adapt it to market changes even quicker. Now the startup has the clear advantage.
+Companies that don’t have API strategies in place will feel the pain and quickly fall behind.
+Arm Yourself
+How do you arm yourself to succeed in this new world?
+Companies will need to migrate their existing platforms to be API-enabled and open them up to developers.
+The approach many companies are going to take is to just put an API on front of their existing systems. However, slapping an API on top of an existing system and calling it done will not be enough. Companies are going to have to retrofit and redo the plumbing beneath these APIs. Many underlying issues that aren’t currently obvious or visible will show up when exposing your product functionality via an API to the outside world – security, versioning, latency, scalability, QoS, flexibility, etc.
+To compete, companies are going to have to go further, dig-deep and refactor their underlying architectures to be in the same end-state as the startup that started from scratch. They will need to have the same flexibility in place in their final product as the startup does, one that allows them to plug-in other best-of-breed vendor APIs as necessary. If not, they simply will not be able to compete.
+This remodeling work has a name, it’s called API ReModeling or ARM. It’s an initiative your company and engineering teams will have to take to reshape your APIs and retrofit the underlying foundations of your platform to allow easier integration with APIs.
+Companies will need to start putting these API strategies in place now and start acting on them sooner rather than later. Start by ramping up your development teams to think API-first. Start visualizing what your platform would look like if you were to design it from scratch today without any constraints and make it flexible enough to be able to easily plug-in third-party APIs, especially in those areas that don’t provide any differentiated product value.
+Start arming yourself today for the upcoming API wars.
+James Donelan is VP of engineering at MuleSoft , provider of the world’s most widely used integration platform. Follow him on Twitter @jdonelan .
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

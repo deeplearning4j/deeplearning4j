@@ -1,0 +1,25 @@
+From: ndd@sunbar.mc.duke.edu (Ned Danieley)
+Subject: problem with Tek xterminal
+Organization: Basic Arrhythmia Laboratory, Duke Univ. Med. Center, Durham, N.C.
+Lines: 18
+Nntp-Posting-Host: bal1.mc.duke.edu
+Originator: ndd@bal1
+
+
+We have recently purchased a Tektronix xterminal, and I'm having
+a problem with it. We have a graphics widget that we wrote to
+display waveforms, and it doesn't work on the xterminal. the buttons,
+etc, all show up, and it seems to take the 'right' amount of time to
+draw, but nothing is visible in the graphics window. I
+have no clue as to where to start looking: the program works fine
+on all our suns (3s and 4s, color and B&W). could anyone suggest a
+line of attack for this problem?
+
+TekXpress XP380 color xterminal running 6.0.0. host is a Sun IPX
+running SunOS 4.1.3 and X11R5, PL17.
+
+-- 
+Ned Danieley (ndd@sunbar.mc.duke.edu)
+Basic Arrhythmia Laboratory
+Box 3140, Duke University Medical Center
+Durham, NC  27710   (919) 660-5111 or 660-5100

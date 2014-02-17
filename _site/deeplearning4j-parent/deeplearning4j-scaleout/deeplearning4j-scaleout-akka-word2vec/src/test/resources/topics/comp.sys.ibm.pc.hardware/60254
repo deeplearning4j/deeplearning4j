@@ -1,0 +1,18 @@
+From: egzondag@prl.philips.nl (Eddy Zondag)
+Subject: QUESTION: How to get serial mouse working on IBM notebook L40?
+Organization: Philips Research Laboratories, Eindhoven, The Netherlands
+Lines: 13
+
+Do you happen to know how I can get a serial mouse (9 pins) working on
+an IBM L40 notebook (which has a kind of bus mouse connection besides serial
+and parallel interfaces). The manual doesn't say anything about it.
+
+I've tried two drivers, with the result that left and right buttons are
+recognized, but mouse movement is not. Should I cut or shortcut some
+wires to/from the mouse?
+
+Thanks for your help.
+
+Eddy Zondag
+Philips Research
+egzondag@prl.philips.nl

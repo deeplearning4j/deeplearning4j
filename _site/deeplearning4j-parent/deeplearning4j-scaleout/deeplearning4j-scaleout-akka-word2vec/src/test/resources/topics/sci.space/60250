@@ -1,0 +1,33 @@
+From: abdkw@stdvax (David Ward)
+Subject: Re: Questions about Titan IV and Ariane 5
+Distribution: sci
+Organization: Goddard Space Flight Center - Robotics Lab
+Lines: 26
+News-Software: VAX/VMS VNEWS 1.4-b1
+
+In article <C50orq.7G0@news.cso.uiuc.edu>, gwg33762@uxa.cso.uiuc.edu (Garret W. Gengler) writes...
+>In sci.space you write:
+> 
+>>Try the ENVIRONET database at GSFC. FTP to envnet.gsfc.nasa.gov or 
+>>128.183.104.16, or call (310)286-5690.  They have data on STS, Ariane, Titan, 
+>>Atlas, Delta and Scout launch environments.
+> 
+>Howdy.  Thanks for the info.
+> 
+>I tried "anonymous" FTP there, but it didn't work.
+>I also tried telnetting to the same address, but it asked for a login
+>and password, although there was a note saying that the new username for
+>environet was "envnet".  
+> 
+>Anyways, do you have any idea what else I should try?
+> 
+>Thanks,
+>Garret
+> 
+> 
+The home office number for ENVIRONET is (301) 286-5690 (note area
+code change).  A friend of mine used to use it to get LDEF data, but
+he had to apply for a login name and password.  I have a call in for
+more info, which I hope to get in the morning.
+
+David W. @ GSFC

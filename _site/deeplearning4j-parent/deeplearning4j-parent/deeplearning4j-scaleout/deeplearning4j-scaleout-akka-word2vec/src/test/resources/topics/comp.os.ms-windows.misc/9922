@@ -1,0 +1,47 @@
+From: gedwards@ncratl.AtlantaGA.NCR.COM (Gordon Edwards)
+Subject: Re: protection fault
+Keywords: fault
+Organization: NCR Engineering and Manufacturing Atlanta -- Atlanta, GA
+Distribution: na
+Lines: 40
+
+In <thia.735836016@mira.sce.carleton.ca> thia@sce.carleton.ca (Yong Thia) writes:
+>Hi! I was wondering if anyone out there could help me.
+>I have an error message that goes:
+>
+>
+>
+>What does it mean?
+>
+>I am running MS windows 3.1.
+
+Ummm.. I think you left the message out...
+
+I get these protection faults all the time on my machine at work, a
+486 33MHz with 4MB RAM, Windows 3.1, with Dos 5.0.  
+
+At home (on a 386 40MHz, 8MB RAM, Windows 3.1 and Dos 5.0) I *never* get
+these.  
+
+Any idea what could be wrong?  Someone already suggested I check for tmp
+files in the windows/temp directory, there are none there.
+
+The message I get is:
+
+	This application has violated system integrity due to an invalid
+	general protection fault and will be terminated.
+
+I only have this problem with applications running in DOS boxes (with or
+without .pif files setup for them).
+
+Any hints/help greatly appreciated.  Please post since at least one other
+person is also having gpf problems.
+
+Thanks,
+    Gordon
+
+-- 
+=============================================================================
+Gordon Edwards, N4VPH              |         "Nothing Unreal Exists"
+NCR Engineering & Manufacturing    |
+gedwards@ncratl.atlantaga.ncr.com  |  Kiri-Kin-Tha's First Law of Metaphysics

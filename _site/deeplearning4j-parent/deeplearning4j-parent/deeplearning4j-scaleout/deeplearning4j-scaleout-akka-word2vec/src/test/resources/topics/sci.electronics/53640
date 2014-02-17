@@ -1,0 +1,37 @@
+From: ankleand@mtl.mit.edu (Andrew Karanicolas)
+Subject: Re: IC Packages
+Organization: MIT Microsystems Technology Laboratories
+Lines: 31
+NNTP-Posting-Host: ampere.mit.edu
+
+In article <1993Apr16.142715.12613@sol.ctr.columbia.edu> seema@madvlsi.columbia.edu (Seema Varma) writes:
+>Getting a custom-made package is too expensive, so
+>I am trying to choose between a flatpak and a
+>leadless chip carrier. The flatpack would be hard
+>to test since it has to be soldered on to the test
+>setup and I would spend loads of time soldering 
+>as I kept changing the test chip. The leadless chip
+>carrier sockets also have long lead lines and may
+>not work at high speeds.
+> 
+>	Does anyone out there have experience/knowledge
+>of this field ? I would greatly appreciate help! Any ideas/
+>names of companies manufacturing holders/sockets/packages
+>would help. 
+
+Check with Kyocera America, Inc.
+           24 Prime Park Way, Suite 150
+           Natick, MA 01760
+
+They are one of the largest manufacturers of IC packaging in the
+world.
+
+It sounds like you would be a good candidate for wafer probing or at
+least IC probing to test performance.  HP, Cascade Microtech and
+Tektronix should be able to help you here.  One note, testing at high
+frequency accurately can be an *expensive* business.
+
+-- 
+Andrew Karanicolas
+MIT Microsystems Technology Laboratory
+ankleand@mtl.mit.edu

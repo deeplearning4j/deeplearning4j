@@ -1,0 +1,18 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: how can 0.022 uF be different from two 0.047 in series?!
+Organization: U of Toronto Zoology
+Lines: 13
+
+In article <1993Apr19.185326.9830@Princeton.EDU> mg@cs.princeton.edu (Michael Golan) writes:
+>The board itself is also identical, with room for all three caps. The
+>US/Can versions is clearly indicated in both places.
+>
+>How does that make sense? 0.047/2 is 0.0235, essentially 0.022 for caps
+>(there are just standard caps, no special W/type/precision). 
+
+This may be a safety issue; the CSA is more paranoid in certain areas than
+UL and such.  Two caps in series means that you don't have a short if one
+of them shorts.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

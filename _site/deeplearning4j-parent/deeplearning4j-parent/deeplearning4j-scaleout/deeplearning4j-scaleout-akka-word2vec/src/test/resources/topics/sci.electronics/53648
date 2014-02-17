@@ -1,0 +1,21 @@
+From: peter.m@insane.apana.org.au (Peter Tryndoch)
+Subject: Telephone On Hook/Off Hok
+Lines: 17
+
+AllMichael CovingtonTelephone on hook/off hok
+
+MC>From: mcovingt@aisun3.ai.uga.edu (Michael Covington)
+MC>Organization: AI Programs, University of Georgia, Athens
+MC>Aye, there's the rub -- if you draw enough current to light an LED, th
+MC>equipment at the phone company will think you've gone off hook.
+MC>In the on-hook state you're not supposed to draw current.  
+
+Ok lets have some calculation here: Going by Australian standards, which I 
+presume might be similar to other countries ( If not, lets have some 
+input) a phone uses 600ohm to loop a 48V line = 80mA. A standard LED 
+drains 20mA. So what is the actual loop current required for an "off hook" 
+indication, do you know?
+
+Cheers 
+Peter T.
+

@@ -1,0 +1,34 @@
+From: amolitor@nmsu.edu (Andrew Molitor)
+Subject: Re: Off the shelf cheap DES keyseach machine (Was: Re: Corporate acceptance of the wiretap chip)
+Organization: Department of Mathematics
+Lines: 28
+NNTP-Posting-Host: moink.nmsu.edu
+
+In article <1993Apr20.192105.11751@ulysses.att.com>
+	smb@research.att.com (Steven Bellovin) writes:
+>
+> [ responding to claims about Skipjack cracking engines ]
+>
+>Thousands?  Tens of thousands?  Do some arithmetic, please...  Skipjack
+>has 2^80 possible keys.  Let's assume a brute-force engine like that
+>hypothesized for DES:  1 microsecond per trial, 1 million chips.  That's
+>10^12 trials per second, or about 38,000 years for 2^80 trials.  Well,
+>maybe they can get chips running at one trial per nanosecond, and build
+>a machine with 10 million chips.  Sure -- only 3.8 years for each solution.
+>
+
+	I think I should also point out that the mystical DES engines
+are known plaintext engines (unless you add a ton of really smart
+hardware?)
+
+	The 'plaintext' is digitized voice, and exists for a very short
+time, probably in a couple inches of copper, tops. It's flatly not
+available -- your bug in my office can hear my voice, and even digitize
+it, but it's going to get a different bitstream.
+
+	It is horribly naive to suppose that regular folks can figure
+out how to crack skipjack, or clipper based telephones. I'm certainly
+not devoting a great deal of thought to it.
+
+	Andrew Molitor
+

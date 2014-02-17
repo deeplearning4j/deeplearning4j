@@ -1,0 +1,84 @@
+From: pfuetz@igd.fhg.de (Matthias Pfuetzner)
+Subject: Re: Available memory to the Xserver. How to get the actual size?
+Reply-To: pfuetz@igd.fhg.de (Matthias Pfuetzner)
+Organization: Zentrum fuer Graphische Datenverarbeitung, Darmstadt, FRG
+Lines: 78
+
+Hello!
+
+In article <1993Apr17.144246.29806@thunder.mcrcim.mcgill.edu>,
+mouse@mcrcim.mcgill.edu (der Mouse) writes:
+>In article <1965@igd.fhg.de>, pfuetz@igd.fhg.de (Matthias Pfuetzner) writes:
+>
+>> Is there a possibility to determine via X protocol calls the size of
+>> free memory available to the Xserver?
+>
+>No.  Even if you could, the answer could be out of date even before you
+>get it (even if you grab the server, it could be taken up by buffering
+>user actions).  You should just try to do whatever you want; a BadAlloc
+>error is your indication that insufficient server memory is available.
+>
+>					der Mouse
+
+This isn't of much help! Especially when doing Phigs (PEX) via the libphigs as
+supplied by MIT, I have much trouble together with PEX-terminals that don't
+have enough memory!
+
+Performing the following:
+
+   visual.visualid = CopyFromParent;
+
+   bg_pix = WhitePixel( grafik_display, DefaultScreen( grafik_display ) );
+   
+   xswa.backing_store      = NotUseful;
+   xswa.event_mask         = ExposureMask | StructureNotifyMask;
+   xswa.background_pixel   = bg_pix;
+
+   graphic_window =
+         XCreateWindow( graphic_display,
+                       RootWindow( graphic_display,
+                                  DefaultScreen( graphic_display ) ),
+                       0,
+                       0,
+                       DisplayWidth(graphic_display, 
+                                  DefaultScreen( graphic_display ) ),
+                       DisplayHeight(graphic_display, 
+                                  DefaultScreen( graphic_display ) ),
+                       (unsigned int)0,
+                       8,
+                       InputOutput,
+                       &visual,
+                       CWEventMask | CWBackingStore | CWBackPixel,
+                       &xswa );
+   XMapWindow( graphic_display, graphic_window );
+   
+   /** sync and wait for exposure event **/
+   XSync( graphic_display, False );
+   XWindowEvent( graphic_display, graphic_window, ExposureMask, &exposureEvent );
+
+   conn.display     = graphic_display;
+   conn.drawable_id = graphic_window;
+
+   xinfo.display = graphic_display;
+   xinfo.flags.no_monitor = 0;      /* False -> Monitor is running! */
+   xinfo.flags.force_client_SS = 0; /* False! */
+
+   popen_xphigs( NULL, 0, PXPHIGS_INFO_FLAGS_NO_MON |
+                          PXPHIGS_INFO_FLAGS_CLIENT_SS |
+                          PXPHIGS_INFO_DISPLAY, &xinfo );
+
+   popen_ws( 1, (Pconnid)(&conn), phigs_ws_type_x_drawable );
+
+I get core dumps in the popen_ws call! (No BadAlloc, etc.! Simply a core
+dump!) So I need some way of getting info about the maximal available memory
+to the Xserver!
+
+But thanks!
+
+Sincerly,
+        Matthias
+-- 
+    Matthias Pfuetzner  |  @work:  +49 6151 155-150  | @home: +49 6151 75717
+    6100 Darmstadt, FRG | ZGDV, Wilhelminenstrasse 7 | Lichtenbergstrasse 73
+      pfuetzner@igd.fhg.de, pfuetzner@zgdvda.UUCP    |  Keith Packard said:
+      R5 is different from R4. That's why we changed the release number :-)

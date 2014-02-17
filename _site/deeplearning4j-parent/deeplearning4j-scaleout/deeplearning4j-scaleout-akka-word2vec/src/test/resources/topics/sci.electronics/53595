@@ -1,0 +1,40 @@
+Subject: Re: What do Nuclear Site's Cooling Towers do?
+From: ganter@ifi.unibas.ch (Robert Ganter)
+Organization: Institut fuer Informatik
+Nntp-Posting-Host: schroeder.ifi.unibas.ch
+Lines: 34
+
+In article <1qlg9o$d7q@sequoia.ccsd.uts.EDU.AU>  writes:
+> 
+> 
+> I really don't know where to post this question so I figured that
+> this board would be most appropriate.
+> I was wondering about those massive concrete cylinders that
+> are ever present at nuclear poer sites. They look like cylinders
+> that have been pinched in the middle. Does anybody know what the
+> actual purpose of those things are?. I hear that they're called
+> 'Cooling Towers' but what the heck do they cool?
+> I hope someone can help 
+> 
+
+This is definitely the wrong newsgroup for this, but never mind.
+Any machine powered by heat (motor, steam- or gasturbine, steamengine,  
+thermoelement,etc) work the better, the bigger the temperature difference  
+between input and output is. Because You never get all thermic energy out of  
+the powering medium (steam, burning gaz, etc), You have to eliminate the rest  
+of the energy to keep the efficency high. A thermal electric power plant (coal,  
+oil or atomic power) works just the same way. You heat water (steam) to power  
+the turbine and generators. Because You don't get the whole energy out of the  
+steam (efficency is never 100%) You have to cool down this steam again by  
+something else. Most power plants use cooling towers for this purpose (some  
+type of mega-refrigerator...). Others use water of a river (ecologically not  
+unobjectionable). Got it ?
+
+Cheers   Robert  (HB9NBY)
+--
+Robert Ganter			/------------\
+Universitaet Basel		| I am a fan |
+Institut fuer Informatik	| of my plan |
+Basel/Switzerland		\------------/
+ganter@ifi.unibas.ch
+amateurradio: HB9NBY	packet: HB9NBY@HB9EAS.CHE.EU

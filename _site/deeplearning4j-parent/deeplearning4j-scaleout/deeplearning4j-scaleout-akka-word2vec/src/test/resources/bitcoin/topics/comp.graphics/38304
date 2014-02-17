@@ -1,0 +1,129 @@
+From: mogal@deadhead.asd.sgi.com (Joshua Mogal)
+Subject: Re: SGI sales practices (Was: Crimson (Was: Kubota Announcement?))
+Organization: Silicon Graphics, Inc.
+Lines: 123
+NNTP-Posting-Host: deadhead.asd.sgi.com
+
+|> My
+|> comment regarding DEC was to indicate that I might be open to other
+|> vendors
+|> that supported OpenGL, rather than deal further with SGI.
+
+OpenGL is a graphics programming library and as such is a great, portable
+interface for the development of interactive 3D graphics applications. It
+is not, however, an indicator of performance, as that will vary strongly
+from machine to machine and vendor to vendor.  SGI is committed to high
+performance interactive graphics systems and software tools, so OpenGL
+means that you can port easily from SGI to other platforms, there is no
+guarantee that your performance would be comparable.
+
+|> 
+|> What I *am* annoyed about is the fact that we were led to believe that
+|> we *would* be able to upgrade to a multiprocessor version of the
+|> Crimson without the assistance of a fork lift truck.
+
+If your sales representative truly mislead you, then you should have a
+valid grievance against us which you should carry up to your local SGI
+sales management team. Feel free to contact the local branch manager...we
+understand that repeat sales come from satisfied customers, so give it a
+shot.
+
+|> 
+|> I'm also annoyed about being sold *several* Personal IRISes at a
+|> previous site on the understanding *that* architecture would be around
+|> for a while, rather than being flushed.
+
+As one of the previous posts stated, the Personal IRIS was introduced in
+1988 and grew to include the 4D/20, 4D/25, 4D/30 and 4D/35 as clock rates
+sped up over time. As a rule of thumb, SGI platforms live for about 4-5
+years. This was true of the motorola-based 3000 series ('85-'89), the PI
+('88-'93), the Professional Series (the early 4D's - '86-'90), the Power
+Series parallel systems ('88-'93). Individual CPU subsystems running at a
+particular clock rate usually live for about 2 years. New graphics
+architectures at the high end (GT, VGX, RealityEngine) are released every
+18 months to 2 years.
+
+These are the facts of life.  If we look at these machines, they become
+almost archaic after four years, and we have to come out with a new
+platform (like Indigo, Onyx, Challenge) which has higher bus bandwidths,
+faster CPUs, faster graphics and I/O, and larger disk capacities. If we
+don't, we become uncompetitive.
+
+From the user perspective, you have to buy a machine that meets your
+current needs and makes economic sense today.  You can't wait to buy, but
+if you need a guaranteed upgrade path for the machine, ask the Sales Rep
+for one in writing. If it's feasible, they should be able to do that. Some
+of our upgrade paths have specific programs associated with them, such as
+the Performance Protection Program for older R3000-based Power Series
+multiprocessing systems which allowed purchasers of those systems to obtain
+a guaranteed upgrade price for moving to the new Onyx or Challenge
+R4400-based 64-bit multiprocessor systems.
+
+|> 
+|> Now I understand that SGI is responsible to its investors and has to
+|> keep showing a positive quarterly bottom line (odd that I found myself
+|> pressured on at least two occasions to get the business on the books
+|> just before the end of the quarter), but I'm just a little tired of
+|> getting boned in the process.
+|> 
+
+If that's happening, it's becausing of misunderstandings or
+mis-communication, not because SGI is directly attempting to annoy our
+customer base.
+
+|> Maybe it's because my lab buys SGIs in onesies and twosies, so we
+|> aren't entitled to a "peek under the covers" as the Big Kids (NASA,
+|> for instance) are.  This lab, and I suspect that a lot of other labs
+|> and organizations, doesn't have a load of money to spend on computers
+|> every year, so we can't be out buying new systems on a regular basis.
+
+Most SGI customers are onesy-twosey types, but regardless, we rarely give a
+great deal of notice when we are about to introduce a new system because
+again, like a previous post stated, if we pre-announced and the schedule
+slipped, we would mess up our potential customers schedules (when they were
+counting on the availability of the new systems on a particular date) and
+would also look awfully bad to both our investors and the financial
+analysts who watch us most carefully to see if we are meeting our
+commitments.
+
+|> The boxes that we buy now will have to last us pretty much through the
+|> entire grant period of five years and, in some case, beyond. That
+|> means that I need to buy the best piece of equipment that I can when I
+|> have the money, not some product that was built, to paraphrase one
+|> previous poster's words, 'to fill a niche' to compete with some other
+|> vendor.  I'm going to be looking at this box for the next five years.
+|> And every time I look at it, I'm going to think about SGI and how I
+|> could have better spent my money (actually *your* money, since we're
+|> supported almost entirely by Federal tax dollars).
+|> 
+
+Five years is an awfully long time in computer years. New processor
+technologies are arriving every 1-2 years, making a 5 year old computer at
+least 2 and probably 3 generations behind the times. The competitive nature
+of the market is demanding that rate of development, so if your timing is
+really 5 years between purchases, you have to accept the limited viability
+of whatever architecture you buy into from any vendor.
+
+There are some realities about the computer biz that we all have to live
+with, but keeping customers happy is the most important, so don't give up,
+we know it.
+
+Josh   |:-)
+
+-- 
+
+
+**************************************************************************
+**				     **					**
+**	Joshua Mogal		     **	Product Manager			**
+**	Advanced Graphics Division   **	  Advanced Graphics Systems	**
+**	Silicon Graphics Inc.	     **	Market Manager			**
+**	2011 North Shoreline Blvd.   **	  Virtual Reality		**
+**	Mountain View, CA 94039-7311 **	  Interactive Entertainment	**
+**	M/S 9L-580		     **					**
+**				     *************************************
+**	Tel:	(415) 390-1460						**
+**	Fax:	(415) 964-8671						**
+**	E-mail:	mogal@sgi.com						**
+**									**
+**************************************************************************

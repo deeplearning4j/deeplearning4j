@@ -1,0 +1,17 @@
+From: zeno@phylo.genetics.washington.edu (Sean Lamont)
+Subject: Closed-curve intersection
+Article-I.D.: shelley.1ra2paINN68s
+Organization: Abstract Software
+Lines: 10
+NNTP-Posting-Host: phylo.genetics.washington.edu
+
+I would like a reference to an algorithm that can detect whether 
+one closed curve bounded by some number of bezier curves lies completely
+within another closed curve bounded by bezier curves.
+
+Thanks.
+-- 
+Sean T. Lamont                           |   Ask me about the WSI-Fonts
+zeno@genetics.washington.edu             |   Professional collection for NeXT 
+lamont@abstractsoft.com                  |____________________________________
+Abstract Software                                                         

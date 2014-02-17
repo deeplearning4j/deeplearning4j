@@ -1,0 +1,60 @@
+From: willisw@willisw.ENG.CLEMSON.edu (Bill Willis)
+Subject: Re: HELP! Installing second IDE drive
+Organization: Engineering Services, Clemson University
+Lines: 55
+
+In article <1qn627$iv@darwin.sura.net> wbarnes@sura.net (Bill Barnes) writes:
+
+>Recently my cousin got a second internal IDE drive (a Seagate 210MB,
+>I can look up the model number if it's important) and I've been
+>trying to help him install it.  [I've got a vested interest, since
+>my machine's busted and I have to use his until I get mine fixed.]
+>He already has a Seagate 85MB IDE HD (again, I forget the model number
+>but I can find out.)
+
+>Anyway, I can't seem to get the bloody thing up.  I've managed to get
+>one or the other drive up (with the other disconnected), but not both
+>at the same time; whenever I try, the thing hangs during bootup -
+>never gets past the system test.  The IDE controller's instruction
+>sheet says it supports two drives; I think I've configured the CMOS
+>correctly; the power's plugged in properly; I even learned about the
+>master/slave relationship that two HDs are supposed to have (didn't
+>know PCs were into S&M! 8^) and I think I configured the jumpers
+>properly (the 85MB one is the master, the new 210MB one is the slave).
+
+>The only thing I can think of is maybe I'm doing the cabling wrong.  I've
+>tried several combinations:
+
+>controller - master - slave
+>controller - slave - master
+>master - controller - slave
+
+>None of them worked.  Unfortunately, I can't think of any others.
+
+>Another possibility is that the 85MB one is already partitioned into
+>two seperate drives, C and D, and the CMOS asks for "C: drive" and "D:
+>drive" setup info rather than "drive 1" and "drive 2" like most others
+>I've seen.  Could this be confusing things?
+
+>So, I need HELP!  The drive came bereft of any docs, except for some
+>info for the CMOS setup; the controller has a little piece of paper
+>about the size of an index card; I cannibalized the cable (it's one
+>of those with a connector at each end and the one in the middle, so
+>it looks like a serial connection); now I be lost!
+
+>Many, many thanks in advance!  This is practically an emergency (I have
+>two papers to do on this thing for Monday!)!  Help!
+>-- 
+>-----------------------
+>William Barnes         SURAnet Operations
+>wbarnes@sura.net       (301) 982-4600 voice  (301) 982-4605 fax
+>Disclaimer:  I don't speak for SURAnet and they don't speak for me.
+I've been told by our local computer guru that you can't do this unless you 
+perform a low level format on your existing hard drive and set your system 
+up for two hard drives from the beginning.  I took him at his word, and I 
+have not tried to find out any more about it, because I'm not going to back 
+everything up just to add another HDD.  If anyone knows for sure what the 
+scoop is, I would like to know also.  Thanks in advance also.
+
+Bill Willis
+

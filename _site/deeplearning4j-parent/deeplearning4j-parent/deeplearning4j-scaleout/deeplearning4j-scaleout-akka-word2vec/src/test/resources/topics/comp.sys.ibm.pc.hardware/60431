@@ -1,0 +1,37 @@
+From: yee@nimios.eng.mcmaster.ca (Paul Yee)
+Subject: Re: Booting from B drive
+Summary: Sorry, can't be done from AMI BIOS
+Nntp-Posting-Host: nimios.eng.mcmaster.ca
+Organization: Communications Research Laboratory, McMaster University
+Lines: 30
+
+In article <khan0095.735001731@nova> khan0095@nova.gmi.edu (Mohammad Razi Khan) writes:
+>glang@slee01.srl.ford.com (Gordon Lang) writes:
+>
+>>David Weisberger (djweisbe@unix.amherst.edu) wrote:
+>>: I have a 5 1/4" drive as drive A.  How can I make the system boot from
+>>: my 3 1/2" B drive? 
+
+[intermediate reply suggesting cable switch deleted]
+
+>
+>I have AMI bios, I have poked around the bios but haven't tried this but somewhere it says BOOT: A:;C:
+>I would assume that you could probably slip in a b:
+>althoug a.) I haven't tried it and
+>b.) don't mess with your CMOS unless you know what your doing!!
+
+I hate to burst your bubble but you cannot "slip in a B:" to that
+particular AMI BIOS setting. That setting only allows you to set
+the *boot order* of the floppy A: with respect to the primary HD C:,
+i.e., check A: first, then C: or check C:, then A:.
+
+>
+>
+>>Gordon Lang
+>--
+>Mohammad R. Khan                /    khan0095@nova.gmi.edu
+>After July '93, please send mail to  mkhan@nyx.cs.du.edu
+
+Regards,
+Paul Yee
+yee@nimios.eng.mcmaster.ca

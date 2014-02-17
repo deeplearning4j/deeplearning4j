@@ -1,0 +1,152 @@
+From: c5ff@jupiter.sun.csd.unb.ca (COOK  Charlie)
+Subject: NHL Summary parse results for games played Wed, April 14, 1993
+Organization: University of New Brunswick
+Lines: 147
+
+Boston                           2 2 0--4
+Ottawa                           0 1 1--2
+First period
+     1, Boston, Roberts 5 (Juneau) 7:19.
+     2, Boston, Wiemer 1(Juneau, Oates) 17:47.
+Second period
+     3, Boston, Neely 11 (Juneau, Murphy) 6:10.
+     4, Boston, Hughes 5 (Richer, Kimble) 7:55.
+     5, Ottawa, Archibald 9 (Rumble, Lamb) 11:37.
+Third period
+     6, Ottawa, Boschman 9 (Kudelski) 5:10.
+
+Boston: 4    Power play: 2-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Hughes             1    0    1
+Juneau             0    3    3
+Kimble             0    1    1
+Murphy             0    1    1
+Neely              1    0    1
+Oates              0    1    1
+Richer             0    1    1
+Roberts            1    0    1
+Wiemer             1    0    1
+
+Ottawa: 2    Power play: 4-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Archibald          1    0    1
+Boschman           1    0    1
+Kudelski           0    1    1
+Lamb               0    1    1
+Rumble             0    1    1
+
+-----------------------------------------
+Washington                       0 0 2--2
+NY Rangers                       0 0 0--0
+First period
+     No scoring.
+Second period
+     No scoring.
+Third period
+     1, Washington, Bondra 36 (Pivonka, Cavallini) 6:54.
+     2, Washington, Bondra 37 (Cote, Pivonka) 10:10.
+
+Washington: 2    Power play: 2-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bondra             2    0    2
+Cavallini          0    1    1
+Cote               0    1    1
+Pivonka            0    2    2
+
+NY Rangers: 0    Power play: 1-0
+No scoring
+
+-----------------------------------------
+NY Islanders                     2 1 1 0--4
+Hartford                         2 1 1 1--5
+First period
+     1, NY Islanders, Ferraro 13 (Malakhov, King) 1:29.
+     2, NY Islanders, Hogue 32 (Thomas, Turgeon) 1:57.
+     3, Hartford, Yake 21(Poulin) 4:15.
+     4, Hartford, Yake 22 (Nylander, Poulin) 16:44.
+Second period
+     5, Hartford, Verbeek 39 (Cassels, Weinrich) pp, 2:43.
+     6, NY Islanders, Thomas 35 (King, Ferraro) 7:58.
+Third period
+     7, Hartford, Burt 5 (Sanderson, Cassels) 13:41.
+     8, NY Islanders, Malakhov 14 (Hogue) 17:45.
+Overtime
+     9, Hartford, Janssens 12 (Poulin) 1:08.
+
+Hartford: 5    Power play: 3-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Burt               1    0    1
+Cassels            0    2    2
+Janssens           1    0    1
+Nylander           0    1    1
+Poulin             0    3    3
+Sanderson          0    1    1
+Verbeek            1    0    1
+Weinrich           0    1    1
+Yake               2    0    2
+
+NY Islanders: 4    Power play: 3-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Ferraro            1    1    2
+Hogue              1    1    2
+King               0    2    2
+Malakhov           1    1    2
+Thomas             1    1    2
+Turgeon            0    1    1
+
+-----------------------------------------
+Pittsburgh                       2 3 1 0--6
+New Jersey                       2 4 0 0--6
+First period
+     1, Pittsburgh, Daniels 5 (Needham, Tippett) 4:14.
+     2, New Jersey, Lemieux 29 (Semak, Driver) 10:19.
+     3, Pittsburgh, Stevens 55(Tocchet, Murphy) pp, 12:40.
+     4, New Jersey, Zelepukin 22 (Driver, Niedermayer) 17:26.
+Second period
+     5, Pittsburgh, Lemieux 68 (Stevens, Tocchet) 1:42.
+     6, New Jersey, Semak 36 (Lemieux, Zelepukin) 2:27.
+     7, Pittsburgh, McEachern 28 (Jagr, Barrasso) 4:24.
+     8, New Jersey, Stevens 12 (Guerin, Pellerin) 5:45.
+     9, Pittsburgh, Lemieux 69 (unassisted) sh, 12:40.
+     10, New Jersey, Richer 37 (Nicholls) 15:53.
+     11, New Jersey, Lemieux 30 (Semak, Zelepukin) 17:40.
+Third period
+     12, Pittsburgh, Mullen 33 (Jagr, Lemieux) 18:54.
+Overtime
+     No scoring.
+
+Pittsburgh: 6    Power play: 5-1   Special goals:  pp: 1  sh: 1  Total: 2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Barrasso           0    1    1
+Daniels            1    0    1
+Jagr               0    2    2
+Lemieux            2    1    3
+McEachern          1    0    1
+Mullen             1    0    1
+Murphy             0    1    1
+Needham            0    1    1
+Stevens            1    1    2
+Tippett            0    1    1
+Tocchet            0    2    2
+
+New Jersey: 6    Power play: 3-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Driver             0    2    2
+Guerin             0    1    1
+Lemieux            2    1    3
+Nicholls           0    1    1
+Niedermayer        0    1    1
+Pellerin           0    1    1
+Richer             1    0    1
+Semak              1    2    3
+Stevens            1    0    1
+Zelepukin          1    2    3
+
+-----------------------------------------

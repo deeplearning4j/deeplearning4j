@@ -1,0 +1,44 @@
+From: kluskens@radar.nrl.navy.mil (Michael S Kluskens)
+Subject: Re: Quadra SCSI Problems???
+Organization: Naval Research Laboratory
+Lines: 39
+
+In article <1993Apr19.131311.25871@mintaka.lcs.mit.edu>, nodine@lcs.mit.edu
+(Mark H. Nodine) wrote:
+> 
+> In article <C5L39p.2qz@news.udel.edu>, johnston@me.udel.edu (Bill Johnston) writes:
+> |> In article <1993Apr16.144750.1568@mintaka.lcs.mit.edu> nodine@lcs.mit.edu (Mark H. Nodine) writes:
+> |> >I don't know about the specific problem mentioned in your
+> |> >message, but I definitely had SCSI problems between my
+> |> >Q700 and my venerable Jasmine Megadrive 10 cartridge
+stuff deleted
+> |> 
+> |> I doubt this is a Quadra-specific problem.  I had to get
+> |> rid of my "venerable" Bernoulli 20 last year (with enough 
+stuff deleted
+> |> might fix the problem - in my case the cartridges wouldn't 
+> |> format/mount/partition for A/UX.  
+> 
+> All I know is that the Megadrives worked perfectly on both my
+> Mac Plus and my Powerbook 140.  It was for this reason I assumed
+> the problem had something to do with the Quadra.  Even with the
+> Quadra, they mostly worked OK.  The problem occurred when I ejected
+> a cartridge from a drive: it would start popping up dialog boxes
+> saying "This cartridge must be formatted with Jasmine Driveware"
+> even though there was no cartridge in the drive.
+> 
+> 	--Mark
+
+The problem mentioned last is a known Quadra SCSI problem, it was heavily
+discussed last year and an Apple employee pointed out that there was a
+one byte error in the SCSI driver routine for the Quadra's (at least the
+700
+and 900).  System 7.1 should not have that problem, for most people the 
+solution was to get an updated driver from the drive manufactor.  In my
+case MASS Microsystems wrote a new driver which fixed the problem on my
+Quadra
+700, all that occured early last year.
+
+Michael S. Kluskens
+kluskens@radar.nrl.navy.mil
+Opinions expressed are the author's and not those of his employer.

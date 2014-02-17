@@ -1,0 +1,33 @@
+15
+Venture capitalists and angel investors are clamoring to fund developer tools. According to a recent estimate, they poured a massive $646 million into this space in 2012, making it one of the hottest market opportunities for entrepreneurs.
+So of course, companies are rushing to create new tools for developers. Some of these new products provide real value, and are selling fast. Others inspire initial interest from customers, and then fall flat. However, unless you’re highly technical and have abundant time on your hands to test new products, it’s near impossible to figure out what is the best.
+Mattermark  is helping investors pinpoint startups with potential. For its latest free newsletter, the Mattermark team compiled a handy list of the front-end and back-end developer tools with the most momentum, meaning the companies that are growing their user-bases at a consistent and steady rate. Some of these startups have raised venture financing or an angel round, others are entirely bootstrapped. They all have a minimum of 10,000 users, but many have far more than that.
+Editor’s note: Our upcoming CloudBeat conference , Sept. 9-10 in San Francisco, will be tackling revolutionary cases of enterprise cloud usage. Register today!
+Mattermark compiles data from a variety of sources, including news articles, AngelList, app store rankings, Alexa.com rankings, and anonymous tips. The signals for business-to-business startups are weaker, but Mattermark tracks sales support materials, like white papers and customer videos, to get a sense of how robust the company’s business pipeline is. Its analysts factor out anomalies, like a surge of interest due to a Hacker News hit.
+“Hacker News spikes do help the company, but only if they can sustain meaningful traffic beyond the initial bump,” chief executive Danielle Morrill told me.
+If you’re not familiar with Mattermark, check out our  in-depth profile of Mattermark  that ran last week. In a nutshell, it’s a new service that helps investors make more informed bets. The data isn’t foolproof by any means, but for investors, it’s a good place to start.
+Here are the top development tool companies as identified by Mattermark.
+10 front-end software development tools 
+Ink Mobility  - tool for enabling apps to communicate on mobile
+Bootstraptor - Twitter Bootstrap templates for web developers
+Macaw  - web design tool capable of writing semantic HTML and succinct CSS
+XingCloud - “One click” localization of your website
+FlauntResponsive  - responsive design conversion tools
+StatusPage.io  - simple downtime communication tools (just launched at Y Combinator)
+GrowthGiant  - Continuous A/B testing tools (private beta not yet launched)
+Spinnakr  - tools for A/B testing content, display different messages to different users
+Dakwak  - deliver localized versions of your website to your visitors
+Nitrous.IO  - rapid development environment management and code collaboration
+10 back-end developer tools
+Bitnami  - app store for server software running on Amazon, Azure and VMWare
+Flywheel - WordPress hosting and management for designers
+Pivotal  - enterprise platform as a service (spin out from EMC and VMWare)
+Salt Stack  - systems and configuration management for DevOps organizations
+KnackHQ  - manage databases in the cloud
+HortonWorks  - commercial vendor of Apache Hadoop, used for big data storage
+Digital Ocean – cloud hosting service for developers
+Fastly  - next generation content delivery network (CDN)
+Honeybadger  - modern error management service for Rails
+Mean.io  - boilerplate for MongoDB, Node.js, Express and AngularJS applications
+[Disclosure: Morrill made an angel investment in Bitnami.]
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

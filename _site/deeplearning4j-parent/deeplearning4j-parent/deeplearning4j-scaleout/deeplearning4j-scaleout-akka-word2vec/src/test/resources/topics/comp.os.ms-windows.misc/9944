@@ -1,0 +1,28 @@
+From: jef_i@pt_iwaniw.stars.flab.Fujitsu.JUNET (Jefrem Iwaniw)
+Subject: Re: Visual c++
+In-Reply-To: David A. Fuess's message of 26 Apr 1993 14: 22:55 GMT
+Nntp-Posting-Host: 192.8.210.197
+Organization: Pelican Software Corporation
+Distribution: usa
+Lines: 20
+
+
+To clarify:  
+
+VC++ *is* considered an upgrade for C7.  There will be no product
+called C 8.0 (although the command-line compiler of VC++ lists its
+version as 8.00).  C7 is not a "DOS"-only product -- it is a C/C++
+compiler capable of producing executables for DOS or Windows, as is
+VC++ (Pro. Ed.).  The (significant) difference is that VC++ comes with
+many Windows-hosted tools (ide, etc) which assist developers in
+creating Windows executables much more quickly (basically by
+automating the thousands of lines of boilerplate code).  Initial
+impressions have been very favorable.
+
+Everyone who is a registered user of C7 should have received a
+considerable amount of info regarding the specifics of C7. If you
+haven't, call Microsoft and I'm sure they'd be happy to send you some!
+
+-Jefrem Iwaniw
+Pelican Software Corporation
+

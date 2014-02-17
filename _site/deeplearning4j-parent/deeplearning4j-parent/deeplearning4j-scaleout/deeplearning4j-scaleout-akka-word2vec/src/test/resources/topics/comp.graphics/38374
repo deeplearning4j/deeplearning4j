@@ -1,0 +1,26 @@
+From: kuryakin@bcstec.ca.boeing.com (Rick Pavek)
+Subject: VISION-3D site and email unavailable
+Organization: Boeing
+Lines: 21
+
+I used the information provided in the recent resource listings and
+tried to ftp to:
+
+ccu1.aukland.ac.nz [130.216.1.5]:  ftp/mac/architec - *VISION-3D facet
+
+and received an 'unknown host' message.
+
+mail to Paul D. Bourke (pdbourke@ccu1.aukland.ac.nz) bounces with basically
+the same problem.
+
+Where'd he go????
+
+Rick
+
+ 
+
+-- 
+Rick Pavek                       | Never ask a droid to outdo its program.
+kuryakin@bcstec.ca.boeing.com    |           
+Seattle, WA                      |   It wastes your time
+                                 |          and annoys the droid.  

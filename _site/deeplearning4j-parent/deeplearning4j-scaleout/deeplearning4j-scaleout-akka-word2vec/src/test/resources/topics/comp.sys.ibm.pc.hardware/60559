@@ -1,0 +1,14 @@
+From: lepper@logopolis.mct.anl.gov (Matt Lepper 2-5950)
+Subject: Help with 3C503 and NCSA Telnet
+Organization: Argonne National Laboratory, Argonne, Illinois
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 8
+
+Help!
+  I'm trying to configure NCSA Telnet v2.3.05 to work with a 3C503 ethernet
+board.  I can use FTP fine, but whenever I attempt to use Telnet, the
+machine hangs with a blank screen and a blinking green cursor.  Any ideas?
+
+Please e-mail:
+	lepper@maat.mct.anl.gov
+	mjlepper@mtu.edu

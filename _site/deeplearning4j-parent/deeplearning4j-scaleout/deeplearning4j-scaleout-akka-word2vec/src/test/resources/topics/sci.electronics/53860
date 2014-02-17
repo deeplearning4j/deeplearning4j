@@ -1,0 +1,33 @@
+From: baden@inqmind.bison.mb.ca (Baden de Bari)
+Subject: *]] MOSFET help...
+Organization: The Inquiring Mind BBS  1 204 488-1607
+Lines: 28
+
+ 
+        Since I'm not all too keen on this area of hooking them up, I'm 
+asking for help.  I know better than to hook a 12v, 1a stepper line to 
+one, unless it can take it; however what about if I've got a 24-60v 
+stepper.  What sort of curent limmiting circuitry would be involved (a 
+small schematic would probably be helpfull).  
+        Also, I've looked into the TIPC2701N by TI, and I was wondering 
+if I should use the same suggested (by you replying to this message) 
+current limiting circuitry on each of the 7 mosfets in the package as 
+that illustrated in the schematic (which you the replyer would hopefully 
+help me with).
+ 
+                                ... hmm... different request... 
+ 
+                Thanks.
+
+ 
+  _________________________________________________
+  Inspiration  |   ___                             |
+  comes to     |  \   o  baden@sys6626.bison.mb.ca |
+  those who    | (  ^  ) baden@inqmind.bison.mb.ca |
+  seek the     |   /-\      =] Baden de Bari [=    |
+  unknown.     |                                   |
+  ------------------------------------------------- 
+ 
+
+baden@inqmind.bison.mb.ca
+The Inquiring Mind BBS, Winnipeg, Manitoba  204 488-1607

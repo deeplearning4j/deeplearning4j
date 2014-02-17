@@ -1,0 +1,24 @@
+From: j_manning@csc32.enet.dec.com (John Manning)
+Subject: Mitsumi and SB Pro
+Organization: Digital Equipment Corporation
+Distribution: usa
+Lines: 18
+
+
+Hi,
+
+I just bought a Mitsumi CD-ROM drive and a SB Pro soundcard.  The pin outs on
+the CD-ROM line-out and the SB Pro CD-IN are not the same.  I am considering
+taking the RCA output jacks on the Mitsumi interface card and routing them to
+the line-in input on the SB Pro.  Will this work with multi-media software
+that uses the CD-ROM and the SB Pro or do I need to go to the CD-IN pins on
+the SB-Pro.
+
+Thanks,
+
+John
+
+-------------------------------------------------------------------------------
+|    John Manning                       |  Opinions expressed are my own.     |
+|    j_manning@csc32.enet.dec.com       |  I do not represent Digital Equip.  |
+-------------------------------------------------------------------------------

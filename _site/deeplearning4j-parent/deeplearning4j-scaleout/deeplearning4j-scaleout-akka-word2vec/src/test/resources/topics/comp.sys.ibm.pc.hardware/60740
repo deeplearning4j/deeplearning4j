@@ -1,0 +1,41 @@
+From: wally@Auspex.COM (Wally Bass)
+Subject: Re: Date is stuck
+Organization: Auspex Systems, Santa Clara
+Lines: 35
+Nntp-Posting-Host: alpha1-e5.auspex.com
+
+In article <1993Apr19.055039.29715@oec4.orbital.dialix.oz.au>
+    oecjtb@oec4.orbital.dialix.oz.au (John Bongiovanni) writes:
+  [stuff deleted]
+>Did I once hear that in order for the date to advance, something, like a 
+>clock, *has* to make a Get Date system call? Apparently, the clock
+>hardware interrupt and BIOS don't do this (date advance) automatically. The
+>Get Date call notices that a "midnight reset" flag has been set, and then
+>then advances the date.
+>
+>Anybody with more info?
+
+There are two 'problems':
+(1) the BIOS TOD routine which updates the BIOS clock uses only 1 bit
+    for day increment, so a second wrapping of the clock past midnight
+    will get lost if no one calls the BIOS to read the clock in the
+    meantime, and
+(2) the BIOS resets the day wrap indicator on the first 'get date'
+    call from ANYBODY (after the wrap indicator has been set). So
+    unless the first BIOS 'get date' call after midnight is done by
+    the DOS 'kernel' (which is the only part of DOS which knows how to
+    increment the date, the day wrap indication is normally lost.
+My guess is that Kevin's 'menu' system uses BIOS calls to read the
+clock (in order to display the time), and is hence the entity which
+causes the day wrap indication to get lost. Even if the 'menu' system
+'notices' the day 'wrap' (which I think is indicated by a non-zero
+value in AL), there really isn't any particularly good way to tell DOS
+about it, so that DOS can update the day. The menu system 'should' use
+DOS calls to get the time, which would cause the DOS 'kernel' to do
+the BIOS call, and the wrap indicator would hence be processed
+properly.  Possibly, though, the 'menu' system can't easily use DOS
+calls for time, because DOS is not reentrant, and perhaps time
+incrementing ofters occur while the 'menu' system is 'inside' some
+other DOS call.
+
+Wally Bass

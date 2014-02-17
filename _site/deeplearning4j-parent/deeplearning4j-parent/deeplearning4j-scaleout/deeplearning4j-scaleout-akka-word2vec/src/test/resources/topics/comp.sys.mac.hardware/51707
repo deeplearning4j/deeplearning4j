@@ -1,0 +1,48 @@
+From: ray@netcom.com (Ray Fischer)
+Subject: Re: 68040 Specs.
+Organization: Netcom. San Jose, California
+Lines: 43
+
+patrickd@wpi.WPI.EDU (Lazer) writes ...
+>I'd appreciate it greatly if someone could E-mail me the following:
+>(if you only know one, that's fine)
+>1) Specs for the 68040 (esp. how it compares to the Pentium)
+
+Specs for the 68040 can fill a 500 page book.  Some highlights are...
+32-bit address space w/ 32-bit data width.  18 32-bit integer registers 
+& 8 80-bit floating point registers.  8K copyback capable caches,
+4-way set associative.  Typical 1.2 clocks/integer instruction.  5
+clocks for a floating point multiply.
+
+(interesting aside: the 68040 can multiply two 80-bit floating point
+numbers in less time than it can multiply two 32-bit integers)
+
+>2) Specs for the 68060 with estimated cost, release date, etc...
+
+More of the same but with multiple instruction dispatching.  Figure
+about 0.8 clocks per instruction typical (my guess).  But the Motorola
+guys are pretty bright, it may be less.
+
+>I'm interested in speeds, systems it can run (Windows NT, RISC, or whatever),
+>costs, bus info, register info.  All the technical info.
+
+Call Motorola.  I'm not typing it all in.
+
+>I am hoping that the 68040 can win yet another battle against the intel people.
+
+I'm predicting that both the 680x0 and x86 lines are reaching their
+ends.  New experimental processors have 64-bit data pathways and can
+schedule up to 8 out of 32 instructions each clock cycle.  That sort
+of trick can't really be done with CISC architectures.
+
+I finally saw some details on the 586/Pentium and was not greatly
+impressed.  They've finally done some work on the FPU to get it up to
+speed, but otherwise it's only going to be a 2x speedup.  And to get
+that they're using two integer units, larger caches, and a branch
+target buffer.  Yes, I know they're talking about 100MHz processors.
+Big whoop.  Designing a 100MHz board is difficult and really
+expensive.  Priced 15ns memory chips lately?
+
+-- 
+Ray Fischer                   "Convictions are more dangerous enemies of truth
+ray@netcom.com                 than lies."  -- Friedrich Nietzsche

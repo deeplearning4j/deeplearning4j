@@ -1,0 +1,56 @@
+From: d3e758@bucky.pnl.gov (JE Pelkey)
+Subject: Multi-screen apps and window managers
+Originator: d3e758@bucky.pnl.gov
+Organization: Battelle Pacific N.W. Labs
+Lines: 50
+
+
+
+I am working on a project to provide an emergency management
+information system.  In keeping with more classic command and
+control type systems, we are considering developing a dual screen monitor
+system in order to provide a status board on it's own monitor.  
+I have a number of X level questions regarding this:
+
+(We are devloping on Unix systems using X/Motif. Platform will be 
+predominantly Sun's, probably with ports to RS/6000 as well).
+
+I am assuming the standard dual monitor systems are configured
+such that we are talking about one X display and multiple screens,
+and not multiple X displays.   Given this:
+
+	- Is changing input focus from one screen to the other as simple
+	as tracking your mouse from one screen to the other?  There's
+	nothing special that needs to be done to shift focus between
+	screens?
+
+	- Do I have to run separate window managers on the separate
+	screens or are there multiscreen window managers out there?
+	What are they; who sells them...
+
+	- Is a multi-screen window manager the only way I can grab a
+	window frame and move a window from one screen to the next?
+
+	- Is there any way for the application to transparently see
+	multiple screens as one logical x-y plane, or does the hardware
+	only provide for each screen to start at 0,0?
+
+	- Any thoughts on the difficulties involved with designing a
+	system capable of using either multiple screens or a single
+	screen (perhaps running a virtual window manager to simulate
+	multiple screens instead)?  
+	I am assuming that this is not a major issue - that I can rely
+	on providing config files which will specify for each
+	configuration the screen placement of each window in the
+	application.  Any thoughts or suggestions from past experience
+	are more than welcome.
+
+
+========================================================================
+Jo Pelkey                                   Phone: (509)375-6947
+Battelle Pacific Northwest Labs             Fax:   (509)375-3641
+Mail Stop K7-22                             Email: je_pelkey@pnl.gov
+P.O. Box 999
+Richland, WA  99352
+========================================================================
+

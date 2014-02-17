@@ -1,0 +1,24 @@
+From: hades@coos.dartmouth.edu (Brian V. Hughes)
+Subject: Re: Adding VRAM to Quadra 800 ?
+Keywords: VRAM Quadra 800
+Reply-To: hades@Dartmouth.Edu
+Organization: Dartmouth College, Hanover, NH
+Disclaimer: Personally, I really don't care who you think I speak for.
+Moderator: Rec.Arts.Comics.Info
+Lines: 15
+
+wstuartj@lucky.ecn.purdue.edu (W Stuart Jones) writes:
+
+>I want to go from 512K to 1M VRAM on my Quadra 800.  How many 512K SIMMS do I
+>need to buy?
+
+    None. You need to buy 2 80ns 256k VRAM SIMMs. They cost about $30
+each from your favorite memory distributor.
+
+>Is the current 512K soldered on the board or do I need to take out the
+>current VRAM before I add more?
+
+    The 512k is soldered to the logic board. There are 2 SIMM slots for
+expansion.
+
+-Hades

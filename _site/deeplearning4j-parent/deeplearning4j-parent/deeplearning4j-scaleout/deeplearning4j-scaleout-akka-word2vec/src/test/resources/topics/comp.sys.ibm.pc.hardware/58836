@@ -1,0 +1,46 @@
+From: gryphon@openage.openage.com (The Golden Gryphon)
+Subject: Re: Intel, the Pentium and Linux
+Article-I.D.: openage.1993Apr04.175934.8526
+Organization: Open Age, Inc.
+Lines: 40
+
+INABU@ibm.rz.tu-clausthal.de (Arnd Burghardt) writes:
+
+>Hi folks,
+> 
+>Yesterday i visited the CEBIT (hannover, germany), where Intel was presenting
+>the Pentium (586) processor. They had four (in words 4) machines with this
+>beast running. So they presented it nicely (unly by running picture shows),
+>this i could do on a 80286 ;-)). The presentor promised it to be binary
+>compatible to the i486, and I said I don't believe. I showed him a ONE_DISK_
+>Linux-System (Emergency disk, with patched lilo to boot from disk), and said
+>him : Convice me, boot this :  No guts, no glory ! A he decided no glory.
+>He won't let anybody touch his holy cows, and not even boot a suspect OS.
+> 
+>I thought by myself 'This is the coward of the day' and went back to earth.
+> 
+>What cn we learn : this technology is far from industrial-standarts, so you
+>can expect this beast in your local computer-shop at least in spring next
+>year....
+> 
+>only my 2cents....
+
+Yes only your $00.02.  Here's mine.
+
+If I were running at a new chip at a Trade show, and had little to no real
+technical knowledge,  I wouldn't let some stranger with a diskette boot my demo
+machine.  If the demo machine is down too long people will not see my nice
+demos, and if this purposted LINUX diskette is really something that will wipe
+the disk, or is loaded with a VIRUS!, I'm in deep trouble.
+
+No marketer in their right mind would let you do this, unless they had
+specifically invited people to do so, and provided machines to do it with.
+
+We can we learn : This technology will be shipping from PC vendors in May 1993,
+and will be i486 compatible.
+
+-- 
+The Golden Gryphon 				gryphon@openage.COM
+"The Crown Jewel of the American Prison System." - President Bill
+Clinton on living in The White House.
+Openage - The Premier SCO UNIX integrator in the Washington D.C. area

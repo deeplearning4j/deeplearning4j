@@ -1,0 +1,16 @@
+From: arthur@hardy.u.washington.edu (howard roark)
+Subject: PROBLEM WITH PRINTER AND EMM386.EXE!!
+Article-I.D.: shelley.1qtbh0INN7nh
+Distribution: world
+Organization: University of Washington, Seattle
+Lines: 8
+NNTP-Posting-Host: hardy.u.washington.edu
+
+I recently decided to try using emm386.exe for a memory manager and when I
+tried to print to my printer in lpt1 from word55 I wouldn't work.  It would
+send the linefeeds for the top margin and then the printer READY light would
+go off and stop working.  I disabled emm386.exe and the problem went away.
+I would like to continue using emm386.exe if possible.  I would greatly    
+appreciate any comments or suggestions!!  please send them to arthur@u.washingt,
+
+arthur@u.washington.edu 

@@ -1,0 +1,15 @@
+0
+Yesterday’s attack that brought the New York Times site down also targeted Twitter and the Huffington Post, CloudFlare says .
+The Syrian Electronic Army was allegedly behind the hacking attack , which was essentially a DNS hijack. Attackers exploited vulnerabilities at the Times‘ registrar, MelbourneIT, the company that manages the nytimes.com domain.
+DNS hijacks work by changing the mapping systems of the Internet that tell browsers where to go in order to get the information they request. Essentially, by changing the map, DNS hijacks reroute traffic from its intended destination service to another.
+“The hack illustrates the damage that can be done by redirecting a site’s DNS,” CloudFlare CEO Matthew Prince said in a blog post. “DNS forms the heart of the Internet, not just the web. Email routing, too, depends on DNS to route message to the correct server.”
+CloudFlare
+How to ensure you have a registry lock in place
+That’s especially dangerous when you consider the emails that might be coming into the Times from confidential sources who do not want their identities exposed.
+The attackers also targeted several other domains, including some that belong to Twitter and Huffington Post, CloudFlare said. The company’s engineers participated in a joint effort with the Times, OpenDNS, and Google to track down the attack and discover the other targets.
+Due to the nature of the attack, however, even after the issues were corrected, many web surfers continued to be routed to the wrong sites, including at least one that had malware embedded in it. That’s due to the fact that the internet uses multiple DNS servers that update each other with changes to the “map,” and they don’t all update all the time.
+In fact, DNS propagation can take as long as 24 hours.
+The Syrian Electronic Army is a loosely constituted group that is not officially part of the embattled Syrian government but is composed of “patriotic young people” who are sympathetic to their government and attack those whom they feel spread false news about the messy, bloody Syrian civil war.
+The New York Times could have protected itself by having what is called a “registry lock” in place, which prevents domain transfers or changes to the DNS details.
+In fact, having that lock in place is likely the only thing that prevented Twitter.com from suffering the same fate as the Times.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

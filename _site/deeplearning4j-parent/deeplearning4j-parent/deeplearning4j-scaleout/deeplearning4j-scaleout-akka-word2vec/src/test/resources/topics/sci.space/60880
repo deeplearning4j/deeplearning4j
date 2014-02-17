@@ -1,0 +1,29 @@
+From: jcm@head-cfa.harvard.edu (Jonathan McDowell)
+Subject: Re: Shuttle Launch Question
+Organization: Smithsonian Astrophysical Observatory, Cambridge, MA,  USA
+Distribution: sci
+Lines: 23
+
+From article <C5owCB.n3p@world.std.com>, by tombaker@world.std.com (Tom A Baker):
+>>In article <C5JLwx.4H9.1@cs.cmu.edu>, ETRAT@ttacs1.ttu.edu (Pack Rat) writes...
+>>>"Clear caution & warning memory.  Verify no unexpected
+>>>errors. ...".  I am wondering what an "expected error" might
+>>>be.  Sorry if this is a really dumb question, but
+> 
+> Parity errors in memory or previously known conditions that were waivered.
+>    "Yes that is an error, but we already knew about it"
+> I'd be curious as to what the real meaning of the quote is.
+> 
+> tom
+
+
+My understanding is that the 'expected errors' are basically
+known bugs in the warning system software - things are checked
+that don't have the right values in yet because they aren't
+set till after launch, and suchlike. Rather than fix the code
+and possibly introduce new bugs, they just tell the crew
+'ok, if you see a warning no. 213 before liftoff, ignore it'.
+
+ - Jonathan
+
+

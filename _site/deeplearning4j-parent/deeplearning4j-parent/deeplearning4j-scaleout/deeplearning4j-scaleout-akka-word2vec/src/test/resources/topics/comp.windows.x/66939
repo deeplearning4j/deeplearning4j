@@ -1,0 +1,16 @@
+Subject: MIT R5 on Sun with Rasterops TC Colorboard
+From: mark@comp.vuw.ac.nz (Mark Davies)
+Distribution: world
+Organization: Dept. of Comp. Sci., Victoria Uni. of Wellington, New Zealand.
+NNTP-Posting-Host: bats.comp.vuw.ac.nz
+Lines: 9
+
+
+Is it possible to run an MIT R5 based Xserver on a Sun with a Rasterops TC
+Colorboard (24bit board)?  I have the Xsun24 patches for supporting sun's
+24bit frame buffers but does the rasterops appear as if its a cgtwelve or
+something else?  I know nothing about the rasterops other than we might be
+buying one to put in an IPX.
+
+cheers
+mark

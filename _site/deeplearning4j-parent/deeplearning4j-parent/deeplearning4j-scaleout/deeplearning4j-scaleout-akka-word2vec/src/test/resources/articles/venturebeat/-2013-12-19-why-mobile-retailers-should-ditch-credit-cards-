@@ -1,0 +1,26 @@
+2
+Ayo Omojola is CEO and cofounder of Hipmob .
+At Hipmob we help companies talk to mobile app users. Many companies use Hipmob around their checkout, answering questions about your product or policy helps close sales and increase revenue.
+Sometimes though, the problem is the checkout itself. As more commerce goes mobile, many companies still apply lessons from their website to their mobile apps, and they are learning that design principles that worked for the web rarely apply. For example:
+Beware The Wall Of Fields
+Often a shopper gets to checkout, and sees this:
+Nobody wants to fill out 14 separate fields in order to complete a purchase! Credit cards were designed for the physical world, to be seamless – I take out my wallet, pull out my card and swipe. Faced with this, your shopper would rather play Dots.
+What are the better options? HotelTonight guests sometimes don’t even have to type:
+HotelTonight cuts the number of fields by 70%. They do this by using the Venmo Touch payment plugin. As more retailers integrate mobile-native payment options, those who don’t will fall behind.
+Skip The Credit Card
+Today, more and payment SDKs offer several advantages over credit cards. What you use depends on your needs, but by using these, shoppers have to work less, to buy your product. Here I discuss three, which have the same pricing: 2.9% + $0.30 per transaction.
+Pay by Amazon: A well known brand with over 200m user credit cards. Hard to compare in practice as it was only recently released. The downside: Amazon may compete with you one day, and by giving them purchase data, you’re helping them.
+Pay with Paypal: A well known brand; ~ 140m user accounts, a large base of international users, and a new mobile SDK that (like Venmo below, which is owned by Paypal) detects first if the user is logged into PayPal on device, and uses those credentials. The downside: a somewhat spotty reputation for customer service . Uber recently started enabling riders to pay via Paypal.
+Venmo Touch (owned by Paypal): Offers a few advantages over Paypal and Amazon in implementation — the key one being a network effect:
+A shopper entering their credit card in your checkout can opt into Venmo Touch.
+A shopper whose used Venmo Touch before, could instantly use it in your checkout.
+All shoppers also submit their payment credentials to you (which isn’t true for either Amazon or Paypal).
+Amazon/Paypal speed up your checkout, but withhold the shoppers payment credentials, which might matter to your business. Venmo Touch (pictured at the top of this post) gives you both a form, their network, and the shoppers credit card information.
+The downside: Venmo Touch has fewer users than either Amazon or Paypal (Venmo’s recent acquirer). Short term, this means many shoppers will still have to fill out 4 fields, rather than 2. Long term however, it carries the least threat to your business (vs Amazon) and a stronger 2-way network effect than either Amazon or Paypal.
+Retailers also have a couple of other concerns:
+Brands can conflict: By using Paypal/Amazon, you stick another company’s brand smack in the middle of your checkout.
+Conflicting brands
+User Mix: If most of your mobile sales come from new users, then speeding up the checkout is a huge advantage. If most are from logged in, web-first users, it matters less.
+Follow your Demographics: Venmo Touch users likely skew younger than Amazon, Paypal skews more international than either of the other two, and so on.
+Ditching credit card forms wont solve everything, but when well done, you’ll definitely see lift. More broadly, you should shift away from using web payment principles in mobile payment flows, and reduce payment friction where possible. Other mobile-native tools to check out that I don’t discuss here: Card.io (scan credit cards with your phone’s camera), Affirm (enable customers to pay later), and Google Wallet’s Android integration (used in the HotelTonight Android app) .
+Ayo Omojola is CEO and cofounder of Hipmob . Hipmob helps mobile retailers and app developers to communicate with their users. Before this, Ayo has designed and helped develop mobile apps, interfaces, and services since 2008.

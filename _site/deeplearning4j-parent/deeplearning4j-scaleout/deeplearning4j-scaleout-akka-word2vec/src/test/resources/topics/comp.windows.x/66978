@@ -1,0 +1,20 @@
+From: mike@hopper.Virginia.EDU (Michael Chapman)
+Subject: Re: Compiling help
+Organization: ITC/UVA Community Access UNIX/Internet Project
+Lines: 15
+
+Here's what I (think) have figured out.  All I need to do is install
+the R5 disitribution without the Xserver like the sony.cf file defines,
+and all the new libraries, utils, etc., will be installed and my old
+server from r4 will still work.  This will allow me to run Xview 3.0,
+and have X11r5 up and running.  Does the server interface remain the
+same with all changes made only to the libs?
+
+Another question: Is it likely that since Sun is dropping OW support
+that the desktop utils (like the file manager) will be made public?
+It would be nice if companies would make old code public for the
+benefit of those of us with smaller budgets. :)
+-- 
+mike@hopper.acs.virginia.edu 
+
+"I will NOT raise taxes on the middle class." -Unknown

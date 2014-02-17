@@ -1,0 +1,45 @@
+From: karplus@cse.ucsc.edu (Kevin Karplus)
+Subject: Re: decoupling caps - onboard
+Organization: University of California, Santa Cruz
+Lines: 38
+Reply-To: karplus@ce.ucsc.edu (Kevin Karplus)
+NNTP-Posting-Host: ararat.ucsc.edu
+
+
+I've used on-chip capacitors to reduce ground-bounce noise on a small
+systolic array chip that had 50pF loads on the clock lines.
+(Design was in 2-micron n-well cmos, using the MOSIS scalable design rules.)
+Here are some thoughts on the bypass capacitors:
+
+1) They don't help much with simultaneous output switching--there is
+	still a large inductance between the bypass capacitor and the
+	load capacitor (on both the signal line and the ground
+	return), so you still get ground and power line bounce. 
+
+2) They do help a lot with on-chip loads, as I had with the high load
+	on the clock lines. 
+
+3) The transients you are trying to suppress are really high
+	frequency, so forget about large areas of poly-thin-oxide-diff
+	capacitors, since the RC time constant is too large.
+	What I did is to make a metal2, metal, poly, diff sandwich,
+	but put a lot of holes in the poly layer, allowing frequent
+	diff-metal1 contacts.  I forget exactly how wide the poly
+	lines were.  If I were doing this design again, I'd probably
+	omit the diff altogether, and use a solid poly sheet instead,
+	using just m2, m1, and poly (and substrate, but that has such a high
+	resistance it can be ignored at these speeds).
+
+4) You are probably better off trying to tune your circuit to run with
+	slightly slower edges and lower voltage swings (especially for
+	output signalling), than spending chip area on capacitors.
+	I had spare space on the die since the circuit was too big for
+	a MOSIS tiny chip, and the next size up was twice as big as I
+	needed. 
+
+Kevin Karplus
+-- 
+Kevin Karplus		karplus@ce.ucsc.edu
+
+Due to budgetary constraints the light at the end of the tunnel is
+being turned off.

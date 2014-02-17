@@ -1,0 +1,36 @@
+From: jebright@magnus.acs.ohio-state.edu (James R Ebright)
+Subject: Re: Once tapped, your code is no good any more.
+Nntp-Posting-Host: bottom.magnus.acs.ohio-state.edu
+Organization: The Ohio State University
+Distribution: na
+Lines: 29
+
+In article a_rubin@dsg4.dse.beckman.com (Arthur Rubin) writes:
+>In strnlght@netcom.com (David Sternlight) writes:
+>
+[...]
+>>I'd be happy to use a crypto system supplied by the NSA for business, if
+>>they told me it was more secure than DES, and in particular resistant to
+>>attempts by Japanese, French, and other competitive companies and
+>>governments to break.
+>
+>(It's NIST, not NSA.  NSA is not supposed to have anything to do with this.)
+
+With all the activity in sci.crypt these past few days, I am not supprised
+you missed it... NIST got Skipjack from the NSA :)
+
+[...]
+>>I'd trust the NSA or the President if they stated there were no trap
+>>doors--I'd be even happier if a committee of independent experts examined
+>>the thing under seal of secrecy and reported back that it was secure.
+>
+>I wouldn't trust the NSA.  I think I would trust the President on this, but
+>I'm not certain he would be told.
+
+"I am not a crook." President Richard M. Nixon
+                    ^^^^^^^^^
+-- 
+ Information farming at...     For addr&phone: finger             A/~~\A
+ THE Ohio State University  jebright@magnus.acs.ohio-state.edu   ((0  0))____
+      Jim Ebright             e-mail: jre+@osu.edu                 \  /      \
+                          Support Privacy: Support Encryption      (--)\      

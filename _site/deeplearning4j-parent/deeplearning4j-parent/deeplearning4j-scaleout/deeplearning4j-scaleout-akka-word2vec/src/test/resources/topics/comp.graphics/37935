@@ -1,0 +1,36 @@
+From: dsnyder@falcon.aamrl.wpafb.af.mil
+Subject: Re: Real Time Graphics??
+Distribution: na
+Organization: USAF AL/CFH, WPAFB, Dayton, OH
+Lines: 30
+
+In article <C4vA9r.KK7@taurus.cs.nps.navy.mil>, stockel@oahu.oc.nps.navy.mil (Jim Stockel) writes:
+> Hi,
+> 
+> I will be writing a data acquisition program to collect data from a
+> variety of sources including RS232, and external A/D's, and I would
+> like to be able to display the data in near realtime.  I've done this
+> type of thing on PC's and other machines, but I am unaware of any graphics
+> package that could help me with this on a UNIX machine.
+> 
+> .......
+> 
+> Does anyone have any ideas on commercial or "free" packages that might
+> suit my needs?  I would really appreciate any input.  I'm sure this has
+> been done many times before.
+> 
+
+  For a commerical package try WAVE from  Precision Visuals
+                                           505-530-6563
+
+  For a free package try KHOROS from University of New Mexico
+                                      508-277-6563
+                                   ftp from
+                              ptrg.eece.unm.edu
+
+    Login in anonyomus or ftp  with a valid email address as the password
+               cd /pub/khoros/release
+
+   That will get you to the right place.
+
+                                                         David

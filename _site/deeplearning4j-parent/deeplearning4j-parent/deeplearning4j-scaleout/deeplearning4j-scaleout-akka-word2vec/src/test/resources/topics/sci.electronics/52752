@@ -1,0 +1,43 @@
+From: whit@carson.u.washington.edu (John Whitmore)
+Subject: Re: Wire wrap questions (again?)
+Article-I.D.: shelley.1pr803INNh8e
+Organization: University of Washington, Seattle
+Lines: 36
+NNTP-Posting-Host: carson.u.washington.edu
+
+In article <PASCAL.93Apr1160623@ap10.apd.cpg.sony.co.jp> pascal@apd.cpg.sony.co.jp (Pascal Goguey) writes:
+>In article <7376@blue.cis.pitt.edu> macfitz+@pitt.edu (Mark D Fitzsimmos) writes:
+
+> *After a considerable amount of research, review of discussions 
+> *on this group, and mainly fruitless time on breadboards, I have 
+> *decided that the path of least resistance for prototyping my (not 
+> *necessarily someone else's) electronic designs is wire wrapping.  
+
+>	I have no idea about what you want to do, but be careful :
+>Wire wrapping increases a lot the wiring capacitance. That shouldn't
+>be a problem for "slow" applications (i.e a few MHz), but as for
+>quicker ones (around 30 / 40 MHz), I doubt that it can work.
+
+
+	Fortunately, wire-wrapping is a better wiring technique than
+most at high frequencies; Cray computers (up to the X-MP, at least)
+all had wirewrapped backplanes.  Wirewrap gets into trouble at
+much higher frequencies than any TTL can handle.  The 'increase'
+of wiring capacitance is not really relevant (you have to use
+transmission line techniques, and the capacitance is no problem).
+
+> *1) Where can I get a decent wrapping tool?  I'd like to spend less 
+> *than $150 for an AC powered unit including bit and sleeve.
+
+>	Hand powered is the best. There are good AC powered ones,
+>but rather expensive. A low-cost one doesn't work very well.
+
+	Hand-powered is a terrible choice (IMHO) unless you are
+a field maintenance person who will do maybe a dozen connections
+at a time.  Your hands will cramp.  Battery-powered wire-wrap guns
+are available in the $150 range, and so are the little
+twiddle-stick manual types ($15).  For a modest project, of
+a couple hundred connections, I'd prefer to borrow a professional
+AC unit... or a pneumatic one.
+
+	John Whitmore

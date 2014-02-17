@@ -1,0 +1,35 @@
+From: sethf@athena.mit.edu (Seth Finkelstein)
+Subject: Re: The source of that announcement
+Organization: Massachvsetts Institvte of Technology
+Lines: 28
+Distribution: world
+NNTP-Posting-Host: frumious-bandersnatch.mit.edu
+
+Also note (from <branstad@tis.com> and <walker@tis.com>):
+
+% whois -h rs.internic.net tis-dom
+Trusted Information Systems, Inc. (TIS-DOM)
+   3060 Washington Road, Route 97
+   Glenwood, MD 21738
+
+   Domain Name: TIS.COM
+
+   Administrative Contact:
+      Walker, Stephen T.  (STW3)  walker@TIS.COM
+      (301) 854-6889
+   Technical Contact, Zone Contact:
+      Dalva, David I.  (DID1)  dave@TIS.COM
+      (301) 854-6889
+
+   Record last updated on 02-Jul-92.
+
+   Domain servers in listed order:
+
+   TIS.COM                      192.33.112.100
+   LA.TIS.COM                   192.5.49.8
+
+	And "dockmaster" is an infamous address ...
+
+--
+Seth Finkelstein                                sethf@athena.mit.edu
+"The road to Hell is paved with good intentions"

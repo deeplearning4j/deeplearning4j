@@ -1,0 +1,26 @@
+From: wally@Auspex.COM (Wally Bass)
+Subject: Re: IDE vs SCSI
+Organization: Auspex Systems, Santa Clara
+Lines: 20
+Nntp-Posting-Host: alpha1-e5.auspex.com
+
+In article <1993Apr19.034517.12820@julian.uwo.ca> wlsmith@valve.heart.rri.uwo.ca
+ (Wayne Smith) writes:
+  [stuff deleted]
+>So the lowly low-density original PC FDD card used DMA and the PC-AT
+>HDD controller doesn't!?!?  That makes real sense.
+
+Actually, it does make a reasonable amount of sense. Fixed disk
+sectors are buffered by the controller, and transferring them to
+memory with a 'rep insw' (or whatever the instruction is called) is
+quite efficient (single instruction, goes as fast as the
+controller/cpu know how to use the bus). Since the 286 wasn't cached,
+the bus is likely a critical resource relative to CPU performance, and
+it's possible that DMA bus interference would cause as much or more
+loss of CPU cycles (for 'computing') as does the 'rep insw' sequence.
+
+The floppy, on the other hand, is not buffered, so that using the CPU
+for floppy data transfer (as was done on the PC Jr, by the way) really
+does stink.
+
+Wally Bass

@@ -1,0 +1,28 @@
+From: jleon@usc.edu (Juan Carlos Leon)
+Subject: modems and noisy lines.
+Organization: University of Southern California, Los Angeles, CA
+Lines: 21
+Distribution: world
+NNTP-Posting-Host: phakt.usc.edu
+
+Hi,
+
+I just got a problem, I have a cheapo 2400bps modem which I use to connect
+to my university, but I get too much garbage on the screen. I do know it's
+because the noise in the line (I can actually hear it).  So my question is
+will an error correction protocol help to eliminate this garbage?, my modem
+doesn't have any of these on hardware, can a software implemented protocol
+do the trick?
+
+Thanks.
+
+Juan Carlos Leon
+
+
+
+
+-- 
+jleon@scf.usc.edu             |  jcleon@ucs.usc.edu
+Electrical & Computer Major   |  University Computing Services
+		University of Southern California
+			Los Angeles, CA.

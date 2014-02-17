@@ -1,0 +1,18 @@
+MetaPhone: The NSA’s Got Your Number
+Co-authored with Patrick Mutchler.
+MetaPhone is a crowdsourced study of phone metadata . If you own an Android smartphone, please consider participating . In earlier posts , we reported how automated analysis of call and text activity can reveal private relationships, as well as how phone subscribers are closely interconnected.
+“You have my telephone number connecting with your telephone number,” explained President Obama in a PBS interview . “[T]here are no names . . . in that database.”
+Versions of this argument have appeared frequently in debates over the NSA’s domestic phone metadata program. The factual premise is that the NSA only compels disclosure of numbers, not names. One might conclude, then, that there isn’t much cause for privacy concern.
+This line of reasoning has drawn sharp criticism. In a declaration for the ACLU, Ed Felten noted:
+Although officials have insisted that the orders issued under the telephony metadata program do not compel the production of customers’ names, it would be trivial for the government to correlate many telephone numbers with subscriber names using publicly available sources. The government also has available to it a number of legal tools to compel service providers to produce their customer’s information, including their names.
+When Judge Richard Leon granted a preliminary injunction against the program last week, he expressed a similar view:
+The Government maintains that the metadata the NSA collects does not contain personal identifying information associated with each phone number, and in order to get that information the FBI must issue a national security letter (“NSL”) to the phone company. . . . Of course, NSLs do not require any judicial oversight . . . meaning they are hardly a check on potential abuses of the metadata collection. There is also nothing stopping the Government from skipping the NSL step altogether and using public databases or any of its other vast resources to match phone numbers with subscribers.
+(Senator Dianne Feinstein issued a statement in response, reiterating that “no names” are coerced from the phone companies in bulk.)
+So, just how easy is it to identify a phone number?
+Trivial, we found. We randomly sampled 5,000 numbers from our crowdsourced MetaPhone dataset and queried the Yelp, Google Places, and Facebook directories. With little marginal effort and just those three sources—all free and public—we matched 1,356 (27.1%) of the numbers. Specifically, there were 378 hits (7.6%) on Yelp, 684 (13.7%) on Google Places, and 618 (12.3%) on Facebook.
+What about if an organization were willing to put in some manpower? To conservatively approximate human analysis, we randomly sampled 100 numbers from our dataset, then ran Google searches on each. In under an hour, we were able to associate an individual or a business with 60 of the 100 numbers. When we added in our three initial sources, we were up to 73.
+How about if money were no object? We don’t have the budget or credentials to access a premium data aggregator, so we ran our 100 numbers with Intelius, a cheap consumer-oriented service. 74 matched. 1 Between Intelius, Google search, and our three initial sources, we associated a name with 91 of the 100 numbers.
+If a few academic researchers can get this far this quickly, it’s difficult to believe the NSA would have any trouble identifying the overwhelming majority of American phone numbers.
+1. The results we obtained from Intelius were seemingly spottier than from Yelp, Google Places, and Facebook.
+This work is licensed under a Creative Commons Attribution 3.0 Unported License .
+Powered by WordPress . Theme derived from Chunk .

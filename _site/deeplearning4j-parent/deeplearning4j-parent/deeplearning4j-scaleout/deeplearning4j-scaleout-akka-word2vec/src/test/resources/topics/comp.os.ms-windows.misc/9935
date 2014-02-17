@@ -1,0 +1,37 @@
+From: goo@cup.hp.com (Mike Goo)
+Subject: Re: Visual c++
+Distribution: usa
+Nntp-Posting-Host: hpingoo.cup.hp.com
+Organization: Hewlett-Packard, Cupertino, CA
+Lines: 30
+
+In article <1rgr7v$6ga@lll-winken.llnl.gov> David A. Fuess writes:
+
+>It is correct that VC++ is NOT considered an upgrade for C7. C7 is
+>basically a DOS product, VC++ is a Windows product. As Windows is not
+>an upgrade for DOS, it is a separate operating system product line, its
+>utilities cannot be upgrades for DOS utilities. However, I have also
+>been told that it is NOT an upgrade for QCWIN, which it should be!
+
+You *can* upgrade MSC 7.0 and QCWIN to the Visual C++ products as follows:
+
+  STANDARD EDITION:
+    List Price                    $199
+    Upgrade from QCWin            $ 79
+    Competitive Upgrade           $ 99
+
+  PROFESSIONAL EDITION:
+    List Price                    $499
+    Upgrade from MSC 7.0          $139
+    Competitive Upgrade*          $199 
+
+  * Includes upgrades from other MS language products like QCWin
+
+-------------------------------------------------------------------------------
+Michael Goo                   |
+Hewlett-Packard               | "I never try to cover my ass...
+Information Networks Division |   but I certainly support your right to do so!"
+19420 Homestead Road  MS 43LT |
+Cupertino, CA 95014-9974      |
+goo@hpinddh.cup.hp.com        |
+-------------------------------------------------------------------------------

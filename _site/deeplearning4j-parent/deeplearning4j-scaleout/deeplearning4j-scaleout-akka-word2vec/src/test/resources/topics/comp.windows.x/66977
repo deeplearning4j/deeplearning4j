@@ -1,0 +1,17 @@
+From: mike@hopper.Virginia.EDU (Michael Chapman)
+Subject: Compiling help
+Organization: ITC/UVA Community Access UNIX/Internet Project
+Lines: 12
+
+I'd like to compile X11r5 on a Sony NWS-1750 running NEWS 4.1c.  The
+X distribution has support for this config, and the release notes say
+it has been tested on the machine.  BUT, also in the release notes,
+nothing from Sony is listed under the supported servers.  What am I
+supposed to use for my r5 X server then?  How can the OS be supported,
+but not the hardware? Is there something in the r4 binaries that can
+be used as the r5 server? These may seem like silly questions, but
+I'm *really* confused.
+-- 
+mike@hopper.acs.virginia.edu 
+
+"I will NOT raise taxes on the middle class." -Unknown

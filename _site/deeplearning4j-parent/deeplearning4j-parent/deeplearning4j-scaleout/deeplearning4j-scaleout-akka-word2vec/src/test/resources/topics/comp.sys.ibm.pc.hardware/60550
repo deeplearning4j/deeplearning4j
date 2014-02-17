@@ -1,0 +1,33 @@
+From: creek-tm@aza.csc.ncsu.edu (Tobin M Creek)
+Subject: Re: umbdr522.zip : Any later version ?
+Keywords: umbdrv mem
+Organization: NCSU
+Lines: 27
+
+fombaron@ufrima.imag.fr (FOMBARON marc) writes:
+
+>Is there a more recent version of umbdr522.zip because it doesn't
+>work on my machine.
+>My motherboard has Symphony SL82C362 chips and they say it will be
+>supported in the later versions, so is it out ?
+
+>Thank you for helping.
+
+>Marc.
+
+The last I heard, the author was having some problems in his immediate
+family and had delayed the continuation of development for a time.
+This was some months ago.
+
+It's a shame.  The driver is the best memory manager I have found
+ANYWHERE.  It doesn't require V8086 mode (like QEMM) so it works with
+Ultima 7.  It doesn't take ANY memory (runs, then exits).
+
+If only the EMM provider were a little faster and more stable.
+
+
+--
+tmcreek@eos.ncsu.edu       \   These views respresent no one.   /   Now you
+creek-tm@aza.csc.ncsu.edu   \   Even I won't claim them.       /   are here
+----------------------------------------------------------------------------
+#include "std_funny_stuff.h"  /* This is where I include some witty tripe */

@@ -1,0 +1,55 @@
+From: andy@SAIL.Stanford.EDU (Andy Freeman)
+Subject: Re: Clinton wants National ID card, aka USSR-style "Internal Passport"
+Organization: Computer Science Department,  Stanford University.
+Lines: 50
+
+In article <1993Apr14.175931.66210@cc.usu.edu> slp9k@cc.usu.edu writes:
+>> (BTW - Which parts should be secure?  Criminal
+>> records, ie convictions, are typically considered public information,
+>> so should that info be secure?  Remember, the population includes
+>> parents checking prospective childcare worker.)
+>
+>	Like I said, I'm not sure of the details.  But it seems to me that you
+>could access medical information without giving out a name, or any other
+>information.
+
+Medical info without a name/body attached is completely useless for
+treatment.
+
+>The article I mentioned the the earlier post described a debit
+>card type transaction in which neither the store nor the BANK, knew who was
+>withdrawing the money.
+
+Thus making it as secure as cash, for some purposes, but far less
+secure for others.
+
+>	Parent's checking a babysitter shouldn't need access to the information
+>stored in the card.
+
+Sure they do.  The prospective sitter may have a nasty habit of molesting
+kids three or four months into the job.  The references may not have
+known him long enough or may not have picked up on this yet.
+
+Remember, criminal conviction info is public, so if you're going to
+argue for an ID card, other people are going to have a strong argument
+that it disclose public info.
+
+>things.  I think anything that you choose to keep unknown should be.
+
+Thus making it useless for negative information.
+
+>could have it so that only doctors can access medical information, police
+>criminal records etc etc.
+
+Yeah right.  How are you going to keep doctors from spilling the
+beans?  (We already know that you can't keep cops from disclosing
+info, but at least that info is typically supposed to be public
+anyway.)
+
+>	Like I said, it's best if you read the article for yourself.
+
+The article discusses technology, not appropriate policy.  It also
+fails to deal with "what happens if the folks with the secrets blab".
+
+-andy
+--

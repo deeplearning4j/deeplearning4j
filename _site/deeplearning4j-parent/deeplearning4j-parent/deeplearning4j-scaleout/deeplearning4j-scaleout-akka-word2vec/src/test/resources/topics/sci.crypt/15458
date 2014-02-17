@@ -1,0 +1,33 @@
+From: kadie@eff.org (Carl M. Kadie)
+Subject: Would "clipper" make a good cover for other encryption method?
+Originator: kadie@eff.org
+Nntp-Posting-Host: eff.org
+Organization: The Electronic Frontier Foundation
+Lines: 26
+
+Clipper might be a good way to cover the use of another layer of
+encryption.
+
+Currently, when you send an encrypted message, an opponent can usually
+tell 1) that you are using encryption 2) which encryption method you
+are using [because that information is usually in the clear].
+
+With clipper, most opponents will only know that you are sending
+clipper-text, they won't know that your clipper-text is itself
+encoded.
+
+Only those few opponents who get your clipper-keys will know
+that your message is double encrypted.
+
+... kind of like a safety deposit box containing a lock box.
+
+So, don't just think of replacements for clipper, also think of front
+ends.
+
+- Carl
+
+
+
+-- 
+Carl Kadie -- I do not represent EFF; this is just me.
+ =kadie@eff.org, kadie@cs.uiuc.edu =

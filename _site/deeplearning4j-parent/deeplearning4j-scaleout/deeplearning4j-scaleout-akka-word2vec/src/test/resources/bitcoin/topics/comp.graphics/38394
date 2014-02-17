@@ -1,0 +1,38 @@
+From: kennu@mits.mdata.fi (Kenneth Falck)
+Subject: Re: CView answers
+Organization: Microdata International Telecomm Service
+Nntp-Posting-Host: mits.mdata.fi
+Lines: 32
+
+In article <C5Mv2n.49t@rahul.net> bryanw@rahul.net (Bryan Woodworth) writes:
+>In <1993Apr17.113223.12092@imag.fr> schaefer@imag.imag.fr (Arno Schaefer) writes:
+>
+>>Sorry, Bryan, this is not quite correct. Remember the VGALIB package that comes
+>>with Linux/SLS? It will switch to VGA 320x200x256 mode *without* Xwindows.
+>>So at least it is *possible* to write a GIF viewer under Linux. However I don't
+>>think that there exists a similar SVGA package, and viewing GIFs in 320x200 is
+>>not very nice.
+>
+>No, VGALIB?  Amazing..  I guess it was lost in all those subdirs :-)
+>Thanks for correcting me.  It doesn't sound very appealing though, only
+>320x200?  I'm glad it wasn't something major I missed.
+
+Tommy Frandsen's VGAlib (which is probably what you're talking about)
+will do the standard VGA modes, some tweaked modes and then the Tseng
+ET4000 Super VGA modes. I have an ET4000 and I'm viewing GIF's at
+640x480/256 (I have a lousy/small monitor) with dpg-view on Linux. I
+think I had to change some constants in the dpg-view sources to make it
+use the ET4k modes.
+
+VGAlib's sources seem to be designed for easy addition of new Super VGA
+support; each mode is an array of register values and there's a program
+that dumps an array declaration of this kind describing the current
+mode. Haven't tried it though...
+
+(Btw, my version of VGAlib is 1.2.)
+
+-- 
+kennu@mits.mdata.fi
+Try Linux, a free UNIX by Linus Torvalds for 386+'s. Read comp.os.linux
+(or ask me by email if you like) for more information. You can run X11,
+TeX, GNU EMACS and much more on top of a nice POSIX environment.

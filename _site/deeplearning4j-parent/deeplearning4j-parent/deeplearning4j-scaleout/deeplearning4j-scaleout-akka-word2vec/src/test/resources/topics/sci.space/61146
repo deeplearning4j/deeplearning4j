@@ -1,0 +1,45 @@
+From: leech@cs.unc.edu (Jon Leech)
+Subject: Weekly reminder for Frequently Asked Questions list
+Supersedes: <reminder_734971619@cs.unc.edu>
+Organization: University of North Carolina, Chapel Hill
+Lines: 36
+Distribution: world
+Expires: 7 May 1993 17:25:40 GMT
+NNTP-Posting-Host: mahler.cs.unc.edu
+
+    This notice will be posted weekly in sci.space, sci.astro, and
+sci.space.shuttle.
+
+    The Frequently Asked Questions (FAQ) list for sci.space and sci.astro is
+posted approximately monthly. It also covers many questions that come up on
+sci.space.shuttle (for shuttle launch dates, see below).
+
+    The FAQ is posted with a long expiration date, so a copy may be in your
+news spool directory (look at old articles in sci.space). If not, here are
+two ways to get a copy without waiting for the next posting:
+
+    (1) If your machine is on the Internet, it can be obtained by anonymous
+FTP from the SPACE archive at ames.arc.nasa.gov (128.102.18.3) in directory
+pub/SPACE/FAQ.
+
+    (2) Otherwise, send email to 'archive-server@ames.arc.nasa.gov'
+containing the single line:
+
+help
+
+    The archive server will return directions on how to use it. To get an
+index of files in the FAQ directory, send email containing the lines:
+
+send space FAQ/Index
+send space FAQ/faq1
+
+    Use these files as a guide to which other files to retrieve to answer
+your questions.
+
+    Shuttle launch dates are posted by Ken Hollis periodically in
+sci.space.shuttle. A copy of his manifest is now available in the Ames
+archive in pub/SPACE/FAQ/manifest and may be requested from the email
+archive-server with 'send space FAQ/manifest'. Please get this document
+instead of posting requests for information on launches and landings.
+
+    Do not post followups to this article; respond to the author.

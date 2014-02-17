@@ -1,0 +1,25 @@
+From: katkere@krusty.eecs.umich.edu (Arun Katkere)
+Subject: Re: cylinder and ray
+Reply-To: katkere@engin.umich.edu
+Organization: University of Michigan EECS Dept., Ann Arbor, MI
+Lines: 19
+
+In article <1qc1fgINNbv4@darkstar.UCSC.EDU>, koehler@secs.ucsc.edu writes:
+|> I would be most thrilled if some kind person could help me with the following
+|> Given a cylinder in 3D -defined as a line segment between two points and
+|> a radius (e.g. Sx,Sy,Sz to Ex,Ey,Ez and r), what is the easiest (and not
+|> too expensive) way to find if a ray -defined as another line through two
+|> points -cuts through this cylinder and if so where? 
+
+|> I think the test for touching is rather simple: if the closest approach
+|> of the two lines is less than r, then the ray does penetrate the cylinder.
+
+Nope, this won't work for a cylinder. You can have a line arbitrarily close
+to the the cylinder backbone, and yet not intersect it. The test works for a
+pillbox, though. (a cylinder with two hemispheres attached at the ends.)
+
+|> Thanks,
+|> 	Ryan 	(koehler@secs.ucsc.edu)
+
+-arun
+-- 

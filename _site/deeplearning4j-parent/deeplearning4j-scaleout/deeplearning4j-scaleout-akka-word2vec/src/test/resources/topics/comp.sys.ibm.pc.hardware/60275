@@ -1,0 +1,85 @@
+From: sherwood@adobe.com (Geoffrey Sherwood)
+Subject: Orchid P9000 vs Fahrenheit (mini review)
+Organization: Adobe Systems Incorporated
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 79
+
+
+I just purchased a Viewsonic 17 and and Orchid P9000.  In short, I am happy
+with the monitor and unhappy with the card.  I have spent a lot more time
+futzing with the card, so that is what I am going to write about.  The monitor
+is pretty.  The moires I had under Simcity on my 17" Magnavox went away.  It
+isn't as heavy as I thought it would be (45 lbs, I think).  So much for the
+monitor.  On to the bitch session and test results.
+
+In going with the modern trend, the Orchid P9000 card only supports 16 colors
+in 640x480 mode without a driver.  Of course, this breaks any DOS program
+which uses SVGA modes (like most of my CD-ROMs).  The Compudyne Whiplash VGA,
+Orchid Fahrenheit 1280, and Orchid F. VLB all share this limitation.  Those
+are all S3 cards, which means it is an S3 problem for them (the P9000 uses
+a Weitek VGA chip which also doesn't support them).  The Hercules Graphite
+card does seem to have these modes, but I didn't run the same test cases as
+I did on the other boards during the brief time I had it.  It was able to
+print the splash screen for the Grolier's Encyclopedia, though, which the S3
+cards just printed as hash, which is why I suspect the SVGA modes are supported.
+
+The supported resolutions really annoy me.  You can do 1280x1024 at 75Hz if
+you tell the driver you have an NEC 5FG (they only have about six monitors
+listed plus 'Generic', and if you choose Generic you can't get any high
+refreshes at ALL).  But at 1024x768 you are limited to 70Hz.  Seems to me
+that the hardware should be able to support the bandwidth (if it can do 75Hz
+at 1280 it sure should be able to do it at 1024!).  Higher vertical resolution
+was the main reason I bought the card over the Orchid F. VLB I currently have,
+and it will do 1024x768x70 Hz as well.
+
+The higher graphics modes all crash HP Dashboard.  I just got off the phone
+with Orchid, and with the 1.1 drivers (I don't know what I have) he was unable
+to recreate the problem.  On the plus side, their tech rep was as helpful as
+he could be and booted up the program on his computer to verify he didn't have
+the problem.  He didn't know why they limited the refresh to 70 Hz either.
+
+The board is faster that the OFVLB for most things according to the Hercules
+Speedy program. This program tests various operations and reports the results
+in pixels/second.  I don't have the numbers for the Graphite card, but they
+were close to half of the OFVLB (ie, slower) but that was running in a 20MHz
+386, ISA, so the numbers aren't really comparable.  The following numbers
+were all obtained using a 486, 33 MHz, AIR motherboard (UMC chipset), with
+8 MB memory.  I give ranges because the program reports the numbers as it
+computes them, and these tend to jump around a bit.
+
+
+K means thousand (not 1024), M means million, pixels per second
+
+             Orchid Fahrenheit VLB                  Orchid P9000
+Chip                 S3 805                          Weitek 9000
+DIB to Screen        182K - 190K                     228K - 240K
+Memory to Screen     5.9M - 6.2M                     8.4M - 8.9M
+Screen to Screen     14M - 14.8M                     29M - 30.8M
+Vector, solid        2.4M                            2.8M - 2.9M
+Vector, styled       55K - 58K                       449K - 473K
+Polygon, shaded      1.8M - 2.1M                     1.6M - 1.9M
+Polygon, hatched     6.9M - 7.9M                     1.3M - 1.7M
+Ternary Rops         1.9M - 2.4M                     477K - 520K
+Font                 130K - 160K                     46K - 55K / 1.2M
+
+The DIB to Screen test takes a device independent bitmap of a face and transfers
+it to the screen.  I have no idea what is being done internally as far as
+conversions go.  The memory to screen takes the same face and copies it to
+the screen, my guess is after it has been rasterized into a bitmap that can
+just be copied to the video display.  The screen to screen test copies that
+face from place to place on the screen.  Awesome!  Interestingly, the solid
+vectors and shaded polygons show no improvement, and hatched polygons (ie,
+filled with cross-hatching) and Ternary Rops (whatever they are.  Graphics
+operations like XORs maybe????) are a dead loss on the 9000.  I give two
+numbers for the 9000 fonts, because I think they are caching.
+When the fonts are first drawn on the screen they are done fairly slowly --
+1/3 the speed of the OFVLB.  Then the speed increases dramatically.  Sounds
+like programming to a benchmark to me....
+
+I make no claims that these numbers mean anything at all.  Its just what
+I saw when I ran them on my computer.  I normally don't write disclaimers,
+but this time maybe I'd better.  My testing is totally unconnected with my
+work (I program under UNIX on Decstations) is done completely without the
+knowledge, blessing, or equipment of my company.
+
+geoff sherwood

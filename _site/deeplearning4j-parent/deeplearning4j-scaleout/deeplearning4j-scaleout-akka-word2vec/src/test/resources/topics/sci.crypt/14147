@@ -1,0 +1,265 @@
+From: Marc VanHeyningen <mvanheyn@cs.indiana.edu>
+Subject: RIPEM Frequently Asked Questions
+Content-Type: text/x-usenet-FAQ; version=1.0; title="RIPEM FAQ"
+Originator: mvanheyn@silver.ucs.indiana.edu
+Supersedes: <1993Jan25.113427.28926@news.cs.indiana.edu>
+Nntp-Posting-Host: silver.ucs.indiana.edu
+Organization: Computer Science, Indiana University
+Expires: Fri, 30 Apr 1993 00:00:00 GMT
+Lines: 255
+
+Archive-name: ripem/faq
+Last-update: Sun, 7 Mar 93 21:00:00 -0500
+
+ABOUT THIS POSTING
+------------------
+This is a (still rather rough) listing of likely questions and
+information about RIPEM, a program for public key mail encryption.  It
+(this FAQ, not RIPEM) was written and will be maintained by Marc
+VanHeyningen, <mvanheyn@whale.cs.indiana.edu>.  It will be posted to a
+variety of newsgroups on a monthly basis; follow-up discussion specific
+to RIPEM is redirected to the group alt.security.ripem.
+
+This month, I have reformatted this posting in an attempt to comply
+with the standards for HyperText FAQ formatting to allow easy
+manipulation of this document over the World Wide Web.  Let me know
+what you think.
+
+DISCLAIMER
+----------
+Nothing in this FAQ should be considered legal advice, or anything
+other than one person's opinion.  If you want real legal advice, talk
+to a real lawyer.
+
+QUESTIONS AND ANSWERS
+---------------------
+
+1)  What is RIPEM?
+
+ RIPEM is a program which performs Privacy Enhanced Mail (PEM) using
+ the cryptographic techniques of RSA and DES.  It allows your
+ electronic mail to have the properties of authentication (i.e. who
+ sent it can be confirmed) and privacy (i.e. nobody can read it except
+ the intended recipient.)
+
+ RIPEM was written primarily by Mark Riordan <mrr@scss3.cl.msu.edu>.
+ Most of the code is in the public domain, except for the RSA routines,
+ which are a library called RSAREF licensed from RSA Data Security Inc.
+
+2)  How can I get RIPEM?
+
+ RIPEM contains the library of cryptographic routines RSAREF, which is
+ considered munitions and thus is export-restricted from distribution
+ to people who are not citizens or permanent residents of the U.S. or
+ Canada.  Therefore, the following request is quoted from the README
+ file:
+
+ #Please do not export the cryptographic code in this distribution
+ #outside of the USA or Canada.  This is a personal request from me,
+ #the author of RIPEM, and a condition of your use of RIPEM.
+
+ Note that RSAREF is not in the public domain, and a license for it is
+ included with the distribution.  You should read it before using
+ RIPEM.
+
+ The best way to get it is to ask a friend for a copy, since this will
+ reduce the load on those sites that do carry it (not to mention the
+ humans that run them.)  Naturally this requires that you trust the
+ friend.
+
+ RIPEM is available via anonymous FTP to citizens and permanent residents
+ in the U.S. from rsa.com; cd to rsaref/ and read the README file for
+ info.  Last I looked, this site contains only the source tree, and
+ does not contain compiled binaries or the nice Mac version.
+
+ RIPEM, as well as some other crypt stuff, has its "home site" on
+ rpub.cl.msu.edu, which is open to non-anonymous FTP for users in the
+ U.S. and Canada who are citizens or permanent residents.  To find out
+ how to obtain access, ftp there, cd to pub/crypt/, and read the file
+ GETTING_ACCESS.  For convenience, binaries for many architectures are
+ available here in addition to the full source tree.
+
+3)  Will RIPEM run on my machine?
+
+ Probably.  It has already been ported to MS-DOS and most flavors of
+ Unix (SunOS, NeXT, Linux, AIX, ULTRIX, Solaris, etc.)  Ports to
+ Macintosh include a standard UNIX-style port and a rather nice
+ Mac-like port written by Raymond Lau, author of StuffIt.  More ports
+ are expected, and help of users is invited.
+
+4)  Will RIPEM work with my mailer?
+
+ Probably.  How easy and clean the effective interface is will depend
+ on the sophistication and modularity of the mailer, though.  The users
+ guide, included with the distribution, discusses ways to use RIPEM
+ with many popular mailers, including Berkeley, mush, Elm, and MH.
+ Code is also included in elisp to allow easy use of RIPEM inside GNU
+ Emacs.
+
+ If you make a new interface for RIPEM or create an improvement on one
+ in the distribution which you believe is convenient to use, secure,
+ and may be useful to others, feel free to post it to alt.security.ripem.
+
+5)  What is RSA?
+
+ RSA is a crypto system which is asymmetric, or public-key.  This means
+ that there are two different, related keys: one to encrypt and one to
+ decrypt.  Because one cannot (reasonably) be derived from the other,
+ you may publish your encryption, or public key widely and keep your
+ decryption, or private key to yourself.  Anyone can use your public
+ key to encrypt a message, but only you hold the private key needed to
+ decrypt it.  (Note that the "message" sent with RSA is normally just
+ the DES key to the real message. (See "What is DES?")
+
+ Note that the above only provides for privacy.  For authentication,
+ the fingerprint of the message (See "What is a fingerprint, like
+ MD5?") is encrypted with the sender's private key.  The recipient can
+ use the sender's public key to decrypt it and confirm that the message
+ must have come from the sender.
+
+ RSA was named for the three men (Rivest, Shamir and Adleman) who
+ invented it.  To find out more about RSA, ftp to rsa.com and look in
+ pub/faq/ or look in sci.crypt.
+
+6)  What is DES?
+
+ DES is the Data Encryption Standard, a widely used symmetric, or
+ secret-key, crypto system.  Unlike RSA, DES uses the same key to
+ encrypt and decrypt messages.  However, DES is much faster than RSA.
+
+ RIPEM uses both DES and RSA; it generates a random key and encrypts
+ your mail with DES using that key.  It then encrypts that key with the
+ recipient's public RSA key and includes the result in the letter,
+ allowing the recipient to recover the DES key.
+
+ DES is sometimes considered weak because it is somewhat old and uses a
+ key length considered too short by modern standards.  However, it
+ should be reasonably safe against an opponent smaller than a large
+ corporation or government agency.  It is not unlikely that future
+ RIPEMs will strengthen the symmetric cipher, possibly by using
+ multiple encryption with DES.
+
+7)  What is PEM, and how does RIPEM relate?
+
+ PEM is Privacy Enhanced Mail, a system for allowing easy transfer of
+ encrypted electronic mail.  It is described in RFCs 1421-1424; these
+ documents have been approved and obsolete the old RFCs 1113-1115.
+
+ RIPEM is not really a complete implementation of PEM, because PEM
+ specifies certificates for authenticating keys, which RIPEM does not
+ handle at this time.  Their addition is planned.
+
+8)  What's this about distributing and authenticating keys?
+
+ For a remote user to be able to send secure mail to you, she must know
+ your public key.  For you to be able to confirm that the message
+ received came from her, you must know her public key.  It is important
+ that this information be accurate; if a "bad guy" convinces her that
+ his key is in fact yours, she will send messages which he can read.
+
+ RIPEM allows for three methods of key management: a central server,
+ the distributed finger servers, and a flat file.  All three are
+ described in the RIPEM users guide which is part of the distribution.
+ None of them provide perfect security.
+
+9)  Why do all RIPEM public keys look very similar?
+
+ RIPEM public keys begin with a PKCS identifier describing various
+ characteristics about the key, so the first bunch of characters in
+ your key may be the same as those of lots of other people's keys.
+ This does not mean your keys are similar, but only that they are the
+ same class of key, were generated with the same program, are of the
+ same length, etc.
+
+10)  What is a fingerprint, like MD5?
+
+ MD5 is a message digest algorithm produced by RSA Data Security Inc.
+ It provides a 128-bit fingerprint, or cryptographically secure hash,
+ of the plaintext.  It is cryptographically secure because it is not
+ possible (in a reasonable amount of computation) to produce a
+ different plaintext which produces the same fingerprint.  Thus,
+ instead of signing the entire message with the sender's private key,
+ only the MD5 of the message needs to be signed for authentication.
+
+ MD5 is sometimes used for other purposes; for example, it is often
+ used to map an input of arbitrary length to 128 bits of data, as a
+ passphrase interpreter or cookie generator.
+
+ MD5 is described in its entirety (including an implementation in C) in
+ RFC 1321.
+
+11)  What is PGP?
+
+ PGP is another cryptographic mail program called Pretty Good Privacy.
+ PGP has been around longer than RIPEM, and works somewhat differently.
+ PGP is not compatible with RIPEM in any way, though PGP does also use RSA.
+
+ Some major differences between PGP and RIPEM:
+
+ - PGP has more key management features, particularly for users without
+   a direct network connection.
+
+ - RIPEM conforms to the PEM RFCs and thus has a greater probability of
+   working with other PEM software.  PGP makes no attempt to be compatible
+   with anything other than PGP (in fact, PGP 1.0 is not compatible with
+   PGP 2.0.)
+
+ - RIPEM uses RSAREF, a library of RSA routines from RSA Data Security
+   Inc.  RSAREF comes with a license which allows noncommercial use.
+   PGP uses its own implementation of RSA which is not licensed; thus,
+   PKP, the firm holding the U.S. patents on the RSA algorithm, claims
+   that it is a infringement of that patent to make, use or sell PGP in
+   the U.S. or Canada.  In acknowledgement of this, PGP's original
+   author, Phil Zimmermann, says in the documentation:
+
+   #In fact, if you live in the USA, and you are not a Federal agency, 
+   #you shouldn't actually run PGP on your computer, because Public
+   #Key Partners wants to forbid you from running my software.  PGP is
+   #contraband.  
+
+ - Both PGP and RIPEM are export-restricted, and cannot be sent outside
+   the U.S. and Canada.  However, PGP already exists on many ftp sites
+   in Europe and other places.
+
+ Whether you use PGP or RIPEM or whatever, the documentation to PGP is
+ recommended reading to anyone interested in such issues.
+
+ Note that the above facts, both regarding patent and export
+ restrictions, are somewhat controversial; many people think it
+ shouldn't be that way, and some people interpret various documents
+ differently.  Unfortunately, discussions of it on the net inevitably
+ seem to produce more heat than light, and probably belong in
+ misc.legal.computing.  (See:  "DISCLAIMER")
+
+12)  What about RPEM?
+
+ RPEM stands for Rabin Privacy Enhanced Mail.  It was similar to RIPEM,
+ but used a public-key cipher invented by Rabin (which is not RSA) in
+ an attempt to avoid the patent on RSA.  It was written by Mark
+ Riordan, the same author as RIPEM.
+
+ Its distribution was halted when, contrary to the beliefs of many
+ (including Rabin), Public Key Partners (PKP) claimed that their patent
+ was broad enough to cover any public-key cipher whose strength rested
+ in the difficulty of factoring products of large primes, not just RSA.
+ This claim is not universally accepted by any means, but was not
+ challenged for pragmatic reasons.
+
+ RPEM is not really used anymore.  It is not compatible with RIPEM or PGP.
+
+13)  What is MIME?
+
+ MIME stands for Multipurpose Internet Mail Extensions, and is
+ described in RFC 1341.  You can find out about it in the newsgroup
+ comp.mail.mime.  How PEM should interact with MIME is not yet entirely
+ clear; some people use the stopgap solution of having a MIME type
+ application/x-ripem in order to send RIPEM messages as MIME ones.  I
+ hope some standards will emerge.  Draft Internet documents exist on
+ the matter.
+
+14)  I have this simple way to defeat the security of RIPEM...
+
+ You may wish to check the companion post "ripem-attacks" which
+ discusses some of the more obvious attacks on RIPEM's security and
+ what procedures will minimize the risk.  RIPEM's main "weak area" is
+ probably key distribution.

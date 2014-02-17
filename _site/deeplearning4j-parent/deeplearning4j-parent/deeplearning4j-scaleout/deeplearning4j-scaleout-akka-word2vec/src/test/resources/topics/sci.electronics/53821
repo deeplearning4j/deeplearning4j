@@ -1,0 +1,68 @@
+From: wagner@mala.bc.ca (TOM WAGNER, Wizzard of old Audio/Visual Equipment........Nanaimo Campus)
+Subject: Re: Suggestions  on Audio relays ???
+Organization: Malaspina College
+Lines: 63
+
+In article <C5r60r.4ID@megatest.com>, alung@megatest.com (Aaron Lung) writes:
+> In article <C5qsBF.IEK@ms.uky.edu> billq@ms.uky.edu (Billy Quinn) writes:
+>>I built a little project using the radio shack 5vdc relays to switch
+>>audio.  I got pretty bad 'clicks' when the thing switched.  I was doing
+>>most of the common things one is supposed to do when using relays and
+>>nothing seemed to get rid of the clicks.
+>>
+>>
+>>My question is:
+>>
+>>	Is there a good relay/relay circuit that I can use for switching
+>>audio, so that there will be *NO* noise of any kind on the audio lines.
+>>
+>>
+>>I will appreciate any advice or references to advice.  Also, exact part
+>>numbers/company names etc. for the relays will help!
+> 
+> Are you switching high level signals or low level signals like pre-amp
+> out level signals?  Also, are the clicks you mentioning the big
+> clack that happens when it switches or are you refering to contact
+> bounce?  How are you driving the relays?  TTL gate output?  Switching
+> transistor?  How are the relays connected to what you are driving?
+> 
+> Need more specifics to answer your question!! :-)
+
+As a general rule, no relay will cleanly switch audio if you try to tranfer
+the circuit with the contacts.  The noise you hear is due to the momentary
+opening and closing of the path.
+
+The noiseless way of transfering audio is to ground the circuit.  In high
+impedance audio circuits a resistive "T" is constructed close to characteristic
+impedance of the circuit.  Grounding the imputs (connected to the T) transfers
+the audio.
+
+In low impedance circuits transformers are usually used, and the inputs are
+shorted out or grounded.  Secondaries are paralleled at the characteristic
+impedance.
+
+Sometimes if it is necessary to actually switch audio, a second contact is used
+to momentarily short the circuit output for the duration of the switching time.
+
+Telephone relays are handy, because contacts can be adjusted to "Make before
+break and Vica Versa" but I haven't seen any of these for years.
+
+Nowadys switching is done electronically with OP amps, etc.
+
+A novel circuit I used to build was a primitive "optical isolator".. It consists
+of a resistive photocell and a lamp, all packaged in a tube.  When the lamp is
+off the cell is high resistance.  Turn the lamp on and the resistance lowers
+passing the audio.  Once again this device in a "T" switches the audio.  Varying
+the lamp resistance give a remote volume control.  Use 2 variable resisters and
+you have a mixer!
+
+Lots of luck!
+-- 
+73, Tom
+================================================================================
+Tom Wagner, Audio Visual Technician.  Malaspina College Nanaimo British Columbia
+(604)753-3245, Loc 2230  Fax:755-8742  Callsign:VE7GDA Weapon:.45 Kentucky Rifle
+Snail mail to:  Site Q4, C2.   RR#4, Nanaimo, British Columbia, Canada, V9R 5X9  
+
+I do not recyle.....   I keep everything!       (All standard disclaimers apply)
+================================================================================

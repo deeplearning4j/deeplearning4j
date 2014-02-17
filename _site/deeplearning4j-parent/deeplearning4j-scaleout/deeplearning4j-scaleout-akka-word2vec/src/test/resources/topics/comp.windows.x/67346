@@ -1,0 +1,68 @@
+From: Wilfred.Hansen@CS.CMU.EDU
+Subject: CFP: Andrew Technical Conference
+Organization: Carnegie Mellon, Pittsburgh, PA
+Lines: 61
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xannounce@expo.lcs.mit.edu
+
+*Reminder*   Plan now for the Andrew Conference.
+*Date* The dates are as noted below.  (We have not changed them.)
+*Submission extension*   We are still accepting papers.
+
+*Tutorial topic*  
+	_Converting Andrew source code to C++_
+
+This tutorial will discuss the steps necessary to convert a site from C
+(extended with classC) to C++.  Conversion of the source code requires
+only a couple of steps:
+	run the converter
+	fill in missing type information
+Describing this will not take long.  The remainder of the day will be
+spent learning how to write objects in C++ and practicing.
+
+------------------------------
+
+1993 Andrew Technical Conference and Consortium Annual Meeting
+June 24-25, 1993
+Carnegie Mellon University
+Pittsburgh, PA
+
+The conference will be held on the last Thursday and Friday in June.  A
+tutorial will be on Thursday the 24th and the conference proper on the
+25th with the annual meeting at the dinner on the evening between the
+two days.  All conference attendees are welcome at the annual meeting,
+though only Consortium members will be able to vote.
+
+This year's theme is 
+
+	Application Construction by Non-Programmers
+
+Much of the effort on X toolkits has been aimed at programmer
+construction of applications.  There have, however, been some excellent
+UIMS systems built on top of X.  Papers addressing the theme will
+consider questions such as
+	What is needed for application construction by non-programmers?
+	Can we avoid programming altogether, or is a simple language needed?
+	Is it sufficient to create applications, or must users be able to
+create new widgets?
+	Should widgets and applications be able to print themselves?
+
+Your participation in the conference is welcome.  Papers are appropriate
+on the theme or any aspect of the Andrew User Interface System, including
+
+	applications
+	experience with users
+	new objects
+	reviews of and proposals for revision of 
+		internal Andrew protocols
+
+We expect to have an RS/6000 with video projector available if you would
+like to do a demonstration.  
+
+Paper proposals should be submitted by 15 May 1993.
+Acceptance will be 1 June with final papers due by 15 June.
+
+Send papers via electronic mail to wjh+@andrew.cmu.edu.
+
+Fred Hansen
+Director, Andrew Consortium

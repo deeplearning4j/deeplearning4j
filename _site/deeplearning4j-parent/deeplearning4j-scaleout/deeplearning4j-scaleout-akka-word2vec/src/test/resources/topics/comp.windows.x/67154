@@ -1,0 +1,57 @@
+From: dla@se05.wg2.waii.com (Doug Acker)
+Subject: Re: build X11R5 with xlc 1.2.1 (Aix 3.2.3e)
+Organization: western geophysical exploration products
+Lines: 50
+NNTP-Posting-Host: se05.wg2.waii.com
+In-reply-to: dla@se05.wg2.waii.com's message of 22 Apr 1993 01:02:41 GMT
+
+>>>>> On 22 Apr 1993 01:02:41 GMT, dla@se05.wg2.waii.com (Doug Acker) said:
+	Doug> NNTP-Posting-Host: se05.wg2.waii.com
+
+>>>>> On 21 Apr 1993 03:49:16 GMT, dla@se05.wg2.waii.com (Doug Acker) said:
+	Doug> NNTP-Posting-Host: se05.wg2.waii.com
+	Doug> I  am  having  a  big problem trying to build MIT X11R5 with xlc 1.2.1
+	Doug> (the  one  bundled  with  AIX  3.2.3e).   Its almost the linker is not
+	Doug> working properly with shared libraries.
+
+	Doug> I've built X11R5 with no problem before .. but now its all  headaches.
+	Doug> For example, the xset client complains that libXmu doesnt have a bunch
+	Doug> of Xt routines and shr.o is missing (or  something  like  that).   The
+	Doug> build of libXmu DOES link in libXt  so I am really perplexed  what  is
+	Doug> going on.
+
+
+	Doug> ....following up on this, the specific error I get is:
+	Doug> Could not load program ./xset 
+	Doug> Symbol XtVaSetValues in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtName in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtWindowOfObject in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtGetConstraintResourceList in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtDisplayToApplicationContext in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtAppSetTypeConverter in ../.././lib/Xmu/libXmu.a is undefined
+
+
+
+
+
+
+
+
+	Doug> Symbol XtScreenDatabase in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtResolvePathname in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtCvtStringToFont in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtCallConverter in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Symbol XtDisplayStringConversionWarning in ../.././lib/Xmu/libXmu.a is undefined
+	Doug> Could not load library libXmu.a[shr.o]
+	Doug> Error was: Exec format error
+
+
+....  a  search  on  IBMLINK  revealed that this is similar to IX33890
+(howervre this was closed USE).
+--
+Douglas L.Acker                Western Geophysical Exploration Products
+____    ____     ____          a division of Western Atlas International Inc.
+\   \  /   /\   /   /\         A Litton / Dresser Company
+ \   \/   /  \ /   /  \        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  \  /   / \  /   /\   \       Internet  :  acker@wg2.waii.com
+   \/___/   \/___/  \___\      Voice     :  (713) 964-6128

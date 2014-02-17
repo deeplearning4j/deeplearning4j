@@ -1,0 +1,23 @@
+From: gay@venice.sedd.trw.com (Lance Gay)
+Subject: Out of environment space running BAT files from Windows
+Article-I.D.: venice.1993Apr23.005117.21582
+Organization: TRW Systems Engineering & Development Division, Carson, CA
+Lines: 17
+
+I have a .BAT file that I run under a Windows Icon.  I have set up a PIF
+file to run the BAT file in exclusive mode and to use the entire screen.
+The first line of the BAT file sets an environment variable.
+
+My problem is that on some of our machines (running MS-DOS 5.0 and Windows
+3.1 in enhanced mode), the SET command in the BAT file fails with the
+OUT OF ENVIRONMENT SPACE error.  I have raised the amount of environment 
+space to 2048 bytes using the SHELL command in CONFIG.SYS so I know that
+I am nowhere near to running out.  If I just click on the MS-DOS icon,
+I can create a bunch of environment varibles from the DOS shell.  The problem
+is that on some machines, setting the value of an environment variable in
+a BAT file fails.  Has anyone seen such behavior before?  I see no place in the
+PIF fail to configure environment space.
+ 
+Lance J. Gay                                 Internet: gay@venice.sedd.trw.com
+TRW Systems Engineering & Development Div.   Phone: 310-764-3988
+Carson, CA  90746

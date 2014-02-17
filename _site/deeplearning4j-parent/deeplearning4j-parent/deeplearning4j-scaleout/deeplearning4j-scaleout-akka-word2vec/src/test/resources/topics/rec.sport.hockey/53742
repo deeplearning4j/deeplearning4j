@@ -1,0 +1,47 @@
+From: steveg@cadkey.com (Steve Gallichio)
+Subject: The Most Average Player in the NHL
+Organization: Cadkey, Inc.
+Lines: 41
+NNTP-Posting-Host: access.digex.net
+
+
+And now, I interrupt your regularly scheduled news reading to bring you 
+another message sponsored by the Department of Really Mundane Statistics:
+
+I passed the final individual player stats posted here the other day through
+a filter to average out games, goals, assists, points, and penalty minutes
+for the mythical average NHL pro who played in the league this season. (Why?
+Because it's Monday and I didn't feel like writing any REAL code...)
+
+Anyway, after I wiped out the 60-odd goalies in the list, I came up with:
+
+NHL average:		55 GP      11 G      19 A      30 Pts      69 PIM
+
+Then I passed the list through a second time to come up with the players who
+had the smallest percentage difference in each of the categories.
+
+Marty McInnis (NYI)	56 GP (1%) 10 G (9%) 20 A (5%) 30 Pts (0%) 24 PIM (65%)
+Igor Kravchuk (EDM)	55 GP (0%) 10 G (9%) 17 A (10%) 27 Pts (9%) 27 PIM (53%)
+
+These two are close in games, goals, assists, and points, but are too far off
+in PIM. This leaves, as the most average player in the NHL:
+
+Bobby Carpenter (WAS)	65 GP (18%) 11 G (0%) 17 A (10%) 28 Pts (6%) 63 PIM (8%)
+
+What an honor.
+
+I also passed the list through with the goalies still included. Kravchuk and
+Carpenter were still in the top three, but Rob DiMaio came flying up from 
+behind to take the title:
+
+NHL average:		53 GP      10 G      17 A      27 Pts      64 PIM
+Igor Kravchuk (EDM)     55 GP (3%) 10 G (0%) 17 A (0%) 27 Pts (0%) 27 PIM (50%)
+Bobby Carpenter (WAS)   65 GP (22%) 11 G (10%) 17 A (0%) 28 Pts (3%) 63 PIM (1%)
+Rob DiMaio (TB)		54 GP (1%) 9 G (9%) 15 A (11%) 24 Pts (11%) 62 PIM (3%)
+
+
+It's all really kind of underwhelming when you think about it.
+
+-SG
+
+	    And now, back to our regularly scheduled programming...

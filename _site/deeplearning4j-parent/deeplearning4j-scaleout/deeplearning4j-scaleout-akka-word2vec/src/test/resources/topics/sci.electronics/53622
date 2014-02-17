@@ -1,0 +1,39 @@
+From: tomb@hplsla.hp.com (Tom Bruhns)
+Subject: Re: Trace size for a 15 Amp supply
+Organization: HP Lake Stevens, WA
+Lines: 34
+
+acollins@uclink.berkeley.edu (Andy Collins) writes:
+
+>How thick do I need to make a PCB trace for 15 Amps of current? and
+>Does anybody have any other thoughts on the process (what kind of PCB
+>to use, materials, thickness of copper, any advice graciously accepted)?
+
+In four replies, I've seen no hard numbers, so here goes:  For traces
+on the outside (not inner layers), expect, in 1 oz copper, at 15 amps,
+the following temperature rises versus width.  This is from Sams'
+"Reference Data for Engineers," seventh edition, Pg 5-30, which claims
+in turn to be from MIL-STD-275C...
+
+    width   Temp rise
+    inches  degrees C
+    ------  ---------
+     .125	100
+     .15	 75
+     .17	 60
+     .20	 45
+     .24	 30
+     .33	 20
+
+At 10 amps, the rise for the .125 width is only about 30 degrees.
+Power goes as square of the current, plus the copper resistance goes
+up as temperature goes up...  Certainly .20" (~5mm) traces should be 
+ample for what you want to do.  And 2 ounce copper almost cuts the 
+required width in half.  (I'd do 2 oz at about 0.08" width myself, 
+I think...given that the _rated_ current is 10 amps and the 15 is
+a transient or fault condition.)
+
+(There's another question: will the voltage drop be low enough?
+But you should be able to figure this one out with wire tables or
+just the resistivity of copper.  Keep traces short and use separate
+sensing traces where appropriate, as mentioned by another poster.)

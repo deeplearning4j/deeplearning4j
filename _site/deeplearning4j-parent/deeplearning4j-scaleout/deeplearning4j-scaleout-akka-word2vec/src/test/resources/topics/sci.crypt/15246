@@ -1,0 +1,346 @@
+From: crypt-comments@math.ncsu.edu
+Subject: Cryptography FAQ 10/10 - References
+Organization: The Crypt Cabal
+Lines: 333
+Expires: 22 May 1993 04:00:07 GMT
+Reply-To: crypt-comments@math.ncsu.edu
+NNTP-Posting-Host: pad-thai.aktis.com
+Summary: Part 10 of 10 of the sci.crypt FAQ, References.
+ History and classical methods. Modern methods. Survey and reference
+ articles. Journals and conference proceedings. Electronic sources
+ (FTP sites).  Related newsgroups.
+X-Last-Updated: 1993/04/16
+
+Archive-name: cryptography-faq/part10
+Last-modified: 1993/4/15
+
+
+FAQ for sci.crypt, part 10: References
+
+This is the tenth of ten parts of the sci.crypt FAQ. The parts are
+mostly independent, but you should read the first part before the rest.
+We don't have the time to send out missing parts by mail, so don't ask.
+Notes such as ``[KAH67]'' refer to the reference list in this part.
+
+The sections of this FAQ are available via anonymous FTP to rtfm.mit.edu 
+as /pub/usenet/news.answers/cryptography-faq/part[xx].  The Cryptography 
+FAQ is posted to the newsgroups sci.crypt, sci.answers, and news.answers 
+every 21 days.
+
+
+Contents
+
+* Books on history and classical methods
+* Books on modern methods
+* Survey articles
+* Reference articles
+* Journals, conference proceedings
+* Other
+* Electronic sources
+* RFCs (available from [FTPRF])
+* Related newsgroups
+
+
+* Books on history and classical methods
+
+  [CF]    Lambros D. Callimahos, William F. Friedman, Military Cryptanalytics.
+	  Aegean Park Press, ?.
+  [DEA85] Cipher A. Deavours & Louis Kruh, Machine Cryptography and
+          Modern Cryptanalysis. Artech House, 610 Washington St.,
+          Dedham, MA 02026, 1985.
+  [FRIE2] William F. Friedman, Solving German Codes in World War I.
+          Aegean Park Press, ?.
+  [GAI44] H. Gaines, Cryptanalysis, a study of ciphers and their
+          solution. Dover Publications, 1944.
+  [HIN00] F.H.Hinsley, et al., British Intelligence in the Second
+          World War. Cambridge University Press. (vol's 1, 2, 3a, 3b
+          & 4, so far).  XXX Years and authors, fix XXX
+  [HOD83] Andrew Hodges, Alan Turing: The Enigma. Burnett Books
+          Ltd., 1983
+  [KAH91] David Kahn, Seizing the Enigma. Houghton Mifflin, 1991.
+  [KAH67] D. Kahn, The Codebreakers. Macmillan Publishing, 1967.
+          [history] [The abridged paperback edition left out most
+          technical details; the original hardcover edition is
+          recommended.]
+  [KOZ84] W. Kozaczuk, Enigma. University Publications of America, 1984
+  [KUL76] S. Kullback, Statistical Methods in Cryptanalysis. Aegean
+          Park Press, 1976.
+  [SIN66] A. Sinkov, Elementary Cryptanalysis. Math. Assoc. Am. 1966.
+  [WEL82] Gordon Welchman, The Hut Six Story. McGraw-Hill, 1982.
+  [YARDL] Herbert O. Yardley, The American Black Chamber. Aegean Park
+          Press, ?.
+
+* Books on modern methods
+
+  [BEK82] H. Beker, F. Piper, Cipher Systems. Wiley, 1982.
+  [BRA88] G. Brassard, Modern Cryptology: a tutorial.
+          Spinger-Verlag, 1988.
+  [DEN82] D. Denning, Cryptography and Data Security. Addison-Wesley
+          Publishing Company, 1982.
+  [KOB89] N. Koblitz, A course in number theory and cryptography.
+          Springer-Verlag, 1987.
+  [KON81] A. Konheim, Cryptography: a primer. Wiley, 1981.
+  [MEY82] C. Meyer and S. Matyas, Cryptography: A new dimension in
+          computer security. Wiley, 1982.
+  [PAT87] Wayne Patterson, Mathematical Cryptology for Computer
+          Scientists and Mathematicians. Rowman & Littlefield, 1987.
+  [PFL89] C. Pfleeger, Security in Computing. Prentice-Hall, 1989.
+  [PRI84] W. Price, D. Davies, Security for computer networks. Wiley, 1984. 
+  [RUE86] R. Rueppel, Design and Analysis of Stream Ciphers.
+          Springer-Verlag, 1986.
+  [SAL90] A. Saloma, Public-key cryptography. Springer-Verlag, 1990.
+  [WEL88] D. Welsh, Codes and Cryptography. Claredon Press, 1988.
+
+* Survey articles
+
+  [ANG83] D. Angluin, D. Lichtenstein, Provable Security in Crypto-
+          systems: a survey. Yale University, Department of Computer
+          Science, #288, 1983.
+  [BET90] T. Beth, Algorithm engineering for public key algorithms.
+          IEEE Selected Areas of Communication, 1(4), 458--466,
+          1990.
+  [DAV83] M. Davio, J. Goethals, Elements of cryptology. in Secure
+          Digital Communications, G. Longo ed., 1--57, 1983.
+  [DIF79] W. Diffie, M. Hellman, Privacy and Authentication: An
+          introduction to cryptography. IEEE proceedings, 67(3),
+          397--427, 1979.
+  [DIF88] W. Diffie, The first ten years of public key cryptography.
+          IEEE proceedings, 76(5), 560--577, 1988.
+  [FEI73] H. Feistel, Cryptography and Computer Privacy. Scientific 
+          American, 228(5), 15--23, 1973.
+  [FEI75] H. Feistel, H, W. Notz, J. Lynn Smith. Some cryptographic
+          techniques for machine-to-machine data communications,
+          IEEE IEEE proceedings, 63(11), 1545--1554, 1975.
+  [HEL79] M. Hellman, The mathematics of public key cryptography.
+          Scientific American, 130--139, 1979.
+  [LAK83] S. Lakshmivarahan, Algorithms for public key
+          cryptosystems. In Advances in Computers, M. Yovtis ed.,
+          22, Academic Press, 45--108, 1983.
+  [LEM79] A. Lempel, Cryptology in transition, Computing Surveys,
+          11(4), 285--304, 1979.
+  [MAS88] J. Massey, An introduction to contemporary cryptology, IEEE
+          proceedings, 76(5), 533--549, 1988.
+  [SIM91] G. Simmons (ed.), Contemporary Cryptology: the Science of
+          Information Integrity. IEEE press, 1991.
+
+* Reference articles
+
+  [AND83] D. Andelman, J. Reeds, On the cryptanalysis of rotor and
+          substitution-permutation networks. IEEE Trans. on Inform.
+          Theory, 28(4), 578--584, 1982.
+  [BEN87] John Bennett, Analysis of the Encryption Algorithm Used in
+          the WordPerfect Word Processing Program. Cryptologia 11(4),
+          206--210, 1987.
+  [BER91] H. A. Bergen and W. J. Caelli, File Security in WordPerfect
+          5.0. Cryptologia 15(1), 57--66, January 1991.
+  [BIH91] E. Biham and A. Shamir, Differential cryptanalysis of
+          DES-like cryptosystems. Journal of Cryptology, vol. 4, #1,
+          3--72, 1991.
+  [BI91a] E. Biham, A. Shamir, Differential cryptanalysis of Snefru,
+          Khafre, REDOC-II, LOKI and LUCIFER. In Proceedings of CRYPTO
+          '91, ed. by J. Feigenbaum, 156--171, 1992.
+  [BOY89] J. Boyar, Inferring Sequences Produced by Pseudo-Random
+          Number Generators. Journal of the ACM, 1989.
+  [BRI86] E. Brickell, J. Moore, M. Purtill, Structure in the
+          S-boxes of DES. In Proceedings of CRYPTO '86, A. M. Odlyzko
+          ed., 3--8, 1987.
+  [BRO89] L. Brown, A proposed design for an extended DES, Computer
+          Security in the Computer Age. Elsevier Science Publishers
+          B.V. (North Holland), IFIP, W. J. Caelli ed., 9--22, 1989.
+  [BRO90] L. Brown, J. Pieprzyk, J. Seberry, LOKI - a cryptographic
+          primitive for authentication and secrecy applications.
+          In Proceedings of AUSTCRYPT 90, 229--236, 1990.
+  [CAE90] H. Gustafson, E. Dawson, W. Caelli, Comparison of block
+          ciphers. In Proceedings of AUSCRYPT '90, J. Seberry and J.
+          Piepryzk eds., 208--220, 1990.
+  [CAM93] K. W. Campbell, M. J. Wiener, Proof the DES is Not a Group.
+          In Proceedings of CRYPTO '92, 1993.
+  [ELL88] Carl M. Ellison, A Solution of the Hebern Messages. Cryptologia,
+          vol. XII, #3, 144-158, Jul 1988.
+  [EVE83] S. Even, O. Goldreich, DES-like functions can generate the
+          alternating group. IEEE Trans. on Inform. Theory, vol. 29,
+          #6, 863--865, 1983.
+  [GAR91] G. Garon, R. Outerbridge, DES watch: an examination of the
+          sufficiency of the Data Encryption Standard for financial
+          institutions in the 1990's. Cryptologia, vol. XV, #3,
+          177--193, 1991.
+  [GIL80] Gillogly, ?. Cryptologia 4(2), 1980.
+  [GM82]  Shafi Goldwasser, Silvio Micali, Probabilistic Encryption and
+	  How To Play Mental Poker Keeping Secret All Partial Information.
+	  Proceedings of the Fourteenth Annual ACM Symposium on Theory of
+	  Computing, 1982.
+  [HUM83] D. G. N. Hunter and A. R. McKenzie, Experiments with
+          Relaxation Algorithms for Breaking Simple Substitution
+          Ciphers. Computer Journal 26(1), 1983.
+  [KAM78] J. Kam, G. Davida, A structured design of substitution-
+          permutation encryption networks. IEEE Trans. Information
+          Theory, 28(10), 747--753, 1978.
+  [KIN78] P. Kinnucan, Data encryption gurus: Tuchman and Meyer.
+          Cryptologia, vol. II #4, 371--XXX, 1978.
+  [KRU88] Kruh, ?. Cryptologia 12(4), 1988.
+  [LAI90] X. Lai, J. Massey, A proposal for a new block encryption 
+          standard. EUROCRYPT 90, 389--404, 1990.
+  [LUB88] C. Rackoff, M. Luby, How to construct psuedorandom
+          permutations from psuedorandom functions. SIAM Journal of
+          Computing, vol. 17, #2, 373--386, 1988.
+  [MAS88] J. Massey, An introduction to contemporary cryptology.
+          IEEE proceedings, 76(5), 533--549, 1988.
+  [ME91a] R. Merkle, Fast software encryption functions. In Proceedings
+          of CRYPTO '90, Menezes and Vanstone ed., 476--501, 1991.
+  [MEY78] C. Meyer, Ciphertext/plaintext and ciphertext/key
+          dependence vs. number of rounds for the Data Encryption
+          Standard. AFIPS Conference proceedings, 47, 1119--1126,
+          1978.
+  [NBS77] Data Encryption Standard. National Bureau of Standards,
+          FIPS PUB 46, Washington, DC, January 1977.
+  [REE77] J. Reeds, `Cracking' a Random Number Generator.
+          Cryptologia 1(1), 20--26, 1977.
+  [REE84] J. A. Reeds and P. J. Weinberger, File Security and the UNIX
+          Crypt Command. AT&T Bell Laboratories Technical Journal,
+          Vol. 63 #8, part 2, 1673--1684, October, 1984.
+  [SHA49] C. Shannon, Communication Theory of Secrecy Systems. Bell
+          System Technical Journal 28(4), 656--715, 1949.
+  [SHE88] B. Kaliski, R. Rivest, A. Sherman, Is the Data Encryption
+          Standard a Group. Journal of Cryptology, vol. 1, #1,
+          1--36, 1988.
+  [SHI88] A. Shimizu, S. Miyaguchi, Fast data encipherment algorithm
+          FEAL. EUROCRYPT '87, 267--278, 1988.
+  [SOR84] A. Sorkin, LUCIFER: a cryptographic algorithm.
+          Cryptologia, 8(1), 22--35, 1984.
+	
+* Journals, conference proceedings
+
+  CRYPTO
+  Eurocrypt
+  IEEE Transactions on Information Theory
+  Cryptologia: a cryptology journal, quarterly since Jan 1977.
+          Cryptologia; Rose-Hulman Institute of Technology; Terre Haute
+          Indiana 47803 [general: systems, analysis, history, ...]
+  Journal of Cryptology; International Association for Cryptologic
+          Research; published by Springer Verlag (quarterly since
+          1988).
+  The Cryptogram (Journal of the American Cryptogram Association);
+          18789 West Hickory Street; Mundelein, IL 60060; [primarily
+          puzzle cryptograms of various sorts]
+  Cryptosystems Journal, Published by Tony Patti, P.O. Box 188,
+          Newtown PA, USA 18940-0188 or tony_s_patti@cup.portal.com.
+	  Publisher's comment: Includes complete cryptosystems with
+	  source and executable programs on diskettes. Tutorial. The
+	  typical cryptosystems supports multi-megabit keys and Galois
+	  Field arithmetic. Inexpensive hardware random number
+	  generator details.
+
+  Computer and Communication Security Reviews, published by Ross Anderson.
+	  Sample issue available from various ftp sites, including
+	  black.ox.ac.uk.  Editorial c/o rja14@cl.cam.ac.uk.  Publisher's
+	  comment: We review all the conference proceedings in this field,
+	  including not just Crypto and Eurocrypt, but regional gatherings
+	  like Auscrypt and Chinacrypt. We also abstract over 50 journals,
+	  and cover computer security as well as cryptology, so readers can
+	  see the research trends in applications as well as theory.
+
+* Other
+
+  Address of note: Aegean Park Press, P.O. Box 2837, Laguna Hills, CA
+  92654-0837. Answering machine at 714-586-8811.
+
+  The ``Orange Book'' is DOD 5200.28-STD, published December 1985 as
+  part of the ``rainbow book'' series. Write to Department of Defense,
+  National Security Agency, ATTN: S332, 9800 Savage Road, Fort Meade, MD
+  20755-6000, and ask for the Trusted Computer System Evaluation
+  Criteria. Or call 301-766-8729.
+
+  [BAMFD] Bamford, The Puzzle Palace. Penguin Books, ?.
+  [GOO83] I. J. Good, Good Thinking: the foundations of probability and
+          its applications. University of Minnesota Press, 1983.
+  [KNU81] D. E. Knuth, The Art of Computer Programming, volume 2:
+          Seminumerical Algorithms. Addison-Wesley, 1981.
+  [KUL68] Soloman Kullbach, Information Theory and Statistics.
+          Dover, 1968.
+  [YAO88] A. Yao, Computational Information Theory. In Complexity in
+          Information Theory, ed. by Abu-Mostafa, 1988.
+
+* How may one obtain copies of FIPS and ANSI standards cited herein?
+
+  Many textbooks on cryptography contain complete reprints of the FIPS
+  standards, which are not copyrighted.
+
+  The following standards may be ordered from the
+      U.S. Department of Commerce, National Technical Information Service,
+      Springfield, VA 22161.
+
+      FIPS PUB 46-1 "Data Encryption Standard"  (this is DES)
+      FIPS PUB 74   "Guidelines for Implementing as Using the NBS DES"
+      FIPS PUB 81   "DES Modes of Operation"
+      FIPS PUB 113  "Computer Data Authentication" (using DES)
+
+  The following standards may be ordered from the
+      American National Standards Institute Sales Office,
+      1430 Broadway, New York, NY 10018.
+      Phone 212.642.4900
+
+      ANSI X3.92-1981  "Data Encryption Algorithm" (identical to FIPS 46-1)
+      ANSI X3.106-1983 "DEA Modes of Operation"    (identical to FIPS 113)
+
+  Notes:  Figure 3 in FIPS PUB 46-1 is in error, but figure 3 in X3.92-1981
+      is correct.  The text is correct in both publications.
+
+
+* Electronic sources
+
+  Anonymous ftp:
+
+  [FTPBK] ftp.uu.net:bsd-sources/usr.bin/des/
+  [FTPCB] ftp.uu.net:usenet/comp.sources.unix/volume10/cbw/
+  [FTPDF] ftp.funet.fi:pub/unix/security/destoo.tar.Z
+  [FTPEY] ftp.psy.uq.oz.au:pub/DES/
+  [FTPMD] rsa.com:?
+  [FTPMR] cl-next3.cl.msu.edu:pub/crypt/newdes.tar.Z
+  [FTPOB] ftp.3com.com:Orange-book
+  [FTPPF] prep.ai.mit.edu:pub/lpf/
+  [FTPPK] ucsd.edu:hamradio/packet/tcpip/crypto/des.tar.Z
+  [FTPRF] nic.merit.edu:documents/rfc/
+  [FTPSF] beta.xerox.com:pub/hash/
+  [FTPSO] chalmers.se:pub/des/des.1.0.tar.Z
+  [FTPUF] ftp.uu.net:usenet/comp.sources.unix/volume28/ufc-crypt/
+  [FTPWP] garbo.uwasa.fi:pc/util/wppass2.zip
+
+* RFCs (available from [FTPRF])
+
+
+1424  Kaliski, B.  Privacy Enhancement for Internet Electronic Mail: Part IV:
+      Key Certification and Related Services.  1993 February; 9 p. (Format:
+      TXT=17538 bytes)
+
+1423  Balenson, D.  Privacy Enhancement for Internet Electronic Mail: Part
+      III: Algorithms, Modes, and Identifiers.  1993 February; 14 p. (Format:
+      TXT=33278 bytes)  (Obsoletes RFC 1115)
+
+1422  Kent, S.  Privacy Enhancement for Internet Electronic Mail: Part II:
+      Certificate-Based Key Management.  1993 February; 32 p. (Format:
+      TXT=86086 bytes)  (Obsoletes RFC 1114)
+
+1421  Linn, J.  Privacy Enhancement for Internet Electronic Mail: Part I:
+      Message Encryption and Authentication Procedures.  1993 February; 42 p.
+      (Format: TXT=103895 bytes)  (Obsoletes RFC 1113)
+
+
+* Related newsgroups
+
+  There are other newsgroups which a sci.crypt reader might want also to
+  read.  Some have their own FAQ as well.
+
+  alt.comp.compression		discussion of compression algorithms and code
+  alt.security			general security discussions
+  alt.security.index		index to alt.security
+  alt.security.pgp		discussion of PGP
+  alt.security.ripem		discussion of RIPEM
+  alt.society.civil-liberty	general civil liberties, including privacy
+  comp.org.eff.news		News reports from EFF
+  comp.org.eff.talk		discussion of EFF related issues
+  comp.patents			discussion of S/W patents, including RSA
+  comp.risks			some mention of crypto and wiretapping
+  comp.society.privacy		general privacy issues
+  comp.security.announce	announcements of security holes
+  misc.legal.computing		
+  sci.math			general math discussion

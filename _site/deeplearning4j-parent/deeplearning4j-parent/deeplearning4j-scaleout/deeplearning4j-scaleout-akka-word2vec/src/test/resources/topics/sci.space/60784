@@ -1,0 +1,122 @@
+From: baalke@kelvin.jpl.nasa.gov (Ron Baalke)
+Subject: Galileo Update - 04/15/93
+Organization: Jet Propulsion Laboratory
+Lines: 113
+Distribution: world
+NNTP-Posting-Host: kelvin.jpl.nasa.gov
+Keywords: Galileo, JPL
+News-Software: VAX/VMS VNEWS 1.41    
+
+Forwarded from Neal Ausman, Galileo Mission Director
+
+                                GALILEO
+                     MISSION DIRECTOR STATUS REPORT
+                             POST-LAUNCH
+                         April 9 - 15, 1993
+
+SPACECRAFT
+
+1.  On April 9, real-time commands were sent, as planned, to reacquire
+celestial reference after completion of the Low Gain Antenna (LGA-2)
+swing/Dual Drive Actuator (DDA) hammer activities.
+
+2.  On April 9, the EJ-1 (Earth-Jupiter #1) sequence memory load was uplinked
+to the spacecraft without incident.  This sequence covers spacecraft activity
+from April 12, 1993 to June 14, 1993 and includes a window for the Radio Relay
+Antenna (RRA) slew test on April 28, 1993.  The command loss timer was set to
+11 days as a part of this sequence memory load.
+
+3.  On April 12 and 15, a NO-OP command was sent to reset the command loss
+timer to 264 hours, its planned value during this mission phase.
+
+4.  On April 12, cruise science Memory Readouts (MROs) were performed for the
+Extreme Ultraviolet Spectrometer (EUV), Dust Detector (DDS), and Magnetometer
+(MAG) instruments.  Preliminary analysis indicates the data was received
+properly.
+
+5.  On April 12, an Ultra-Stable Oscillator (USO) test was performed to verify
+the health status of the USO and to collect gravitational red shift experiment
+data; long term trend analysis is continuing.
+
+6.  On April 14, a 40bps modulation index test was performed to determine the
+optimal Signal-to-Noise Ratio (SNR) when transmitting at 40bps.  Preliminary
+analysis of the data suggests that the present pre-launch selected modulation
+index is near the optimal level.
+
+7.  On April 15, cruise science Memory Readouts (MROs) were performed for the
+Extreme Ultraviolet Spectrometer (EUV) and Magnetometer (MAG) instrument.
+Preliminary analysis indicates the data was received properly.
+
+8.  On April 15, a periodic RPM (Retro-Propulsion Module) 10-Newton thruster
+flushing maintenance activity was performed; all 12 thrusters were flushed
+during the activity.  Thruster performance throughout the activity was nominal.
+
+9.  The AC/DC bus imbalance measurements have not exhibited significant
+changes (greater than 25 DN) throughout this period.  The AC measurement reads
+19 DN (4.3 volts).  The DC measurement reads 111 DN (12.9 volts).  These
+measurements are consistent with the model developed by the AC/DC special
+anomaly team.
+
+10. The Spacecraft status as of April 15, 1993, is as follows:
+
+       a)  System Power Margin -  60 watts
+       b)  Spin Configuration - Dual-Spin
+       c)  Spin Rate/Sensor - 3.15rpm/Star Scanner
+       d)  Spacecraft Attitude is approximately 18 degrees
+           off-sun (lagging) and 6 degrees off-earth (leading)
+       e)  Downlink telemetry rate/antenna- 40bps(coded)/LGA-1
+       f)  General Thermal Control - all temperatures within
+           acceptable range
+       g)  RPM Tank Pressures - all within acceptable range
+       h)  Orbiter Science- Instruments powered on are the PWS,
+           EUV, UVS, EPD, MAG, HIC, and DDS
+       i)  Probe/RRH - powered off, temperatures within
+           acceptable range
+       j)  CMD Loss Timer Setting - 264 hours
+           Time To Initiation - 260 hours
+
+
+GDS (Ground Data Systems):
+
+1.  Galileo participated in a second DSN (Deep Space Network) acceptance test
+for the DSN Telemetry Phase 3 Upgrade on April 13, 1993, using CTA-21
+(Compatibility Test Area 21).  The purpose of this test was to verify
+the flow of Galileo telemetry data through the new Telemetry Group Controller
+(TGC) and the Telemetry Channel Assembly (TCA).  The TGC/TCA is the replacement
+for the current Telemetry Processing Assembly (TPA).  Seven different telemetry
+rates were run for this test; all ran well on both the MTS (MCCC Telemetry
+Subsystem) and the AMMOS MGDS V18.0 GIF with the exception of 10bps.  The
+10bps rate had some trouble staying in lock; it appears the TGC/TCA was
+not metering the data correctly.  Further comparisons between the MGDS and MTS
+data from this test are being conducted. MVT (Mission Verification Test) of
+the TGC/TCA system is expected to begin May 16, 1993.
+
+
+TRAJECTORY
+
+     As of noon Thursday, April 15, 1993, the Galileo Spacecraft trajectory
+status was as follows:
+
+	Distance from Earth         152,606,000 km (1.02 AU)
+	Distance from Sun           277,519,800 km (1.86 AU)
+	Heliocentric Speed          93,400 km per hour
+	Distance from Jupiter       543,973,900 km
+	Round Trip Light Time       17 minutes, 4 seconds
+
+
+SPECIAL TOPIC
+
+1.  As of April 15, 1993, a total of 70184 real-time commands have been
+transmitted to Galileo since Launch.  Of these, 65076  were initiated in the
+sequence design process and 5108 initiated in the real-time command process.
+In the past week, 7 real time commands were transmitted: 6 were initiated in
+the sequence design process and one initiated in the real time command process.
+Major command activities included commands to reacquire celestial reference,
+uplink the EJ-1 sequence memory load, and reset the command loss timer.
+     ___    _____     ___
+    /_ /|  /____/ \  /_ /|     Ron Baalke         | baalke@kelvin.jpl.nasa.gov
+    | | | |  __ \ /| | | |     Jet Propulsion Lab |
+ ___| | | | |__) |/  | | |__   M/S 525-3684 Telos | Being cynical never helps 
+/___| | | |  ___/    | |/__ /| Pasadena, CA 91109 | to correct the situation 
+|_____|/  |_|/       |_____|/                     | and causes more aggravation
+                                                  | instead.

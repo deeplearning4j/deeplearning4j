@@ -1,0 +1,41 @@
+From: ykhan@gandalf.ca (Yousuf Khan)
+Subject: Re: IDE vs SCSI (here we go again.....)
+Organization: Gandalf Data Ltd.
+Lines: 36
+
+In <1993Apr16.205724.26258@mnemosyne.cs.du.edu> smace@nyx.cs.du.edu (Scott Mace) writes:
+
+>In article <1993Apr12.171250.486@julian.uwo.ca> wlsmith@valve.heart.rri.uwo.ca (Wayne Smith) writes:
+
+>>I almost got a hernia laughing at this one.
+
+>You'll probably get one when you realize that your $100 vesa super
+>dooper local bus ultra high tech controller sucks...
+
+>>If anything, SCSI (on a PC) will be obsolete-> killed off by Vesa Local
+>With any luck PC bus archeitecture will be doen any with by sbus.
+
+>Have you ever seen what happens when you hook a busmaster controller to
+>a vesa local bus.  It actually  slows down your system
+>>Bus IDE.  It must be real nice to get shafted by $20-$100 bucks for the
+>>extra cost of a SCSI drive, then pay another $200-$300 for a SCSI controller.
+
+Yeah, there is absolutely no use for VLB except for video graphics.
+And no IDE could possibly take advantage the VLB, because it runs at
+8 Mhz and 16 bits. Do people forget that the IDE was specifically
+designed to interface directly with the AT ISA bus? We've seen
+IDEs come out for EISA, XT ISA, and now even MCA, but at all times
+it was a 16 bit standard, running at somewhere near 8-10 Mhz. When
+you run an IDE off of the VLB, there's no way that you're running it
+at 33 Mhz, it would burn up. Of course same goes for SCSI, ESDI, whatever,
+none of them run at CPU speed.
+
+The only way to gain advantage with a VLB IDE is to hook it up to
+a caching controller. I suspect it would be much, much better to
+get a software disk cache instead, since you get write-caching as well.
+
+>because you have an ide and no one makes ide disks that big.
+
+I've seen some Fuji IDE drives going as high as 1G.
+
+						Yousuf Khan

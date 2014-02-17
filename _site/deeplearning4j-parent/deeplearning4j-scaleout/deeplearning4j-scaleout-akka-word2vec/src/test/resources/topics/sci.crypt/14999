@@ -1,0 +1,57 @@
+From: jgk@osc.COM (Joe Keane)
+Subject: Re: Hard drive security for FBI targets
+Summary: Encrypted data looks random.
+Keywords: entropy
+Reply-To: Joe Keane <jgk@osc.com>
+Organization: Versant Object Technology
+Lines: 47
+Weather: mostly cloudy, high 64, low 49
+Moon-Phase: waxing gibbous (99% of full)
+
+In article <1993Apr2.050451.7866@ucsu.Colorado.EDU> cuffell@spot.Colorado.EDU
+(Tim Cuffel) writes:
+>How about this.  I create a bunch of sets of random data, and encrypt it.  I 
+>keep only one of the sets of random data around, to show that I encypt random
+>data for kicks.  The rest, I delete with their keys.  I tell all my friends.
+>I think this establishes reasonable doubt about the contents of any encrypted
+>files, and my ability to provides keys.  Since anyone could do this, any law
+>that forces a user to provide keys on demand is worthless.
+
+The law is much worse than worthless.  It gives police the power to put
+innocent people in jail because they (the police) find something they don't
+understand.  Most police don't know what the return key does, never mind the
+difference between a core file and classified military secrets.
+
+There are plenty of scenarios where the user would have no idea what something
+is either.  It could be uninitialized junk.  The burden of proof is on the
+user to show that it's something a normal upstanding citizen should have.  No
+one should ever be put in that situation, especially in America.
+
+What's disgusting about this is how easily most people go along with it, to
+provide a bargaining chip against some hypothetical *alleged* child molester
+or drug dealer, or whatever bad thing is in style at the time.  Basically most
+people don't have a clear distinction between criminals and suspects.
+
+As an analogy, it's like they find a loose screw in your house, and they
+insist that you're building a bomb or machine gun.  They ask you where it came
+from (like you'd know), and ask you to prove your claim.  When you explain it
+in such simple terms, people may start to get the idea.
+
+As a matter of fact, i do keep random files on my disk.  The reason is,
+without special-purpose hardware, it takes a long time to generate good random
+bits.  I have programs that crank out a couple bits per minute, which is
+pretty conservative, but over time that's more than i need.
+
+If you think about it, there's no point in actually encrypting random data,
+because it just gives you different random data.  If you want some data to
+look like an encrypted file, you just put an appropriate header on it.  If
+enough people do this, some of them will be put in jail.
+
+When you get arrested and the police ask for your keys, you can tell them it's
+just random junk, although of course they won't believe you.  While you're
+sitting in jail, you can take consolation in the fact that the government will
+burn a few CPU-years trying to find something that's not there.
+
+--
+Joe Keane, amateur cryptologist
+jgk@osc.com (uunet!amdcad!osc!jgk)

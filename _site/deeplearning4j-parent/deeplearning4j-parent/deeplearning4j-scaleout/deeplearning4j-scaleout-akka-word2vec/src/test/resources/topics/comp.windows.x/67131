@@ -1,0 +1,20 @@
+From: rlm@helen.surfcty.com (Robert L. McMillin)
+Subject: Re: How do I find my AppContext?
+Organization: Surf City Software/TBFW Project
+In-Reply-To: masc0442@ucsnews.sdsu.edu's message of 19 Apr 1993 23:00:15 GMT
+Lines: 14
+
+On 19 Apr 1993 23:00:15 GMT, masc0442@ucsnews.sdsu.edu (Todd Greene) said:
+
+> Is there an Xt call to give me my application context?
+> I am fixing up an X/Motif program, and am trying to use XtAppAddTimeOut,
+> whose first argument is the app_context.  What call can I use
+> to give me this value?
+
+I believe it's XtVaAppInitialize or something like that.
+
+--
+
+Robert L. McMillin | Surf City Software | rlm@helen.surfcty.com | Dude!
+#include <std.disclaimer.h>
+

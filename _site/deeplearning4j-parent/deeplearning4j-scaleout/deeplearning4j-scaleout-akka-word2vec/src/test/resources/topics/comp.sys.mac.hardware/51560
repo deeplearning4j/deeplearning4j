@@ -1,0 +1,22 @@
+From: guykuo@carson.u.washington.edu (Guy Kuo)
+Subject: Re: iisi clock upgrades
+Organization: University of Washington
+Lines: 16
+NNTP-Posting-Host: carson.u.washington.edu
+
+I've just completed a successful upgrade of a an SI to 27.5 mhz. I'm waiting
+on delivery of a 62 mhz clock for a final speed trial. Definitely needed the
+heatsink. The CPU was quite hot to the touch at higher speeds until I glued
+on a 90 cent Radio Shack sink. 
+
+I made a call for reports of failures last week. No reports have arrived
+here. Locally, in Seattle there is a reported CPU damage due to the user
+slipping with the iron and putting a gash into the board -- not exactly
+a problem due to the CPU running too fast.
+
+I think it would be nice to have a poll to report top speeds and system
+configurations including PDS and Nubus cards which were used. I'd be happy
+to coordinate and report results
+
+Guy Kuo <guykuo@u.washington.edu>
+

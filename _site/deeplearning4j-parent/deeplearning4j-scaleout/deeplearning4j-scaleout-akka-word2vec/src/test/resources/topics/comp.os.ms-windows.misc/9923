@@ -1,0 +1,43 @@
+From: ebosco@us.oracle.com (Eric Bosco)
+Subject: Re: Help with changing Startup logo
+Reply-To: ebosco@us.oracle.com
+Distribution: usa
+Organization: Oracle Corp., Redwood Shores CA
+Lines: 32
+Nntp-Posting-Host: monica.us.oracle.com
+X-Disclaimer: This message was written by an unauthenticated user
+              at Oracle Corporation.  The opinions expressed are those
+              of the user and not necessarily those of Oracle.
+
+In article <1rgtba$gtn@access.digex.net> farley@access.digex.com (Charles  
+U. Farley) writes:
+> 
+> I know this is probably a FAQ, but...
+> 
+> I installed the s/w for my ATI graphics card, and it bashed my Windows
+> logo files.  When I start Windows now, it has the 3.0 logo instead of
+> the 3.1 logo.
+> 
+> I thought the files that controlled this were
+> 
+> \WINDOWS\SYSTEM\VGALOGO.RLE
+> \WINDOWS\SYSTEM\VGALOGO.LGO	
+> 
+> I restored these files, but it didn't change the logo.  Anyone know what
+> the correct files are?
+> 
+> Thanks.
+> 
+
+Somewhere (ftp.cica.indiana.edu or SIMTEL20 mirror) there is a program  
+called winlogo.zip that does the trick. It works great. I believe the  
+reason why you can't change the files you mentioned is that the logo is  
+actually imbeded into the windows executable (Somebody please  
+correct/expand on this)
+
+-Eric
+
+> 
+> -- 
+> farley@access.digex.com  <Charles U. Farley>
+> Average IQ of Calgary Board of Ed. Employee: 65

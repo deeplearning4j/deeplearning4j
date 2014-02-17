@@ -1,0 +1,18 @@
+From: carl@teal.csn.org (Carl Podlogar)
+Subject: need font family, weight and slant from instance of a widget
+Summary: need font family, weight and slant from instance of a widget
+Keywords: font
+Nntp-Posting-Host: teal.csn.org
+Organization: Colorado SuperNet, Inc.
+Lines: 10
+
+How can I get the font family, weight and slant from an
+instance of a widget? Using initFontContext(), getNextFont()
+and freeFontContext() I can get the size of the font (and a
+bunch of other stuff concerning the font) but nowhere have
+I found family, weight and slant. Assume that I do not have
+access to the source where family, weight and slant were
+orginaly used when creating a fontlist.
+Thanks a bunch and have a great day,
+Carl
+carl@softsolut.com 

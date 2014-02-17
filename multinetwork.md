@@ -1,5 +1,5 @@
 ---
-title: deeplearning4j
+title: 
 layout: default
 ---
 
@@ -7,7 +7,6 @@ layout: default
 Up to this point we have assumed you have read about Single Layer Neural Networks, if not please start at: [link]
 
 # Creating Deep-Learning Networks
-
 
 A multi layer network is a stacked representation of a [single layer neural network]({{ site.baseurl }}/singlelayernetwork.html).
 

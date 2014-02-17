@@ -1,0 +1,56 @@
+From: rnichols@cbnewsg.cb.att.com (robert.k.nichols)
+Subject: Re: Permanaent Swap File with DOS 6.0 dbldisk
+Summary: PageOverCommit=factor
+Organization: AT&T
+Lines: 50
+
+In article <93059@hydra.gatech.EDU> gt4356c@prism.gatech.EDU (James Dean Barwick) writes:
+...
+>more on permenent swap files...
+>
+>i'm sure everyone who has an uncompressed part of their compressed hard disk
+>has seen the message "you have selected a swap file greater than the suggested
+>size...windows will only use the size suggested...do you wan't to create this
+>swap file anyway" or something like that.
+>
+>well, a friend of mine (ROBERT) called microsoft and asked them what and why.
+>what they said is that windows checks the amount of free disk space and
+>divides that number by 2.  Then it checks for the largest contiguous block
+>of free disk space.  Windows then suggests the smaller of the two numbers.
+>
+>They also said that under absolutely no circumstances...NONE!...will windows
+>uses a swap file larger than the suggested size.  Well...that's what he 
+>said!
+>
+>I call bull@#$#.  If this is true why does windows report the memory is
+>available to me if it's not going to use it?
+
+I think the support droid was malfunctioning and confused the disk space
+limit with the virtual address space limit.  As far as the disk is
+concerned, you are limited only by the amount of contiguous free space.
+The limit that causes the message, "Windows will only use ...," is the
+amount of virtual address space that the Virtual Memory Manager will
+create, and this is a function of the amount of free memory that you have
+when Windows starts.
+
+In the [386enh] section of SYSTEM.INI, you can specify a parameter:
+
+	PageOverCommit=multiplier
+
+The following description is from the Windows Resource Kit:
+
+	This entry specifies the multiplier what determines the amount of
+	linear address space the VMM will create for the system, which is
+	computed by rounding up the amount of available physical memory to
+	the nearest 4 MB and then multiplying that value by the value
+	specified for PageOverCommit=.  Increasing this value increases the
+	amount of available linear address space, causing the size of data
+	structures to increase.  This also increases paging activity
+	proportionately and can slow down the system.  You can specify a
+	value between 1 and 20.  The default is 4.  To change this entry,
+	you must edit SYSTEM.INI.
+
+--
+Bob Nichols
+AT&T Bell Laboratories
+rnichols@ihlpm.ih.att.com

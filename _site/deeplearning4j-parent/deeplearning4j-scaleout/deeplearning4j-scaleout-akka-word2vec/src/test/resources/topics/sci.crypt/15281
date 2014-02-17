@@ -1,0 +1,113 @@
+From: grady@netcom.com (1016/2EF221)
+Subject: powerful "similarity" too
+Organization: capriccioso
+X-Newsreader: TIN [version 1.1 PL6]
+Lines: 107
+
+A Unix tool of cryptographic significance is available
+for anonymous ftp.
+
+"agrep 2.0.4" -- a fast approximate pattern-matching tool
+
+source code project available from:
+
+cs.arizona.edu 
+
+in directory "agrep"
+
+agrep is a very fast fuzzy search tool with a tremendous
+number of powerful search options.  The one most obviously
+applicable to cryptography (key selection) is to be able to
+specify the "similarity" of matches in the data.
+
+For example say you make up a password/phrase of "qimwe7l".
+Of course you rightly suspect that this key itself is not
+in any dictionary or word list.  But how *close* is it to
+en entry that could be varied by some "crack" program to
+brute-force search for it?
+
+You use agrep to find out.  Looking with argument for none,
+one or two errors, no matches.  Good so far.  But 
+
+agrep -3 "qimwe7l" bigwordandphraselist
+
+finds that the pattern "qimwe7l" is too close to the
+pattern "imsel" (part of "himself" and a host of others),
+to be of any cryptographic value as a key.
+
+An error of level two corresponds to a simple transposition of
+letters like "teh" for "the".  A minimally acceptable password
+would have to pass as *least* level 3 in order not immediately
+ruled-out as even a remote possibility of being a good password.
+(In real cryptographic use, my personal passphrases clear at
+*least* level 8 on my rather large [>80 meg] word and phrase lists.)
+
+
+And for searching for key words in human-typed data (lots o'
+typos) the tool is unexcelled.  For example, For example,
+say I want to find out what people think about Gibson's
+SF book "Neuromancer" in the huge SF-Lover's archives.
+Even with an error distance specification as small as
+of "1" I will find all those people who think the title
+was "Necromancer" or other common typos.  Why miss anything?
+
+Also, the program can look for up to 30,000 patterns IN PARALLEL
+at Boyer-Moore (sublinear) speeds.  Great for a NSA wannabe
+to look for your name, terrorists names, special Tagalog or
+religious words, etc. in the news or e-mail spool directories.
+
+You can even search for ciphertext by using, say, 30,000
+random three-byte combinations and eliminate all texts that
+don't score the X chi-square 'birthday' hits on message size Y.
+
+You think some crypto-terrorist is try to foil you by changing
+the pattern on you?  No problem.  Try agrep -p NSA to find
+NSA, National Security Agency, NSecAg, No Such Agency,
+National Scrabble Association, N*S*A, etc.
+
+You can also specify "fixed" areas: looking for license
+plate XYZ123 when you know that the letters are correct,
+you might say:
+
+agrep -2 <XYZ>123 licenseplatedatabase
+
+will find all plates starting with XYZ with up to two errors
+(addition, substitution, deletion) in the number area.  You can
+also "weight" the relative "cost" for substiutions, additions,
+or deletion errors.  For example, when searching DNA patterns
+for a particular protein combination, you might know that
+some kinds of damage cause the "A" nucelotide to drop out more
+than other errors... you could adjust for this bias by setting
+-Dc where you set the "deletion cost" to count as "c" errors.
+
+A steganographic use (I even used "agrep -2 "<steg>eograp" E"
+just now to find the correct spelling!) would be to intentionally
+introduce errors of a certain type and magnitude into a plaintext
+and then later recover the orginal it via an agrep pipe.  Lots of
+possibilities here when only outlaws can have ciphertext...
+
+Also with agrep's powerful extraction options it makes it easy
+to abstract the "hits" into a useful form.  For example,
+
+agrep -d "^From" 'PGP;(passphrase|Zimmerman|NSA)'
+
+says output the entire mail record, delimited by 'From'
+that contains 'PGP' and contains either 'passphrase',
+'Zimmerman', or 'NSA'.
+
+And agrep has been measured an order-of-magnitude faster
+than the second-best similarity tool publicly available.
+
+As usual, I will be glad to e-mail the source and docs
+to those who reqest them by e-mail IF they cannot do
+an anonymous FTP.
+
+Get this now.
+It is too powerful to stay in the hands of the NSA.
+
+
+Grady Ward, vendor to the NSA (and proud of it)
+
+-- 
+grady@netcom.com  2EF221 / 15 E2 AD D3 D1 C6 F3 FC  58 AC F7 3D 4F 01 1E 2F
+

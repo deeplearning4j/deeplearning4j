@@ -1,0 +1,62 @@
+From: m.t.palmer@larc.nasa.gov (Michael T. Palmer)
+Subject: re: text of White House announcement and Q&As on clipper chip encryption
+Organization: NASA Langley Research Center, Hampton, VA
+Lines: 56
+NNTP-Posting-Host: oldtown.larc.nasa.gov
+
+
+In article <C5L12t.GCI@dove.nist.gov> clipper@csrc.ncsl.nist.gov (Clipper Chip Announcement) writes:
+
+>Q:   Suppose a law enforcement agency is conducting a wiretap on
+>     a drug smuggling ring and intercepts a conversation... [etc]
+        ^^^^^^^^^^^^^^^^^^^\
+                            Great... nice choice of bad guys to
+                            convince everyone how "bad" unrestricted
+                            encryption is.  Why not use a child
+                            molester instead?  Of course, the word
+                            *suspect* is never used here, so I guess
+                            these people have already been convicted
+                            and are operating this drug ring from
+                            their jail cells.
+
+How about *this* question instead?
+
+Q:   Suppose a law enforcement agency is conducting a wiretap on
+     a political opponent of a senior administration official and
+     intercepts a conversation...
+
+Kinda changes your interpretation of the event, doesn't it?  And yes,
+the presence of the Clipper Chip DOES change things, because it will
+not only give the people talking on the phone a false sense of security,
+it will also give federal law enforcement agencies the justification
+to deny use of strong encryption methods that are inconvenient to them.
+Dang it all, it's SUPPOSED to be inconvenient (but not impossible).
+That's the ONLY sure way to make sure that abuses are minimized while
+still allowing legitimate law enforcement access.
+
+
+>Q:   How strong is the security in the device?  How can I be sure
+>     how strong the security is?  
+>
+>A:   This system is more secure than many other voice encryption
+>     systems readily available today.  While the algorithm will
+>     remain classified to protect the security of the key escrow
+>     system, we are willing to invite an independent panel of
+>     cryptography experts to evaluate the algorithm to assure all
+>     potential users that there are no unrecognized
+>     vulnerabilities.
+
+Uh huh... sure.  I predict that within two months (weeks?) of the chip's
+debut, the full technical details will be posted to sci.crypt.  And if
+this has ANY impact on the security of the key escrow system, then we've
+been lied to.  Any cryptosystem worth its salt can withstand the light
+of public scrutiny, and there is NO WAY you can be sure that an
+algorithm has no "unrecognized vulnerabilities" unless you have half
+the world trying to break it for a decade or so.  Even then, you gotta
+be careful.
+
+ 
+Michael T. Palmer         |  "A man is crazy who writes a secret in any
+m.t.palmer@larc.nasa.gov  |   other way than one which will conceal it
+RIPEM key on server       |   from the vulgar." - Roger Bacon, 1220-1292
+

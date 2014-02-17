@@ -1,0 +1,38 @@
+From: guy@x.co.uk (Guy Singh)
+Subject: Re: xv -root with vue? (was Re: xloadimage -onroot ...)
+In-Reply-To: jan@camhpp12.mdcbbs.com's message of 5 Apr 93 11:31:27 PDT
+X-Disclaimer: This is not the view of IXI Ltd unless explicitly stated.
+Lines: 22
+Nntp-Posting-Host: yorks.x.co.uk
+Organization: Not a lot
+	<WHALEY.93Apr3113732@behemoth.kpc.com>
+	<1993Apr5.113128.2936@ug.eds.com>
+X-Copyright: The author asserts the right of paternity in this message.
+
+>>>>> On 5 Apr 93 11:31:27 PDT, jan@camhpp12.mdcbbs.com (Jan Vandenbrande) said:
+Jan> Nntp-Posting-Host: 134.244.49.156
+
+Jan> On a related note, how can I use xv to display colored GIFs on my
+Jan> root display with HP Vue?
+
+Jan> All I can do with Vue is display xbm's through their
+Jan> Backdrop Style Manager.
+
+Jan> xv does not seem to be able to override whatever Vue
+Jan> puts there.
+
+I suspect this is because VUE creates a window (probably OverrideRedirect)
+that is the size of (or larger than) the Root Window. Because the window
+manager does not know about this, you cannot move, resize etc. it. xv in the
+mean time is busy changing your root window to whatever you have requested
+but you never get to see it because VUE's window is overlaid on top of the root
+window. 
+
+Contact HP support and see whether VUE can support coloured bitmap format
+such as xpm, if they cant then they probably create all their coloured
+backdrops inside the code.
+--
+-Guy Singh,                 IXI            Internet: guy@x.co.uk
+                            Vision Park    UUCP:     guy@ixi.uucp
+                            Cambridge      Bang:     ...!uunet!ixi!guy
+                            CB4 4ZR, UK    Tel:      +44 223 236 555

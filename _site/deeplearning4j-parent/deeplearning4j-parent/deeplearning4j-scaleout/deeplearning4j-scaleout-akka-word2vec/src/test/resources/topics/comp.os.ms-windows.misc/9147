@@ -1,0 +1,41 @@
+From: moor9881@mach1.wlu.ca (Dwayne Moore u)
+Subject: SOUND BLASTER ver 1.5 UNDER WINDOWS 3.1
+X-Newsreader: TIN [version 1.1 PL6]
+Organization: Wilfrid Laurier University
+Lines: 35
+
+[ Article crossposted from comp.speech,comp.sys.ibm.pc.soundcard,comp.os.linux ]
+[ Author was MARIO LAURETTI ]
+[ Posted on Mon, 5 Apr 1993 21:44:24 GMT ]
+
+I Have a Sound Blaster ver 1.5
+
+When I try to install driver ver 1.5 (driver that comes with window 3.1)
+It tell me to upgrade my card first!!!????
+
+Now, I have found new drivers from Creative labs.
+
+But I have problems installing it:
+
+After removing the vsbd.386 (old version that come in windows)
+After installing Creative Sound Blaster - MIDI Synthesizer
+
+I try to install Creative Sound Blaster 1.5 Wave...
+
+But when I am in the menu: Add Unlisted or Updated Driver
+and double click on this driver, I have this error:
+
+--------------------------Driver Error---------------------------
+
+Cannot load Creative Sound Blaster 1.5 Wave and MIDI driver. The driver file
+may be missing. Try installing the driver again, or contact your system
+administrator.
+
+Yes, yes, yes, I have read the README.1st and try every thing!
+
+can somebody help me??
+
+
+Mario Laureti
+
+internet: laurm00@tohi.dmi.usherb.ca

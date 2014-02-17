@@ -1,0 +1,41 @@
+From: raney@teal.csn.org (Scott Raney)
+Subject: Re: Hypercard for UNIX
+Nntp-Posting-Host: teal.csn.org
+Organization: Colorado SuperNet, Inc.
+Lines: 35
+
+queloz@bernina.ethz.ch (Ronald Queloz) writes:
+
+>Hi netlanders,
+
+>Does anybody know if there is something like Macintosh Hypercard for any UNIX 
+>platform?
+
+There are several products you might investigate.  If you've got
+$20,000 per seat and high-end hardware, Gain Momentum might be a good
+choice.  It isn't compatible with HyperCard, but has a similar
+architecture (and *way* more functionality).  I don't have contact
+information, but they were recently purchased by Sybase who shouldn't
+be too hard to find.
+
+If you're running News on SPARC, check out HyperLook
+(hyperlook@turing.com).  It uses Postscript as a scripting language
+which is good if you need to do lots of display oriented scripting,
+but not so good for non-programmers.  It was $995, last I heard.
+
+You might also look at our product MetaCard.  We're alpha-testing
+direct importing of HyperCard stacks (we've even made the test release
+available for anonymous FTP), so we're obviously the closest in
+functionality.  MetaCard runs on most UNIX workstations and costs
+$495.  Email to info@metacard.com for more details.
+  Scott
+
+>Thanks in advance
+
+
+>Ron.
+-- 
+***********************************************************************
+* Scott Raney  303-447-3936            Remember: the better you look, *
+* raney@metacard.com                   the more you'll see -- Lidia   *
+***********************************************************************

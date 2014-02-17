@@ -1,0 +1,36 @@
+From: smb@research.att.com (Steven Bellovin)
+Subject: Re: (new) reason for Clipper alg'm secrecy
+Organization: AT&T Bell Laboratories
+Lines: 31
+
+In article <1993Apr20.155924.29995@news.clarkson.edu>, tuinstra@signal.ece.clarkson.edu.soe (Dwight Tuinstra) writes:
+> First, note that the "experts" will only look at "details", and of just 
+> the algorithm:
+> 
+>     In addition, respected experts from outside the
+>     government will be offered access to the confidential details of
+>     the algorithm to assess its capabilities and publicly report
+>     their findings.
+> 
+> Why not the chip design?  Well, here's the possiblity:  in addition to
+> encryption, the chip pre-processes voice signals to make them easier
+> to analyze/transcribe electronically.  The chip, once widespread, might
+> effectively be part of a massively parallel computer for "voice-
+> grepping" the US phone network (or the criminal & wrong-thinking patrons
+> thereof).
+
+First of all, the chip doesn't do that.  It runs at 16 megabits/second,
+which is far beyond what you need for voice.  It's obviously intended
+for data as well, and on high-speed lines at that.
+
+Second -- what advantage is there to doing the processing in the phone?
+I don't care how fancy that chip is; it's not as fancy as the roomful
+of analyzers at Fort Meade running the program they'll have 5 years from
+now.  They can't update every Clipper chip that's out there.
+
+Third -- if they did do this preprocessing in the chip, it would probably
+have a serious effect on recognizability of the voice patterns.  If
+nothing else, that would hurt the acceptability of the product.  The
+V.32bis modems are just barely fast enough to do a good job on properly-
+massaged voice as is; add any more to the mix, and you're completely out
+of the ballpark.

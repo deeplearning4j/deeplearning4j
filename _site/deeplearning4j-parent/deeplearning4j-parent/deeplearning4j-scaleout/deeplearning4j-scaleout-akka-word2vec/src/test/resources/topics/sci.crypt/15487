@@ -1,0 +1,26 @@
+From: gtoal@gtoal.com (Graham Toal)
+Subject: Re: text of White House announcement and Q&As on clipper chip encryption
+Lines: 22
+
+Bred wrote:
+	And this means that the FBI will want to track the customer lists of
+	better encryption phones, because "the only reason a person would want
+	one is to evade the police."
+
+They don't have to track customer lists - they merely have to digitally
+listen to any phone line and eliminate any that don't have the clipper
+header/signature.  (No-one has said how it will be modulated - want a bet
+it's a non-standard and hence easily recognisable baudrate?)
+
+Devices to scan exchanges and detect modems etc already exist.  I've seen
+them advertised in the trade press.
+
+Once you eliminate crippled crypto devices and ordinary data modems, what's
+left is crypto worth looking more closely at.  I guess any substitute scheme
+will have to be v32bis or v.fast to disguise it, though then they just start
+looking at the data too...
+
+Whatever happens though, the effect of this new chip will be to make private
+crypto stand out like a sore thumb.
+
+G

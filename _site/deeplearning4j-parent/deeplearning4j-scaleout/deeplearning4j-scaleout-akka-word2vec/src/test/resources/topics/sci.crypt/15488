@@ -1,0 +1,36 @@
+From: bontchev@fbihh.informatik.uni-hamburg.de (Vesselin Bontchev)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Reply-To: bontchev@fbihh.informatik.uni-hamburg.de
+Organization: Virus Test Center, University of Hamburg
+Lines: 29
+
+pat@rwing.UUCP (Pat Myrto) writes:
+
+> Can you, while my mind is on it, give us one good reason that the
+> algorithm should be a secret algorithm, unless this encryption scheme
+> either is a joke, or contains features like a 'master key' or other back
+> door for UNAUTHORIZED eavesdropping?
+
+Hmm, here are a couple:
+
+1) If the algorithm becomes known, it will be easy to produce
+pin-compatible non-crippled chips that provide -real- encryption and
+privacy, because their keys are only in their users' hands.
+
+2) Since SkipJack is a symmetric key cypher, it needs some way to
+agree on a session key. The released information says that any
+protocol may be used (e.g., DH). From a theoretical point of view,
+this is probably true. However, from a practical point of view, those
+chips must have some kind of key exchange protocol built-in. What if
+it is good old RSA? This will mean that the producer will have to pay
+lots of bucks to PKP. By keeping the details secret this can be
+avoided...
+
+Regards,
+Vesselin
+-- 
+Vesselin Vladimirov Bontchev          Virus Test Center, University of Hamburg
+Tel.:+49-40-54715-224, Fax: +49-40-54715-226      Fachbereich Informatik - AGN
+< PGP 2.2 public key available on request. > Vogt-Koelln-Strasse 30, rm. 107 C
+e-mail: bontchev@fbihh.informatik.uni-hamburg.de    D-2000 Hamburg 54, Germany

@@ -1,0 +1,25 @@
+From: rps@arbortext.COM (Ralph Seguin)
+Subject: finding out state of state keys (eg, CapsLock and NumLock)
+Organization: The Internet
+Lines: 19
+To: xpert@expo.lcs.mit.edu
+
+Hi.  I've looked in the FAQ and the O-Reilly books and was unable to
+find (an easy) means of finding out the state of state keys such as
+CapsLock and NumLock.  I can certainly track the events inside of my
+window and set a boolean there, but what if CapsLock is pressed in
+another window?  I looked at XGrabKey() and decided it was definitely
+NOT what I wanted to do.  I could find no convenience function to tell
+me that information.
+
+My question is this:  Is there a means of determining what the state
+of CapsLock and/or NumLock is?
+
+An even more pointed question: Is there an easy means of making an X
+keyboard act like a PC keyboard?  ie, CapsLock is active, and the user
+presses shift-a, I'd like to get a lowercase 'a' instead of 'A'.
+
+Any input is greatly appreciated. Please respond via email.  I will
+repost a summary of my findings.
+
+			Thanks, Ralph

@@ -1,0 +1,36 @@
+From: mont@netcom.com (Mont Pierce)
+Subject: Re: 8051 Microcontroller
+Organization: Netcom - Online Communication Services (408 241-9760 guest)
+Lines: 31
+
+In article <1qppr5INNaqa@dns1.NMSU.Edu> mcole@spock (COLE) writes:
+>I would like to experiment with the INTEL 8051 family.  Does anyone out  
+>there know of any good FTP sites that might have compiliers, assemblers,  
+>etc.?
+
+Well, it's not an FTP site, but I got an 800 number for Signetics BBS.
+
+The Signetics BBS contain some pretty good items for the 8051.  I am
+currently using the following files which I downloaded from them:
+
+    ml-asm51.zip      MetaLink's 8051 family macro assembler
+    bootstrp.zip      Hex file Load-and-Go using 8051 uart
+                      (allows you to download your program into a RAM
+                       and then execute from RAM.  Works great.  Tell
+                       me if you want more details).
+    tutor51.zip       TSR for 8051 feature help screens
+    
+They have lots of coding examples, assemblers, and misc. tools.
+
+Signetics BBS numbers are:    (800) 451-6644
+                              (408) 991-2406
+
+Have fun,
+-- 
+Mont Pierce
+
++-------------------------------------------------------------------------+
+| Ham Call: KM6WT             Internet:  mont@netcom.com                  |
+|    bands: 80/40/20/15/10/2  IBM vnet:  mont@vnet.ibm.com                |
+|    modes: cw,ssb,fm                                                     |
++-------------------------------------------------------------------------+

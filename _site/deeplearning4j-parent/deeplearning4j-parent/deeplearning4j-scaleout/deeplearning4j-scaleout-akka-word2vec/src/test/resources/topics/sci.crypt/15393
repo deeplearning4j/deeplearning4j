@@ -1,0 +1,36 @@
+From: lewis@eecg.toronto.edu (david lewis)
+Subject: Off the shelf cheap DES keyseach machine (Was: Re: Corporate acceptance of the wiretap chip)
+Organization: CSRI, University of Toronto
+Lines: 31
+
+In article <16BB51156.C445585@mizzou1.missouri.edu> C445585@mizzou1.missouri.edu (John Kelsey) writes:
+> 
+>strnlght@netcom.com (David Sternlight) writes:
+>>
+[..stuff deleted]
+>existence of the key-registry system seems to make possible all kinds of
+>possible attacks at a small fraction of the expense of trying to build (say)
+>a DES keysearch machine.
+> 
+>   As originally described, it sounded like any police / court combination
+>could acquire the key for a given chip.  I hope that's not the case, since
+>it would imply a glaring hole.  (How much does it cost to find *one* crooked
+>jodge and *one* crooked cop?  Especially for a foreign intelligence agency
+>or organized crime boss?)  However, even if more intelligent schemes are used
+>to allow access to the unencrypted phone conversations, there will be weak-
+>nesses.  They may be very expensive, and very difficult.  But who would
+>trust his/her confidential information to an encryption scheme that, for
+>(say) $100,000 could by cracked one time in a hundred?  (DES, for all the
+>complaints about a 56-bit key, would probably cost several million dollars
+>to build a keysearch machine for.)
+> 
+
+I can buy a DES keysearch machine off the shelf now for approx $500K, but
+it is not sold by that name. Go buy a circuit emulation machine (eg. Quickturn)
+containing a bunch of FPGAs, (say 500 to 1000 3090's), and program each
+to be a DES search engine. Lets say 500 chips, running at 10Mhz = 5G tests/sec.
+Time is 14e6 sec max = 23 weeks, 12 weeks average. Can't wait that long?
+Buy a bigger machine.
+
+
+David Lewis

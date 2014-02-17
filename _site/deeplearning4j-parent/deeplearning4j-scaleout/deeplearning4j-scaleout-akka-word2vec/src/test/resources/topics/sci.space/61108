@@ -1,0 +1,39 @@
+From: wiml@stein2.u.washington.edu (William Lewis)
+Subject: Re: Abyss--breathing fluids
+Organization: University of Washington
+Lines: 33
+NNTP-Posting-Host: stein2.u.washington.edu
+
+loss@fs7.ECE.CMU.EDU (Doug Loss) writes:
+>Besides the mechanical problems of moving so dense a medium in oan out
+>of the lungs (diaphragm fatigue, etc.), is there likely to be a problem
+>with the mixture?  I mean, since the lungs never expel all the air in
+>them, the inhaled air has to mix pretty quickly with the residual air in
+>the lungs to provide a useful partial pressure of oxygen, right?  Would
+>this mixing be substantially faster/slower at the pressures we're
+>talking about?
+
+  There was an interesting article in Scientific American some time ago
+about breathing liquid. (It was a few months before _The Abyss_ came out.)
+As far as I can remember, they mentioned three things that were difficult
+to do at once with a substitute breathing fluid:
+  - low viscosity --- if it's too difficult to force the fluid in & out 
+    of the lungs, you can't extract enough oxygen to power your own
+    breathing effort (let alone anything else)
+
+  - diffusion rate --- obviously, not all the air in your lungs is
+    expelled when you breathe out; and the part that isn't expelled
+    is the part that's nearest the walls of the alveoli. (alveolus?)
+    So the trip from the blood vessels to the new air has to be done
+    by diffusion of the gas through the fluid. Apparently oxygen
+    tends to diffuse more readily than CO2, so even if you can get enough
+    oxygen in, you might not be able to get enough CO2 out.
+
+  - oxygen/CO2 capacity --- you have to be able to dissolve enough
+    gas per unit volume. 
+
+  Oh, and of course, your new breathing fluid must not irritate the lungs
+or interfere with their healing or anything like that... 
+
+--
+Wim Lewis, wiml@u.washington.edu

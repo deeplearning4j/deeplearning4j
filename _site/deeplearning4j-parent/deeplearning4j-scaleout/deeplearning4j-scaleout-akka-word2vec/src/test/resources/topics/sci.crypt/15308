@@ -1,0 +1,120 @@
+From: wesommer@mit.edu (Bill Sommerfeld)
+Subject: Re: The source of that announcement
+Organization: Massachusetts Institute of Technology
+Lines: 112
+Distribution: world
+NNTP-Posting-Host: bill-the-cat.mit.edu
+In-reply-to: marc@mit.edu's message of 18 Apr 1993 01:19:38 GMT
+
+       % telnet csrc.ncsl.nist.gov 25
+       Trying...
+       Connected to csrc.ncsl.nist.gov.
+       Escape character is '^]'.
+       220 first.org sendmail 4.1/NIST ready at Sat, 17 Apr 93 20:42:56 EDT
+       expn clipper
+       250-<csspab@mail-gw.ncsl.nist.gov>
+       250-<denning@cs.georgetown.edu>
+       250-<hoffman@seas.gwu.edu>
+       250-<mkapor@eff.org>
+       250-<rotenberg@cpsr.org>
+       250-<rivest@mit.edu>
+       250-<mhellman@stanford.edu>
+       250-<alanrp@aol.com>
+       250-<dparker@sri.com>
+       250-<jim@rsa.com>
+       250-<branstad@tis.com>
+       250 <mgrsplus@csmes.ncsl.nist.gov>
+       quit
+       221 first.org closing connection
+       Connection closed.
+
+Note also:
+
+% telnet csmes.ncsl.nist.gov 25
+Trying 129.6.54.2...
+Connected to csmes.ncsl.nist.gov.
+Escape character is '^]'.
+220 csmes.ncsl.nist.gov sendmail 4.1/NIST(rbj/dougm) ready at Sat, 17 Apr 93 23:08:58 EDT
+expn mgrsplus
+250-<mcnulty@ecf.ncsl.nist.gov>
+250-Irene Gilbert <igilbert>
+250-Dennis Branstad <branstad>
+250-Robert Rosenthal <rmr>
+250-Gene Troy <troy>
+250-<smid@st1.ncsl.nist.gov>
+250-Dennis Steinauer <dds>
+250 <katzke@st1.ncsl.nist.gov>
+
+telnet mail-gw.ncsl.nist.gov 25
+Trying 129.6.48.199...
+Connected to mail-gw.ncsl.nist.gov.
+Escape character is '^]'.
+220 mail-gw.ncsl.nist.gov sendmail 4.1/rbj/jck-3 ready at Sat, 17 Apr 93 23:06:50 EDT
+expn csspab
+250-<burrows@ecf>
+250-<mcnulty@ecf>
+250-Bill Colvin <colvin>
+250-<Gangemi@dockmaster.ncsc.mil>
+250-John Kuyers <kuyers>
+250-<slambert@cgin.cto.citicorp.com>
+250-<lipner@mitre.org>
+250-<gallagher@dockmaster.ncsc.mil>
+250-<cindy_rand@postmaster.dot.gov>
+250-<walker@tis.com>
+250-<willis@rand.org>
+250-Eddie Zeitler <zeitler>
+250-Cris Castro <castro>
+250 <whitehurst@vnet.ibm.com>
+
+% telnet st1.ncsl.nist.gov 25
+Trying 129.6.54.91...
+Connected to st1.ncsl.nist.gov.
+Escape character is '^]'.
+220 st1.ncsl.nist.gov SEndMaIl 4.1/NBS-rbj.11 rEadY At Sat, 17 Apr 93 23:13:43 EDT
+expn smid
+250 Miles Smid <smid>
+expn katzke
+250 Stuart Katzke <katzke>
+quit
+221 st1.ncsl.nist.gov closing connection
+Connection closed by foreign host.
+
+% telnet ecf.ncsl.nist.gov 25
+Trying 129.6.48.2...
+Connected to ecf.ncsl.nist.gov.
+Escape character is '^]'.
+220 ECF.NCSL.NIST.GOV TGV/MultiNet SMTP service ready.
+expn burrows
+250 Burrows, James <burrows>
+expn mcnulty
+250 McNulty, Lynn <mcnulty>
+quit
+221 ECF.NCSL.NIST.GOV TGV/MultiNet SMTP service complete.
+
+% whois -h rs.internic.net first.org
+National Institute of Standards and Technology (FIRST-DOM)
+   225/A216
+   	 NIST
+   	 GAITHERSBURG, MD 20899
+
+   Domain Name: FIRST.ORG
+
+   Administrative Contact:
+      Wack, John P.  (JPW18)  WACK@ENH.NIST.GOV
+      (301) 975-3411 (FTS) 879-3411
+   Technical Contact, Zone Contact:
+      Hunt, Craig W.  (CWH3)  Hunt@ENH.NIST.GOV
+      (301) 975-3827 (FTS) 879-3827
+
+   Record last updated on 17-Dec-91.
+
+   Domain servers in listed order:
+
+   DOVE.NIST.GOV		129.6.16.2
+   AMES.ARC.NASA.GOV		128.102.18.3
+
+
+The InterNIC Registration Services Host ONLY contains Internet Information
+(Networks, ASN's, Domains, and POC's).
+Please use the whois server at nic.ddn.mil for MILNET Information.
+--

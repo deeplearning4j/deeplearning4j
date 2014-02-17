@@ -1,0 +1,21 @@
+From: rosa@ghost.dsi.unimi.it (massimo rossi)
+Subject: ide &scsi controller
+Organization: Computer Science Dep. - Milan University
+Lines: 16
+
+hi folks
+i have 2 hd first is an seagate 130mb
+the second a cdc 340mb (with a future domain no ram)
+i'd like to change my 2 controller ide & scsi and buy
+a new one with ram (at least 1mb) that could controll 
+all of them
+any companies?
+how many $?
+and is it possible via hw or via sw select how divide
+the ram cache for 2 hd? (for example using dos that is 
+about all on one hd i'd like to reserve ram cache just to it)
+
+thanks to all
+write at   rosa@ghost.sm.dsi.unimi.it
+
+

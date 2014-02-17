@@ -1,0 +1,100 @@
+From: smace@nyx.cs.du.edu (Scott Mace)
+Subject: Re: IDE vs SCSI (here we go again.....)
+X-Disclaimer: Nyx is a public access Unix system run by the University
+	of Denver for the Denver community.  The University has neither
+	control over nor responsibility for the opinions of users.
+Organization: Nyx, Public Access Unix at U. of Denver Math/CS dept.
+Lines: 92
+
+In article <1993Apr12.171250.486@julian.uwo.ca> wlsmith@valve.heart.rri.uwo.ca (Wayne Smith) writes:
+>In article <ercC57245.H2w@netcom.com> erc@netcom.com (Eric Smith) writes:
+>>
+>>SCSI is better because it has a better future, and it has a lot of
+>>minor advantages right now.  IDE cards are cheaper right now, but will
+>>be obsolete in a few years.  (In fact, IDE cards are so cheap, they
+>>might as well be free.  The real cost is in the IDE drives.)  SCSI
+>>cards cost more, but they are worth it.
+>
+
+>I almost got a hernia laughing at this one.
+
+You'll probably get one when you realize that your $100 vesa super
+dooper local bus ultra high tech controller sucks...
+
+>If anything, SCSI (on a PC) will be obsolete-> killed off by Vesa Local
+With any luck PC bus archeitecture will be doen any with by sbus.
+
+Have you ever seen what happens when you hook a busmaster controller to
+a vesa local bus.  It actually  slows down your system
+>Bus IDE.  It must be real nice to get shafted by $20-$100 bucks for the
+>extra cost of a SCSI drive, then pay another $200-$300 for a SCSI controller.
+
+Maybe my workstation doesn't understand what your vesa local bus
+IDE is
+
+Vesa local bus will be killed off by pcmi? whatever intels spec is.
+VLBUS it not good for much more than vga cards.
+
+To each his own.  I'll laugh when you start crying over how much you
+spent for your 2 little ide drives and then finding out you need more
+space.
+>
+>>The biggest advantage of SCSI right now is that you can add more
+>>different kinds of devices, such as tapes, etc., easily, and can add
+>>bigger disks.  The best and most cost effective hard disks available
+>>are SCSI.
+
+Here Here....
+
+
+>
+>Only of you need drives larger then 500 meg.  Oh yes, gotta have 10 megs/sec
+>transfer rate for those speedy tape backups and cd rom drives.
+
+don't stick your foot in your mouth when you make a statement you know
+nothing about.
+
+
+I'd rather wait a second compared to the 5 minutes and ide would take.
+(obviously exaggerated).
+
+Have you ever tried to backup 2 gigs of disk?  Oh I forgot you can't
+because you have an ide and no one makes ide disks that big.
+
+>
+>Basically, if a person *has* to ask which one is better for him/her,
+>then they will *probably* never see the EXPENSIVE benefits from SCSI.
+
+I guess you probably bought a 486sx too
+
+>
+>Also, all this arm-waving about SCSI expandability is a moot point if
+>the user only has one or two drives on it.  And with SCSI those two
+>drives *may* be fast, but that speed is only due to the onboard memory
+>cache -> something I can duplicate with a caching IDE controller.
+
+What?  The SCSI-2 FAST,WIDE spec has much more bandwidth than any stupid
+vlbus ide crap....
+
+Stop this thread now, Its just cluttering up bandwidth.  If you want
+to read about scsi vs ide just pay a visit to you local usenet archive.
+
+the best SCSI-2 FAST,WIDE,etc is clearly faster than any the best ide drive.
+All the response given are based upon personal experience with 1 or 2
+drives.  You can't judge such completely different interfaces.  
+IDE has the low cost adavantage + a descent performance.
+SCSI has the ability for super high capacity expandibility and speed.
+
+neither one is better in all cases.
+
+If you don't belive what I said about busmastering and vlbus then pick
+up a back issue of PC-week in whihc they tested vlbus, eisa and isa
+busmastering cards.
+
+send flames to /dev/null.....
+
+--
+*********************************************************************
+*    Scott Mace                internet:    smace@nyx.cs.du.edu     *
+*                                           emace@tenet.edu         *
+*********************************************************************

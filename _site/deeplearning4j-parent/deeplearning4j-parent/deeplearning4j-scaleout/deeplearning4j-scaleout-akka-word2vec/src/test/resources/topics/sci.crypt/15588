@@ -1,0 +1,264 @@
+From: stevew@helios.unl.edu (Steve Wu)
+Subject: CRYPTO 93 FINAL CALL
+Organization: University of Nebraska--Lincoln	
+Lines: 258
+NNTP-Posting-Host: helios.unl.edu
+
+
+............................................................................
+        CRYPTO '93  -  Conference Announcement & Final Call for Papers
+............................................................................
+
+The Thirteenth Annual CRYPTO Conference, sponsored by the International 
+Association for Cryptologic Research (IACR), in cooperation with 
+the IEEE Computer Society Technical Committee on Security and Privacy, 
+the Computer Science Department of the University of California, Santa 
+Barbara, and Bell-Northern Research (a subsidiary of Northern Telecom), 
+will be held on the campus of the University of California, Santa Barbara, 
+on August 22-26, 1993. Original research papers and technical expository talks 
+are solicited on all practical and theoretical aspects of cryptology. It is 
+anticipated that some talks may also be presented by special invitation of the 
+Program Committee.
+-------------------------        
+INSTRUCTIONS FOR AUTHORS:  Authors are requested to send 12 copies of a 
+detailed abstract (not a full paper) by April 26, 1993, to the Program Chair 
+at the address given below. A limit of 10 pages of 12pt type (not counting 
+the bibliography or the title page) is placed on all submissions. Submissions 
+must arrive on time or be postmarked no later than April 21, 1993 and sent by 
+airmail in order to receive consideration by the Program Committee. It is 
+required that submissions start with a succinct statement of the problem 
+addressed, the solution proposed, and its significance to cryptology, 
+appropriate for a non-specialist reader. Technical development directed to 
+the specialist should follow as needed.
+-------------------------        
+Abstracts that have been submitted to other conferences that have proceedings 
+are NOT eligible for submission.
+
+Submissions MUST BE ANONYMOUS. This means that names and affiliations of 
+authors should only appear on the title page of the submission; it should 
+be possible to remove this page and send the papers to Program Committee 
+members. A Latex style file that produces output in this format is available by email from the Program Chair.
+
+Authors will be informed of acceptance or rejection in a letter mailed on 
+or before June 21, 1993. A compilation of all accepted abstracts will be 
+available at the conference in the form of pre-proceedings. Authors of 
+accepted abstracts will be allowed to submit revised versions for the 
+pre-proceedings. A revised abstract should contain only minor changes and 
+corrections to the originally submitted abstract. All revised abstracts must 
+be received by the Program Chair by July 16, 1993. THE 10 PAGE LIMIT WILL BE 
+STRICTLY ENFORCED for the pre-proceedings.
+
+Complete conference proceedings are expected to be published in Springer-
+Verlag's Lecture Notes in Computer Science series at a later date, pending 
+negotiation.
+-------------------------        
+The Program Committee consists of 
+
+   D. Stinson (Chair, Nebraska)   
+   M. Bellare (IBM T. J. Watson)       E. Biham (Technion, Israel)
+   E. Brickell (Sandia National Labs)  J. Feigenbaum (AT&T Bell Labs)
+   R. Impagliazzo (UCSD)               A. Odlyzko (AT&T Bell Labs)
+   T. Okamoto (NTT, Japan)             B. Pfitzmann (Hildesheim, Germany)
+   R. Rueppel (R3, Switzerland)        S. Vanstone (Waterloo, Canada)
+-------------------------        
+Send submissions to the Program Chair:        
+
+Douglas R. Stinson, Crypto '93        
+Computer Science and Engineering Department         
+115 Ferguson Hall, University of Nebraska        
+Lincoln, NE 68588-0115 USA        
+Telephone: (402)-472-7791         
+Fax: (402)-472-7767        
+Internet: stinson@bibd.unl.edu        
+
+For other information, contact the General Chair: 
+
+Paul C. Van Oorschot, Crypto '93 
+Bell-Northern Research (MAIL STOP 000) 
+3500 Carling Ave. 
+Nepean, Ontario K2H 8E9  Canada 
+Telephone: (613)-763-4199 
+Fax: (613)-763-2626 
+Internet: crypto93@bnr.ca
+
+............................................................................
+        CRYPTO '93  -  General Information  (August 22 - 26, 1993)
+............................................................................
+
+THE PROGRAM:  Crypto'93 is the thirteenth in a series of workshops on 
+cryptology held at Santa Barbara, and is sponsored by the International 
+Association for Cryptologic Research, in cooperation with the IEEE 
+Computer Society Technical Committee on Security and Privacy, the Computer 
+Science Department of the University of California, Santa Barbara, and 
+Bell-Northern Research (a subsidiary of Northern Telecom). The program 
+for the workshop will cover all aspects of cryptology. Extended abstracts of 
+the papers presented at the conference will be distributed to all attendees 
+at the conference, and formal proceedings will be published at a later date.
+
+In addition to the regular program of papers selected or invited by the 
+program committee, there will be a rump session on Tuesday evening for 
+informal presentations. Facilities will also be provided for attendees to 
+demonstrate hardware, software and other items of cryptographic interest. 
+If you wish to demonstrate such items, you are urged to contact the General 
+Chair so that your needs will be attended to. The social program will include 
+hosted cocktail parties on Sunday and Monday. In addition, there will be a 
+beach barbecue on Wednesday evening. The price of the barbecue is included 
+in the room and board charge, and extra tickets may be purchased.
+
+ABOUT THE CONFERENCE FACILITIES:  The workshop will be held on the campus of 
+the University of California, Santa Barbara. The campus is located adjacent 
+to the Santa Barbara airport and the Pacific Ocean. Accommodations are 
+available in the university dormitories at relatively low cost for conference 
+participants. Children under the age of 13 are not allowed to stay in the 
+dormitories, so those bringing small children will need to make separate 
+arrangements in one of several nearby hotels. More information on hotels is 
+enclosed. Parking on campus is available at no cost to the participants. 
+However, participants must indicate on the registration form if they desire 
+a parking permit.
+
+TRAVEL INFORMATION:  The campus is located approximately 2 miles from the 
+Santa Barbara airport, which is served by several airlines, including 
+American, America West, Delta, United, and US Air. Free shuttle bus service 
+will be provided between the Santa Barbara airport and the campus on Sunday 
+and Thursday afternoons. All major rental car agencies are also represented 
+in Santa Barbara, and AMTRAK has rail connections to San Francisco from the 
+north and Los Angeles from the south. Santa Barbara is approximately 100 miles 
+north of Los Angeles airport, and 350 miles south of San Francisco.
+
+REGISTRATION:  Participation is invited by interested parties, but attendance 
+at the workshop is limited, and pre-registration is strongly advised. Late 
+registrations, subject to a late registration fee, may be accepted if space 
+is available, but there are NO GUARANTEES. To register, fill out the attached 
+registration form and return to the address on the form along with payment in 
+full before July 9, 1993. Campus accommodations will be available on a first 
+come, first serve basis for attendees who register by July 9, 1993. The 
+conference fees include participation in the program and all social functions, 
+as well as membership to the IACR and a subscription to the Journal of 
+Cryptology. The room and board charges include dormitory lodging and meals 
+>from dinner on Sunday to lunch on Thursday. Technical sessions will run 
+>from Monday morning to Thursday at noon. A very limited number of stipends 
+are available to those unable to obtain funding. Applications for stipends 
+should be sent to the General Chair before June 4, 1993.
+
+............................................................................
+        CRYPTO '93  -  CRYPTO '93 Registration Form 
+............................................................................
+                       REGISTRATION DEADLINE: July 9, 1993
+
+Last Name:   _____________________________________________
+
+First Name:  _____________________________________________ Sex: (M)__  (F)__
+
+Affiliation: _______________________________________________________________ 
+
+Mailing Address:  __________________________________________________________
+
+                  __________________________________________________________
+
+                  __________________________________________________________
+
+                  ___________________________________________________________
+
+Phone:  __________________________________ FAX:  ___________________________ 
+
+Electronic Mail:  __________________________________________________________ 
+
+Payment of the conference fee entitles you to membership in the International 
+Association for Cryptologic Research for one year at no extra charge, 
+including a subscription to the Journal of Cryptology, published by Springer-
+Verlag, at no extra charge.  Do you wish to be an IACR member?   YES__  NO__
+
+The conference fee also includes the conference proceedings when they become 
+available, containing final versions of conference papers. The book of 
+extended abstracts distributed at the conference will contain only shortened 
+preliminary versions of these papers (maximum 10 pages).
+
+Conference fee: Regular ($280)                        US$ _______
+                Attended Eurocrypt'93, Norway ($230)      _______
+                Full time student ($190)                  _______ 
+                deduct $50 if you do not wish proceedings _______
+                Total conference fee:                              US$_______
+
+Room and Board (4 nights):   Smoking ___  Non-smoking ___
+        Single room ($275 per person)                                 _______
+        Double room ($225 per person)                                 _______
+               Roommate's name:  ____________________________________
+
+Extra barbecue tickets ($20 each; one is included in room and board)  _______ 
+$40 late fee for registration after July 9; 
+    REGISTRATION NOT GUARANTEED AFTER JULY 9                          _______
+
+Total funds enclosed (U.S. dollars):                              US$ _______
+
+Payment must be by check PAYABLE IN U.S. FUNDS, by money order IN U.S. FUNDS, 
+or by U.S. BANK DRAFT, payable to: CRYPTO'93.  Payment should be mailed to the 
+General Chair:
+               Paul C. Van Oorschot, CRYPTO'93 
+               Bell-Northern Research (MAIL STOP 000)
+               3500 Carling Ave.
+               Nepean, Ontario K2H 8E9   Canada 
+
+............................................................................
+        CRYPTO '93  -  Hotel Information
+............................................................................
+
+For those who choose not to stay in the dormitories, the following is a 
+partial list of hotels in the area. Those who choose to stay off campus are 
+responsible for making their own reservations, and early reservations are 
+advised since August is a popular season in Santa Barbara. Note that Goleta 
+is closer to UCSB than Santa Barbara, but that a car will probably be 
+required to travel between any hotel and the campus. All prices are subject 
+to change; prices should be confirmed by calling the individual hotels 
+directly. However, mention CRYPTO'93 when you are making your reservation and 
+in several of the hotels listed you will be eligible for the university rate 
+which can be significantly less than the normal rates. We are not able to 
+block rooms in these hotels, so please make reservations as early as 
+possible. The quality of the hotels range from rather expensive beach-front 
+resorts to basic inexpensive accommodations. For further information, try 
+contacting the Santa Barbara Convention and Visitors Center, (805)-966-9222. 
+
+South Coast Inn: 5620 Calle Real, Goleta, CA 93117. Regular rates: Single $89, 
+Double $94; call for University rates. Contact Murrill Forrester at 
+(805)-967-3200 or toll-free at (800)-350-3614.
+
+Cathedral Oaks Lodge: 4770 Calle Real, Santa Barbara, 93110. Single rates not 
+available, Double rates start at $84 including breakfast; no University rates. 
+Call Tom Patton at (805)-964-3511 or toll-free at (800)-654-1965.
+
+Motel 6: 5897 Calle Real, Goleta, CA 93117. Single $33.95, Double $39.95, 
+no University rate available. Call (505)-891-6161.
+
+The Sandman Inn: 3714 State St., Santa Barbara, CA 93105. Regular rates: 
+Single or Double $84, $94 for king-size, University rate $65. Call Jean 
+Ingerle at (805)-687-2468 or toll-free at (800)-350-8174.
+
+Miramar Hotel (Beachfront): 3 miles south of Santa Barbara on U.S. 101 at 
+San Ysidro turnoff. Regular rates: $70-$135. No University rates. Call 
+(805)-969-2203. 
+
+Pepper Tree Inn: 3850 State St., Santa Barbara, CA 93105. Regular rates: 
+$106-$112 for two people, University rates $96-$102 for two people. Call 
+Christopher Oliphant at (805)-687-5511 or toll-free at (800)-338-0030.
+
+Encina Lodge: 220 Bath Street, Santa Barbara, CA 93105. Regular rates 
+$106-$108 for two people, no University rates. Call Carol Wolford at 
+(805)-682-7550 or toll-free at (800)-526-2282.
+
+Quality Suites: 5500 Hollister Ave, Santa Barbara, CA 93111 (close to campus). 
+Regular rates: Single $125, Double $145, University rates $99 double 
+(must mention you are attending a UCSB program). Call Michael Ensign at 
+(805)-683-6722.
+
+Upham Hotel (bed-and-breakfast): 1404 De La Vina Road, Santa Barbara, 
+CA 93101. University rate $85 (mention you are from Crypto). Call Sheila 
+Donegan at (805)-962-0058.
+............................................................................
+
+
+
+
+--
+stevew@helios.unl.edu  |=| \ Fender / |=| ... smoke on the water, fire in
+                       |=|   \    /   |=| the sky...   Smoke on the water.
+stevew@hoss.unl.edu    |=|     \/     |=|     (36 bars guitar solo)
+		      Deep purple, the best

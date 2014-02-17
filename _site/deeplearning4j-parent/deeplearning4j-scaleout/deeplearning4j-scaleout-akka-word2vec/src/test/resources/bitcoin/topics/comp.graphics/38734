@@ -1,0 +1,59 @@
+From: lansd@dgp.toronto.edu (Robert Lansdale)
+Subject: Advice sought: Turning font outlines into renderable polygons
+Organization: CSRI, University of Toronto
+Distribution: na
+Lines: 53
+
+
+I am seeking some alternate solutions on how to turn a Postscript Type 1 or
+TrueType font outline into polygons that can be subsequently scan converted
+by a 3D scanline renderer. 
+
+I have been studying the problem of font conversion for a few years but
+have never had the need to implement such a system. Well, I now have the
+opportunity to write some font rendering software so I would like to have
+some of my questions answered before I jump into the deep end.
+
+The main problem I face is how to use the even/odd or non-winding rules to
+turn the outlines into a single outline polygon (my renderer can handle
+complex polygons so there is no need to reduce the polygons to simple
+polygons). For example, in the letter "O" there are two outlines:
+
+	1) The outside outline which is clockwise (TrueType font)
+	2) The inside outline which is counterclockwise.
+
+One common solution used by a number of rendering packages is to simply 
+connect the inner outline to the outer outline at the point where the
+two outlines are closest. This is equivalent to descibing a "polygon with
+holes". The renderer will then make the appropriate hole since the interior
+polygon edges are in the opposite direction to the outside edges.
+
+I do not want to use this simplistic system since:
+
+	1) It will not handle all outline fonts properly (it is not a simple
+		matter to connect the outer outline to the inner outline for
+		some fancy fonts).
+	2) It does not properly handle the even/odd or non-winding rules.
+
+From my research over the years the proper solution is to use a trapezoid
+decomposition algorithm to scan convert the outlines into trapezoids (as
+is done by the Postscript and TrueType font rasterizers). These trapezoidal
+polygons can then be easily and properly rendered by the 3D scanline renderer.
+
+My question is: are there any better solutions to turning the outlines into
+polgyons other than the trapezoid decomposer? I am not fond of this solution
+since it creates excess number of polygons.
+
+Another question, for those in the know: what is the best algorithm to create
+bevelled and/or offset curves for font outlines? I have a dozen papers on these
+subjects but I can't tell which method is the best to implement.
+
+Thanks for any pointers.
+
+--> Rob Lansdale
+
+-- 
+Robert Lansdale - (416) 978-6619       Dynamic Graphics Project	
+Internet: lansd@dgp.toronto.edu        Computer Systems Research Institute
+UUCP:   ..!uunet!dgp.toronto.edu!lansd University of Toronto
+Bitnet:	  lansd@dgp.utoronto           Toronto, Ontario M5S 1A4, CANADA

@@ -1,0 +1,40 @@
+From: andrem@pyrtech.mis.pyramid.com (Andre Molyneux)
+Subject: Re: LCIII->PowerPC?
+Reply-To: andrem@pyrtech.mis.pyramid.com (Andre Molyneux)
+Organization: Pyramid Technologies, Mt. View, California.
+Lines: 34
+
+In article <1qksuq$1tt8@hal.gnu.ai.mit.edu>, mirsky@hal.gnu.ai.mit.edu
+(David Joshua Mirsky) writes:
+|> Hi. I own an LCIII and I recently heard an interesting rumor.
+|> I heard that the LCIII has a built in slot for a PowerPC chip.
+|> Is this true? I heard that the slot is not the same as the PDS
+|> slot.  Is that true?
+|> 
+|> Thanks
+|> David Mirsky
+|> mirsky@gnu.ai.mit.edu
+
+Well, I also have an LC III.  Popping the top revealed:
+
+	One "socket" for an additional VRAM SIMM
+
+	One "socket" for a 72-pin RAM SIMM
+
+	One socket for a flat-pack FPU
+
+	A processor-direct slot (PDS) identical to the LC/LC II, but with
+	an additional set of connetions to one side (for the full 32-bit
+	data path that the LC/LC II lacked
+
+That's it.  I guess a board with a PowerPC chip could be made that would fit
+in the PDS, but that's the only place.
+
++--------------------------------------------------------------------------+
+| Andre Molyneux   KA7WVV     "Insert your favorite disclaimer here"       |
++-----------------------------------------+--------------------------------+
+|      -=-------- PYRAMID TECHNOLOGY CORP |Internet:                       |
+|    ---===------ 3860 N. First Street    |  andrem@pyramid.com            |
+|  -----=====---- San Jose, CA            |Packet:                         |
+|-------=======-- (408) 428-8229          |  ka7wvv@n0ary.#nocal.ca.usa.na |
++-----------------------------------------+--------------------------------+

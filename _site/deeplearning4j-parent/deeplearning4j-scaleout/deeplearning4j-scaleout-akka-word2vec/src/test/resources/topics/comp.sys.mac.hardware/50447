@@ -1,0 +1,89 @@
+From: cmmiller@iastate.edu (C. M. Miller)
+Subject: RESULTS of Mathematica Speed Tests!!
+Organization: Iowa State University, Ames, IA
+Lines: 84
+
+Well, here are the results of the Mathematica test which I posted to
+this newsgroup.  The "test" was the following command:
+
+>Plot3D[((-2*9000)/(2*3.1416*((x-5000)^2+(y-8000)^2+
+>81000000)^1.5))+((-3*9000)/(2*3.1416*((x-10000)^2+
+>(y-1000)^2+81000000)^1.5))+((4*2000)/(2*3.1416*
+>((x-7000)^2+(y-10000)^2+4000000)^1.5)),
+>{x,-5500,19500},{y,-5500,19500},PlotPoints->50]
+
+
+I was just curious how fast the plot command would be executed on
+various Macintosh machines as well as other personal computers and
+workstations.  The results are posted below:
+
+Machine		System		Math vers.	# of trials	time, min
+
+PB 170		7.0.0 with	2.1		2		2:08
+		tuneup/8MB
+		RAM/5MB for
+		Mathematica
+
+DEC 5000	Ultrix v4.2a	2.1 for		1		0:25
+		DEC RISC	
+					
+IIsi		7.1/cache@96MB	1.2f33Enh.	1		4:30
+		25MHz/5MB RAM/
+		3MB for Math./
+		w/ 68882
+
+C650		7.1/8MB RAM			2		0:32
+
+Q800		8MB/Cache@384/	1.2				1:01
+		4MB for Math.	
+
+Sparc		SunOS4.1.3					0:14
+Station		40MB RAM
+
+SGI Iris/4D	R3000 RISC					<0:01
+		processor
+		version
+
+Sparc		SunOS4.1.2	2.1 				0:26
+Station2
+
+IIsi		7.1						3:15
+
+NeXT		NeXTSTEP 2.1	1.2				2:38
+Cube		68030 based/
+		w/ coprocessor	
+
+NeXT		NeXTSTEP 3.0	1.2		5(ave)		0:52
+Cube		68040/25MHz/
+		20 MB RAM
+
+IIsi		17MB/8MB for	2.102 Enha			3:15
+		Math.			
+		w/ 68882
+
+NeXT		16MB RAM/			1 		0:37
+		25 MHz 040/
+		Workspace
+		Manager 2.1
+
+Funny how the IIsi running at 25 MHz is slower than other equivalent
+machines, lots slower in fact.  Perhaps the version of Mathematica
+makes a difference or the fact that not much RAM was allocated.
+Another interesting thing is how fast the SGI did it.  Wow. 
+
+Basically, though, I wouldn't draw any conclusions from this data.  It
+seems that Mathematica's speed is dependant on a lot of variables.  I
+was just curious how different machines would measure up.  
+
+Well, if you have any questions or if I forgot something, just drop me
+a line at "cmmiller@iastate.edu".  
+
+Chad
+
+PS  If the spacing of the above table doesn't come out right on your
+machine, tell me and I'll mail you a copy of this in a binhexed Word
+5.1 document.  
+
+
+
+

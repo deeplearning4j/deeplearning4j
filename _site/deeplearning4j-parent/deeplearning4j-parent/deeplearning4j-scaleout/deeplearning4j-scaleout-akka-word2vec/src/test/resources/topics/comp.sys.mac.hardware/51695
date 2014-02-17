@@ -1,0 +1,27 @@
+From: guykuo@carson.u.washington.edu (Guy Kuo)
+Subject: SI clock reports
+Summary: Request for SI clock poll
+Keywords: SI,clock,upgrade,oscillator,chip
+Article-I.D.: shelley.1qokppINNree
+Organization: University of Washington
+Lines: 18
+NNTP-Posting-Host: carson.u.washington.edu
+
+I am continuing to collect user results to produce a more comprehensive
+report on IIsi clock oscillator upgrades. I you have attempted the modification
+please drop me a note with details of your experience. The more reports 
+obtained, the more accurate the numbers I will generate.
+
+If possible, please include the following:
+  1) Top speed achieved
+  2) System configuration at top Mhz setting
+       a) speed rating of the CPU (the last two digits printed on CPU #)
+       b) presence of additional heat sinks
+       c) Nubus & FPU cards used
+       d) floppy drive functionality on both 800 and 1.4 M disks
+  3) Damage incurred during modification
+  4) Damage due to higher speed use
+  5) Average length of time the CPU is on. (i.e. 8 hours a day)
+  6) Unusual other modifications to the usual procedure
+
+Guy Kuo <guykuo@u.washington.edu>

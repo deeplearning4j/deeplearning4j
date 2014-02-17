@@ -1,0 +1,77 @@
+From: guykuo@carson.u.washington.edu (Guy Kuo)
+Subject: Quadra 700 Memory Install FAQ
+Organization: University of Washington
+Lines: 69
+NNTP-Posting-Host: carson.u.washington.edu
+Summary: Instructions for Quadra 700 memory installation
+Keywords: memory,quadra,700,install
+
+This is turning into a FAQ
+
+
+Here is how to violate your Quadra 700 warranty and install your own
+memory.
+
+1)  Insert usual disclaimer here
+ 
+2)  Remove the top lid of the machine. You will see the floppy disk and
+    hard drive mounted in a plastic tower. Follow the usual anti-static
+    precautions and of course make sure the machine is OFF when you do
+    this. Unplug the wall and monitor power supply cords from the back
+	of the mac.
+ 
+3)  Remove the power supply by pulling the plastic interlocking tab on the
+    tower forward and simultaneously pulling the power supply straight up.
+    The tab is a piece of plastic from the left posterior aspect of the
+    tower which extends downward to hook on to the power supply. You may
+    also feel a horseshoe shaped piece at the right portion of the power
+    supply. Leave that alone. The plastic tab from the tower is all you
+    need release.
+ 
+4)  Look at the rear of the tower assembly. You will see the flat ribbon
+    SCSI connector to the hard drive, a power cable and a flat ribbon cable
+    leading to the floppy drive. Disconnect all these from the motherboard.
+    The hard drive power cable connector has a tab which must be squeezed
+    to release it.
+                                            
+5)  Unplug the drive activity LED from its clear plastic mount
+
+6)  Look down the posterior, cylindrical section of the plastic tower. A
+    phillips head screw is at the base. Remove it, taking care not to drop
+    it into the case. A bit of gummy glue on your screwdriver is helpful
+    here.
+
+7)  Remove the tower assembly by pulling medially the plastic tab on the
+    right side of the tower. This tab prevents the tower from sliding
+	posteriorly. Slide the entire tower assembly 1 cm posteriorly then
+	lift the tower assembly straight up and out of the case.
+
+8)  Congratulations, you have now gained access to your machine's SIMM
+    slots.
+
+9)  The six big slots are for VRAM. One usually must install all six to
+    gain useful video modes. All SIMMS (RAM or VRAM)  installed with their
+	chips facing the front of the motherboard.
+	
+    The four smaller sockets in front are for RAM SIMMS. Install SIMMS in
+	sets of four into these sockets. Be sure you seat the SIMMS squarely
+	and firmly into a fully upright position.
+	
+10) Reinstall the tower assembly by first placing the right wall of the
+    tower against the right wall of the case with the tower assembly about
+	1 cm posterior of its intended position. Lower the tower assembly into
+	place while maintaining contact with the right wall of the case.
+    Once fully down, slide the tower assembly anteriorly until it clicks
+    into place.
+	
+11) Reconnect the motherboard ends of the cables. DONT'T FORGET THE FLOPPY
+    DRIVE CABLE.
+
+12) Replace the phillips head screw
+
+13) Drop the power supply straight down into place until it clicks in.
+
+14) Plug the hard drive activity light back into its clear plastic mount
+
+Guy Kuo <guykuo@u.washington.edu>
+

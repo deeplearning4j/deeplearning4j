@@ -1,0 +1,472 @@
+Subject: Space FAQ 03/15 - Data Sources
+From: leech@cs.unc.edu (Jon Leech)
+Expires: 6 May 1993 19:55:35 GMT
+Organization: University of North Carolina, Chapel Hill
+Keywords: Frequently Asked Questions
+Supersedes: <data_730956427@cs.unc.edu>
+NNTP-Posting-Host: mahler.cs.unc.edu
+Lines: 463
+
+Archive-name: space/data
+Last-modified: $Date: 93/04/01 14:39:07 $
+
+ONLINE AND OTHER SOURCES OF IMAGES, DATA, ETC.
+
+
+INTRODUCTION
+
+    A wide variety of images, data, catalogs, information releases, and
+    other material dealing with space and astronomy may be found on the net.
+    A few sites offer direct dialup access or remote login access, while the
+    remainder support some form of file transfer. Many sites are listed as
+    providing 'anonymous FTP'. This refers to the File Transfer Protocol on
+    the Internet. Sites not connected to the Internet cannot use FTP
+    directly, but there are a few automated FTP servers which operates via
+    email. Send mail containing only the word HELP to ftpmail@decwrl.dec.com
+    or bitftp@pucc.princeton.edu, and the servers will send you instructions
+    on how to make requests.
+
+    The sources with the broadest selection of material are the NASA Ames
+    SPACE archive and the National Space Science Data Center.
+
+    Don't even ask for images to be posted to the net. The data volume is
+    huge and nobody wants to spend the time on it.
+
+
+VIEWING IMAGES
+
+    The possible combinations of image formats and machines is forebodingly
+    large, and I won't attempt to cover common formats (GIF, etc.) here. To
+    read PDS and VICAR (and many other) formats on Unix systems running X,
+    use XV 2.11, available by anonymous FTP from export.lcs.mit.edu
+    (18.24.0.12) in contrib/xv-2.11.tar.Z and the other standard X11 FTP
+    sites.
+
+    The FAQ for the Usenet group alt.binaries.pictures discusses image
+    formats and how to get image viewing software. A copy of this document
+    is available by anonymous FTP from the Usenet FAQ archives at
+    pit-manager.mit.edu (18.72.1.58), in directory
+    pub/usenet/alt.binaries.pictures.
+
+
+ONLINE ARCHIVES
+
+    NASA AMES
+
+    Extensive archives are maintained at NASA Ames and are available via
+    anonymous FTP or an email server. These archives include many images and
+    a wide variety of documents including this FAQ list, NASA press
+    releases, shuttle launch advisories, and mission status reports. Please
+    note that these are NOT maintained on an official basis.
+
+    FTP users should connect to ames.arc.nasa.gov (128.102.18.3) and look in
+    pub/SPACE. pub/SPACE/Index contains a listing of files available in the
+    archive (the index is about 200K by itself).
+
+    To access the archives by email, send a letter to
+    archive-server@ames.arc.nasa.gov (or ames!archive-server). In the
+    subject of your letter (or in the body), use commands like:
+
+	send SPACE Index
+	send SPACE SHUTTLE/ss01.23.91.
+
+    The capitalization of the subdirectory names is important. All are in
+    caps. Only text files are handled by the email server at present; use
+    one of the FTP email servers described in the introduction to this
+    section for images or programs.
+
+    The Magellan Venus and Voyager Jupiter, Saturn, and Uranus CD-ROM image
+    disks have been put online in the CDROM and CDROM2 directories. The
+    disks will be rotated on a weekly basis. Thousands of images are
+    available in these collections.
+
+    The GIF directory contains images in GIF format. The VICAR directory
+    contains Magellan images in VICAR format (these are also available in
+    the GIF directory). A PC program capable of displaying these files is
+    found in the IMDISP directory (see the item "VIEWING IMAGES" below).
+
+    The NASA media guide describes the various NASA centers and how to
+    contact their public affairs officers; this may be useful when pursuing
+    specific information. It's in MISC/media.guide.
+
+    Any problems with the archive server should be reported to Peter Yee
+    (yee@ames.arc.nasa.gov).
+
+
+    NASA ASTROPHYSICS DATA SYSTEM
+
+    The ADS is a distributed data retrieval system which is easy to use and
+    provides uniform access to ground-based and space-based astronomy data
+    from NASA data centers across the country. It currently has over 140
+    data catalogs of radio, infrared, optical, UV, and X-ray data which can
+    be queried by position or any other parameter in the catalog. The ADS
+    also provides tools to manipulate and plot tabular results. In addition,
+    ADS has a Beta version of an Abstracts Service which allows users to
+    query over 125,000 abstracts of astronomy papers since 1975 by authors,
+    keywords, title words, or abstract text words.
+
+    ADS use requires direct Internet access. For more info and to sign up to
+    become a user, email ads@cuads.coloradu.edu. The User's Guide and
+    "QuickStart" Guide are available by anonymous FTP to sao-ftp.harvard.edu
+    in directory pub/ads/ADS_User_Guide (PostScript files).
+
+    Contact Carolyn Stern Grant (stern@cfa.harvard.edu).
+
+
+    NASA JET PROPULSION LAB (MISSION INFORMATION AND IMAGES)
+
+    pubinfo.jpl.nasa.gov (128.149.6.2) is an anonymous FTP site operated by
+    the JPL Public Information Office, containing news releases, status
+    reports, fact sheets, images, and other data on JPL missions. It may
+    also be reached by modem at (818)-354-1333 (no parity, 8 data bits, 1
+    stop bit).
+
+    Contact newsdesk@jplpost.jpl.nasa.gov or phone (818)-354-7170.
+
+
+    NASA LANGLEY (TECHNICAL REPORTS)
+
+    techreports.larc.nasa.gov is an anonymous FTP site offering technical
+    reports. To get started, cd to directory pub/techreports/larc/92 and
+    retrieve files README and abstracts.92. Most files are compressed
+    PostScript. The reports are also in a WAIS database with the following
+    description:
+
+	(:source
+	 :version 3
+	 :ip-name "techreports.larc.nasa.gov"
+	 :tcp-port 210
+	 :database-name "nasa-larc-abs"
+	 :cost 0.00
+	 :cost-unit :free
+	 :maintainer "M.L.Nelson@LaRC.NASA.GOV"
+	 :description "NASA Langley Research Center Technical Reports
+
+    Contact tr-admin@techreports.larc.nasa.gov.
+
+
+    NASA SPACELINK
+
+    SpaceLink is an online service located at Marshall Space Flight Center
+    in Huntsville, Alabama. The system is specifically designed for
+    teachers. The data base is arranged to provide easy access to current
+    and historical information on NASA aeronautics, space research, and
+    technology transfer information. Also included are suggested classroom
+    activities that incorporate information on NASA projects to teach a
+    number of scientific principles. Unlike bulletin board systems, NASA
+    Spacelink does not provide for interaction between callers. However it
+    does allow teachers and other callers to leave questions and comments
+    for NASA which may be answered by regular mail. Messages are answered
+    electronically, even to acknowledge requests which will be fulfilled by
+    mail. Messages are generally handled the next working day except during
+    missions when turnaround times increase. The mail system is closed-loop
+    between the user and NASA.
+
+    SpaceLink also offers downloadable shareware and public domain programs
+    useful for science educators as well as space graphics and GIF images
+    from NASA's planetary probes and the Hubble Telescope.
+
+    You can dial in at (205)-895-0028 (300/1200/2400/9600(V.32) baud, 8
+    bits, no parity, 1 stop bit), or telnet to spacelink.msfc.nasa.gov
+    (128.158.13.250, also known as xsl.msfc.nasa.gov) if you're on the
+    Internet. Anonymous FTP capability (password guest) is now available.
+
+    Most of this information is also available from the Ames server in
+    directory SPACELINK.
+
+
+    NATIONAL SPACE SCIENCE DATA CENTER (NSSDC)
+
+    The National Space Science Data Center is the official clearinghouse for
+    NASA data. The data catalog (*not* the data itself) is available online.
+    Internet users can telnet to nssdca.gsfc.nasa.gov (128.183.36.23) and
+    log in as 'NODIS' (no password). You can also get the catalog by sending
+    email to 'request@nssdc.gsfc.nasa.gov'.
+
+    You can also dial in at (301)-286-9000 (300, 1200, or 2400 baud, 8 bits,
+    no parity, one stop). At the "Enter Number:" prompt, enter MD and
+    carriage return. When the system responds "Call Complete," enter a few
+    more carriage returns to get the "Username:" and log in as 'NODIS' (no
+    password).
+
+    The system is menu-driven; topics available as of 3/93 are:
+
+	1   -	Master Directory - NASA & Global Change
+	2   -	Personnel Information Management System
+	3   -	Nimbus-7 GRID TOMS Data
+	4   -	Interplanetary Medium Data (OMNI)
+	5   -	Request data and/or information from NSSDC
+	6   -	Geophysical Models
+	7   -	CANOPUS Newsletter
+	8   -	International Ultraviolet Explorer Data Request
+	9   -	CZCS Browse and Order Utility
+	10  -	Astronomical Data Center (ADC)
+	11  -	STEP Bulletin Board Service
+	12  -	Standards and Technology Information System
+	13  -	Planetary Science & Magellan Project Information
+	14  -	Other Online Data Services at NSSDC
+	15  -	CD-ROMS Available at NSSDC
+
+    For users with Internet access, datasets are made available via
+    anonymous FTP once you select the desired datasets from the online
+    catalog. For other users, data may be ordered on CD-ROM and in other
+    formats. Among the many types of data available are Voyager, Magellan,
+    and other planetary images, Earth observation data, and star catalogs.
+    Viewers for Macintosh and IBM systems are also available. As an example
+    of the cost, an 8 CD set of Voyager images is $75. Data may ordered
+    online, by email, or by physical mail. The postal address is:
+
+	National Space Science Data Center
+	Request Coordination Office
+	Goddard Space Flight Center
+	Code 633
+	Greenbelt, MD  20771
+
+	Telephone: (301) 286-6695
+
+	Email address:	 request@nssdca.gsfc.nasa.gov
+
+
+    SPACE TELESCOPE SCIENCE INSTITUTE ELECTRONIC INFORMATION SERVICE
+
+    stsci.edu (130.167.1.2) has a large amount of information about the
+    Hubble Space Telescope available by anonymous FTP, such as status
+    reports and newsletters, in addition to material oriented towards HST
+    observers and proposers. Get the top level README file to begin with.
+    Contact Pete Reppert (reppert@stsci.edu) or Chris O'Dea
+    (odea@stsci.edu).
+
+
+    STARCAT
+
+    The Space Telescope European Coordination Facility, at ESO/Garching
+    provides on-line access to a huge astronomical database, featuring
+
+	- Observation log files of several satellites/telescopes
+	    (IUE,IRAS,HST,NTT...).
+	- Spectra and images (IUE, HST).
+	- Most of the astronomical catalogues (SAO, HR, NGC, PPM, IRAS,
+	    Veron, GSC and many others, more than 50) in a very convenient
+	    way (give center+radius+kind of objects, and you get the
+	    corresponding files!).
+
+    Log on as ``starcat'' (no password) on node stesis.hq.eso.org
+    (134.171.8.100) or on STESIS (DECnet). The files created can be
+    retreived by FTP. Contact: Benoit Pirenne, bpirenne@eso.org (phone +49
+    89 320 06 433) at ST-ECF
+
+
+    ASTRONOMICAL DATABASES
+
+    The full SAO stellar database is *NOT* available online, probably due to
+    the 40 MB size. It may be ordered on magnetic tape from the NSSDC. A
+    subset containing position and magnitude only is available by FTP (see
+    "Astronomy Programs" below).
+
+    nic.funet.fi (128.214.6.100) has a large collection of astronomical
+    programs for many types of computers, databases of stars and deep sky
+    objects, and general astronomy information in directory /pub/astro. This
+    site is mainly for European users, but overseas connections are
+    possible.
+
+    The Ames archives contain a database of 8,436 galaxies including name,
+    RA, declination, magnitude, and radial velocity in MISC/galaxy.dat.
+    Supplied by Wayne Hayes (wayne@csri.utoronto.ca).
+
+    iris1.ucis.dal.ca (129.173.18.107) has a number of GIFs from Voyager,
+    Hubble, and other sources available by anonymous FTP in pub/gif (most of
+    this data is also in SPACE/GIF on the Ames server). Please restrict
+    access to 5pm - 8am Atlantic time.
+
+    pomona.claremont.edu has the Yale Bright Star catalog for anonymous FTP
+    in directory [.YALE_BSC]. Contact James Dishaw
+    (jdishaw@hmcvax.claremont.edu).
+
+    The Hubble Guide Star catalog is available on CD-ROM for the Mac and PC
+    for $49.95 US (catalog # ST101).
+
+	Astronomical Society of the Pacific
+	390 Ashton Ave.
+	San Francisco, CA 94112
+	Phone: (415) 337-2624 9 AM - 3 PM Pacific Time
+	FAX: (415) 337-5205
+
+    For German (and possibly other European) readers, Jost Jahn has a
+    service to distribute astronomical data to interested amateurs at cost.
+    About 30-40 catalogs are available for DM 6..8/disk. Several floppy disk
+    formats are available. Because of the expense of receiving email on his
+    system, he asks that you contact him by physical mail:
+
+	Jost Jahn
+	Neustaedter Strasse 11
+	W-3123 Bodenteich
+	GERMANY
+	Phone: FRG-5824-3197
+
+
+    ASTRONOMY PROGRAMS
+
+    Various astronomy-related programs and databases posted to the net in
+    the past are archived for anonymous FTP at multiple sites, including
+    ftp.uu.net (137.39.1.9). Also see the ASTRO-FTP list posted to sci.astro
+    monthly, which is more complete than this list.
+
+    Astonomical/Space-related sources of interest in comp.sources.unix:
+
+    Volume 8:	    phoon	moon phase and date routines
+    Volume 12,13:   starchart	starchart program & Yale Star data
+    Volume 15:	    moontool	shows moon phase picture on Suns
+    Volume 16:	    sao		reduced SAO catalog
+
+    Astonomical/Space-related sources of interest in comp.sources.misc:
+
+    Volume  8:	    moon	another moon phase program
+    Volume 11:	    starchart	starchart program, version 3.2
+    Volume 11:	    n3emo-orbit orbit: track earth satellites
+    Volume 12:	    starchart2	starchart program, update to version 3.2.1
+    Volume 13:	    jupmoons	plotter for Jupiter's major moons [in perl]
+    Volume 13:	    lunisolar	lunisolar (not sure what this does)
+    Volume 14:	    ephem-4.21	astronomical ephemeris, v4.21
+    Volume 14:	    n3emo-orbit patch to orbit 3.7
+    Volume 18:	    planet	planet generation simulator
+
+    Elwood Downey (e_downey@tasha.cca.cr.rockwell.com), the author of
+    "ephem", has offered to mail copies to people who can't find it on one
+    of the archives.
+
+    XSAT, an X Window System based satellite tracking program, is
+    available by anonymous FTP from export.lcs.mit.edu (18.24.0.12) in
+    contrib/xsat1.0.tar.Z. Contact Dave Curry (davy@ecn.purdue.edu)
+    for more information.
+
+    Xsky, a computerized sky atlas for the X Window System, is available for
+    anonymous FTP on arizona.edu in the directory [.SOFTWARE.UNIX.XSKY] as
+    xsky.tarz. Contact Terry R. Friedrichsen (terry@venus.sunquest.com) for
+    more information.
+
+    The "Variable Stars Analysis Software Archive" is available via
+    anonymous FTP from kauri.vuw.ac.nz (130.195.11.3) in directory
+    pub/astrophys. This is intended for specialists in this field, and they
+    would appreciate people from outside New Zealand confining their FTP
+    access to the astrophys directory, as they pay a significant amount for
+    Internet access. Contents are relatively sparse at present due to the
+    youth of the archive - contributions are encouraged. Contact the archive
+    administrator, Timothy Banks (bankst@kauri.vuw.ac.nz) for more
+    information.
+
+    The "IDL Astronomy Users Library" is available by anonymous FTP from
+    idlastro.gsfc.nasa.gov (128.183.57.82). This is a central repository for
+    general purpose astronomy procedures written in IDL, a commercial image
+    processing, plotting, and programming language. Contact Wayne Landsman
+    (landsman@stars.gsfc.nasa.gov) for more information.
+
+
+    ORBITAL ELEMENT SETS
+
+    The most recent orbital elements from the NASA Prediction Bulletins are
+    carried on the Celestial BBS, (513)-427-0674. Documentation and tracking
+    software are also available on this system. The Celestial BBS may be
+    accessed 24 hours/day at 300, 1200, or 2400 baud using 8 data bits, 1
+    stop bit, no parity.
+
+    Orbital element sets are available via anonymous FTP from the
+    following sites:
+
+    archive.afit.af.mil (129.92.1.66)	    NASA,TVRO,Shuttle
+    directory: /pub/space
+
+    ftp.funet.fi (128.214.6.100)	    NASA,TVRO,Molczan,CelBBS,
+    directory: /pub/astro/pc/satel	    Shuttle (*)
+
+    kilroy.jpl.nasa.gov (128.149.1.165)     NASA,Molczan
+    directory: /pub/space/
+
+
+    SPACE DIGEST ARCHIVES
+
+    Copies of back issues of Space Digest are archived on
+    LISTSERV@UGA.BITNET. Send mail containing the message "INDEX SPACE" to
+    get an index of files; send it the message "GET filename filetype" to
+    get a particular file.
+
+
+LANDSAT AND NASA PHOTOS
+
+    You can get black-and-white 1:1M prints, negatives, or positives for
+    $10, $18, $12 respectively for any Landsat data more than 2 years old
+    from EDC, (Eros (Earth Resources Orbiting Satellite) Data Center). Call
+    them at (605)-594-6511. You get 80 meter resolution from the MSS
+    scanner, 135x180 kilometers on a picture 135x180 mm in size. I think you
+    have to select one band from (green, red, near IR, second near IR), but
+    I'm not sure. Digitial data is also available at higher prices.
+
+    Transparencies of all NASA photos available to the public can be
+    borrowed from the NASA photo archive; you can have copies or prints
+    made.
+
+	 NASA Audio-Visual Facility
+	 918 North Rengstorff Ave
+	 Mountain View, CA  94043
+	 (415)-604-6270
+
+
+PLANETARY MAPS
+
+    The USGS address for maps of the planets is:
+
+    U.S. Geological Survey,
+    Distribution Branch,
+    Box 25286, Federal Center, Bldg. 41
+    Denver, CO 80225
+
+    Maps cost $2.40 to $3.10 per sheet (a few come in sets of 2 or 3 sheets).
+
+    The best global maps of Mars based on Viking images are 1:15,000,000
+    scale in 3 sheets. These maps are:
+
+    I-1535 (2 sheets only) - relief, albedo, names
+    I-1535
+    I-1618 (3 sheets) - relief, names
+    I-2030 (3 sheets) - relief, topographic contours
+    I-1802-A,B,C (3 sheets) - geology
+
+    There are many other maps as well: 30 sheets at 1:5,000,000 scale in
+    relief, albedo, geology, photomosaic forms (not all 30 sheets available
+    in all formats); 140 sheets at 1:2,000,000 scale as photomosaics of the
+    whole planet, about 100 sheets of interesting sites at 1:500,000 scale
+    in photomosaic format, and lots of special sheets.
+
+    Then there are maps of Mercury, Venus, the Moon, the four Galilean
+    Satellites, six moons of Saturn and five of Uranus. [Phil Stooke
+    (stooke@vaxr.sscl.uwo.ca), the author of this item, has offered to
+    respond to email requests for information on any topic relating to lunar
+    and planetary maps.]
+
+
+COMETARY ORBIT DATA
+
+    The Central Bureau for Astronomical Telegrams and the Minor Planet
+    Center announce the sixth edition of the Catalogue of Cometary Orbits in
+    IAU Circular 4935. The catalogue contains 1292 entries which represent
+    all known comets through November 1989 and is 96 pages long.
+    Non-subscribers to the Circulars may purchase the catalogue for $15.00
+    while the cost to subscribers is $7.50. The basic catalogue in ASCII
+    along with a program to extract specific orbits and calculate
+    ephemerides is available on MS-DOS 5.25-inch 2S2D diskette at a cost of
+    $75.00 (the program requires an 8087 math coprocessor). The catalogue
+    alone is also available by e-mail for $37.50 or on magnetic tape for
+    $300.00.
+
+    Except for the printed version of the catalogue, the various magnetic
+    media or e-mail forms of the catalogue do not specifically meantion
+    non-subscribers. It is possible that these forms of the catalogue may
+    not be available to non-subscribers or that their prices may be more
+    expensive than those given. Mail requests for specific information and
+    orders to:
+
+	Central Bureau for Astronomical Telegrams
+	Smithsonian Astrophysical Observatory
+	Cambridge, MA 02138, USA
+
+
+NEXT: FAQ #4/15 - Performing calculations and interpreting data formats

@@ -1,0 +1,41 @@
+From: marc@tanda.isis.org (Marc Thibault)
+Subject: Re: PEM and MIME
+Reply-To: marc@tanda.isis.org
+Distribution: world
+Organization: Thibault & Friends
+Lines: 34
+
+In article <1qg8m2$2e5@nigel.msen.com> 
+(Edward Vielmetti) writes: 
+
+> I would suggest that 50 attractive MIME formatted news messages a day would be
+> sufficient to get a few people thinking about adding MIME support to news
+> readers, esp if the content is really worth it.
+
+        But that's just the problem. There is no such thing as
+        "MIME-Formatted". By analogy, MIME is a content-labelling
+        standard for the box, not a specification for the contents
+        themselves. It provides a standard for "like-minded"
+        individuals to exchange mail containing an agreed-upon data
+        format.
+
+        You say tomahto, I say tomaeto; you say postscript, I say
+        SGML...
+        
+        Cheers,
+                Marc
+
+---
+ Marc Thibault        | CIS:71441,2226     |  Put another log
+ marc@tanda.isis.org  | NC FreeNet: aa185  |  on the fire.
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: 2.0
+
+mQBNAiqxYTkAAAECALfeHYp0yC80s1ScFvJSpj5eSCAO+hihtneFrrn+vuEcSavh
+AAUwpIUGyV2N8n+lFTPnnLc42Ms+c8PJUPYKVI8ABRG0I01hcmMgVGhpYmF1bHQg
+PG1hcmNAdGFuZGEuaXNpcy5vcmc+
+=HLnv
+-----END PGP PUBLIC KEY BLOCK-----
+
+

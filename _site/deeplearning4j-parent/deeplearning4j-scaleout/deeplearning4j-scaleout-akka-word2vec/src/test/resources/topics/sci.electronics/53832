@@ -1,0 +1,60 @@
+From: verity@jack.sns.com (Steve Verity)
+Subject: Need help with video detection circuit
+Organization: Systems'n'Software
+Lines: 55
+
+
+
+I am trying to build a circuit that detects the presence of video (Vs.
+a blank screen) by monitoring the R,G, and B outputs of a graphics
+card.  It should be able to detect the presence of a single pixel at
+65 MHz, which would mean detecting a 15 NS pulse.  It should also be
+able to tell the difference between a blank screen (about 300 mv)
+and a dim screen (say, around 310 mv).  Oh yes, it also needs to be
+cheap.  
+
+My first circuit was a dismal failure.  I used 3 compariators; each
+compariator had the + input going to one of the guns, the - input
+went to a reference created by a voltage divider(a potentiometer).
+
+The first problem was that the compariator was way too slow.. I
+needed to get several pixels in a row before it would fire the
+compariators, so I could have a whole screen full of text, but my
+circuit would not detect it.   
+
+The second problem is that there was more noise on the reference then
+the smallest difference between a blank screen and a dim screen.  In
+fact the difference between completely black and completely white is
+only 650 mv.  I am wondering if I am going to have to amplify the
+video signals to make this work.  
+
+There are faster compariators, but they are expensive, and require 
+split supplies.   I would need to replace my .49 quad compariator
+with three 1.89 compariators, and create a whole new power supply
+circuit.  
+
+At this point, I think what I need is some sort of transistor
+circuit.  Transistors are fast and cheap and should do the trick...
+
+Unfortunately, I am way out of my league when It comes to designing
+transistor circuits, so I am appealing to the net for help.  Any
+ideas, tips, circuits, pointers, references, etc. would be greatly
+appreciated.  
+
+Oh yes, I only sample the output of this thing every second or so, so
+I don't need a fast response time at all, however, I haven't found a
+way to take advantage of that fact.
+
+Thanks a lot for any help anybody might be able to give. Of course,
+you will have my undying gratitude.
+
+
+Steve Verity
+
+
+
+
+-- 
+..........>.........>........>......>...>...>..>..>..>..>.>.>.>>>>>>>>+ .   
+Steve Verity                  +   +             ...Maxed on MIDI        + .
+                                    +      verity@jack.sns.com      + ..   +

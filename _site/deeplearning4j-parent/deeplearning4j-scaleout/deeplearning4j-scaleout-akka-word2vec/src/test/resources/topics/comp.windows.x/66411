@@ -1,0 +1,46 @@
+From: Bill.Kayser@delft.SGp.slb.COM (Bill Kayser)
+Subject: Re: gadgets vs widgets
+Article-I.D.: parsival.199304060609.AA00309
+Organization: The Internet
+Lines: 38
+NNTP-Posting-Host: enterpoop.mit.edu
+To: xpert@expo.lcs.mit.edu
+
+
+> 
+> > Motif managers take a very simplistic approach to the way they handle events 
+> > for gadgets: they track for all events(such as Motion Notify) wether or not 
+> > the gadget expresses interest in the events. As a result, gadgets typically
+> > generate a great deal more network traffic.  Those with X terminals might find 
+> > a noticable network performance drop as a result.
+> > 
+> > Really?  What's the point using Gadgets then?
+> 
+> It is a case of memory vs. network performance tradeoff.  Gadgets
+> save both client and server memory.  But memory is easily expandable while
+> network performance is not, so if I were designing Motif I would
+> at least make it *possible* to avoid using gadgets.  At present you
+> really don't have a choice because Motif forces you to use gadgets
+> in menus and in various other places.
+> 
+> Adrian Nye
+> O'Reilly and Associates, Inc.
+
+
+I've been using the XmGraph widget that's been floating around and I
+noticed the performance is significantly better using Gadgets, perhaps
+even 100% faster.  I had heard in an old programming course that gadgets
+were no longer any benefit to performance, and that it's just as well
+to use widgets everywhere.  So why would ~50 pushbutton gadgets be a lot
+quicker than 50 pushbuttons in the graph?  Should I start putting gadgets
+back into my long pulldown menus? 
+
+XmGraph manages children connected by XmArc widgets in a directed network
+type graph with automatic layout capability.
+
+
+Bill
+
+---------------------------------------------------------------------------
+                                         Schlumberger Geco-Prakla
+                                         Internet : kayser@delft.sgp.slb.com

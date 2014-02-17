@@ -1,0 +1,53 @@
+From: brucet@extro.ucc.su.OZ.AU (Bruce Tulloch)
+Subject: Re: Duo 230 crashes aftersleep (looks like Apple bug!)
+Nntp-Posting-Host: extro.ucc.su.oz.au
+Organization: Sydney University Computing Service, Sydney, NSW, Australia
+Lines: 47
+
+lreiter@jade.tufts.edu (Lowell B. Reiter) writes:
+
+>My Duo 230 crashe.
+
+>I close the lid.   It goesto sleeplikenormal.   Then I open it press a key.
+>The screen showsthis wied pattern.   You can berely make outthe menubar on top., although there are no words on the bar.  Anditfrezzes.   Why?
+
+>---Lowell
+>--
+>***********************************************************************
+>* Lowell Reiter			  "I need a Vacation... Now!!! "      *
+>* Tufts University                                                    *
+>* Internet Account: lreiter@jade.tufts.edu                            *
+>***********************************************************************
+
+I have the same problem and was about to post this....
+
+Hello duo owners (and Apple technical people :-)
+ 
+I have a new duo 230 which appears to have a problem waking up from
+sleep when running on battery power. When woken (usually for the second
+time) after sleeping, the wake fails and the screen appears with a
+corrupted image of broken horizontal lines and control can only be
+recovered with control-command-poweron or the reset key at the back of
+the machine. The problem occurs even when the system is stock standard
+(no extensions, no virtual memory, a fully charged new battery, system 7.1
+etc). I have not had the problem when the machine is plugged in to AC.
+I've checked that the battery is properly seated (it appears to be fine).
+ 
+What's going on here ? Anyone else had this problem ? Is it software or
+hardware ? 
+ 
+If you have a duo 230 and a bit of time, try repeatedly sleeping and
+waking the machine on battery power and let me know if you see the same
+behaviour (and let Apple know too !).
+ 
+Many thanks to anyone who can clear this one up for me.
+ 
+Bruce
+
+
+
+
+
+-- 
+          bruce tulloch sydney australia - brucet@extro.ucc.su.oz.au
+***complex problems have straight forward, easy to understand wrong answers***

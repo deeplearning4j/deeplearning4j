@@ -1,0 +1,49 @@
+From: ryanph@mrl.dsto.gov.au
+Subject: DREGISTERe: XV for MS-DOS
+Organization: Defence Science and Technology Organisation
+Lines: 43
+NNTP-Posting-Host: mrl.dsto.gov.au
+
+Pascal Perret, in article <1993Apr21.125750.263@eicn.etna.ch>, wrote
+> 
+> 	Site	: omnigate.clarkson.edu
+> 	Aliases	: grape.ecs.clarkson.edu
+> 	Number	: 128.153.4.2
+> 
+> 	/pub/msdos/djgpp/pub
+> 
+> 	it's xv221.zip (?) I think...
+> Certainly you read the other answer from Kevin Martin... He write about DV/X 
+> (?). 
+> 
+>     What is it ?????? Could Someone answer ????
+
+Funny thing, the InterNet: I have no idea what xv221 might be - except that it
+might be something to do with X-windows on PCs (? If you know, and have used
+it, and think that it is good, email me. [ryanph@mrl.dsto.gov.au]).
+
+DV/X is a common abbreviation for QuarterDeck corporation's Desqview/X
+software.
+
+I have not used DV/X yet, but reading the blurbs that Quarterdeck sent me, it
+sounds pretty great:
+	* allows multiple DOS machines - the way that OS/2 does, but without
+requiring 10 MB of RAM to get OS/2 going
+	* pre-emptive multi-tasking
+	* network computing - a proper X-windows client/server application -
+this means that DOS program can be used on other X-windows computers on your
+network, and that X-windows programs can be used on your DV/X computer
+	* although it is NOT a version of Unix, it effectively has many of
+Unix's features, and mostly you will be able to compile unix-type programs
+using the djgpp or gnu c compilers
+
+They advertise regularly in all of the major computing and programming
+magazines. They also have InterNet support online (support@qdeck.com).
+
+> *  Pascal PERRET     		|	perret@eicn.etna.ch         *
+
+Hope that this helps anyone wanting to know.
+
+Phil Ryan
+Melbourne, australia
+

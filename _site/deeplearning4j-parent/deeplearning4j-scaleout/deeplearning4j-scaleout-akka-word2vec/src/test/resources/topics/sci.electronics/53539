@@ -1,0 +1,30 @@
+From: tomb@hplsla.hp.com (Tom Bruhns)
+Subject: Re: Do Analog Systems Need Ground Planes?
+Organization: HP Lake Stevens, WA
+Lines: 25
+
+engp2254@nusunix1.nus.sg (SOH KAM YUNG) writes:
+
+>I understand the need for a ground plane in a digital system. However, I
+>would like to know if such a ground plane is also necessary in an analog
+>system.
+>
+>(Note: this ground plane will not be connected, except at one point, to
+>the signal ground).
+>
+>I keep getting conflicting answers over this. Does having a ground plane
+>in an analog system help reduce noise also? My system only deals with
+>low frequency signals (up to 100Hz only!!!).
+
+Well, one reason for getting conflicting answers is that it depends on
+what you want the ground plane to do.  A continuous conductor is a good 
+electrostatic shield.  Do you have signals on your board that need
+shielding rom other things?  This shielding won't do much good for magnetic
+fields, unless you make it continuous around the circuit to be shielded,
+like a Faraday cage.
+
+The flip side of the coin:  if you are working with (very) high impedances,
+you could end up with capacitances to the gound plane that cause problems.
+You aren't likely to encounter this at 100Hz, but at 20kHz, it can be a
+real problem (one that bit me once).
+

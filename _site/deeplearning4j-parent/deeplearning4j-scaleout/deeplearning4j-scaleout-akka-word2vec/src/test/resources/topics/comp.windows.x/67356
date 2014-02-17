@@ -1,0 +1,29 @@
+From: barmar@think.com (Barry Margolin)
+Subject: Re: Pulldown menu periodically hangs application on OpenWindows 3.0
+Organization: Thinking Machines Corporation, Cambridge MA, USA
+Lines: 22
+Distribution: inet
+NNTP-Posting-Host: gandalf.think.com
+
+In article <1rgt23INNonv@ssdc.SSDC.Sterling.COM> rlee@ssdc.SSDC.Sterling.COM (Richard Lee) writes:
+>: A Motif 1.2.2 application will periodically hang when run against the
+>: OpenWindows 3. server (xnews).
+
+>I have seen the same problem using a SPARCStation 10, Solaris 2.1, OW 3.1.
+>In my case, it happens far more often than "periodically".
+
+I don't know if there's a corresponding patch for Solaris 2.1, but this
+sounds like the following bug which is supposedly fixed in 100492-06, the
+Solaris 1.x olwm Jumbo patch:
+
+	1108642 - window system can hang in an errant pointer grab
+
+Actually, I suspect that the OW 3.1 problem may be different, since the
+README file says that this patch is just a SunOS 4.x version of the OW 3.1
+olwm (but maybe that line came from an earlier version of the patch, and
+they forgot to take it out in the -06 version).
+-- 
+Barry Margolin
+System Manager, Thinking Machines Corp.
+
+barmar@think.com          {uunet,harvard}!think!barmar

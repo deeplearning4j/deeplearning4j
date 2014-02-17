@@ -1,0 +1,17 @@
+From: jbotz@mtholyoke.edu (Jurgen Botz)
+Subject: Reseting LW IIg to factory defaults
+Organization: Mount Holyoke College
+Lines: 11
+NNTP-Posting-Host: orixa.mtholyoke.edu
+
+I have a Laserwriter IIg that has disappeared completely from the
+Network, i.e. it's name doesn't show up in any zone.  (You can print
+to it from it's serial interface, tho!)  I have seen some discussion
+here about changing the zone a IIg is in... including some PS code
+that lets you change the zone.  Is there maybe some PS code you can
+use to have it go back to all its factory default settings?  I have
+a feeling that's what needed to heal ours.
+-- 
+Jurgen Botz, jbotz@mtholyoke.edu | Vending machines SHOULD respond to a [finger]
+South Hadley, MA, USA            | request with a list of all items currently
+--Unix is dead, long live Unix-- | available for purchase... -RFC1288

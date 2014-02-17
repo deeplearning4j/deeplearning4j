@@ -1,0 +1,27 @@
+From: cs000rdw@selway.umt.edu (Richard D Warner)
+Subject: UART-CPU-ROM-RAM subsystem
+Keywords: cheap, low-cost, small $$$
+Organization: University of Montana
+Lines: 21
+
+	This is a followup post to something I've written previously.  Several
+people responded with good information, but I don't think I communicated 
+exactly what I am looking for.
+	I'm working on a custom I/O device that will communicate with a host
+via RS-232.  My custom circuitry will use an 80C186EB or EC CPU and require
+about 64K of RAM (preferably FLASH RAM).  In looking around, I see that lots
+of people have engineered UART-CPU-ROM-RAM subsystems that are ready to be
+interfaced to your custom I/O devices.  It's been done so much, that it 
+would be best if I can avoid reinventing a system.  It just needs to use
+an 80C186 (or 188) CPU, and be able to load a program from the host then 
+transfer control to that program.  Well, there's one other thing the ROM
+needs to know how to do.  It should have routines to send and receive bytes
+to/from the host, that utilize the hardware control lines (DTR,RTS,DTS,CTS).
+Everything I've seen is in the $200.00 and up range.  That's too much for
+this application.  I need something around $100.00.  The CPU has the UART
+built-in, so you're only looking at a few chips.  Does anyone know a 
+company that markets a good board in this range, or some public domain 
+circuitry I can use?  Thanks in advance for the info.
+
+Rich
+

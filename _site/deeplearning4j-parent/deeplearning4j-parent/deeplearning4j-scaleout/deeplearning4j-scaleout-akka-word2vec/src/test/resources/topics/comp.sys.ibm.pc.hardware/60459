@@ -1,0 +1,16 @@
+From: westes@netcom.com (Will Estes)
+Subject: Quantum 240AT: is my cache working?
+Organization: Mail Group
+X-Newsreader: TIN [version 1.1 PL8]
+Lines: 10
+
+The Quantum LPS 240AT is supposed to have a 256K cache on the IDE
+controller built into the card.  Yet when I do a DOS DIR command
+on my system, the disk is always accessed (I can hear the mechanical
+movement of the heads).  Why is this happening?  Strangely, even
+when I have smartdrive installed, every DIR command accesses the
+disk.  Did I somehow de-activate the cache?  This is happening on each 
+of two machines with an LPS 240AT drive.
+
+-- 
+Will Estes		Internet: westes@netcom.com

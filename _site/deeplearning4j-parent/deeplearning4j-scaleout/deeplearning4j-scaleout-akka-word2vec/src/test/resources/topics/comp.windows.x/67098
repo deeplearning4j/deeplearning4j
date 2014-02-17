@@ -1,0 +1,54 @@
+From: suresh@iss.nus.sg (Suresh Thennarangam - Research Scholar)
+Subject: Re: Mix GL with X (Xlib,Xt,mwm)
+Nntp-Posting-Host: titan.iss.nus.sg
+Organization: Institute Of Systems Science, NUS
+X-Newsreader: Tin 1.1 PL4
+Lines: 47
+
+pyeatt@Texaco.com (Larry D. Pyeatt) writes:
+: In article <9304191540.AA09727@sparc1.jade.com>, graham@sparc1.ottawa.jade.COM (Jay Graham) writes:
+: |> 
+: |> XmDrawingArea for drawing with Xlib.  But I would like to take advantage of
+: |> the Graphics Library (GL) available on our IBM RS/6000 (SGI's GL i believe).
+: |> Is it possible to mix X and GL in one application program?
+: |> Can I use GL subroutines in an XmDrawingArea or in an X window opened by me
+: |> with XOpenWindow?
+
+You can't make GL calls in an XmDrawingArea widget for sure.  
+: 
+: There is a widget already defined for GL.  It is the GlxMDraw (motif) or
+: GlxDraw (athena) widget.  It is similar to a XmDrawingArea, except that it
+: allows you to use GL calls to render into the window.  Look at glxlink,
+: glxunlink, glxgetconfig, and glxwinset in the man pages.
+: 
+: 
+: The GlxMDraw widget works pretty well.  OpenGL will be an improvement.
+
+I can vouch for that. The GL Widget works pretty well. I have been using it
+for sometime now. I'm not sure though whether you can use Xlib calls to draw
+into the GL widget. I haven't tried it yet nor have I read the accompanying
+documentation completely. Try posting to comp.sys.sgi for more information.
+Better still,you will find most of the answers in the  SGI manuals .. there
+is a little transition guide which explains the "mixed-model programming"
+paradigm(Mixing X and GL).
+
+: |> Does PEX (graPHIGS?) have the same functionality of GL?
+: 
+: I think GL is a little easier to use and a little more powerful, but
+: that's just an opinion.  Mileage may vary.
+
+Well, PEX is designed as an extension to  X and will be more seamless  but 
+then, it is buggy to start with .. opinions again.
+
+      __                  
+     (_   / /  o_   o  o |_
+     __)/(_( __) (_(_ /_)| )_
+
+***************************************************************************
+* Suresh Thennarangam               *  EMail: suresh@iss.nus.sg(Internet) *
+* Research Scholar                  *         ISSST@NUSVM.BITNET          *
+* Institute Of Systems Science      *  Tel:  (065) 772 2588.              *
+* National University Of Singapore  *  Facs.: (065) 778 2571              *
+* Heng Mui Keng Terrace             *  Telex: ISSNUS RS 39988             *
+* Singapore 0511.                   *                                     *
+***************************************************************************

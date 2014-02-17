@@ -1,0 +1,23 @@
+From: jeroeng@blade.stack.urc.tue.nl (Jeroen Gremmen)
+Subject: Re: DOS 6 vfintd.386 and Windows sys.ini
+Organization: MCGV Stack, Eindhoven University of Technology, the Netherlands.
+Lines: 16
+NNTP-Posting-Host: blade.stack.urc.tue.nl
+X-Newsreader: TIN [version 1.1 PL6]
+
+Peter P. Lei (lei@rtsg.mot.com) wrote:
+: 
+: Does anyone know what the vfintd.386 device is used for in windows 3.1?
+: It's under the [386enh] section as
+: 	device=c:\dos\vfintd.386
+: 
+I know Norton Desktop for Windows includes this file and its help file 
+mentioned something about floppy-disk access.
+
+Jeroen
+
+-- 
+========================================================================
+J.C.A. Gremmen              Email: jeroeng@blade.stack.urc.tue.nl
+Gildelaan 34                Phone: 04255-3411 (No modem or fax pleez!)
+5081 PH  Hilvarenbeek               

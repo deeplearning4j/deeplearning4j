@@ -1,0 +1,49 @@
+From: pmontan@nswc-wo.navy.mil (Paul Montanaro)
+Subject: Re: IIci -> Q700 upgrade?
+Organization: NSWC
+Lines: 44
+
+In article <1993Apr15.164053.29298@thunder.mcrcim.mcgill.edu>,
+dudek@daeron.mcrcim.mcgill.edu (Gregory Dudek) wrote:
+> 
+> In article <C5HA0x.11oq@austin.ibm.com> $LOGIN@austin.ibm.com writes:
+> >
+> >A while ago I posted a note asking for specs on the Quadra 700, and opinions on
+> >the Q700 upgrade of a IIci vs. an accelerator card.  So far no responsed that
+> >I've noticed.  Please let me know what you think of these possible upgrade
+> >paths:  Cost, efficiency, pros/cons, etc.. Thanks!
+> 
+>   Complete Q700 are best obtained from your dealer or some recent
+> copy of MacWorld or MacUser.  My foggy memory suggests that the most relevant
+> comparison factors vis-a-vis a IIci are as follows:
+> 
+>   25 MHz 68040
+>   16 Mhz data path (don't recall this for sure, but it's slower
+>       than Q 950 style machines for sure).
+>   Ethertalk card on-board
+>   Audio in/out
+>   4 MB RAM on motherboard
+>   4 SIMM slots
+>   2 NuBus slots.
+>   More flexible build-in video than the CI.  Uses VRAM.
+> 
+> In comparison, a IIci with an accelerator won't give you
+>   audio or ethernet  or the same video options.
+>   With a 68040 accelerator, CPU performance can be comparable but I
+>   think it ends up costing more.
+> 
+> Greg Dudek
+
+  Actually, an accelerator such as the Daystar 33 MHz 68040 is cheaper than
+upgrading to a Q700 (25 MHz).  The accelerator costs about $1400 whereas
+the upgrade costs $2131 (just quoted from my dealer).  However the Q700
+upgrade gives you very fast built in video that supports monitors up to 21"
+with 8 bit depth and up to 16" at 24 bit depth (with additional VRAM).  It
+also has a SCSI port capable of a much faster throughput than the CI, which
+makes a big difference if you have a fast hard drive.
+
+  If the improved video and SCSI features are important to you, you're
+better off getting the Q700 upgrade, otherwise save some money and get an
+accelerator.
+
+Paul

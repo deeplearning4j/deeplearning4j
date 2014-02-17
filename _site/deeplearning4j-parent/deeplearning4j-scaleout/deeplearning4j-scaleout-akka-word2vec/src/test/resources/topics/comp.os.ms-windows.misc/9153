@@ -1,0 +1,29 @@
+From: cgd@eden.CS.Berkeley.EDU (Chris G. Demetriou)
+Subject: Re: PC/Geos, Windows, OS/2, and Unix/X11
+Organization: Kernel Hackers 'r' Us
+Lines: 22
+NNTP-Posting-Host: eden.cs.berkeley.edu
+In-reply-to: rcampbel@weejordy.physics.mun.ca's message of Tue, 6 Apr 1993 11:41:36 GMT
+
+In article <C528HE.I1q@news.ucs.mun.ca> rcampbel@weejordy.physics.mun.ca (Roderick Campbell) writes:
+=>There is a free unix, linux, that has cc, ~c++, fortran ( f2c ),
+=>Xwindows and many other features besides, with a large number of utilities
+=>that can be optionally added. And there is also a free 386BSD I believe.
+=>Both these unix's are quite robust. You can check out comp.os.linux
+
+i dunno about linux, but for 386bsd, don't forget networking
+(well tested, at that), NFS, a fast, incredibly stable filesystem,
+and the list goes on...  8-)
+
+for us 386bsd folk, look in comp.os.386bsd.*.
+
+
+
+
+chris
+moderator of comp.os.386bsd.announce, anti-politician, and sometime evangelist
+--
+Chris G. Demetriou                                    cgd@cs.berkeley.edu
+
+   "386bsd as depth first search: whenever you go to fix something you
+       find that 3 more things are actually broken." -- Adam Glass

@@ -1,0 +1,164 @@
+From: bontchev@fbihh.informatik.uni-hamburg.de (Vesselin Bontchev)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Keywords: encryption, wiretap, clipper, key-escrow, Mykotronx
+Reply-To: bontchev@fbihh.informatik.uni-hamburg.de
+Organization: Virus Test Center, University of Hamburg
+Lines: 157
+
+strnlght@netcom.com (David Sternlight) writes:
+
+> Though some may argue about the nose of the camel, it's worth noting that
+> the government proposal is limited to scrambled telephony. If it is only
+> used for that purpose, and does not extend to electronic mail or file
+
+As usual, David Sternlight is demonstrating his inability to read. The
+proposal clearly states:
+
+=> The initiative will involve the creation of new products to
+=> accelerate the development and use of advanced and secure
+=> telecommunications networks and wireless communications links.
+
+It speaks about telecommunications in general. Read it again, David.
+Maybe you'll understand it the next time... Nah, probably not.
+
+> encryption, then it IS an improvement over the current mass-produced
+> standard civilian technology which, with a few exceptions, is limited to
+> easy-to-break inverters.
+
+That's exactly what the government wants all sheep-minded people to
+think. Let's look at the current situation. It allows to almost
+anybody to eavesdrop almost everybody, unless secure (and I mean
+secure) encryption is used. What will happen when ("if"? Ha!
+optimists...) the new proposal gets accepted? Almost nobody EXCEPT
+SOME will be able to eavesdrop everybody else, but the ability of
+these "some" to eavesdrop will be guaranteed! The proposal emphasizes
+on the former ("almost nobody") - which is clearly an improvement -
+and "forgets" to mention the drawbacks of the latter ("guaranteed").
+Yes, my statement assumes that the next step will be to make the
+strong crypto unlawful. You think that it will not happen? Good luck.
+
+> Note that the big issue for the feds is the continued ability to wiretap.
+
+It's not just "continued ability". It's -guaranteed- ability.
+
+> Before we go off the deep end with long discusions about secure crypto for
+> e-mail and files, let's focus on this.
+
+Yeah, that's exactly what your government wants you to think. Let's
+take small steps, one at a time. Concentrate on the current one, don't
+think about the future. Trust us.
+
+> One question that was not asked in the release is whether this proposal is
+> limited to telephony, or if the government intends to expand it.
+
+It's not asked because the proposal clearly says that this is the
+intention. They, unlike you, read what they write.
+
+> Though I share many of the concerns expressed by some, I find the proposal
+> less threatening than many others, since right now most Americans have no
+> secure telephony, and any jerk with a pair of clip leads and a "goat" can
+> eavesdrop. This would also plug up the security hole in cellular and
+> cordless phones.
+
+Yes, it will. It will stop the jerk who is eavesdropping now. It will
+allow only to the government to eavesdrop. (If the scheme is secure,
+of course, which is yet to be proven.) But how do you know that the
+jerk you are fearing now will not get a government job tomorrow? The
+new proposal -guarantees- him the ability to eavesdrop then. Hell,
+that will even motivate him to get that job - if he indeed is that
+mentally pervert...
+
+> Reading between the lines, I infer that the system is highly secure
+> without access to the keys.
+
+Great. The Greatest Cryptographer of All Times David Sternlight (tm)
+has succeeded to evaluate the new system in the absense of any
+details whatsoever and has concluded that it is "highly secure". I
+guess, that comes from the background of working some 50 years for the
+two major crypto evaluating companies, right? Gee, now the government
+can save all that money and trouble to ask a secret council of crypto
+experts to secretly analyse the new secret method - for David
+Sternlight has already done all the job for them...
+
+> This would meet the needs of U.S. businesses
+> confronted by rich and powerful adversaries, including French and Japanese
+> security services and rich Japanese companies. It allows the NSA to make
+> available some of its better stuff while protecting law enforcement needs.
+
+"Trust us, we're from the Government and we're here to help you."
+
+> Most legitimate U.S. corporations trust the NSA, and would be delighted to
+> have a high-security system certified by them, even at the price of
+> depositing keys in escrow. I see no difficulty in creating a reliable
+
+"Those who are prepared to trade their liberties for the promises of
+future safety, do not deserve either." This (or something like that; I
+don't have the exact quote, but the meaning is the same) has been said
+by one of your great men. Maybe you should study their works more
+carefully, if you have the brains to understand them, of course.
+
+> From my point of view this is a fair starting point. There are concerns that
+> need to be addressed, including the reliability of the escrows. But in
+
+The main question is to guarantee to availability of -really- secure
+cryptography to the masses. Gee, if the proposal was saying "we
+guarantee that every American will still have the full right to use
+any kind of encryption s/he would like and regard this proposal as
+just a default, voluntary implementation", there would have been much
+less opposition... For some reason, they didn't even try to promise
+you that. I wonder why... Was Orwell off only by 10 years?
+
+> return we get access to high-security crypto.
+
+No, in return you get crypto that is guaranteed to be crippled.
+
+> Many have suggested that DES
+> and other systems may be breakable by the NSA and hence others similarly
+> skilled and endowed.
+
+While the above is just rumors, and while even if it is true, it is
+not done -easily-, the new scheme can is guaranteed to be easily
+breakable by anybody who has the two keys. It might be also breakable
+by somebody who does not have them but knows the right trick. Or who
+has only one of them. NSA also told you that DES is secure, why don't
+you simply trust them, huh?
+
+> There is at least a good possibility (which should be
+> checked) that the proposed system is not so breakable. It doesn't have to
+
+It is -guaranteed- to be -easily- breakable - just get the keys. It
+might be even easier, but until there is some evidence, this is just a
+wild speculation.
+
+> be, nor does it have to have trapdoors, if the government can get the keys
+
+The trapdoors -are- there. In government's hands. The keys.
+
+> pursuant to a legitimate court order. Thus they can protect legitimate
+> communications against economic adversaries, while still being able to
+> eavesdrop on crooks pursuant to a court order.
+
+Legitimate? And who decides what communications are legitimate? Oh, I
+guess, it's the government, right? The guys who already have the keys?
+It's kinda if I have the keys from your car and I am asked to decide
+who has the right to use it "legitimately"...
+
+> In discussing this, let's try to avoid the nastiness, personal attacks and
+> noise of some previous threads.
+
+Impossible, since you are demonstrating the same level of incompetence
+and ignorance as in the provious threads.
+
+> This is a substantive and technical issue,
+> and personal remarks have no place in such a discussion.
+
+Unfortunately, I have yet to see you posting a technically competent
+message.
+
+Regards,
+Vesselin
+-- 
+Vesselin Vladimirov Bontchev          Virus Test Center, University of Hamburg
+Tel.:+49-40-54715-224, Fax: +49-40-54715-226      Fachbereich Informatik - AGN
+< PGP 2.2 public key available on request. > Vogt-Koelln-Strasse 30, rm. 107 C
+e-mail: bontchev@fbihh.informatik.uni-hamburg.de    D-2000 Hamburg 54, Germany

@@ -1,0 +1,13 @@
+A
+Summary:
+IBM is acquiring Aspera, a specialist in sending big files over the internet . The company’s technology is used by everyone from movie studios to genetic researchers, and it recently launched a Dropbox-for-business-style synchronization service.
+IBM on Thursday announced plans to acquire Aspera, a startup whose protocol technology is used to transfer large files fast over the slow public internet. The Aspera protocol, called fasp, is used by a large number of movie studios and others that need to send gigabyte files between desktops, servers and clouds. IBM is touting the acquisition as a “big data” move in a press release announcing the acquisition, but it will probably have a bigger impact on Big Blue’s revamped cloud computing business.
+Getting data to and from cloud services has always been a tricky proposition, which is why cloud providers such as Amazon Web Services, Google and Microsoft allow users to just mail them hard drives rather than trying uploading terabytes of data at a time. The same issues exist for large files, albeit on a smaller scale. Consider the hours it takes to upload a day’s worth of high-res photos to Dropbox, for example. Aspera claims it can send a 24-gigabyte file halfway around the world in 30 seconds.
+In 2011, I wrote a story about how Microsoft’s VidLab relies on Aspera to receive everything from movies to 2.5-hour Ultimate Fighting Championship events from its content-provider partners.
+Aspera was founded in 2004, and has been quick to embrace a lot of trends in the computing space since then. In 2009, for example, it partnered with Amazon Web Services to speed file delivery to that cloud. In 2011, it launched an iPhone app to help users send video files (presumably) faster over 3G networks. In September 2013, Aspera announced a cloud file-sharing and synchronization service a la Dropbox that targeted companies and research institutions, and that represented an amalgamation of the capabilities Aspera has developed for different types of devices and platforms.
+All of this could be a boon to IBM’s cloud business, in which the company has invested billions of dollars in order to make it more competitive in the market. If IBM’s cloud makes it easier for them to move files around the world and do hybrid cloud deployments, where data flow between corporate data centers and cloud servers, IBM’s cloud looks like a lot better option.
+For a little more on Aspera, here is Co-founder and CEO Michelle Munson (also pictured above) speaking at our Structure Europe conference in 2012.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

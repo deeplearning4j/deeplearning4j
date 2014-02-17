@@ -1,0 +1,33 @@
+From: schellew@wu2.wl.aecl.ca (Wayne Schellekens)
+Subject: WANTED: DRAM Controller for use with MC68HC16
+Keywords: DRAM, HC16
+Nntp-Posting-Host: wu2.wl.aecl.ca
+Organization: AECL Research, Whiteshell Laboratories
+Distribution: na
+Lines: 25
+
+For an upcoming project I want to use 4 Megs of DRAM configured as two 2
+Meg banks of 16 bit data.  I was wondering if anyone out there knows of a
+DRAM controller which will handle refreshing the data.  It's ok if the
+controller doesn't handle bank switching - that part is easy.
+
+The only controllers I know of are the ones out of the National
+Semiconductor DRAM Management Handbook (1988 edition) eg. DP8429.  I would
+like to know if another manufacturer produces one which may be easier to
+implement in my circuit.
+
+BTW, if anyone is wanting to hook up DRAM to a microcontroller, Dallas
+Semiconductor makes a neat chip: the DS1262 Serial DRAM Nonvolatizer
+Chip.  It uses the SPI (I2C) bus and refreshes/controls up to 16Mx1 of DRAM
+memory.  It can use an external battery to refresh the DRAM when the
+power is off.  Price is $11.75 from Dallas (quan 1).  I wish I could use
+this chip but its maximum SPI clock rate is 1 MHz (too slow for me...).
+
+Thanks in advance,
+
+Wayne Schellekens
+<schellew@wu2.wl.aecl.ca>
+-- 
+Wayne Schellekens, VE4WTS          Internet: schellew@wu2.wl.aecl.ca
+AECL Research                         AX.25: VE4WTS@VE4KV.#WPG.MB.CAN 
+Whiteshell Laboratories        Twisted pair: (204)753-2311 x2317

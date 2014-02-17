@@ -1,0 +1,21 @@
+From: lioness@oak.circa.ufl.edu
+Subject: int15h for joysticks is slow....
+Organization: Center for Instructional and Research Computing Activities
+Lines: 14
+Reply-To: LIONESS@ufcc.ufl.edu
+NNTP-Posting-Host: oak.circa.ufl.edu
+
+
+I'm using int15h to read my joystick, and it is hideously slow.  Something
+like 90% of my CPU time is being spent reading the joystick, and this
+is in a program that does nothing but printf() and JoyRead().
+
+The problem is that a lot of programs trap int15h ( like SMARTDRV ) and
+so it is a slow as hell interface.  Can I read the joystick port in
+a reasonably safe fashion via polling?  And that isn't platform or
+clockspeed specific?
+
+Thanks,
+
+Brianzex
+

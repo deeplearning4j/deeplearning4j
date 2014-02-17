@@ -1,0 +1,32 @@
+From: balog@eniac.seas.upenn.edu (Eric J Balog)
+Subject: A: DRIVE WON'T BOOT
+Organization: University of Pennsylvania
+Lines: 26
+Nntp-Posting-Host: eniac.seas.upenn.edu
+
+Hi!
+
+I recently switched my 3.5" drive to A:. The problem is, while I can read and
+write to both the new A: and B: correctly, I can't boot from a floppy in A:.
+I've checked the CMOS settings; it is set for Floppy Seek at Boot and Boot 
+Order A:,C:. 
+
+Once, I had a floppy that did not have the systems files on it in A:. I got a
+message telling me to put a disk systems disk in the drive. It didn't work.
+When I do have a systems disk in the A: drive, this is what happens:
+1) Power-on and Memory Test;
+2) A: light comes on
+3) B: light comes on, followed by a short beep;
+4) HD light comes on for an instant;
+5) B: light comes on again, then nothing happens
+
+The light goes off, there is no disk activity of any kind, and the screen 
+blanks. I can't even use ctrl-alt-del.
+
+Any suggestions.
+
+Thanks in advance.
+
+Eric Balog 
+balog@eniac.seas.upenn.edu
+

@@ -1,0 +1,51 @@
+From: bgrubb@dante.nmsu.edu (GRUBB)
+Subject: Re: IDE vs SCSI
+Organization: New Mexico State University, Las Cruces, NM
+Lines: 44
+Distribution: world
+NNTP-Posting-Host: dante.nmsu.edu
+
+DXB132@psuvm.psu.edu writes:
+>In article <1qlbrlINN7rk@dns1.NMSU.Edu>, bgrubb@dante.nmsu.edu (GRUBB) says:
+>>In PC Magazine April 27, 1993:29 "Although SCSI is twice as fasst as ESDI,
+>>20% faster than IDE, and support up to 7 devices its acceptance ...has   
+>>long been stalled by incompatability problems and installation headaches."
+                                                                      
+>I love it when magazine writers make stupid statements like that re:      
+>performance. Where do they get those numbers? I'll list the actual
+>performance ranges, which should convince anyone that such a               
+>statement is absurd:                                                     
+>SCSI-I ranges from 0-5MB/s.                                                
+>SCSI-II ranges from 0-40MB/s.            
+>IDE ranges from 0-8.3MB/s.                          
+>ESDI is always 1.25MB/s (although there are some non-standard versions)
+ALL this shows is that YOU don't know much about SCSI.
+
+SCSI-1 {with a SCSI-1 controler chip} range is indeed 0-5MB/s
+and that is ALL you have right about SCSI
+SCSI-1 {With a SCSI-2 controller chip}: 4-6MB/s with 10MB/s burst {8-bit}
+ Note the INCREASE in SPEED, the Mac Quadra uses this version of SCSI-1
+ so it DOES exist. Some PC use this set up too.
+SCSI-2 {8-bit/SCSI-1 mode}:          4-6MB/s with 10MB/s burst
+SCSI-2 {16-bit/wide or fast mode}:  8-12MB/s with 20MB/s burst
+SCSI-2 {32-bit/wide AND fast}:     15-20MB/s with 40MB/s burst
+ 
+By your OWN data the "Although SCSI is twice as fast as ESDI" is correct
+With a SCSI-2 controller chip SCSI-1 can reach 10MB/s which is indeed
+"20% faster than IDE" {120% of 8.3 is 9.96}. ALL these SCSI facts have been
+posted to this newsgroup in my Mac & IBM info sheet {available by FTP on 
+sumex-aim.stanford.edu (36.44.0.6) in the info-mac/report as 
+mac-ibm-compare[version #].txt (It should be 173 but 161 may still be there)}
+
+Part of this problem is both Mac and IBM PC are inconsiant about what SCSI
+is which.  Though it is WELL documented that the Quadra has a SCSI-2 chip
+an Apple salesperson said "it uses a fast SCSI-1 chip" {Not at a 6MB/s,
+10MB/s burst it does not. SCSI-1 is 5MB/s maximum synchronous and Quadra
+uses ANsynchronous SCSI which is SLOWER}  It seems that Mac and IBM see
+SCSI-1 interface and think 'SCSI-1' when it maybe a SCSI-1 interface driven
+in the machine by a SCSi-2 controller chip in 8-bit mode {Which is MUCH
+FASTER then true SCSI-1 can go}.
+
+Don't slam an article because you don't understand what is going on.
+One reference for the Quadra's SCSI-2 controller chip is 
+(Digital Review, Oct 21, 1991 v8 n33 p8(1)).

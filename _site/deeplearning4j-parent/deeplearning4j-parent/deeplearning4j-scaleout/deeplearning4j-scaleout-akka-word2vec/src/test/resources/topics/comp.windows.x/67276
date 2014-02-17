@@ -1,0 +1,144 @@
+From: inoue@crd.yokogawa.co.jp (Inoue Takeshi)
+Subject: How to see characterset from wchar_t
+Nntp-Posting-Host: emu
+Distribution: comp
+Organization: Yokogawa Electric Corporation, Tokyo, Japan
+Lines: 137
+
+
+We developed a toolkit running on the X Window System.
+The toolkit copes with any languages based on X11R5's i18n
+facility. As you know, there are 2 kinds of i18n implementation from MIT's 
+X11R5 release -- Xsi and Ximp. Our original implementation of the toolkit
+uses Xsi.
+
+Our toolkit manages each character's size based on our own font management system.
+In order to do that, the 'wchar_t' typed character strings must be decomposed
+to character sets. This means that if one wchar_t type compound string with 
+ASCII and Kanji mixed, for example, is given, each element of the wchar_t
+array must be checked its corresponding character set based on a bit layout
+and application environment's locale. In this case if the locale is 'japanese',
+each wchar_t character will be classified either to iso8859-1, jisx0208 or so.
+
+We need a function to do this. The function must check how many characters
+from the top are the same character set and what the character set is.
+
+We could not find any public X11R5 function to do that and inevitably, used
+Xsi's internal functions to construct that function. The following is the
+source code of that function 'decomposeCharacterSet()'.
+
+
+//I18N.h
+// This may look like C code, but it is really -*- C++ -*-
+// $Id: I18N.h,v 1.1 1992/01/21 12:05:24 iima Exp iima $
+
+#ifndef _I18N_H
+#define _I18N_H
+
+#include <X11/Xlib.h>
+
+extern int decomposeCharacterSet(const wchar_t *wc_str,	/* IN */
+				 int wc_len,		/* IN */
+				 char *buf,		/* OUT */
+				 int *buflen,		/* IN/OUT */
+				 int *scanned_len,	/* OUT */
+				 char **charset);	/* OUT */
+extern XmString wcharToXmString(const wchar_t *wc_str);
+extern XmStringCharSet charsetOfWchar(const wchar_t wc);
+
+#endif /* _I18N_H */
+
+//I18N.cc
+/* $Id: I18N.cc,v 1.1 1992/01/21 12:05:05 iima Exp $ */
+
+#include <stdlib.h>
+#include <X11/Xlibint.h>
+#include <Xm/Xm.h>
+#include "I18N.h"
+
+extern "C" {
+#include <X11/wchar.h>
+#define _XwcDecomposeGlyphCharset XXX_XwcDecomposeGlyphCharset
+#define _Xmbfscs XXX_Xmbfscs
+#define _Xmbctidtocsid XXX_Xmbctidtocsid
+#include "Xlocaleint.h"
+#undef _XwcDecomposeGlyphCharset
+#undef _Xmbfscs
+#undef _Xmbctidtocsid
+    extern int _XwcDecomposeGlyphCharset(XLocale, const wchar_t*, int,
+					 char*, int*, int*, int*);
+    extern Charset *_Xmbfscs(XLocale, _CSID);
+    extern _CSID _Xmbctidtocsid(XLocale, _CSID);
+};
+
+int decomposeCharacterSet(const wchar_t *wc_str,/* IN */
+			  int wc_len,		/* IN */
+			  char *buf,		/* OUT */
+			  int *buf_len,		/* IN/OUT */
+			  int *scanned_len,	/* OUT */
+			  char **charset)	/* OUT */
+{
+    XLocale xlocale = _XFallBackConvert();
+    int ctid;
+    int status;
+    Charset *xcharset;
+    
+    status = _XwcDecomposeGlyphCharset(xlocale, wc_str, wc_len, buf,
+				       buf_len, scanned_len, &ctid);
+    if (status == Success) {
+	xcharset = _Xmbfscs(xlocale, _Xmbctidtocsid(xlocale, ctid));
+	*charset = (xcharset) ? xcharset->cs_name : NULL;
+    }
+    else
+	*charset = NULL;
+    return status;
+}
+----------------
+
+An included file above, "Xlocaleint.h", is also Xsi internal and we copied
+the file to the toolkit directory and compiled.
+
+A serious issue occured when we tried to compile a toolkit application on
+our HP machine with its OS version of HP-UX9.01.
+
+When we tried to link an application based on our toolkit,
+link errors occured saying that the following functions are missing:
+    _Xmbctidtocsid (code)
+    _Xmbfscs (code)
+    _XwcDecomposeGlyphCharset (code)
+    _XFallBackConvert (code)
+
+We had used MIT release version of X11R5 and its Xsi implementation until
+HP-UP9.0 and ran applications successfully. One of the reasons to use Xsi was that
+because HP did not release HP's X11R5 until the OS 9.0 and we had no way to 
+know how HP's R5 would be implemented. We had hoped Xsi's popularity and used 
+its internal functions. 
+
+The HP's linker complains that there are no Xsi internal functions implemented.
+We observe from HP's libX11.a, they used some Ximp implementation but we are
+not sure if they used MIT's vanilla Ximp version or their own version of Ximp and
+therefore, finding just counter part functions in MIT's Ximp for Xsi does not
+seem to lead us a solution.
+
+My question and goal is to know how we can construct a function like
+'decomposeCharacterset()' listed above. Is there any function to check
+character set of each element of wchar_t type strings depending on locales?
+If it is a public function, that is perfect but even if it is not, we
+want to use any internal functions in HP's X11R5 as we did for MIT's R5.
+
+In order to render a 'wchar_t' type string, there must be some machinery
+to judge character sets and that is how the proper fonts are selected for
+the string. We have no way to find out that without any HP's X11R5 source 
+files. We want to know how we can use that for our goal. 
+Any help or comments would be highly appreciated.
+
+I also appreciate if anyone tell me about Ximp treating around this area
+even if it is not HP's implementation.
+
+Thank you.
+
+--
+				Takeshi Inoue
+				inoue@crd.yokogawa.co.jp
+				Yokogawa Electric Corporation
+				Open Systems Laboratory	0422(52)5557

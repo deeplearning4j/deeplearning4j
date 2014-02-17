@@ -1,0 +1,34 @@
+From: jliukkon@klaava.Helsinki.FI (Juha-Matti Liukkonen)
+Subject: Re: Please help identify this old 3Com Ethernet card
+Organization: University of Helsinki
+Lines: 29
+
+simon@moscow.uidaho.edu (Mike Simon) writes:
+
+>In article <1qhvunINNhau@emory.mathcs.emory.edu>, splee@pd.org (Seng-Poh Lee, Speedy) writes:
+>|> I have an old 3Com ethernet card (PC AT Bus) that came out of a Apollo
+>|> workstation. I'm trying to identify it in order to use it on a PC.
+>|> 
+>|> The Assembly number is 4008-00 REV 2 and it is a 16 bit card, circa
+>|> 1985.  It has an AUI port as well as a BNC coax connection.  It has
+>|> selectable address for the BIOS, IO, DMA, and IRQ locations via berg
+>|> jumpers.  It also appears to have a Intel 80186 processor on board,
+>|> presumably for buffering. 
+>|> 
+>|> The ethernet chip appears to be an Intel 82586, a 48 pin DIP package. Is
+>|> this chip an equivalent to the 8390 used in some cards? There is also
+>|> a 68 pin PLCC chip, called a LINK+
+
+I got two very similar sounding boards for dirt cheap, too. Their Assy
+numbers were not 4000-series, but your description fits otherwise. They
+are 3Com 3C505's aka Etherlink Plus cards. Check out ftp.3com.com, there
+are drivers and diagnostic programs for just about any and all 3Com
+cards. I concluded that my card was the 505 after I ran their diagnostic
+program for 3C505 succesfully ("..passes with flying colours") :)
+
+Anybody know of packet drivers for these cards under OS/2..?
+
+-- 
+               Juha Liukkonen, aka jliukkon@cc.helsinki.fi
+              University of Helsinki,  Dept. of  Lost Souls
+           "Trust me, I know what I'm doing." - Sledge Hammer

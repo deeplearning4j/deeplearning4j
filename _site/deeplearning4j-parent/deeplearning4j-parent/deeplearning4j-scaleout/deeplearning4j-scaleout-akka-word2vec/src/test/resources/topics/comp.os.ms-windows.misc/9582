@@ -1,0 +1,13 @@
+From: ghhwang@csie.nctu.edu.tw (ghhwang)
+Subject: Re: WP-PCF, Linux, RISC?
+Organization: Computer Sci. & Information Eng., Chiao-Tung U, Taiwan, ROC
+X-Newsreader: TIN [version 1.1 PL6]
+Lines: 7
+
+Dear friend,
+  The RISC means "reduced instruction set computer". The RISC usually has 
+small instruction set so as to reduce the circuit complex and can increase 
+the clock rate to have a high performance. You can read some books about
+computer architecture for more information about RISC.
+                       
+                                   ghhwang@csie.nctu.edu.tw form R.O.C TaiwaN 

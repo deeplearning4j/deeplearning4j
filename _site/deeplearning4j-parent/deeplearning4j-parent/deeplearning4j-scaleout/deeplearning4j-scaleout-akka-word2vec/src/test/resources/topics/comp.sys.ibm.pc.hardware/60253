@@ -1,0 +1,22 @@
+From: scott@hpcvccl.cv.hp.com (Scott Linn)
+Subject: No 32-bit box on Gateway
+Nntp-Posting-Host: hpcvccl.cv.hp.com
+Organization: Hewlett-Packard Company, Corvallis, Oregon USA
+Lines: 16
+
+While playing around with my Gateway 2000 local-bus machine last
+night, it became apparent that Windows 3.1 didn't give the option
+for 32-bit access for virtual memory.
+
+I am using a permanent swap file, and the disk drive is on the local
+bus interface.
+
+Is this expected, or should I be investigating further why no 32-bit
+option appears?
+
+Thanks for any help.
+
+--
+
+Scott Linn
+scott@hpcvccl.cv.hp.com

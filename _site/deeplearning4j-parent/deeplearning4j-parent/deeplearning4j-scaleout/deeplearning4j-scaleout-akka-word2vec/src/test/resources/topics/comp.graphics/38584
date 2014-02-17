@@ -1,0 +1,26 @@
+From: nahess@mir.gatech.edu (Nicholas A. Hess)
+Subject: Hitatchi Raster Format (HRF)?
+Organization: USGS Center for Spatial Analysis Technologies
+Lines: 19
+NNTP-Posting-Host: mir.gatech.edu
+Keywords: HRF
+
+ Our shop uses a package called CADCore - very good - to scan and
+subsequently vectorize original maps into digital maps. The problem is that
+once the raster file is loaded into the CADCore package, a header is added
+to the .HRF file which makes it unreadable by the supplied converter. We
+would like to be able to ship some of the already-altered raster images for
+further use on our workstations. So, here are my questions:
+
+ (1) What is the Hitachi format? - I need this format so I can recognize
+precisely what to strip out. I strongly suspect that it's a compressed
+format - if so, then t might not be possible for me to strip out the
+offending header.
+
+ (2) Are there any UNIX packages that read and recognize HRF? It would be
+really nice to find some sort of "hrftopbm" converter out there. ;)
+
+ I've already searched some of the more well-known ftp sites which contain
+graphics formats documentation, with no luck. So, if you know, or knwo
+someone who knows - please email! Thanks.
+

@@ -1,0 +1,22 @@
+Subject: Re: How large are commercial keys?
+From: pgut1@cs.aukuni.ac.nz (Peter Gutmann)
+Organization: Computer Science Dept. University of Auckland
+Lines: 17
+
+In <1993Apr20.182038.12009@ee.eng.ohio-state.edu> butzerd@maumee.eng.ohio-state.edu (Dane C. Butzer) writes:
+
+>What are the typical sizes for keys for commercial secret key algorithms?
+>I know DES is 56 bits ("tripple DES" is 112 bits) and IDEA is 128 bits.  Is
+>there anything made in the US that has 128 bit keys?  Anything anywhere
+>that has larger keys?  I've heard that RC2 can be scaled to arbitrarily
+>large keys, but is this actually implemented anywhere?
+
+My MDC cipher (which uses any one-way hash function as a CFB-mode stream
+cipher, the current implementation uses MD5) uses a key of up to 2048 bits
+(that is, you can use a 1-bit key if you want and copy it over the entire
+2048-bit range, or you can use the entire 2048 bits).  Runtime is
+independant of key size, the system runs slightly slower than MD5 itself.
+I presume RC2 and RC4 use a similar system (or possibly they just hash an
+arbitrary-length key down to n bits, maybe 128, using something like MD5).
+
+Peter.

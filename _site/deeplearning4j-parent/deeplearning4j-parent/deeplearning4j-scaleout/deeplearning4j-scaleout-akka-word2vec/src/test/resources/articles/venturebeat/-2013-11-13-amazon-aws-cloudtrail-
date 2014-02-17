@@ -1,0 +1,7 @@
+0
+As apps on Amazon Web Services (AWS) become increasingly complex and integrated, AWS API calls come from more places and people. It can get confusing — and tracking all that information can be valuable for compliance aid, security analytics, operational troubleshooting, and resource life cycle tracking.
+To help developers and IT follow it all, Amazon just unveiled AWS CloudTrail , which records calls made to the AWS APIs and publishes the resulting log files (in JSON format) to a storage bucket in AWS S3, Amazon Web Services’ cloud storage offering.
+CloudTrail lets you keep track of what actions users have taken over a specific period of time and of which users have accessed a specific resource. You can also see the source IP address of that activity.
+There’s no special charge for CloudTrail, just regular S3 and SNS (Simple Notification Service) pricing.
+Amazon made a fun flow chart to demonstrate where CloudTrail fits in the AWS ecosystem. You can check that out below.
+Related articles

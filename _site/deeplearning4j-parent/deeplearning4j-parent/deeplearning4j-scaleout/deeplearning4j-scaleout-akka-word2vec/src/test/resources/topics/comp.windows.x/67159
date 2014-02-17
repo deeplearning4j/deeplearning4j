@@ -1,0 +1,35 @@
+From: earle@isolar.Tujunga.CA.US (Greg Earle)
+Subject: Re: Colormaps and Window Managers
+Organization: Personal Usenet site, Tujunga, CA USA
+Lines: 27
+Distribution: world
+NNTP-Posting-Host: isolar.tujunga.ca.us
+Keywords: twm  tvtwm  InstallWindowColormaps
+
+In article <1993Apr15.155255.27034@thunder.mcrcim.mcgill.edu> mouse@thunder.mcrcim.mcgill.edu (der Mouse) writes:
+>In article <C5DuHC.71p.1@cs.cmu.edu>, das+@cs.cmu.edu (David Simon) writes:
+>
+>>Can some one please explain to me why the following piece of code
+>>causes twm (or tvtwm) to dump core [...]
+>
+>>In particular, I am interested in knowing whether this behavior is
+>>caused by a bug in my reasoning, or if it is a bug in twm.
+>
+>If *anything* a client does causes twm to dump core, it's a bug in twm.
+>Window managers should never *ever* crash.
+
+Would if only it were true ...
+
+If only MIT would fix the !@&$^*@ twm "InstallWindowColormaps()" crash bug
+once and for all, then I could say that I've (almost) unable to crash either
+"twm" or "tvtwm", which would be a remarkable feat - and most desirable to
+boot.  I mean, this bug has only been reported, oh, a zillion times by now ...
+
+Now *servers*, on the other hand ... (want to crash an OpenWindows 3.0 "xnews"
+server at will?  Just do an 'xbiff -xrm "XBiff*shapeWindow: on"'.  Blammo.)
+
+-- 
+	- Greg Earle
+	  Phone: (818) 353-8695		FAX: (818) 353-1877
+	  Internet: earle@isolar.Tujunga.CA.US
+	  UUCP: isolar!earle@elroy.JPL.NASA.GOV a.k.a. ...!elroy!isolar!earle

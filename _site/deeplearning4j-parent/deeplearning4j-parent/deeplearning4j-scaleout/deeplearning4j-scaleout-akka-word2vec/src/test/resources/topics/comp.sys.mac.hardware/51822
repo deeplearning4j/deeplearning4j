@@ -1,0 +1,64 @@
+From: hades@coos.dartmouth.edu (Brian V. Hughes)
+Subject: Re: Why does Apple give us a confusing message?
+Reply-To: hades@Dartmouth.Edu
+Organization: Dartmouth College, Hanover, NH
+Disclaimer: Personally, I really don't care who you think I speak for.
+Moderator: Rec.Arts.Comics.Info
+Lines: 56
+
+ubs@carson.u.washington.edu (University Bookstore) writes:
+>bunt0003@student.tc.umn.edu (Monthian Buntan-1) writes:
+>>
+>>
+>>Does anyone know why Apple has an ambiguous message for C650 regarding
+>>fpu?  In all Mac price lists I've seen, every C650 has the message "fpu:
+>>optional".  I know from what we've discussed in this newsgroup that all
+>>C650 have the fpu built in except the 4/80 configuration.  Why would
+>>they be so unclear about this issue in their price list?
+
+    I think this is mostly the fault of the people who write up the
+literature and price lists being confused themselves. Since there are
+two possible processor configurations and one of the them doesn't have
+an FPU it does seem to be an option, even though it really isn't.
+
+>>I'm planning to buy the C650 8/230/cd pretty soon, but I'm now getting
+>>confused with whether it comes with fpu or not.
+
+    Well, then allow me to end your confusion. The C650 ONLY come with
+an LC040 in the base 4/80 configuration. If you are not getting this
+configuration then you are getting an FPU.
+
+>>Why say "optional" if it's built in?
+
+    Good question. I have been wondering that since Feb. 10th.
+
+>If you get the Centris 650 with CD configuration, you are getting a Mac with
+>a 68RC040 processor that has built-in math coprocessor support.  My 
+>understanding is that the "optional fpu" refers to your option of purchasing
+>the Centris 650 4/80 without FPU OR one of the other configurations WITH FPU.
+ 
+    This is possible, but an option is something that you are supposed
+to be able to request when you want it. What Apple has done is given the
+buyer a CHOICE between configurations and not an OPTION.
+
+>Apple does not offer an upgrade from the non-FPU system to become an FPU
+>system.  And, it is unclear whether the '040 processor on the non-FPU system
+>(a 68LC040) can be replaced with a 68RC040 supplied by another vendor.
+
+    This is not unclear at all. In fact Apple has included in the ROMs
+of those machines with LC040s code to recognize the presence of the full
+040's FPU and use it. Thereby making the upgrade as easy as switching
+chips. You pop the LC040 out and pop in a full '040.
+
+>Apple did send a memo out at one point sating that the Centris 610, which ONLY
+>comes with a non-FPU 68LC040 processor CANNOT be upgraded to support an FPU -
+>the pin configurations of the two chips apparently do not match so you cannot
+>swap one for another (again, according to Apple's memo).
+
+    They did? I think I would double-check this. It has been stated
+countless times in this newsgroup by two of the Centris hardware
+designers that the LC040 and the full '040 are pin compatible and that
+the C610 can be upgraded to a full '040.
+
+-Hades
+

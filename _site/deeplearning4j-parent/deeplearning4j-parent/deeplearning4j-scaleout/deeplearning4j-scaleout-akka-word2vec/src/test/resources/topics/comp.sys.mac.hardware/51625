@@ -1,0 +1,27 @@
+From: ellens@bnr.ca (Chris Ellens)
+Subject: Re: HD Setup Partition (Was: OK to set 54 lbs on top of Centris 610???
+Nntp-Posting-Host: bcarm422
+Organization: Bell-Northern Research
+Lines: 21
+
+In article <1993Apr15.143516.17221@urbana.mcd.mot.com>,
+feldman@urbana.mcd.mot.com (Mike Feldman) wrote:
+> 
+> 
+> Now if I can figure out if there's any hope using the "partition" button
+> on the hard disk setup utility (do I dare just try it and see what happens?),
+> then maybe I can divide up the wealth among the family members a bit more
+> securly.  The "getting more information" section of the manual suggested
+> trying other avenues before calling Apple, but didn't mention the net.
+> -- 
+> Mike Feldman, Motorola Computer Group,     (217) 384-8538, FAX (217) 384-8550
+> 1101 East University Avenue	   Pager in IL (800) 302-7738, (217) 351-0009
+> Urbana, IL 61801-2009 (mcdphx|uiucuxc)!udc!feldman feldman@urbana.mcd.mot.com
+
+The Partition button in Apple's HD Setup lets you set up A/UX and other
+types of partitions. It WON'T let you create more than one normal mac
+volume. You need SilverLining or something similar to do that. It WILL,
+however, allow you to take advantage of some possible unused space on your
+hard disk, if you don't mind reformatting the whole thing.
+
+Chris Ellens         ellens@bnr.ca

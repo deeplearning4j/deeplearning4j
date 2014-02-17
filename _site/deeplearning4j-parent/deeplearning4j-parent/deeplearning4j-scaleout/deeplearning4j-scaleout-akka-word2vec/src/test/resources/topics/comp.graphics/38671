@@ -1,0 +1,17 @@
+From: eapu207@orion.oac.uci.edu (John Peter Kondis)
+Subject: I need to make my VGA do shades.
+Nntp-Posting-Host: orion.oac.uci.edu
+Lines: 12
+
+I have a routine that changes the color (RGB) attributes on my
+VGA adapter, but it doesn't work in the mode that I need.  
+Specifically 68 hex.  An obscure mode, of course, but I need to
+change the zillions of colors to 64 shade greyscale, but I do
+not have the correct memory address for the pointer I need.
+
+PLEASE, someone, I need the starting address, or maybe somewhere 
+I can find it.  Thank you.
+
+John Kondis
+eapu207@orion.oac.uci.edu
+

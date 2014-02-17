@@ -1,0 +1,23 @@
+From: donaldlf@k9.Rose-Hulman.Edu (Leslie F. Donaldson)
+Subject: Problems using Graphic Context with Athena widgets
+Organization: Rose-Hulman Institute of Technology
+Lines: 15
+Distribution: world
+NNTP-Posting-Host: k9.cs.rose-hulman.edu
+Keywords: athena,colormaps,graphic contex
+
+I am creating a graphics program using the Athena widgets. I use
+Xlib routines to install a custom Graphics Contex by obtaining the display,
+and window variables with the XtWindowOfObject() and XtDisplayOfObject().
+The object was one of the sub widgets.  
+  The problem occurs that whenever a button is pressed or a menu is selected
+the graphic contex reverts to the orginal one. I tried moving the allocation
+of the graphic context before the allocation of the buttons but nothing
+changed. I am preforming all of this manipulation before calling 
+XtAppMainLoop().
+
+Thank you for any help.
+Leslie Donaldson
+
+donaldlf@cs.rose-hulman.edu
+donaldlf@nextwork.rose-hulman.edu

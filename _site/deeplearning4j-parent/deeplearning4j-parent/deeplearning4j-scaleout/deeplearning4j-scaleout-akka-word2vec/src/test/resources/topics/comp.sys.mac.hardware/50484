@@ -1,0 +1,20 @@
+From: peter@ferranti.com (peter da silva)
+Subject: Re: DCC and MiniDisc: next DAT/DDS like story?
+Organization: Xenix Support, FICC
+Lines: 15
+
+In article <C50CMD.1zz@newcastle.ac.uk> Tor-Olav.Berntzen@newcastle.ac.uk (Tor-Olav Berntzen) writes:
+> Another thing, why a SCSI interface ?
+
+Because SCSI works well with removable media, and works well with large
+capacity devices. The floppy interface you suggest handles the former, but
+it doesn't have any hooks for dealing with the latter... you'd have to kludge
+it. Plus, it's extremely low performance. AND, SCSI has gobs of room for
+expansion compared with a floppy (I can just see it, let's stick a 5.25",
+a 3.5", a tape drive, and a MO drive, all on the floppy interface. The
+possibilities for unexpected collisions are enormous).
+-- 
+Peter da Silva                                            `-_-'
+Network Management Technologies Incorporated               'U` 
+12808 West Airport Blvd.  Sugar Land, TX  77478  USA
++1 713 274 5180                            "Zure otsoa besarkatu al duzu gaur?"

@@ -1,0 +1,30 @@
+From: baalke@kelvin.jpl.nasa.gov (Ron Baalke)
+Subject: Gaspra Animation (QuickTime)
+Keywords: Gaspra, JPL
+Organization: Jet Propulsion Laboratory
+Lines: 22
+NNTP-Posting-Host: kelvin.jpl.nasa.gov
+News-Software: VAX/VMS VNEWS 1.41
+
+
+                       ==============================
+                              GASPRA ANIMATION
+                                March 12, 1993
+                       ==============================
+
+     The Gaspra animation is now available at the Ames Space Archives in 
+QuickTime format.  The animation was formed from 11 images taken by the 
+Galileo spaecraft shortly before its closest approach to the asteroid in 
+October 1991.  The animation is available using anonymous ftp to:
+
+        ftp:      ames.arc.nasa.gov (128.102.18.3)
+        user:     anonymous
+        cd:       pub/SPACE/ANIMATION
+        files:
+                  gaspra.qt 
+     ___    _____     ___
+    /_ /|  /____/ \  /_ /|     Ron Baalke         | baalke@kelvin.jpl.nasa.gov
+    | | | |  __ \ /| | | |     Jet Propulsion Lab |
+ ___| | | | |__) |/  | | |__   M/S 525-3684 Telos | It's kind of fun to do
+/___| | | |  ___/    | |/__ /| Pasadena, CA 91109 | the impossible. 
+|_____|/  |_|/       |_____|/                     | Walt Disney

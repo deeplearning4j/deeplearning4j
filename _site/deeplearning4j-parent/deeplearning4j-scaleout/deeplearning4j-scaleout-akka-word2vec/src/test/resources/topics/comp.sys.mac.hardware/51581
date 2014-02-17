@@ -1,0 +1,91 @@
+From: andy@ie.utoronto.ca (Andy Sun)
+Subject: Re: Centris 650 to Decstation E-net adapter
+Organization: University of Toronto, Department of Industrial Engineering
+Lines: 86
+
+>pnsf01dw@smucs1.umassd.edu (Dennis J. Wilkinson) writes:
+>Not necessarily a thrid-party adapter; Apple does manufacture transceivers
+>for thinWire and 10BaseT (twisted pair) cable media, as well as an AUI
+>(Attachment Unit Interface) transciever. They run at ~$100 each. If you use
+>thinWire or 10BaseT, you'll probably also need terminators (Apple's
+>transceivers are self-terminated, if I remember correctly, but I have no
+>idea about DECs). 
+
+The third-party media adapters are usually cheaper (at least in Toronto) than
+Apple's. I bought the adapters from Asante instead of Apple.
+
+gurman@umbra.gsfc.nasa.gov (Joseph B. Gurman) writes:
+>    The DECstation 5000 Models 200 and 240 come with ThinWire only
+>(can't say for certain about the Models 125 and 133), so your best bet
+
+That's not true. Only the DECstation 5000/200 comes with a Thinwire
+(BNC, coaxial) Ethernet connector. The 5000/25, 5000/133 and 5000/240
+all have a single 15-pin AUI Ethernet connector only. I distinctly
+remembered this because when got the 5000/200 first and I thought all
+of them are going to be Thinwire. I eventually had to go back and ordered
+DESTAs (DEC's oversized version of an AUI-to-BNC adapter that MUST be used
+with a transciever cable) for the rest of the stations.
+
+My advise to the very original poster (Beverly?) is:
+
+(1) If all you want is to create a LAN with two workstations and won't add
+    machines to it EVER, go for Thinwire regardless of the media type. Going
+    for UTP (unshielded twisted pair) wiring requires a concentrator which
+    means extra money and I believe these units come with at least 6 ports.
+    As for Thicknet, it's a nightmare and cabling is expensive. Avoid it
+    unless you have no choice (e.g. the two machines are two floors parts).
+
+(2) On the Mac side, you will need:
+    - one Thinwire media adapter (from Apple or third-party).
+    - MacX (make sure you get version 1.2; 1.1.7 won't run on System 7.1).
+    - MacTCP (which comes with MacX; if you get MacX v1.2, you should be
+      getting MacTCP v1.1.1 with it. Don't use earlier versions on a Centris).
+    - you may or may not need a 25ohm terminator depending on the
+      Thinwire media adapter. So just ask the sales if the adapter is
+      self-terminated or not.
+    - configure MacTCP to use "Ethernet".
+
+(3) On the DECstation side, you will need:
+    - for a Model 200, you will only need a T-connector.
+    - for Models 25, 125, 133, 240, you will need an AUI-to-BNC adapter.
+      Get one that can be plugged in directly to the AUI port of the
+      DECstation. This way you save the cost of a transciever cable
+      (a 15-pin AUI male to a 15-pin AUI female cable).
+    - get a 25ohm terminator.
+
+Your two-machine network will look like this:
+
+
+       ##T----------------------------------------------[]
+      +-----+                                           |
+      |     |                                           |
+      +-----+                                         +-----+
+                                                      |     |
+                                                      +-----+
+    DECstation                                        Centris
+     5000/200                                           650
+                              OR
+
+       ##T----------------------------------------------[]
+        {=}                                             |
+      +-----+                                           |
+      |     |                                         +-----+
+      +-----+                                         |     |
+                                                      +-----+
+    DECstation                                        Centris
+5000/25,125,133,240                                     650
+         
+   ##    -> 25ohm terminator
+   T     -> T connector
+   ---   -> Thinwire (RG58 coaxial cable)
+   {=}   -> AUI-to-BNC (i.e. Thick-to-Thin) adapter
+   []    -> Thickwire media adapter (assuming self-terminated)
+   |
+   |
+
+Andy
+-- 
+Andy Sun (andy@ie.utoronto.ca)          4 Taddle Creek Road, Toronto
+Computing Coordinator                   Ontario, Canada. M5S 1A4
+Department of Industrial Engineering    Phone: (416) 978-8830
+University of Toronto                   Fax:   (416) 978-3453

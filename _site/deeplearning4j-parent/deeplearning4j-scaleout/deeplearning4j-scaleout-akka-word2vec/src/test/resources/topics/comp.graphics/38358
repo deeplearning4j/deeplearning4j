@@ -1,0 +1,27 @@
+From: tsa@cellar.org (The Silent Assassin)
+Subject: Re: Please Recommend 3D Graphics Library For Mac.
+Organization: The Cellar BBS and public access system
+Lines: 22
+
+rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter) writes:
+
+> Hi Netters,
+> 
+> I'm building a CAD package and need a 3D graphics library that can handle
+> some rudimentry tasks, such as hidden line removal, shading, animation, etc.
+> 
+> Can you please offer some recommendations?
+
+It's really not that hard to do.  There are books out there which explain
+everything, and the basic 3D functions, translation, rotation, shading, and
+hidden line removal are pretty easy.  I wrote a program in a few weeks witht
+he help of a book, and would be happy to give you my source.
+	Also, Quickdraw has a lot of 3D functions built in, and Think pascal
+can access them, and I would expect that THINK C could as well.  If you can
+find out how to use the Quickdraw graphics library, it would be an excellent
+choice, since it has a lot of stuff, and is built into the Mac, so should be
+fast.
+
+Libertarian, atheist, semi-anarchal Techno-Rat.
+
+I define myself--tsa@cellar.org

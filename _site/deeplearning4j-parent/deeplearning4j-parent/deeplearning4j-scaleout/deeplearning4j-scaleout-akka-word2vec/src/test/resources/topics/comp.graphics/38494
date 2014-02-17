@@ -1,0 +1,26 @@
+From: un034214@wvnvms.wvnet.edu
+Subject: M-MOTION VIDEO CARD: YUV to RGB ?
+Organization: West Virginia Network for Educational Telecomputing
+Lines: 21
+
+I am trying to convert an m-motion (IBM) video file format YUV to RGB 
+data...
+
+THE Y portion is a byte from 0-255
+THE V is a byte -127-127
+THe color is U and V
+and the intensity is Y
+
+DOes anyone have any ideas for algorhtyms or programs ?
+
+Can someone tell me where to get info on the U and V of a television signal ?
+
+IF you need more info reply at the e-mail address...
+Basically what I am doing is converting a digital NTSC format to RGB (VGA)
+for displaying captured video pictures.
+
+Thanks.
+
+
+THE U is a byte -127-127
+

@@ -1,0 +1,145 @@
+From: yang@cs.umass.edu (Hong Yang)
+Subject: colormap question
+Organization: University of Massachusetts/Amherst
+Lines: 139
+NNTP-Posting-Host: freya.cs.umass.edu
+
+Hi, Experts, 
+
+I'm kind of new to X. The following question is strange to me. I am
+trying to modify the contents of the colormap but failed without
+reason (to me). I am using the following piece of code:
+
+
+  toplevel = XtInitialize(argv[0], "Testcolor", NULL, 0,
+			  &argc, argv);
+  dpy = XtDisplay(toplevel);
+  scr = DefaultScreen(dpy);
+  def_colormap = DefaultColormap(dpy,scr);
+
+  if(XAllocColorCells(dpy, def_colormap, True, NULL, 0, cells, 5)) {
+    color.pixel = cells[0];
+    color.red = 250;
+    color.green = 125;
+    color.blue = 0;
+    color.flags = DoRed | DoGreen | DoBlue;
+    XStoreColor(dpy, def_colormap, &color);
+    printf("\n Try to allocate, the color %d as (%d,%d,%d)",
+	   color.pixel, color.red, color.green, color.blue); 
+
+    XQueryColor(dpy, def_colormap, &color);
+    printf("\n After  allocate, the color %d is (%d,%d,%d)",
+	   color.pixel, color.red, color.green, color.blue); 
+  }
+  else
+    printf("\n Error: couldn't allocate color cells");
+
+
+Running output:
+
+     Try to allocate, the color 7 as (250,125,0)
+     After  allocate, the color 7 is (0,0,0)
+
+After XStoreColor(), XQueryColor() just returned the original value. 
+No failure/error displayed but the contents of colormap are obvious
+unchanged. (I also tried to draw a line using the colors but it 
+turned out to be the unmodified colors.)
+
+So what is my problem? How to modify the contents of the colormap?
+
+Any help/information will be appreciated. Please send mail to
+"yang@cs.umass.edu".
+
+--------------------------
+William 
+email: "yang@cs.umass.edu"
+--------------------------
+
+
+By the way, the following is the environment I am using (output of
+"xdpyinfo"). It shows the default visual is PseudoColor.
+
+version number:    11.0
+vendor string:    DECWINDOWS DigitalEquipmentCorporation UWS4.2
+vendor release number:    1
+maximum request size:  16384 longwords (65536 bytes)
+motion buffer size:  100
+bitmap unit, bit order, padding:    32, LSBFirst, 32
+image byte order:    LSBFirst
+number of supported pixmap formats:    2
+supported pixmap formats:
+    depth 1, bits_per_pixel 1, scanline_pad 32
+    depth 8, bits_per_pixel 8, scanline_pad 32
+keycode range:    minimum 86, maximum 251
+number of extensions:    8
+    Adobe-DPS-Extension
+    DPSExtension
+    SHAPE
+    MIT-SHM
+    Multi-Buffering
+    XInputExtension
+    MIT-SUNDRY-NONSTANDARD
+    DEC-XTRAP
+default screen number:    0
+number of screens:    1
+
+screen #0:
+  dimensions:    1024x864 pixels (333x281 millimeters)
+  resolution:    78x78 dots per inch
+  depths (2):    1, 8
+  root window id:    0x29
+  depth of root window:    8 planes
+  number of colormaps:    minimum 1, maximum 1
+  default colormap:    0x27
+  default number of colormap cells:    256
+  preallocated pixels:    black 1, white 0
+  options:    backing-store YES, save-unders YES
+  current input event mask:    0xd0001d
+    KeyPressMask             ButtonPressMask          ButtonReleaseMask        
+    EnterWindowMask          SubstructureRedirectMask PropertyChangeMask       
+    ColormapChangeMask       
+  number of visuals:    5
+  default visual id:  0x21
+  visual:
+    visual id:    0x21
+    class:    PseudoColor
+    depth:    8 planes
+    size of colormap:    256 entries
+    red, green, blue masks:    0x0, 0x0, 0x0
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x22
+    class:    GrayScale
+    depth:    8 planes
+    size of colormap:    256 entries
+    red, green, blue masks:    0x0, 0x0, 0x0
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x23
+    class:    StaticGray
+    depth:    8 planes
+    size of colormap:    256 entries
+    red, green, blue masks:    0x0, 0x0, 0x0
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x24
+    class:    StaticColor
+    depth:    8 planes
+    size of colormap:    256 entries
+    red, green, blue masks:    0x7, 0x38, 0xc0
+    significant bits in color specification:    8 bits
+  visual:
+    visual id:    0x25
+    class:    TrueColor
+    depth:    8 planes
+    size of colormap:    8 entries
+    red, green, blue masks:    0x7, 0x38, 0xc0
+    significant bits in color specification:    8 bits
+  number of mono multibuffer types:    5
+    visual id, max buffers, depth:    0x21, 0, 8
+    visual id, max buffers, depth:    0x22, 0, 8
+    visual id, max buffers, depth:    0x23, 0, 8
+    visual id, max buffers, depth:    0x24, 0, 8
+    visual id, max buffers, depth:    0x25, 0, 8
+  number of stereo multibuffer types:    0
+

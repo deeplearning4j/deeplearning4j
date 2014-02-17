@@ -1,0 +1,62 @@
+From: Dan Wallach <dwallach@cs.berkeley.edu>
+Subject: FAQ: Typing Injuries (1/4): Changes since last month [monthly posting]
+Supersedes: <typing-injury-faq/changes_734664243@cs.berkeley.edu>
+Organization: University of California, Berkeley
+Lines: 51
+Expires: 22 May 1993 04:18:16 GMT
+Reply-To: Dan Wallach <dwallach@cs.berkeley.edu>
+NNTP-Posting-Host: elmer-fudd.cs.berkeley.edu
+Summary: what's new and happening with Dan's FAQ and ftp archive
+Originator: dwallach@elmer-fudd.cs.berkeley.edu
+
+Archive-name: typing-injury-faq/changes
+Version: $Revision: 1.3 $ $Date: 1993/04/13 04:12:33 $
+
+This file details changes to the soda.berkeley.edu archive and summarizes
+what's new in the various FAQ (frequently asked questions) documents.
+This will be posted monthly, along with the full FAQ to the various net
+groups.  The various mailing lists will either receive the full FAQ
+every month, or every third month, but will always get this file, once
+per month.  Phew!
+
+============================================================================
+Changes to the Typing Injuries FAQ and soda.berkeley.edu archive, this month
+============================================================================
+
+a few new files on the soda.berkeley.edu archive
+    the TidBITS "Caring for your wrists" document
+    RSI Network #11
+    Advice about "adverse mechanical tension"
+    More details about the new Apple keyboard
+    more info about carpal tunnel syndrome (carpal.explained)
+    more general info about RSI (rsi.details, rsi.physical)
+
+    marketing info on the Vertical
+    MacWeek article the Bat
+
+new details on hooking a normal PC keyboard to an RS/6000
+
+updated pricing info on the DataHand and Comfort
+
+Half-QWERTY now available for anonymous ftp on explorer.dgp.toronto.edu
+
+new GIF picutures!
+    The Apple Adjustable Keyboard
+    The Key Tronic FlexPro
+    another picture of the Kinesis
+    The Vertical
+    The Tony!
+
+============================================================================
+
+If you'd like to receive a copy of the FAQ and you didn't find it in the
+same place you found this document, you can either send e-mail to 
+dwallach@cs.berkeley.edu, or you can anonymous ftp to soda.berkeley.edu
+(128.32.149.19) and look in the pub/typing-injury directory.
+
+Enjoy!
+
+-- 
+Dan Wallach               "One of the most attractive features of a Connection
+dwallach@cs.berkeley.edu  Machine is the array of blinking lights on the faces
+Office#: 510-642-9585     of its cabinet." -- CM Paris Ref. Manual, v6.0, p48.

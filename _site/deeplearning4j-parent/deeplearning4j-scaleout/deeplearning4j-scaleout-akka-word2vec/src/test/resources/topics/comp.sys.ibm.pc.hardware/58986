@@ -1,0 +1,31 @@
+From: dallas@ravel.udel.edu (Paul Lewis Fincke)
+Subject: SCSI help
+Nntp-Posting-Host: ravel.udel.edu
+Organization: University of Delaware
+Distribution: us
+Lines: 24
+
+
+Howdy,
+
+Sorry if this has been covered before:
+
+One of my PC illiterate friends asked me to help him install DRDOS 6.0 on his
+NEC Powermate SX (386SX 16).  Of course, I said "No problem" and went to work.
+Unfortunately, the DRDOS refuses to recognize the hard drive during 
+installation, even though I am still able to boot off of the hard drive using
+the old DOS.  After openning it up I discovered it was using an 8-bit 
+Seagate SCSI controller on a ST-157N SCSI 40Mbtye drive.  I then booted 
+with DRDOS 6.0 off of the floppy a second time and ran fdisk to see if 
+I could access the drive.  Lo and behold the primary 46.5 Mbyte partition 
+was intact (created by DOS 3.1 no less, I didn't think you could go over a
+32Mbyte partition in the older DOSes. I could be wrong...).  I then tried 
+to remove the primary partition, which it wouldn't allow me to do.  I am 
+unaware of anything special that has to be done with a SCSI drive (I 
+kinda expected it to work just like an IDE/MFM/RLL drive for DOS 
+installations).  Any suggestions would be greatly appreciated (except for 
+"Throw it in the garbage and buy a new PC")...
+
+Thanks in advance,
+
+Paul "Mr. SCSI... NOT!" Fincke

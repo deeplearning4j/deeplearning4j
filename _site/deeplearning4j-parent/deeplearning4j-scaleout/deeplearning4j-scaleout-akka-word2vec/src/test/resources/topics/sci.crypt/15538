@@ -1,0 +1,38 @@
+From: olson@umbc.edu (Bryan Olson; CMSC)
+Subject: Re: WH proposal from Police point of view
+Organization: University of Maryland, Baltimore County Campus
+Lines: 30
+Distribution: world
+NNTP-Posting-Host: umbc7.umbc.edu
+X-Auth-User: olson
+
+
+In article <1993Apr18.034352.19470@news.clarkson.edu>, tuinstra@sunspot.ece.clarkson.edu.soe (Dwight Tuinstra) writes:
+|> It might pay to start looking at what this proposal might mean to a
+|> police agency.  It just might be a bad idea for them, too.
+|> 
+|> OK, suppose the NY State Police want to tap a suspect's phone.  They
+|> need a warrant, just like the old days.  But unlike the old days, they
+|> now need to 
+|> 
+|>    (a) get two federal agencies to give them the two parts of
+|>        the key.
+|> 
+|> Now, what happens if there's a tiff between the two escrow houses?
+|> Posession/release of keys becomes a political bargaining chit.
+
+	While I think it is unrealistic to suppose that the federal
+agencies will fail to promptly comply with a court order, there is 
+still a good point here.  Local law enforcement will be unable to perform
+a wiretap without bringing in federal agencies.   Based on the (possibly
+incomplete) understanding of the system quoted from D. Denning, only the
+FBI will be able to decrypt the system key encryption layer, which seems
+to be needed even to identify what escrowed keys to request.  This moves
+a great deal of law enforcement power to the federal level.
+	The reason I like this point is that it may sway or even persuade
+people who don't generally line up with the civil liberties crowd.  A
+national police force is opposed by people from a broad range of political 
+viewpoints.
+
+
+olson@umbc.edu

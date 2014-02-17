@@ -1,0 +1,35 @@
+From: cmmiller@iastate.edu (C. M. Miller)
+Subject: Re: LCIII vs. Centris 610?
+Article-I.D.: news.C51s6w.9nr
+Organization: Iowa State University, Ames, IA
+Lines: 29
+
+In article <1993Apr5.221603.17245@nctams1.uucp> tomj@pnet16.cts.com (Tom Jenkins) writes:
+>Title says it all.  I'd be particularly interested in the performance
+>difference.  Just how much faster (50%?) is the Centris 610 over the LCIII?
+>
+>--Tom
+>
+>UUCP: humu!nctams1!pnet16!tomj
+>ARPA: humu!nctams1!pnet16!tomj@nosc.mil
+>INET: tomj@pnet16.cts.com
+
+When Apple came with their demos to Iowa State, I got a chance to run
+Speedometer3.1 on some of the new Macs.  Both machines were running
+System7.1, had a 14" RGB.  Don't know what the caches were set to.
+Neither machine had an FPU  It appears that the Centris610 is quite a
+bit faster than the LC III:
+
+		Centris610		LCIII
+
+CPU		13.01			6.92
+Graf		15.67			7.69
+Disk		2.22			2.44
+Math		25.57			10.19
+
+P.R. Rating	12.91			6.58
+
+So, there is a comparison.  There is definitely a very noticable speed
+difference between these two machines according to Speedometer3.1.  
+
+Chad

@@ -1,0 +1,11 @@
+0
+The Linux Foundation , champion of all things open-source, has just announced a new collaboration with OpenBEL , an open-source platform for sharing scientific data.
+OpenBEL was, until about a year ago, a proprietary project. The foundation, which has huge amounts of experience in creating, guiding, and maintaining open-source software, intends to help OpenBEL with adoption and collaboration in its own community.
+“All of us are smarter collectively than any one of us is by ourselves,” said Linux Foundation executive director Jim Zemlin in a statement on the news.
+“OpenBEL represents an amazing opportunity for openness and collaboration to advance science, and we’re happy to impart our knowledge of collaborative software development to leaders in the life sciences industry.”
+BEL stands for “Biological Expression Language.” It was created to help scientists and research organizations “represent scientific findings by capturing causal and correlative relationships in context.” Context can include data about how studies were curated, publications cited in papers, etc.
+The language is accompanied by an open-source framework for sharing this information among a host of entities, including researchers and businesses. The BEL framework is designed for ease of use and neutrality as to how data is used.
+All in all, it’s pretty gee-whiz nifty.
+From a statement on the collaboration project:
+In biotechnology and life sciences, the use of OpenBEL and its standard way of expressing information can accelerate the pace of technology innovation and scientific discovery in areas such as network visualization of neural brain function; understanding of complex inter-related disease biology; comparison of human diseases with various animal models; deep investigation of drug efficacy and toxicity; as well as development of innovative therapeutics and diagnostics for personalized healthcare.
+Currenty, the OpenBEL steering committee is led by Dr. Martin Hofmann-Apitius, head of the bioinformatics department at the Fraunhofer Institute for Algorithms and Scientific Computing in Sankt Augustin, Germany.
