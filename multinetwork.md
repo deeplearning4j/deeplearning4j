@@ -5,17 +5,13 @@ layout: default
 
 # creating deep-learning networks
 
-By now, you should have read about Single-Layer Neural Networks (if you haven't read about them, you can [here](({{ site.baseurl }}/singlelayernetwork.html).
+By now, you should have read about Single-Layer Neural Networks (if you haven't read about them, you can [here](({{ site.baseurl }}/singlelayernetwork.html)).
 
 A multilayer network is a stacked representation of a [single-layer neural network]({{ site.baseurl }}/singlelayernetwork.html).
 
-The input layer is tacked onto the first-layer neural network and a [feed-forward network]({{ site.baseurl }}/glossary.html#feedforward).
+The input layer is tacked onto the first-layer neural network and a [feed-forward network]({{ site.baseurl }}/glossary.html#feedforward). Each subsequent layer from the input layer on uses the output of the previous layer as its input.
 
-Each subsequent layer from the input layer on uses the output of the previous layer as its input.
-
-A multi-layer network will accept all the same kinds of inputs as a single-layer network.
-
-The multilayer network parameters are also typically the same as their single-layer network counterparts.
+A multilayer network will accept the same kinds of inputs as a single-layer network. The multilayer network parameters are also typically the same as their single-layer network counterparts.
 
 The output layer for a multilayer network is typically a [logistic regression classifier](http://en.wikipedia.org/wiki/Multinomial_logistic_regression), which sorts results in zeros and ones.
 
@@ -23,9 +19,9 @@ This is a discriminatory layer used for classification of input features based o
 
 A multi layer network is composed of the following kinds of layers:
 
-k single layer networks 
+* *k* single layer networks 
 
-a softmax regression output layer.
+* a softmax regression output layer.
 
 Training a multi layer network:
 
@@ -37,7 +33,7 @@ The typical value is between 0.001 and 0.1. The learning rate, or step rate, is 
 
 ### momentum 
 
-An extra factor in determining how fast an optimization algorithm converges.
+Momentum is an additional factor in determining how fast an optimization algorithm converges.
 
 ### L2 Regularization constant 
 
