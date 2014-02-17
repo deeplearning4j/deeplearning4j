@@ -11,10 +11,9 @@ Deep-belief networks are composed of binomial neurons; that is, they can only ac
 Please also see [the multi layer network parameters common to all multi layer networks](../multinetwork.html).
 
 #### k 
-The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
-composing the restricted boltzmann machine. A typical value of 1 is fine.
-
+K is the number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain. In composing the restricted Boltzmann machine, a typical value is one.
+<!---
 ### input
 
 ### initiating a continuous deep-belief network

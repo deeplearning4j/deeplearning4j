@@ -13,33 +13,33 @@ A multilayer network will accept the same kinds of inputs as a single-layer netw
 
 The output layer for a multilayer network is typically a [logistic regression classifier](http://en.wikipedia.org/wiki/Multinomial_logistic_regression), which sorts results in zeros and ones. This is a discriminatory layer used for classification of input features based on the final hidden layer of the deep network.
 
-A multi layer network is composed of the following kinds of layers:
+A multilayer network is composed of the following kinds of layers:
 
-* *k* single layer networks 
+* *K* single layer networks 
 
-* a softmax regression output layer.
+* A softmax regression output layer.
 
-Training a multi layer network:
+Below is what you need to think about in training a network.
 
 ## parameters
 
 ### learning rate 
 
-The typical value is between 0.001 and 0.1. The learning rate, or step rate, is the rate at which a function steps within a search space. Smaller learning rates mean higher training times, but may lead to more precise results.
+The learning rate, or step rate, is the rate at which a function steps through the search space. The typical value of the learning rate is between 0.001 and 0.1. Smaller steps mean higher training times, but can lead to more precise results. 
 
 ### momentum 
 
-Momentum is an additional factor in determining how fast an optimization algorithm converges.
+Momentum is an additional factor in determining how fast an optimization algorithm converges on the optimum point.
 
 ### L2 Regularization constant 
 
 This is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
 
-Pretraining Step
+*Pretraining step*
 
 For pretraining -- i.e. learning the features via reconstruction at each layer -- each network is trained and then the output is piped into the next layer.
 
-Finetuning step
+*Finetuning step*
 
 Finally, the [logistic regression](http://en.wikipedia.org/wiki/Multinomial_logistic_regression) output layer is trained, and then back propagation happens for each layer.
 

@@ -3,7 +3,6 @@ title:
 layout: default
 ---
 
-
 # restricted boltzmann machine
 
 To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make stochastic decisions about whether to be on or off." A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). 
@@ -16,8 +15,9 @@ Please also see [the single layer network parameters common to all single networ
 
 ### k 
 
-The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
+K is the number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
+<!---
 ### bias 
 
 HIDDEN AND VISIBLE

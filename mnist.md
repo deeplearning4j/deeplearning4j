@@ -16,9 +16,9 @@ MNIST is a good place to begin exploring image recognition. Here’s an easy way
 ### tutorial
 
 To begin with, you’ll take an image from your [training?] data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
-
+<!---
 CODE HERE
-
+-->
 Now you should have a matrix of ones and zeros, and that’s the input you’ll feed into your neural network. A restricted Boltzmann machine will look at that input and learn patterns among the ones and zeros that correlate with significant features; i.e. features that lead to lower erros. 
 
 Next, you deliberately corrupt the data. You’re basically throwing noise at it for the same reason that denoising autoencoders do. You need to prove to yourself that your net is not simply reproducing the input as output, a pitfall known as the identity function. Only when the algorithm is capable of taking bad data and ignoring the noise can it be trusted to learn unsupervised. 

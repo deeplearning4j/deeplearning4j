@@ -6,56 +6,40 @@ layout: default
 single-layer neural network
 ======================================
 
-A single layer neural network with respect to deep learning is a neural network composed of an input (visible) layer and a hidden (output layer).
+A single-layer neural network in deep learning is a neural network composed of an input, the visible layer, and a hidden output layer.
 
 The single layer network's goal, or [objective function](../glossary.html#objectivefunction), is to learn features by minimizing [reconstruction entropy](../glossary.html#reconstructionentropy)
 
-This allows it to auto learn features of the input which leads to finding good correlations and higher accuracy on finding discriminatory features. 
+This allows it to auto learn features of the input which leads to finding good correlations and higher accuracy on finding discriminatory features. From there, a multilayer network leverages this to do accurate classification of data. This is called the pretraining step in the literature.
 
-From there, a multi layer network leverages this to do accurate classification of data. This is called the pretraining step in the literature.
+Each single-layer network has the following attributes:
 
+* Hidden bias: The bias for the output
+* Visible Bias: The bias for the input
+* Weight Matrix: The weights for the machine 
 
-Each Single Layer Network has the following attributes:
+### training a single-layer network
 
-Hidden bias: The bias for the output
+Train a network by joining the input vector to the input. Distort the input with some Gaussian noise. Depending on the network, this noise function will vary. Then minimize reconstruction entropy to carry out pretraining until the network learns the best features for reconstructing the input data.
 
-Visible Bias: The bias for the input.
+## parameters
 
-Weight Matrix: The weights for the machine.
+### learning Rate
 
+Typical value is between 0.001 and 0.1. The learning rate, or step rate, is the rate at which a function steps within a search space. Smaller learning rates mean higher training times, but may lead to more precise results.
 
-###Training a single layer network:
+### momentum
 
-Train a network by clamping the input vector on to the input. Distort the input with some gaussian noise.
+Momentum is an extra factor in determining how fast an optimization algorithm converges.
 
-Depending on the network, this noise function will be different. Then minimize reconstruction entropy
+### L2 regularization constant
 
-to do pretraining until the network learns good features for reconstructing the input data.
+This is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
 
+If you're curious about the internals of the dj4j implementation, please see [BaseNeuralNetwork](../doc/com/ccc/deeplearning/nn/BaseNeuralNetwork.html)
 
-##PARAMETERS
+Below are the different kinds of single-layer networks:
 
-###Learning Rate: Typical value is between 0.001 and 0.1. The learning rate, or step rate, is the rate
-
-at which a function steps within a search space. Smaller learning rates mean higher training times,
-
-but may lead to more precise results.
-
-
-###Momentum: An extra factor in determining how fast an optimization algorithm converges.
-
-
-###L2: L2 Regularization constant: This is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm)
-
-
-If you are curious about the internals of the dj4j implementation, please see [BaseNeuralNetwork](../doc/com/ccc/deeplearning/nn/BaseNeuralNetwork.html)
-
-
-
-Below are the different kinds of Single Layer Networks:
-
-
-
-[Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-[Continuous Restricted Boltzmann Machine](../continuousrestrictedboltzmannmachine.html)
-[Denoising AutoEncoder](../denoisingautoencoder.html)
+*[Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+*[Continuous Restricted Boltzmann Machine](../continuousrestrictedboltzmannmachine.html)
+*[Denoising AutoEncoder](../denoisingautoencoder.html)

@@ -15,8 +15,8 @@ Denoising autoencoders are an extension of the basic autoencoder, and represent 
 #### corruption level 
 
 The amount of noise to apply to the input takes the form of a percentage. Typically, 30 percent (0.3) is fine, but if you have very little data, you may want to consider adding more.
-
-INPUT
+<!---
+## input
 
 ### initiating a denoising autoencoder
 
