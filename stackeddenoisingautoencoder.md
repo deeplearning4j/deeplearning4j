@@ -18,7 +18,7 @@ Please also see [the multi layer network parameters common to all multi layer ne
 #### corruption Level 
 
 The amount of noise to apply to the input will take the form of a percentage. Typically 30% (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.
-
+<!---
 ### initiating a stacked denoising autoencoder
 
 Setting up a single-thread stacked denoising autoencoder is easy. 
@@ -50,3 +50,4 @@ CODE BLOCK TRAINING SET TK
 Train the machine:
 
 CODE BLOCK TRAINING THE MACHINE TK
+-->

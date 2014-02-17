@@ -16,7 +16,7 @@ Please also see [the single-layer network parameters common to all single-layer 
 K is number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
 Composing the restricted Boltzmann machine. A typical value of 1 is fine.
-
+<!---
 ### initiating a continuous restricted Boltzmann machine
 
 Setting up a single-thread continuous restricted Boltzmann machine is easy. 
