@@ -1,0 +1,17 @@
+From: bday@lambda.msfc.nasa.gov (Brian Day)
+Subject: Re: 8051 Microcontroller
+Organization: NASA/MSFC
+Lines: 12
+
+mcole@spock (COLE) writes:
+
+>I would like to experiment with the INTEL 8051 family.  Does anyone out  
+>there know of any good FTP sites that might have compiliers, assemblers,  
+>etc.?
+
+Try lyman.pppl.gov -- /pub/8051
+
+-- 
+Brian Day                                       bday@lambda.msfc.nasa.gov
+New Technology, Inc.                            (205) 461-4584
+Mission Software Development Division           Opinions are my own -

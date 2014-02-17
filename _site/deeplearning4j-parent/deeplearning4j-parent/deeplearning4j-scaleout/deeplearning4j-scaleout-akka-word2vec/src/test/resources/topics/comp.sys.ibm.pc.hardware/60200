@@ -1,0 +1,21 @@
+From: wong@ws13.webo.dg.com (E. Wong)
+Subject: Help with 24bit mode for ATI
+Organization: Data General Corporation, Westboro, MA
+Lines: 16
+
+I finally got the vesa driver for my ATI graphics ultra plus (2M).  However,
+when I tried to use this to view under 24bit mode, I get lines on the picture.
+With 16bit or below, the picture is fine.  Can someone tell me what was wrong?
+Is it the card, or is it the software?
+--
+Thanks
+8)
+    _/_/_/_/  _/_/_/    _/    _/    _/_/    _/_/_/    _/_/_/  
+   _/	     _/    _/  _/    _/  _/    _/  _/    _/  _/    _/ 
+  _/_/_/_/  _/    _/  _/ _/ _/  _/_/_/_/  _/_/_/    _/    _/
+ _/        _/    _/  _/ _/ _/  _/    _/  _/  _/    _/    _/ 
+_/_/_/_/  _/_/_/      _/ _/   _/    _/  _/    _/  _/_/_/    
+                                                            
+user's name:	Edward Wong 				    
+Internet:     	wong@ws13.webo.dg.com		 
+telephone:	(508) 870-9352

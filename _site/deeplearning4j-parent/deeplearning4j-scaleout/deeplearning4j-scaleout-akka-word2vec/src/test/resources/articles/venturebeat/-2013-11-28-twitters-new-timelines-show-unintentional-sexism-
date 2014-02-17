@@ -1,0 +1,15 @@
+5
+Twitter’s automatic expansion of photos in the timeline has been controversial as some people complain that images dominate the experience. But it also has some unintended consequences: awkward crops.
+I was browsing the timeline of Eventbrite CEO Kevin Hartz when I saw this tweet about his wife Julia’s appearance on Bloomberg West.
+When viewed in timeline mode, Twitter expands the image, but the cropping only shows the butts and legs of Hartz’s wife and co-founder Julia and the show’s host, Emily Chang.
+After I tweeted out a screenshot, Chang responded:
+The Wall Street Journal’s Evelyn Rusli got involved:
+Clearly, this is unintentional. (Chang and the Hartz are friends, so it’s all good.) Twitter just expands the middle of the photo. (I tested this with a photo of me and I’m also awkwardly cropped.)
+Other sites also run into such cropping problems; I see it frequently on dating sites. The difference with Twitter is that Twitter is all public and often involves high profile people. It’s one thing when there’s an accidental boob or crotch crop on sites with friends; it’s entirely another when that URL is on TV and thousands or millions of people see it. It’s anyone’s guess how many unintentional Anthony Weiner-style pictures have appeared in timelines. It could also cause issues for advertisers who are paying to promote their tweets in timelines. (Presumably advertisers would be more careful and test the cropping before promoting a tweet.)
+There are a couple of easy ways for Twitter to address the problem — face detection and cropping guidance.
+Face detection technologies are readily available and have been for a few years. When I ran Hartz’s original picture through Google+, it correctly detected Julia’s face. The iPhone and many Android phones have face detection to help focus and to set exposure. My point-and-shoot camera is even smart enough that when it sees a face that I shoot frequently in a different focal plane than another face, it will focus on the person I take pictures of more frequently. Twitter could use face detection to correctly center the image.
+Another option (which would require manual work by the user), is to show crop marks in the Twitter compose interface.
+Tweeter Jay Cuthrell provided an example:
+Image processing technology has been rapidly improving. Google has been adding technologies that it calls “auto-awesome”. Among other things, it creates stop motion movies and can delete unwanted items from photos automatically. I took a series of pictures of a friend’s toddler and a man who was walking through the background was erased without any work on my part. Cell phone cameras such as Samsung’s Galaxy S4 also come with such trick image processing.
+The Hartz couldn’t be reached for comment.
+What are some bad crops that you’ve seen? Post them in the comments.

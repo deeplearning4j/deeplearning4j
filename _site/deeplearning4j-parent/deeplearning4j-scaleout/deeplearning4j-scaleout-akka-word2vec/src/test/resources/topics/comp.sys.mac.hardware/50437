@@ -1,0 +1,44 @@
+From: ivancich@eecs.umich.edu (Eric Ivancich)
+Subject: Re: 14" monitors
+In-Reply-To: fredm@media.mit.edu's message of Wed, 31 Mar 1993 20:39:45 GMT
+Organization: University of Michigan EECS Department
+Distribution: na
+Lines: 37
+
+In article <1993Mar31.203945.8757@news.media.mit.edu> fredm@media.mit.edu (Fred G Martin) writes:
+
+   [part of posting removed]
+
+   * the Sony CPD-1304 has better video circuitry than either of the
+   other two monitors.  It can display Apple 640x480, VGA 640x480, VGA
+   800x600 (though this has 56 Hz flicker), and Apple 832x624 (75 Hz
+   refresh:  no flicker at all).  It might be able to display Apple's
+   1024x768, but I'm not sure about this, and the pixels would be real
+   small anyway so it might not be that useful.
+
+   Note that with either Sony monitor, you will need the proper adapter,
+   which both connects the video signals properly, but also informs the
+   Macintosh video hardware of which display mode to use.
+
+   [part of posting removed]
+
+   -- 
+   Fred Martin | fredm@media.mit.edu | (617) 253-7143 | 20 Ames St. Rm. E15-301
+   Epistemology and Learning Group, MIT Media Lab     | Cambridge, MA 02139 USA
+
+I'm assuming that the cabling tells the Mac, at startup, what kind of
+monitor is connected.  Now I think I've seen ads in popular Mac
+magazines for products (I'm not sure if it's just a monitor, just a
+video card, or a package of both) that allow you to change resolutions
+on the fly (w/o restarting the Mac).
+
+If you were to buy a 1304, would it be possible to switch back and
+forth between Apple 640x480 and Apple 832x624 without restarting the
+Mac?  Is this strictly a hardware startup function, or can software
+intervene, or does the Mac hardware occasionally probe the cable
+setting and switch automatically?
+
+Thanks,
+
+Eric
+(ivancich@eecs.umich.edu)

@@ -1,0 +1,12 @@
+From: hwstock@snll-arpagw.llnl.gov (stockman harlan w)
+Subject: pentium clock counts
+Organization: Sandia National Laboratories
+Lines: 7
+
+
+Does anyone have a list of the clock counts for pentium instructions --
+or know if the INTEGER mul is down to 1 tick?
+
+
+Thanks, HW Stockman, hwstock@sandia.llnl.gov
+

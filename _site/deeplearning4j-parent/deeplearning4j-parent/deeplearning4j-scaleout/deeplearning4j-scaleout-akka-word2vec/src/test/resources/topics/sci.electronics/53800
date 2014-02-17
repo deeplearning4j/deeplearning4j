@@ -1,0 +1,37 @@
+From: johnh@macadam.mpce.mq.edu.au (John Haddy)
+Subject: Re: Dmm Advice Needed
+Organization: Macquarie University
+Lines: 30
+Distribution: world
+NNTP-Posting-Host: macadam.mpce.mq.edu.au
+
+
+|>   What the world needs is a meter that won't let you change ranges or
+|> turn it on/off with a lead stuck in the amps jack - a little bit of
+|> clever plastic detailing would take care of this and make the world
+|> safer for electricans, anyway.
+|>    Not that I've ever put a meter on the wrong range into a live 
+|> circuit, no, not me...not more than a dozen times, anyway....
+|>     Bill
+|> 
+|> 
+|> bills@inqmind.bison.mb.ca
+|> The Inquiring Mind BBS, Winnipeg, Manitoba  204 488-1607
+
+The Fluke 87 beeps at you if you try to take it out of a current measuring
+range while there is still a lead plugged in to the current sense socket.
+
+... this should solve your problem - unless you are in a noisy environment.
+
+JohnH
+
+----------------------------------------------------------------------------
+
+      |  _  |_   _   |_|  _   _|  _|              Electronics Department
+    |_| (_) | | | |  | | (_| (_| (_| \/           School of MPCE
+    ---------------------------------/-           Macquarie University
+                                                  Sydney, AUSTRALIA 2109
+
+    Email: johnh@mpce.mq.edu.au, Ph: +61 2 805 8959, Fax: +61 2 805 8983
+
+----------------------------------------------------------------------------

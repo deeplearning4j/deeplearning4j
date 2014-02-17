@@ -1,0 +1,48 @@
+From: koontzd@phobos.lrmsc.loral.com (David Koontz )
+Subject: Re: Will FEDs troll for mutilated law enforcement blocks?
+Organization: Loral Rolm Mil-Spec Computers
+Lines: 43
+
+The M code stream  might be independently attacked based on knowledge of
+clipper chip protocols as revealed plaintext.  This could be invalidated
+by changing the temporal and or spatial relationship of the clipper M stream
+and the actual transmitted stream, under the control of a secure key
+generator synchronized between endpoints.
+
+The useful life time of captured law enforcement blocks might be limited
+based on hostile forces using them as targets following transmission
+interception.  You would need a large number of them, but, hey there's
+supposed to be millions of these things, right?  Adding time stamps to
+the encrypted law enforcement block is probably impractical, who wants
+an encryption chip with a real time clock?
+
+*****************************************************************************
+
+The entire idea of the law enforcement block can be invalidated.
+
+I just had the thought, that you could capture your own law enforcement blocks
+for session keys K that you will not use in actual transmissions as
+the session key authenticators.  The proviso that you don't mind your own
+serial number being discovered.
+
+d. denning just sent out further information of a new version of the clipper
+chip.	If a hash function were to be embedded in a clipper M transmission
+block reflecting the law enforcement block, it better not fall on 64 bit block
+boundaries.  If it were a recognizeable datum, you could lie with it too.
+
+I like the randomizer inclusion in the MYK-80.  I remember reading that
+Intel had an approved random noise source on silicon, hence the ability
+to put it Inside.
+
+You ever think that Mykotronx sounds like one of those made up names of 
+companies used as fronts for intelligence organizations?
+
+
+
+
+
+
+
+
+
+

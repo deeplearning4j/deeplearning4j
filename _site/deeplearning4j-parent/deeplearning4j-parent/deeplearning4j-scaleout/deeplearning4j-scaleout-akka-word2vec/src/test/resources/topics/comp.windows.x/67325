@@ -1,0 +1,13 @@
+From: oleg@sdd.comsat.com (Oleg Roytburd)
+Subject: HP 2623A graphics terminal emulators
+Summary: Need application to emulate HP 2623A graphics terminal on X
+Keywords: graphics terminal emulator
+Organization: SDD, COMSAT Labs, Clarksburg, MD
+Lines: 6
+
+I would be grateful to anyone who knows about an X-windows application
+that would emulate HP 2623A graphics in a manner similar to
+the way TEK graphics windows are implemented in xterm.
+Thanks for you help.
+
+-- Oleg Roytburd (oleg@sdd.comsat.com)

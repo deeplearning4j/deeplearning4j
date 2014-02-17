@@ -1,0 +1,46 @@
+From: jiml@garfunkel.FtCollinsCO.NCR.COM (Jim L)
+Subject: Re: SIMM Speed
+Distribution: world
+Organization: NCR Microelectronics Products Division (an AT&T Company)
+Lines: 40
+
+In article <1993Apr6.150808.27533@news.unomaha.edu>, hkok@cse (Kok Hon Yin) writes:
+|> Robert Desonia (robert.desonia@hal9k.ann-arbor.mi.us) wrote:
+|> : B
+|> : BK>Is it possible to plug in 70ns or 60ns SIMMs into a motherboard saying
+|> : BK>wants 80ns simms? 
+|> 
+|> : You shouldn't have troubles.  I have heard of machines having problems 
+|> : with slower than recommended memory speeds, but never faster.  
+|> 
+|> --
+|> It should run without any trouble of course but why do you want to buy some
+|> 60ns and mixed them with 80ns?  60ns is more expensive than 80ns and
+|> furthermore your machine will run the slowest SIMMs clock speed eventhough
+|> you have 60ns.  Just my 0.02cents thought....
+|> 
+
+
+Your machine will run at whatever the bus is jumpered to/CMOS is set to
+(usually wait states) regardless of what speed RAM is installed.  No
+motherboard can sense the speed of the RAM installed, unless you call
+failing as a sort of auto-sense.  This is how you can sometimes use
+"slower" RAM in a machine.  You either set the number of wait states to
+accomodate the slow RAM (in which case, all memory will run at that
+slower rate) or you reduce the wait states and take the chance that the
+slower RAM will act like faster RAM and you won't crash.
+
+Putting faster RAM in won't speed things up unless you tell the machine
+it has faster RAM.  
+
+Mixing fast and slow RAM will not help you if you have to keep the bus 
+slowed down to accomodate slow RAM.
+
+JimL
+--------------------------------------------------------------------
+
+-- 
+Mailer address is buggy!  Reply to: jiml@strauss.FtCollinsCO.NCR.com
+
+James Lewczyk                                   1-303-223-5100 x9267
+NCR-MPD Fort Collins, CO             jim.lewczyk@FtCollinsCO.NCR.COM

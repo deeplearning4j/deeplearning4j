@@ -1,0 +1,100 @@
+From: davewood@bruno.cs.colorado.edu (David Rex Wood)
+Subject: Creating application contexts multiple times???
+Nntp-Posting-Host: bruno.cs.colorado.edu
+Organization: University of Colorado, Boulder
+Lines: 94
+
+The subject does not describe the problem I am having very well.  Please read
+on...
+
+I am trying to write a function which creates an XtAppContext and a Widget,
+displays the widget for a while, then destroys everything and returns.  The
+problem is that multiple calls to this function cause a variety of problems
+including (depending on which calls I make to get rid of things):
+
+- Core Dump
+- BadPixmap X Error
+- Widget not unmapped
+
+
+Here is a simple (C++) program I wrote to show the problem:
+
+#include <X11/Xlib.h>
+#include <Xm/Xm.h>
+#include <Xm/PushB.h>
+
+void bla()
+{
+        XtAppContext app;
+        Display *dis = XOpenDisplay("");
+        int junk = 0;
+
+        Widget top=XtAppInitialize (&app, "test", NULL, 0, &junk, NULL,
+                NULL, NULL, 0);
+
+        Widget box = XtVaCreateManagedWidget("blaaa", xmPushButtonWidgetClass,
+                        top,
+                        XmNheight, 50,
+                        XmNwidth, 50,
+                        NULL);
+
+        XtRealizeWidget(top);
+        //Same as XtAppMainLoop but with only 10 XEvents
+        for (int i=0;i<=10;i++)
+        {
+                XEvent event;
+                XtAppNextEvent(app, &event);
+                XtDispatchEvent(&event);
+        }
+
+// WHAT SHOULD I PUT HERE???
+        XtUnrealizeWidget(top);
+        XtDestroyWidget(top);
+        XtDestroyApplicationContext(app);
+        XCloseDisplay(dis);
+// ???
+}
+
+main()
+{
+        for (int i=0;i<=20;i++)
+                bla();
+}
+
+Note that I rewrote XtAppMainLoop so that at a given time (in this example,
+after 10 XEvents) the function will exit and return to the main program.
+With this example, I get the following error on about (this is NOT consistent)
+the 5th call to bla():
+
+X Error of failed request:  BadPixmap (invalid Pixmap parameter)
+  Major opcode of failed request:  55 (X_CreateGC)
+  Resource id in failed request:  0xe0000d
+  Serial number of failed request:  71
+  Current serial number in output stream:  86
+
+If I take out the XtUnrealizeWidget(top); line, it just dumps core on the
+seconds call.
+
+Furthermore, every time I call XtAppInitialize() (other than the 1st time), I
+get:
+
+Warning: Initializing Resource Lists twice
+Warning: Initializing Translation manager twice.
+
+
+So finally, my question is this:
+
+What needs to be done in order to be able to call a function which creates
+an XtAppContext and widgets multiple times?
+
+Any help would be greatly appreciated.
+
+PLEASE respond via email as I dont usually have time to read this group.
+
+Thanks very much.
+
+-davewood
+-- 
+-------------------------------------------------------------------------------
+David Rex Wood -- davewood@cs.colorado.edu -- University of Colorado at Boulder
+-------------------------------------------------------------------------------

@@ -1,0 +1,22 @@
+Subject: Re: Window start up position for app, how?
+From: davidw@auck.irl.cri.nz (David White)
+Organization: Industrial Research Ltd, Auckland, New Zealand
+Keywords: app window, startup position
+NNTP-Posting-Host: kauri.auck.irl.cri.nz
+Lines: 15
+
+In <1993Apr19.143054.17499@ucsu.Colorado.EDU> hayesj@rintintin.Colorado.EDU (HAYES JAMES MICHAEL JR) writes:
+
+>How do you set up an app to give its window a default start up
+>position and size?
+
+Try sizeit.zip from ftp.cica.indiana.edu [129.79.20.84] in the directory 
+ftp/pub/pc/win3/desktop. It's freeware.
+
+Also noticed there a program called sizer110.zip, which from the description
+looks like it also does what you want.
+
+Hope this helps.
+--
+ david white    (engineer, Goon fan & son of my Dad)
+ Internet davidw@auck.irl.cri.nz  Fax +64 9 443-4737

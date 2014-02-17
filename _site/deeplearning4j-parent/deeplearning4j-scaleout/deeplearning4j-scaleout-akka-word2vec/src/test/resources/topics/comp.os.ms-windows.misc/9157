@@ -1,0 +1,58 @@
+From: bkph@kauai.ai.mit.edu (Berthold K.P. Horn)
+Subject: Re: ATM or Truetype-which to choose?
+Organization: MIT Artificial Intelligence Lab
+Lines: 50
+Distribution: usa
+NNTP-Posting-Host: kauai.ai.mit.edu
+In-reply-to: davidgl@microsoft.com's message of 06 Apr 93 02:37:30 GMT
+
+
+`In article <1993Apr06.023730.5094@microsoft.com> davidgl@microsoft.com (David Glenn) writes:
+
+	...
+
+	Again, not true. The characters in a TT or Type 1 font depend on the 
+	maker. If someone converts a Type 1 font to TT they'll only get the
+	characters in the font of orgin. TT allows for much more flexibility
+	in this area as well. You can have thousands of glyphs in a TT font
+	file (Mac/PS/Windows/Unicode char set) and use the characters
+	appropriate for the particular platform you are running the font on.
+
+Well, yes, both Type 1 and TrueType fonts can contain lots of characters.
+And in both cases plain text fonts will be reencoded to Windows ANSI
+in Windows, and to Mac standard roman encoding on the Mac. 
+No difference there between T1 and TT!   
+
+And as for fonts with thousands of glyphs, right know these are a liabiliaty
+rather than a great new thing.  Reason is that a font with 3000 characters
+is very large, and if you can only access 224 of them you are paying a heavy
+price in downloading time and printer storage.  (And at the moment there
+is only one program of that uses `partial font downloading')
+
+	For instance, all or our fontpack 2 TT fonts have the Mac/Windows
+	char set in them. The metrics of the fonts are such that if the font
+	is brought over to the mac the user will have access to the full mac
+	char set. 	
+
+Yes and T1 text fonts all have the `ISO Adobe' character set, which is
+a superset of Windows ANSI and Macintosh standard roman enocding.
+
+The question is whether you can get at the glyphs.  In Windows, for example,
+you cannot get at the ligatures `fi' anfd `fl' (both T1 and TT)even though a
+font may very well have them.
+
+ANd, while it is somewhat painful to reencode a Type 1 font and to create a
+new Windows metric file (PFM) for it, there are utilities out there to allow
+you do this.  How do I reencode a TrueType font?  How can I get at the
+`fi' and `fl' ligatures in Windows (or on the Mac)?  Are there utilities
+that make it possible to circumvent the hard-wired Windows ANSI encoding?
+
+
+   > Regards,                                            1001-A East Harmony Road
+   > Bob Niland                                          Suite 503
+   > Internet:  rjn@csn.org                              Fort Collins CO 80525
+   > CompuServe: 71044,2124                              (303) 223-5209
+
+
+Berthold K.P. Horn
+Cambridge, Massachusetts, USA

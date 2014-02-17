@@ -1,0 +1,18 @@
+A
+Summary:
+Today’s secure email technology is too clunky for really widespread deployment. Now the creators of Lavabit and Silent Mail — including encryption legend Phil Zimmermann — have funding to help realize their dream of a usable yet genuinely secure email system.
+The problem with encrypted email is that it’s hard to use – if it weren’t, everyone would be using it. So rather than mucking around with encryption keys, they’re using services like Gmail, which leave their messages open for reading if an intelligence agency is secretly tapping the provider’s fiber , or if law enforcement comes knocking at the front door.
+This is why the Dark Mail project, which ended its Kickstarter campaign comfortably past the $196,608 goal late Wednesday, is so intriguing. It represents the evolution of two notable secure email schemes that shut themselves down in the wake of the Snowden disclosures, Lavabit and Silent Circle’s Silent Mail , and as such it’s got some hefty talent running the show.
+Both of those services were fundamentally flawed. The thing is, email encryption only really works if you hold and manage your encryption keys and certificates yourself – and that’s where the hassle comes in. Both Lavabit and Silent Mail were hosted services that tried to make things simpler by managing such things on the user’s behalf, and they essentially shut up shop because they realized the feds could force them to betray their users’ trust and give up the keys.
+Also, as cryptographer Moxie Marlinspike has pointed out , elements of Lavabit’s underlying security mechanism kind of sucked: transmitting passwords in plaintext is not a great idea.
+Phil Zimmermann, co-founder Silent Circle & inventor of PGP. (Photo courtesy of Phil Zimmermann)
+The Dark Mail Alliance ‘s Kickstarter cash ($212,513 in the end) will fund the cleaning-up and free release of the source code for Lavabit, mostly by paying for talented programmers to join the team.
+Crucially, the open-source project will support Dark Mail, a new kind of email protocol. The way the Alliance sees it, standard email is Email 1.0 and encrypted-but-hard-to-use email is Email 2.0 — that includes email using Pretty Good Privacy (PGP) technology, the work of Silent Circle and Dark Mail Alliance co-founder Phil Zimmermann . Encrypted-and-easy-to-use Dark Mail is Email 3.0.
+The plan is this: the Dark Mail protocol will have encryption baked right in, so the user won’t have to handle any keys, and the message will still be encrypted end-to-end, including while in transit (sorry, fiber-tappers). The promise is a lofty one:
+“Dark Mail users will get the security of PGP without the cognitive burden; if someone can use email today they will be able to use Dark Mail tomorrow.”
+There will be clients for all desktop platforms and iOS and Android mobile devices and, because it’s an open-source project, others will be able to build on top of the underlying technology as well. The project’s open nature also means experts can poke around the code to check it’s as secure as the Dark Mail Alliance says it is.
+The code should be released to the public in April 2014. This isn’t the only intriguing secure mail project out there — Mailpile springs to mind – but those behind it know what they’re doing and it certainly has as good a shot as any rival. Frankly, if someone can deliver a version of email that’s totally secure and as easy-to-use as today’s webmail, I don’t care where it comes from.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

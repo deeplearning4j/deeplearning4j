@@ -1,0 +1,25 @@
+From: msprague@superior.mcwbst311b (Mike Sprague)
+Subject: Re: Soundblaster IRQ and Port settings
+Organization: Xerox
+Lines: 20
+
+> My solution was to switch the interrupt to IRQ 5, which is
+> unreserved in contemporary computers (using IRQ 5 for the
+> drives went out with the XT architechture ... )
+
+Not completly true.  For AT class and later machines, IRQ5 is
+reserved for LPT2.  Since it's rare to have a second parallel
+port in a PC, it's usually a good safe choice if you need an
+interrupt.
+
+On the other hand, we just ran into a problem with that here
+at work on a Gateway computer (4DX-33V).  It has a Modem on COM1,
+a Mouse on COM2, and the other serial port was set to COM3 (which
+normally uses the same interrupt as COM1).  We had a real fight
+with a board when trying to use IRQ5, and discoverd the problem
+was that Gateway had set it up such that COM3 used IRQ5.  As soon
+as we disabled COM3, our problems went away.  Grumble ... after
+several days of trying to figure out why the interrupt didn't work.
+
+			~ Mike  (sprague.wbst311@xerox.com)
+

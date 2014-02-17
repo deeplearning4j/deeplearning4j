@@ -1,0 +1,23 @@
+From: ba1634807@ntuvax.ntu.ac.sg
+Subject: pwm control thru software
+Lines: 17
+Nntp-Posting-Host: v9001.ntu.ac.sg
+Organization: Nanyang Technological University - Singapore
+
+
+currently I am using the 8051 microcontroller with external eprom..
+
+In order to drive the dc motor (with direction) I use the Pulse width modultion 
+
+thru software control(Assembly language programming). However I am afraid that
+
+they will be overheads and thus alter the pulse timing. My question is 
+
+is the software pwm control reliable?. I understand that port 0 is a latch
+
+and so I vary the duty cycle by setting it high first and at the desire 
+
+duty cycle then I set low..? Any improments ?
+ 
+
+ 

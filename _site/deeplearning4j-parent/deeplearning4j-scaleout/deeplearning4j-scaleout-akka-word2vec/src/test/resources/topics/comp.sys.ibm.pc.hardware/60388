@@ -1,0 +1,35 @@
+From: rnichols@cbnewsg.cb.att.com (robert.k.nichols)
+Subject: Re: how to search for bad memory chips.
+Organization: AT&T
+Distribution: na
+Lines: 29
+
+In article <N5s42B8w165w@c-cat.UUCP> david@c-cat.UUCP (Dave) writes:
+>i came upon this idea i would like to share with everyone.
+>
+>to check for bad memory chips
+>
+>1. create a boot disk with emm386 himem.sys and ramdrive.sys in the
+>   config/autoexec.bat.
+>
+>2. boot the PC to create a RAM drive as large as possible.
+>
+>3. use a disk repair utility ( I use NDD ). Run it on the RAM
+>        drive, yes it will run, its only a device driver
+>
+>4. run 1000 or so passes, they go very quick
+>
+>5. if your machine fails, there is a definate bad memory chip
+>
+>6. if your machine passes, there is a conflict with programs you
+>        are loading in memory.
+...
+
+It's an interesting idea, but the worst-case data patterns developed to
+test magnetic media are totally different than the patterns used to detect
+common faults in memory chips.
+
+--
+Bob Nichols
+AT&T Bell Laboratories
+rnichols@ihlpm.ih.att.com

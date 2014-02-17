@@ -1,0 +1,31 @@
+From: aew@eosvcr.wimsey.bc.ca (Alan Walford)
+Subject: ATI Ultra Pro Confirmation
+Reply-To: aew@eosvcr.wimsey.bc.ca
+Organization: Eos Systems Inc, Vancouver, B.C., Canada
+Lines: 25
+
+I have heard many things about the ATI Ultra Pro card. Some have
+been positive but most are negative. Could people please confirm
+these?  (I am interested in the EISA version in particular).
+
+1) The card does not work in a system with 32M RAM.
+
+2) The card works in a 32M system with some switches
+   set but it is much slower.
+
+3) The card is _interlaced_ in its 24bit (true-colour) modes.
+
+4) The latest build 59 drivers still do not work in many
+   cases.
+
+5) This card is the fastest full colour card for the money.
+
+6) This card is the greatest thing since sliced bread. ;-)
+
+Thanks for your feedback. I will summarize.
+
+Al
+
+-- 
+Alan Walford     Eos Systems Inc., Vancouver,B.C., Canada  Tel: 604-734-8655
+aew@eosvcr.wimsey.bc.ca           OR        ...uunet!wimsey.bc.ca!eosvcr!aew  

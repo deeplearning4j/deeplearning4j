@@ -1,0 +1,25 @@
+From: jack@multimedia.cc.gatech.edu (Tom Rodriguez)
+Subject: composite video - what are HD and VD?
+Article-I.D.: multimed.JACK.93Apr6032642
+Organization: Multimedia Computing Group
+Lines: 19
+
+
+	I've got an rgb Mistubishi monitor and on the back it has 5
+BNC connectors labeled like this:
+
+    composite
+  HD          VD
+  +           +        +       +       +
+             sync     red    green    blue
+
+	I've used it as a straight RGB monsitor but i can't figure out
+how to use it for composite.  Could someone explain what these markings
+mean?  Thanks for any help.
+
+	tom
+--
+Tom Rodriguez  (jack@cc.gatech.edu)
+Multimedia Computing Group - GVU Lab
+Georgia Institute of Technology
+Atlanta, Georgia 30332-0280

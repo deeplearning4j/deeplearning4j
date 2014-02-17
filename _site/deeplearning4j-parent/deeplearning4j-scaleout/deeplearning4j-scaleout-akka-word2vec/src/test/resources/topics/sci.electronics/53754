@@ -1,0 +1,35 @@
+From: st1my@rosie.uh.edu (Stich, Christian E.)
+Subject: Re: Motorola XC68882RC33 and RC50
+Organization: University of Houston
+Lines: 26
+Distribution: world
+NNTP-Posting-Host: rosie.uh.edu
+Keywords: Motorola, FPU, 68882, 68030, 33/50 MHz, problems (FPU exception)
+News-Software: VAX/VMS VNEWS 1.41    
+
+In article <16APR199323531467@rosie.uh.edu>, st1my@rosie.uh.edu (Stich, Christian E.) writes...
+>I just installed a Motorola XC68882RC50 FPU in an Amiga A2630 board (25 MHz
+>68030 + 68882 with capability to clock the FPU separately).  Previously
+>a MC68882RC25 was installed and everything was working perfectly.  Now the
+>systems displays a yellow screen (indicating a exception) when it check for
+>the presence/type of FPU.  When I reinstall an MC68882RC25 the system works
+>fine, but with the XC68882 even at 25 MHz it does not work.  The designer
+>of the board mentioned that putting a pullup resistor on data_strobe (470 Ohm)
+>might help, but that didn't change anything.  Does anybody have some
+>suggestions what I could do?  Does this look like a CPU-FPU communications
+>problem or is the particular chip dead (it is a pull, not new)?
+>Moreover, the place I bought it from is sending me an XC68882RC33.  I thought
+>that the 68882RC33 were labeled MC not XC (for not finalized mask design). 
+>Are there any MC68882RC33?
+> 
+>Thanks
+>	Christian 
+> 
+
+It appears as if the problem is related to the 68882/50's need for very fast
+(and clean) signal transitions.  I got some email (Vielen Dank, Thomas) stating
+that Motorola provides a solution for this problem in their 68030 manual.  
+Since my manual (1989) predates the 50 MHz 68030/68882s I couldn't find it.
+Could someone please email me the specifics?
+		Thanks
+			Christian

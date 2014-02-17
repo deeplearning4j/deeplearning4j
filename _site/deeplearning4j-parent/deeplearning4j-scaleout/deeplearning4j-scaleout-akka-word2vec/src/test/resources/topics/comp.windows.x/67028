@@ -1,0 +1,49 @@
+From: dshaker@qualix.com (Doug Shaker)
+Subject: Re: MacX 1.2 color problem
+Reply-To: dshaker@qualix.com
+Organization: QUALiX Group, Inc.
+Lines: 43
+
+In article KuL@ux1.cso.uiuc.edu, kerr@ux1.cso.uiuc.edu (Stan Kerr) writes:
+>I have a peculiar color problem with MacX, Apple's Macintosh X server.
+>I'd like to know if others have seen the same problem. It's happened
+>with the current version (1.2), and with version 1.1.7.
+>When some types of client windows are displayed, parts of the windows
+>are in the wrong color; if the window is moved slightly, forcing the server
+>to repaint it, it is repainted in the correct colors. It doesn't happen
+>for xterm windows, but has happened for graphic windows and with some
+>Motif clients.
+
+I expect what is going on here is that your colormap is full and, when the new application starts up, it cannot add the colors that it needs to the colormap.
+It therefore has to pick and choose from the existing colors.  This makes it look
+ugly until it's window gets priority.  Then Macx changes the colormap so that
+the selected app is getting the exact colors it wanted, but now other applications
+are having to make do with it's colormap.
+
+This is a problem with all color X servers (or at least all color Xservers I have
+seen) when the demands of the applications exceed the size of the colormap.
+My solution is usually to (1) avoid colormap-greedy apps and (2) display
+applications where color is just icing on the cake in monochrome mode rather
+than in color (if this is an option for the application).
+
+ - Doug Shaker
+	voice:	415/572-0200
+	fax:	415/572-1300
+	email:	dshaker@qualix.com
+	mail:	Qualix Group
+		1900 S. Norfolk St., #224
+		San Mateo, CA 94403
+
+Qualix maintains a mailserver with information files and demo
+versions of products.  If you would like more information on
+the mailserver, send an email to qfacts@qualix.com (or 
+uunet!qualix!qfacts).  The email should take the following
+form:
+	BEGIN
+	send help
+	send index
+	END
+	Name
+	Address
+	Phone
+

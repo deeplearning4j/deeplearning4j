@@ -1,0 +1,43 @@
+From: amanda@intercon.com (Amanda Walker)
+Subject: Re: Secret algorithm [Re: Clipper Chip and crypto key-escrow]
+Organization: InterCon Systems Corporation - Herndon, VA  USA
+Lines: 34
+Distribution: world
+Reply-To: amanda@intercon.com (Amanda Walker)
+NNTP-Posting-Host: chaos.intercon.com
+X-Newsreader: InterCon TCP/Connect II 1.1
+
+gtoal@gtoal.com (Graham Toal) writes:
+> Oh, I see your point.  I think you're wrong.  But if you sit back and 
+> wait to find out if I'm right, it'll be too late.  Just listen *very* 
+> carefully for the first 'such and such will not be permitted on network 
+> XYZ' shoe to drop. 
+
+I've been a very intent NREN spectator of the NREN for years.  As a 
+commercial IP software vendor, it really is my professional opinion that the 
+NREN, at this point, is irrelevant to private sector networking.  If it had 
+been deployed five years ago, it would have been a major development.  Now,
+however, it's just an upgrade to the NSFnet, and an attempt to revive the 
+lagging use of the national supercomputer centers.  You could cut out the 
+NSFnet completely, and the Internet would continue chugging along without a 
+hiccup (aside from a few universities).
+
+Long-haul networking and Internet connectivity have long since ceased to be 
+under federal sponsorship or regulation, at least in the USA.  The success of 
+the CIX (Commercial Internet Exchange) is a prime example of this.  While our 
+dear VP has been promoting his "data superhighway," the private sector has 
+been building it, without the NSFnet's restrictions.
+
+To illustrate, a connection from the machine on my desk to the machine your 
+article was posted from (pizzabox.demon.co.uk) involves *only* commercial IP 
+providers until it hits Amsterdam.  No NSFnet.  No NREN.  No "appropriate 
+use" restrictions.  It's even 1.544mbps (T1) until it hits the EUnet 
+gateway...
+
+QED.
+
+
+Amanda Walker
+InterCon Systems Corporation
+
+

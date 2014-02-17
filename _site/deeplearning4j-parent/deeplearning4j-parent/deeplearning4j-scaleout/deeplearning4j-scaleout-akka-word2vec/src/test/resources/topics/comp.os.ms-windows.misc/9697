@@ -1,0 +1,23 @@
+From: davidw@auck.irl.cri.nz (David White)
+Subject: Re: How do I quickly switch between Windows screen resolutions?
+Organization: Industrial Research Ltd, Auckland, New Zealand
+Lines: 16
+Distribution: na
+NNTP-Posting-Host: kauri.auck.irl.cri.nz
+
+In <93721@hydra.gatech.EDU> ccastco@prism.gatech.EDU (Constantinos Malamas) writes:
+
+>In article <C5qLr8.DJL@cbnewsl.cb.att.com> slg@slgsun.att.com (The Idealistic Cynic) writes:
+>>Can someone out there tell me how to switch Window's screen resolution
+>>quickly and easily?  I know that I can go back into install to do it,
+
+> 	Take a look at ftp.cica.indiana.edu at pub/pc/win3/(util?misc?)
+>for a program caleld vswitch.zip.It's as close to want you want as you can
+>get in WIn3.1 ...
+
+I think George is referring to switch.zip in the ~ftp/pub/pc/win3/drivers/video
+directory. Description reads -- Switcher: Windows Video Mode Switcher.
+
+--
+ david white    (engineer, Goon fan & son of my Dad)
+ Internet davidw@auck.irl.cri.nz  Fax +64 9 443-4737

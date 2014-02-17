@@ -1,0 +1,40 @@
+From: mhembruc@tsegw.tse.com (Mattias Hembruch)
+Subject: Re: Can I Change ""Licensed To"" Data in Windows 3.1?
+Organization: Toronto Stock Exchange
+Lines: 35
+
+rmohns@vax.clarku.edu writes:
+
+>This is in relation to a question concerning changing the registered to: 
+>information of MS-Windows...
+
+>In a previous article, 2a42dubinski@vms.csd.mu.edu wrote:
+>> 
+>>	ahh, yes, this is a fun topic.  No, once the name is incribed on the
+>>disk, that is it, it is encoded.  Not even a HEX editor will find it.  You can
+>>write over the "Licensed to:", but you can't change the name underneth it.  I
+
+>I can find it with a HEX editor, although I have not tried to overwrite it.
+>Are you sure it can't be?  You may be mistaken about this. (???)
+
+>Rob
+
+>rmohns@vax.clarku.edu
+
+On a similar note, has anyone found out a way to do this with MS FoxPro for
+Windows? My setup.ini file was modified on disk 1 (all encrypted).. Well,
+of course I forgot about Microsoft's stupid arrangement when I got the 
+software, and used my name (it was paid for by the company I'm doing 
+consulting for. When my job is done, it's their software).. Any ideas before
+I start doing dumb things to a copy of that file??
+
+Mattias
+ps NO - I don't want to pirate this software. I just want to avoid having
+to buy a new copy in order to change the registration information and then
+having a copy lying around I don't use...
+
+maybe I can get a new disk 1...
+-- 
+Mattias Hembruch
+>> My views do not necessarily reflect those of the TSE. <<
+E-mail: mhembruc@tse.com

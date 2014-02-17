@@ -1,0 +1,15 @@
+0
+A little over a year since big data startup Trifacta came out of stealth with funding, it’s announcing another capital raise. This time it’s $12 million, with Greylock Partners and previous investor Accel Partners leading the round.
+The new money will help the company add to its technology for preparing raw data for analysis and get it into the hands of more users.
+The San Francisco-based team is already 22 people strong. More sales, engineering, and design types will come on board.
+At the helm of the company is Joe Hellerstein, a cofounder and also a computer science professor at UC Berkeley, where Trifacta has its roots.
+Hellerstein and the company’s two other founders — Stanford computer science professor Jeffrey Heer and former Stanford Ph.D. student Sean Kandel — “took the ideas we’ve been working on on campus and went off campus to start the company,” he told VentureBeat.
+[Editor's note: Hellerstein will be speaking onstage at our DataBeat/Data Science Summit later today in Redwood City. It's not too late to register so you can catch his talk at 2 p.m.]
+The team is laser-focused not on the place where the data is sitting — like Hadoop or a data warehouse — and not on analytics. It’s the space in between that matters for Trifacta.
+“Data transformation was this ubiquitous problem that everybody complained about,” Hellerstein said. It’s not unusual for that transformation — the T in the data-world acronym ETL, alongside extracting and loading — to take up more than half of data scientists’ precious time, Hellerstein said, and Trifacta wants to make it happen faster.
+But it’s not just that. The company wants to make transformation into a more pleasant experience. The team wants to provide a clean interface for cleaning up data, coming up with structure for it, and seeing that it looks the way it should.
+The product is still under wraps, but Hellerstein said that, at a high level, it will let users take cues from the software intelligence, and vice-versa.
+“Our user interface focuses on direct manipulation of data for the user,” he said. That implies “suggestions coming back in a sort of fluid way from the back end, based on user interaction.”
+The company already has paying customers, Hellerstein said, although he declined to name them. It’s currently an on-premise product, which makes sense for large companies that might be hesitant to upload lots of data to a public cloud — although it is designed to be available as a hosted service as well, Hellerstein said.
+The bigger trend here is that investors see major promise for new pieces of the big data ecosystem. Pivotal executive Scott Yara alluded to the trend at VentureBeat’s DataBeat/Data Science Summit event yesterday, saying he hadn’t witnessed “a healthier funding environment for these kinds of technologies ever.”
+That means investors might be willing to keep funding Trifacta as it grows into a staid vendor to hold its own against larger operations that offer similar services, such as Informatica.

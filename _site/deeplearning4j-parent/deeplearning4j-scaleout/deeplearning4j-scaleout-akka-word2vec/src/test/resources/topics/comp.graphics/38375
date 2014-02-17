@@ -1,0 +1,1025 @@
+From: nfotis@ntua.gr (Nick C. Fotis)
+Subject: (17 Apr 93) Computer Graphics Resource Listing : WEEKLY [part 2/3]
+Lines: 1023
+Reply-To: nfotis@theseas.ntua.gr (Nick (Nikolaos) Fotis)
+Organization: National Technical Univ. of Athens
+
+Archive-name: graphics/resources-list/part2
+Last-modified: 1993/04/17
+
+
+Computer Graphics Resource Listing : WEEKLY POSTING [ PART 2/3 ]
+===================================================
+Last Change : 17 April 1993
+
+
+14. Plotting packages
+=====================
+
+Gnuplot 3.2
+-----------
+  It is one of the best 2- and 3-D plotting packages, with
+  online help.It's a command-line driven interactive function plotting utility
+  for UNIX, MSDOS, Amiga, Archimedes, and VMS platforms (at least!).
+  Freely distributed, it supports many terminals, plotters, and printers
+  and is easily extensible to include new devices.
+  It was posted to comp.sources.misc in version 3.0, plus 2 patches.
+  You can practically find it everywhere (use Archie to find a site near you!).
+  The comp.graphics.gnuplot newsgroup is devoted to discussion of Gnuplot.
+
+Xvgr and Xmgr (ACE/gr)
+-----------------------
+  Xmgr is an XY-plotting tool for UNIX workstations using
+  X or OpenWindows. There is an XView version called xvgr for
+  Suns. Collectively, these 2 tools are known as ACE/gr.
+  Compiling xmgr requires the Motif toolkit version 1.1
+  and X11R4 - xmgr will not compile under X11R3/Motif 1.0x.
+
+  Check at ftp.ccalmr.ogi.edu [129.95.72.34} in
+  /CCALMR/pub/acegr/xmgr-2.09.tar.Z (Motif version)
+  /CCALMR/pub/acegr/xvgr-2.09.tar.Z (XView version)
+
+  Comments, suggestions, bug reports to Paul J Turner
+  <pturner@amb4.ese.ogi.edu> (if mail fails, try pturner@ese.ogi.edu).
+  Due to time constraints, replies will be few and far between.
+
+Robot
+-----
+  Release 0.45 : 2-D and limited 3-D. Based on XView 3, written
+  in C / Fortran (so you need a Fortran compiler or the f2c translator).
+  Mainly tested on Sun4, less on DECstations. Check at
+  ftp.astro.psu.edu (128.118.147.28),  pub/astrod.
+
+VG plotting library
+-------------------
+  This is a library of Fortran callable routines at sunspot.ceee.nist.gov
+  [129.6.64.151]
+
+Xgobi
+-----
+  It's being developed at Bellcore, and its speciality are
+  multidimensional data sets analysis and exploration. You can call it
+  from the S language also, and it works as an X11 client using the Athena
+  widget set (or with an ASCII terminal). It's distributed free of charge
+  from STATLIB at CMU.
+  To get it via e-mail, send email to statlib@temper.stat.cmu.edu and
+  in the body area of the message, put the line
+
+  send xgobi from general
+
+  If you want to pick it via ftp, connect to lib.stat.cmu.edu. Log in as
+  "statlib" and use your e-mail address as your password. Then type
+
+  cd general
+  mget xgobi.*
+
+  Warning: It's about 2 MB sources + large Postscript manual. Read the
+  relevant README to decide whether you need it or not.
+
+PGPLOT
+------
+  Runs on VAX/VMS and supposedly on UNIX. It's a set of fortran routines freely
+  available (though copyrighted and requiring a nominal fee of $50 or so)
+  that includes contour plots and support for various devices, including ps.
+  Contact tjp@deimos.caltech.edu
+
+GGRAPH
+------
+  Host shorty.cs.wisc.edu [128.105.2.8] : /pub/ggraph.tar.Z
+  Unknown more details.
+
+epiGRAPH
+--------
+  For PCs. Call dvj@lab2.phys.lgu.spb.su (Vladimir J. Dmitriev) for details.
+  You can get the program demo or (and) play version, if sent 10 $ to
+
+        1251 Budapest posta fiok 60
+        Hungary
+        ph/fax 1753696  Budapest
+        ph     2017760
+
+Multiplot XLN
+-------------
+  For Amigas, shareware ($30 USD, #20 UK or $40 Aust.). Advanced 2D package
+  that has a big list of features. Contact:
+
+  Dr. Alan Baxter <agb16@mbuc.bio.cam.ac.uk>,
+  Cambridge University
+  Department of Pathology,
+  Tennis Court Road,
+  Cambridge CB2 1QP, UK
+
+
++Athena Plotter Widget set
++-------------------------
++  
++  This version V6.0 is based on Gregory Bond's version V5-beta. Added
++  some stuff for scientific graphs, i.e. log axes, free scalable axes,
++  XY-lineplots and some more, and re-added plotter callbacks from V4, e.g.
++  to request the current pointer position, or to cut off a rectangle from the
++  plotting area for zooming-in. Version V6.0 has a log of bugs fixed and a
++  log of improvements against V6-beta. Additionally I did some other
++  changes/extensions, besides 
++  
++      -     Origin and frame lines for axes.
++      -     Subgrid lines on subtic positions.
++      -     Line plots in different line types (lines, points, lines+points,
++       impulses, lines+impulses, steps, bars), line styles (solid, dotted,
++       dashed, dot-dashed) and marker types for data points.
++      -     Legend at the right or left hand side of the plot.
++      -     Optional drawing to a pixmap instead of a window.
++      -     Layout callback for aligning axis positions when using
++       multiple plotters in one application.
++  
++  Available at export.lcs.mit.edu, directory contrib/plotter
++
++SciPlot
++-------
++  SciPlot is a scientific 2D plotting and manipulation program. 
++  For the NeXT (requires NeXTStep 3.0), and it's shareware.
++
++  Features:
++  ASCII import and export;  EPS export; copy, cut, paste with data buffer;
++  free number of data points, data buffer, and document window;
++  selective open and save ; plotting in many styles; automatic legend;
++  subviews; linear and logarithmic axes; two different axes; text and graphic;
++  color support; zoom; normalizing and moving; axis conversions;
++  free hand data manipulations (cut, edit, move, etc.); data editor; sorting
++  of data; absolute,relative, and free defined error bars;
++  calculating with buffers (+, -, *, / ); background subtractions
++  (linear,shirley,tougaard, bezier); integration and relative integration;
++  fitting of one or more free defined functions; linear regression;
++  calculations (+, -, *, /, sin, cos, log, etc.); function generator;
++  spline interpolation; least square smooth and FFT smooth; differentiation;
++  FFT; ESCA calculations and database; .. and something more 
++
++  You can find it on:
++  ftp.cs.tu-berlin.de [130.149.17.7] : /pub/NeXT/science/SciPlot3.1.tar.Z
++
++  Author:
++  Michael Wesemann
++  Scillerstr. 73,1000 Berlin 12, Germany   
++  mike@fiasko.rz-berlin.mpg.de
++
++PLPLOT
++------
++  PLPLOT is a scientific plotting package for many systems, small (micro)
++  and large (super) alike.  Despite its small size and quickness,
++  it has enough power to satisfy most users, including:
++  standard x-y plots, semilog plots, log-log plots, contour plots, 3D plots,
++  mesh plots, bar charts and pie charts.  Multiple graphs (of the same or
++  different sizes) may be placed on a single page with multiple lines in each
++  graph.  Different line styles, widths and colors are supported.  A virtually
++  infinite number of distinct area fill patterns may be used.  There are
++  almost 1000 characters in the extended character set.  This includes four
++  different fonts, the Greek alphabet and a host of mathematical, musical, and
++  other symbols.  The fonts can be scaled to any size for various effects.
++  Many different output device drivers are available (system dependent),
++  including a portable metafile format and renderer.
++  
++  Freely available (but copyrighted) via anonymous FTP on
++  hagar.ph.utexas.edu, directory pub/plplot
++  
++  At present (v. 4.13), PLPLOT is known to work on the following systems:
++  
++  Unix:   SunOS, A/IX, HP-UX, Unicos, DG/UX, Ultrix
++  Other platforms: VMS, Amiga/Exec, MS-DOS, OS/2, NeXT
++  
++  Authors: Many. The main supporters are:
++  
++  Maurice LeBrun <mjl@fusion.ph.utexas.edu>: PLPLOT kernel and the metafile,
++     xterm, xwindow, tektronix, and Amiga drivers.
++  Geoff Furnish <furnish@fusion.ph.utexas.edu>: MS-DOS and OS/2 drivers
++  Tony Richardson <amr@egr.duke.edu>: PLPLOT on the NeXT
++
++SuperMongo
++----------
++  2-D plotting package at CMU, filename ~re00/tmp/SM.2.1.0.tar.Z
++  (probably under the ftp.cmu.edu or andrew.cmu.edu machines?)
++
++GLE
++---
++  GLE is a high quality graphics package for scientists.  It runs on a
++  variety of platforms (PCs, VAXes, and Unix) with drivers for XWindows,
++  REGIS, TEK4010, PC graphics cards, VT100s, HP plotters, Postscript
++  printers, Epson-compatible printers and Laserjet/Paintjet printers.  It
++  provides LaTEX quality fonts, as well as full support for Postscript
++  fonts.  The graphing module provides full control over all features of
++  graphs.  The graphics primitives include user-defined subroutines for
++  complex pictures and diagrams.
++
++  Accompanying utilities include Surface (for hidden line surface
++  plotting), Contour (for contour plots), Manip (for manipulation of
++  columnar data files), and Fitls (for fitting arbitrary equations to
++  data).
++
++  Mailing list: GLEList. Send a message to
++
++  listserver@tbone.biol.scarolina.edu, with a message boyd containing
++
++  sub glelist "Your Name"
++  
++ maintainer: Dean Pentcheff <dean2@tbone.biol.scarolina.edu>
+
+==========================================================================
+
+15. Image analysis software - Image processing and display
+==========================================================
+
+PC and Mac-based tools (multi-platform software)
+======================
+
+IMDISP
+------
+  IMDISP Written at JPL and other NASA sites. Can do simple display,
+  enhancing, smoothing and so on. Works with the FITS and VICAR/PDS
+  data formats of NASA. Can read TIFF images, if you know their dimensions
+  [PC and Macs]
+
+LabVIEW 2
+---------
+  LabVIEW is used as a framework for image processing tools. It provides a
+  graphical programming environment using block diagram sketch is the
+  "program" with graphical elements representing the programming elements.
+  Hundreds of functions are already available and are connected using a
+  wiring tool to create the block diagram (program).  Functions that the
+  block diagrams represent include digital signal processing and
+  filtering, numerical analysis, statistics, etc.  The tool allows any
+  Virtual Instrument (VI, a software file that looks and acts like a real
+  laboratory instrument) to be used as a part of any other virtual
+  instrument.
+
+  National Instruments markets plug-in digital signal processing (DSP)
+  boards for Macintoshs and PC compatables that allow real-time
+  acquisition and analysis at a personal computer.  New software tools for
+  DSP are allowing engineers to harness the power of this technology. The
+  tools range from low-level debugging software to high-level block
+  diagram development software.  There are three levels of DSP programming
+  associated with the NB-DSP2300 board and LabVIEW:
+  Use of the NB-DSP2300 Analysis Library: FFTs, power spectra, filters
+  routines callable from THINK C and Macintosh Programers Workshop (MPW) C
+  that execute on the NB-DSP2300 board. There is an analysis Virtual
+  Interface Library of ready-to-use VIs optimized for the NB-DSP2300.
+
+  Use of the National Instruments Developers Toolkit that includes an
+  optimizing C compiler, an assembler and a linker for low-level
+  programming of the DSP hardware.  This approach offers the highest level
+  of performance but is the must difficult in terms of ease of use.
+
+  Use of the National Instruments Interface Kit software package which has
+  utility functions for memory management data communications and
+  downloading code to the NB-DSP2300 board. (This is the easiest route for
+  the development of custom code.)
+
+Ultimage Concept VI
+-------------------
+  Concept VI  by Graftek-France is a family of image processing Virtual
+  Instruments (VIs) that give LabVIEW 2 (described above) users high-end
+  tools for designing, integrating and monitoring imaging control systems.
+  A VI is a software file that looks and acts like a real laboratory
+  instrument. Typical applications for Concept VI include thermography,
+  surveillance, machine vision, production testing, biomedical imaging,
+  electronic microscopy and remote sensing.
+
+  Ultimage Concept VI addresses applications which require further
+  qualitative and quantitative analysis.  It includes a complete set of
+  functions for image enhancement, histogram equalization, spatial and
+  frequency filtering, isolation of features, thresholding, mathematical
+  morphology analysis, density measurement, object counting, sizing and
+  characterization.
+
+  The program loads images with a minimum resolution of 64 by 64, a pixel
+  depth of 8, 16, or 32 bits, and one image plane.  Standard input and
+  output formats include PICT, TIFF, SATIE, and AIPD.  Other formats can
+  be imported.
+
+  Image enhancement features include lookup table transformations, spatial
+  linear and non-linear filters, frequency filtering, arithmetic and logic
+  operations, and geometric transformations, among others.  Morphological
+  transformations include erosion, dilation, opening, closing, hole
+  removal, object separation, and extraction of skeletons, among others.
+  Quantitative analysis provides for objects' detection, measurement, and
+  morphological distribution.  Measures include area, perimeter, center of
+  gravity, moment of inertia, orientation, length of relevant chords, and
+  shape factors and equivalence.  Measures are saved in ASCII format.  The
+  program also provides for macro scripting and integration of custom
+  modules.
+
+  A 3-D view command plots a perspective data graph where image intensity
+  is depicted as mountains or valleys in the plot.  The histogram tool can
+  be plotted with either a linear or logarithmic scale. The twenty-eight
+  arithmetic and logical operations provide for: masking and averaging
+  sections of images, noise removal, making comparisons, etc.  There are
+  13 spatial filters that alter pixel intensities based on local
+  intensity.  These include high-pass filters for contrast and outlines.
+  The frequency data resulting from FFT analysis can be displayed as
+  either the (real , imaginary ) components or the (phase, magnitude)
+  data.  The morphological transformations are useful for data sharpening
+  and defining objects or for removing artifacts.
+
+  The transformations include: thresholding, eroding, dilating and even
+  hole filling.
+
+  The program's quantitative analysis measurements include: area,
+  perimeter, center of mass, object counts, and angle between points.
+
+  GTFS, Inc. 2455 Bennett Valley Road #100C Santa Rosa, CA 95494
+  707-579-1733
+
+IPLab Spectrum
+--------------
+  IPLAB Spectrum supports image processing and analysis but lacks the
+  morphology and quantitative analysis features provided by
+  Graftek-FranceUs Ultimage Concept VI.  Using scripting tools, the user
+  tells the system the operations to be performed. The problem is that far
+  too many basic operations require manual intervention. The tool
+  supports: FFTs, 16 arithmetic operations for pixel alteration, and a
+  movie command for cycling through windows.
+
+
+Macintosh-based tools
+=====================
+
+NCSA Image, NCSA PalEdit and more
+---------------------------------
+  NCSA provides a whole suite of public-domain visualization tools for the
+  Macintosh, primarily aimed at researchers wanting to visualize results
+  from numerical modelling calculations.  These applications,
+  documentation, and source code are available for anonymous ftp from
+  ftp.ncsa.uiuc.edu. Commercial versions of the NCSA programs have been
+  developed by Spyglass.
+
+  Spyglass, Inc. 701 Devonshire Drive Champaign, IL  61820 (217) 355-6000
+  fax: 217 355 8925
+
+NIH IMAGE
+---------
+  Available at alw.nih.gov (128.231.128.7) or (preferably)
+  zippy.nimh.nih.gov [128.231.98.32], directory:/pub/image.
+  It has painting and image manipulation tools, a macro language,
+  tools for measuring areas, distances and angles, and for counting
+  things. Using a frame grabber card, it can record sequences of
+  images to be played back as a movie. It can invoke user-defined
+  convolution matrix filters, such as Gaussian. It can import raw
+  data in tab-delimited ASCII, or as 1 or 2-byte quantities. It also
+  does histograms and even 3-D plots. It is limited to 8-bits/pixel,
+  though the 8 bits map into a color lookup table. It runs on any Mac
+  that has a 256-color screen and a FPU (or get the NonFPU version
+  from zippy.nimh.nih.gov)
+
+PhotoMac
+--------
+  Data Translation, Inc. 100 Locke Dr. Marlboro, MA 01752 508-481-3700
+
+PhotoPress
+----------
+  Blue Solutions 3039 Marigold Place Thousand Oaks, CA 91360 805-492-9973
+
+PixelTools and TCL-Image
+------------------------
+  "Complete family of PixelTools (hardware accelerator and applications
+  software) for scientific image processing and analysis.  Video-rate
+  capture, display, processing, and analysis of high-resolution
+  monochromatic and color images.  Includes C source code."
+
+TCL-Image:
+  "Software package for scientific, quantitative image processing and
+  analysis. It provides a complete language for the capture, enhancement,
+  and extraction of quantitative information from gray-scale images.
+  TCL_Image has over 200 functions for image processing, and contains the
+  other elements needed in a full programming language for algorithm
+  development -- variables and control structures.  It is easily
+  extensible through "script" (or indirect command) files. These script
+  files are simply text files that contain TCL-Image commands.  They are
+  executed as normal commands and include the ability to pass parameters.
+  The direct capture of video images is supported via popular frame
+  grabber boards.  TCL-Image comes with the I-View utility that provides
+  conversion between common image file types, such as PICT2 and TIFF."
+
+  Perceptics 725 Pellissippi Parkway Knoxville, TN 37933 615-966-9200
+
+Satellite Image Workshop
+------------------------
+  It comes with a number of satellite pictures (raw data) and does all
+  sorts of image enhancing on it. You'll need at least a Mac II with co-
+  processor; a 256 color display and a large harddisk. The program doesn't
+  run under system 7.x.ATE1 V1
+
+  In the documentation the contact address is given as:  Liz Smith, Jet
+  Propulsion Laboratory, MS 300-323, 4800 Oak Grove Dr,.Pasadena, CA 91109
+  (818) 354-6980
+
+Visualization Workbench
+-----------------------
+  "An electronic imaging software system that performs interactive image
+  analysis and scientific 2D and 3D plotting."
+
+  Paragon Imagine 171 Lincoln St. Lowell, MA 01852 508-441-2112
+
+Adobe Photoshop
+---------------
+
+  The tool supports Rtrue colorS with 24-bit images or 256 levels of grey
+  scale.  Once an image has been imported it can be Rre-touchedS with
+  various editing tools typical of those used in Macintosh-based RpaintS
+  applications.  These include an eraser, pencil, brush and air brush.
+  Advanced RpasteS tools that control the interaction between a pasted
+  selection and the receiving site have also been incorporated.  For
+  example, all red pixels in a selection can easily be preventing from
+  being pasted. Photoshop has transparencies ranging from 0 to 100%,
+  allowing you to create ghost overlays.  RPhoto-editingS tools include
+  control of the brightness and contrast, color balancing, hue/saturation
+  modification and spectrum equalization.  Images can be subjected to
+  various signal processing algorithms to smooth or sharpen the image,
+  blur edges, or locate edges.  Image scaling is also supported.
+
+  For storage savings, the images can be compressed using standard
+  algorithms, including externally supplied compression such as JPEG,
+  availlable from Storm Technologies. The latest version of Adobe
+  Photoshop supports the import of numerous image formats including: EPSF,
+  EPSF, TIFF, PICT resource, Amiga IFF/ILBM, CompuServe GIF, MacPaint,
+  PIXAR, PixelPaint, Scitex CT, TGA and ThunderScan..
+
+  Adobe Systems, Inc. 1585 Charlestown Road PO Box 7900 Mountain View, CA
+  94039-7900 415-961-4400
+
+ColorStudio and ImageStudio
+---------------------------
+  ColorStudio is an image-editing and paint package from Letraset that has
+  more features than Adobe Photoshop but is decidedly more complex and
+  therefore more difficult to use.  Several steps are often required to
+  accomplish that which can be done in a single step using Photoshop.  The
+  application requires a great deal of available disk space as one can
+  easily end up with images in the 30 MB range.  The program provides a
+  variety of powerful selection tools including the "auto selection tool"
+  which lets the user choose image areas on the basis of color, close
+  hues, color range and mask.
+
+ImageStudio: Don't know...
+
+  Letraset USA 40 Eisenhower Drive Paramus, NJ 07653 201-845-6100
+
+Dapple Systems
+--------------
+  "High resolution image analysis software provides processing tools to
+  work with multiple images, enhance and edit, and measure a variety of
+  global or feature parameters, and interpret the data."
+
+  Dapple Systems, 355 W. Olive Ave, #100 Sunnyvale, CA 94086 408-733-3283
+
+Digital Darkroom
+----------------
+  The latest release of Digital Darkroom has five new selection and
+  editing tools for enhancing images. One such feature allows the user to
+  select part of an image simply by "painting" it. A new polyline
+  selection tool creates a selection tool for single pixel wide
+  selections.  A brush lets the operator "paint" with a selected portion
+  of the image. Note that this is not a true color image enhancement tool.
+  This tool should be used when the user intends to operate in grey-scale
+  images only.  It should be noted that Digital Darkroom is not as
+  powerful as either Adobe Photoshop or ColorStudio.
+
+  Silicon Beach Software 9770 Carroll Ctr. Rd., Suite J San Diego, CA
+  92126 619-695-6956
+
+Dimple
+------
+  It  is compatible with system 6.05 and system 7.0 , requires Mac LC or
+  II series with 256 colours, with a recommended min of 6Mb of ram. It has
+  the capability of reading Erdas files. Functions include; image
+  enhancement, 3D and contour plots, image statistics, supervised and
+  unsupervised classification, PCA and other image transformations. There
+  is also a means (Image Operation Language or IOL) by which you can write
+  your own transformations. There is no image rectification, however
+  Dimple is compatable with MAPII. The latest version is 1.4 and it is in
+  the beta stage of testing. Dimple was initially developed as a teaching
+  tool and it is very good for this purpose."
+
+  "Dimple  runs on a colour Macintosh.  It is a product still in its
+  development phase.. i.e. it doesn't have all the inbuilt features of
+  other packages, but is coming along nicely.  It has its own inbuilt
+  language for writing "programs" for processing an image, defining
+  convolution filters etc. Dimple is a full mac application with pull down
+  menus etc... It is unprotected software."
+
+  Process Software Solutions, PO Box 2110, Wollongong, New South Wales,
+  Australia. 2500. Phone 61 42 261757  Fax 61 42 264190.
+
+Enhance
+-------
+  Enhance has a RrulerS tool that supports measurements and additionally
+  provides angle data. The tool has over 80 mathematical filter
+  variations: "Laplacian, medium noise filter", etc.  Files can be saved
+  as either TIFF, PICT, EPSF or text (however EPSF files can't be imported).
+
+  MicroFrontier 7650 Hickman Road Des Moines, IA  50322 515-270-8109
+
+Image Analyst
+-------------
+  An image processing product for users who need to extract quantitative
+  data from video images.  Image Analyst lets users configure
+  sophisticated image processing and measurement routines without the
+  necessity of knowing a programming language.  It is designed for such
+  tasks at computing number and size of cells in images projected by video
+  cameras attached to microscopes, or enhancing and measuring distances in
+  radiographs.
+
+  Image Analyst provides users with an array of field-proven video
+  analysis techniques that enable them to easily assemble a sequence of
+  instructions to enhance feature appearance; count objects; determine
+  density, shape, size, position, or movement; perform object feature
+  extraction; and conduct textural analysis automatically.  Image Analyst
+  works with either a framegrabber board and any standard video camera, or
+  a disk-stored image.
+
+  Within minutes, without the need for programming, the Image Analyst user
+  can set up a process to identify and analyze any element of a image.
+  Measurements and statistics can be automatically or semi-automatically
+  generated from TIFF or PICT files or from captured video tape images.
+  Image Analyst recognizes items in images based on their size, shape and
+  position.  The tool provides direct support for the Data Translation and
+  Scion frame grabbers. A menu command allows for image capture from a VCR
+  video camera or other NTSC or PAL devices.
+
+  There are 2 types of files, the image itself and the related Sequence
+  file that holds the processing, measurements and analysis that the user
+  defines.  Automated sequences are set up in Regions Of Interest (ROI)
+  represented by movable, sizable boxes atop the image.  Inside a ROI, the
+  program can find the distance between two edges, the area of a shape,
+  the thickness of a wall, etc.  Image Analyst finds the center, edge and
+  other positions automatically. The application also provides tools so
+  that the user can work interactively to find the edge of object. It also
+  supports histograms and a color look-up table (CLUT) tool.
+
+  Automatix, Inc. 775 Middlesex Turnpike Billerica, MA 01821 508-667-7900
+
+IPLab
+-----
+  Signal Analytics Corp. 374 Maple Ave. E Vienna, VA  22180 703-281-3277
+  FAX 703-281-2509
+
+  "Menu-driven image processing software that supports 24-bit color or
+  pseudocolor/grayscale image display and manipulation."
+
+MAP II
+------
+  Among the Mac GIS systems, MAP II distributed by John Wiley has
+  integrated image analysis.
+
+IMAGE
+-----
+  from Stanford : Try anonymous ftp from sumex-aim.stanford.edu
+  It has pd source for image v2, and ready to run code for a mac under
+  image v3.
+
+
+
+Windows/DOS PC-based tools
+==========================
+
+CCD
+---
+  Richard Berry's CCD imaging book for Willamon-Bell contains (optional?)
+  disks with image manipulating software.  Source code is included.
+
+ERDAS
+-----
+  "ERDAS will do all of the things you want:  rectification,
+  classification, transformations (canned & user-defined), overlays,
+  filters, contrast enhancement, etc. ... I was using it on my thesis &
+  then changed the topic a bit & that work became secondary."
+
+  ERDAS, Inc. 2801 Buford Highway Suite 300 Atlanta, GA 30329 404-248-9000
+  FAX   404-248-9400
+
+RSVGA
+-----
+  "I have been getting up to speed on a program called RSVGA available from
+  Eidetic Digital Image Ltd. in British Columbia.  Its for IBM PC's or
+  clones, cheap (about $400) and does all the stuff Erdas does but is not
+  as fast or as powerful, though I have had only limited experience with
+  Erdas.  I have used RSVGA with 6 of 7 Landsat bands and it is a good
+  starter program except for the obtuse manual"
+
+IMAGINE-32
+----------
+  It's a 32 bit package [I suppose for PCs] called "Imagine32"
+  or "Image32" The program does a modest amount of image processing --add,
+  subtract, multiply, divide, display, and plot an x or y cut across the image.
+  It can also display a number of images simultaneously.
+  The company is CompuScope, in Santa Barbara, CA. 
+
+PC Vista
+--------
+  It was announced in the 1989 August edition of PASP.  It is known to
+  be available from Mike Richmond, whose email addresses have been
+
+	richmond@bllac.berkeley.edu
+	richmond@bkyast.berkeley.edu
+
+  and his s-mail address is:
+
+  Michael Richmond,Astronomy Department, Campbell Hall, Berkeley, CA 94720
+
+  The latest version of PC-Vista, version 1.7, includes not only the source
+  code and help files, but also a complete set of executable programs and
+  a number of sample FITS images. If you do wish to use the source code,
+  you will need Microsoft C, version 5.0 or later; other compilers may work,
+  but will require substantial modifications.
+
+  To receive the documentation and nine double-density (360K) floppies
+  (or three quad-density 3-1/2 inch floppies (1.44M) with everything on them,
+  just send a request for PC-Vista, together with your name and a US-Mail
+  address, to 
+
+	Office of Technology Licensing
+	2150 Shattuck Ave., Suite 510
+	Berkeley, Ca. 94704
+
+  Include a check (Traveller's Checks are fine) or purchase order for $150.00
+  in U.S. dollars, if your address is inside the continental U.S., or $165.00
+  otherwise, made out to Regents of the University of California
+  to cover duplication and mailing costs.
+
+
+SOFTWARE TOOLS
+--------------
+  It's a set of software "tools" put out by Canyon State
+  Systems and Software. They are not free, but rather cheap at about $30 I
+  heard. It will handle most all of the formats used by frame grabber
+  software. 
+
+MIRAGE
+------
+  It's image processing software written by Jim Gunn at the
+  Astrophysics Dept at Princeton. It will run on a PC among other platforms.
+  It is a Forth based system - i.e. a Forth language with many image
+  processing displaying functions built in. 
+
+DATA TRANSLATION SOURCE BOOK
+----------------------------
+  The Data Translation company in Massachusetts publishes a free book
+  containing vendors of data analysis hardware and software which is
+  compatible with Data Translation and other frame grabbers.
+  Surely you can find much more PC-related stuff in it.
+
+MAXEN386
+--------
+  A couple of Canadians have written a program named MAXEN386 which does
+  maximum entropy image deconvolution. Their company is named Digital
+  Signal Processing Software, or something like that, and the software is
+  mentioned in an article in Astronomy Magazine, either Jan or Feb 92
+  (an article on CCD's vs film). 
+
+JANDEL SCIENTIFIC (JAVA)
+------------------------
+  Another software package (JAVA) is put out by Jandel Scientific. 
+  Jandel Scientific, 65 Koch Road, Corte Madera, CA 94925, (415) 924-8640,
+  (800) 874-1888.
+
+Microbrian
+----------
+  Runs on an MS dos platform and uses a 32 bit graphics card
+  (Vista), or an about to be released version will support a number of
+  super VGA cards.  Its a full blown remote sensed data processing
+  system.. It is menu driven (character based screen), but is does not use
+  a windowed user interface. Its is hardware protected with a dongle.
+  Mbrian = micro Barrier reef Image Anaysis System. It was developed by
+  CSIRO (Commonwealth Scientific & Industrial Organization) and is
+  marketed/ supported by:
+
+  MPA Australia (51 Lusher Road, Croydon, Victoria
+  tel + 61 3 724 4488     fax  +61 3 724 4455)
+
+  There are educational and commercial prices, but be prepared to set
+  aside $A10k for the first educational licence.  Subsequent ones come
+  cheaper (they need to!) It has installed sites worldwide.  It is widely
+  used at ANU.
+
+MicroImage
+----------
+  The remote sensing lab here at Dartmouth currently uses Terra-Mar's
+  MicroImage, on 486 PCs with some fancy display hardware.
+
+  Terra-Mar Resource Information Services, Inc.
+
+  1937 Landings Drive Mountain View, CA  94043 415-964-6900   FAX
+  415-964-5430
+
+Unix-based tools
+================
+
+IRAF (Image Reduction and Analysis Facility)
+--------------------------------------------
+  Developed in the National Optical Astronomy Observatory, Kitt Peak AZ
+  It is free, you can ftp it from tucana.noao.edu [140.252.1.1]
+  and complement it with STSDAS from stsci.edu [130.167.1.2].
+  Email to iraf@noao.edu for more details.
+  Apparently this is one of the _de facto_ standards in the astronomical
+  image community. They issue a newsletter also.
+  They seem to support very well their users. Works with VMS also last
+  I heard, and practically has its own shell on top of the VMS/Unix shells.
+
+  It's suggested that you get a copy of saoimage for display under X windows.
+  Very flexible/extendable  -- tons (literally 3 linear feet) of
+  documentation for the general user, skilled user, and programmer.
+
+ALV
+---
+  A Sun-specific image toolkit.  Version 2.0.6 posted to
+  comp.sources.sun on 11dec89.  Also available via email to
+  alv-users-request@cs.bris.ac.uk.
+
+AIPS
+----
+  Astronomical Image Processing System.  Contact: aipsmail@nrao.edu
+  (also see the UseNet Newsgroups alt.sci.astro.aips and sci.astro.fits)
+  Built by NRAO (National Radio Astronomy Observatory, HQ in Charlottesville,
+  VA, sites in NM, AZ, WV).  Software distributed by 9-track, Exabyte, DAT,
+  or (non-anonymous) internet ftp.  Documentation (PostScript mostly)
+  available via anonymous ftp to baboon.cv.nrao.edu (192.33.115.103),
+  directory pub/aips and pub/aips/TEXT/PUBL.  Installation requires building
+  the system and thus a Fortran and C compiler.
+     This package can read and write FITS data (see sci.astro.fits), and is
+  primarily for reduction, analysis, and image enhancement of Radio Astronomy
+  data from radio telescopes, particularly the Very Large Array (VLA), a
+  synthesis instrument.  It consists of almost 300 programs that do everything
+  from copying data to sophisticated deconvolution, e.g. via maximum entropy.
+  There is an X11-based Image tool (XAS) and a tek-compatible xterm-based
+  graphics tool built into AIPS.  The XAS tool is modelled after the hardware
+  functionality of the International Imaging Systems model 70 display unit and
+  can do image arithmetic, etc.
+    The code is mostly Fortran 77 with some system C language modules, and is
+  available for Suns, IBM RS/6000, Dec/Ultrix, Convex, Cray (Unicos), and
+  Alliant with support planned for HP-9000/7xx, Solaris 2.1, and maybe SGI.
+     There is currently a project - "AIPS++" - underway to rewrite the
+  algorithmic functionality of AIPS in a modern setting, using C++ and an
+  object oriented approach.  Whereas AIPS is proprietary code (licensed for
+  free to non-profit institutions) owner by NRAO and the NSF, AIPS++ will be
+  in the public domain at some level, as it is an international effort with
+  contributions from the US, Canada, England, the Netherlands, India, and
+  Australia to name a few. 
+
+LABOimage
+---------
+  (version 4.0 is out for X11) It's written in C, and currently
+  runs on Sun 3/xxx, Sun 4/xxx (OS3.5, 4.0 and 4.0.3) under SunView.
+  The expert system for image segmentation is written in Allegro Common Lisp.
+  It was used on the following domains: computer science (image analysis), 
+  medicine, biology, physics. It is distributed free of charge (source code).
+  Available via anonymous FTP at ftp.ads.com (128.229.30.16), in
+  pub/VISION-LIST-ARCHIVE/SHAREWARE/LaboImage_*
+
+  Contact: Prof. Thierry Pun, Computer Vision Group Computing Science Center,
+  U-Geneva 12, rue du Lac, CH-1207 Geneva SWITZERLAND
+  Phone : +41(22) 787 65 82; fax: +41(22) 735 39 05
+  E-mail: pun@cui.unige.ch  or pun@cgeuge51.bitnet
+
+
+Figaro
+------
+  It was originally made for VMS, and can be obtained from
+  Keith Shortridge in Australia (ks@aaoepp.aao.gov.au)
+  and for Unix from Sam Southard at Caltech (sns@deimos.caltech.edu).
+  It's about 110Mbytes on a Sun.
+
+KHOROS
+------
+  Moved to the Scientific  Visualization category below
+
+Vista
+-----
+  The "real thing" is available via anonymous ftp from lowell.edu. Email to
+  vista@lowell.edu for more details. Total size less than 20Mbytes.
+
+DISIMP
+------
+  (Device Independent Software for Image Processing) is a powerful
+  system providing both user friendliness and high functionality in
+  interactive times.
+
+  Feature Description
+
+  DISIMP incorporates a rich library of image processing utilities and
+  spatial data options. All functions can be easily accessed via the
+  DISIMP executive. This menu is modular in design and groups image
+  processes by their function. Such a logical structure means that
+  complicated processes are simply a progression through a series of
+  modules.
+
+  Processes include image rectification, classification (unsupervised and
+  supervised), intensity transformations, three dimensional display and
+  Principal Component Analysis. DISIMP also supports the more simple and
+  effective enhancement techniques of filtering, band subtraction and
+  ratioing.
+
+  Host Configuration Requirements
+
+  Running on UNIX workstations, DISIMP is capable of processing the more
+  computational intensive techniques in interactive processing times.
+  DISIMP is available in both Runtime and Programmer's environments. Using
+  the Programmers environment, utilities can be developed for specific
+  applications programs.
+
+  Graphics are governed by an icon-based Display Panel which allows quick
+  enhancments of a displayed image. Manipulations of Look Up Tables,
+  colour stretches, changes to histograms, zooming and panning can be
+  interactively driven through this control.
+
+  A range of geographic projections enables DISIMP to integrate data of
+  image, graphic and textual types. Images can be rectified by a number of
+  coordinate systems, providing the true geographic knowledge essential
+  for ground truthing. Overlays of grids, text and vector data can be
+  added to further enhance referenced imagery.
+
+  The system is a flexible package allowing users of various skill levels
+  to determine their own working environment, including the amount of help
+  required. DISIMP comes fully configured with no optional extras. The
+  purchase price includes all functionality required for professional
+  processing of remote sensed data.
+
+  For further information, please contact:
+
+  The Business Manager, CLOUGH Engineering Group Systems Division, 627
+  Chapel Street, South Yarra, Australia 3141. Telephone:  +61 3 825 5555
+  Fax:  +61 3 826 6463
+
+Global Imaging Software
+-----------------------
+  "We use Global Imaging Software to process AVHRR data, from the dish to
+  the final display. Select a chunk of five band data from a pass,
+  automatic navigation, calibrate it to Albedo and Temp, convert that to
+  byte, register it to predesigned window, all relatively automatically
+  and carefree.
+
+  It has no classification routines to speak of, but it isn't that
+  difficult to write your own with their programmer's module.
+
+  Very small operation: one designs, one codes, one sells. Been around for
+  a number of years, sold to Weather Service and Navy.  Runs on HP9000
+  with HP-UX.  Supports 24-bit display"
+
+HIPS
+----
+(Human   Information   Processing Laboratory's Image Processing System)
+
+  Michael Landy co-wrote and sell a general-purpose package for image
+  processing which has been used for basically all the usual image
+  processing applications (robotics, medical, satellite, engineering, oil
+  exploration, etc.).  It is called HIPS, and deals with sequences of
+  multiband images in the same way it deals with single images.  It has
+  been growing since we first wrote it, both by additions from us as well
+  as a huge user-contributed library.
+
+  Feature description
+
+  HIPS  is  a  set  of  image  processing  modules  which together provide
+  a  powerful  suite  of  tools  for  those interested in research,
+  system  development  and  teaching. It  handles  sequences  of  images
+  (movies)  in precisely the same manner as single frames.
+
+  Programs and subroutines have been developed  for simple image
+  transformations, filtering, convolution, Fourier and other transform
+  processing, edge detection  and line  drawing   manipulation, digital
+  image compression and transmission  methods, noise generation, and image
+  statistics computation. Over 150 such  image transformation programs
+  have been developed.  As a result, almost any image processing  task
+  can be performed quickly and conveniently. Additionally, HIPS allows
+  users to easily integrate  their  own custom  routines.   New users
+  become effective using HIPS on their first day.
+
+  HIPS features images that are  self-documenting.   Each image stored  in
+  the  system  contains  a  history  of the transformations that have been
+  applied to that image.   HIPS includes  a  small  set of subroutines
+  which primarily deals with a standardized  image sequence  header,  and
+  a  large library  of  image  transformation tools in the form of UNIX
+  ``filters''.  It comes complete with source  code,  on-line manual
+  pages, and on-line documentation.
+
+  Host Configuration Requirements
+
+  Originally  developed at  New  York  University,  HIPS  now represents
+  one of the most extensive and flexible vision and image  processing
+  environments currently available.  It runs under the UNIX operating
+  system.  It is modular  and  flexible, provides automatic documentation
+  of its actions, and is almost entirely independent of special equipment.
+  HIPS is now in use on a variety of computers including Vax and
+  Microvax, Sun, Apollo,  Masscomp,  NCR Tower, Iris, IBM AT, etc.
+  For image display and input, drivers are supplied for the Grinnell and
+  Adage (Ikonas) image processors, and the Sun-2, Sun-3, Sun- 4, and
+  Sun-386i consoles.  We also  supply  user-contributed drivers  for  a
+  number of  other framestores and windowing packages (Sun gfx, Sun
+  console, Matrox VIP-1024, ITI IP-512, Lexidata,  Macintosh II, X
+  windowing system, and Iris).  The Hipsaddon package includes an
+  interface  for the  CRS-4000. It  is  a  simple matter to interface HIPS
+  with other frame- stores, and we can put interested users in touch with
+  users who  have interfaced HIPS with the Arlunya and Datacube Max-
+  Video. HIPS can be easily adapted for other  image  display devices
+  because 98% of HIPS is machine independent.
+
+  Availability
+
+  HIPS has proven itself a highly flexible  system,  both as  an
+  interactive  research tool, and for more production- oriented tasks. It
+  is both easy to use, and quickly adapted and extended to new uses. HIPS
+  is supplied on magnetic tape in UNIX tar format (either reel- to-reel or
+  Sun  cartridge), and comes with source code, libraries, a library of
+  convolu- tion masks, and on-line documentation and manual pages.
+
+  Michael Landy SharpImage Software P.O. Box 373, Prince Street Station
+  New York, NY   10012-0007 Voice:  (212) 998-7857 Fax: (212) 995-4011
+  msl@cns.nyu.edu
+
+
+MIRA
+----
+[ Please DON'T confuse that with the Thalmanns animation system from
+  Montreal. These are altogether different beasts! - nfotis ]
+
+  MIRA stands for Microcomputer Image Reduction and Analysis.  MIRA gives
+  workstation level performance on 386/486 DOS computers using SVGA cards in
+  256 color modes up to 1024x768. MIRA contains a very handsome/functional
+  GUI which is mouse and keystroke operated. MIRA reads/writes TIFF and FITS
+  formats, native formats of a number of CCD cameras, and uncompressed binary
+  images in byte, short integer, and 4-byte real pixel format in 1- or 2-
+  dimensions. The result of an image processing operation can be short integer
+  or real pixels, or the same as that of the input image. MIRA does the
+  operation using short or floating point arithmetic to maintain the precision
+  and accuracy of the pixel format. Over 100 functions are hand-coded in
+  assembly language for maximum speed on the Intel hardware.  The entire
+  graphical interface is also written in assembly language to maximize
+  the speed of windowing operations.  Windows for 2-d image and 1-d image/data
+  display and analysis have dedicated cursors which read position and value
+  value in real time as you move the mouse.  There are also smooth, real time
+  contrast and brightness stretch and panning of a magnified portion of
+  the displayed image(s), all operated by the mouse. A wide selection of
+  grayscale, pseudocolor, and random palettes is provided, and other 
+  palettes can be generated.
+
+
+Supported functions include such niceties as the following:
+
+o  image & image: + - / * interpolation
+o  image & constant: + - / *
+o  unary operations: abs value, polynomial of pixel value, chs, 1/x, log,
+   byteswap, clip values at upper/lower limits, short->real or real->short.
+o  combine images by mean, median, mode, or sum of pixel values, with or
+   without autoscaling to mean, median, or mode of an image section.
+o  convolutions/filters: Laplacian, Sobel edge operator, directional gradient,
+   line, Gaussian, elliptical and rectangular equal weight filters, unsharp
+   masking, median filters, user defined filter kernel.  Ellipse, rectangle,
+   line, gradient, Gaussian, and user defined filters can be rotated to
+   any specified angle.
+o  CCD data reduction: flat fielding, dark subtraction, column over/underscan
+   bias removal, remove bad pixels and column defects, normalize to
+   region target mean, median, or modal value.
+o  create subimage, mosaic m x n 1-d or 2-d images to get larger image,
+   collapse 2-d image into 1-d image.
+o  plot 1-d section or collapsed section of 2-d image, plot histogram of
+   region of an image.
+o  review/change image information/header data, rename keywords, plot
+   keyword values for a set of images.
+o  luminance/photometry: elliptical or circular aperture photometry,
+   brightness profile, isophotal photometry between set of upper & lower
+   luminances, area and luminance inside traced polygon. Interactive
+   background fitting and removal from part or all of image, fit elliptical
+   aperture shape to image isophotes. 
+o  interactive with 2-d image: contrast/brightness, x- y- or diagonal plot
+   of pixel values, distance between two points, compute region stats,`
+   centroid, pan to x,y location or image center, zoom 1/16 to 10 times,
+   change cursor to rectangle crosshair, full image crosshair, or off, and
+   adjust cursor size on image. Select linear, log or gamma transfer function
+   or histogram equalization.
+o  interactive or specified image offset computation and re-sampling for
+   registration.
+o  interactive with 1-d image: zoom in x- y- or both in steps of 1/2 or
+   2 times current, re-center plot, or enlarge a framed area. 4 plot buffers
+   can be cycled through. Interactive data analysis: polynomial fitting,
+   point deletion, undelete, change value, point weighting, linear and
+   quadratic loess and binomial smoothing, revert to unit point weights
+   or original data buffer, substitute results into data buffer for pass
+   back to calling function. Dump data buffer (+ overlays and error bars)
+   to file or printer.  Change to user specified coordinate system.
+o  Tricolor image combination and display, hardcopy halftone printout to
+   HP-PCL compatible printers (Laserjet, deskjet, etc.)
+o  Documentation is over 300 pages in custom vinyl binder.
+
+  Cost: 995 $USD/copy
+
+  Available from:
+
+  Axiom Research, Inc.
+  Box 44162
+  Tucson, AZ  85733
+  (602) 791-2864  phone/fax.
+
+  international marketing rep: Saguaro Scientific Corporation, Tucson, Arizona.
+
+==========================================================================
+
+End of Part 2 of the Resource Listing
+-- 
+Nick (Nikolaos) Fotis         National Technical Univ. of Athens, Greece
+HOME: 16 Esperidon St.,       InterNet : nfotis@theseas.ntua.gr
+      Halandri, GR - 152 32   UUCP:    mcsun!ariadne!theseas!nfotis
+      Athens, GREECE          FAX: (+30 1) 77 84 578

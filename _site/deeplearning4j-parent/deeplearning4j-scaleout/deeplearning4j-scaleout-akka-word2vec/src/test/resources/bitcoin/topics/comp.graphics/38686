@@ -1,0 +1,36 @@
+From: ger@cv.ruu.nl (Ger Timmens)
+Subject: Re: Postscript drawing prog
+Nntp-Posting-Host: triton.cv.ruu.nl
+Organization: University of Utrecht, 3D Computer Vision Research Group
+Lines: 30
+
+In <0010580B.vma7o9@diablo.UUCP> diablo.UUCP!cboesel (Charles Boesel) writes:
+
+
+>In article <1993Apr19.171704.2147@Informatik.TU-Muenchen.DE> (comp.graphics.gnuplot,comp.graphics), rdd@uts.ipp-garching.mpg.de (Reinhard Drube) writes:
+>>In article <C5ECnn.7qo@mentor.cc.purdue.edu>, nish@cv4.chem.purdue.edu (Nishantha I.) writes:
+>>|> 	Could somebody let me know of a drawing utility that can be
+>>|> used to manipulate postscript files.I am specifically interested in
+>>|> drawing lines, boxes and the sort on Postscript contour plots.
+>>|> 	I have tried xfig and I am impressed by it's features. However
+>>|> it is of no use since I cannot use postscript files as input for the
+>>|> programme.Is there a utility that converts postscript to xfig format?
+>>|> 	Any help would be greatly appreciated.
+>>|> 				Nishantha
+>Have you checked out Adobe Illustrator? There are a few Unix versions
+>for it available, depending on your platform. I know of two Unix versions:
+>One for Mach (NeXT) and for Irix (SGI). There may be others, such
+>as for Sun SparcStation, but I don't know for sure.
+
+You can include postscript epsi files in xfig (encapsulated postscript
+info files). You can't actually edit the postscript file, but you're able
+to draw over the postscript file.
+
+There a eps to epsi converter: eps2epsi (perl program),
+
+Succes,
+-- 
+Ger Timmens (ger@cv.ruu.nl) 3DCV Research Group, Utrecht, The Netherlands
+Tel.: +31 -30 50 67 11;      Room: F.01.7.03;      Fax.: +31 -30 51 33 99
+  Unquestionably, there is progress.  The average American now pays out
+  twice as much in taxes as he formerly got in wages. --- H. L. Mencken

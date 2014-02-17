@@ -1,0 +1,39 @@
+From: theroo@med.unc.edu (Bron D. Skinner Ph.D.)
+Subject: Re: Why is my mouse so JUMPY? (MS MOUSE)
+Nntp-Posting-Host: pelham.med.unc.edu
+Organization: UNC-CH School of Medicine
+Lines: 33
+
+In article <1993Apr23.140123.5018@cti.com> rlister@cti.com (Russell Lister) writes:
+>ecktons@ucs.byu.edu (Sean Eckton) writes:
+>
+>>I have a Microsoft Serial Mouse and am using mouse.com 8.00 (was using 8.20 
+>>I think, but switched to 8.00 to see if it was any better).  Vertical motion 
+>>is nice and smooth, but horizontal motion is so bad I sometimes can't click 
+>>on something because my mouse jumps around.  I can be moving the mouse to 
+>>the right with relatively uniform motion and the mouse will move smoothly 
+>>for a bit, then jump to the right, then move smoothly for a bit then jump 
+>>again (maybe this time to the left about .5 inch!).  This is crazy!  I have 
+>>never had so much trouble with a mouse before.  Anyone have any solutions?  
+>
+>>Does Microsoft think they are what everyone should be? <- just venting steam!
+>
+>  I had the same problem.  At first, I thought it was the video driver and 
+>  made sure I had the most current drivers, because the problem was most
+>  evident at SVGA resolution modes.  It didn't help and after a bit of
+>  experimentation, determined that the problem existed in standard VGA
+>  resolution mode. It was just much less noticeable.
+>  
+>  My mouse was an older MS serial version I bought second hand in 1990. It
+>  worked just fine in DOS and DOS based graphic applications.  On the 
+>  guess that the problem was with the resolution of the mouse, I borrowed
+>  a new mouse (a MS bus model) and tried it.  That solved the problem.
+>  So, if your mouse is old, you may want to try replacing it for a newer
+>  one.
+>  
+
+Another alternative is to clean the mouse you've got.  Sometimes the
+rollers inside the mouse pick up a ball of lint or other debris.  Open the
+bottom of the mouse, take out the ball and use some alcohol on a Q-tip to
+clean it out.  Inspect the inside for any hairs or fuzz.  I have had my
+mouse get real jumpy and cleared up the problem with this procedure.

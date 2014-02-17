@@ -1,0 +1,16 @@
+From: wellison@kuhub.cc.ukans.edu
+Subject: Re: electronic odometers
+Article-I.D.: kuhub.1993Apr15.153153.49197
+Organization: University of Kansas Academic Computing Services
+Lines: 10
+
+I had the insturment panel go out in my car (a 1990 Lincoln Contenintal) which
+is a digital dash. They replaced the whole thing with a 1991 dash (thank god it
+was under the warrenty ! :-) Anyway, the odometer was reading the exact milage
+from the old panel. It must have a EEPROM of some sort in it that is up-dated.
+Seems to me that removing the battery would erase it, but it doesn't. So I
+guess they swapped the NVM chip (non-volitile memory) and installed it in the
+new dash. No, they wouldn't let me have the old dash to tinker with :-(
+
+
+-=-= Wes =-=-

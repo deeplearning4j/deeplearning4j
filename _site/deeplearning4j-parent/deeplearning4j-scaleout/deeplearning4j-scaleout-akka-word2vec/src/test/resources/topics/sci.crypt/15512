@@ -1,0 +1,59 @@
+From: eachus@spectre.mitre.org (Robert I. Eachus)
+Subject: Re: Would "clipper" make a good cover for other encryption method?
+In-Reply-To: kadie@eff.org's message of Tue, 20 Apr 1993 03:26:23 GMT
+Nntp-Posting-Host: spectre.mitre.org
+Organization: The Mitre Corp., Bedford, MA.
+Lines: 52
+
+In article <1993Apr20.032623.3046@eff.org> kadie@eff.org (Carl M. Kadie) writes:
+
+  > Clipper might be a good way to cover the use of another layer of
+  > encryption.
+
+  But, if you are making custom equipment in any case, why not just
+roll your own Clipper implementation and report the wrong keys to the
+Escrow agency?  (Tells us who is going to be in the chip business if
+this thing goes through--NSA, and those with something to hide from
+NSA.)
+
+  If anyone can verify that your phone is not using the key registered
+to that serial number, either:
+
+  1) They have a court ordered wiretap.  But what are they going to
+do?  Tell the judge that this individual really does have privacy?
+All they know is that the keys are not enough, but not why.
+
+  2) They have a court ordered wiretap on a phone in this series.
+(This part is really scary.  Since the "expectation" is that all
+chips in a particular batch will uses seeds based on the same S1 and
+S2 and the serial number, getting the keys for one of a batch may give
+access to all.)
+
+  3) There is a backdoor which allows all messages to be deciphered
+without the keys.  I find this one especially threatening since the
+scheme seems very open to known plaintext attacks.  (What I need to
+decipher is the data in the header.  If I talk to someone who has one
+of these phones, presumably there will be an automatically negotiated
+key generated.  I'm not trying to decipher the record of the
+conversation to know what was said, I use it as a known plaintext to
+recover the backdoor represented by the header, but I know what the
+header says for conversations I participate in.  Even worse, if the
+phones in a series have related keys, I can buy a phone/chip from the
+same production lot.  Then I can recover its keys, either elegantly by
+talking to myself, or by brute force analysis of the actual chip, then
+apply the key generation process with those seeds to find the target
+keys.)
+
+    Hmmm!  I don't think I want to ever come close to these phones.
+Even DES is starting to look good.  Two cans and a string will provide
+much better security.
+
+
+
+--
+
+					Robert I. Eachus
+
+with Standard_Disclaimer;
+use  Standard_Disclaimer;
+function Message (Text: in Clever_Ideas) return Better_Ideas is...

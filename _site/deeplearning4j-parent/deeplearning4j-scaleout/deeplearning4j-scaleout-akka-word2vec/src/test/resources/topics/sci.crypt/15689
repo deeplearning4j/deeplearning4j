@@ -1,0 +1,48 @@
+From: Marc VanHeyningen <mvanheyn@cs.indiana.edu>
+Subject: Re: freely distributable public key cryptography c++ code:  where?
+Organization: Computer Science Dept, Indiana University
+Lines: 43
+
+Thus said ee92jks@brunel.ac.uk (Jonathan K Saville):
+>D. Wigglesworth (smhanaes@gpu.utcc.utoronto.ca) wrote:
+>
+>: Do you know of any freely distributable c++ (or c) code for public
+>: key cryptography (such as RSA)?  
+>
+>: I've tried various archie searches to no avail.  
+>
+>Have you heard of PGP? I assume from your post that you have not. PGP 2.2
+>is a freeware RSA encryption program which includes digital signatures and
+>comprehensive key management facilities. Most sites also keep the source code.
+>A growing number of people are using this excellent software to encrypt (to
+>a very high standard) their email and data. Get it before Clinton outlaws it.
+>
+>Two of the many sites are:
+>      rsa.com     /pub/pgp
+>      soda.berkeley.edu      /pub/cypherpunks/pgp
+
+PGP is not available on the archive site rsa.com.  If it were, it
+would be highly amusing, since rsa.com (actually Public Key Partners,
+but it's the same entity) is the organization holding the patents
+which they claim are violated if you actually "make, use or sell" PGP.
+I believe those patents also apply in Canada, but I'm not a patent
+lawyer or anything.
+
+There is no such thing as freely redistributable code for RSA which
+can be used in North America without legal entanglements.  You may
+wish to consider RSAREF, however, which *is* available from the FTP
+site rsa.com in /rsaref but probably doesn't meet your definition of
+"freely redistributable" (it's readily available in source, in C, and
+does RSA, MD5, etc. and comes with a license allowing noncommercial
+use.  Like any other strong crypto software, it's not exportable
+legally.  It can be modified with permission from RSADSI, which a
+number of people have received in the past.)  For reasons that aren't
+entirely clear to me, RSA says that only U.S. people should take
+RSAREF from its server, although there aren't ITAR issues regarding
+Canada.  The RIPEM distribution site (ripem.msu.edu) has RSAREF in its
+distribution, and is OK for Canadians.
+--
+Marc VanHeyningen   mvanheyn@cs.indiana.edu   MIME & RIPEM accepted
+
+
+"Barney the Dinosaur is simply Rush Limbaugh in a Dinosaur Suit."  - Lost Boy

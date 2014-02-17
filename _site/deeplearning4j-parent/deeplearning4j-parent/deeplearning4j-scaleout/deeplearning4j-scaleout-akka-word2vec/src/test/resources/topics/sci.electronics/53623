@@ -1,0 +1,17 @@
+From: tomb@hplsla.hp.com (Tom Bruhns)
+Subject: Re: Looking for 900MHz Spread Spectrum Modules
+Organization: HP Lake Stevens, WA
+Lines: 12
+
+butts@shocker.ee.twsu.edu (Ronald W. Butts, Jr.) writes:
+
+>I am looking for suppliers of 900MHz spread spectrum radio modules. I need 
+>to implement a two-way audio band link (essentially the guts of a cordless 
+>900MHz phone is what I want.)
+
+This isn't exactly audio, but take a look in "RF Design" magazine,
+April 93, for the article "A Robust Signaling Technique for Part 15
+RF Control Netowrk Applications."  Page 29.  Sources of parts are
+mentioned; in the same issue is an article that features a chipset
+for the Digital European Cordless Telecommunications standard.
+

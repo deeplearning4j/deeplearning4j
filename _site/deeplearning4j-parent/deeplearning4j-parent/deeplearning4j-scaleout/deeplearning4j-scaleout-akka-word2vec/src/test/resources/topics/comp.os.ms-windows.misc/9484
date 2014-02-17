@@ -1,0 +1,25 @@
+From: chen@citr.uq.oz.au (G. Chen)
+Subject: Help on bitmaps
+Summary: Bitmap size
+Keywords: Bitmap, windows 3.1, SDK
+Organization: Prentice Centre, University of Queensland
+Lines: 18
+
+I wonder if anyone can tell me whether or not I can create a bitmap
+of any size?  I followed the bitmap creation example in SDK manual
+and specified a 24x24 bitmap (set the width/height to 24) and supplied
+a byte string with 72 chars.  But I just cannot get the right bitmap
+image.  I changed the width/height to 32x32 and used the same value
+string (padded with zero byets to make up to the right size) and
+got the image.
+
+The example in the manual is 64x32 size, which are multiple of 2 bytes.
+Can you define a bitmap image of any size?
+
+Thanks very much.
+
+G Chen chen@citr.uq.oz.au
+--
+G. Chen, Centre for Information Technology Research, University of
+Queensland, Australia 4072
+chen@citr.uq.oz.au  Tel: +61 7 365 4325, Fax +61 7 365 4399

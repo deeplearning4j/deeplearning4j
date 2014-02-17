@@ -1,0 +1,25 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: HELP: MC146818A Real Time Clock Standby Mode
+Organization: U of Toronto Zoology
+Lines: 20
+
+In article <1r0b69INN5ct@flash.pax.tpa.com.au> mgregory@flash.pax.tpa.com.au (Martin John Gregory) writes:
+>I am having trouble obtaining the specified standby current drain from
+>a MC146818A Real Time Clock...
+>lowest current drain I can acheive at 3.7V Vcc is 150uA.  This is
+>three times the specified MAXIMUM...
+>1) Made sure that RESET/ is asserted for Trlh after powerup, and AS is
+>   low during this time.
+>2) Made sure that there is a cycle on AS after the negation of RD/ or
+>   WR/ during which STBY/ was asserted...
+
+Are any of the inputs to the chip coming from TTL?  Standby-drain specs
+for CMOS chips typically apply only if inputs are pulled all the way down
+to zero or all the way up to Vcc.  TTL isn't good at doing the former and
+it won't do the latter at all without help from pullup resistors.  This
+sort of thing can easily multiply power consumption by a considerable
+factor, because the CMOS transistors that are supposed to be OFF aren't
+all the way hard OFF.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

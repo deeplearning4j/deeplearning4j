@@ -1,0 +1,26 @@
+From: terryh@cae.wisc.edu (Terry Henning)
+Subject: Help with a Windows drum machine!
+Organization: U of Wisconsin-Madison College of Engineering
+Lines: 21
+
+Hello,
+
+I'm trying to get a drum program to work that I downloaded from
+ftp.cica.indiana.edu in the pub/pc/win3/sounds directory.  It's called
+drum.zip.  
+
+I have an ATI Stereo FX card with the latest Windows drivers installed. 
+When I try to run the drum program, it reports that a MIDI device is not
+installed, however the drivers utility in the control panel reports that it
+is installed.  
+
+Anyone have any idea how to set up the MIDI device so that the drum program
+will work with my setup?  What I'm trying to do is use my computer as a
+metronome.  Someone suggested that I try one of the drum machines that are
+circulating around out there.  Any help would be appreciated.
+
+Thanks,
+
+Terry
+
+terryh@cae.wisc.edu

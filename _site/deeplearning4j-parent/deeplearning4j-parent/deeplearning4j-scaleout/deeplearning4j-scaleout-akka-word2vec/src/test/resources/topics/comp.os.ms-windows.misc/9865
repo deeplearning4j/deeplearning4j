@@ -1,0 +1,62 @@
+From: gel@cs.mcgill.ca (Gilles KHOUZAM)
+Subject: Re: Workgroup Questions (conven. ram and licensing)
+Summary: Good Choice
+Keywords: W4WG
+Organization: SOCS - Mcgill University, Montreal, Canada
+Lines: 55
+
+In article <Ny+0rA6ABh107h@eosvcr.wimsey.bc.ca> aew@eosvcr.wimsey.bc.ca writes:
+>I would be very appreciative if someone would answer a few 
+>questions about Windows for Workgroups.
+>
+>I currently have Novell Netware Lite which does not work with
+>Windows very well and is a conventional memory hog (ver. 1.1).
+>I am considering moving all our machines to W4WG.
+>
+>Q1:  How much conventional ram does W4WG use over and above the
+>     driver for the network card?
+
+	I have just checked it and you have three files that are loaded:
+	PROTMAN :  128 Bytes
+	DRIVER	: 9072 Bytes
+	WORKGRP	: 4416 Bytes
+>
+>Q2:  If I have a Novell NE2000 card, are the LSL and IPX drivers
+>     still needed?
+
+	No W4WG uses it's own drivers.
+>
+>Q3:  Does W4WG do a license check over the network to ensure each
+>     machine is running its own licenced copy of W4WG? (Note: I do
+>     not want to break the license agreement and I will buy a copy
+>     of W4WG for each of our machines, it is just that I would like
+>     to try it out first to see if it meets our needs. Returning one
+>     opened copy is much easier than returning N opened copies.)
+
+	Not that I know of, I bought two copies, had some problems with one
+	installed both from the same copie, no problems. Do worry I just had
+	a really old BIOS and that's the only problem I got.
+>
+>Q4:  If you buy the upgrade to Windows 3.1 for W4WG does it replace
+>     all of Win 3.1 as you install it or does it depend on current
+>     Win 3.1 files?
+	It will replace all older files (I think) and prompt you for the
+	others.
+>
+>Q5:  If I install Windows NT on my server when it comes out, will I have
+>     any troubles with the W4WG machines?
+
+	This I do not know...
+>
+>When I started this message, I was going to ask only 2 questions but I got carried
+>away. I'll stop now ;-).
+>
+>I look forward to your replies.
+>
+>Al
+
+
+					Hope this helps
+
+					GEL
+

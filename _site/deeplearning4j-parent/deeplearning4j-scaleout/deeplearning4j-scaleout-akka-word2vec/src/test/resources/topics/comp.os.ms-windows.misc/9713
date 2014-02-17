@@ -1,0 +1,18 @@
+From: wild@access.digex.com (wildstrom)
+Subject: Re: MathCad 4.0 swap file
+Organization: Express Access Online Communications, Greenbelt, MD USA
+Lines: 12
+NNTP-Posting-Host: access.digex.net
+
+baseball@catch-the-fever.scd.ucar.edu (Gregg Walters) writes:
+
+>I have 16MB of memory on my 386SX.  I have been running Windows
+>without a swap file for several months.  Will Mathcad 4.0 be
+>happy with this, or insist on a swap file?
+
+Presumeably, you mean without a _permanent_ swap file. If Windows needs a
+swap file, it will upo and create one if a permanent one doesn't exist.
+Permanent is generally faster though. I don't know why Mathcad wouldn't
+be happy with either type--Ver. 3.0 is and so should any program conforming
+to the Win specification.
+

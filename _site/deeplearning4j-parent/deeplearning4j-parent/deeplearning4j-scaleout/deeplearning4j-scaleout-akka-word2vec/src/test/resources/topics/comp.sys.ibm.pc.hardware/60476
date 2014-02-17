@@ -1,0 +1,23 @@
+Subject: Re: Soundblaster IRQ and Port settings
+From: ARowatt@massey.ac.nz (A.J. Rowatt)
+Organization: Massey University, Palmerston North, New Zealand
+X-Reader: NETNEWS/PC Version 2c
+Lines: 17
+
+They don't have a conflict because technically LPT1: does not use
+IRQ7!.
+     The Parallel printer processor (the actual number escapes
+me) contains a printer control register which enables the chip
+to transmit an interrupt to the interrupt controller as IRQ7,
+then onto the main processor as Int 0x0F. By default the parallel
+printer processor does not enable it's interrupt line therefore
+no Int 0x0F's will be sourced from the printer controller chip,
+thus enabling other devices to use the actual IRQ7.
+
+     Note, this applies to COM ports also which by default do not
+route interrupts to the system bus, although COM's software
+usually enable this feature as it make monitoring COM port
+activity easier than polling the serial UART, thus probably
+getting the sound card slighty confused!.
+
+Windows may be a different story....

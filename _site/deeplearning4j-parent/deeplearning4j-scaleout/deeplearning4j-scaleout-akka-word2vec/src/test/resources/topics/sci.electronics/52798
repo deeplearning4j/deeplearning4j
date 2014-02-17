@@ -1,0 +1,27 @@
+From: mpaul@unl.edu (marxhausen paul)
+Subject: How to kill AC inductive load spiking?
+Organization: University of Nebraska--Lincoln	
+Lines: 20
+Distribution: world
+NNTP-Posting-Host: unlinfo.unl.edu
+
+Is there a fast 'n dirty way to kill the line spiking that occurs when
+an inductive load is turned on sometime other than at zero-crossing of
+the AC cycle?  A capacitor kludged in somehow, etc?
+
+I've got a microcontroller that is running a bunch of valves and pumps
+in a big instrument washer, and almost everything is being switched with
+zero-crossing solid state relays, so that stuff stays "quiet", AC-wise.
+But there's one steam valve that gets turned on by a mechanical relay
+in the water tank fill/thermostat system, and it's not under control
+of my SSRs, and it does sometimes generate/radiate a spike that resets
+one of my peripheral chips.  My software times out and tries again, but
+I'd love to just tack in a magic spike-killing fix that would avoid having
+to do some major rewiring/redesign.  A varistor would help but might not
+be sufficient.  Ideas?
+
+--
+paul marxhausen .... ....... ............. ............ ............ .......... 
+ .. . .  . . . university of nebraska - lincoln .  . . .. . .  .. . . . . . . .
+ .     .    .  .   .     .   .  .    .   .  .   .    .   .  grace .   .    .  . 
+   .         .       .      .        .        .      .        .   happens .     

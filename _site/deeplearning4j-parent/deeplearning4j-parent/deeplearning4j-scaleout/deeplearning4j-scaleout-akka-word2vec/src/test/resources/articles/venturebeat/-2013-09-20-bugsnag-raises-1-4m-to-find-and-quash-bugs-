@@ -1,0 +1,17 @@
+0
+BugSnag has raised $1.4 million to catch bugs. Computer bugs that is.
+Its has developed an automated crash detection platform for mobile and web applications. Once a crash is detected, BugSnag notifies site owners about when the crash happened and how many users were affected. The system also presents information about the errors and filters for searching by error type, message, and location.
+A study by Cambridge University found that developers spend 50% of their time debugging . This represents a significant time and financial commitment, but users have little patience for crashes and errors and it is important for developer teams stay on top of them.
+High level but hands on: Learn more at DevBeat.
+Our upcoming DevBeat conference , Nov. 12-13 in San Francisco, will have a lot more on this topic. Featuring developer gurus like Richard Stallman, David Heinemeir Hansson, and Alex Payne, it’s a hands-on developer event packed with:
+master classes
+Q&As, and
+hackathons.
+It’s all aimed at boosting your skillset in code, security, hardware, and career development. Apply to register now.
+BugSnag’s dashboard makes it easier to find the bugs and understand their source, which helps reduce the drain on resources and costs associated with bug fixing. It also groups errors together to help dev teams identify patterns and find the real problems.
+Every tech company, whether it has two people or two thousand, deals with bugs. With the rise of mobile platforms, we’re seeing a rising need for bug-tracking systems that are cross-channel. Advances in cloud computing mean that developers can identify and respond to issues in real-time, and that opens up a large opportunity for companies like BugSnag and its competitors.
+Crittercism is another player in this space. It provides a mobile-first application performance management system and is backed by $19 million in venture capital. Earlier this year Twitter acquired Crashlytics, a rival startup that focused on crash reports. Instabug runs in the background of apps and lets anyone instantly send feedback on bugs with the shake of an iPhone.
+BugSnag aims to provide a full-stack monitoring service and has processed over 1 billion application crashes to date. It now works with more than 3,000 organizations, including LinkedIn, Path, Svbtle, Kippt, and Bitium.
+Cofounder James Smith previously worked as CTO of mobile gaming startup HeyZap, along with cofounder Simon Maynard.
+Matrix Partners led this seed round with participation from angel investors. It will be used to hire more engineers and build out its technology.
+BugSnag was founded in 2012 and is based in San Francisco.

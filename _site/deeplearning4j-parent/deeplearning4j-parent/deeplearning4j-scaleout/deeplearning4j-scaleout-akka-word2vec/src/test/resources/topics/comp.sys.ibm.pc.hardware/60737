@@ -1,0 +1,23 @@
+From: badry@cs.UAlberta.CA (Badry Jason Theodore)
+Subject: Chaining IDE drives
+Summary: Trouble with Master/Slave drives
+Nntp-Posting-Host: cab009.cs.ualberta.ca
+Organization: University Of Alberta, Edmonton Canada
+Lines: 16
+
+Hi.  I am trying to set up a Conner 3184 and a Quantum 80AT drive.  I have
+the conner set to the master, and the quantum set to the slave (doesn't work
+the other way around).  I am able to access both drives if I boot from a 
+floppy, but the drives will not boot themselves.  I am running MSDOS 6, and
+have the Conner partitioned as Primary Dos, and is formatted with system
+files.  I have tried all different types of setups, and even changed IDE
+controller cards.  If I boot from a floppy, everything works great (except
+the booting part :)).  The system doesn't report an error message or anything,
+just hangs there.  Does anyone have any suggestions, or has somebody else
+run into a similar problem?  I was thinking that I might have to update the bios
+on one of the drives (is this possible?).  Any suggestions/answers would be
+greatly appreciated.  Please reply to:
+
+	Jason Badry
+	badry@cs.ualberta.ca
+

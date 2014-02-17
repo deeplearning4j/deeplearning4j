@@ -1,0 +1,668 @@
+From: drice@ponder.csci.unt.edu (D. Keith Rice)
+Subject: Re: Drive/Controller Compatibility
+Lines: 672
+Organization: University of North Texas
+
+Thanks to all who responded to my original post.  I got the number for
+Western Digital tech support and determined that I need to upgrade the
+BIOS to the Super BIOS.  It will handle hard drives with up to 16 read/
+write heads and up to 1024 cylinders.  The upgrade is $15, payable by
+check or money order.  Send to:
+
+	Western Digital Corporation
+	Technical Support Group
+	P.O. Box 19665
+	Irvine, CA  92713-9665
+
+The Super BIOS is for any WD XT hard drive controller card in the
+WD1002 series.
+
+The BIOS on my system would only handle up to 20mb drives.
+
+The responses to my request for help follow my .sig.  Warning: It's long.
+
+Keith
+
+--
+_____________________________
+__-----____--___--__-----____	D. Keith Rice
+__--__--___--__--___--__--___	University of North Texas
+__--___--__--_--____--___--__	Department of Computer Science
+__--___--__----_____--__--___	Denton, Texas, USA
+__--___--__--_--____--_--____
+__--__--___--__--___--__--___	drice@ponder.csci.unt.edu
+__-----____--___--__--___--__	drice@cs.unt.edu
+_____________________________
+
+<========================== responses below ==========================>
+
+From ravalent@mailbox.syr.edu Sat Apr  3 16:45:03 1993
+Received: from mailbox.syr.EDU by ponder (5.61/1.36)
+	id AA15218; Sat, 3 Apr 93 16:45:00 -0600
+From: ravalent@mailbox.syr.edu (Bob Valentine)
+Received: from mothra.syr.EDU by mailbox.syr.edu (4.1/CNS)
+	id AA16647; Sat, 3 Apr 93 17:44:49 EST
+Received: by mothra.syr.EDU (4.1/Spike-2.0)
+	id AA03607; Sat, 3 Apr 93 17:43:27 EST
+Date: Sat, 3 Apr 93 17:43:27 EST
+Message-Id: <9304032243.AA03607@mothra.syr.EDU>
+To: drice@ponder
+Status: OR
+
+To: drice@ponder.csci.unt.edu
+Subject: Re: Drive/Controller Compatibility
+Newsgroups: comp.sys.ibm.pc.hardware
+In-Reply-To: <drice.733866833@ponder>
+Organization: Syracuse University, Syracuse, NY
+Cc: 
+
+In article <drice.733866833@ponder> you write:
+>I recently bought a used Seagate ST-251 hard drive.  The guy told me that
+>it had been fully tested and that it was good.  I took it home to install
+>in my Compaq Portable (OK, I'm a little behind in technology).  I already
+>had an MFM controller.
+>
+>I installed the drive and powered up the system.  I got a post error, "1701".
+>
+>My controller is a Western Digital WD1002S-WX2 Rev. C.
+>As I said above, the drive is a Seagate ST-251.
+>The system is a Compaq Portable (circa 1985).
+
+     Ah, finally a question I can answer.   I mess with this older
+stuff alot.   Kinda fun.  8)
+
+     First problem I can forsee is that the ST-251 will not be
+compadible with that WD card unless it has the right bios rom.  
+
+    Check the numbers on it.  It should be the only non-smt chip on
+the board.  Slightly below center, and left.    The bios should read 
+either :     62-000042-015 or
+             62-000094-0x2
+
+     If the last 3 digits are 013, you got problems.
+
+>
+>Controller jumpers are set as follows: ("-" represents jumper)
+>	W1	1-2 3
+>       W2      1-2 3
+>	W3	1-2
+>	W4	1 2-3
+>	W5	1 2 3
+>	W6	1-2 3
+>	W7	1 2 3
+
+    Looks right.   W5 and W7 are factory jumped (with a trace) between
+pins 1 and 2 to select the primary controller address.
+
+>The drive jumpers are as follows: ("8" represents jumper)
+
+    Looks right.
+  
+[art deleted]
+
+>Here are my questions:
+>
+>1.)	Are the drive and controller compatible w/ each other?
+
+      I notice you left out the S1 jumper table settings.   Those are
+what control what drive the controller thinks it has.   If you have
+the 62-000042-015 rom, set it like this:
+
+              5 + +    open
+              6 + +    open             
+              7 + +    open        
+              8 + +    open
+              4 + +    closed
+              3 + +    closed
+              2 + +    open
+              1 + +    open
+
+    Note:   those are how WD runs the numbers on the jumper block.
+Top to bottom.   +'s represent the jumper pins.    Pins 3,4, and 8
+select the first drive setting (drive 0) and pins 1,2 and 7 select the
+second drive (drive 1).   
+
+      If you have the 62-000094 rom, it's a auto-config, and I'll have
+to look up how to do it... I don't have the big book right here.
+
+>2.)	Are the jumpers on the card/drive set correctly?
+
+      See above.  You might have problems if the S1 jumpers are not
+right.   Also,  at the risk of being insulting, make sure the cables
+are on right and good. 8).    On the jumper on the 251, try moving it
+to the opposite side of the drive.    It's one or the other.   
+     The narrow data cable goes to J2.   I've thrown it on J3 a few
+times and banged my head for a day.....
+
+>3.)	Is my system's BIOS in need of an upgrade?
+
+     Dunno.    IBM roms had to be later than 10/27/82.   A quick way
+to check is to boot dos and run debug.   Enter:
+       
+        -d f000:fff5 fffc    (the - is the debug prompt)
+   
+    This will return the rom date, if it's of any use.
+
+>Keith Rice
+
+      If I oversimplified any of the above, I appologize.     It's
+just hard to know what caliber of person I'm talking to. 8).
+
+                     -->   Bob Valentine  <--  
+                  --> ravalent@mailbox.syr.edu <--  
+
+
+
+From chpp@unitrix.utr.ac.za Mon Apr  5 06:33:46 1993
+Received: from unitrix.utr.ac.za by ponder (5.61/1.36)
+	id AA16194; Mon, 5 Apr 93 06:32:59 -0500
+Received: by unitrix.utr.ac.za (Smail3.1.28.1 #1)
+	id m0nfpMA-0001X7C; Mon, 5 Apr 93 13:28 GMT
+Message-Id: <m0nfpMA-0001X7C@unitrix.utr.ac.za>
+From: chpp@unitrix.utr.ac.za (Prof P. Piacenza)
+Subject: ST251
+To: drice@ponder
+Date: Mon, 5 Apr 1993 13:28:49 +0200 (GMT)
+X-Mailer: ELM [version 2.4 PL11]
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Length: 24559     
+Status: OR
+
+
+If you are using a TWISTED 34-way cable then move the jumper 
+on your drive to the neighbouring pins   :8::::::.  Make sure that
+the twisted cable is for a hard disk (and not a floppy disk) - the
+coloured stripe (pin 1) should be furthest from the twist.
+
+This may also help.
+
+
+                             PRODUCTS FOR XT SYSTEMS
+     
+     
+     HARD DISK CONTROLLERS FOR MFM HARD DISK DRIVES
+                                  Reference NOTE 1.
+     
+          
+          WD1002A-WX1, feature F300R - Half-slot size hard disk controller 
+          card with an ST506/ST412 interface.  It supports 2 MFM drives 
+          with up to 16 heads and 1024 cylinders and is jumper 
+          configurable for secondary addressing and default drive tables.  
+          Built in ROM BIOS supports non-standard drive types, virtual 
+          drive formatting, dual drive operation, bad track formatting and 
+          dynamic formatting.  This board features a power connector for 
+          filecard applications and it will also operate in AT systems. 
+          Please note that this controller card will be unavailable from 
+          the manufacturer (Western Digital) after March, 1989.  Reference 
+          NOTE 2.
+          
+          WDXT-GEN, feature F300R - Half-slot size hard disk controller 
+          card with an ST506/ST412 interface.  It  supports 2 MFM hard 
+          disk drives with up to 8 heads and 1024 cylinders.  Built-in ROM 
+          BIOS supports non-standard drive types, virtual drive 
+          formatting, dual drive operation, bad track formatting and 
+          dynamic formatting.  Please note that this controller card will 
+          be unavailable from the manufacturer (Western Digital) after 
+          March, 1989.
+          
+          WD1004A-WX1, feature F300R - Half-slot size disk controller 
+          card  with an ST506/ST412 interface.  It supports 2 MFM drives 
+          with up to 16 heads and 1024 cylinders and is jumper 
+          configurable for secondary addressing and default drive tables.  
+          Built in ROM BIOS supports non-standard drive types, virtual 
+          drive formatting, dual drive operation, bad track formatting and 
+          dynamic formatting.  This board features a power connector for 
+          filecard applications and it will also operate in AT systems.  
+          Reference NOTE 2.
+          
+          WDXT-GEN2, feature F300R - Half-slot size hard disk controller   
+          card with an ST506/ST412 interface.  It supports 2 MFM hard disk 
+          drives with up to 8 heads and 1024 cylinders.  Built-in ROM BIOS 
+          supports non-standard drive types, virtual drive formatting, 
+          dual drive operation, bad track formatting and dynamic 
+          formatting.  Reference NOTE 2.
+          
+          
+     
+     HARD DISK CONTROLLERS FOR RLL HARD DISK DRIVES
+                                  Reference NOTE 2.
+     
+          
+          WD1002-27X, feature F301R - Half-slot size hard disk controller 
+          card with an ST506/ST412 interface.  It supports 2 RLL hard disk 
+          drives with up to 16 heads and 1024 cylinders and is jumper 
+          configurable for secondary addressing and default drive tables.  
+          Built in ROM BIOS supports non-standard drive types, virtual 
+          drive formatting, dual drive operation, bad track formatting and 
+          dynamic formatting.  This board features a power connector for 
+          filecard applications and it will also operate in AT systems.   
+          Please note that this controller card will be unavailable from 
+          the manufacturer (Western Digital) after March, 1989.  Reference 
+          NOTE 2.
+          
+          WD1002A-27X, feature 300R - Half-slot size hard disk controller 
+          with an ST506/ST412 interface.  It supports 2 RLL drives with up 
+          to 16 heads and 1024 cylinders. Built-in ROM BIOS supports non-
+          standard drive types, virtual drive formatting, bad track 
+          formatting and dynamic formatting.  Please note that this 
+          controller card will be unavailable from the manufacturer     
+          (Western Digital) after March, 1989.
+          
+          WD1004-27X, feature F301R - Half-slot size hard disk controller  
+          card with an ST506/ST412 interface.  It supports 2 RLL hard    
+          disk drives with up to 16 heads and 1024 cylinders and is jumper 
+          configurable for secondary addressing and default drive tables.  
+          Built in ROM BIOS supports non-standard drive types, virtual    
+          drive formatting, dual drive operation, bad track formatting     
+          and dynamic formatting.  This board features a power connection 
+          for filecard applications and it will also operate in AT 
+          systems.  Reference NOTE 2.
+          
+          WD1004A-27X, feature F300R - Half-slot size hard disk 
+          controller  with an ST506/ST412 interface.  It supports 2 RLL 
+          drives with up to 16 heads and 1024 cylinders.  Built-in ROM 
+          BIOS supports non-standard drive types, virtual drive 
+          formatting, bad track formatting and dynamic formatting.
+          
+          NOTE 1:  AT&T 6300 - The AT&T 6300 and the AT&T 6300 PLUS 
+          contain system BIOS chips that support the hard disk drive.  
+          When using a Western Digital XT controller card the system will 
+          not "boot."  To solve this problem, one of the ROM BIOS chips 
+          must be disabled.  To disable the BIOS on your Western Digital  
+          XT controller card, you must remove the jumper at position W-3 
+          or add a jumper at position R-23 (depending on which model of XT 
+          controller you are using).
+          
+                                       -2-
+
+
+          
+          NOTE 2:  TANDY 1000 SYSTEMS - The WD1002A-WX1, WD1004A-WX1, 
+          WDXT-GEN2 and the WD1004-27X can be modified to operate in 
+          Tandy 1000 series computers, models SX, TX and the original or 
+          "A" version.  These computers utilize an interrupt of 2 (IRQ2) 
+          instead of IRQ5, the IBM standard.  To modify the WD1002A-WX1 or 
+          the WD1002-27X to operate in these systems, you must cut the 
+          etch between pin 1 and pin 2 at jumper position W-7.  Then 
+          solder pin 2 and pin 3 at the position (W-7).  To complete the 
+          modification, a jumper must be added to position 7 of switch S-1 
+          (2 rows of 8 pins).  PLEASE NOTE THAT ANY PHYSICAL MODIFICATION 
+          TO YOUR WESTERN DIGITAL HARD DISK CONTROLLER VOIDS THE WARRANTY 
+          ON YOUR BOARD.  To modify the WD1004A-WX1, WDXT-GEN2 or the 
+          WD1004-27X for your Tandy 1000 system, a zero ohm resister must 
+          be soldered to jumper position W-27.  This will change the 
+          interrupt from IRQ5 to IRQ2.
+     
+     
+     XT CONTROLLERS FOR FLOPPY DISK DRIVES
+     
+          
+          WD1002A-FOX - Half-slot floppy disk controller for XT or AT  
+          systems.  Four versions of the board are available:
+                Feature F001 supports two floppy disk drives.
+                Feature F002 supports four floppy disk drives and includes 
+                an optional 37-pin control, data and power connector and 
+                an optional 4-pin power connector.
+                Feature F003 supports two floppy disk drives and includes
+                a ROM BIOS that will enable your system to recognize 
+                floppy disk drive that may not be supported by your AT
+                system ROM BIOS.  The optional ROM BIOS will also allow
+                this controller card to operate high density floppy disk
+                drives in an XT system.
+                Feature F004 supports four floppy disk drives and includes
+                an optional 37-pin control, data and power connector, an
+                optional 4-pin power connector and a ROM BIOS that will 
+                enable your system to recognize floppy disk drives that 
+                may not be supported by your AT system ROM BIOS.  The 
+                optional ROM BIOS will also allow this controller card to 
+                operate high density floppy disk drives in an XT system.
+                
+                
+                                       -3-
+
+
+
+                             PRODUCTS FOR AT SYSTEMS
+     
+      
+     HARD DISK CONTROLLERS FOR MFM HARD DISK DRIVES - NO FLOPPY SUPPORT
+     
+          
+          WD1003-WAH, feature F003R - Hard disk controller card with an   
+          ST506/ST412 interface.  It supports 2 MFM drives with up to 16 
+          heads and 2048 cylinders, 3:1 interleave.
+          
+          WD1003V-MM1, feature F300R - Hard disk controller card with an  
+          ST506/ST412 interface. It supports 2 MFM drives with up to 16  
+          heads and 2048 cylinders, 2:1 interleave.  The "V" boards can   
+          run in high speed AT systems (10 to 16 megahertz system speed).
+          
+          WD1006-WAH , feature F001R - Hard disk controller card with     
+          an ST506/ST412 interface.  It supports 2 MFM drives with up to 
+          16 heads and 2048 cylinders, 1:1 interleave.
+              
+          WD1006V-MM1, feature F300R - Hard disk controller card with an  
+          ST506/ST412 interface.  It supports 2 MFM drives with up to 16  
+          heads and 2048 cylinders, 1:1 interleave and faster data     
+          transfer due to "look ahead caching."  The "V" boards can run in 
+          high speed AT systems (10 to 16 megahertz system speed).
+          
+          
+     HARD DISK CONTROLLERS FOR MFM HARD DISK DRIVES AND FLOPPY DISK DRIVES
+     
+     
+          WD1003-WA2, feature F003R - Hard disk controller card with an  
+          ST506/ST412 interface, full AT form factor.  It supports 2 MFM 
+          drives with up to 16  heads and 2048 cylinders, at 3:1 
+          interleave and 2 floppy disk drives (360K and 1.2 MB).
+          
+          WD1003A-WA2, feature F003R - Hard disk controller card with an 
+          ST506/ST412 interface, full XT form factor.  It supports 2 MFM 
+          drives with up to 16 heads and 2048 cylinders, at 3:1 interleave 
+          and 2 floppy disk drives (360K and 1.2 MB).
+          
+          WD1003V-MM2, feature F300R - Hard disk controller card with an  
+          ST506/ST412 interface.  It supports a maximum of 2 MFM drives 
+          with up to 16  heads and 2048 cylinders at 2:1 interleave, and 2 
+          floppy disk drives (5-1/4" 360K, 1.2Mb; 3-1/2" 720K, 1.44Mb).   
+          The "V" boards can run in high speed AT systems, (10 to 16 
+          megahertz system speed).
+          
+          WD1006V-MM2, feature F300R - Hard disk controller card with an   
+          ST506/ST412 interface.  It supports a maximum of 2 MFM drives 
+          with up to 16 heads and 2048 cylinders at 1:1 interleave and 
+          faster data transfer due to "look ahead caching" and 2 floppy 
+          disk drives (5-1/4" 360K, 1.2 Mb; 3-1/2" 720K, 1.44 Mb).  The 
+          "V" boards can run in high speed AT systems, (10 to 16 megahertz 
+          system speed).
+          
+     
+                                       -4-
+
+
+     HARD DISK CONTROLLERS FOR RLL HARD DISK DRIVES - NO FLOPPY SUPPORT 
+     
+          
+          WD1003-RAH - Hard disk controller card with an ST506/ST412 
+          interface.  It supports 2 RLL hard disk drives with up to 16  
+          heads and 2048 cylinders at 3:1 interleave. 
+          
+          WD1003V-SR1 - Hard disk controller card with an ST506/ST412 
+          interface.  It supports a maximum of 2 RLL hard disk drives with 
+          up to 16 heads and 2048 cylinders at 2:1 interleave. The "V" 
+          boards can run in high speed AT systems (10 to 16 megahertz 
+          system speed).
+                Feature F301R includes an optional ROM BIOS that allows 
+                the user to define the drive's parameters. 
+                Feature F300R does not include the ROM BIOS and you must  
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+          
+          WD1006-RAH - Hard disk controller card with an ST506/ST412 
+          interface.  It supports a maximum of 2 RLL hard disk drives with 
+          up to 16 heads and 2048 cylinders, 1:1 interleave.
+                Feature F001R includes an optional ROM BIOS that provides  
+                additional drive parameter tables.
+                Feature F300R does not include the ROM BIOS and you must   
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+          
+          WD1006V-SR1 - Hard disk controller card with an ST506/ST412     
+          interface.  It supports 2 RLL hard disk drives with up to 16 
+          heads and 2048 cylinders, 1:1 interleave and faster data 
+          transfer due to "look ahead caching."  The "V" boards can run in 
+          high speed AT  systems (10 to 16 megahertz system speed).
+                Feature F301R includes an optional ROM BIOS that allows  
+                the user to define the drive's parameters.           
+                Feature F300R does not include the ROM BIOS and you must  
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+                 
+     
+     HARD DISK CONTROLLERS FOR RLL HARD DISK DRIVES AND FLOPPY DISK DRIVES
+     
+     
+          WD1003-RA2, feature F001R -  Hard disk controller card with an  
+          ST506/ST412 interface.  It supports a maximum of 2 RLL hard disk 
+          drives with up to 16  heads and 2048 cylinders, at 3:1 
+          interleave, and 2 floppy disk drives (5-1/4" 360K, 1.2 Mb).
+          
+          
+     
+                                       -5-
+
+          
+          WD1003V-SR2 -  Hard disk controller card with an ST506/ST412    
+          interface.  It supports a maximum of 2 RLL hard disk drives with 
+          up to 16 heads and 2048 cylinders, at 2:1 interleave, and 2 
+          floppy disk drives, (5-1/4" 360K, 1.2 Mb; 3-1/2" 720K, 1.44 
+          Mb).  The "V" boards run in high speed AT systems (10 to 16 
+          megahertz system speed).
+                Feature F301R includes an optional ROM BIOS that allows   
+                the user to define the drive's parameters.
+                Feature 300R does not include the ROM BIOS and you must
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+          
+          WD1006V-SR2 -  Hard disk controller card with an ST506/ST412   
+          interface.  It supports a maximum of 2 RLL hard disk drives with 
+          up to 16 heads, 2048 cylinders and 2 floppy disk drives (5-1/4" 
+          360K, 1.2 Mb; 3-1/2" 720K, 1.44 Mb).   It also features 1:1 
+          interleave and faster data transfer due to  "look ahead 
+          caching".  The "V" boards can run in high speed AT  systems (10 
+          to 16 megahertz system speed).              
+                Feature F301R includes an optional ROM BIOS that allows 
+                the user to define the drive's parameters.
+                Feature 300R does not include the ROM BIOS and you must   
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+                 
+     
+     HARD DISK CONTROLLERS FOR ESDI HARD DISK DRIVES - NO FLOPPY SUPPORT -
+     
+          
+          WD1007A-WAH - This controller card will support up to 2 ESDI 
+          hard disk drives, 10 megabit per second data transfer rate and 
+          1:1 interleave.        
+                Feature F301R  includes an optional ROM BIOS with "shadow 
+                RAM" that will enable the controller card to interface 
+                with all types of ESDI drives without modifying the system 
+                ROM BIOS.
+                Feature F300R does not include the ROM BIOS and you must 
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+          WD1007V-SE1/ME1 - This controller card will support up to 2 ESDI 
+          hard disk drives, 15 megabit per second data transfer rate and 
+          1:1 interleave.  The "V" boards can run in high speed AT 
+          systems, (10 to 16 megahertz system speed).
+                Feature F301R includes an optional ROM BIOS with "shadow 
+                RAM" that will enable the controller card to interface 
+                with all types of ESDI drives without modifying the system 
+                ROM BIOS.
+                Feature F300R does not include the ROM BIOS and you must 
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+                                       -6-
+      
+     HARD DISK CONTROLLERS FOR ESDI HARD DISK DRIVES AND FLOPPY DISK 
+     DRIVES
+     
+          
+          WD1007A-WA2 - This controller card will support up to 2 ESDI 
+          hard disk drives, 10 megabit per second data transfer rate, 1:1 
+          interleave and 2 floppy disk drives (5-1/4" 360K, 1.2 Mb; 3-1/2" 
+          720K, 1.44 Mb).
+                Feature F301R includes an optional ROM BIOS with "shadow 
+                RAM" that will enable the controller card to interface 
+                with all types of ESDI drives without modifying the system 
+                ROM BIOS.
+                Feature F300R does not include the ROM BIOS and you must 
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+          
+          WD1007V-SE2/ME2 - This controller card will support up to 2 ESDI 
+          hard disk drives, 15 megabit per second data transfer rate, 1:1 
+          interleave and 2 floppy drives (5-1/4" 360K, 1.2 Mb; 3-1/2" 
+          720K, 1.44 Mb).  The "V" boards can run in high speed AT systems 
+          (10 to 12 megahertz bus speed).
+                Feature F301R includes an optional ROM BIOS with "shadow 
+                RAM" that will enable the controller card to interface 
+                with all types of ESDI drives without modifying the system 
+                ROM BIOS.
+                Feature F300R does not include the ROM BIOS and you must 
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameters.
+                
+                
+          WD1007A-WA4 - This controller card will support up to 2 ESDI 
+          hard disk drives, 10 megabit per second data transfer rate, 1:1 
+          interleave and 2 floppy disk drives (5-1/4" 360K, 1.2 Mb; 3-1/2" 
+          720K, 1.44 Mb).  This board also has a serial port and parallel 
+          port.
+                Feature F301R includes an optional ROM BIOS with "shadow 
+                RAM" that will enable the controller card to interface 
+                with all types of ESDI drives without modifying the system 
+                ROM BIOS.
+                Feature F300R does not include the ROM BIOS and you must 
+                use the drive tables on your system's ROM BIOS that must 
+                contain the appropriate drive parameter. 
+                
+                
+                                       -7-
+
+
+      
+     HARD DISK CONTROLLERS FOR SCSI HARD DISK DRIVES
+     
+          
+          7000-ASC - A SCSI host adapter that serves as an interface 
+          between the AT bus and the SCSI bus.  All necessary drivers and 
+          receivers are included, permitting direct cable connections to 
+          the SCSI bus through a 50 pin connector and to the AT bus 
+          through two edge connectors.  The 7000-ASC utilizes jumper  
+          configurable options that enable the address space, DMA channels 
+          and interrupt requests to be selected to suit the end user's 
+          application.  The board also features word data transfer at 4 
+          megabytes per second (synchronous), an on-board floppy disk 
+          controller and a ROM BIOS.  Please note that the 7000-ASC 
+          operates using standard DOS 3.2 or DOS 3.3 only.
+          
+          7000-FASST2 - This SCSI host adapter card provides the same 
+          features as the 7000-ASC plus additional support capabilities 
+          using software developed by Columbia Data Products.  The 7000-
+          FASST2 will support MS-DOS 3.2-3.3, Compaq DOS 3.31, PC-DOS 4.0, 
+          PC-MOS/386 version 2.1, XENIX, Microsoft Windows, Novell and 
+          Sytos tape backup.
+          
+          WDATXT-FASST KIT - An "unintelligent" SCSI host adapter that is 
+          compatible with the IBM XT, AT and compatible systems.  It uses 
+          a 50 pin external SCSI bus "D" connector with a standard 50 pin 
+          internal SCSI cable.  The WDATXT-FASST can be used as  both a 
+          target and an initiator and it serves as an excellent tool for 
+          SCSI designers.  It also provides a low cost alternative for end-
+          users desiring to install a SCSI peripheral device such as a 
+          hard disk drive or a tape backup unit. The kit includes an 8-bit 
+          SCSI HBA board, manual, FASST software diskettes and an internal 
+          SCSI cable.
+          
+          SYTOS TAPE BACKUP - (Utility for 7000-FASST) - FASST-SYTOS - 
+          FASST version of Sytos tape backup utilities.  MS-DOS 
+          compatible, it runs with FASST software products Revision 3.3+.
+          
+          
+     HARD DISK CONTROLLERS FOR PS/2 MODEL 50, 60, 80 SYSTEMS  
+     (MICROCHANNEL ARCHITECTURE)
+     
+          
+          WD1006V-MC1, feature F300R - Hard disk controller with an 
+          ST506/ST412 interface for microchannel systems.  It supports 2 
+          MFM drives with up to 16 heads and 2048 cylinders, 1:1 
+          interleave and faster data transfer due to "look ahead 
+          caching."  The"V" boards can run in high speed AT systems (10 to 
+          16 megahertz system speed).
+          
+     
+                                       -8-
+
+
+          
+          WD1007V-MC1, feature F300R - This controller card will support 
+          up to 2 ESDI hard disk drives, 15 megabit per second transfer 
+          rate and it contains a ROM BIOS with "shadow RAM" that will 
+          enable the controller card to interface with all types of ESDI 
+          hard disk drives without modifying the system BIOS.  It uses 1:1 
+          interleave.  The "V" boards can run in high speed AT systems, 
+          (10 to 12 megahertz bus speed).
+          
+          
+     
+     CONTROLLERS FOR FLOPPY DISK DRIVES ONLY
+     
+          
+          WD1002A-FOX - Half-slot floppy disk controller for XT or AT 
+          systems.  Four versions of the board are available:
+                Feature F001 supports two floppy disk drives.
+                Feature F002 supports four floppy disk drives and includes 
+                an optional 37-pin control, data and power connector and 
+                an optional 4-pin power connector.
+                Feature F003 supports two floppy disk drives and includes 
+                a ROM BIOS that will enable your system to recognize     
+                floppy disk drives that may not be supported by your AT 
+                system ROM BIOS.  The optional ROM BIOS will also allow 
+                this controller card to operate high density floppy disk
+                drives in an XT system.
+                Feature F004 supports four floppy disk drives and includes 
+                an optional 37-pin control, data and power connector, an 
+                optional 4-pin power connector and a ROM BIOS that will 
+                enable your system to recognize floppy disk drives that 
+                may not be supported by your AT system ROM BIOS.  The 
+                optional ROM BIOS will also allow this controller card to 
+                operate high density floppy disk drives in an XT system.
+                
+
+
+-- 
+    Prof. L. Piacenza - Chemistry Department - University of Transkei
+    Internet: chpp@unitrix.utr.ac.za  (preferred).  Tel. 27-471-3022384
+    Internet: sppp@hippo.ru.ac.za
+
+
+From necis!mydual.uucp!olson@transfer.stratus.com Mon Apr  5 12:14:06 1993
+Received: from transfer.stratus.com by ponder (5.61/1.36)
+	id AA29202; Mon, 5 Apr 93 12:14:03 -0500
+Received: from necis.UUCP by transfer.stratus.com (4.1/3.12-jjm)
+	id AA22183; Mon, 5 Apr 93 13:12:04 EDT
+Received: from mydual by necis.necis.ma.nec.com id aa21760; 5 Apr 93 12:50 EDT
+Received: by mydual.UUCP (5.58/smail2.5/09-28-87)
+	id AA18009; Mon, 5 Apr 93 13:24:23 EST
+Date: Mon, 5 Apr 93 13:24:23 EST
+From: "Kirtland H. Olson" <mydual!olson@transfer.stratus.com>
+Message-Id: <9304051824.AA18009@mydual.UUCP>
+To: drice@ponder
+Subject: Re: Drive/Controller Compatibility
+Newsgroups: comp.sys.ibm.pc.hardware
+In-Reply-To: <drice.733866833@ponder>
+Organization: The Harvard Group, 01451-0667
+Reply-To: necis!olson%mydual.uucp@transfer.stratus.com
+Cc: 
+Status: OR
+
+Suggest you move jumper on drive rightward one position.
+
+Regards,
+
+      --Kirt
+
+-- 
+Kirtland H Olson Harvard MA 01451-0667 USA olson%mydual.uucp@necis.ma.nec.com
+

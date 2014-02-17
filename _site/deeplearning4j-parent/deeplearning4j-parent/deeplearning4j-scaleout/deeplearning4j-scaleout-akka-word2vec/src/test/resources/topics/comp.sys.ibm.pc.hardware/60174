@@ -1,0 +1,20 @@
+From: peterd@jamie.dev.cdx.mot.com (Peter Desnoyers)
+Subject: Help with fixed-frequency (52kHz?) VGA monitor
+Nntp-Posting-Host: jamie.dev.cdx.mot.com
+Organization: Motorola Codex, Canton, Massachusetts
+Lines: 14
+
+I recently bought a monichrome VGA monitor for $99 that will do
+1024x768 non-interlaced, which seems like a good deal. However, it is
+a fixed-scan rate monitor, and only handles 52 kHz horizontal, I
+think. With my Trident card it works only in graphics modes 5e and 62
+- not much use, since just about any application will set the mode to
+something else, especially if it wants to do text, I suppose. Anyway:
+
+ - is there any way that I can use this as a general-purpose VGA
+   display with a 1-meg trident 8900C card?
+
+ - if not, can I do so with some sort of different VGA card?
+
+				Peter Desnoyers
+-- 

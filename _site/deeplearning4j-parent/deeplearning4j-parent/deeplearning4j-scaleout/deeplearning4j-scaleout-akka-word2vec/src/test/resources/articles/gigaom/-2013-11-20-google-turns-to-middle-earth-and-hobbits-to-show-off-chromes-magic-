@@ -1,0 +1,13 @@
+A
+Summary:
+Want to safely explore Middle Earth from the comfort of your phone or tablet? You’ll avoid dragons and get a taste of new web technologies at the same time: Google’s latest Chrome Experiment showcases off new web technologies for mobile devices.
+Google has a new Chrome Experiment out in the wild — or the wilds, if you prefer. The latest is a showcase for the newest web technologies packed into Chrome for mobile devices, although it works on traditional computers as well. And what better or richer world to explore on your mobile device is there then J.R.R. Tolkien’s Middle Earth ?
+Point your Chrome mobile browser to middle-earth.thehobbit.com  to explore the Trollshaw Forrest, Rivendell and Dol Guldur with additional locations currently locked. Here’s a glimpse of what to expect:
+The experiment is comprised of an interactive map of Middle Earth and Google thinks you might be surprised by how it was created:
+“It may not feel like it, but this cinematic part of the experience was built with just HTML, CSS, and JavaScript. North Kingdom used the  Touch Events API  to support multi-touch pinch-to-zoom and the  Full Screen API  to allow users to hide the URL address bar. It looks natural on any screen size thanks to  media queries  and feels low-latency because of hardware-accelerated CSS Transitions.”
+Similar to prior Chrome Experiments, the idea here is to show what can be done through web technologies; particular since many of them have parity on both traditional and mobile devices. And of course, that points to the bigger picture for Google, which continues to use Chrome as a platform to compete will full desktop operating systems through the Chrome browser and Chrome OS devices.
+I’m impressed with the overall experience put together here. Of course, it doesn’t hurt that I’m lifelong fan of Tolkien’s work. That aside, the transitions, smooth navigation, sound and 3-D like qualities all coming from the browser would bring a hint of a smile even to Sauron’s evil face.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

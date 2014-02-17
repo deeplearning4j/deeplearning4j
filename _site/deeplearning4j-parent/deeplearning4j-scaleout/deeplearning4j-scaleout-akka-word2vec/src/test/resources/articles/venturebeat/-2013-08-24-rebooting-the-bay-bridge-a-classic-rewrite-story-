@@ -1,0 +1,39 @@
+2
+Mathew Spolin is the founder and CTO of Sproutling .
+From the smallest startup to the largest multi-national company, the ground-up software rewrite is the unicorn of organizations. At some point, a software system needs to be rewritten from scratch, usually for one or more of three reasons:
+Architectural flaws inherent from the onset.
+External market conditions that the software can not meet.
+Too much deferred maintenance such that the software is unstable and unchangeable.
+Software is sometimes hard to understand as it is abstract. However, we have the ultimate physical, real-life rewrite on our doorstep here in San Francisco: the rebuild of the eastern span of the Bay Bridge.
+Architectural Flaws
+Wikimedia Commons
+Collapsed span of the Bay Bridge, 1989.
+The eastern span of the Bay Bridge, first opened in 1936, had a significant architectural flaw in that it could not survive a high-magnitude earthquake. The magnitude 7 Loma Prieta earthquake in 1989 caused a 76- by 50-foot section of the upper deck to collapse onto the lower deck. There was a single fatality on the bridge and the bridge was out of commission for a month, from October 17 to November 18.
+Sometimes software hits an architectural wall, and has to be rewritten. The current mobile and tablet phenomena has caused many traditionally web-only companies to substantially overhaul their software in order to deliver their service to mobile devices.
+The Technically Obvious “Rewrite” Proposal
+Wikimedia Commons
+Bay Bridge proposal #6.
+Bridges are hard to build, and the more complicated the bridge, the more complicated and expensive the construction project. The existing eastern span of the bay bridge was nothing fancy, and could be replaced relatively easily by a modern, economical skyway at a cost of $1.1 billion.
+When proposing a rewrite of software, things may seem simple at first, and engineers and managers think that they can rip out a new version relatively quickly.
+The Rewrite Maelstrom
+Wikimedia Commons
+Bay Bridge proposal #1.
+Although there was a simple alternative, there are lots of stakeholders who couldn’t get what they wanted from the existing bridge and wanted to put their imprint on the new bridge. Jerry Brown, then the mayor of Oakland, demanded that the new bridge be a “statement bridge” since Oakland deserved a modern suspension bridge on par with what San Francisco has with the Western span of the Bay Bridge. Biking advocates demanded a bike lane, even though there is not much to do on Yurba Buena and Treasure Island and the Western span of the bridge doesn’t have a bike lane. Everyone settled on a self-anchored suspension bridge, a type of bridge design that had never been attempted at the scale of the Bay Bridge.
+Even though the Governor at the time, Arnold Schwarzenegger, attempted to override everyone and go back to the simpler skyway design, there were so many people and factions involved that eventually the more extensive design was greenlit.
+When rewriting software, it is important to consider that there are many people that are stakeholders in the existing solution, and likely have pent up requirements that they were not able to solve with the existing solution that they would now finally like to be addressed with the new solution. It is also extremely difficult to remove features as people expect a new solution to improve on their current solution. This type of requirements creep is all very normal and should be expected, and needs to be addressed well as it can lead to a significant amount of analysis, sometimes paralysis, and a lot of change management.
+Agreement Challenges
+Wikimedia Commons
+Should the new span go to the north or the south of the old eastern span?
+Even once a new design and its features are agreed upon, there will likely be additional disagreements. In the Bay Bridge’s case, Mayor Willie Brown of San Francisco and Mayor Jerry Brown of Oakland, bickered over whether to put the new bridge to the North or South of the existing bridge. Brown wanted the new bridge placed to the South of the current bridge in order for its shadow to not decrease the value of prime real estate on Yurba Buena Island. Even the Navy was involved, since it was transferring the land to San Francisco, and wouldn’t let Caltrans test the soil at the site. The disagreement dragged on for two years and added hundreds of millions of cost to the project.
+When rewriting software, it should be expected that there will be disagreements, so it is critical that all the stakeholders meet regularly, keep the overall project goals in mind, and have the ability to engage in frank and open dialog in order to address issues.
+Unforeseen Problems, Delays and Cost
+The Bay Bridge had numerous delays and cost overruns, ranging from bad welds due to welders being rushed to bad bolts that the manufacturer changed specifications on after they were initially tested.
+During all the debate about what type of bridge to build, and exactly where to build the bridge, China’s building boom began consuming all available concrete and steel, driving up prices. The delays in the Bay Bridge construction ended up costing billions of dollars. The state and local agencies haggled constantly on who would pay for overruns, leading to toll increases and debt. The simple design was estimated to cost $1.1 billion, and the bridge ended up costing $6.3 billion and was delivered years late, with some potential flaws.
+In large, complicated projects, unfortunately it should be expected that there are going to be unforeseen problems and delays, in even the most padded schedule. It is a fact of life of engineering and time and cost overruns are unfortunately very typical of large projects. In addition, these types of delays can cause endless thrash in organizations as people expected the new solution and deferred maintenance and features on the existing solution.
+Finally, a New Bridge!
+I have learned the hard way, unfortunately more than once, that rewrites are an incredibly painful process. They may initially seem simple, but end up taking far more time, money and coordination than initially envisioned. However, on the other side of the process, you end up with a brand spanking new bridge, ready for the future.
+Wikimedia Commons
+The eastern span of the Bay Bridge nearing completion in July, 2013.
+Mathew Spolin is an accomplished engineer and entrepreneur who has co-founded several companies including DoubleDutch, Noosh, and his most recent venture, Sproutling , a company combining wearable technology and big data to make parenting a little less scary and a lot more fun. In his spare time he enjoys photography and spending time with his wife and their two young children.
+For more on the Bay Bridge project, see Wikipedia  and BayBridgeInfo.org .
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

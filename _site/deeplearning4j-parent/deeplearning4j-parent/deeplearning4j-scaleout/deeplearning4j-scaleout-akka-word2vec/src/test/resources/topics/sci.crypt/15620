@@ -1,0 +1,69 @@
+From: wcs@anchor.ho.att.com (Bill Stewart +1-908-949-0705)
+Subject: Re: THE CLIPPER CHIP: A TECHNICAL SUMMARY
+Organization: Brought to you by the numbers 2, 3, and 7
+In-Reply-To: denning@guvax.acc.georgetown.edu's message of 19 Apr 93 18:23:27 -0400
+Nntp-Posting-Host: rainier.ho.att.com
+Lines: 62
+
+In article <1993Apr19.182327.3420@guvax.acc.georgetown.edu> denning@guvax.acc.georgetown.edu writes:
+	[Prof. Denning's description of SkipJack mostly omitted]
+
+	CHIP STRUCTURE
+	The Clipper Chip contains a classified 64-bit block encryption
+	algorithm called "Skipjack."  The algorithm uses 80 bit keys (compared
+	with 56 for the DES) and has 32 rounds of scrambling (compared with 16
+	for the DES).  It supports all 4 DES modes of operation.  Throughput is
+	16 Mbits a second. [...]
+
+	F, an 80-bit family key that is common to all chips
+	N, a 30-bit serial number
+	U, an 80-bit secret key that unlocks all messages encrypted
+		 with the chip
+	The key K and message stream M (i.e., digitized voice) are then
+	fed into the Clipper Chip to produce two values:
+
+  	   E[M; K], the encrypted message stream, and 
+	   E[E[K; U] + N; F], a law enforcement block.  
+
+Three questions:
+1) It looks like each 64 bits of input gives you 4*64 bits of output:
+		E[M;K] = 64 bits
+		E[K;U] = E[ 80 bits ] = 128 bits
+		E[ E[K;U], N ; F ] = E[ 128 + 30 bits ] = 192 bits
+   Do you really need to transmit all 256 bits each time,
+   or do you only transmit the 192 bits of wiretap block at the beginning?   
+   All 256 would be really obnoxious for bandwidth-limited applications
+   like cellular phones (or even regular phones over 
+
+2) how do the 4 DES modes interact with the two-part output?
+   Do the various feedback modes only apply to the message block,
+   or also to the wiretap block?  Or, if the wiretap block is only
+   transmitted at the beginning, does it get incorporated into
+   everything through feedback modes, but not during ECB mode?
+
+3) Does the Clipper Chip check the wiretap block itself?
+   Does the block have to be present at all?
+   Since the receiving chip doesn't know the transmitter's U,
+   it presumably can't check the validity of E[K;U], so it's 
+   limited to checking the *form* of the wiretap block,
+   and maybe checking the serial number for reasonableness
+   (unless there's some sort of back-door structure that lets
+   it recognize a valid E[K;U].)
+   
+   In that case, can you replace the wiretap block with a DIFFERENT
+   wiretap block, presumably an old valid one to avoid attracting attention?
+   (The chip won't do it, so you postprocess the output.)
+   Regular people can do one with their own serial number and a dummy key;
+   paranoid people can use someone else's serial number.
+
+   On the other hand, if I could think of that solution so easily,
+   presumably the NSA could too - have they done something to block it,
+   like use message encryption that's really E[M; K,U,N] ?
+
+
+	Thanks!
+--
+#				Pray for peace;      Bill
+# Bill Stewart 1-908-949-0705 wcs@anchor.att.com AT&T Bell Labs 4M312 Holmdel NJ
+#	              No, I'm *from* New Jersey, I only *work* in cyberspace....
+# White House Commect Line 1-202-456-1111  fax 1-202-456-2461

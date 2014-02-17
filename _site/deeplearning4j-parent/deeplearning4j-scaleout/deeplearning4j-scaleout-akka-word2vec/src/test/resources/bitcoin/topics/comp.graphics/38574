@@ -1,0 +1,21 @@
+From: mz@moscom.com (Matthew Zenkar)
+Subject: Re: CView answers
+Organization: Moscom Corp., E. Rochester, NY
+Lines: 15
+X-Newsreader: TIN [version 1.1 PL9]
+
+Cyberspace Buddha (cb@wixer.bga.com) wrote:
+: renew@blade.stack.urc.tue.nl (Rene Walter) writes:
+: >over where it places its temp files: it just places them in its
+: >"current directory".
+
+: I have to beg to differ on this point, as the batch file I use
+: to launch cview cd's to the dir where cview resides and then
+: invokes it.  every time I crash cview, the 0-byte temp file
+: is found in the root dir of the drive cview is on.
+
+I posted this as well before the cview "expert".  Apparently, he thought he
+knew better.
+
+Matthew Zenkar
+mz@moscom.com

@@ -1,0 +1,7 @@
+0
+Sometimes a hack isn’t the fancy, invisible coding-footwork you might expect. Sometimes a hacker needs to literally cut a hole in its target.
+That’s what security researchers revealed at the Chaos Communication Congress (30C3) in Hamburg, Germany today. Hackers had been targeting a number of European ATMs from an unnamed bank by infecting the automated tellers with a malicious USB stick. The problem? The port these hackers were after was concealed within the machine.
+They had to cut a hole in the ATM to access the desired port. Once in, however, the hackers were able to upload malicious code onto the machines. Entering a 12-digit passcode plus a passcode from a fellow hacker (to avoid hackers going rogue with the USBs) gave them access to a dashboard that displayed how many bills were in the machine, and more specifically, how many of each bill-value.
+The hackers then targeting the highest valued bills to shorten the amount of time they were standing in front of the ATM. They then patched the hole in a way that gave them easy access to it again — a physical backdoor, perhaps.
+Of course, we’ve seen USBs used maliciously before. The United States and Israel supposedly used a USB drive to infect Iran’s nuclear systems with Stuxnet. And it isn’t the only kind of plug-and-play computer accessory under fire at 30C3.
+Yesterday, researchers revealed a hack that used SD cards as malicious actors. It goes to show that everyone should be wary of seemingly innocuous devices — someone out there has figured out a way to make them dangerous.

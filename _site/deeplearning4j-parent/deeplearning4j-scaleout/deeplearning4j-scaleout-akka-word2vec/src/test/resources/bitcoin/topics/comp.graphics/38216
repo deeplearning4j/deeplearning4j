@@ -1,0 +1,25 @@
+From: ab@nova.cc.purdue.edu (Allen B)
+Subject: Re: TIFF: philosophical significance of 42
+Organization: Purdue University
+Lines: 20
+
+In article <1993Apr10.160929.696@galki.toppoint.de> ulrich@galki.toppoint.de  
+writes:
+> According to the TIFF 5.0 Specification, the TIFF "version number"
+> (bytes 2-3) 42 has been chosen for its "deep philosophical 
+> significance".
+> Last week, I read the Hitchhikers Guide To The Galaxy,
+> Is this actually how they picked the number 42?
+
+I'm sure it is, and I am not amused.  Every time I read that part of the
+TIFF spec, it infuriates me- and I'm none too happy about the
+complexity of the spec anyway- because I think their "arbitrary but
+carefully chosen number" is neither.  Additionally, I find their
+choice of 4 bytes to begin a file with meaningless of themselves- why
+not just use the letters "TIFF"?
+
+(And no, I don't think they should have bothered to support both word
+orders either- and I've found that many TIFF readers actually
+don't.)
+
+ab

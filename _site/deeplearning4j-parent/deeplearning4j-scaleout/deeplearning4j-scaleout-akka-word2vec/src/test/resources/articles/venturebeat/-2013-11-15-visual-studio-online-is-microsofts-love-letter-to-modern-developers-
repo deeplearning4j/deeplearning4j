@@ -1,0 +1,19 @@
+2
+Every major developer-oriented company is coaxing programmers into the cloud. Microsoft is not to be left behind in this respect, and nothing shows that more than the launch of Visual Studio Online, a series of tools for collaboration, coding-from-anywhere, and DevOps.
+Even the most hardline anti-Microsoft devs will admit that Visual Studio itself is a remarkable tool. Some would even go so far as to call it pleasurable to use. And along with the announcement of Visual Studio 2013, Microsoft is going big on modern, cloud-friendly features that tie into its other products and services beautifully — if you don’t mind buying into the Mircosoft developer stack, that is.
+“We feel like we’ve got a phenomenal environment for developing for and in the cloud,” said Microsoft corporate vice president S. “Soma” Somasegar [pictured] in a recent chat with VentureBeat.
+“Visual Studio is getting into a new era … the developer is at the center of this transformation from our perspective. They’re becoming more and more critical.”
+Visual Studio has a smattering of new features such as increased DevOps functionality. But the star of the show is VS Online.
+“It’s a collection of developer services that run on the cloud — in our case Azure — that works hand-in-hand with VS tools to build apps that deploy on the cloud and get consumed on devices,” said Soma.
+From Microsoft’s files explaining the new Online features:
+Take team collaboration to the cloud, making it dramatically easier for teams to embrace agile application development and delivery.
+Enhance the individual development experience by extending tools through additional cloud services and development capabilities.
+Bring agility to application delivery — from development to deployment to improvement, often referred to as DevOps.
+Enable continuous delivery to Windows Azure in addition to monitoring and learning about their applications.
+It’s also got analytics features, called Application Insights. “Let’s say you have a crash in an app. We can capture the crash dump and create a work item and let you see the debug it right then and there,” said Soma.
+“We can integrate between Azure, VS, and VS Online to give you an easier experience, being able to act on your insights.”
+And then there’s Monaco (code name). This is a lightweight in-browser code editor (not a full IDE [integrated developer environment, for those of you who are not developers and are probably confused by a great deal of this post]) currently in beta for editing Azure sites with Azure mobile services coming soon.
+“This gives you a browser-based development environment for a certain set of tasks. It’s very complimentary to Visual Studio tools,” said Soma.
+“Today, if you want to edit a source file on SkyDrive, you’re using the Monaco environment.”
+Soma added, “I don’t think [Monaco] is going to replace Visual Studio. Over time we will add more functionality, but we think of it as complimentary to Visual Studio. … We don’t believe you have to abandon your editor and move entirely to the cloud.”
+Ultimately, said Soma, Microsoft hopes the 2013 edition of Visual Studio, including Online and Monaco, will “enable developers to create modern applications.”

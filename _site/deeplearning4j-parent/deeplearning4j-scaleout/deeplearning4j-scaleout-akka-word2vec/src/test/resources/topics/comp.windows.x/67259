@@ -1,0 +1,39 @@
+From: Gary Keim <gk5g+@andrew.cmu.edu>
+Subject: Re: X Toolkits
+Organization: School of Computer Science, Carnegie Mellon, Pittsburgh, PA
+Lines: 32
+NNTP-Posting-Host: po4.andrew.cmu.edu
+In-Reply-To: <C5y8wJ.3zE@undergrad.math.uwaterloo.ca>
+
+Excerpts from netnews.comp.windows.x: 23-Apr-93 X Toolkits Paul
+Prescod@undergrad.m (1132)
+
+
+> I am getting Linux, so I will have InterViews, but I don't know how it
+> will look.  I get the impression Andrew is from the FSF, but I don't
+> know what it looks like either.
+
+If you're on the internet and your site isn't sheltered from external
+tcp/ip traffic, you can use the Remote Andrew Demo to see what the
+Andrew Toolkit looks like:
+
+Remote Andrew Demo Service
+
+This network service allows you to run Andrew Toolkit applications
+without the overhead of obtaining or compiling the Andrew software.  You
+need a host machine on the Internet, and you need to be running the X11
+window system.  A simple "finger" command will allow you to experience
+ATK applications firsthand.  You'll be able to compose multimedia
+documents, navigate through the interactive Andrew Tour, and use the
+Andrew Message System to browse through CMU's three thousand bulletin
+boards and newsgroups.
+
+To use the Remote Andrew Demo service, simply run the following command
+on your machine:
+
+    finger help@atk.itc.cmu.edu
+
+The service will give you further instructions.   
+
+Gary Keim
+Andrew Consortium

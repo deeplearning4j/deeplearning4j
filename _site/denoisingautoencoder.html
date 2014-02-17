@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title margin-left="55px";>deeplearning4j</title>
+        <title margin-left="55px";></title>
         <meta name="viewport" content="width=device-width">
 
         <!-- syntax highlighting CSS -->
@@ -29,17 +29,19 @@
                    <li><a href="//index.html">Neural Nets Overview</a></li>
                     <ul>
                         <li><a href="//restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
-                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann</a></li>
+                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann Machine</a></li>
                         <li><a href="//denoisingautoencoder.html">Denoising Autoencoder</a></li>
                     </ul>
-                   <li>Multilayer Neural Nets</li>
+                   <li><a href="//multinetwork.html">Multilayer Neural Nets</a></li>
                     <ul>
+
                         <li><a href="//deepbeliefnetwork.html">Deep-Belief Network</a></li>
                         <li><a href="//continuousdeepbeliefnetwork.html">Continuous Deep-Belief Network</a></li>
                         <li><a href="//stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
                     </ul>
+                    <li><a href="//mnist.html">MNIST Tutorial</a></li>
                     <li><a href="//word2vec.html">Word2vec</a></li>
-                    <li><a href="//data-sets.html">Data Sets and Machine Learning</a></li>
+                    <li><a href="//data-sets-ml.html">Data Sets and Machine Learning</a></li>
                     <li><a href="//examples.html">Motivating Examples</a></li>
                     <li><a href="//glossary.html">Glossary</a></li>
                     <li><a href="//about.html">About</a></li>
@@ -47,21 +49,23 @@
                     </div>
           <div class="span8">
 
-    <h1>deeplearning4j</h1>
+    <h1></h1>
 
-    <h3>Single Network/Denoising Autoencoder</h3>
+    <h1>denoising autoencoder</h1>
 
 <p>An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the <a href="https://en.wikipedia.org/wiki/Identity_function">identity function</a> -- where the output simple equals the input -- thereby becoming useless. </p>
 
 <p>Denoising autoencoders are an extension of the basic autoencoder, and represent a stochastic version of the autoencoder. Denoising autoencoders attempt to address identity-function risk by randomly corrupting input (i.e. introducing noise) that the autoencoder must then reconstruct, or denoise. </p>
 
-<p>PARAMETERS</p>
+<h3>parameters</h3>
 
-<h4>Corruption Level - The amount of noise to apply to the input. This is a percentage. Typically 30% (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.</h4>
+<h4>corruption level</h4>
+
+<p>The amount of noise to apply to the input. This is a percentage. Typically 30% (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.</p>
 
 <p>INPUT</p>
 
-<h3>Initiating a denoising autoencoder</h3>
+<h3>initiating a denoising autoencoder</h3>
 
 <p>Setting up a single-thread denoising autoencoder is easy. </p>
 

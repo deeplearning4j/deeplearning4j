@@ -1,0 +1,113 @@
+From: louis@loa.citilille.fr (Louis Gonzalez 20-43-41-19)
+Subject: SPHINX: Satellite Image Processing under X11
+Organization: Universite des Sciences et Technologie de LILLE, France
+Lines: 106
+NNTP-Posting-Host: loasil.citilille.fr
+X-Newsreader: TIN [version 1.1 PL8]
+
+
+****************************   SPHINX   ***************************
+
+	Sphinx is a user-friendly, state-of-the-art image processing
+and analysis package that runs across a spectrum of high performance 
+computer platforms operating UNIX and the X-Window System.
+
+	It was created to meet to the daily research needs of scientists 
+conducting climate investigations using satellite data and remote
+sensing techniques. 
+
+		   Intuitive Graphic Interface
+
+	Sphinx features an interactive interface with pop-up menus and 
+point-and-click dialog boxes which makes image processing and
+analysis simple and fast.
+	This accessible menuing enables you to build attractive image 
+layouts quickly while also providing you the flexibility of returning
+to the main menu to conduct other image analysis and processing operations.
+
+		    Image Format Compatibility
+
+	Using smart read/write functions, Sphinx allows you to easily open
+and save image files in a variety of formats using bit, integer or real
+data values.  Sphinx also reads and writes the common TIFF and GIF formats
+as well as compresses and decompresses image formats to save disk space.
+
+		    Image Analysis & Processing
+
+	For image and pixel analysis, the Sphinx package includes an
+assortment of processing tools that perform useful statistical and 
+mathematical filtering operations, such as Fourier transforms, convolution 
+product or principal component analyses.
+An interactive interpreter for both algebraic equations and images allows
+the user to manipulate and combine individual data channels interactively.
+Standard FORTRAN notation is used for formula entry and for trig
+onometric and transcendental functions.
+
+		    Satellite Spectra & Orbit Analysis
+
+	Sphinx possesses functions to simulate satellite signal sensitivity
+for various meteorological satellites (e.g., GOES, METEOSAT, NOAA, Spot etc.).
+The simulations are conducted for a selection of standard atmospheric and
+surface conditions and instrument spectral bands.
+A geometry model computes the solar zenith angles, warping, orbit simulation,
+and 3-D image projection.
+
+		    Easy External Program Interfacing
+
+	Sphinx allows users the flexibility to integrate externally
+developed software algorithms for processing and converting satellite
+observations.  Sphinx exports and imports image files and image parameters
+to external programs using special interface functions.
+
+		    Quick Quality Presentation
+
+	Sphinx rapidly displays, manipulates, and enhances high-resolution
+multispectral images and color tables.  Using six 8-bit 1024x1024 image
+planes and one graphics plane, the package conveniently combines color images,
+graphics and text to generate sharp digital images for articles and reports.
+Sphinx's 2-D and 3-D graphics editor provides complete flexibility for modifying
+and integrating vector graphics and analysis plots with images, such as 
+histograms and radial graphs.  The package supplies color and gray scale
+output for standard inkjet and laser printers.
+	Other Capabilities Sphinx also performs image animation, external 
+graphics importing, mosaic fitting... what else?
+
+		    Software Support & Development
+
+	 Sphinx was developed at the Laboratoire d'Optique Atmospherique (LOA)
+ of the Universite de Lille, France.
+The package has received critical feedback and support from scientists at
+the French national laboratory, Centre National de Recherche Scientifique (CNRS),
+and the French space agency, Centre National d'Etudes Spatiales (CNES).
+At LOA, Sphinx undergoes continued refinement and development to meet changing
+research needs and advances in computer technology.  The package, which features
+on-line help, is supported by an Internet address
+
+ sphinx@loasil.citilille.fr through which questions can be answered and
+ version updates provided without delay.
+
+		    Performance Tested
+
+ 	CNES has selected Sphinx to analyze and process the satellite data 
+collected during the upcoming ADEOS/POLDER satellite mission.  Today,
+the Sphinx package is in use at the NASA - Goddard Space Flight Center
+and is widely used in many French laboratories, including
+the Centre de Recherche en Physique de l'Environnement, Ecole Normale Superieure ,
+Laboratoire d' Etudes et de Recherches en Teledetection Spatiale,  Laboratoire 
+de Meteorologie Dynamique.
+
+
+   A TEST VERSION OF SPHINX IS AVAILABLE AT loasil.citilille.fr
+   (134.206.50.4) anonymous (bin : cd SPHINX : get ALL_SPHINX.tar.Z)
+
+   IN THE TEST VERSION THE OUTPUT FILES ARE DISABLE. HOWEVER THE
+   VISUALISATION AND GRAPHIC FUNCTIONS ARE AVAILABLE. THIS IS
+   SUFFICIENT TO WORK WITH.
+
+   IF YOU ARE INTERESTED IN KEEPING "SPHINX", SEND US YOUR EMAIL
+   AND YOU WILL RECEIVE NEWS ABOUT THE PACKAGE EVOLUTION.
+
+   THE SOFTWARE IS CHANGING WITH USER SUGGESTIONS WE WILL
+   APPRECIATE YOUR COMMENTS.
+
+

@@ -1,0 +1,32 @@
+From: rgooch@rp.CSIRO.AU (Richard Gooch)
+Subject: Re: Animation with XPutImage()?
+Organization: CSIRO Division of Radiophysics/Australia Telescope National Facility
+Lines: 27
+
+In article <WHALEY.93Apr22110027@sigma.kpc.com>, whaley@sigma.kpc.com (Ken Whaley) writes:
+> One advanage of MIT-SHM is that if your images are large, you don't end up
+> growing the size of the server process to hold them.
+>
+  Correct. Most X servers use a version of  malloc(3)  which will not return
+  memory to the OS (ie. the X server might  free(3)  a Pixmap, but the heap does
+  not shrink).
+
+> One disadvantage of the MIT-SHM is that, in its sample implementation,
+> there is no provision for elegantly cleaning up the shared memory segments
+> if the client dies a sudden, violent death (e.g., "kill").  You have to 
+> be mindful of cluttering up the system with zombie shared memory segments.
+>
+  Well, part of the routines I mentioned do a dirty little trick to get around
+  that problem. First, I create the shared memory segment, attach the client,
+  attach the X server, and then remove (!) the segment. If you read the man
+  pages on removing of shared memory segments, you will see that the segment
+  only dies after all attachments are gone.
+  Now, if the client dies, that's one attachment gone (the OS cleans up for you)
+  and since the X server notices the client has dies, frees up it's resources,
+  including detaching from the segment: there goes the last attachment. No more
+  shared memory segment.
+  Terrible, but it works.
+
+				Regards,
+
+					Richard Gooch....

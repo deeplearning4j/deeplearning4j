@@ -1,0 +1,37 @@
+From: ebosco@us.oracle.com (Eric Bosco)
+Subject: Ram boards on a 486??
+Nntp-Posting-Host: monica.us.oracle.com
+Reply-To: ebosco@us.oracle.com
+Organization: Oracle Corp., Redwood Shores CA
+X-Disclaimer: This message was written by an unauthenticated user
+              at Oracle Corporation.  The opinions expressed are those
+              of the user and not necessarily those of Oracle.
+Lines: 27
+
+
+Hello,
+
+	I have a 486sx25 ISA machine with Pheonix BIOS.  Currently I have  
+8 megabytes of RAM installed via eight 1 MG SIMMS on the motherboard: ie.  
+both banks are full, and there is no space for more SIMMS.  I am thinking  
+of running OS2 on my machine and Possibly Linux with X windows, and I know  
+that more RAM would be helpful.  However with SIMMS, the only solution I  
+can see is to sell my 8 Megs for about $180, and by 4 4mg SIMMS for about  
+$400 used. Apart from the fact that I can't afford the price right now,  
+the entire process of selling RAM and buying it used probably means that  
+the machine might be down for a number of days which I would rather  
+avoid...
+
+So my question is, do the AT RAM boards that plug into a free slot work  
+well with a 486 ISA machine. I have seen some being sold used for about  
+$90 with 4 Mg with space for another 4Mg's.  If these boards do work, how  
+do they do it?  Is a device driver needed, or will the BIOS pickup the  
+extra RAM as it does with the SIMMS on the mother board? I know that the  
+ISA expansions slots are 16-bits and 486 SIMM memory is 32 bits, so  
+probably all of this is just wishful thinking... However any help is truly  
+appreciated.
+
+-Eric
+
+ebosco@us.oracle.com
+

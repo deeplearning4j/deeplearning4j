@@ -1,0 +1,90 @@
+From: grady@netcom.com (1016/2EF221)
+Subject: SOURCE to Mactinosh PGP 2.2 in C available 
+Organization: capriccioso
+X-Newsreader: TIN [version 1.1 PL6]
+Lines: 84
+
+*** SOURCE code to Macintosh PGP 2.2 now available via anonymous FTP ***
+
+FTP netcom.com
+CD pub/grady
+MGET MacPGP2.2src.sea.hqx
+MGET MacPGP2.2srcSIGNATURE
+
+Convert to a Compact Pro self-extracting archive with BinHex 4.0.
+
+If appropriate, check the digital signature of the .hqx file with
+your copy of PGP.  (Non-Macintosh users wishing to check the digital
+signature please note that 'CR' denotes the end-of-line on a Macintosh,
+not 'LF' or 'CRLF'.)
+
+For the purposes of the ITAR act, this 'unclassified technical
+documentation' is hereby released into the public domain.  (However
+no representation is made as to copyright or other commercial rights
+that may exist in this package.)
+
+Full source code, Symantec THINK C 5.0.4 projects and full user
+documentation is included for both 68020 and 68000 versions of Pretty
+Good Privacy, a strong public key encryption and digital signature
+application using the RSA algorithm patented in the United States
+and the IDEA cipher patented in Switzerland.
+
+No executables are included.
+
+Executables are available via anonymous FTP from:
+
+leif.thep.lu.se (Sweden)
+night.nig.ac.jp (Japan)
+van-bc.wimsey.bc.ca (Canada)
+soda.berkeley.edu (P.R. of Berkeley)
+src.doc.ic.ac.uk (United Kingdom)
+ghost.dsi.unimi.it (Italy)
+plaza.aarnet.edu.au (Australia)
+nic.funet.fi (Finland)
+
+
+Other's public keys are available from anonymous server sites:
+(Send message subject "help" for more information.)
+
+Internet sites:
+        pgp-public-keys@junkbox.cc.iastate.edu
+                Michael Graff
+                explorer@iastate.edu
+                FTP: tbird.cc.iastate.edu:/usr/explorer/public-keys.pgp
+        pgp-public-keys@toxicwaste.mit.edu
+                Derek Atkins
+                warlord@MIT.EDU
+                FTP: toxicwaste.mit.edu:/pub/keys/public-keys.pgp
+        pgp-public-keys@phil.utmb.edu
+                John Perry
+                perry@phil.utmb.edu
+                FTP: phil.utmb.edu:/pub/pgp/public-keys.pgp
+        pgp-public-keys@demon.co.uk
+                Mark Turner
+                mark@demon.co.uk
+                FTP: ftp.demon.co.uk:/pub/pgp/pubring.pgp
+
+UUCP site:
+        pgp-public-keys@jpunix.com
+                John Perry
+                perry@jpunix.com
+
+The executable application built from these sources has NOT been
+licensed by RSA Data Security, Inc. nor has the RSA public key
+algorithm or the IDEA block cipher algorithm been approved by
+the National Security Agency.
+
+This unclassified technical documentation is made available for
+EDUCATIONAL USE ONLY; possession, distribution, or use of an
+executable binary built from this source may be a civil or criminal
+offense.
+
+Suggested improvements, bugs, or comments should be directly posted
+to alt.security.pgp or to the principal developers listed among
+the source documents.  General questions and comments about public
+key cryptography or the IDEA cipher may be posted to alt.security.pgp
+or to the sci.crypt Usenet groups.
+
+-- 
+grady@netcom.com  2EF221 / 15 E2 AD D3 D1 C6 F3 FC  58 AC F7 3D 4F 01 1E 2F
+

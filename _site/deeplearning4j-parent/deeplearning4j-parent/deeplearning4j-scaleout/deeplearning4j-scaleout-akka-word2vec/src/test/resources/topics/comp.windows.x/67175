@@ -1,0 +1,26 @@
+From: scornd4@technet.sg (HIANLEONG ONG)
+Subject: Re: ..Image processing Packages under X..
+Nntp-Posting-Host: solomon.technet.sg
+X-Newsreader: TIN [version 1.1 PL9]
+Lines: 20
+
+Prateek Mishra (mishra@cs.sunysb.edu) wrote:
+
+: I am looking for a package that implements standard
+: image processing functions (reading/writing from
+: standard formats), clipping, zoom, etc. implemented
+: under X. Both public domain and private packages
+: are of interest. The particular application area I
+: have in mind is medical imaging, but a package meant
+: for a more general context would be acceptable.
+
+: Please reply to me; I will summarize on the net if
+: there is general interest.
+
+: - prateek mishra
+: mishra@sbcs.sunysb.edu 
+
+
+keep tabs with the FAQ in sci.image.processing. There is quite a
+comprehensive compilation of image processing s/w (X included). I've
+ftp'ed ImageMagick and its great. Check out the FAQ its all there.

@@ -1,0 +1,23 @@
+From: finchm@csugrad.cs.vt.edu (Michael >Finchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchmfinchm< Finch)
+Subject: Re: Why the clipper algorithm is secret
+Organization: Virginia Tech Computer Science Dept, Blacksburg, VA
+Lines: 17
+NNTP-Posting-Host: csugrad.cs.vt.edu
+
+johnl@iecc.cambridge.ma.us (John R. Levine) writes:
+> >The cryptographic protocol, though, is another matter.  I see no valid
+> >reasons for keeping it secret, and -- as I hope I've shown above -- there
+> It just occurred to me why the algorithm is secret.  If it were
+> published, one could then build physically identical clone versions
+
+I recall seeing a post some time ago saying that if the details of
+an encryption scheme couldn't be revealed, then the encryption
+scheme is worthless.  I believe the statement was in response to
+somebody saying that they had some new snazzy scheme, but the
+algorithm was a secret.
+
+Does this algorithm depend on the fact that the scheme is secret or
+is it for the stated reasons above?
+
+
+-Mike

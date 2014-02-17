@@ -1,0 +1,37 @@
+From: hildjj@jupiter.fuentez.COM (Joe Hildebrand)
+Subject: Re: question regarding overlaying of graphics
+Organization: The Internet
+Lines: 30
+To: venkatg@grace.cs.orst.edu (Gopal Venkatraman)
+Cc: xpert@expo.lcs.mit.edu
+
+
+> Let's say I have two rectangles on the canvas(see above) 
+> one intersecting the other...
+> Now, I would like to delete one of the rectangles.
+> The way I do it is to create another GC wherein I use the
+> GXxor logical function and simply redraw the rectangle using the
+newly
+> created graphics context thus deleting it for all apparent purposes.
+> A problem with this approach is that at the points of intersection
+the pixel 
+> locations belonging to the other rectangle also become white, which
+is 
+> something that should be avoided.
+
+You could set up a bitmap with a mask in it.  Clear the
+bitmap, draw the rectangle to be deleted with GXor.  Draw the one
+that is to stay with GXclear.  Then GXxor the entire pixmap with
+the screen.  
+
+Note that this is a pretty effective way of animation, if you ever
+need to do that (replace the GXclear with a GXxor).
+
+----------
+Joe Hildebrand
+hildjj@fuentez.com
+Software Engineer
+Fuentez Systems Concepts
+(703)273-1447
+
+Standard disclaimers apply

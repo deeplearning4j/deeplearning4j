@@ -1,0 +1,34 @@
+From: cui@maccs.mcmaster.ca (Jun Cui)
+Subject: How to hold the control to a window object?
+Nntp-Posting-Host: maccs.dcss.mcmaster.ca
+Organization: McMaster University, Hamilton, Ontario.
+Lines: 28
+
+// Hope I am in the right group! I'm using BC++'s ObjectWindows (version 3.1),
+// trying to get some date processed in a window object. However, when invoking
+// the window object, the calling program gives up the control to the window
+// object, and keeps executing the next statement. The source code may look
+// like the following:
+
+class MyWindow : public TWindow
+{
+	...
+};
+
+void MyCallingProg(...)  // Could the calling program be a C function?
+{	...
+	MyWindow *MyWinObj;
+	MyWinObj = new MyWindow(...);
+	GetApplication()->MakeWindow(MyWinObj);
+	MyWinObj->Show(SW_SHOWNORMAL);
+
+	next statement;  // I want the program to wait here until MyWinObj is closed
+	...              // so that I can get some data back from MyWinObj. 
+	...              // I specified the window style to be WS_POPUPWINDOW, didn't
+	...              // help. Is there any other way to execute the window object
+	...              // so that the calling program won't give up the control?
+}                   // Any help would be appreciated. Thanks!  --jun
+To talk to the Lord with PS/2 through MS-Windows
+
+
+

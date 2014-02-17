@@ -1,0 +1,14 @@
+A
+Summary:
+The U.S. Department of Health and Services is using New Relic to trouble-shoot its problem-plagued Healthcare.gov website, according to New Relic.
+A progress report on Healthcare.gov sent out by the U.S. Department of Health and Human Services credits new application and system monitoring software with helping to right the course of the troubled website. While the report names no names, a set of real-time monitoring screen shots will probably look familiar to any developers or devops familiar with New Relic’s popular SaaS service. 
+This probably should not be surprising: New Relic’s SaaS-based application monitoring tool is a huge favorite among devops building and supporting massive web sites. And while New Relic CEO and founder Lew Cirne (pictured above), said he couldn’t say too much about this implementation except for the fact that the screen shots included in the reports are “instantly recognizable to any of our 70,000 customers.”
+After the disastrous debut of Healthcare.gov in October, HHS announced it was implementing a “tech surge” to correct major problems, part of which was the implementation of an unnamed  real-time monitoring service. 
+On Sunday morning, HHS said it had met an internal deadline for correcting the worst issues about the web site. And the accompanying report showed error rates falling from about 6 percent to less than 1 percent and drastically faster response times (see charts below.)
+New Relic’s strength is its ability to pinpoint where problems are happening in a complex websites that often taps many disparate software components.
+“We show how all the pieces are doing and that can reduce fingerpointing. When you know where the problems lie, fingers point in the right direction and things get less emotional if there is data to back up assertions,” Cirne said in an interview Sunday night.
+Cirne said New Relic got the order in October just as the company was hosting its big user conference. “I got the information and asked, is this the HHS I think it is? The answer was yes.”
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

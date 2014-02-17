@@ -1,0 +1,36 @@
+From: srt@duke.cs.duke.edu (Stephen R. Tate)
+Subject: Re: Why the clipper algorithm is secret
+Organization: Duke University Computer Science Dept.; Durham, N.C.
+Lines: 31
+
+In article <1993Apr18.225502.358@iecc.cambridge.ma.us> johnl@iecc.cambridge.ma.us (John R. Levine) writes:
+>It just occurred to me why the algorithm is secret.  If it were
+>published, one could then build physically identical clone versions
+>of the chip that would interoperate with official Clipper chips.  But
+>the cloner wouldn't provide the keys to the escrow houses.  Hmmn.
+
+Not necessarily --- they could release the details of the algorithm
+without releasing the "system key" (called SK by Hellman).  That would
+make most people happy, and with some sort of verification procedure
+before key exchange, the "official" chips would only work with other
+"official" chips.  In other words, secrecy of SK makes "physically
+identical clone versions" impossible;  secrecy of the algorithm shouldn't
+be necessary.
+
+Of course, revealing the algorithm opens them up to attacks on SK ---
+since all units share this key, compromising it may be a big deal.
+Personally, I wouldn't feel too comfortable knowing that one "secret"
+80-bit number held in many places was all that guaranteed my security.
+Of course, compromise of SK doesn't necessarily mean that the system
+is compromised, but it's impossible to tell whether or not that's true
+with a secret algorithm.
+
+Incidentally, what's to keep a "secret algorithm" from using the secret
+SK as the main key, with UK being only marginally important.  Then
+a court order for UK may not even be necessary to do a wiretap.
+
+-- 
+Steve Tate srt@cs.duke.edu | The reason why mathematics enjoys special esteem,
+Dept. of Computer Science  | above all other sciences, is that its laws are
+Duke University     | absolutely certain and indisputable, while those of all
+Durham, NC  27706   | other sciences are to some extent debatable. (Einstein)

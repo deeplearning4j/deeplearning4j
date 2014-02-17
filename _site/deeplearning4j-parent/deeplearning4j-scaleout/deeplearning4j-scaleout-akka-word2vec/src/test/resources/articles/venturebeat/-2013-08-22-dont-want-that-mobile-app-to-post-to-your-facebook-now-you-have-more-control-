@@ -1,0 +1,9 @@
+0
+Facebook has just announced a welcome feature for all its mobile users. Just like on the web proper, you can now accept and reject specific actions from any app that uses Facebook Login.
+This isn’t totally new, but it will now be generally available, along with some welcome Login speed improvements.
+Example: TurboGame is the newest mobile game all your buddies are obsessed with. So you download the app, and you use your Facebook identity to create an account. Starting today, just like on the desktop, TurboGame will have to ask you separately for any questionable permissions.
+If TurboGame wants to post to your wall, ask for your location, or post things to your friends, it has to get specific consent from you first, directly from your phone. You can also tap the “Skip” or “Cancel” buttons to deny permission.
+Here’s what it looks like:
+From the Facebook blog :
+Clearly separating sharing means people can decide whether they only want to use Facebook Login for fast registration without also sharing back to Facebook. If you want to share later, you still can. …
+We’ve been working directly with popular mobile apps to help them create great Facebook Login experiences. The recent changes to Login are just the beginning of more improvements you’ll see as we continue working to provide useful services for developers that are easy for users to understand.

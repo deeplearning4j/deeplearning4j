@@ -1,0 +1,51 @@
+From: ge!severy%severy@uunet.UU.NET (severy)
+Subject: Overriding window manager focus processing
+Organization: GE Information Services, Rockville, MD
+Lines: 44
+NNTP-Posting-Host: cs.utexas.edu
+Keywords: Window Manager Focus Motif
+
+     I am working on an X-Window based application that needs to 
+override some of the window manager focus processing.  I am 
+using X11R4 and Motif 1.1 currently, although I will also be 
+working with Open Look in the future.
+
+     What I need to do is under certain circumstances prevent the 
+user from switching from one window of the application to 
+another window.  Let's say, for example, that Window A is on top 
+of Window B in the window hierarchy.  Normally, if the user clicks 
+the mouse in Window B it will be brought to the top of the 
+window hierarchy and placed on top of Window A.  Under certain 
+circumstances if the user clicks the mouse in Window B I need to 
+beep and prevent Window B from being raised on top of Window 
+A.
+
+      From the research and testing I've done so far, it appears that 
+this window ordering is handled by the window manager, in this 
+case Motif.  I haven't found any way to override this default 
+processing through standard X Window functions.  I can tell 
+when this switching occurs through focus change and mapping 
+notify events, but I can't find any way to tell Motif not to make the 
+switch.
+
+      The temporary solution I've currently come up with is very 
+kludgy but it partially works.  When I detect such a window switch 
+in those cases when the switch is not allowed, I manually force 
+the formerly top window back on top with an XRaiseWindow call 
+and beep with the XBell function.  This provides the necessary 
+functionality but looks ugly when the windows switch places 
+twice.
+
+      Does anyone know how I can tell Motif (or preferably *any* 
+window manager) when I don't want the window order switch to 
+actually take place?  Respond either by e-mail or posting to this 
+newsgroup.
+
+Cheers....     Randall
+
+***************************************************************************
+* Randall Severy                    *      UUNET: uunet!ge!severy         *
+* GE Information Services           *   INTERNET: ge!severy@uunet.uu.net  *
+* 401 N. Washington St.   MC05A     *      GENIE: RSEVERY                 *
+* Rockville, MD  20850    USA       *      PHONE: +1-301-340-4543         *
+***************************************************************************

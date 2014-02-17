@@ -1,0 +1,32 @@
+From: sherry@a.cs.okstate.edu (SHERRY ROBERT MICH)
+Subject: Re: .SCF files, help needed
+Organization: Oklahoma State University
+Lines: 27
+
+From article <1993Apr21.013846.1374@cx5.com>, by tlc@cx5.com:
+> 
+> 
+> I've got an old demo disk that I need to view. It was made using RIX Softworks.  
+> The files on the two diskette set end with: .scf
+> 
+> The demo was VGA resolution (256 colors), but I don't know the spatial  
+> resolution.
+> 
+
+According to my ColoRIX manual .SCF files are 640x480x256
+
+> First problem: When I try to run the demo, the screen has two black bars that  
+> cut across (horizontally) the screen, in the top third and bottom third of the  
+> screen. The bars are about 1-inch wide. Other than this, the demo (the  
+> animation part) seems to be running fine.
+> 
+> Second problem: I can't find any graphics program that will open and display  
+> these files. I have a couple of image conversion programs, none mention .scf  
+> files.
+> 
+
+You may try VPIC, I think it handles the 256 color RIX files OK..
+
+
+Rob Sherry
+sherry@a.cs.okstate.edu

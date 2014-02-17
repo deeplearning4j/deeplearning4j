@@ -1,0 +1,43 @@
+From: rws@cs.arizona.edu (Ronald W. Schmidt)
+Subject: outlining of spline surface
+Keywords: spline rasterization
+Lines: 38
+
+
+	About a year ago I started work on a problem that appeared to
+be very simple and turned out to be quite difficult.  I am wondering if
+anyone on the net has seen this problem and (hopefully) some published 
+solutions to it.
+
+	The problem is to draw an outline of a surface defined by two
+roughly parallel cubic splines.  For inputs the problem essentially
+starts with two sets of points where each set of points is on the 
+edge of an object which we treat as two dimensional, i.e. only extant
+between the edges, but which exists in three dimensional space.  To draw 
+the object we 
+
+1) fit a cubic spline through the points.  Each spline is effectively
+	computed as a sequence of line segments approximating the
+        curve.  Each spline has an equal number of segments.  We assume
+	that the nth segment along each spline is roughly, but not
+	exactly, the same distance along each spline by any reasonable
+	measure.
+2) Take each segment (n) along each spline and match it to the nth segment
+	of the opposing spline.  Use the pair of segments to form two
+	triangles which will be filled in to color the surface.
+3) Depth sort the triangles
+4) Take each triangle in sorted order, project onto a 2D pixmap, draw
+	and color the triangle.  Take the edge of the triangle that is
+	along the edge of the surface and draw a line along that edge
+	colored with a special "edge color"
+
+	It is the edge coloring in step 4 that is at the heart of the
+problem.  The idea is to effectively outline the edge of the surface.
+The net result however generally has lots of breaks and gaps in
+the edge of the surface.  The reasons for this are fairly complicated.
+They involve both rasterization problems and problems resulting
+from the projecting the splines.  If anything about this problem
+sounds familiar we would appreciate knowing about other work in this
+area.
+
+-Thanks

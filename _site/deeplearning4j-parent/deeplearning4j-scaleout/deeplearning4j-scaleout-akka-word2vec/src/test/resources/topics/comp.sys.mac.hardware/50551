@@ -1,0 +1,52 @@
+From: durtralp@ux1.isu.edu (Ralph Durtschi)
+Subject: Re: IIsi clock upgrade
+Organization: Idaho State University, Pocatello
+Lines: 47
+
+Hi, I have been getting a lot of requests for this information so I thought
+I would post it for those interested parties. (Sorry for length).
+
+To increase the MacIISi speed to 25MHz or 33MHz the clock must be changed
+from 40MHz to 50MHz or 64MHz respectively.
+This is done by going to a static-free work station or putting some
+aluminum foil down to work on.
+	1. Open up the Si by lifting the tabs at the back of the case.
+	2. Remove the Hard Disk by disconnecting the power and SCSI cables,
+		spreading the tabs, and lifting the drive out.
+	3. Remove the flopy drive.
+	4. Remove the power supply by spreading the tab in front and lifting
+		the supply straight up and out.
+	5. Remove the fan by pressing the ears together at the back, bottom
+		side of the fan and lifting straight up and out.
+	6. Remove the Mother Board by spreading the tabs on the left and
+		right side of the board and sliding the board forward then
+		lifting the board out. (all connectors on the back of the
+		board must be removed first)
+	7. Desolder the 40MHz clock (the one closest to the memory modules).
+		This is not easy even for a skilled solderer.
+	8. Get an IC socket with the round pins and remove four of the pins
+		by pushing them up from the bottom with long nose pliers.
+	9. Put the four pins in the holes vacated by the clock and solder 
+		them in.
+	10.Insert a 50MHz or 64MHz clock.
+	11.Put large power transistor heat sink's on the processor chip and 
+		the other large chip just to the right of the processor and
+		figure some way to hold the heat sync's in place. I made a
+		simple clamp by putting a four inch screw up through the hole
+		in the board between the two chips. Mount the screw using
+		insulated washers. Screw a cross member down over the heat
+		sync's to hold them in place. Don't use too much pressure.
+
+	12. Put it all back together and go-for-it.
+
+Disclaimer: this is only the procedure I used and is not authorized by anyone.
+	    You are on your own for this procedure. I'm quite sure it will
+	    void your warentee.
+
+Bye for now,
+************************************************
+Ralph Durtschi    (208) 236-3256
+Idaho State University
+EMAIL:  durtralp@ux1.isu.edu
+************************************************ 
+

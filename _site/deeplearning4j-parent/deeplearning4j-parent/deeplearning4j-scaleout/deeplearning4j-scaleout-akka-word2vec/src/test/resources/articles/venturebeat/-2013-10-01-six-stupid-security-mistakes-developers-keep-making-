@@ -1,0 +1,39 @@
+I’m a technology journalist right now, but in prior lives, I built sites, apps, and software, including a social online-learning site for 500,000 users and a kid-tastic simplified Windows shell for a Disney PC.
+And I see developer doing six things again and again and again.
+And again.
+Let’s make a deal and just stop, m’kay? (Oh, and full disclosure: I’ve made each of these mistakes, too.)
+Our upcoming DevBeat conference , Nov. 12-Nov. 13 in San Francisco, will have a lot more on developer-first security. This show is a hands-on developer event packed with master classes, presentations, Q&As, and hackathons, all aimed at boosting your code skills, security knowledge, hardware hacking, and career development. Register now.
+1) Trusting user input
+Developers have a million things to think about and a thousand threads to draw together. So it’s not surprising that many beginning developers want to trust what users give them. But the problem is that users are stupid, and users are smart.
+Users are stupid because they don’t care about your site and your code: They are simply focused on what they want to accomplish, and they make mistakes. That means that user-sourced data could have all kinds of validation and formatting issues, making your app ugly, your data bad, and sometimes causing your app to crash.
+And that’s if you’re lucky.
+Because users are also smart — especially the wrong kind of users who are really crackers out to cause trouble or make money. These guys salivate at the thought of novice coders not validating code, because it means that they can inject beautiful wonderful things into your oh-so-fragile backend with cross-site scripting tactics that could delete data, wipe out your database, and just generally give you a very, very bad situation.
+The simple solution: Double-check that the data you’re getting is the data you’re expecting, no more, no less, and clean it of all non-alphanumerics.
+2) Building your own encryption
+I know you’re smart. Supersmart. You were the smartest kid in elementary school, and you took all the math and science courses in high school. And while those popular jock types are flipping burgers after they didn’t get their college scholarship and the hotties that didn’t notice you are selling jeans on Main Street, you’re making almost six figures changing the world, one line of code at a time, thanks to your Big Brain.
+Sadly, it’s not big enough.
+The world is a big place, and big fish in small ponds are minnows in lakes and oceans. And even if perchance you’re still a whale in the ocean of worldwide code, other whales are around, and sharks are, too.
+So making your own encryption scheme is a bad idea.
+Maybe the NSA does know how to crack almost every major encryption  algorithm, but it’s not likely. And even if it can, it’s hard for other shady organizations and black-hat hackers, who are much more likely to be the ones who want to steal your company’s goodies and get you fired.
+You might be too young to remember the saying, “No one ever got fired buying from IBM,” but the modern corollary is, “No one ever got fired for buying industry-standard, military-grade, high-spec encryption.” At least, not yet. You could be the first.
+But it’s unlikely — much more unlikely than you getting fired because you built some hokey encryption scheme based on Joseph Conrad’s Heart of Darkness and some dude in Romania cracked it because he had nothing better to do in his sad little village and then emptied your company’s bank accounts to feed his Miley Cyrus addiction.
+3) Providing a big, fat attack target
+You might need port 4,560,231 at some point in the year 2099, so why not leave it open? And you might want to add a network file system at some point, so why not leave NFS daemons running?
+Because the less that’s happening on your server, the smaller your target you leave for an attack — and the faster your performance.
+So shut down everything you don’t absolutely need in a production environment — don’t simply copy over exact machine state from development and staging servers and hunker down.
+4) Being too generous with privileges
+Privileges are wonderful things that must be earned and needed to be granted and revoked as soon as possible. But it’s easy to be too generous, because it makes your life easier.
+The novice web developer, unable to figure out filesystem privileges quickly, might be tempted to chmod 777 to just make it work and solve all his or her problems immediately and easily. This is, however, the nuclear option, and you are the target, as this will permit anyone to read, write, and execute anything.
+Bad idea.
+Suck it up and learn.
+The same is true for users. Life is easier as an administrator when you don’t have to grant users permission for each and every little thing in a temporary revokable way, but life is also easier when your server is uncompromised and safe and secure. Keep users’ privileges to a minimum, and they’ll be able to do a minimum of damage as well as create a minimum of opportunity for nasty strangers to do damage.
+5) Ignoring failure modes
+It’s often when your code fails that you’re most vulnerable. Sometimes, web surfers will get unintended glimpses into the backend of your site, and sometimes those web surfers will have caused the issues on purpose for precisely that reason.
+So don’t ignore failure — expect it.
+And when it comes, be prepared for it with error handling that not only does something somewhat sensible for end users but also leaves your app in a stable, protected state.
+6) Not using SSL/HTTPS
+There’s a reason Google is going to HTTPS , and no, it’s not just because in a cookieless and referrerless world, Google will have more power .
+It’s also just safer.
+Phishing is a major problem. So is the potential interception of secure data between your server and your users’ devices — which are sometimes connected to the Internet via insecure Wi-Fi. While nothing is absolutely secure, refusing to use the most basic of security precautions when dealing with sensitive information is just asking for trouble.
+Yes, there is extra processing time involved with SSL, which some use as an excuse to minimize the number of pages or service that they protect. Ultimately, however, unless you’re Facebook or Twitter, the extra processing time is not a major factor. Customer trust, on the other hand, and your crown jewels, are.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

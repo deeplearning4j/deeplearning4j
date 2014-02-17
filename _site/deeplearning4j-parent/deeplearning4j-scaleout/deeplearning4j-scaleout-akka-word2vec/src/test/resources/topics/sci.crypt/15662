@@ -1,0 +1,20 @@
+From: pmetzger@snark.shearson.com (Perry E. Metzger)
+Subject: Re: Once tapped, your code is no good any more.
+Organization: Partnership for an America Free Drug
+Distribution: na
+Lines: 14
+
+res@colnet.cmhnet.org (Rob Stampfli) writes:
+>
+>Wouldn't a a second monitor of similar type scrolling gibberish and adjacent
+>to the one being used provide reasonable resistance to tempest attacks?
+
+It would be in a different location, so a directional antenna could
+probably lock in on just the one monitor. Failing that, a phased array
+could likely seperate the signals. Admittedly, this is expensive, but
+so is all the rest of this stuff anyway.
+
+--
+Perry Metzger		pmetzger@shearson.com
+--
+Laissez faire, laissez passer. Le monde va de lui meme.

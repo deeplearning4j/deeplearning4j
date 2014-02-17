@@ -1,0 +1,41 @@
+From: smk5@quads.uchicago.edu (Steve Kramarsky)
+Subject: Re: Hard drive security for FBI targets
+Keywords: cooperation
+Reply-To: smk5@midway.uchicago.edu
+Organization: University of Chicago
+Lines: 34
+
+In article <Apr13.011855.69422@yuma.ACNS.ColoState.EDU> holland@CS.ColoState.EDU (douglas craig holland) writes:
+>I'm not a lawyer, so correct me if I'm wrong, but doing that could be
+>considered obstruction of justice, which could land you in prison for
+>quite a while.
+>
+>The thing that's great about the secret key is it is IDEA encrypted, so
+>even if the FBI do get the key, they're SOL unless they know the magic
+>word.  If they try to force you to give them your pass phrase, just say
+>"Oops, I forgot."  Since the burden of proof is still on the prosecution
+>in this country, if you keep your mouth shut, how can they prove that you
+>didn't forget your pass phrase.
+>
+  OK, Doug is right, it would be obstruction of justice, blah blah blah,
+BUT, saying "I forgot" is a lie, which is just as bad from a moral point
+of view _IF_ you think "lawfulness" is a good in and of itself (which 
+admittedly most people do not.)  But there's an even better way out of this.
+PROVIDED the government is prosecuting you criminally, you can probably
+plead the fifth amendmeent and thus LEGALLY avoid revealing your key.  The
+government cannot demand information from a criminal defendant which "may
+tend to incriminate" that defendant.  Though this has never been applied
+in the cryptography context (at least as far as I can tell) it seems an
+obvious application to me.  
+
+ This may be a common suggestion in this group, but if it's not (I'm new
+here) I'd love to hear what people have to say about it.  Since I don't
+really read this group (and since the subject matter is more legal than
+cryptoid) maybe misc.legal.computing would be an appropriate place?
+
+  Steve.
+
+-- 
+            Steve Kramarsky, University of Chicago Law School
+           steve@faerie.chi.il.us -or- smk5@quads.uchicago.edu 
+     "All I did was kiss a girl." - Jake, the night before his hanging.

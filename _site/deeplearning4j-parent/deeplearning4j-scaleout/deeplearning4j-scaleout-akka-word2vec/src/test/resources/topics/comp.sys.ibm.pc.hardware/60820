@@ -1,0 +1,18 @@
+Subject: IDE Cable
+From: vacsc0qe@VAX.CSUN.EDU
+Reply-To: vacsc0qe@VAX.CSUN.EDU
+Organization: Cal State Northridge
+Lines: 12
+
+I just bought a new IDE hard drive for my system to go with the one
+I already had.  My problem is this.  My system only had a IDE cable
+for one drive, so I had to buy cable with two drive connectors
+on it, and consequently have to switch cables.  The problem is, 
+the new hard drive's manual refers to matching pin 1 on the cable
+with both pin 1 on the drive itself and pin 1 on the IDE card.  But
+for the life of me I cannot figure out how to tell which way to plug
+in the cable to align these.  
+Secondly, the cable has like a connector at two ends and one between them.
+I figure one end goes in the controler and then the other two go into
+the drives.  Does it matter which I plug into the "master" drive
+and which into the "Slave"?  any help appreciated.  thanks...

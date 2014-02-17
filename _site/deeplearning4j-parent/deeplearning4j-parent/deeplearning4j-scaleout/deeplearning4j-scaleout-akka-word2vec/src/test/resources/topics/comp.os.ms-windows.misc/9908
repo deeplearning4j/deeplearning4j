@@ -1,0 +1,36 @@
+From: bo@horus.cem.msu.EDU (Bo Peng)
+Subject: Re: More Diamond SS 24X
+Organization: Michigan State University
+Lines: 30
+NNTP-Posting-Host: horus.cem.msu.edu
+
+From article <1993Apr20.195853.16179@samba.oit.unc.edu>, by dil.admin@mhs.unc.edu (Dave Laudicina):
+> Has anyone experienced a faint shadow at all resolutions using this
+> card. Is only in Windows. I have replaced card and am waiting on 
+> latest drivers. Also have experienced General Protection Fault Errors
+> in WSPDPSF.DRV on Winword Tools Option menu and in WINFAX setup.
+> I had a ATI Ultra but was getting Genral Protection Fault errors
+> in an SPSS application. These card manufactures must have terrible
+> quality control to let products on the market with so many bugs.
+> What a hassle. Running on Gateway 2000 DX2/50.
+> Thx Dave L
+> 
+>  
+You're using drivers version 2.02 or earlier. The latest is 2.03, available
+from their BBS or by snailmail. It at least fixes the WfW problem.
+
+The reason I wanted to reply in public instead of private mail is because
+of following: I talked to their tech support a few days ago and was told
+that I can expect a new version near the end of the month. Which should be
+about now...
+
+However, I have a problem when switching back from a DOS session in standard
+mode. Apparently they don't know of this problem and seem to be surprised
+why anybody would want to use standard mode at all.
+
+
+It's a great card for the price, at least when I bought it. Now there may be
+better alternatives.
+
+
+Bo Peng

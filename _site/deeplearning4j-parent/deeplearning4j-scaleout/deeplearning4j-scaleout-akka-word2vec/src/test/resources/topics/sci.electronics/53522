@@ -1,0 +1,19 @@
+From: msf@skaro.as.arizona.edu (Michael Fulbright)
+Subject: Re: Analog switches/Balanced Demodulators
+Distribution: na
+Organization: University of Arizona UNIX Users Group
+Lines: 13
+
+caadams@atlas.cs.upei.ca (Kenny Adams) writes:
+
+>hi,
+>	instead of using a +15vdc supply for the 4066 try using a +7 and -7
+>volt supply.  i have some commercial audio equipment that uses this approach
+>for ground referenced audio.  they use the -7 volt supply as the logic
+>ground.
+
+In this case would the switch control voltages be -7V to turn the switch
+off and >0V to turn the switch on?
+
+michael fulbright
+msf@as.arizona.edu

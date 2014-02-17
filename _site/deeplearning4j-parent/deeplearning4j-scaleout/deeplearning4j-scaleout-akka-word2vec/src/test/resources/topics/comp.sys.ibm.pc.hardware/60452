@@ -1,0 +1,38 @@
+From: blean@rwb.esd.sgi.com (Bob Blean)
+Subject: Re: Which high-performance VLB video card?
+Organization: Silicon Graphics
+Lines: 33
+
+In article <1993Apr16.230319.28437@spartan.ac.BrockU.CA>, tmc@spartan.ac.BrockU.CA (Tim Ciceran) writes:
+
+|> PC Magazine just did another review of high-end graphics accelerators.  For all
+|> around performance (Windows, DOS, CAD) go for ATI Graphics Ultra Pro.  They've
+|> done two reviews in the last three months and that card ranks as an editors
+|> choice in both reviews.  For all around performance it seems it just can't be
+|> beat.  You should pick up this issue of PC-Mag (April 13) and check it out for
+|> yourself.  
+
+
+Windows: The recent reviews have all shown that the P9000 cards are
+	 significantly faster doing Windows than the ATI card.
+
+VGA:	 The recent reviews have all shown that the P9000 cards they looked
+	 at are significantly slower doing VGA than the ATI card.  About
+	 1/2 the speed, as I recall.
+
+	 The big question for me is the Orchid V9000 card.  Each of the 
+	 P9000 cards tested so far has had the W5186 to do VGA.  Orchid
+	 is the only one I know about (I don't know about AMI) that uses
+	 the W5286 for VGA.  That is reportedly faster.
+	 
+	 I would like to know whether the Orchid card can do VGA as fast as
+	 the ATI card.  If so, it would appear to be a formidable competitor.
+	 (Advertised prices are about the same for the two cards.)
+
+Someone in this group posted a little while back that they were getting an
+Orchid V9000 card -- has that card arrived?  What do the benchmarks look
+like?
+
+Also, is the AMI P9000-based card real?  What does it use for VGA?  Speed?
+
+--Bob

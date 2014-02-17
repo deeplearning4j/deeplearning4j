@@ -1,0 +1,12 @@
+Summary:
+Spunky IaaS player DigitalOcean adds much more capacity and private networking capabilities in new Amsterdam facility.
+DigitalOcean, the New York-based IaaS player that’s won plaudits with its cheap-and-easy cloud infrastructure , is adding lots of European capacity with its second major data center in Amsterdam on Monday. The new AMS5 data center brings 500 more physical servers online, with capacity expandable to 10,000 servers, said CEO Ben Uretsky in an interview.
+Perhaps as important as all that headroom is that the new data center brings shared private networking to all DigitalOcean instances, a.k.a. “Droplets.” That means customers can create virtual servers that mix a public and private address. All communications using the private address are conducted via a private network, which means security-conscious customers can use public infrastructure for web-facing applications but a private network for sensitive data. Data sent over the private network is not subject to data transfer costs.
+“The European market is very important to us,” Uretsky said. About 20 percent of DigitalOcean’s overall footprint is outside the U.S. and the company is looking to set up a European subsidiary. He acknowledged that some European consumers are wary of dealing with an American company in the wake of the Patriot Act and all the Edward Snowden revelations about NSA data scooping, but at the very least, hosting a physical network outside the U.S. makes snooping harder for U.S. authorities, he said.
+Another advantage of setting up a European presence is it will be easier for DigitalOcean to use European lenders and financing.
+With AMS5 online, DigitalOcean has five data centers, two in New York, one in San Francisco and now two in Amsterdam — which was chosen because it’s a cross roads of carriers. “Amsterdam hosts the largest internet exchanges in Europe; all the telcos and providers are there and that network offers free traffic exchange,” Uretsky said.
+DigitalOcean is also rolling out IPv6-ready hardware so customers will be able to take advantage of all   IP addressing capabilities and routing benefits  and all the addressing and routing advantages it can enable.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

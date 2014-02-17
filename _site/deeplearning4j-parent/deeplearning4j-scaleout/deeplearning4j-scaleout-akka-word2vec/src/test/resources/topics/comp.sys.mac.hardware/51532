@@ -1,0 +1,25 @@
+From: ldo@waikato.ac.nz (Lawrence D'Oliveiro, Waikato University)
+Subject: Re: Interesting ADB behaviour on C650
+Organization: University of Waikato, Hamilton, New Zealand
+Lines: 20
+
+In article <1993Apr15.181440.15490@waikato.ac.nz>, I said:
+
+> I know that plugging and unplugging ADB devices with the power on is "not
+> supported", and you can hit problems if you have multiple devices with
+> clashing addresses, and all that.
+
+I've had a couple of e-mail responses from people who seem to believe that
+this sort of thing is not only unsupported, it is downright dangerous.
+
+I have heard of no such warnings from anybody at Apple. Just to be sure, I
+asked a couple of our technicians, one of whom has been servicing Macs for
+years. There is *no* danger of damaging logic boards by plugging and unplugging
+ADB devices with the power on.
+
+SCSI, yes, ADB, no...
+
+Lawrence D'Oliveiro                       fone: +64-7-856-2889
+Computer Services Dept                     fax: +64-7-838-4066
+University of Waikato            electric mail: ldo@waikato.ac.nz
+Hamilton, New Zealand    37^ 47' 26" S, 175^ 19' 7" E, GMT+12:00

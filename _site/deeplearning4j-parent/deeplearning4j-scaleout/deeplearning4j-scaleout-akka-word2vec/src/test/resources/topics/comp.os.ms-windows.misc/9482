@@ -1,0 +1,70 @@
+From: bcasavan@skyhawk.ecn.uoknor.edu (Brent Casavant)
+Subject: Re: Permanaent Swap File with DOS 6.0 dbldisk
+Summary: Explanation of message
+Nntp-Posting-Host: skyhawk.ecn.uoknor.edu
+Organization: Engineering Computer Network, University of Oklahoma, Norman, OK, USA
+Lines: 63
+
+In article <93059@hydra.gatech.EDU> gt4356c@prism.gatech.EDU (James Dean Barwick) writes:
+[Stuff deleted]
+>
+>more on permenent swap files...
+>
+>i'm sure everyone who has an uncompressed part of their compressed hard disk
+>has seen the message "you have selected a swap file greater than the suggested
+>size...windows will only use the size suggested...do you wan't to create this
+>swap file anyway" or something like that.
+>
+>well, a friend of mine (ROBERT) called microsoft and asked them what and why.
+>what they said is that windows checks the amount of free disk space and
+>divides that number by 2.  Then it checks for the largest contiguous block
+>of free disk space.  Windows then suggests the smaller of the two numbers.
+>
+>They also said that under absolutely no circumstances...NONE!...will windows
+>uses a swap file larger than the suggested size.  Well...that's what he 
+>said!
+>
+>I call bull@#$#.  If this is true why does windows report the memory is
+>available to me if it's not going to use it?
+>
+>any takers?
+>
+>James
+
+Well, someone at Microsoft told you wrong.  Windows will use a swap file
+larger than the recommended size.  Last summer I went to a Microsoft
+Windows 3.1 Technical Workshop and they distributed A LOT of information
+that the general public might not be aware of.  Anyway in the main book
+they handed out they have a section on "Creating larger than recommended
+swapfile".  I'll quote the information
+
+  If you create a permanent swapfile larger than the recommended size, you
+  will receive a message telling you that Windows will not use anything
+  larger than the recommended size.  THIS ERROR MESSAGE IS INCORRECT, we
+  will allow the use of the larger swapfile, up to four times the amount
+  of RAM on your machine.
+
+So as you see, Microsoft does know that the information is incorrect.  You
+probably just ran into some doofball who was new on the job and was only
+telling you what little he knew.
+
+Be that what it may, I would really suggest to everyone to take the
+opportunity to go to these Technical Workshops.  They aren't actually
+incredibly in-depth, but you do get a lot of material about bugs and
+optimization straight from those in the know.  Besides that they offer
+you HUGE discounts on software.  If I remember correctly, you could pick
+up Word 2.0, Excel 4.0, or whatever their presentation program is for $130.
+That is the full blown version, not an upgrade or educational version.  You
+could also pick up Microsoft Office for $500 or something like that.  Myself
+I sprang for Word.
+
+Well, hope that was helpful to someone.  And besides that I hope someone
+will go to a workshop and save a little money.
+
+And if anyone at Microsoft is reading this -- I really love your products.
+I need a job once I graduate also, can we work something out?  ;-)
+
+Thanks,
+Brent Casavant
+bcasavan@mailhost.ecn.uoknor.edu
+

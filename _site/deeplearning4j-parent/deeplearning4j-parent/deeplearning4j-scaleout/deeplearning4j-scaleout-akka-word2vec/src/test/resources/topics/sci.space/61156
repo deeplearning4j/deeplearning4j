@@ -1,0 +1,57 @@
+From: baalke@kelvin.jpl.nasa.gov (Ron Baalke)
+Subject: Mars Observer Update - 04/23/93
+Organization: Jet Propulsion Laboratory
+Lines: 48
+Distribution: world
+NNTP-Posting-Host: kelvin.jpl.nasa.gov
+Keywords: Mars Observer, JPL
+News-Software: VAX/VMS VNEWS 1.41    
+
+Forwarded from the Mars Observer Project
+
+                       MARS OBSERVER STATUS REPORT
+                             April 23, 1993
+                              10:00 AM PDT
+
+Flight Sequence C8 is active, the Spacecraft subsystems and instrument
+payload performing well in Array Normal Spin and outer cruise
+configuration, with uplink and downlink via the High Gain Antenna; uplink
+at 125 bps, downlink at the 2 K Engineering data rate.
+
+As a result of the spacecraft entering Contingency Mode on April 9, all
+payload instruments were automatically powered off by on-board fault
+protection software.  Gamma Ray Spectrometer Random Access Memory
+was successfully reloaded on Monday, April 19.  To prepare for
+Magnetometer Calibrations which were rescheduled for execution in Flight
+Sequence C9 on Tuesday and Wednesday of next week, a reload of Payload
+Data System Random Access Memory will take place this morning
+beginning at 10:30 AM.
+
+Over this weekend, the Flight Team will send real-time commands to
+perform Differential One-Way Ranging to obtain additional data for
+analysis by the Navigation Team.  Radio Science Ultra Stable Oscillator
+testing will take place on Monday .
+
+The Flight Sequence C9 uplink will occur on Sunday, April 25, with
+activation at Midnight, Monday evening April 26.  C9 has been modified to
+include Magnetometer Calibrations which could not be performed in C8 due
+to Contingency Mode entry on April 9.  These Magnetometer instrument
+calibrations will allow the instrument team to better characterize the
+spacecraft-generated magnetic field and its effect on their instrument.
+This information is critical to Martian magnetic field measurements
+which occur during approach and mapping phases. MAG Cals will require
+the sequence to command the spacecraft out of Array Normal Spin state
+and perform slew and roll maneuvers to provide the MAG team data points
+in varying spacecraft attitudes and orientations.
+
+Today, the spacecraft is 22,971,250 km (14,273,673 mi.) from Mars
+travelling at a velocity of 2.09 kilometers/second (4,677 mph) with
+respect to Mars.  One-way light time is approximately 10 minutes, 38
+seconds.
+     ___    _____     ___
+    /_ /|  /____/ \  /_ /|     Ron Baalke         | baalke@kelvin.jpl.nasa.gov
+    | | | |  __ \ /| | | |     Jet Propulsion Lab |
+ ___| | | | |__) |/  | | |__   M/S 525-3684 Telos | The aweto from New Zealand
+/___| | | |  ___/    | |/__ /| Pasadena, CA 91109 | is part caterpillar and
+|_____|/  |_|/       |_____|/                     | part vegetable.
+

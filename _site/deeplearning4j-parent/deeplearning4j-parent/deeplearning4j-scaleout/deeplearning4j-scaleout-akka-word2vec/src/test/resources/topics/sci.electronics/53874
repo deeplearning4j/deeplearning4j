@@ -1,0 +1,32 @@
+From: gerrit@laosinh.stgt.sub.org (Gerrit Heitsch)
+Subject: Re: What's a good IC for RS232 -> TTL signals??
+Distribution: world
+Organization: Lao-Sinh project (private UUCP site)
+Lines: 26
+
+In article <C5nz60.99z@scraps.uucp>, Frank Holden KA3UWW writes:
+
+> >I'm looking for an IC that will convert RS232 voltage levels to TTL voltage 
+> >levels.  Something relatively inexpensive would be nice, too.  Anyone have
+> >a suggestion??  Thanks.
+> 
+> Well it looks as if Digi-Key sells a chip with the number ICL232 that does what
+> you want.  They are selling it for about $3.50...
+
+Are you sure that he needs a two way converter? If he wants only
+RS232->TTL I would suggest the MC1489, its very cheap (0.80 DM in
+Germany). This chip needs only +5V. The MC1488 TTL->RS232-Converter
+uses +12V and -12V.
+
+BTW... The MAX232 and compatibles seem to be expensive in the USA...
+I paid 2.95 DM for a ITS80272 (made by Harris), its absolutely
+compatible with the MAX232 or the ICL232.
+
+Gerrit
+
+-- 
+         Gerrit Heitsch  Moenchweg 16  7038 Holzgerlingen  Germany
+  Logical adresses: UUCP: gerrit@laosinh.stgt.sub.org FIDO: (2:2407/106.9)
+If we will ever be visited by Aliens, it will be very hard to explain, why a
+ lifeform, that is intelligent enough to build atomic weapons can be stupid
+   enough to do it. (taken from GEO special about space, page 88-91)

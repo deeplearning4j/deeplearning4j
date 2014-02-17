@@ -1,0 +1,14 @@
+A
+Summary:
+It just got easier to hold a video call and work in another app on an Android tablet. Skype for Android 4.5 supports a floating window for your call, even when using a different application.
+The Skype team added an innovative feature on Friday to the video calling app for Android tablets : A floating picture-in-picture window. This means you can use Skype video calls and still see the other party when using a different Android app.
+It’s a pretty impressive feat mainly because Android by default doesn’t support running two apps on the screen at the same time. One exception is Samsung’s implementation of limited multitasking that allows for a pair of apps to be on screen and running independent simultaneously . You could even argue that Facebook’s chatheads sort of work similar albeit in an even more limiting fashion.
+Here’s what the Skype blog says about the feature and why it was added:
+“ In the spirit of wanting to provide a common Skype experience across as many OSes as possible, our Android team sought out a way to develop an experience similar to Windows 8′s Snap View, but with an Android twist. Now you can multitask while you’re on Skype video calls, as well as audio calls.”
+Although it’s a tablet-only function, Android phone users will still see a permission request for the app to draw itself on top of other apps. The feature won’t work on the phone, however.
+There’s also a faster way to “scroll” through contacts in Skype for Android. Users can pinch in on their contact list to see letters of the alphabet. Tapping on a letter shows contacts whose names start with that letter, allowing for a speedier contact search.
+Implementing a floating window view for Skype is another example of how traditional computing methods are finding their way to new mobile devices, such as tablets. Instead of a singular app experience, slates are starting to offer more ways to multitask on the same screen; one of the key benefits provided by a desktop operating system.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

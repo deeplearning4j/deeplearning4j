@@ -1,0 +1,129 @@
+From: gnohmon@ssiny.UUCP (Ralph Betza)
+Subject: dynamic SqueezeTitle configuration in *twm
+Keywords: TWM, twm, vtwm, tvtwm, ctwm
+Organization: Systems Strategies, Inc., NY, NY
+Lines: 123
+
+I consider TWM-style Squeezed Titles indispensable in a window
+manager. I like to have two tall xterm windows visible at the same
+time, with no overlap; and since two windows aren't enough, I have
+other xterm windows underneath them, with exactly the same positioning.
+
+In case you're not familiar with Squeezed Titles, here's a crude
+picture:
+
+ ====================== Figure 1 ====================================
+ |
+ |    +---------+                   +---------+          +=========+
+ |    + title A +                   + title B +          + title C +
+ |    +------------------------+    +------------------------------+
+ |    +   this is the          +    + window B hides window C, but +
+ |    +     body of the        +    + you can still see C's title  +
+ |    +      window, window A  +    + which is squeezed right.     +
+ |    +------------------------+    +------------------------------+
+ |
+ ====================== Figure 1 ====================================
+
+Squeezed titles allow me to have about 5 such windows in each stack,
+with easy access; and 3 per stack is usually more than I really
+need, since I also insist on having a virtual WM.
+
+The only problem is that the title location is static, that is,  it
+is configured in .twmrc, and in order to change it you have to edit
+that file and restart the window manager. Doing so is cumbersome and
+time-consuming.
+
+Therefore, I have implemented f.squeeze{ left, center, right }
+functions in my own copy of vtwm; the idea being that with one click
+of a button, you can change this:
+
+    +---------+
+    + title A +
+    +------------------------+
+    +   this is the          +
+    +     body of the        +
+    +      window, window A  +
+    +------------------------+
+
+to this:
+
+                   +---------+
+                   + title A +
+    +------------------------+
+    +   this is the          +
+    +     body of the        +
+    +      window, window A  +
+    +------------------------+
+
+ ===============
+
+Okay. So far, so good. Now, how the heck do I get them to put this
+into the next "official" twm, and the next tvtwm, and the next vtwm,
+and the next ctwm? And the next xyztwm that I never heard of?
+
+One way would be to post, in comp.windows.x, a description of this
+enhancement, together with an explanation of why I think it is a
+Very Good Thing, and hope that someone reads it. :-)
+
+In case it isn't already clear why I think it's a Very Good Thing,
+look back up at Figure 1, and picture window A moved over on top of
+windows B and C; now window A's title hides Window B's title;
+but when you hit f.squeezecenter, the result is:
+
+        +=========+   +---------+   +=========+
+        + title B +   + title A +   + title C +
+        +-------------------------------------+
+        +   this is the body of the window,   +
+        +   window A, which is on top.        +
+        +-------------------------------------+
+
+ ===================
+
+The rest of this posting explains how to implement it, based on my
+X11R4 copy of vtvwm.shar; it's just a sketch because posting the
+full diffs would be too long.
+
+The key to this enhancement is to add the following lines in the
+ExecuteFunction() routine in menus.c:
+
+#ifdef SHAPE
+	case F_SQUEEZELEFT:
+	{	static SqueezeInfo left_squeeze = { J_LEFT, 0, 0 };
+		if (DeferExecution (context, func, Scr->SelectCursor))
+		  return TRUE;
+
+		tmp_win->squeeze_info = &left_squeeze;
+		SetFrameShape( tmp_win );
+		break;
+	}
+	.... and similarly for squeezeright ( J_RIGHT ) and
+	squeezecenter ( J_CENTER ) ...
+#endif
+
+( Of course, you also have to define F_SQUEEZELEFT in parse.h
+  and add
+    { "f.squeezeleft", FKEYWORD, F_SQUEEZELEFT },
+     ... and so forth ...
+to parse.c
+
+In order to use these functions, add something like the
+following to your .twmrc file:
+
+Button2 = m | s : w|v|d|r|i|t|door : f.squeezecenter
+
+ =================
+
+About a year ago, I posted this, but our news was broken and I
+*think* it didn't get out.
+
+Since then, "blast" has appeared in comp.sources.x, Volume 19,
+Issue 41; you could use blast to achieve a similar effect, by
+chiseling away at an mwm-style wide title. Better to have a
+twm-style window manager, I think.
+
+--
+Ralph Betza (FM),
+uunet!ssiny!gnohmon         gnohmon@ssiny.com
+
+"The question of whether a computer can swim is more interesting
+ than the question of whether a submarine can think" - Lenny Dykstra

@@ -1,0 +1,51 @@
+From: lance@hartmann.austin.ibm.com (Lance Hartmann)
+Subject: Re: Diamond Stealth 24 & Windows problems!!!
+Summary: Users complain of service from Diamond.
+Reply-To: lance%hartmann.austin.ibm.com@ibmpa.awdpa.ibm.com
+Organization: IBM, Austin
+Keywords: diamond video s3 windows
+Lines: 43
+
+In article <1pifisINNhsr@dns1.NMSU.Edu> jdiers@dante.nmsu.edu (DIERS) writes:
+>
+>I own a Stealth 24 card from diamond.  When using the 640X480x16.7mil win 3.1
+>driver the card and driver work but are not very fast.  ALL of the other
+>windows drivers have a number of bugs.  Shadows remain when windows are
+>erased and text boxes are often unreadable.  All attempts to get help from
+>Diamond have failed.  I have called the Tech support and never been able
+>to get past the hold line (a toll call) in a reasonable time (ie 10min).
+>Leaving voice mail has not helped either.  The BBS is a joke! It always
+>has too many people on to download anything.  You cannot even get a file
+>listing (it considers that a download!).  I have faxed the tech support group.
+>All this with no reponse.
+>
+>The bottom line is if you are looking for a fast card and want to use it
+>for windows, DO NOT get a Diamond product.  Try another vendor, I wish I had.
+
+While others here may have had better experiences, I, too, share the
+sentiments posted above.  Though I have the original Stealth/VRAM,
+it is only "relatively" recent that the Windows drivers for this card
+have evolved to a point of decent performance.  Note that there are
+STILL a couple of modes I cannot use (ie. will not) due to shadowing,
+mis-drawn check boxes, etc.  I believe the version I have is 2.01.
+If there's a more recent release, I'd appreciate if someone would
+drop me a note to let me know -- I haven't been able to get on their
+BBS lately to check again.  Naturally, Diamond doesn't even bother
+notifying me of fixes/releases.
+
+Diamond was helpful when I finally reached the "right" person in curing
+some of my Windows' problems due to an address conflict.  The conflicting
+addresses (2E0, 2E8) were OMITTED in at least my version of the
+Diamond/VRAM manual.  I hope it has been corrected by now.  The tech rep
+explained that ALL S3-based boards use these addresses.  I have not
+confirmed the validity of that statement.
+
+When I upgrade my motherboard in the near future (hopefully with some
+form of local bus), I'll seek a video solution from someone other than
+Diamond.
+
+Lance Hartmann (lance%hartmann.austin.ibm.com@ibmpa.awdpa.ibm.com)
+               Yes, that IS a '%' (percent sign) in my network address.
+------------------------------------------------------------------------------
+All statements, comments, opinions, etc. herein reflect those of the author
+and shall NOT be misconstrued as those of IBM or anyone else for that matter.

@@ -1,0 +1,17 @@
+From: tg@cs.toronto.edu (Tom Glinos)
+Subject: 12V to 3V and 48V at 3A
+Organization: Department of Computer Science, University of Toronto
+Distribution: na
+Lines: 11
+
+The subject line says it all. I'm working on a project
+that will use a car battery. I need to pull off 3V and possibly
+48V at 3A.
+
+I have several ideas, but I'd prefer to benefit from all you
+brilliant people :-)
+-- 
+=================
+"Conquest is easy, control is not"	| Tom Glinos @ U of Toronto Statistics
+[Star Trek TOS]   			| tg@utstat.toronto.edu
+USL forgot this simple history lesson

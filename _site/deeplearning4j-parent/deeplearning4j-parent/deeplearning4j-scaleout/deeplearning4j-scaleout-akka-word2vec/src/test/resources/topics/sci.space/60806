@@ -1,0 +1,35 @@
+From: kjenks@gothamcity.jsc.nasa.gov
+Subject: Re: Shuttle oxygen (was Budget Astronaut)
+Organization: NASA/JSC/GM2, Space Shuttle Program Office 
+X-Newsreader: TIN [version 1.1 PL8]
+Lines: 29
+
+: henry@zoo.toronto.edu (Henry Spencer) writes:
+
+: >There is an emergency oxygen system that is capable of maintaining a
+: >breathable atmosphere in the cabin for long enough to come down, even
+: >if there is something like a 5cm hole in the wall that nobody tries
+: >to plug.
+
+Josh Hopkins (jbh55289@uxa.cso.uiuc.edu) replied:
+: Wow.
+
+: Double wow.  Can you land a shuttle with a 5cm hole in the wall?
+
+Personnally, I don't know, but I'd like to try it sometime.
+
+Programmatically, yes, we can land an Orbiter with a 5 cm hole in
+the wall -- provided that the thing which caused 5 cm hole didn't
+cause a Crit 1 failure on some of the internal systems.  There are
+a few places where a 5 cm hole would cause a Bad Day -- especially
+if the 5 cm hole went all the way through the Orbiter and out the
+other side, as could easily happen with a meteor strike.  But a
+hole in the pressure vessel would cause us to immediately de-orbit
+to the next available landing site.
+
+-- Ken Jenks, NASA/JSC/GM2, Space Shuttle Program Office
+      kjenks@gothamcity.jsc.nasa.gov  (713) 483-4368
+
+     "NASA turns dreams into realities and makes science fiction
+      into fact" -- Daniel S. Goldin, NASA Administrator
+

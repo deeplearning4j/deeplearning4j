@@ -1,0 +1,33 @@
+From: luf4695@cup.edu
+Subject: Re: Gateway UART chip?
+Distribution: usa
+Organization: California University of Pennsylvania, California, PA
+Lines: 27
+
+In article <spiroC4Bssw.Drq@netcom.com>, spiro@netcom.com (Philip N. Spiro) writes:
+> George A. Theall (theall@gdalsrv.sas.upenn.edu) wrote:
+> : In article <dickyjC4B7H8.BMt@netcom.com> dickyj@netcom.com (Dicky Johan) writes:
+> : >It seems that there are using the 16450 UART chip in the
+> : >machine. Is that the same as the 16550 UART chip, which has a 16-bytes
+> : >buffer? 
+> 
+> :   No, it's not. According to the sales critter I spoke with last week, 
+> : though, Gateway does use socketed chips. You should be able to find the 
+> : 16550AFN for about $15 and upgrade the chip yourself. Minor nuisance.
+> 
+> For whatever it's worth, my GW salesman said that their 16450 would do
+> 14.4kbps and was soldered to the board. 
+> 
+> Will someone with a recent GW pls settle this by inspection!
+> -- 
+> Phil
+> -------------------------------------------
+> Phil Spiro  spiro@netcom.com   415-964-6647
+
+MINE has a 16450 sodered right on the card.  Why would you need the 16550
+anyway?  From what I've heard, when you're multitasking, its FIFO buffer keeps
+you from loosing data.  Is this right?
+
+Bryan Luff
+Math & Comp. Sci.
+Cal. U. of PA

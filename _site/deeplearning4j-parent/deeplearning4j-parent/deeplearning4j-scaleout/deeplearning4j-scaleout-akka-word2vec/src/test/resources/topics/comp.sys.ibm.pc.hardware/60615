@@ -1,0 +1,23 @@
+From: richk@grebyn.com (Richard Krehbiel)
+Subject: Re: IDE vs SCSI
+In-Reply-To: bgrubb@dante.nmsu.edu's message of 18 Apr 1993 19:30:47 GMT
+Lines: 14
+Organization: Grebyn Timesharing, Inc.
+
+In article <1qsa97INNm7b@dns1.NMSU.Edu> bgrubb@dante.nmsu.edu (GRUBB) writes:
+
+>   richk@grebyn.com (Richard Krehbiel) writes:
+>   [Stuff about the connection between IDE and IDA deleated]
+>   >8MHz clock, 16 bit width, 5MB/sec.
+>   If IDE speed come from IDA WHERE does the 8.3MB/s sighted for IDE
+>   come from?
+
+Well, some quick math on my part shows that an 8.3MHz bus, 16 bits
+wide, performing a transfer every two clock cycles will provide 8.3M
+bytes/sec.  Someone said that it really takes 3 clock cycles to
+perform a transfer, so that reduces the transfer rate to 5.5MB/s,
+which is the commonly-used figure for ISA bus speed.  However, I
+believe a two-clock transfer is possible (0 wait states).
+-- 
+Richard Krehbiel                                 richk@grebyn.com
+OS/2 2.0 will do for me until AmigaDOS for the 386 comes along...

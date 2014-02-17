@@ -1,0 +1,43 @@
+From: bontchev@fbihh.informatik.uni-hamburg.de (Vesselin Bontchev)
+Subject: Re: Clipper considered harmful
+Reply-To: bontchev@fbihh.informatik.uni-hamburg.de
+Organization: Virus Test Center, University of Hamburg
+Lines: 37
+
+brad@optilink.COM (Brad Yearwood) writes:
+
+> Criminals who very badly want inscrutable tactical communications (specificall
+> the terrorists and drug dealers who proponents of key escrow cite as threats)
+> will be highly motivated to steal the cipher phone of a legitimate user, and
+> to kill this person or hold them hostage so discovery of compromise of the
+> device will be delayed.
+
+Why doing it in such a rough manner? It is much more professional to
+steal the chip from the phone and even to replace it with a
+pin-compatible do-nothing chip that does not encrypt at all. Chances
+are that the victim will not notice anything, especially if it is done
+professionally.
+
+> Once a suitable collection of devices is stolen, criminals can communicate
+> with impunity (assuming the cipher system carries no trapdoors apart from
+> key escrow) until and unless the compromise is discovered by some other means.
+
+No, because the Feds will still be able to decrypt the conversations.
+True, they'll blame the wrong guys, but nevertheless one cannot say
+something like "The drugs arrive tommorrow on the ship 'Terminus'"
+when the Feds are listening, even if they cannot identify who the
+speaker is.
+
+No, the criminals will just use some secure encryption. The new
+proposal does not stop criminals; it ensures that the government will
+be able to wiretap the average citizen and stops the casual snooper.
+To me, it also clearly looks as a step towards outlawing any other
+strong encryption devices.
+
+Regards,
+Vesselin
+-- 
+Vesselin Vladimirov Bontchev          Virus Test Center, University of Hamburg
+Tel.:+49-40-54715-224, Fax: +49-40-54715-226      Fachbereich Informatik - AGN
+< PGP 2.2 public key available on request. > Vogt-Koelln-Strasse 30, rm. 107 C
+e-mail: bontchev@fbihh.informatik.uni-hamburg.de    D-2000 Hamburg 54, Germany

@@ -1,0 +1,31 @@
+From: jmgree01@starbase.spd.louisville.edu (Jude M. Greer)
+Subject: Gateway 2000 and ATI LB problem.
+Nntp-Posting-Host: starbase.spd.louisville.edu
+Organization: University of Louisville
+Lines: 25
+
+I was wondering if anyone out there has had the same problem I am having with
+my Gateway 2000 486-33DX VL-Bus system with ATI Graphics Ultra Pro LB.  
+When I have my computer in any resolution other than 800x600, everything is
+fine, but whenever I use it in 800x600 (Windows, AutoCAD, GIFs) the screen 
+gets about 1 1/2 inches shorter.  At the very top and very bottom of the screen
+there is about a 3/4" bar of black.  The screen isn't cut off, it just squeezes
+everything into the smaller space and messes up the aspect ratio.  While I can
+manually change the V-Size on the back, this is a pain in the ass, and it just
+shouldn't happen anyway.  I've called Gateway numerous times and they haven't 
+been able to help me at all.  Two different times they sent me a new card, and
+both times the new card didn't work at all in my computer.  They even tried
+to bill me for the first card because they didn't get it back in a couple of
+days, when they TOLD me over the phone that they would wait more than 2 weeks
+before billing my card.  But their customer support is a different story...
+So, if anyone has had this same problem, please let me know if you know what
+to do.  Hell, let me know if you don't have a solution, just so I know I'm
+not the only one with this problem.  Thanks in advance.
+
+Jude M. Greer
+jmgree01@starbase.spd.louisville.edu
+
+P.S.  I already tried going into the MACH 32 install program and manually set-
+ting up the card.  Doesn't work.  Whenever I try to increase the vertical size
+of the 800x600 screen, it just starts to cut off the top and bottom.
+

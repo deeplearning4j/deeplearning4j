@@ -1,0 +1,61 @@
+From: robert.desonia@hal9k.ann-arbor.mi.us (Robert Desonia) 
+Subject: Re: I don't understand SI
+Distribution: world
+Organization: HAL 9000 BBS, W-NET HQ, Ann Arbor, Michigan, USA
+Reply-To: robert.desonia@hal9k.ann-arbor.mi.us (Robert Desonia) 
+Lines: 54
+
+MG>joohwee students (neural@iss.nus.sg) wrote:
+MG>> 	I went buying SIMMs recently, and the sales person told me that 
+the
+MG>> are 9-chip SIMMs and 3-chip SIMMs, and one cannot use them interchan
+MG>> If you use one, you have to use all of the same type.
+
+don't believe everything you are told.  I can tell you that mixing them 
+between 'banks' ok, and I can't see why mixing in one bank is not unless 
+they are of different speeds ( e.g. mixing of 60ns and 100ns SIMMs in one 
+bank ).  The two only differ in the type of chips it uses.  Assuming that 
+the SIMMS are 1Mx9 ( 9 bit wide ), here is the two equivalent 
+configuration.  The 3-chip SIMM uses two 4-bit wide 4Mbit (1M of 4-bit 
+nibbles ) and one 1-bit wide 1Mbit chip ( for a total of 9-bit wide 1Mbyte 
+).  The 9-bit SIMM uses nine 1-bit wide 1Mbit chips.  These are equivalent 
+because of the way that it is 'pinned' on the SIMM board.  At the SIMM 
+interface, they both act as 9-bit wide 1MByte SIMMS ( 2*4+1=9*1 ).  [sorry 
+if too techie for ya].
+
+
+MG>> 	Similarly, one cannot plug in two 1MB SIMMs and one 4MB SIMMs to 
+gi
+MG>> the system a total of 6 MEG. Why is that so ?? If my system supports
+MG>> of 8 MEG (it has 8 SIMM slots), can I plug in 4 4MB SIMMs to give my
+MG>> 16MB ??
+
+That sounds correct.  the problem is that if your computer takes 9-bit 
+wide SIMMs, you can not mix different sizes in one bank.  Why you ask?  
+Simple,  if you understand why there is banks.  Assuming you have a 32-bit 
+CPU ( 386DX or 486 ), the data bus (e.g. the mechanism to retrieve data 
+from memory ) is 32-bits wide, so the computer expects to see 32 bits when 
+it asks for data.  To get that bandwidth ( 32-bit wide ), the motherboard 
+links 4 1Mx9 ( one bit is not data, but parity, so I will ignore that in 
+this simple explaination ) to get 32bits [ (9-1)*4=32 bits ].  That means 
+that a SIMM in a bank stores only 1/4 of the 32 bit wide data.  If you 
+have a 16-bit bus, two 1Mx9 SIMMs are linked together to get 16-bit wide 
+data, which is the reason why 286 banks are 2 SIMMs wide, and 32-bit banks 
+are 4 SIMMs wide.  If your computer required 1Mx36 ( e.g. 32-bit wide data 
+with 4 parity bits, used in some PS/2s and ASTs ), you could upgrade by 
+one SIMM at a time.
+
+Hope that this message is not over your head, but the answer to your 
+question was not simple.  I could of just said, 'because I said so.'
+
+-rdd    
+
+---
+ . WinQwk 2.0b#0 . Unregistered Evaluation Copy
+ * KMail 2.95d W-NET HQ, hal9k.ann-arbor.mi.us, +1 313 663 4173 or 3959
+                                                  
+----
+| HAL 9000 BBS:  QWK-to-Usenet gateway  | Four 14400 v.32bis dial-ins    |
+| FREE Usenet mail and 200 newsgroups!  | PCBoard 14.5aM * uuPCB * Kmail |
+| Call +1 313 663 4173 or 663 3959      +--------------------------------+
+| Member of EFF, ASP, ASAD  * 1500MB disk * Serving Ann Arbor since 1988 |

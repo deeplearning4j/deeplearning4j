@@ -1,0 +1,24 @@
+A
+Summary:
+With an HTC One and coordinates to find Spark in hand, I set out to run some speed tests on Sprint’s latest network in New York City.
+Where can you find Spark? Among lots of other sparkly, rare objects – in Manhattan’s diamond district. That’s where Sprint told me I could go to test out its newest 4G LTE network.
+So I trekked uptown to 47th Street between 5th and 6th Avenue. Right now the network is officially available in just five markets, including Chicago, Los Angeles, Miami, Tampa and New York. According to Sprint each of these markets has been launched at a 25 percent threshold, but New York is closer to 35 percent. That means I probably could’ve found Spark outside of the diamond district, but it was close enough.
+Once you can find Spark, you need a way to tap into it, and right now there aren’t many. Currently the only tri-band phones that bring Spark to life are the HTC One Max, LG G2, Samsung Galaxy Mega and Samsung Galaxy S 4 Mini. Luckily, I’ve had an HTC One Max review unit on my hands over the last few days, so I was able to put Sprint’s network to the test.
+I also brought along a Nokia Lumia 1520 on AT&T and an Apple iPhone 5s on Verizon to compare performance on each of the networks. So how did Spark fare?
+Keeping in mind I performed my tests in an area recommended to me by a spokeswoman from Sprint (and therefore pretty much guaranteed to perform quite well), I still have to admit the results were impressive. Using the Ookla Speedtest.net app on all three devices, Sprint’s Spark network turned in the fastest results by far. Here are the averages:
+Sprint: 43Mbps down / 17Mbps up
+Verizon: 16Mbps down / 18Mbps up
+AT&T: 4.5Mbps down / 7Mbps up
+Sprint’s results were the fastest of the three networks I tested.
+For a close look at how Spark works, you can read this piece by my colleague Kevin Fitchard. But basically Spark taps into Sprint’s new souped-up 4G network in the 2.5 GHz band, which is much faster than the LTE systems its rolled out in most of the U.S. According to Sprint, Spark supports peak speeds of 50Mbps to 60Mbps down. On top of that, Sprint claims that by aggregating available spectrum and using LTE-Advanced techniques like multiple pairs of antennas, it could theoretically boost speeds up to an astounding 2Gbps in the future.
+Take that with a grain of salt though, as I didn’t even reach the advertised 50-60Mbps peak speeds, although I came close. Considering that there are very few devices available that connect to Spark, I assume there was very little traffic on the network when I was connected. As more Sprint users buy Spark-compatible devices and traffic increases, I’d expect to see the speeds I saw today go down considerably, which is something I’ve seen happen on every LTE network so far. Sprint is acknowledging as much, saying average speeds will be in the 5 to 12 Mbps range, which is right on par with the other carriers’ LTE marketing claims.
+Verizon also had a surprisingly strong showing, which could be due to the new 4G LTE network it is expected to unveil.
+I was surprised by Verizon’s results, which were quite strong. Considering the carrier’s current issues with LTE traffic in big cities , I expected to see results much lower. It’s possible that my iPhone 5s was catching wind of Verizon’s  monster new LTE network , which the carrier is expected to launch quite soon.
+AT&T, on the other hand, turned in results that were slower than what I expected to see, but still not bad for congested midtown Manhattan. Anecdotally, I usually see the speeds that AT&T and Verizon achieved today flip-flopped. PCMag has found the same – it reported average download speeds of 13.69Mbps in New York on AT&T in its yearly speed tests .
+AT&T’s 4G LTE network didn’t have a great day, though I usually see it perform much faster.
+Any way you look at it, this is a good showing for Sprint, and good news for Sprint users purchasing a Spark-compatible device. It might take a while for Spark to reach you, though, as the carrier is only expecting to cover 100 million Americans by the end of 2014. If you aren’t covered by Spark, you’ll fall back on Sprint’s regular LTE network if it’s available in your area.
+It’ll be interesting to see how Spark fares as more compatible devices become available and more users get on the network. I’m also curious to see how it’ll stack up to Verizon’s new LTE network when it arrives.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

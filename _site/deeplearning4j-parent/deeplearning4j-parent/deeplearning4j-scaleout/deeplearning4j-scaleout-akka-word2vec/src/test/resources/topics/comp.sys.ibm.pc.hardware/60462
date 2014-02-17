@@ -1,0 +1,33 @@
+From: tdbear@dvorak.amd.com (Thomas D. Barrett)
+Subject: Re: Rockwell Chipset for 14.4's ... Any good?
+Organization: Advanced Micro Devices, Inc.; Austin, Texas
+Lines: 28
+
+In article <im14u2c.735176900@camelot> im14u2c@camelot.bradley.edu (Joe Zbiciak) writes:
+>What's the word on the chipset?  Is this a ROM bug specific 
+>to a specific brand using the Rockwell, or is it the Rockwell
+>chipset itself?
+
+There were an assortment of firmware problems, but that is pretty much
+expected with any FAX/modem talking with a different FAX or modem
+which may have also been revised or is new.  I'm pretty much
+oblivious to any current firmware problems, so you'll have to get it
+from someone else.
+
+However, I can tell you to stay clear of any board which uses the
+Rockwell MPU (as opposed to the DPU) for an internal implementation.
+This is because the MPU used "speed buffering" instead of having a
+16550 interface.  Without the 550 interface, the number of interrupts
+are still the same and thus may get dropped under multitasking
+conditions (like in windows).  As far as I know, the "speed buffering"
+works OK for external modems if a 550 is used on the internal serial
+port board.
+
+Hope this helps...
+Tom
+
+-- 
+|Tom Barrett (TDBear), Sr. Engineer|tom.barrett@amd.com|v:512-462-6856 |
+|AMD PCD MS-520 | 5900 E. Ben White|Austin, TX  78741  |f:512-462-5155 |
+|...don't take no/take hold/don't leave it to chance ---Tasmin Archer  |
+|My views are my own and may not be the same as the company of origin  |

@@ -1,0 +1,57 @@
+From: et@teal.csn.org (Eric H. Taylor)
+Subject: Holes: practical questions, was - Philosophical Question
+Summary: How do we preferentially amplify holes instead of electrons?
+Keywords: holes electrons semi-conductors mobility
+Nntp-Posting-Host: teal.csn.org
+Organization: 4-L Laboratories
+Expires: Sun, 9 May 1993 06:00:00 GMT
+Lines: 48
+
+In article <12426@sun13.scri.fsu.edu> jac@ds8.scri.fsu.edu (Jim Carr) writes:
+>[...]
+>I agree.  I come at this from nuclear physics, where one often discusses 
+>particle-hole excitations and certain reactions have the effect of 
+>applying an annihilation operator and creating a hole, and it is a 
+>subtle question.  The longer one works with them, the more real they 
+>become.  There are also quasi-particles, which raise the same sort 
+>of question about how "real" the entity is.  The phenomenon is most 
+>certainly a real one. 
+
+OK, I've asked this before, and with a new thread on these lines, I
+ask this again:
+
+1: If a large hole current is run thru a resistor, will there be
+   I^2 * R cooling instead of heating?
+
+2: Can anyone design an amplifier that preferentially amplifies
+   hole currents over normal electron currents?
+
+3: what semiconductor materials have the highest ratio of
+   hole mobility to electron mobility? (please quote actual
+   test samples rather than estimates based on theory. Also,
+   don't be limited to semiconductors: consider also insulators,
+   resistors, dielectrics, piezo-electrics, conductors,
+   magnets (metal, ceramic), magnetostrictives, etc).
+
+NOTES:
+
+   to summarize, this thread has so far stated that the only area
+   where holes are not detectable is the vacuum. That is, hole
+   particles only exist in the presence of matter.
+   Previous threads have stated that holes only exist in certain
+   semi-conductors. The question that naturally arises is if
+   the hole currents inside a semi-conductor vanish at the point
+   where the semiconductor is joined to a conductor (say, copper).
+   I don't want a theoretical discussion here about whether
+   holes could exist inside metal conductors, rather I ask for
+   an experimental discussion on how to amplify and detect such
+   currents *if* they exist.
+   Also note that I have cross-posted this to sci.electronics
+   since this is now becoming an electronic discussion.
+
+Thanx,
+Eric.
+
+----
+ ET   "A Force of Nature"
+----

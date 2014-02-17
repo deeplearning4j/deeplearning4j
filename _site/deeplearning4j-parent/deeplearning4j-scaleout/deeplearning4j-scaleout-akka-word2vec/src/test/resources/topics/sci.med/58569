@@ -1,0 +1,344 @@
+From: Dan Wallach <dwallach@cs.berkeley.edu>
+Subject: FAQ: Typing Injuries (4/4): Software Monitoring Tools [monthly posting]
+Supersedes: <typing-injury-faq/software_732179032@cs.berkeley.edu>
+Organization: University of California, Berkeley
+Lines: 333
+Expires: 22 May 1993 01:24:03 GMT
+Reply-To: Richard Donkin <richardd@hoskyns.co.uk>
+NNTP-Posting-Host: elmer-fudd.cs.berkeley.edu
+Summary: software tools to help out injured typists
+Originator: dwallach@elmer-fudd.cs.berkeley.edu
+
+Archive-name: typing-injury-faq/software
+Version: 1.8, 7th December 1992
+
+This FAQ is actually maintained by Richard Donkin <richardd@hoskyns.co.uk>.
+I post it, along with the other FAQ stuff.  If you have questions, you want
+to send mail to Richard, not me.  -- Dan
+ 
+ 
+		    Software Tools to help with RSI
+		    -------------------------------
+ 
+This file describes tools, primarily software, to help prevent or manage RSI.
+This version now includes information on such diverse tools as calendar
+programs and digital watches...
+ 
+Please let me know if you know any other tools, or if you have information
+or opinions on these ones, and I will update this FAQ.
+
+I am especially interested in getting reviews of these products from people
+who have evaluated them or are using them.  
+ 
+Richard Donkin                           
+Internet mail: richardd@hoskyns.co.uk              
+Tel: +44 71 814 5708 (direct)
+Fax: +44 71 251 2853
+
+Changes in this version:
+
+     Added information on StressFree, another typing management tool 
+     for Windows.
+
+
+TYPING MANAGEMENT TOOLS: these aim to help you manage your keyboard use,
+by warning you to take a break every so often.  The better ones also include
+advice on exercises, posture and workstation setup.  Some use sound hardware to
+ 
+warn of a break, others use beeps or screen messages.
+
+Often, RSI appears only after many years of typing, and the pain has
+a delayed action in the short term too: frequently you can be typing
+all day with little problem and the pain gets worse in the evening.
+These tools act as an early warning system: by listening to their
+warnings and taking breaks with exercises, you don't have to wait for your 
+body to give you a more serious and painful warning - that is, getting RSI.
+
+ 
+    Tool: At Your Service (commercial software)
+    Available from:
+	Bright Star
+	Tel: +1 (206) 451 3697
+    Platforms: Mac (System 6.0.4), Windows
+    Description:
+	Provides calendar, keyboard watch, email watch, and system info. 
+	Warns when to take a break (configurable).  Has a few recommendations
+	on posture, and exercises.  Sound-oriented, will probably work best 
+	with sound card (PC) or with microphone (Mac).  Should be possible
+	to record your own messages to warn of break.
+ 
+    Tool: AudioPort (sound card and software)
+    Available from:
+	Media Vision
+	Tel: +1 (510) 226 2563
+    Platforms: PC
+    Description:
+	A sound card to plug into your PC parallel port.
+	Includes 'At Your Service'.
+ 
+    Tool: Computer Health Break (commercial software)
+    Available from:
+	Escape Ergonomics, Inc
+	1111 W. El Camino Real
+	Suite 109
+	Mailstop 403
+	Sunnyvale, CA
+	Tel: +1 (408) 730 8410
+    Platforms: DOS
+    Description:
+	Aimed at preventing RSI, this program warns you to take
+	breaks after a configurable interval, based on clock time, or
+	after a set number of keystrokes -- whichever is earlier.
+	It gives you 3 exercises to do each time, randomly selected from
+	a set of 70.  Exercises are apparently tuned to the type of work
+	you do - data entry, word processing, information processing.
+	Exercises are illustrated and include quite a lot of text on
+	how to do the exercise and on what exactly the exercise does.
+
+	CHB includes hypertext information on RSI that you can use 
+	to learn more about RSI and how to prevent it.  Other information
+	on non-RSI topics can be plugged into this hypertext viewer.
+	A full glossary of medical terms and jargon is included.
+
+	CHB can be run in a DOS box under Windows, but does not then
+	warn you when to take a break; it does not therefore appear
+	useful when used with Windows.
+
+	Cost: $79.95; quantity discounts, site licenses.
+
+    Comments:
+	The keystroke-counting approach looks good: it seems better
+	to measure the activity that is causing you problems than to
+	measure clock time or even typing time.  The marketing stuff
+	is very good and includes some summaries of research papers,
+	as well as lots of arguments you can use to get your company 
+	to pay up for RSI management tools.  
+
+    Tool: EyerCise (commercial software)
+    Available from:
+	RAN Enterprises
+	One Woodland Park Dr.
+	Haverhill, MA  01830, US
+	Tel: 800-451-4487 (US only)
+    Platforms: Windows (3.0/3.1), OS/2 PM (1.3/2.0) [Not DOS]
+    Description:
+	Aimed at preventing RSI and eye strain, this program warns you to take
+	breaks after a configurable interval (or at fixed times). Optionally
+	displays descriptions and pictures of exercises - pictures are
+	animated and program beeps you to help you do exercises at the
+	correct rate.  Includes 19 stretches and 4 visual training 
+	exercises, can configure which are included and how many repetitions
+	you do - breaks last from 3 to 7 minutes.  Also includes online help 
+	on workplace ergonomics.  
+
+	Quote from their literature:
+
+	"EyerCise is a Windows program that breaks up your day with periodic
+	sets of stretches and visual training exercises.  The stretches work
+	all parts of your body, relieving tension and helping to prevent
+	Repetitive Strain Injury.  The visual training exercises will improve
+	your peripheral vision and help to relieve eye strain.  Together these
+	help you to become more relaxed and productive."
+ 
+	"The package includes the book _Computers & Visual Stress_ by Edward C.
+	Godnig, O.D. and John S. Hacunda, which describes the ergonomic setup
+	for a computer workstation and provides procedures and exercises to
+	promote healthy and efficient computer use. 
+	
+	Cost: $69.95 including shipping and handling, quantity discounts
+	for resellers.  Free demo ($5 outside US).
+ 
+    Comments:
+	I have a copy of this, and it works as advertised: I would say
+	it is better for RSI prevention than RSI management, because it
+	does not allow breaks at periods less than 30 minutes.  Also, it
+	interrupts you based on clock time rather than typing time, which
+	is not so helpful unless you use the keyboard all day.  Worked OK on
+	Windows 3.0 though it did occasionally crash with a UAE - not sure
+	why. Also refused to work with the space bar on one PC, and has
+	one window without window controls.  Very usable though, and does not
+	require any sound hardware.
+
+    Tool: Lifeguard (commercial software)
+    Available from:
+	Visionary Software
+	P.O. Box 69447
+	Portland, OR  97201, US
+	Tel: +1 (503) 246-6200
+    Platforms: Mac, DOS (Windows version underway)
+    Description:
+	Aimed at preventing RSI.  Warns you to take a break
+	with dialog box and sound.  Includes a list of exercises
+	to do during breaks, and information on configuring your
+	workstation in an ergonomic manner.  Price: $59;
+	quantity discounts and site licenses.  The DOS product is
+	bought in from another company, apparently; not sure how
+	equivalent this is to the Mac version.
+	
+	The Mac version got a good review in Desktop Publisher 
+	Magazine (Feb 1991).  Good marketing stuff with useful 
+	2-page summaries of RSI problems and solutions, with 
+	references.
+ 
+    Tool: StressFree (commercial software, free usable demo)
+    Available from:
+	LifeTime Software
+	P.O. Box 87522
+	Houston
+	Texas 77287-7522, US
+	Tel: 800-947-2178 (US only)
+	Fax: +1 (713) 474-2067
+	Mail: 70412.727@compuserve.com
+
+	Demo (working program but reduced functions) available from:
+	    Compuserve: Windows Advanced Forum, New Uploads section, or 
+			Health and Fitness Forum, Issues At Work section. 
+	    Anon FTP:   ftp.cica.indiana.edu (and mirroring sites)
+
+    Platforms: Windows (3.0/3.1) (Mac and DOS versions underway)
+    Description:
+	Aimed at preventing RSI, this program warns you to take
+	breaks after a configurable interval (or at fixed times). 
+	Displays descriptions and pictures of exercises - pictures are
+	animated and program paces you to help you do exercises at the
+	correct rate.  Quite a few exercises, can configure which ones
+	are included to some extent.  Online help.
+
+	Version 2.0 is out soon, Mac and DOS versions will be based
+	on this.
+
+	Cost: $29.95 if support via CompuServe or Internet, otherwise $39.95.  
+              Site license for 3 or more copies is $20.00 each.
+	      (NOTE: prices may have gone up for V2.0).
+ 
+    Comments:
+	I have had a play with this, and it works OK.  Its user interface
+	design is much better in 2.0, though still a bit unusual.
+	expensive tool around and it does the job.  It is also the only
+	tool with a redistributable demo, so if you do get the demo, post it
+	on your local bulletin boards, FTP servers and Bitnet servers!
+	Does not include general info on RSI and ergonomics, but it does 
+	have the ability to step backward in the exercise sequence,
+	which is good for repeating the most helpful exercises.
+
+    Tool: Typewatch (freeware), version 3.8 (October 1992)
+    Available from:
+	Email to richardd@hoskyns.co.uk
+	Anonymous ftp: soda.berkeley.edu:pub/typing-injury/typewatch.shar
+    Platforms: UNIX (tested on SCO, SunOS, Mach; character and X Window mode)
+    Description:
+	This is a shell script that runs in the background and warns you
+	to stop typing, based on how long you have been continuously
+	typing.  It does not provide exercises, but it does check
+	that you really do take a break, and tells you when you
+	can start typing again.  
+
+	Typewatch now tells you how many minutes you have been typing
+	today, each time it warns you, which is useful so you
+	know how much you *really* type.  It also logs information
+	to a file that you can analyse or simply print out.  
+
+	The warning message appears on your screen (in character mode),
+	in a pop-up window (for X Windows), or as a Zephyr message
+	(for those with Athena stuff).   Tim Freeman <tsf@cs.cmu.edu> 
+	has put in a lot of bug fixes, extra features and support for 
+	X, Zephyr and Mach.
+
+	Not formally supported, but email richardd@hoskyns.co.uk
+	(for SCO, SunOS, character mode) or tsf@cs.cmu.edu (for Mach,
+	X Window mode, Zephyr) if you have problems or want to give 
+	feedback.
+
+    Tool: Various calendar / batch queue programs
+    Available from:
+	Various sources
+    Platforms: Various
+    Description:
+	Any calendar/reminder program that warns you of an upcoming
+	appointment can be turned into an ad hoc RSI management tool.
+	Or, any batch queue submission program that lets you submit
+	a program to run at a specific time to display a message to
+	the screen.
+
+	Using Windows as an example: create a Calendar file, and
+	include this filename in your WIN.INI's 'load=' line so
+	you get it on every startup of Windows.  Suppose you
+	want to have breaks every 30 minutes, starting from 9 am.
+	Press F7 (Special Time...) to enter an appointment, enter
+	9:30, hit Enter, and type some text in saying what the break
+	is for.  Then press F5 to set an alarm on this entry, and repeat 
+	for the next appointment.
+
+	By using Windows Recorder, you can record the keystrokes
+	that set up breaks throughout a day in a .REC file.  Put this
+	file on your 'run=' line, as above, and you will then, with
+	a single keypress, be able to set up your daily appointments
+	with RSI exercises.
+
+	The above method should be adaptable to most calendar programs. 
+	An example using batch jobs would be to submit a simple job
+	that runs at 9:30 am and warns you to take a break; this will
+	depend a lot on your operating system.
+
+	While these approaches are not ideal, they are a good way of forcing 
+	yourself to take a break if you can't get hold of a suitable RSI 
+	management tool.  If you are techie enough you might want to
+	write a version of Typewatch (see above) for your operating
+	system, using batch jobs or whatever fits best.
+
+    Tool: Digital watches with count-down timers
+    Available from:
+	Various sources, e.g. Casio BP-100.
+    Description:
+	Many digital watches have timers that count down from a settable
+	number of minutes; they usually reset easily to that number, either
+	manually or automatically.  
+
+	While these are a very basic tool, they are very useful if you
+	are writing, reading, driving, or doing anything away from
+	a computer which can still cause or aggravate RSI.  The great
+	advantage is that they remind you to break from whatever you
+	are doing.
+	
+    Comments:
+	My own experience was that cutting down a lot on my typing led to
+	my writing a lot more, and still reading as much as ever, which
+	actually aggravated the RSI in my right arm though the left
+	arm improved.  Getting a count-down timer watch has been
+	very useful on some occasions where I write a lot in a day.
+
+	I have tried an old fashioned hour-glass type egg timer, but
+	these are not much good because they do not give an audible
+	warning of the end of the time period!
+
+
+KEYBOARD REMAPPING TOOLS: these enable you to change your keyboard mapping
+so you can type one-handedly or with a different two-handed layout.  
+One-handed typing tools may help, but be VERY careful about how 
+you use them -- if you keep the same overall typing workload you
+are simply doubling your hand use for the hand that you use for typing,
+and may therefore make matters worse.
+
+    Tool: hsh (public domain)
+    Available from:
+	Anonymous ftp: soda.berkeley.edu:pub/typing-injury/hsh.shar
+    Platforms: UNIX (don't know which ones)
+    Description:
+	Allows one-handed typing and other general keyboard remappings.
+	Only works through tty's (so, you can use it with a terminal or
+	an xterm, but not most X programs).
+
+    Tool: Dvorak keyboard tools (various)
+    Available from:
+	Anonymous ftp: soda.berkeley.edu:pub/typing-injury/xdvorak.c
+	Also built into Windows 3.x. 
+    Description:
+	The Dvorak keyboard apparently uses a more rational layout
+	that involves more balanced hand use.   It *may* help prevent
+	RSI a bit, but you can also use it if you have RSI, since 
+	it will slow down your typing a *lot* :-)  
+
+-- 
+Dan Wallach               "One of the most attractive features of a Connection
+dwallach@cs.berkeley.edu  Machine is the array of blinking lights on the faces
+Office#: 510-642-9585     of its cabinet." -- CM Paris Ref. Manual, v6.0, p48.

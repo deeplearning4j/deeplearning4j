@@ -1,0 +1,29 @@
+From: smd@iao.ford.com (Steve Dahmen)
+Subject: Changing colors on a label - HELP
+Organization: Ford Motor Company -- standard disclaimers apply
+Lines: 21
+Distribution: world
+Reply-To: smd@iao.ford.com (Steve Dahmen)
+NNTP-Posting-Host: ope001.iao.ford.com
+
+
+I have a toggleButton widget (yes widget) and I have a routine
+which changes the color of the foreground and background of the
+label.  Well, the background changes alright, but the label
+text does not redraw itself.
+
+I am guessing that I have to force it to redraw with an
+XExposeEvent sent to it via XSendEvent.  Is this the best
+way to get the text up again?  I can't seeem to get
+XSEndEvent to work right.... if this is a good approach,
+might anyone have an example lying around to show me how to
+do this?  I've RTFM all evening and did not find a decent
+example.
+
+PS I keep getting Segmentation Faults in XSEndEvent, tho all
+the values are as expected.
+
+Thanks in Advance
+
+Stephen M. Dahmen
+

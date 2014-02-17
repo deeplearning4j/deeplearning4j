@@ -1,0 +1,41 @@
+From: jeh@cmkrnl.com
+Subject: Re: A question about 120VAC outlet wiring.
+Distribution: world
+Organization: Kernel Mode Systems, San Diego, CA
+Lines: 35
+
+In article <1qmisf$odp@sdl.Warren.MENTORG.COM>, garyg@warren.mentorg.com (Gary Gendel) writes:
+> In article 1834@cmkrnl.com, jeh@cmkrnl.com writes:
+>>What you CAN do if you want three-prong outlets without additional wiring is 
+>>to use a GFCI outlet (or breaker, but the outlet will be cheaper).  In fact,
+>>depending on where you are putting your new outlet(s), a GFCI may be *required*.
+> 
+> You still need to supply a proper ground for a Ground Fault Circuit Interrupter!
+
+Not according to the NEC nor the CEC, as explained in the electrical wiring 
+FAQ, which I posted here separately.  Note the material under the headings
+
+> Subject: How do I convert two prong receptacles to three prong?
+
+and
+
+> Subject: Are you sure about GFCIs and ungrounded outlets?
+> 	Should the test button work?
+
+Of course, as they said -- "Local codes may vary". 
+
+> So rewiring is still a part of this job, however, the ground may be connected to
+> a local earth ground, rather than back at the breaker box.
+
+I'm not sure about this.  If the ground connections on the outlets are
+connected to anything, they should be connected to a wire that runs back to the
+main panel, where it is bonded to the neutral connector and to the house ground
+rod.  A connection to a local earth ground would not necessarily meet one of
+the goals of the ground wire, which is that if a short develops from hot
+to the ground wire, enough current would flow to trip the breaker.  
+
+Hmmm.  How are those orange "isolated ground" outlets (often used in
+computer rooms) wired?  
+
+	--- Jamie Hanrahan, Kernel Mode Systems, San Diego CA
+Internet:  jeh@cmkrnl.com  Uucp: uunet!cmkrnl!jeh  CIS: 74140,2055

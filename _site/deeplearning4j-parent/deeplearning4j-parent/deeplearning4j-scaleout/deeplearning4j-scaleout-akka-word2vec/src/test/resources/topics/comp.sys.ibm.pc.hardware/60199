@@ -1,0 +1,31 @@
+From: balog@eniac.seas.upenn.edu (Eric J Balog)
+Subject: FLOPPY DRIVE PROBLEM--HELP!!!
+Organization: University of Pennsylvania
+Lines: 25
+Nntp-Posting-Host: eniac.seas.upenn.edu
+
+Hi!
+
+I have a problem with my floppy drives. In an effort to make my 3.5" drive 
+(normally b:) my a: drive, I switched the order of connections on the cable 
+from the serial card/floppy/ide controller. I booted up, changed the CMOS
+settings to reflect the a: drive as the 3.5 and the b: drive as the 5.25.
+The drive lights didn't come on, and there was a failure trying to read from
+those drives.
+
+I switched the cables back to their original positions, and then booted-up and
+restored the original CMOS settings. The lights for the floppies came on
+during this process, and they stay on for as long as the computer is on.
+I see that when there is a disk in a:, the drive is spinning, yet there seems
+to be no disk access. MSD.EXE and Norton SI detect both drives, but when I 
+try to get detailed information about a: or b:, Norton SI tells me that there
+is no disk in the drive.
+
+Can anyone offer any suggestions?
+I'm in desperate need of help!!!
+
+Thank you for your time.
+
+Eric Balog
+balog@eniac.seas.upenn.edu
+

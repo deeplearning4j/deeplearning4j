@@ -1,0 +1,22 @@
+From: richk@grebyn.com (Richard Krehbiel)
+Subject: Re: IDE vs SCSI
+In-Reply-To: marka@hcx1.ssd.csd.harris.com's message of 16 Apr 1993 07:30:17 -0400
+Lines: 12
+Organization: Grebyn Timesharing, Inc.
+	<1qm5c9$6on@hcx1.ssd.csd.harris.com>
+
+In article <1qm5c9$6on@hcx1.ssd.csd.harris.com> marka@hcx1.ssd.csd.harris.com (Mark Ashley) writes:
+
+>   First off, with all these huge software packages and files that
+>   they produce, IDE may no longer be sufficient for me (510 Mb limit).
+
+I've seen a listing of a Seagate 1G IDE hard drive.
+
+>   Second, (rumor is) Microsoft recognizes the the importance of SCSI
+>   and will support it soon. I'm just not sure if it's on DOS, Win, or NT.
+
+Windows NT already supports SCSI, a variety of adapters, for disk,
+tape, and CD-ROM.  So does OS/2 2.0.
+-- 
+Richard Krehbiel                                 richk@grebyn.com
+OS/2 2.0 will do for me until AmigaDOS for the 386 comes along...

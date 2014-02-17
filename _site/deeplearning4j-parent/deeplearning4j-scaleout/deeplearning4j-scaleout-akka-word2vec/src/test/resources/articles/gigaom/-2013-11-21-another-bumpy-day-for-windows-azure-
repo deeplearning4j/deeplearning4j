@@ -1,0 +1,19 @@
+A
+Summary:
+Windows Azure storage suffered a disruption across regions which affected some Xbox Live and other services Thursday afternoon.
+Windows Azure’s storage service hit a speed bump Thursday, with a full disruption reported across several regions on the company’s status page.
+Microsoft said the issue surfaced at 2:22 p.m. PDT and as of 3:37 p.m. the status post said:
+21 Nov 2013 10:22 PM UTC We are experiencing an issue with Storage connecting to the network in North Central US, South Central US, North Europe, Southeast Asia, West Europe, East Asia, East US and West US. We are actively investigating this issue and assessing its impact to our customers. Further updates will be published to keep you apprised of the impact. We apologize for any inconvenience this causes our customers.
+The issue apparently took down Xbox Live and some other services — and even at times the Microsoft status page itself, according to TechCrunch and other reports. I’ll update this story as more information comes available. Update: Several Azure watchers said the real issue was a DNS issue which Microsoft Corporate VP Scott Guthrie confirmed on Twitter. The DNS management servers sit outside of Azure.
+@ snayagar No – Azure is not having issues (customer apps continue to run fine). The problem is a DNS name server issue outside of azure—
+Scott Guthrie (@scottgu) November 21, 2013
+I’ve pinged Microsoft for comment and will update when possible.
+At 5:36 p.m. PDT Microsoft  spokeswoman sent this statement.
+“Microsoft is aware of issues involving cloud and online services and we are investigating the cause. We can confirm that these issues were not caused by Windows Azure. We will keep our customers updated as information becomes available. The service interruption that affected Windows Azure Storage was a separate issue and has been resolved. All Windows Azure services are running as normal.”
+Some services returning now. It's how I can send this tweet now.  Patience, please, and sorry for the  inconvenience.—
+Microsoft News (@MSFTnews) November 22, 2013
+Note: This story was updated multiple times. As of 4:08 p.m. PDT the Microsoft status page reported service was back to normal.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

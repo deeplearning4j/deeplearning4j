@@ -1,0 +1,378 @@
+Subject: NHL Summary parse results for games played Sat, April 3, 1993
+From: c5ff@jupiter.sun.csd.unb.ca (COOK  Charlie)
+Organization: University of New Brunswick
+Lines: 373
+
+Tampa Bay                        1 1 0--2
+Philadelphia                     3 2 1--6
+First period
+     1, Philadelphia, Carkner 3 (unassisted) 1:24.
+     2, Philadelphia, Hawgood 9 (Recchi, Lindros) pp, 5:56.
+     3, Philadelphia, Lindros 37 (Recchi, Hawgood) pp, 9:52.
+     4, Tampa Bay, Beers 12 (Zamuner, Chambers) pp, 15:06.
+Second period
+     5, Tampa Bay, Andersson 13 (Hamrlik, Lafreniere) pp, 1:58.
+     6, Philadelphia, Conroy 3 (Butsayev, Faust) 12:10.
+     7, Philadelphia, Beranek 13 (Galley, Hawgood) pp, 18:53.
+Third period
+     8, Philadelphia, Recchi 51 (Brind'Amour, Galley) pp, 17:56.
+
+Philadelphia: 6    Power play: 5-4
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Beranek            1    0    1
+Brind'Amour        0    1    1
+Butsayev           0    1    1
+Carkner            1    0    1
+Conroy             1    0    1
+Faust              0    1    1
+Galley             0    2    2
+Hawgood            1    2    3
+Lindros            1    1    2
+Recchi             1    2    3
+
+Tampa Bay: 2    Power play: 7-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Andersson          1    0    1
+Beers              1    0    1
+Chambers           0    1    1
+Hamrlik            0    1    1
+Lafreniere         0    1    1
+Zamuner            0    1    1
+
+-----------------------------------------
+Vancouver                        1 0 0--1
+Detroit                          2 2 1--5
+First period
+     1, Detroit, Kozlov 4 (Fedorov, Chiasson) 5:20.
+     2, Detroit, Drake 17 (Ciccarelli, Coffey) pp, 7:48.
+     3, Vancouver, Ronning 24 (Slegr, Bure) pp, 17:35.
+Second period
+     4, Detroit, Sheppard 30 (Drake, Hiller) 6:54.
+     5, Detroit, Ciccarelli 38 (Chiasson, Drake) pp, 12:13.
+Third period
+     6, Detroit, Ysebaert 31 (Fedorov, Cheveldae) sh, 4:59.
+
+Detroit: 5    Power play: 5-2   Special goals:  pp: 2  sh: 1  Total: 3
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Cheveldae          0    1    1
+Chiasson           0    2    2
+Ciccarelli         1    1    2
+Coffey             0    1    1
+Drake              1    2    3
+Fedorov            0    2    2
+Hiller             0    1    1
+Kozlov             1    0    1
+Sheppard           1    0    1
+Ysebaert           1    0    1
+
+Vancouver: 1    Power play: 6-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bure               0    1    1
+Ronning            1    0    1
+Slegr              0    1    1
+
+-----------------------------------------
+Buffalo                          1 1 0--2
+Boston                           1 1 1--3
+First period
+     1, Buffalo, Audette 12 (Corkum, Wood) 16:40.
+     2, Boston, Juneau 30 (Neely, Oates) 18:39.
+Second period
+     3, Buffalo, Errey 9 (LaFontaine, Khmylev) 10:51.
+     4, Boston, Douris 3 (D.Sweeney, Bourque) 17:57.
+Third period
+     5, Boston, Donato 12 (unassisted) 17:42.
+
+Boston: 3    Power play: 4-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bourque            0    1    1
+Donato             1    0    1
+Douris             1    0    1
+Juneau             1    0    1
+Neely              0    1    1
+Oates              0    1    1
+Sweeney D          0    1    1
+
+Buffalo: 2    Power play: 5-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Audette            1    0    1
+Corkum             0    1    1
+Errey              1    0    1
+Khmylev            0    1    1
+LaFontaine         0    1    1
+Wood               0    1    1
+
+-----------------------------------------
+Calgary                          1 1 0 1--3
+San Jose                         0 2 0 0--2
+First period
+     1, Calgary, Suter 21 (Reichel, MacInnis) pp, 17:47.
+Second period
+     2, San Jose, Zmolek 5 (Odgers, Evason) 3:03.
+     3, San Jose, Kisio 24 (Garpenlov, Gaudreau) pp, 7:23.
+     4, Calgary, Lindberg 9 (MacInnis) pp, 12:43.
+Third period
+     No scoring.
+Overtime
+     5, Calgary, Fleury 31 (Otto, Yawney) 3:06.
+
+Calgary: 3    Power play: 8-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Fleury             1    0    1
+Lindberg           1    0    1
+MacInnis           0    2    2
+Otto               0    1    1
+Reichel            0    1    1
+Suter              1    0    1
+Yawney             0    1    1
+
+San Jose: 2    Power play: 9-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Evason             0    1    1
+Garpenlov          0    1    1
+Gaudreau           0    1    1
+Kisio              1    0    1
+Odgers             0    1    1
+Zmolek             1    0    1
+
+-----------------------------------------
+Pittsburgh                       0 3 2--5
+Quebec                           2 1 0--3
+First period
+     1, Quebec, Kamensky 15 (Huffman) 6:05.
+     2, Quebec, Young 27 (Lapointe, Huffman) 16:52.
+Second period
+     3, Pittsburgh, Mullen 29 (Lemieux, Murphy) 3:54.
+     4, Pittsburgh, Lemieux 60 (Tocchet, U.Samuelsson) 5:07.
+     5, Pittsburgh, Lemieux 61 (Tocchet, Stevens) 8:12.
+     6, Quebec, Young 28 (Sundin, Kovalenko) pp, 14:52.
+Third period
+     7, Pittsburgh, Tippett 4 (unassisted) sh, 3:52.
+     8, Pittsburgh, Tippett 5 (McEachern, Mullen) 8:25.
+
+Pittsburgh: 5    Power play: 1-0   Special goals:  sh: 1  Total: 1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Lemieux            2    1    3
+McEachern          0    1    1
+Mullen             1    1    2
+Murphy             0    1    1
+Samuelsson U       0    1    1
+Stevens            0    1    1
+Tippett            2    0    2
+Tocchet            0    2    2
+
+Quebec: 3    Power play: 4-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Huffman            0    2    2
+Kamensky           1    0    1
+Kovalenko          0    1    1
+Lapointe           0    1    1
+Sundin             0    1    1
+Young              2    0    2
+
+-----------------------------------------
+New Jersey                       0 0 0--0
+Toronto                          0 0 1--1
+First period
+     No scoring.
+Second period
+     No scoring.
+Third period
+     1, Toronto, Gilmour 32 (Andreychuk, Anderson) 16:22.
+
+Toronto: 1    Power play: 5-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Anderson           0    1    1
+Andreychuk         0    1    1
+Gilmour            1    0    1
+
+New Jersey: 0    Power play: 3-0
+No scoring
+
+-----------------------------------------
+Ottawa                           1 0 2--3
+Hartford                         5 1 1--7
+First period
+     1, Ottawa, Maciver 17 (Baker, Luongo) 4:22.
+     2, Hartford, Kron 11 (Nylander, Gosselin) 5:13.
+     3, Hartford, Burt 4 (Cassels, Verbeek) 7:59.
+     4, Hartford, Cunneyworth 4 (Yake, Nylander) 9:59.
+     5, Hartford, Sanderson 42 (Cassels, Houda) 11:11.
+     6, Hartford, Verbeek 35 (Cassels, Zalapski) pp, 15:50.
+Second period
+     7, Hartford, Sanderson 43 (Cassels, Zalapski) pp, 18:38.
+Third period
+     8, Hartford, Kron 12 (Poulin, Burt) 4:57.
+     9, Ottawa, Turgeon 23 (Lamb) 8:57.
+     10, Ottawa, Baker 17 (Luongo, Maciver) pp, 16:17.
+
+Hartford: 7    Power play: 3-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Burt               1    1    2
+Cassels            0    4    4
+Cunneyworth        1    0    1
+Gosselin           0    1    1
+Houda              0    1    1
+Kron               2    0    2
+Nylander           0    2    2
+Poulin             0    1    1
+Sanderson          2    0    2
+Verbeek            1    1    2
+Yake               0    1    1
+Zalapski           0    2    2
+
+Ottawa: 3    Power play: 7-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Baker              1    1    2
+Lamb               0    1    1
+Luongo             0    2    2
+Maciver            1    1    2
+Turgeon            1    0    1
+
+-----------------------------------------
+Winnipeg                         1 3 2--6
+Edmonton                         1 0 3--4
+First period
+     1, Winnipeg, Tkachuk 27 (Housley, Zhamnov) pp, 14:38.
+     2, Edmonton, Klima 31 (Ciger, Elik) 16:05.
+Second period
+     3, Winnipeg, King 8 (unassisted) 3:54.
+     4, Winnipeg, Zhamnov 21 (Selanne) 10:25.
+     5, Winnipeg, Domi 5 (Selanne, Housley) 18:44.
+Third period
+     6, Edmonton, Manson 15 (unassisted) 10:58.
+     7, Winnipeg, Eagles 8 (Numminen, Bautin) pp, 14:13.
+     8, Winnipeg, Zhamnov 22 (Ulanov, Selanne) 15:27.
+     9, Edmonton, Gelinas 8 (Kravchuk, Ranford) 16:48.
+     10, Edmonton, Kravchuk 10 (Buchberger) 18:42.
+
+Winnipeg: 6    Power play: 5-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bautin             0    1    1
+Domi               1    0    1
+Eagles             1    0    1
+Housley            0    2    2
+King               1    0    1
+Numminen           0    1    1
+Selanne            0    3    3
+Tkachuk            1    0    1
+Ulanov             0    1    1
+Zhamnov            2    1    3
+
+Edmonton: 4    Power play: 3-0
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Buchberger         0    1    1
+Ciger              0    1    1
+Elik               0    1    1
+Gelinas            1    0    1
+Klima              1    0    1
+Kravchuk           1    1    2
+Manson             1    0    1
+Ranford            0    1    1
+
+-----------------------------------------
+Chicago                          0 3 0 0--3
+St. Louis                        1 2 0 0--3
+First period
+     1, St. Louis, Shanahan 46 (Janney, Hull) pp, 4:09.
+Second period
+     2, Chicago, Murphy 4 (Chelios, Roenick) pp, 0:50.
+     3, St. Louis, Shanahan 47 (Hedican, Janney) 1:18.
+     4, Chicago, Noonan 16 (Murphy, Chelios) pp, 5:24.
+     5, St. Louis, Bozon 6, ps, 12:13.
+     6, Chicago, Roenick 43 (Sutter, Murphy) pp, 18:39.
+Third period
+     No scoring.
+Overtime
+     No scoring.
+
+St. Louis: 3    Power play: 4-1   Special goals:  pp: 1  ps: 1  Total: 2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bozon              1    0    1
+Chelios            0    1    1
+Hedican            0    1    1
+Hull               0    1    1
+Janney             0    2    2
+Murphy             0    1    1
+Shanahan           2    0    2
+
+Chicago: 3    Power play: 3-3
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Chelios            0    2    2
+Murphy             1    2    3
+Noonan             1    0    1
+Roenick            1    1    2
+Sutter             0    1    1
+
+-----------------------------------------
+Montreal                         0 1 2--3
+NY Islanders                     0 2 0--2
+First period
+     No scoring.
+Second period
+     1, Montreal, Brunet 10 (Carbonneau, Daigneault) 4:39.
+     2, NY Islanders, Turgeon 51 (Thomas, Kurvers) pp, 9:14.
+     3, NY Islanders, Mullen 16 (unassisted) 15:13.
+Third period
+     4, Montreal, Bellows 38 (Desjardins, Dipietro) 3:01.
+     5, Montreal, Damphousse 38 (Desjardins, Bellows) pp, 10:11.
+
+Montreal: 3    Power play: 5-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Bellows            1    1    2
+Brunet             1    0    1
+Carbonneau         0    1    1
+Daigneault         0    1    1
+Damphousse         1    0    1
+Desjardins         0    2    2
+Dipietro           0    1    1
+
+NY Islanders: 2    Power play: 5-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Kurvers            0    1    1
+Mullen             1    0    1
+Thomas             0    1    1
+Turgeon            1    0    1
+
+-----------------------------------------
+Minnesota                        2 1 0--3
+Los Angeles                      0 0 0--0
+First period
+     1, Minnesota, Dahlen 33 (unassisted) 2:34.
+     2, Minnesota, Courtnall 33 (Dahlen, Modano) pp, 9:30.
+Second period
+     3, Minnesota, McPhee 14 (Sjodin, Hatcher) pp, 7:24.
+Third period
+     No scoring.
+
+Minnesota: 3    Power play: 11-2
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Courtnall          1    0    1
+Dahlen             1    1    2
+Hatcher            0    1    1
+McPhee             1    0    1
+Modano             0    1    1
+Sjodin             0    1    1
+
+Los Angeles: 0    Power play: 5-0
+No scoring

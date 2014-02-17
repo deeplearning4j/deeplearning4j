@@ -1,0 +1,21 @@
+photo: Signe Brewster
+Summary:
+I started the process of making custom pawns on a 3D scanner, which allowed me to 3D print a replica of a small train. Then I created a silicone mold to replicate the pieces even faster.
+photo: Signe Brewster
+One of the strengths of 3D printing is how easy it makes it to customize any object. Emboldened by how perfectly laser cutting a chess board went last week, I decided to make things a bit more complicated and tweak the design of the chess pieces I planned to 3D print .
+I started by working with TechShop’s NextEngine 3D scanner; a panel of lasers and lights attached to a rotating turntable. By scanning a physical object, I could then print a replica–a perfect application for a 3D printer.
+I chose a tiny toy train and, with the help of a TechShop staff member, stuck it to the bottom of a cup. He explained that the markings on the cup help the scanner place where it is in the rotation, resulting in a more complete image. I placed the cup on the turntable and the scanner got to work. Lasers passed over the train’s surface as it slowly rotated.
+We rescanned the train a few times to overcome different problems. After finding some parts of the train were too reflective, we dusted it in talcum powder, which makes it easier for the laser to pick up. The scanner also couldn’t pick up the bottom of the train or its more awkward angles on the first try, so we repositioned it to give it a better view.
+Finally, seven slices of the train appeared in the scanner’s software program. It didn’t stitch them together accurately on its own, so we did it manually.
+The resulting model wasn’t bad. It had a few holes in it where the scanner didn’t pick anything up, but it was 3D printable.
+My next stop was Type A Machines , a 3D printer startup that operates from within TechShop. After using an old Ultimaker for all those weeks at Noisebridge, it was pretty exciting to have the chance to work on Type A’s brand-new Next Generation Series 1 printer .
+We started by printing the 3D scan of the train. While we were waiting, we tweaked the designs for the rest of the chess pieces, which I pulled off of Thingiverse . In Autodesk’s 123D Make, we applied effects that operated much like filters in Photoshop–immediately, they transformed the whole object. We chose a faceted effect that turned the chess pieces into series of flat edges, giving them a more modern look.
+The train turned out well. But considering it was going to take about 10 hours to print the whole chess set, the plan was to make a mold and replicate the pawn that way.
+Making a mold is a messy process, it turns out. A TechShop staffer produced two bottles filled with blue and green goops, which we mixed together to form liquid silicone. We lined the bottom of a shallow cup with clay and stuck the 3D printed train into it before pouring the liquid in.
+An hour later, I had a firm cylinder of silicone that I cut apart to release the train and reveal the mold.
+Then I mixed up another two goops to begin casting the train replicas. But when I pulled the mold apart to reveal the first cast, disaster struck: part of the mold broke away with the train, rendering it useless.
+I guess no DIY project can go absolutely perfectly. I didn’t have the materials to create another mold, so Type A Machines was kind enough to print a few pawns for me.  Despite the last-minute setback, I’m very happy with how the set turned out. I hope the recipient will be too.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

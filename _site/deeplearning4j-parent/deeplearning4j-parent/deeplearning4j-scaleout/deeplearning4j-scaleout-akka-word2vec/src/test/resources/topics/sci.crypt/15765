@@ -1,0 +1,45 @@
+From: ted@nmsu.edu (Ted Dunning)
+Subject: Re: Off the shelf cheap DES keyseach machine (Was: Re: Corporate acceptance of the wiretap chip)
+Organization: Computing Research Lab
+Lines: 36
+	<1993Apr21.001230.26384@lokkur.dexter.mi.us>
+	<C5uvn4.MF7@austin.ibm.com> <strnlghtC5wCMo.Fx5@netcom.com>
+NNTP-Posting-Host: lole.nmsu.edu
+In-reply-to: strnlght@netcom.com's message of Thu, 22 Apr 1993 17:59:12 GMT
+
+
+In article <strnlghtC5wCMo.Fx5@netcom.com> strnlght@netcom.com (David
+Sternlight) writes:
+
+   >At the company I worked for previously, I received a file that was
+   >des encryped and the person that had sent it, went on vaction.
+   >Rather than wait two weeks I set up a straight frontal attack with
+   >one key at a time.  It only took two(2) days to crack the file.
+   >No, I don't have any faith in DES.
+   
+
+   Taking this at face value (though it seems quite dissonant with
+   much else that has been published here about brute force DES
+   cracking, unless Russell was lucky with respect to the key), I'd be
+   very interested in whether the program Russell used is available?
+
+key search is very practical in many real situations since people use
+such stupid keys on the average.  password crackers know this well.
+
+   Depending on his answer, this could be an appalling development
+   calling into question both DES and RSA/DES.
+
+not really.  in fact, public key based communication systems very
+often pick keys automatically which are much better than passwords or
+pass phrases.
+
+   If any bright programmer with a little idle machine time can crack
+   a single DES message in a couple of days (assuming no tricks that
+   are message-specific),
+
+if a person picked the password or pass phrase, then the key search is
+pretty straightforward.  in running english text, the average content
+of a single word is about 8 bits.  in pass phrases, this may increase
+to 10 bits or so.  searching 30bit spaces is semi-practical even in
+software and searching 40bit spaces isn't outrageous to imagine with
+hardware assists of moderate size.

@@ -1,0 +1,32 @@
+From: mau@herky.cs.uiowa.edu (Mau Napoleon)
+Subject: RFD: comp.databases.access
+Organization: UUNET Communications
+Lines: 25
+NNTP-Posting-Host: rodan.uu.net
+Oganization: uiowa.edu
+
+This is an official RFD for the creation of a new newsgroup for the
+general discussion of the Microsoft Access RDMS.
+
+NAME: COMP.DATABASES.ACCESS
+
+MODERATION: UNMODERATED. At this time, no need for a moderator has been
+assertained. Future evaluation will determine if one is needed.
+
+PURPOSE: 
+Access is a new RDBMS for the Windows Operating System. It includes WYSIWYG
+design tools for easy creation of tables, reports, forms and queries and a
+database programming language called Access Basic.
+THe purpose of the group will be to provide help to people who use Access's 
+WYSIWYG design tools to create simple databases as well as to people who use 
+Access Basic to create complex databases.
+
+RATIONALE:
+Eventhough Access is a new RDBMS, it is very popular because of its Graphical
+Development enviroment and its initial low price.
+Been a version 1.0 product means that all Access users are Novices.
+For that reason a newsgroup is needed where Access users can discuss 
+their experiences with the product and answer each other's questions.
+-- 
+Napoleon
+mau@herky.cs.uiowa.edu

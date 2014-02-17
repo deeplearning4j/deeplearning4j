@@ -1,0 +1,46 @@
+From: don@hunan.rastek.com (Donald Owen Newbold)
+Subject: Re: ATM...  ==>  Now HPLJ 4 Pricing
+Organization: Rastek Corporation, Huntsville, AL
+Lines: 41
+
+While there are too many PS clones to count, some of which are quite poor,
+trying to clone something that goes through regular modifications does require
+some patience. Three questions come to mid real quick for something like
+this.
+
+Q:	Which version of Adobe PS will we clone?
+	Aside from the level 1 and level 2 issues, Adobe has in the past released
+	new code that incorporates modifications/upgrades/fixes just as all other
+	software vendors do. The level 2 stuff may seem sound now, but I assure
+	you,changes will become more frequent as their customer list begins to
+	dwindle in the face of competition. This allows them to shift people to
+	maintenance, as well as design efforts for level 3.
+
+Q:	Do we duplicate the bugs, or do we make it work correctly?
+	From the LaserWriter to the LaserJet 4 there have been bugs. (If I had
+	a number to call at HP or Adobe, they'ld have heard from me.) Deciding
+	which approach to take depends on which printer you want to emulate.
+
+Q:	Do we follow the Red Book, or do we follow someone's implementation?
+	Without a doubt, there are differences between the Red Book and Adobe's
+	PS. With level 2 many issues have been refined but the Red Book does
+	leave big, big holes in the implementation specific stuff. It would be
+	nice it the Red Bood at least pined things down enough so that two
+	different implementations of Adobe's PS don't do the exact opposite given
+	an identical set of conditions.
+
+Q:	PSCRIPT.DRV?
+	Having done a lot of PS clone testing myself, the unfortunate side of
+	testing is the limited number of sources for test files. The primary
+	source we use is Genoa. And having characterizes their 1992 PS ATS files,
+	(1300+ of them) over half are taken from PSCRIPT.DRV. It may not ideal,
+	but the ATS files are what the printer vendors use. I'm sure that Adobe
+	uses them too, but Adobe's output is by definition correct, even if its
+	wrong.
+
+Yes, there are some very poor clones. We've seen them here at Rastek (a sub
+of Genicom which has its own clone called GeniScript). Some are poor for lack
+of design, some are poor because they followed the Red Book, and some are poor
+because the vendors don't know what PS is.
+
+Don Newbold									don@rastek.com

@@ -1,0 +1,39 @@
+From: msb@sq.sq.com (Mark Brader)
+Subject: Re: Comet in Temporary Orbit Around Jupiter?
+Organization: SoftQuad Inc., Toronto, Canada
+Lines: 34
+
+> > Can these questions be answered for a previous
+> > instance, such as the Gehrels 3 that was mentioned in an earlier posting?
+
+> Orbital Elements of Comet 1977VII (from Dance files)
+> p(au)          3.424346
+> e              0.151899
+> i              1.0988
+> cap_omega(0) 243.5652
+> W(0)         231.1607
+> epoch       1977.04110
+
+Thanks for the information!
+
+I assume p is the semi-major axis and e the eccentricity.  The peri-
+helion and aphelion are then given by p(1-e) and p(1+e), i.e., about
+2.90 and 3.95 AU respectively.  For Jupiter, they are 4.95 and 5.45 AU.
+If 1977 was after the temporary capture, this means that the comet
+ended up in an orbit that comes no closer than 1 AU to Jupiter's --
+which I take to be a rough indication of how far from Jupiter it could
+get under Jupiter's influence.
+
+> Also, perihelions of Gehrels3 were:
+> 
+> April  1973     83 jupiter radii
+> August 1970     ~3 jupiter radii
+
+Where 1 Jupiter radius = 71,000 km = 44,000 mi = 0.0005 AU.  So the
+1970 figure seems unlikely to actually be anything but a perijove.
+Is that the case for the 1973 figure as well?
+-- 
+Mark Brader, SoftQuad Inc., Toronto		"Remember the Golgafrinchans"
+utzoo!sq!msb, msb@sq.com					-- Pete Granger
+
+This article is in the public domain.

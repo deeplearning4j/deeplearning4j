@@ -1,0 +1,64 @@
+From: ivan@IRO.UMontreal.CA (Catalin Ivan)
+Subject: IDE/ESDI coexistence
+Summary: How to make IDE and ESDI controllers live together???
+Keywords: HD, controller, IDE, ESDI, disks
+Organization: Universite de Montreal
+Lines: 57
+
+Hello all,
+
+You, the Net, are my last resort, or I'll just change my job :-)
+This might be a FAQ (e.g. mixing controllers) but haven't seen any.
+
+Sys: 486/33, AMI BIOS, and your run-of-the mill multi-I/O card with
+serials/paral/floppies and 
+	- IDE controller "clone" Gw2760-EX
+		there are no jumpers affecting the HD or ctrller :-( 
+	- Quantum ProDrive LPS (3" 105M type 47: 755cyl, 16hds, 17spt).
+
+Pb: I want to bring in this (2nd hand, neat price):
+	- Maxtor XT-B380E (~330M, <15ms, BIOS type 1, ctrller manages
+		the real geom: 1630cyl, 8hds, 52spt)
+	- Western Digital WD1007V-SE1 ESDI ctrller: no floppies.
+		(jumpers set IRQ 14/15, hw port addr 1F0/170,
+		and BIOS addr CC00/C800, and other floppy/format stuff)
+
+Goal: have the WD ESDI as a secondary/controller and have both disks 
+simultaneously working. Being able to boot from the ESDI too would be 
+a nice bonus but is not expected.
+
+Ultimate goal: have room for Linux et al.
+Ex of scheme I have in mind: boot from IDE (HD or floppy) and mount
+the ESDI as root. Not booting from ESDI, or even from HD, is acceptable.
+
+I have tried numerous (all!!) combinations to no avail. They work alone,
+or can coexist witout hang-ups but can't access the ESDI or the IDE, 
+depending on setup/jumpers.
+
+Useful suggestions might be:
+- How do I tell the BIOS setup about two ctrllers (I guess the 2nd HD
+is expected to hang off the same ctrller as the 1st).
+- Do I need some driver to make it work?
+- --- " --- some new BIOS/chip for any of these cards?
+- do I have to buy another controller to make them HDs happy? IDE
+is cheaper; ESDI is hard to find and rather costly. I'm not 
+rich or I wouldnt' try to scavenge around, so soft slns are preferred.
+- adapters of some sort; I can hold a soldering iron, and can change
+a chip or put a jumper!
+
+Also useful:
+- BBS or Hot-line of Western Digital.
+- ftp archives with relevant info.
+- expert stores in Toronto, Ontario area (that would be a miracle! haven't
+seen any really knowledgeable ppl in a while)
+- any hints into inner workings of the system ... 
+- anything else that helped you in similar situations (prayers :-) )
+
+Direct or posted replies are ok.
+	Many thanks,
+			Cat.
+--
+////// /// // / /  /  /   /   /    /     /      /      /        / 
+Catalin Ivan - email: ivan@Iro.UMontreal.CA - tel:(416) 324.8704
+         Human-Computer   INTERACTION   Humain-Machine 
+Universite de Montreal - Informatique et Recherche Operationelle

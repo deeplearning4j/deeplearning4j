@@ -1,0 +1,54 @@
+From: skip@eco.twg.com (Skip Koppenhaver)
+Subject: Pulldown menu periodically hangs application on OpenWindows 3.0
+Nntp-Posting-Host: eco.twg.com
+Reply-To: skip@eco.twg.com
+Organization: The Wollongong Group (East Coast Operations)
+Lines: 47
+
+
+Has anyone found a fix for the following problem?
+
+Client Software:	SunOs 4.1.1, X11R5
+Server Hardware:	Sun IPC
+Server Software:	SunOs 4.1.1, Open Windows 3.0 (w/ patch 100444-37)
+
+A Motif 1.2.2 application will periodically hang when run against the
+OpenWindows 3.0 server (xnews). The pulldown is displayed but then no
+button actions have any effect. Sometimes pressing <Return> will
+unstick the application but not usually. It looks like the pulldown is
+grabbing the focus and never letting go. Other windows on the display
+continue to get updated so the server isn't hanging. If I log in from
+another terminal and kill the Motif application then everything gets
+back to normal. The same application when run against other X servers
+(including MIT X11R5 Xsun, DecWindows, Tektronix X terminal) has no
+problems. This is obviously a OpenWindows problem but I need a
+work-around since most of our customers are OpenWindows users.
+
+I have tried the following things:
+
+    1. Installing the latest version of the OpenWindows server patch
+       (100444-37).
+
+    2. Using mwm (version 1.2.2) instead of olwm.
+
+    3. Applying the patch specified in the Motif FAQ (question 110).
+       This had the effect of disabling the point-and-click method of
+       menu interaction (as opposed to the click-and-drag method), and
+       screwing up the menu mnemonics keys. It did seem to help, but I
+       was still able to get the application to hang.
+
+Repeat By:
+
+This is an intermittent problem so you'll have to try several times.
+
+Click and release on a menu heading (pulldown menu will pop up)
+
+Click and release on a menu item
+
+Repeat until application hangs
+
+
+Any help would be appreciated. Thanks in advance.
+--
+Skip Koppenhaver
+skip@eco.twg.com

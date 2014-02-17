@@ -1,0 +1,31 @@
+From: bilan@cps.msu.edu (Thomas J Bilan)
+Subject: W4WG & Novell
+Organization: Dept. of Computer Science, Michigan State University
+Lines: 23
+Distribution: world
+NNTP-Posting-Host: walnut.cps.msu.edu
+Originator: bilan@walnut.cps.msu.edu
+
+I installed Windows for Workgroups on my network and I'm having problems 
+mapping drives in the file-manager.
+
+Situation:
+If I put LASTDRIVE = Z in my config.sys, NETX will run but I can't access
+drive f: to log in to Novell.  
+If I don't put LASTDRIVE = Z in my config.sys I can't access other W4WG 
+drives from the file-manager.
+
+It seems that there should be a way to make NETX work with the LASTDRIVE = 
+statement in my Config.Sys.
+
+I would appreciate any help.  It's probably an easy problem that all you 
+Windows guru's solved many many moons ago...
+
+Thanks,
+Tom Bilan
+
+-- 
+/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+$ Department of Death by Engineering   ^   Surgeon General's Warning:        $
+$ Michigan State University            ^   Graduate School may cause brain   $
+$ bilan@cps.msu.edu                    ^   damage and sporadic loss of hair  $

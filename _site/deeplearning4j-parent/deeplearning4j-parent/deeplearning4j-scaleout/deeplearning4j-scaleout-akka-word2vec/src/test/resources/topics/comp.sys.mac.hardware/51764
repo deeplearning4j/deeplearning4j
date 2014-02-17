@@ -1,0 +1,34 @@
+From: rvenkate@ux4.cso.uiuc.edu (Ravikuma Venkateswar)
+Subject: Re: x86 ~= 680x0 ?? (How do they compare?)
+Distribution: usa
+Organization: University of Illinois at Urbana
+Lines: 28
+
+skok@itwds1.energietechnik.uni-stuttgart.de (Holger Skok) writes:
+
+>In article <C5nq9C.LLp@news.cso.uiuc.edu> rvenkate@ux4.cso.uiuc.edu (Ravikuma Venkateswar) writes:
+>[... stuff deleted]
+>>
+>>Besides, for 0 wait state performance, you'd need a cache anyway. I mean,
+>>who uses a processor that runs at the speed of 80ns SIMMs? Note that this
+>>memory speed corresponds to a clock speed of 12.5 MHz.
+>>
+>[more stuff deleted...]
+
+>How do you calculate that figure? I'd assume even in personal computers
+>the board designers would use bank switching to (optimistically) 
+>quadruple the access speed  or am I missing something here?
+
+The previous article referred to the fact that you could only use 20ns SIMMs in
+a 50MHz machine, but that you could use 80ns SIMMs in slower machines. I just
+pointed out that if you could only use 20ns SIMMs in a 50MHz machine, you can't
+use 80ns SIMMs in anything faster than a 12.5 MHz machine. Bank switching and
+caches were not considered in either example (although both would help memory
+access).
+
+>HSK
+-- 
+Ravikumar Venkateswar
+rvenkate@uiuc.edu
+
+A pun is a no' blessed form of whit.

@@ -1,0 +1,27 @@
+From: amit@aryeh.uchicago.edu (Yali Amit)
+Subject: Problems with Open Windows
+Organization: Dept. of Statistics
+Lines: 22
+
+
+
+
+
+ After having OpenWindows 
+(Version 3 for SunOS 4.1) or Xwindows
+running continuously on my machine for 3-4 days,
+the following message appears  when trying to open
+a new window, or to run any program that needs to open windows.
+
+XView error: Cannot open connection to window server: :0.0 (Server
+package)
+
+I would greatly appreciate any suggestions to solve this problem.
+
+Yali Amit
+Department of Statistics
+University of Chicago 
+Chicago IL 60615
+
+
+

@@ -1,0 +1,70 @@
+From: jott@scarecrow.cse.nd.edu (John Ott)
+Subject: Re: Pinout needed for TIL311
+Reply-To: jott@scarecrow.cse.nd.edu (John Ott)
+Organization: Univ. of Notre Dame
+Lines: 64
+
+In article <segal.734995860@corolla7>, segal@rtsg.mot.com (Gary Segal) writes:
+|> I've recently picked up some TIL311 display chips, but I can't find
+|> any information on them.  It seems they are no longer made by TI, and
+|> I don't have an old enough data book.  :-(
+|> 
+|> It appears to have a dot-matrix led display capable of showing one hex
+|> digit.  It is in a 14 pin DIP package, but pins 6, 9, and 11 are not
+|> present.
+|> 
+|> If you have any information on this part (pinout, power requirments,
+|> functions, ...) please send me e-mail.
+|> 
+|> Thank You,
+|> 
+|> -- 
+|> Gary Segal                             Motorola Inc.            
+|> segal@oscar.rtsg.mot.com               Cellular Infrastructure Division
+|> 	--- we are standing here only to gaze at the wind ---
+
+
+pin      function
+ 1      led supply voltage
+ 2      latch data input b
+ 3      latch data input a
+ 4      left decimal point cathode
+ 5      latch strobe input
+ 6      omitted
+ 7      common gnd
+ 8      blanking input
+ 9      omitted
+10      right decimal point cathode
+11      omitted
+12      latch data input d
+13      latch data input c
+14      logic supply voltage (5v)
+
+LATCH STROBE INPUT, pin 5, when low, the data in the latches follow the data on the latch data
+                             inputs.  When high, the data in the latches will not change.  If the
+                               display is blanked and then restored while the enable input is high,
+                               the previous character will again be displayed.
+
+BLANKING INPUT, pin 8,    When high, the display is blanked regardless of the levels of the other
+                              inputs.  When low, a character is displayed as determined by the data
+                              in the latches.  The blanking input may be pulsed for intensity modulation.
+
+LATCH DATA INPUTS, pins 2,3,12,13,   Data on these inputs are entered into the latches when the enable
+                                          input is low.  The binary weights of these inputs are A = 1,
+                                          B = 2, C = 4, D = 8
+
+DECIMAL POINT CATHODES, pins 4, 10,   These LEDS are not connected to the logic chip.  If a decimal point
+                                          is used, an external resistor or other current limiting
+                                          mechanism must be connected in series with it.
+
+LED SUPPLY, pin 1            This connection permits the user to save on regulated Vcc current by using
+                                 a separate LED supply, or it may be externally connected to the logic
+                                 supply (Vcc).
+
+LOGIC SUPPLY (Vcc), pin 14      Separate Vcc connection for the logic chip
+
+COMMON GROUND, pin 7,      This is the vegative termnal for all logic and LED currents except for the
+                              decimal points.
+
+John
+jott@dickens.helios.nd.edu

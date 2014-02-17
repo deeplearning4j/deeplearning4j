@@ -1,0 +1,28 @@
+From: tchannon@black.demon.co.uk (Tim Channon)
+Subject: Re: Can I use a CD4052 analog multiplexer for digital signal
+Reply-To: tchannon@black.demon.co.uk
+Distribution: world
+X-Mailer: cppnews $Revision: 1.20 $
+Organization: null
+Lines: 19
+
+> As the subject says - Can I use a 4052 for digital signals?  I don't see
+> why it couldn't handle digital signals, but I could be wrong.  Anyone have
+> any advice?  Thanks.
+
+Yes.
+
+I use 74HC4066 and others commerically for this purpose so rest assured it 
+works fine. In one case I route bit serial digital audio using these and it 
+is difficult to see any signal degradation at all which surprised me given 
+some pretty fast edges. HC4066 is spec'd at something like -3dB @ 200MHz into 
+50 ohms. The more complex types are generally a little slower and more 
+resistive.
+
+Plain 4000 series are not so good at handling 5v logic.
+
+Remember that the output load is seen by the input device.
+
+  TC. 
+    E-mail: tchannon@black.demon.co.uk or tchannon@cix.compulink.co.uk
+                                

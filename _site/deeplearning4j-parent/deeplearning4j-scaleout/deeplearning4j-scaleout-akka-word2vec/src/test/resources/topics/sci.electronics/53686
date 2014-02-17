@@ -1,0 +1,91 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: 74ACT???
+Organization: U of Toronto Zoology
+Lines: 86
+
+In article <1qhrq9INNlri@crcnis1.unl.edu> mpaul@unl.edu (marxhausen paul) writes:
+>OK, what's a quick rundown on all the 7400 series variations?  We're
+>repairing something with a 74ACT00 on it and the question arises, "well,
+>do  i really need the ACT part?"  Flipping through Digi-Key I see 
+>ALS, AS, C, HC, AC, ACQ, ACT, HCT, ACHT, HCTLS...
+
+Here's something I posted about this a few years ago.  It's not fully
+up to date with all the new variations (some of which are just different
+manufacturer's synonyms):
+
+------
+In practical terms, ignoring the technological details, this is my view
+of the families (NB I am not a giant corporation, which influences my
+views on things like availability and backward compatibility):
+
+74	The original.  Speed good, power consumption fair.  Effectively
+	obsolete now; use 74LS or later, except for a *very* few oddball
+	functions like 7407 which are hard to find in newer families.
+
+74H	Modification of 74 for higher speed, at the cost of higher
+	power consumption.  Very obsolete; use 74F.
+
+74L	Modification of 74 for lower power, at the cost of lower speed.
+	Very obsolete; use CMOS.
+
+74S	Later modification of 74 for even higher speed, at some cost in
+	power consumption.  Effectively obsolete; use 74F.
+
+74LS	Combination of 74L and 74S, for speed comparable to 74 with lower
+	power consumption.  Best all-round TTL now, widest variety of
+	devices.
+
+74F	Fast as blazes, power not too bad.  The clear choice for high
+	speed in TTL.  Availability and prices generally good.
+
+74AS	Failed competitor to 74F, although a few 74AS parts do things
+	that are hard to find in 74F and thus are still useful.
+
+74ALS	Possible replacement for 74LS.  Generally souped up.  Still fairly
+	new, availability and prices possibly a problem.
+
+74C	Fairly old family, CMOS devices with TTL pinouts.  Competed with
+	4000 series, not too successfully.  Obsolete; use 4000 or newer
+	CMOS 74 families.
+
+4000	(Thrown in as the major non-74 non-ECL logic family.)  The old CMOS
+	family, still viable because of *very* wide range of devices, low
+	power consumption, and wide range of supply voltages.  Not fast.
+	Very forgiving and easy to work with (beware static electricity,
+	but that comment applies to many other modern logic families too).
+	There are neat devices in this family that exist in no other.  The
+	clear choice when speed is not important.
+
+74HC	A new attempt at 74-pinout CMOS.  Fast compared to old CMOS, power
+	consumption often lower than TTL.  Possibly a good choice for
+	general-purpose logic, assuming availability and affordability.
+	CMOS logic levels, *not* TTL ones.  Beware very limited range of
+	supply voltages compared to older CMOS, also major rise of power
+	consumption at faster speeds.
+
+74HCT	74HC with TTL logic levels.  Much the same comments as 74HC.  Read
+	the fine print on things like power consumption -- TTL compatibility
+	in CMOS involves some compromises.
+
+10K	(Thrown in for speed freaks.)  The low end of ECL.  Various sources
+	claim that it is *easier* to work with than super-fast TTL for
+	serious high-speed work.  Less forgiving, though:  read and follow
+	the rules or it won't work.  Availability to hobbyists limited,
+	can be expensive.
+
+100K	(For real speed freaks.)  Hot ECL.  Harder to handle than 10K, and
+	inconvenient packages.  Much more useful datasheets, however.
+
+As for compatibility between families:  the 74 families (except 74C and
+74HC) are all more or less logic-level compatible, but how many 74X devices
+you can drive from one 74Y output varies enormously with X and Y.  You just
+have to read the specs and do the arithmetic.  74C and 74HC are compatible
+with the others with a bit of hassle.  4000 compatibility can be a bit of
+hassle or a lot of hassle depending on what supply voltage 4000 is using.
+10K or 100K to anything else is considerable hassle.
+
+Me?  I use 4000 and 74LS with a sprinkling of 74F.  74HC[T] and 10K are
+interesting but I haven't used either significantly yet.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

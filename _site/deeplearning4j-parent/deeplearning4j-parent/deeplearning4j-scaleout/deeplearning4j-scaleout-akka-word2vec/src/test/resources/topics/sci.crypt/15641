@@ -1,0 +1,24 @@
+From: caronni@nessie.cs.id.ethz.ch (Germano Caronni)
+Subject: Re: Do we need the clipper for cheap security?
+Organization: Swiss Federal Institute of Technology (ETH), Zurich, CH
+Lines: 19
+
+In article <9304201003.AA05465@pizzabox.demon.co.uk> gtoal@gtoal.com (Graham Toal) writes:
+>Can someone tell me if hardware compression is or is not needed to run
+>digital speech down 14.4K?  I think it is; I've heard it's not.  Lets
+>say 8 bit samples.  Would *raw* data at the corresponding sampling rate
+>be usable?  If not, how fancy does the compression need to be?
+
+As far as I know ISDN (call it Swissnet here, and it's being plugged in) it's
+8 bit 8000Hz (gives you one channel of 64kBit/sec) I guess you should not go
+below a sampling rate of 6000 Hz if you want to have same quality as on an
+analog-line. Anybody knows compression-algorithms & -factors for voice ?
+
+Greetings,
+
+	Germano Caronni
+-- 
+Instruments register only through things they're designed to register.
+Space still contains infinite unknowns.
+                                                              PGP-Key-ID:341027
+Germano Caronni caronni@nessie.cs.id.ethz.ch   FD560CCF586F3DA747EA3C94DD01720F

@@ -1,0 +1,30 @@
+From: idr@rigel.cs.pdx.edu (Ian D Romanick)
+Subject: Re: Fast polygon routine needed
+Keywords: polygon, needed
+Article-I.D.: pdxgate.7306
+Organization: Portland State University, Computer Science Dept.
+Lines: 23
+
+In article <C5nF8t.Gsq@news.cso.uiuc.edu> osprey@ux4.cso.uiuc.edu (Lucas Adamski) writes:
+>In article <1993Apr17.192947.11230@sophia.smith.edu> orourke@sophia.smith.edu (Joseph O'Rourke) writes:
+>>	A fast polygon routine to do WHAT?
+>To draw polygons of course.  Its a VGA mode 13h (320x200) game, done in C and
+>ASM.  I need a faster way to draw concave polygons that the method I have right
+>now, which is very slow.
+
+What kind of polygons?  Shaded?  Texturemapped?  Hm?  More comes into play with
+fast routines than just "polygons".  It would be nice to know exaclty what
+system (VGA is a start, but what processor?) and a few of the specifics of the
+implementation.  You need to give  more info if you want to get any answers! :P
+
+                                  - Ian Romanick
+                                    Dancing Fool of Epsilon
+
+[]--------------------------------------------------------------------[]
+ | Were the contained thoughts 'opinions',     EPN.NTSC.quality = Best|
+ | PSU would probably not agree with them.                            |
+ |                                                                    |
+ | "Look, I don't know anything about                                 |
+ | douche, but I do know Anti-Freeze                                  |
+ | when I see it!" - The Dead Milkmen                                 |
+[]--------------------------------------------------------------------[]

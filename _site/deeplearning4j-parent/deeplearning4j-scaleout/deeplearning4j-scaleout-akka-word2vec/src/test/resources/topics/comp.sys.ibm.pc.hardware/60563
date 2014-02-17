@@ -1,0 +1,26 @@
+From: luoma@binah.cc.brandeis.edu
+Subject: (Q) SCSI&IDE (i.e. 2 or more hard drives)
+Reply-To: luoma@binah.cc.brandeis.edu
+Organization: Brandeis University
+Lines: 20
+
+PLEASE: response directly to me (luoma@binah.cc.brandeis.edu)
+        by email.  IF there are a sufficient number of interesting
+        responses, I will post a summary (on April 24 or 25).
+
+I have waded through the mass of SCSI-IDE posting, but
+I missed any answers to a question posted early on --
+
+Has anyone (successfully) put both SCSI and IDE hard drives
+on the same system?
+
+I am particularly interested in having the SCSI as the _boot_ drive.
+
+For those who have managed this feat, I would appreciate
+a bit more information, such as what drives, which SCSI controller,
+and (if possible) what motherboard & BIOS
+(plus any other relevant info.).
+
+Thanks in advance,
+Robert Luoma      (luoma@binah.cc.brandeis)
+   --> all flames will be stored on my WORN drive <--

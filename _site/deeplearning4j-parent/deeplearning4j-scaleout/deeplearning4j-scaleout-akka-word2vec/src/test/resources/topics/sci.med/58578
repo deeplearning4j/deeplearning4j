@@ -1,0 +1,420 @@
+From: Dan Wallach <dwallach@cs.berkeley.edu>
+Subject: FAQ: Typing Injuries (2/4): General Info [monthly posting]
+Supersedes: <typing-injury-faq/general_734664243@cs.berkeley.edu>
+Organization: University of California, Berkeley
+Lines: 409
+Expires: 22 May 1993 04:18:16 GMT
+Reply-To: Dan Wallach <dwallach@cs.berkeley.edu>
+NNTP-Posting-Host: elmer-fudd.cs.berkeley.edu
+Summary: information about where to get more information
+Originator: dwallach@elmer-fudd.cs.berkeley.edu
+
+Archive-name: typing-injury-faq/general
+Version: $Revision: 4.28 $ $Date: 1993/04/13 04:17:58 $
+
+-------------------------------------------------------------------------------
+         Answers To Frequently Asked Questions about Typing Injuries
+-------------------------------------------------------------------------------
+
+The Typing Injury FAQ -- sources of information for people with typing
+injuries, repetitive stress injuries, carpal tunnel syndrome, etc.
+
+Copyright 1992,1993 by Dan Wallach <dwallach@cs.berkeley.edu>
+
+Many FAQs, including this one, are available on the archive site
+pit-manager.mit.edu (alias rtfm.mit.edu) [18.172.1.27] in the directory
+pub/usenet/news.answers.  The name under which a FAQ is archived appears
+in the Archive-name line at the top of the article.  This FAQ is archived
+as typing-injury-faq/general.Z
+
+There's a mail server also.  Just e-mail mail-server@pit-manager.mit.edu
+with the word 'help' on a line by itself in the body.
+
+The opinions in here are my own, unless otherwise mentioned, and do not
+represent the opinions of any organization or vendor.  I'm not a medical
+doctor, so my advice should be taken with many grains of salt.
+
+[Current distribution: sci.med.occupational, sci.med, comp.human-factors,
+ {news,sci,comp}.answers, and e-mail to c+health@iubvm.ucs.indiana.edu,
+ sorehand@vm.ucsf.edu, and cstg-L@vtvm1.cc.vt.edu]
+
+Changes since previously distributed versions are marked with change        ||
+bars to the right of the text, as is this paragraph.                        ||
+
+Table of Contents:
+    ==1== Mailing lists, newsgroups, etc.
+    ==2== The soda.berkeley.edu archive
+    ==3== General info on injuries
+    ==4== Typing posture, ergonomics, prevention, treatment
+    ==5== Requests for more info
+    ==6== References
+
+==1== Mailing lists, newsgroups, etc.
+
+USENET News:
+-----------
+comp.human-factors occasionally has discussion about alternative input devices.
+comp.risks has an occasional posting relevant to injuries via computers.
+sci.med and misc.handicap also tend to have relevant traffic.
+
+There's a Brand New newsgroup, sci.med.occupational, chartered specifically
+to discuss these things.  This would be the recommended place to post.
+
+Mailing lists:
+-------------
+The RSI Network: Available both on paper and via e-mail, this publication
+    covers issues relevant to those with repetitive stress injuries.  For
+    a sample issue and subscription information, send a stamped, self-
+    addressed business envelope to Caroline Rose, 970 Paradise Way, Palo
+    Alto CA 94306.
+
+    E-mail to <crose@applelink.apple.com>
+
+    $2 donation, requested.
+
+    All RSI Network newsletters are available via anonymous ftp from
+    soda.berkeley.edu (see below for details).
+
+c+health and sorehand are both IBM Listserv things.  For those familiar
+    with Listserv, here's the quick info:
+
+    c+health -- subscribe to listserv@iubvm.ucs.indiana.edu
+		post to c+health@iubvm.ucs.indiana.edu
+
+    sorehand -- subscribe to listserv@vm.ucsf.edu
+		post to sorehand@vm.ucsf.edu
+
+Quick tutorial on subscribing to a Listserv:
+    % mail listserv@vm.ucsf.edu
+    Subject: Total Listserv Mania!
+
+    SUBSCRIBE SOREHAND J. Random Hacker
+    INFO ?
+    .
+That's all there is to it.  You'll get bunches of mail back from the Listserv,
+including a list of other possible commands you can mail.  Cool, huh?  What'll
+those BITNET people think of, next?
+
+==2== The soda.berkeley.edu archive
+
+I've started an archive site for info related to typing injuries.  Just
+anonymous ftp to soda.berkeley.edu:pub/typing-injury.  (128.32.149.19)
+Currently, you'll find:
+
+Informative files:
+    typing-injury-faq/
+        general           -- information about typing injuries
+        keyboards         -- products to replace your keyboard
+        software          -- software to watch your keyboard usage
+	changes		  -- changes since last month's edition (new!)	    ||
+
+    keyboard-commentary   -- Dan's opinions on the keyboard replacements
+    amt.advice		  -- about Adverse Mechanical Tension
+    caringforwrists.sit.hqx -- PageMaker4 document about your wrists
+    caringforwrists.ps	  -- PostScript converted version of above...
+    carpal.info           -- info on Carpal Tunnel Syndrome
+    carpal.explained	  -- very detailed information about CTS
+    carpal.surgery	  -- JAMA article on CTS surgery
+    carpal.tidbits	  -- TidBITS article on CTS
+    tendonitis.info       -- info on Tendonitis
+    rsi.biblio		  -- bibliography of RSI-related publications
+
+    rsi-network/*         -- archive of the RSI Network newsletter
+			     (currently, containing issues 1 through 11)    ||
+    
+    rsi.details		  -- long detailed information about RSI
+    rsi.physical	  -- study showing RSI isn't just psychological
+
+    Various product literature:
+
+    apple-press		  -- press release on the Apple Adjustable Keyboard
+    apple-tidbits	  -- extensive info about Apple's Adjustable Keybd
+    bat-info		  -- MacWeek review on the Bat			    ||
+    comfort-*		  -- marketing info on the Comfort Keyboard
+    datahand-review	  -- detailed opinions of the DataHand
+    datahand-review2	  -- follow-up to above
+    datahand-desc	  -- description of the DataHand's appearance
+    kinesis-review	  -- one user's personal opinions
+    maltron-*		  -- marketing info on various Maltron products
+    maltron-review	  -- one user's personal opinions
+    vertical-info	  -- marketing info on the Vertical (new!)	    ||
+
+Programs:
+    (With the exception of accpak.exe, everything here is distributed as
+     source to be compiled with a Unix system.  Some programs take advantage
+     of the X window system, also.)
+
+    hsh.shar		  -- a program for one-handed usage of normal keyboards
+    typewatch.shar	  -- tells you when to take a break
+    xdvorak.c		  -- turns your QWERTY keyboard into Dvorak
+    xidle.shar		  -- keeps track of how long you've been typing
+    rest-reminder.sh      -- yet another idle watcher
+    kt15.tar  		  -- generates fake X keyboard events from the
+			     serial port -- use a PC keyboard on anything!
+			     (new improved version!)
+    accpak.exe		  -- a serial port keyboard spoofer for MS Windows
+
+    (Note: a2x.tar and rk.tar are both from export.lcs.mit.edu:contrib/
+     so they may have a more current version than soda.)
+
+    a2x.tar  		  -- a more sophisticated X keyboard/mouse spoofing
+			     program.  Supports DragonDictate.
+			     (note: a new version is now available)	    ||
+    rk.tar  		  -- the reactive keyboard -- predicts what you'll
+			     type next -- saves typing
+
+Pictures (in the gifs subdirectory):
+    howtosit.gif	  -- picture of good sitting posture
+			     (the caringforwrists document is better for this)
+
+    accukey1.gif	  -- fuzzy picture
+    accukey2.gif	  -- fuzzy picture with somebody using it
+    apple.gif		  -- the Apple Adjustable Keyboard		    ||
+    bat.gif               -- the InfoGrip Bat
+    comfort.gif           -- the Health Care Comfort Keyboard
+    datahand1.gif	  -- fuzzy picture
+    datahand2.gif	  -- key layout schematic
+    datahand3.gif	  -- a much better picture of the datahand
+    flexpro.gif		  -- the Key Tronic FlexPro keyboard		    ||
+    kinesis1.gif          -- the Kinesis Ergonomic Keyboard
+    kinesis2.gif	  -- multiple views of the Kinesis		    ||
+    maltron[1-4].gif      -- several pictures of Maltron products
+    mikey1.gif            -- the MIKey
+    mikey2.gif            -- Schematic Picture of the MIKey
+    tony.gif		  -- The Tony! Ergonomic Keysystem		    ||
+    twiddler1.gif	  -- "front" view
+    twiddler2.gif	  -- "side" view
+    vertical.gif	  -- the Vertical keyboard			    ||
+    wave.gif		  -- the Iocomm `Wave' keyboard
+
+Many files are compressed (have a .Z ending).  If you can't uncompress a file
+locally, soda will do it.  Just ask for the file, without the .Z extension.
+
+If you're unable to ftp to soda, send me e-mail and we'll see what we
+can arrange.
+
+==3== General info on injuries
+
+First, and foremost of importance: if you experience pain at all, then
+you absolutely need to go see a doctor.  As soon as you possibly can.  The
+difference of a day or two can mean the difference between a short recovery
+and a long, drawn-out ordeal.  GO SEE A DOCTOR.  Now, your garden-variety
+doctor may not necessarily be familiar with this sort of injury.  Generally,
+any hospital with an occupational therapy clinic will offer specialists in
+these kinds of problems.  DON'T WAIT, THOUGH.  GO SEE A DOCTOR.
+
+The remainder of this information is paraphrased, without permission, from
+a wonderful report by New Zealand's Department of Labour (Occupational
+Safety and Health Service): "Occupational Overuse Syndrome. Treatment and
+Rehabilitation: A Practitioner's Guide".
+
+First, a glossary (or, fancy names for how you shouldn't have your hands):
+(note: you're likely to hear these terms from doctors and keyboard vendors :)
+
+  RSI: Repetitive Strain Injury - a general term for many kinds of injuries
+  OOS: Occupational Overuse Syndrome -- synonym for RSI
+  CTD: Cumulative Trauma Disorder -- another synonym for RSI
+  WRULD: Work-Related Upper Limb Disorders -- yet another synonym for RSI
+  CTS: Carpal Tunnel Syndrome (see below)
+  Hyperextension:  Marked bending at a joint.
+  Pronation: Turning the palm down.
+  Wrist extension: Bending the wrist up.
+  Supination: Turning the palm up.
+  Wrist flexion: Bending the wrist down.
+  Pinch grip: The grip used for a pencil.
+  Ulnar deviation: Bending the wrist towards the little finger.
+  Power grip: The grip used for a hammer.
+  Radial Deviation: Bending the wrist toward the thumb.
+  Abduction: Moving away from the body.
+  Overspanning: Opening the fingers out wide.
+
+Now then, problems come in two main types: Local conditions and diffuse
+conditions.  Local problems are what you'd expect: specific muscles,
+tendons, tendon sheaths, nerves, etc. being inflamed or otherwise hurt.
+Diffuse conditions, often mistaken for local problems, can involve muscle
+discomfort, pain, burning and/or tingling; with identifiable areas of
+tenderness in muscles, although they're not necessarily "the problem."
+
+--- Why does Occupational Overuse Syndrome occur?  Here's the theory.
+
+Normally, your muscles and tendons get blood through capillaries which
+pass among the muscle fibers.  When you tense a muscle, you restrict
+the blood flow.  By the time you're exerting 50% of your full power,
+you're completely restricting your blood flow.
+
+Without fresh blood, your muscles use stored energy until they run out,
+then they switch to anaerobic (without oxygen) metabolism, which generates
+nasty by-products like lactic acid, which cause pain.
+
+Once one muscle hurts, all its neighbors tense up, perhaps to relieve the
+load.  This makes sense for your normal sort of injury, but it only makes
+things worse with repetitive motion.  More tension means less blood flow,
+and the cycle continues.
+
+Another by-product of the lack of blood flow is tingling and numbness from
+your nerves.  They need blood too.
+
+Anyway, when you're typing too much, you're never really giving a change
+for the blood to get back where it belongs, because your muscles never
+relax enough to let the blood through.  Stress, poor posture, and poor
+ergonomics, only make things worse.
+
+--- Specific injuries you may have heard of:
+
+(note: most injuries come in two flavors: acute and chronic.  Acute
+injuries are severely painful and noticable.  Chronic conditions have
+less pronounced symptoms but are every bit as real.)
+
+Tenosynovitis -- an inflamation of the tendon sheath.  Chronic tenosynovitis
+occurs when the repetitive activity is mild or intermittent: not enough to
+cause acute inflamation, but enough to exceed the tendon sheath's ability
+to lubricate the tendon.  As a result, the tendon sheath thickens, gets
+inflamed, and you've got your problem.
+
+Tendonitis -- an inflammation of a tendon.  Repeated tensing of a tendon
+can cause inflamation.  Eventually, the fibers of the tendon start separating,
+and can even break, leaving behind debris which induces more friction, more
+swelling, and more pain.  "Sub-acute" tendonitis is more common, which entails
+a dull ache over the wrist and forearm, some tenderness, and it gets worse
+with repetitive activity.
+
+Carpal Tunnel Syndrome -- the nerves that run through your wrist into your
+fingers get trapped by the inflamed muscles around them.  Symptoms include
+feeling "pins and needles", tingling, numbness, and even loss of sensation.
+CTS is often confused for a diffuse condition.
+
+Adverse Mechanical Tension -- also known as 'neural tension', this is where
+the nerves running down to your arm have become contracted and possibly
+compressed as a result of muscle spasms in the shoulders and elsewhere.
+AMT can often misdiagnosed as or associated with one of the other OOS 
+disorders.  It is largely reversible and can be treated with physiotherapy 
+(brachial plexus stretches and trigger point therapy).
+
+Others: for just about every part of your body, there's a fancy name for
+a way to injure it.  By now, you should be getting an idea of how OOS
+conditions occur and why.  Just be careful: many inexperienced doctors
+misdiagnose problems as Carpal Tunnel Syndrome, when in reality, you
+may have a completely different problem.  Always get a second opinion
+before somebody does something drastic to you (like surgery).
+
+==4== Typing posture, ergonomics, prevention, treatment
+
+The most important element of both prevention and recovery is to reduce
+tension in the muscles and tendons.  This requires learning how to relax.
+If you're under a load of stress, this is doubly important.  Tune out
+the world and breath deep and regular.  Relaxing should become a guiding
+principle in your work: every three minutes take a three second break.
+EVERY THREE MINUTES, TAKE A THREE SECOND BREAK.  Really, do it every
+three minutes.  It's also helpful to work in comfortable surroundings,
+calm down, and relax.
+
+If you can't sleep, you really need to focus on this.  Rest, sleep, and
+relaxation are really a big deal.
+
+There are all kinds of other treatments, of course.  Drugs can reduce
+inflamation and pain.  Custom-molded splints can forcefully prevent bad
+posture.  Surgery can fix some problems.  Exercise can help strengthen
+your muscles.  Regular stretching can help prevent injury.  Good posture
+and a good ergonomic workspace promote reduced tension.  Ice or hot-cold
+contrast baths also reduce swelling.  Only your doctor can say what's best
+for you.
+
+--- Posture -- here are some basic guidelines.  [I so liked the way this was
+written in the New Zealand book that I'm lifting it almost verbatim from
+Appendix 10. -- dwallach]
+
+. Let your shoulders relax.
+. Let your elbows swing free.
+. Keep your wrists straight.
+. Pull your chin in to look down - don't flop your head forward.
+. Keep the hollow in the base of your spine.
+. Try leaning back in the chair.
+. Don't slouch or slump forward.
+. Alter your posture from time to time.
+. Every 20 minutes, get up and bend your spine backward.
+
+Set the seat height, first.  Your feet should be flat on the floor.  There 
+should be no undue pressure on the underside of your thighs near the knees,
+and your thighs should not slope too much.
+
+Now, draw yourself up to your desk and see that its height is comfortable
+to work at.  If you are short, this may be impossible.  The beest remedy
+is to raise the seat height and prevent your legs from dangling by using a
+footrest.
+
+Now, adjust the backrest height so that your buttocks fit into the space
+between the backrest and the seat pan.  The backrest should support you in
+the hollow of your back, so adjust its tilt to give firm support in this
+area.
+
+If you operate a keyboard, you will be able to spend more time leaning
+back, so experiment with a chair with a taller backrest, if available.
+
+[Now, I diverge a little from the text]
+
+A good chair makes a big difference.  If you don't like your chair, go
+find a better one.  You really want adjustments for height, back angle,
+back height, and maybe even seat tilt.  Most arm rests seem to get in
+the way, although some more expensive chairs have height adjustable arm
+rests which you can also rotate out of the way.  You should find a good
+store and play with all these chairs -- pick one that's right for you.
+In the San Francisco Bay Area, I highly recommend "Just Chairs."  The
+name says it all.
+
+--- Keyboard drawers, wrist pads, and keyboard replacements:
+
+There is a fair amount of controvery on how to get this right.  For some
+people, wrist pads seem to work wonders.  However, with good posture, you
+shouldn't be resting your wrists on anything -- you would prefer your
+keyboard to be "right there".  If you drop your arms at your side and then
+lift your hands up at the elbow, you want your keyboard under your hands
+when your elbows are at about 90 degrees.  Of course, you want to avoid
+pronation, wrist extension, and ulnar deviation at all costs.  Wrist pads
+may or may not help at this.  You should get somebody else to come and
+look at how you work: how you sit, how you type, and how you relax.  It's
+often easier for somebody else to notice your hunched shoulders or
+deviated hands.
+
+Some argue that the normal, flat keyboard is antiquated and poorly
+designed.  A number of replacements are available, on the market, today.
+Check out the accompanying typing-injury-faq/keyboards for much detail.
+
+==5== Requests for more info
+
+Clearly, the above information is incomplete.  The typing-injury archive
+is incomplete.  There's always more information out there.  If you'd like
+to submit something, please send me mail, and I'll gladly throw it in.
+
+If you'd like to maintain a list of products or vendors, that would be
+wonderful!  I'd love somebody to make a list of chair/desk vendors.  I'd
+love somebody to make a list of doctors.  I'd love somebody to edit the
+above sections, looking for places where I've obviously goofed.
+
+==6== References
+
+I completely rewrote the information section here, using a wonderful
+guide produced in New Zealand by their Occupational Safety & Health
+Service, a service of their Department of Labour.  Special thanks
+to the authors: Wigley, Turner, Blake, Darby, McInnes, and Harding.
+
+Semi-bibliographic reference:
+    . Occupational Overuse Syndrome
+    . Treatment and Rehabilitation:
+      A Practitioner's Guide
+    
+    Published by the Occupational Safety and Health Service
+    Department of Labour
+    Wellington,
+    New Zealand.
+
+    First Edition: June 1992
+    ISBN 0-477-3499-3
+
+    Price: $9.95 (New Zealand $'s, of course)
+
+Thanks to Richard Donkin <richardd@hoskyns.co.uk> for reviewing this posting.
+
+-- 
+Dan Wallach               "One of the most attractive features of a Connection
+dwallach@cs.berkeley.edu  Machine is the array of blinking lights on the faces
+Office#: 510-642-9585     of its cabinet." -- CM Paris Ref. Manual, v6.0, p48.

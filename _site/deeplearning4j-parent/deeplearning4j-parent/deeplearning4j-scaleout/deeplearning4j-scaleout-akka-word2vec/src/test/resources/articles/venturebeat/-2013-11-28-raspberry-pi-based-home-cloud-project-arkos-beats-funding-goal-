@@ -1,0 +1,14 @@
+Ark OS, the private cloud crowdfunding project that aims to enable you to provide all your cloud services right in the comfort — and security — of your home, has beaten its funding goal of $45,000.
+So far, 859 backers have pledged $45,189, with six days remaining in the campaign.
+ArkOS puts your website, web apps, e-mail, file hosting, music, and photos all online in one universally accessible place. However, that place is completely under your control, and you get to decide exactly who can access any of your digital stuff.
+And you get to decide what lives or dies.
+Jacob Cook
+Jacob Cook has an ambitious plan to replace Google — with Raspberry Pi servers running his arkOS.
+Founder Jacob Cook started the project when Google killed Reader, a RSS service he relied on.
+“Google, while it is a great service that has done wonderful things for the Web, is showing some troubling signs,” Cook told VentureBeat a few weeks ago. “Their shutdown of Google Reader earlier this year means that none of the services [we] rely upon are sacrosanct if they are not profitable enough for them.”
+While the core software will run on “anything,” Ark OS will typically come on a tiny credit-card-sized Raspberry Pie computer that plugs into your home internet router. Once installed, you can log into it from any online device, using the Genesis utility. From there, you can turn on and turn off services, add new tools and options as they become available, and set up your private cloud with a simple graphical user interface.
+The software, however, does require “a lot of work.” Hence the crowdfunding campaign.
+Once complete, Ark OS will enable you to run your own calendar server, a Dropbox-like file-hosting and sharing service, host your own email server, manage your own chat infrastructure, and integrate with storage disks holding all your photos , movies, and files. You’ll also be able to set up a Tor client for anonymous internet use, and participate in decentralized social networks such as Diaspora.
+You will not, however, be able to host your own Facebook or Twitter.
+But you will be giving Google — and other cloud providers — the middle finger . And, if Ark OS is as secure as Cook says it is, the NSA and FBI as well.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

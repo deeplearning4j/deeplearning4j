@@ -1,0 +1,44 @@
+From: ak333@cleveland.Freenet.Edu (Martin Linsenbigler)
+Subject: Re: EMM386.EXE and Windows and Dos6
+Organization: Case Western Reserve University, Cleveland, OH (USA)
+Lines: 37
+Reply-To: ak333@cleveland.Freenet.Edu (Martin Linsenbigler)
+NNTP-Posting-Host: hela.ins.cwru.edu
+
+
+In a previous article, rudim@cs.kuleuven.ac.be (Rudi Maelbrancke) says:
+
+>In Windows I created a permanent Swap-file of 7771Kb as win3.1
+>recommended me to do that (32bit access).
+>If I use EMM386.EXE, after win3.1 startup I have 6689K of memory
+>free, if I leave EMM386.EXE out of my config.sys I have 9935K
+>of memory free, and windows recommends me a swap file of 11769K.
+>
+
+I think you need the EMM386.EXE noems
+This will let the expanded mem be active but not use any, therefore
+this will give you more extended mem for windows yet have all the
+bases covered.
+
+
+>I use DOS6, with memmaker, have 4MB of internal Memory and a 486DX,
+>
+
+I do not use dos6 so I am not familiar with this.
+
+>Does anybody knows why this is happening (possibly win needs
+>some UMB's to manage virtual memory?, If true, which UMB's, those
+>that EMM386 can find without including suspicious parts?)
+>
+>I need an optimized DOS-environment, because i develop applications for
+>DOS using a windows programming environment.
+>
+>
+>Rudi
+>
+c-ya.....  /\/\artin
+-- 
+  This communication is sent by    /\/\artin   University of Arizona Tucson
+  =========================================================================
+  ak333@cleveland.freenet.edu   mlinsenb@ccit.arizona.edu  mlinsenb@arizvms
+  DEATH HAS BEEN DEAD FOR ABOUT 2,000 YEARS ****** FOLLOW THE KING OF KINGS

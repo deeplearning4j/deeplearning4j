@@ -1,0 +1,22 @@
+From: renggli@masg1.epfl.ch (loris renggli)
+Subject: Need graph display/edit
+Organization: Math. Dept., Swiss Institute of Technology
+Lines: 17
+
+I am looking for a program that is capable of displaying a graph
+with nodes and links and with the possibility to edit interactively
+the graph : add one node, change one link etc...
+
+Actually, a very _simple_ X11 program would be ok; all I need is to
+put some "boxes" (i.e. the nodes ) on a pane and be able to
+manipulate them with the mouse (move, add or delete boxes).
+
+Does anyone know if such program is available ?
+Thanks for any help !!
+
+------------------------------------------------------------------------
+Loris RENGGLI                          phone  : +41-21-6934230
+Swiss Federal Institute of Technology  fax    : +41-21-6934303
+Math. Dept
+CH-1015 Lausanne (Switzerland)         e-mail : renggli@masg1.epfl.ch
+

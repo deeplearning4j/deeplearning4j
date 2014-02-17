@@ -1,0 +1,12 @@
+1
+Maybe we need to set OKCupid up on a date with a security expert.
+It seems others can still get inside your account through links in OKCupid emails despite reports about the security issue earlier this year .
+So, seriously, don’t forward emails you receive from OKCupid or post links to social media — no matter how funny that date invitation to “people-watch at Target” is.
+We reported this issue back in August, showing that you can hop right into someone’s account without needing a login or password. All you need is an email — sent to that person from OKCupid — that contains a link. Examples of this could be an email that leads you to “check out your matches” or a message from a match on the site.
+The issue was first spotted by Adrianne Jeffries over at The Verge when her friend forwarded her a funny date invitation she’d received on the site. And it seems to still be an issue. I was forwarded another one of these emails today from someone I know and was still able to click through the link into his profile. That email originated from OKCupid on Nov. 9.
+And you really have full reign over the account. You’re not asked to re-login unless you want to do something like change the account password (which you need to know the original password for). You can, however, view and send messages, change profile information, change payment information, delete the account, and more.
+Beyond that, OKCupid will keep you logged in even when you navigate away from the page, meaning you’ve got access to the account for as long as you want — or until you shut the browser down.
+What kind of link let’s you do this? It’s through a feature called “login instantly.” The link is set up with an authentication token that tells the website, “It’s okay, this person’s legit, let ‘em in,” assuming you’re who you say you are because you’re accessing the site through your email. That doesn’t work when someone else has their hands on the email, however, or just the link.
+We’ve asked OKCupid why they still keep the “feature” up and running even when it has such obvious security implications, and we’ll update this post when we hear back. One reason could simply be because it breaks down barriers to entry on the dating site — the flow is better.
+Of course, consumers will have to decide whether this easy access is worth the risk. If they don’t think it is, we suggest they tell OKCupid their concerns. It doesn’t seem at this point that the company is changing its ways.
+Related articles

@@ -1,0 +1,10 @@
+Criminals are taking your data, tying it up with some major encryption, and then throwing it back at you, saying, “You pay me, and I’ll decrypt your precious information.”
+And, of course, these guys are looking for Bitcoin in addition to other forms of currency.
+Sarah_Ackerman/Flickr
+The Grinch sneaks into every house, stealing everything.
+CryptoLocker, the malware these criminals are using, slithers into your systems through phishing e-mail. Your unsuspecting employee might open one of these fateful attachments, and then it’s all downhill from there. The malware is like the Grinch on Christmas Eve, silently going from file to file, stealing everything it can, and heavily encrypting it so you can’t access it again.
+When the Whos found their presents gone, they sang a song of “We can survive without gifts!” You? No, you’re pissed because sometimes your company can’t survive without that data.
+PC fix-it “Nic” witnessed this malware firsthand while helping a client, according to Ars Technica . In this case, an accountant received an e-mail from “Intel” with an attachment. The accountant opened the e-mail, and the malware went to work. When the company’s IT department came around to cut off the accountant’s PC from the local drive, they found this screenshot:
+The demand was for $300, and there was a time limit. Pay within three days and you get the encryption key and subsequently all of the data. Fail to do so and the key is destroyed, leaving your data to float lost in a world of keyless encrypted-data and socks gone missing in the laundry.
+But don’t worry, the criminals were sweet enough to let them choose “a convenient payment method,” including Bitcoin and MoneyPak.
+The problem seems to be growing bigger with reports of it running through Reddit. In the end, Nic’s client paid the money and got the data back, but this isn’t always the case. Companies are sometimes left with major data losses and a salted wound having paid up in vain.

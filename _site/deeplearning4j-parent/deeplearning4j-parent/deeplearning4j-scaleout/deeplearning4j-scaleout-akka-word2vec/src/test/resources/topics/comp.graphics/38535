@@ -1,0 +1,120 @@
+From: jk87377@lehtori.cc.tut.fi (Kouhia Juhana)
+Subject: XV problems
+Organization: Tampere University of Technology
+Lines: 113
+Distribution: world
+NNTP-Posting-Host: cc.tut.fi
+
+[Please, note the Newsgroups.]
+
+Recent discussion about XV's problems were held in some newsgroup.
+Here is some text users of XV might find interesting.
+I have added more to text to this collection article, so read on, even
+you so my articles a while ago.
+
+I hope author of XV corrects those problems as best he can, so fine
+program XV is that it is worth of improving.
+(I have also minor ideas for 24bit XV, e-mail me for them.)
+
+Any misundertanding of mine is understandable.
+
+
+Juhana Kouhia
+
+
+==clip==
+
+[ ..deleted..]
+
+Note that 'xv' saves only 8bit/rasterized images; that means that
+the saved jpegs are just like jpeg-to-gif-to-jpeg quality.
+Also, there's three kind of 8bit quantizers; your final image quality
+depends on them too.
+ 
+This were the situation when I read jpeg FAQ a while ago.
+ 
+IMHO, it is design error of 'xv'; there should not be such confusing
+errors in programs.
+There's two errors:
+  -xv allows the saving of 8bit/rasterized image as jpeg even the
+   original is 24bit -- saving 8bit/rasterized image instead of
+   original 24bit should be a special case
+  -xv allows saving the 8bit/rasterized image made with any quantizer
+   -- the main case should be that 'xv' quantizes the image with the
+   best quantizer available before saving the image to a file; lousier
+   quantizers should be just for viewing purposes (and a special cases
+   in saving the image, if at all)
+ 
+==clip==
+
+==clip==
+
+[ ..deleted..]
+
+It is limit of *XV*, but not limit of design.
+It is error in design.
+It is error that 8bit/quantized/rasterized images are stored as jpegs;
+jpeg is not designed to that.
+
+As matter of fact, I'm sure when XV were designed 24bit displays were
+known. It is not bad error to program a program for 8bit images only
+at that time, but when 24bit image formats are included to program the
+whole design should be changed to support 24bit images.
+That were not done and now we have
+ -the program violate jpeg design (and any 24bit image format)
+ -the program has human interface errors.
+
+Otherway is to drop saving images as jpegs or any 24bit format without
+clearly saying that it is special case and not expected in normal use.
+
+[ ..deleted.. ]
+
+==clip==
+
+Some new items follows.
+
+==clip==
+
+I have seen that XV quantizes the image sometimes poorly with -best24
+option than with default option we have.
+The reason surely is the quantizer used as -best24; it is (surprise)
+the same than used in ppmquant.
+
+If you remember, I have tested some quantizers. In that test I found
+that rlequant (with default) is best, then comes djpeg, fbmquant, xv
+(our default) in that order. In my test ppmquant suggeeded very poorly
+-- it actually gave image with bad artifacts.
+
+I don't know is ppmquant improved any, but I expect no.
+So, use of XV's -best24 option is not very good idea.
+
+I suggest that author of XV changes the quantizer to the one used in
+rlequant -- I'm sure rle-people gives permission.
+(Another could be one used in ImageMagick; I have not tested it, so I
+can say nothing about it.)
+
+==clip==
+
+==clip==
+
+Some minor bugs in human interface are:
+
+Key pressings and cursor clicks goes to a buffer; Often it happens
+that I make click errors or press keyboard when cursor is in the wrong
+place. It is very annoying when you have waited image to come about
+five minutes and then it is gone away immediately.
+The buffer should be cleaned when the image is complete.
+
+Also, good idea is to wait few seconds before activating keyboard
+and mouse for XV after the image is completed.
+Often it happens that image pops to the screen quickly, just when
+I'm writing something with editor or such. Those key pressings
+then go to XV and image has gone or something weird.
+
+In the color editor, when I turn a color meter and release it, XV
+updates the images. It is impossible to change all RGB values first
+and then get the updated image. It is annoying wait image to be
+updated when the setting are not ready yet.
+I suggest of adding an 'apply' button to update the exchanges done.
+
+==clip==

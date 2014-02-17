@@ -1,0 +1,22 @@
+From: hlu@eecs.wsu.edu (HJ Lu)
+Subject: Re: Booting from B drive
+Organization: School of EECS, Washington State University
+Lines: 17
+
+In article <1993Apr18.185226.27273@mcshub.dcss.mcmaster.ca>, yee@nimios.eng.mcmaster.ca (Paul Yee) writes:
+|> In article <khan0095.735001731@nova> khan0095@nova.gmi.edu (Mohammad Razi Khan) writes:
+|> >glang@slee01.srl.ford.com (Gordon Lang) writes:
+|> >
+|> >>David Weisberger (djweisbe@unix.amherst.edu) wrote:
+|> >>: I have a 5 1/4" drive as drive A.  How can I make the system boot from
+|> >>: my 3 1/2" B drive? 
+|> 
+|> [intermediate reply suggesting cable switch deleted]
+|> 
+
+
+I heard boot_b.zip could do exactly what you wanted without touching
+anything. Check it out with archie.
+
+
+H.J.

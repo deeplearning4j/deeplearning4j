@@ -1,0 +1,29 @@
+From: mjr@tis.com (Marcus J Ranum)
+Subject: Re: How to detect use of an illegal cipher?
+Organization: Trusted Information Systems, Inc.
+Lines: 23
+NNTP-Posting-Host: sol.tis.com
+
+>>How can the government tell which encryption method one is using without
+>>being able to decode the traffic? i.e., In order to accuse me of using an
+>>unauthorized strong encryption technique they would have to take both
+>>keys out of escrow, run them against my ciphertext and "draw a blank".
+>
+>	I was thinking about this, also. It's quite possible the
+>system transmits, in clear, the serial number of the device being
+>used. That way they can start a tap, get the serial number, and use
+>the warrant for the first tap to get the key.
+>
+>	If they tap someone who's apparently using encryption, but
+>don't find that prefix, then they'll assume it's an "un-authorized"
+>encryption scheme.
+
+	This doesn't handle superencrypted traffic. If the clipper
+doesn't impose any unfortunate performance side-effects there's no
+reason not to use it to superencrypt a stream of triple-DES encrypted
+traffic. That way your traffic looks "normal" and perhaps anyone
+desiring to listen in won't even bother, since they know nobody's
+going to really trust crypto that has classified internals for
+important stuff.
+
+mjr.

@@ -1,0 +1,59 @@
+From: santos@mickey.ai.kyutech.ac.jp (Rafael &)
+Subject: Turbo C++ Visual Edition adn request was Re: absolute newbie questions...
+Organization: KIT Iizuka, AI Dept, JAPAN.
+Lines: 52
+NNTP-Posting-Host: mickey
+In-reply-to: wiggins@buttercup.cs.odu.edu's message of Fri, 16 Apr 1993 06:16:54 GMT
+
+In article <WIGGINS.93Apr16011654@buttercup.cs.odu.edu> wiggins@buttercup.cs.odu.edu (Samuel E Wiggins) writes:
+
+>BTW, how would you rate the new "Borland Turbo C++ Visual Edition for
+>Windows," anyone?
+
+Time for a new discussion, maybe ? I asked in these groups some time ago
+what about the TC++/VE, and got no answers, so I decided to try. My brother
+who lives in the US bought and sent it to me, and I'm still trying to get
+used to it.
+
+Before I put my good/bad points list, consider I am a Turbo Pascal/DOS
+programmer, and sometimes try to make something in Unix with C (just
+some exercises from university). I used to make some programs in
+Microsoft C version 5 (!!) because we used some third-party libraries
+that required that. 
+- I like Borland. It seems to me much more easier to use than Microsoft,
+  specially the debugger. I tried to learn Codeview sometimes, but never
+  felt confortable with it.
+- TC++ V/E seems very nice to create simple apps, like the examples on the
+  ObjectWindows book. So far, no problems. Lets see next week or so, when I
+  will try something more complex.
+- It works nice even in my "weak" machine 386/16Mhz, 6 Mb Ram. 
+
+But.....
+
+- The manual for the Resource Workshop seems to be from a different version 
+  from the Workshop itself. Some of the windows that appear on the manual
+  have more itens than in the manual.
+- I think I will run into trouble since I got this TC++/VE from my brother
+  as a present. I didnt wanted to buy the Japanese version because 1) I 
+  suspect that the manuals will be in Japanese :-( and 2) I believe it
+  will be far more expensive here. So he bought it as a present and sent to
+  me, I send the registration card to the Japanese branch of Borland, but...
+  who knows.
+
+So, I'd like to ask some questions for you all;
+
+- I know that there are some Microsoft guys around here in this group. Is
+  there anybody from Borland ? Is there any e-mail address that we can 
+  contact the technical support ? Not for stupid questions, but to ask
+  for example, why the RW manual seems to be different from the RW itself ?
+- Is there anybody else using it around here ?
+- Will the book of Petzold be useful for me ? I intend to use RW and ProtoGen
+  to make the interfaces and then work on the code itself. 
+
+Answers to my e-mail or comp.os.ms-windows.programmer.tools, please.
+
+Thanks in advance,
+
+Rafael.
+
+

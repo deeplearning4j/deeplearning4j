@@ -1,0 +1,26 @@
+From: rwag@gwl.com (Rodger Wagner)
+Subject: Running C++ EXE under Windows 3.1
+Reply-To: rwag@gwl.com
+Organization: The Great-West Life Assurance Company.
+X-Disclaimer:  The views expressed in this message are those of an
+	individual at The Great-West Life Assurance Company and do
+	not necessarily reflect those of the company.
+Lines: 17
+
+Preface: I am a novice user at best to the Windows environment.
+
+I am trying to execute a MS C++ 7.0 executable program which accesses a Btrieve
+database to build an ASCII file.  
+
+When I execute it under windows the screen goes blank and my PC locks up.  The only
+way for me to return is to reset the machine.
+
+Does anyone have any insight on what I may have to do in order for the program to
+correctly under windows?  (By the way it runs fine in DOS 5.0)
+
+System:  Gateway 486/DX250 
+	 ATI Graphics Ultra Card 640x480
+
+Any help would be greatly appreciated.
+
+Rodger  

@@ -1,0 +1,14 @@
+A
+Summary:
+A growing cadre of Ansible users now have a central site to post and share roles, ask questions, and read reviews.
+AnsibleWorks  launched a new web site this week that aggregates resources for developers/IT folks who use or want to use Ansible, an open-source IT automation tool.
+The Galaxy website , which went live Wednesday, is meant to be a central place for Ansible users to find and share related content, including roles , which are pre-built, reusable units of automation.
+In a forum post announcing Galaxy AnsibleWorks CTO Michael DeHaan wrote:
+“Galaxy is structured around roles. You download the roles you like, then you write very simple play books that assemble all the roles together with roles you also write yourself. Roles can contain tasks, default variables, all you want, and special metadata provided in the role instructs Galaxy about how to display it, along with a README.”
+DeHaan co-founded AnsibleWorks with his former Red Hat colleague Said Ziouani two years ago. The Santa Barbara, Calif.-based company netted $6 million in funding in August and is making a name for itself among devops folks who like the idea of being able to automate systems rollouts without scripting and agents.
+The elevator pitch for AnsibleWorks is that it gives devops and systems admins one tool to handle both initial IT configuration and deployment. It competes with Chef (aka Opscode)  and  Puppet Labs’ Puppet (see disclosure) both of which started out as configuration management tools but are pushing more into full life-cycle IT automation and management.
+Disclosure: Puppet Labs is backed by True Ventures, a venture capital firm that is an investor in the parent company of this blog, Giga Omni Media. Om Malik, founder of Giga Omni Media, is also a venture partner at True.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

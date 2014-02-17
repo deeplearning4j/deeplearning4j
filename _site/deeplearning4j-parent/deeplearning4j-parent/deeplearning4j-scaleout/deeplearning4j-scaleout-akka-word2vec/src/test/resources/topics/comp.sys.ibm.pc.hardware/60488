@@ -1,0 +1,114 @@
+Subject: Trident 8900 switch settings (someone archive this!)
+From: j3gum@vax1.mankato.msus.edu
+Organization: Mankato State University
+Lines: 109
+
+T8900DIP.TXT - Jeffrey E. Hundstad (j3gum@vax1.mankato.msus.edu)
+
+                     Switch Settings on the Trident 8900C
+
+----------------------------------\         /-----------------|
+|                                  ---------                  |
+|                                        9                ----|
+| xx 8  8  8  8    -------                   -------      | 1
+| xx               |  6  |                   |  10 |      |---|
+|                  |     |  4                -------      | 2
+| xx               ------ j1 j2                           |---|
+| xx 8  8  8  8    -------       --------                 | 3
+|                  |   5 |       |   5  |                 |---|
+|--------------|   ------- |-|   --------    7   |-|          |
+               |-----------| |-------------------| |-----------
+                   VGA Graphics Adapter Layout #1 (8-DRAM)
+
+----------------------------------\         /-----------------|
+|                                  ---------      4 j3        |
+|                  -------               9                ----|
+| 11 8  8  8  8    |     |                  --------      | 1
+|                  |  6  |                  |   10 |      |---|
+|                  -------  4     -------   --------      | 2
+|                          j2     |  5   |                |---|
+| 11 8  8  8  8                   -------                 | 3
+|                                 |  5   |           4 j1 |---|
+|--------------|           |-|    --------   7   |-|          |
+               |-----------| |-------------------| |-----------
+                VGA Graphics Adapter Layout #2 (2/4/8 - DRAM)
+
+----------------------------------\         /-----------------|
+|                                  ---------        4 j3      |
+|                  -------               9                ----|
+| 11 8  8  8  8    |     |                  --------      | 1
+|                  |  6  |         -------  |   10  |     |---|
+|                  -------     4   |  5  |  --------      | 2
+|                              j2  -------                |---|
+| 11 8  8  8  8                    |  5  |                | 3
+|                    4 j3          -------                |---|
+|--------------|           |-|                   |-|   4 j1   |
+               |-----------| |-------------------| |-----------
+                VGA GRaphics Adapter Layout #3 (2/4/8 - DRAM)
+
+1.  Dip Switches
+2.  DB-15 connector: For analog monitors.
+3.  DB-9 connector: for TTL monitors. (* NOTE #1)
+4.  Jumers J1, J2, J3, J4 (J3 for layouts #2 and #3, J4 for layout #3)
+5.  Video BIOS: Basic Input/Ouput System.
+6.  TVGA 8900 Chip: VGA GRaphics chip.
+7.  Edge connector: For IBM PC/XT, PC/AT and compatible systems.
+8.  Video DRAM: up to 1MB
+9.  Feature connector: For special applications.
+10. Video DAC
+11. Jumper Blocks JP1 and JP2 (2/4/8 board only)
+* NOTE #1 - Hardware option.  Feature not present for all board versions.
+
+Switch settings for the 6 switch dip box (#1 from figures).
+
+Switch 3:  Scan Rate
+  On  - Less than 48KHz (default)
+  Off - 38-49Khz
+
+Switch 5:  Fast and Slow Address Decode
+  Off - Fast address decode (default)
+  On  - Slow address decode
+
+Switch 6:  8/16 bit Data Path
+  Off - 16-bit data path (default)
+  On  - 8-bit data path
+
+
+Jumper settings
+
+J1:  Settings for IRQ9
+ 1 2 3     1 2 3
+   xxx     xxx
+ Off (def)   On
+
+J2:  Settings for Bus Size Detections
+1           1 x
+2 x         2 x
+3 x         3
+Autodetect  Standard Interface
+(def)
+
+J3:  Settings for DRAM Configuration
+   1  2  3       1  2  3       1  2  3
+   ----          |  |             ----
+   ----          |  |             ----
+   4  5  6       4  5  6       4  5  6
+
+    Two DRAM      Four DRAM      Eight DRAM
+
+J4:  DRAM Clock Select
+ 1 2 3     1 2 3
+   xxx     xxx
+ 40 MHz    48 MHz
+Two DRAM   4/8 DRAM
+
+
+SW1 & SW2
+
+Swich Setings       | SW1 | SW2
+--------------------+-----+----
+VGA mode (default)  | On  | On
+EGA mode            | Off | On
+CGA mode            | On  | Off
+MDA/Hercules mode   | Off | Off
+

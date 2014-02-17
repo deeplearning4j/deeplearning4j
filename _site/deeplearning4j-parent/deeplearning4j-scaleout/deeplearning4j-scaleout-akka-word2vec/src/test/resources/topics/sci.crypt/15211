@@ -1,0 +1,44 @@
+From: karn@servo.qualcomm.com (Phil Karn)
+Subject: Re: Keeping Your Mouth Shut (was: Hard drive security)
+Nntp-Posting-Host: servo.qualcomm.com
+Reply-To: karn@chicago.qualcomm.com
+Organization: Qualcomm, Inc
+Lines: 37
+
+In article <C5K1CE.51A@sunfish.usd.edu>, vkub@charlie.usd.edu (Vince Kub) writes:
+|> Now,
+|> the original scheme as suggested here would be to have the key disappear if
+|> certain threatening conditions are met. Once the key is gone there is no
+|> question of Contempt of Court as there is nothing to compell, the key is no
+|> longer there to be produced.
+
+Getting rid of the keys is actually pretty easy to do automatically on
+a communications link, as opposed to storage where the keys have to be
+retained somehow as long as the owner wants to be able to retrieve the
+data.
+
+The right way to do communications security is to generate a random
+session key with Diffie Hellman, use it for a while and then destroy
+it. Once it's gone, there's no getting it back, and no way to decrypt
+recordings of the conversation.
+
+To make sure you aren't being attacked by a man in the middle, you
+have to authenticate your DH exchanges. The AT&T secure phone does
+this by displaying the DH key so you can compare them verbally over
+the phone. This is nice and simple, but it relies on user awareness
+plus the inability of the man in the middle to duplicate the users'
+voices.
+
+A better way is to authenticate the exchanges with RSA. Since you'd
+never use RSA for actual encryption, compromising your RSA secret key
+would only allow someone to impersonate you in a future conversation,
+and even that only until you revoke your public key.  They would still
+not be able to decrypt recordings of prior conversations for which the
+session keys have been destroyed.
+
+I'm convinced that this is how the government's own secure phones
+(the STU-III) must work. Neat, eh?
+
+Phil
+
+

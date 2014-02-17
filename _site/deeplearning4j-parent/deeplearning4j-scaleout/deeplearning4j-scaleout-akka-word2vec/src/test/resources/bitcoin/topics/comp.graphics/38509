@@ -1,0 +1,33 @@
+From: cgcad@bart.inescn.pt (Comp. Graphics/CAD)
+Subject: Re: Fonts in POV??
+Nntp-Posting-Host: bart
+Organization: INESC-Porto, Portugal
+Lines: 27
+
+Hi.
+
+The RTrace ray tracer supports 3D text as a primitive, not collections of
+spheres, cylinders and so on...
+The 3D chars are made of lines and splines that are extruded...
+
+Please have a look at asterix.inescn.pt [192.35.246.17] in directory
+pub/RTrace.
+In pub/RTrace/tmp there are some demo images with high quality text.
+All of them are called Text?.jpg (JPEG encoded). See them first and then
+tell me what you think.
+
+Regards,
+Antonio.
+.........................................................................
+     O     O
+    /     /                        I N E S C
+   | O   |        Antonio Costa        | E-Mail   acc@asterix.inescn.pt
+   | |\  |   O                         |          acosta@porto.inescn.pt
+   | | \ |  /  O  Comp. Graphics & CAD | DECnet   porto::a_costa
+   | |  \| /  /                        |
+   | |  /  | |    Largo Mompilher 22   | UUCP     {mcvax,...}!...
+   O | |-O | |    4100 Porto PORTUGAL  | Bell     +351+02+321006
+    /   \ /   \
+   O     O     O          "Let the good times roll..."
+
+

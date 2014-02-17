@@ -1,0 +1,23 @@
+From: r0506048@cml3 (Chun-Hung Lin)
+Subject: Re: xman source
+Nntp-Posting-Host: cml3.csie.ntu.edu.tw
+Reply-To: r0506048@csie.ntu.edu.tw
+Organization: Communication & Multimedia Lab, NTU, Taiwan
+X-Newsreader: Tin 1.1 PL3
+Lines: 15
+
+jlong@b4pps40.Berkeley.EDU (John Long) writes:
+:    Where can I get xman source?  I would like to get the binaries for
+: xman for an HP 9000/700, but I would settle for source.  
+: 
+: --
+Try xport.lcs.mit.edu, in direcotry /contrib.
+--
+--------------------------------
+=================================================================
+Chun-Hung Lin ( ªL«T§» )                     
+r0506048@csie.ntu.edu.tw    
+Communication & Multimedia Lab.
+Dept. of Comp. Sci. & Info. Eng.
+National Taiwan University, Taipei, Taiwan, R.O.C.
+=================================================================

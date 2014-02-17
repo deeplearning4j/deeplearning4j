@@ -1,0 +1,26 @@
+From: kubovich@iastate.edu (Mark W Kubovich)
+Subject: Common-mode noise and small signals
+Keywords: noise common mode
+Organization: Iowa State University, Ames IA
+Lines: 20
+
+I have never worked with really small signals before and have a few 
+questions about low level noise.  I have noticed that the waveform 
+synthesizer that I am using (Analogic 2020) has some relatively large
+common mode noise on it.  I am using this synthesizer to 'null' out another
+transient waveform and am amplifying the difference (~200uV) several hundred 
+times.  The 2020 has about 1-3 mVp-p of common mode noise and this tends to
+make my measurements hard to repeat.  (The noise is not quite in sync with 
+line frequency, and on a spectrum analyzer, the main component is about 64Hz).
+
+How can I get rid of the noise?  When I look at the spectrum using an
+HP 3582A (audio range analyzer), the noise goes away the minute I switch to 
+'isolation' on the input.  I am guessing the anlayzer has a diff amp on the 
+input since it will read accurately down to DC.
+
+Also, if I use a differential amplifier (IA) to solve the problem, 
+how important is it to use one of these 'shield drivers' (an amp connected 
+to the shield in sort of a feedback loop to remove trouble caused 
+by different cable capacitances)?  If anyone can suggest a good IC IA for 
+use with transient signals with content from 1KHz to about 300KHz, I would
+appreciate it.  

@@ -1,0 +1,43 @@
+From: kolstad@cae.wisc.edu (Joel Kolstad)
+Subject: Re: How to the disks copy protected.
+Organization: U of Wisconsin-Madison College of Engineering
+Lines: 38
+
+In article <sehari.735357542@du139-213.cc.iastate.edu> sehari@iastate.edu (Babak Sehari) writes:
+>
+>I have written a program and I want to market it.  I would like certain degree
+>of protection, since my main custmers are individuals and not the 
+>cooperations.   I know laser hole burning method, and hardware key method,
+>however, my  software is going to cost only $15.00, so I can not afford that.
+>Also, at this low price I can not afford people make too many copy of my
+>software. Well, I guess say upto %20 illigal copying is ok by me.
+>
+>However, I do not want someone to get a copy of PCTools and copy my software.  
+>Off course, I never meant to forbid the true hackers from copying, since they
+>can develope a better program anyway.
+
+I wouldn't bother with the copy protection, if I were you.  If you program
+is any good, the pirates will have stripped the protection and will be
+distributing the stripped version is well under a week.
+
+Hardware methods prevent J. Random Loser from using his Copy II PC to pirate 
+your software, but doesn't stop anyone who knows a few people with enough 
+connections to "real" pirates who _will_ be able to defeat your "check for the 
+hole" code.
+
+You may want to price your software (depending on what it is) a tad
+higher... a price change from $15 to $25 probably would turn off very few
+potentials buyers, and that way you could tolerate more pirates (whose
+numbers don't change with the price).
+
+As for the 20% pirating figure... ha, ha.  Of course, a lot of pirates just
+have this "thing" about having pirated software, even if they never use it,
+so perhaps that really wouldn't count towards 20%.  Even so, 20% is awfully
+low.
+
+
+					---Joel Kolstad
+
+P.S. -- I assume you're talking PC software.  If you're talking UNIX,
+HP-48, or something else somewhat obscure, copy protection might be a
+slightly more viable alternative.

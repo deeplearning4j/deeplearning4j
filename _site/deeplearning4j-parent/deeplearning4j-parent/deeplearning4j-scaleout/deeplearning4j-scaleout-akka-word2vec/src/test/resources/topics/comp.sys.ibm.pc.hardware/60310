@@ -1,0 +1,23 @@
+From: kxn3796@hertz.njit.edu (Ken Nakata CIS stnt)
+Subject: Re: difference between VLB and ISA/EISA
+Organization: New Jersey Institute of Technology, Newark, N.J.
+Lines: 17
+Nntp-Posting-Host: hertz.njit.edu
+
+In article <734874577snx@finbol.toppoint.de> jschief@finbol.toppoint.de (Joerg Schlaeger) writes:
+>[......]
+>Better OSs (OS/2 & iX) are able to handle more than 16MB of DRAM,
+>if you use EISA-Bus.
+>Has someone experience with VLB ??
+>I think of SCSI-VLB-Busmaster. The problem is the 16bit Floppy DMA
+>controller, which is unable to reach more than 16MB.
+
+I don't think FD is a problem.  Since FD is much sloooooooowwwwwwer
+than HD, the overhead of double buffering doesn't matter.
+
+Ken Nakata
+-- 
+/* I apologize if there are incorrect, rude, and/or impolite expressions in
+this mail or post. They are not intended. Please consider that English is a
+second language for me and I don't have full understanding of certain words
+or each nuance of a phrase.  Thank you. -- Ken Nakata, CIS student, NJIT */

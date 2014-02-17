@@ -1,0 +1,47 @@
+From: george@ccmail.larc.nasa.gov (George M. Brown)
+Subject: Re: PCX
+Organization: Client Specific Systems, Inc.
+Lines: 41
+NNTP-Posting-Host: thrasher.larc.nasa.gov
+
+In article <1993Apr14.220100.17867@freenet.carleton.ca> ad994@Freenet.carleton.ca (Jason Wiggle) writes:
+>From: ad994@Freenet.carleton.ca (Jason Wiggle)
+>Subject: PCX
+>Date: Wed, 14 Apr 1993 22:01:00 GMT
+>
+>Hello
+>	HELP!!! please
+>		I am a student of turbo c++ and graphics programming
+>	and I am having some problems finding algorithms and code
+>	to teach me how to do some stuff..
+>
+>	1) Where is there a book or code that will teach me how
+>	to read and write pcx,dbf,and gif files?
+>
+>	2) How do I access the extra ram on my paradise video board
+>	so I can do paging in the higher vga modes ie: 320x200x256
+>	800x600x256
+>	3) anybody got a line on a good book to help answer these question?
+>
+>Thanks very much !
+>
+>send reply's to : Palm@snycanva.bitnet
+>
+>Peace be
+>Blessed be
+>Stephen Palm
+
+A book that I can somewhat recommend is :
+                     
+                     Pratical Image Processing in C
+                     by Craig A. Lindley
+                     published by Wiley
+
+It addresses reading/writing to/from PCX/TIFF files; image acquisition, 
+manipulation and storage; and has source code in the book. The source is 
+primarily written in Turbo C and naturally has conversion possibilities. I 
+have converted some of it to Quick C. Naturally, the code has some problems 
+in the book - as usuall. Typos, syntax, etc. are problems. It can be a good 
+learning experience for someone who is studying C. There is also a companion 
+disk with source available for order and $50.00. Overall, the book is not 
+bad. I acquired the book at WaldenSoftware.

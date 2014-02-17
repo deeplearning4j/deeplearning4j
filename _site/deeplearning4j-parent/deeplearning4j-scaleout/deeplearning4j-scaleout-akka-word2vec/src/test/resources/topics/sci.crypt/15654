@@ -1,0 +1,52 @@
+From: ifarqhar@laurel.ocs.mq.edu.au (Ian Farquhar)
+Subject: Re: Screw the people, crypto is for hard-core hackers & spooks only
+Organization: Macquarie University, Sydney Australia
+Lines: 46
+NNTP-Posting-Host: laurel.ocs.mq.edu.au
+
+In article <1r0ausINNi01@senator-bedfellow.MIT.EDU> jfc@athena.mit.edu (John F Carr) writes:
+>The chip and algorithm are classified.  If you reverse engineer it and
+>tell people, you are likely to go to jail.
+
+I don't find this a credible argument, for two reasons.  One you have
+supplied below: unless I care about entering the USA at any time in the
+future (eg. the Taiwanese backyard cloners - who BTW have been known to
+decap custom silicon and reproduce it on daughterboards when pirating
+high-profit arcade machines and the like - who wouldn't care less), I am not 
+going to care much about US confidentiality, am I?  Only people like the
+real me, who does care about travelling to various countries for business
+reasons, will sit up and follow laws like this, but I would contend that
+we're not the main threat.
+
+I also have grave doubts whether an algorythm widely distributed in silicon
+could possibly be called "classified."  It's like handing out military
+secrets to the whole world in envelopes marked "don't open me."  I can
+imagine several credible defences which could be employed if it came to
+a trial.  One would be the stupidity of the government's actions.
+
+>Perhaps some foreign governments or corporations could help us out by
+>cracking the system outside the USA.  The US government could probably
+>stop importation of clone hardware, but a software implementation
+>should be practical.
+
+Amusing thought: could they have employed an algorythm which is infeasable
+for a fast software implementation, but which is easy in custom hardware?
+In DES, the extensive use of permutation tables (trivial in hardware: you
+just swap bus lines), but relatively slow in software have had a big effect
+on the speed difference between hardware and software implementations of
+that cipher (indeed, I suspect that Lucifer's designers were well aware that
+it would be, and approved.)  Certain algorythms (usually parallel search
+algorythms) can be very slow in software, yet can fly in custom hardware.
+I have no proof of their employment in Clipper -- it is pure conjecture.  
+However, as a software implementation of this cipher is something that its 
+designers would have been trying to avoid at all costs, then the inclusion 
+of such techniques seems credible.
+
+Hmmm... I also wonder what Intergraph thinks about the use of the name
+"Clipper" for this device. :)
+
+--
+Ian Farquhar                      Phone : + 61 2 805-9400
+Office of Computing Services      Fax   : + 61 2 805-7433
+Macquarie University  NSW  2109   Also  : + 61 2 805-7420
+Australia                         EMail : ifarqhar@laurel.ocs.mq.edu.au.

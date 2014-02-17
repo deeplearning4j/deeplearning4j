@@ -1,0 +1,42 @@
+From: cph@dmu.ac.uk (Chris Hand)
+Subject: Cheap LCD panels & seeking info
+Organization: De Montfort University, Leicester, UK.
+Lines: 37
+
+Attention hardware hackers and bargain seekers!
+
+I just bought a 640x200 pixel LCD panel for 25 UK pounds.  I have
+a datasheet for a similar panel, but I'm looking for proper data.
+
+If anyone can help with locating data for this device (before I start
+with the routine on the phone to Hitachi and rummaging through the
+library), then I'll pass on the source.
+
+	Type: LM225 (Hitachi)
+	Resolution: 640W x 200H (so can do 80x25 chars on 8x8 matrix)
+
+Bought from:
+
+	Greenweld Electronics Ltd
+	27 Park Rd
+	Southampton SO1 3TB, UK
+
+	Tel. +44 703 23 63 63
+	Fax. +44 703 23 63 07
+	Email: Compuserve [100014,1463]
+
+NB: I only just bought this!  I don't even know if it works!
+
+	Price was 25 UK pounds including VAT (17.5%), which isn't
+	payable if you're outside the EC.
+
+Thanks for any info!
+
+
+Chris
+
+-- 
+Chris Hand, Lecturer                Internet mail: cph@dmu.ac.uk
+Dept of Computing Science,          Voice: +44 533 551551 x8476
+De Montfort University, The Gateway,  Fax: +44 533 541891  FIDOnet: 2:440/32.50
+LEICESTER, UK   LE1 9BH             >> Linux: *free* unix for IBM PCs! <<

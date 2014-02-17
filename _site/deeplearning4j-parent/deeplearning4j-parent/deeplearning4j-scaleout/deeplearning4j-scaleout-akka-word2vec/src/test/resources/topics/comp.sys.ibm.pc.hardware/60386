@@ -1,0 +1,10 @@
+From: august1@server.uwindsor.ca (AUGUSTYN  ROBERT         )
+Subject: Data path width from 16 to 32 bits but speed less then double?
+Organization: University of Windsor, Ontario, Canada
+Lines: 5
+
+In evolution of 80-x86 data path width has been doubled from 
+8 to 16 t0 32 bits but the speed of data processing has not increased at
+same rate.The question is Why? What is relationship bettween data path width and data processing speed?
+Thanks in advance for the input.
+Robert. 

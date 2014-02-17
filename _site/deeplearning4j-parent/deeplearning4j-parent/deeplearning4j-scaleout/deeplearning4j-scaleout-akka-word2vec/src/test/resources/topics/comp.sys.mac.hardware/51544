@@ -1,0 +1,25 @@
+From: khc@marantz.Corp.Sun.COM (Kelly Chang)
+Subject: Mac II SCSI & PMMU socket question
+Organization: Sun Microsystems, Inc.
+Lines: 17
+Distribution: world
+Reply-To: khc@marantz.Corp.Sun.COM
+NNTP-Posting-Host: marantz.corp.sun.com
+
+
+===== This is a posting for my friend who does not have USENET access ========
+===== Please contact him (not me) directly, thank you ========================
+
+1. The Mac II is supposed to have a socket for the MC68851 PMMU chip. Could
+anyone let me know where that socket is on the motherboard. I have obtained
+a PMMU chip (16 Mhz) from a surplus store, and would like to install it onto
+my Mac II (circa 1987). But I cannot see the socket myself when I tried to
+install it.
+
+2. Could anyone send me the pinouts for the Mac II SCSI DB-25 interface?
+
+
+Thank you.
+
+	Contact: David Chan, bzone@attmail.com
+

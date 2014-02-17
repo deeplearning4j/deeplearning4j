@@ -1,0 +1,51 @@
+From: jvl@idca.tds.philips.nl (Jan van Loenen)
+Subject: Re: Diamond SS24X, Win 3.1, Mouse cursor
+Lines: 47
+
+dabl2@nlm.nih.gov (Don A.B. Lindbergh) writes:
+
+>In article <1993Apr15.204845.24939@nlm.nih.gov> dabl2@nlm.nih.gov (Don A.B. Lindbergh) writes:
+>>
+>>Anybody seen mouse cursor distortion running the Diamond 1024x768x256 driver?
+>>Sorry, don't know the version of the driver (no indication in the menus) but it's a recently
+>>delivered Gateway system.  Am going to try the latest drivers from Diamond BBS but wondered
+>>if anyone else had seen this.
+>>
+>As a followup, this is a co-worker's machine.  He has the latest 2.03 drivers.
+>It only happens using the 1024x768x256 driver.  Sometimes it takes a minute
+>or so for the cursor to wig out, but it eventually does in this mode.  I
+>susect something is stepping on memory the video card wants.  I excluded
+>a000-c7ff in the EMM386 line and in system.ini  The problem persisted.
+>Perhaps it is something specific to the Gateway machine or it's components.
+>It is a 66mhz DX/2 Eisa bus with an Ultrastore (24xx?) controller.  Ah well,
+>I was hoping this was some kind of 'known problem' or somebody had seen it
+>before.  Perhaps a call to Gateway is in order, but I do find folks here
+>usually are far more in the know.
+
+I have (had) several problems with the card.
+- Applications crashed when moving the mouse (VGA mode). Fixed by removing
+  the line STACKS=0,0 from config.sys. The default value STACKS=9,256
+  does just fine.
+- Random white pixels all over the screen when moving the mouse, in a
+  256 color graphical mode (the hardware cursor modes). Fixed by turning
+  off the hardware scroll ("24xmode scrolloff") before entering the graphics
+  mode. This also fixed the problem of the windowed DOS boxes under windows.
+  With the hardware scroll enabled, applications write garbage outside the
+  window.
+- The screensavers do not remove the cursor in 256 color modes (hardware
+  cursor). I don't know if this is a windows problem or a driver problem.
+  Clearly there should be two types of cursor removing functions: a remove-
+  for-draw, which can be ignored for hardware cursors and a remove-
+  unconditionally. Do other cards with hardware cursors have the same problem?
+- The VESA driver does not support the 640x480x16M TrueColor mode. (Universal
+  VESA drivers do not run at all).
+
+-----------
+DISCLAIMER: Unless otherwise stated, the above comments are entirely my own.
+  _____________            _____
+ /            /\  __    __/    /\
+/____________/  \/ /\  / /____/  \            Jan van Loenen
+\________    \  /_/  \/_/\    \   \_____      Digital Equipment Corporation
+  /____/ \    \ \ \  /\ \/\    \  /    /\     jvl@idca.tds.philips.nl
+  \    \/_\    \/\ \/_/ /  \    \/____/ /     HLDE01::LOENEN_J
+   \___________/  \____/    \_________\/

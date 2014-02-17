@@ -1,0 +1,33 @@
+From: bryan@philips.oz.au (Bryan Ryan)
+Organization: Philips Public Telecommunications Systems, Melbourne, Australia
+Subject: Re: RAMs &ROMs with ALE latches (for 8051's)
+Lines: 28
+
+spp@zabriskie.berkeley.edu (Steve Pope) writes:
+
+>In article <1qg98sINNokf@sheoak.ucnv.edu.au> jeff@redgum.ucnv.edu.au (j. pethybridge) writes:
+>>	Hello again,
+>> I asked this a year ago, but i am still looking.
+>> I am getting sick of having to use a HC373 
+
+>Jeff, just use the damned 373.   Sure, there are oddball
+>latched memory chips, but do you really want to use them?
+
+>Sorry if I'm pedantic but: design your circuit using
+>reasonably available parts, and move on to more important
+>problems.
+
+We're looking at a series of chips by WSI, the PSD3xx series. They have
+_mega_ address decoding logic on them, various ROM sizes (upto 1Mbit),
+various RAM sizes (upto 16 K), and 19 I/O ports which can be chip select
+lines, I/O or the buffered address lines.
+
+Cute chip, 44 pin PLCC package.
+
+Second sourcing may be a problem though :-(
+
+
+Bryan Ryan, VK3TKX
+Melbourne, Australia
+bryan@philips.oz.au
+

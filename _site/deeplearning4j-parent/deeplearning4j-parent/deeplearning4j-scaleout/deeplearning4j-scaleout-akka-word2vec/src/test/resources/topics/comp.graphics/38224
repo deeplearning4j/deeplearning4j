@@ -1,0 +1,37 @@
+From: millernw@craft.camp.clarkson.edu (Neal Miller)
+Subject: Re: Trying to view POV files.....
+Nntp-Posting-Host: craft.clarkson.edu
+Organization: Clarkson University
+Lines: 31
+
+merkelbd@sage.cc.purdue.edu (Brian Merkel) writes:
+
+>In article <1993Apr11.132604.13400@ornl.gov> ednobles@sacam.OREN.ORTN.EDU (Edward d Nobles) writes:
+>>
+>>I've been trying to view .tga files created in POVRAY.  I have the Diamond
+>>SpeedStar 24 Video board (not the _24X_).  So far I can convert them to
+>>jpeg using cjpeg and view them with CVIEW but that only displays 8 bit color.
+>>
+>>I'm looking for some way to convert and/or view them in 24 bit.
+>>
+>>I have UNIVESA (uvesa31.zip) and the DVPEG viewer but I don't get anything.
+>>Perhaps I am not setting up UNIVESA properly?  If anyone has ideas about this
+>>please feel free to enlighten me...
+>>
+>>Just want to see the darn things in real color...
+
+>Image Alchemy (aka alchemy) will view the TGA files that POV outputs
+> and just about any other format you can think of. It will also convert
+> between all these. It's shareware, so it's probably available by FTP
+> somwhere out there in netland...
+
+        Yep... Alchemy works fine on my Tseng400+DAC, but I think I remember
+reading that it only displays in 15-bit or so.  Of course, that's still 32K
+colors which is nothing to sneeze at.  Use the --v flag.
+
+
+--
+-----------------------------------------------------------------------------
+ Neal Miller         | "Why not go mad?"  | millernw@craft.camp.clarkson.edu
+ Clarkson University |     - Ford Prefect |     dark@craft.camp.clarkson.edu
+-----------------------------------------------------------------------------

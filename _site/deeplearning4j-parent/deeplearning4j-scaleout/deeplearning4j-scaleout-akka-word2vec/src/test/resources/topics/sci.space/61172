@@ -1,0 +1,97 @@
+From: jbh55289@uxa.cso.uiuc.edu (Josh Hopkins)
+Subject: DC-Y trajectory simulation
+Keywords: SSTO, Delta Clipper
+Organization: University of Illinois at Urbana
+Lines: 91
+
+
+I've been to three talks in the last month which might be of interest. I've 
+transcribed some of my notes below.  Since my note taking ability is by no means
+infallible, please assume that all factual errors are mine.  Permission is 
+granted to copy this without restriction.
+
+Note for newbies:  The Delta Clipper project is geared towards producing a
+single staget to orbit, reusable launch vehicle.  The DC-X vehicle is a 1/3
+scale vehicle designed to test some of the concepts invovled in SSTO.  It is 
+currently undergoing tests.  The DC-Y vehicle would be a full scale 
+experimental vehicle capable of reaching orbit.  It has not yet been funded.
+
+On April 6th, Rocky Nelson of MacDonnell Douglas gave a talk entitled 
+"Optimizing Techniques for Advanced Space Missions" here at the University of
+Illinois. Mr Nelson's job involves using software to simulate trajectories and
+determine the optimal trajectory within given requirements.  Although he is
+not directly involved with the Delta Clipper project, he has spent time with 
+them recently, using his software for their applications.  He thus used 
+the DC-Y project for most of his examples.  While I don't think the details
+of implicit trajectory simulation are of much interest to the readers (I hope
+they aren't - I fell asleep during that part), I think that many of you will
+be interested in some of the details gleaned from the examples.
+
+The first example given was the maximization of payload for a polar orbit.  The
+main restriction is that acceleration must remain below 3 Gs.  I assume that
+this is driven by passenger constraints rather than hardware constraints, but I
+did not verify that.  The Delta Clipper Y version has 8 engines - 4 boosters
+and 4 sustainers.  The boosters, which have a lower isp, are shut down in 
+mid-flight.  Thus, one critical question is when to shut them down.  Mr Nelson
+showed the following plot of acceleration vs time:
+                  ______
+3 G         /|   /      |
+           / |  /       |          As ASCII graphs go, this is actually fairly 
+          /  | /        |	   good.  The big difference is that the lines
+2 G      /   |/         |          made by the  /  should be curves which are
+        /               |          concave up.  The data is only approximate, as
+       /                |          the graph wasn't up for very long.
+1 G   /                 |
+                        |
+                        |
+0 G                     |
+
+             ^          ^
+           ~100 sec    ~400 sec
+
+
+As mentioned before, a critical constraint is that G levels must be kept below
+3.  Initially, all eight engines are started.  As the vehicle  burns fuel the
+accelleration increases.  As it gets close to 3G, the booster engines are 
+throtled back.  However, they quickly become inefficient at low power, so it
+soon makes more sense to cut them off altogether.  This causes the dip in 
+accelleration at about 100 seconds.  Eventually the remaining sustainer engines
+bring the G level back up to about 3 and then hold it there until they cut
+out entirely.
+
+The engine cutoff does not acutally occur in orbit.  The trajectory is aimed
+for an altitude slightly higher than the 100nm desired and the last vestiges of
+air drag slow the vehicle slightly, thus lowering the final altitude to 
+that desired.
+
+Questions from the audience:  (paraphrased)
+
+Q:  Would it make sense to shut down the booster engines in pairs, rather than
+    all at once?
+
+A:  Very perceptive.  Worth considering.  They have not yet done the simulation.    Shutting down all four was part of the problem as given.
+
+Q:  So what was the final payload for this trajectory?
+
+A:  Can't tell us.  "Read Aviation Leak."  He also apparently had a good 
+    propulsion example, but was told not to use it.  
+
+My question:  Does anyone know if this security is due to SDIO protecting
+national security or MD protecting their own interests?
+
+The second example was reentry simulation, from orbit to just before the pitch
+up maneuver.  The biggest constraint in this one is aerodynamic heating, and 
+the parameter they were trying to maximize was crossrange.  He showed graphs
+of heating using two different models, to show that both were very similar,
+and I think we were supposed to assume that this meant they were very accurate.
+The end result was that for a polar orbit landing at KSC, the DC-Y would have
+about 30 degrees of crossrange and would start it's reentry profile about 
+60 degrees south latitude.
+
+I would have asked about the landing maneuvers, but he didn't know about that
+aspect of the flight profile.
+
+-- 
+Josh Hopkins                                          jbh55289@uxa.cso.uiuc.edu
+		    "Find a way or make one."
+	             -attributed to Hannibal

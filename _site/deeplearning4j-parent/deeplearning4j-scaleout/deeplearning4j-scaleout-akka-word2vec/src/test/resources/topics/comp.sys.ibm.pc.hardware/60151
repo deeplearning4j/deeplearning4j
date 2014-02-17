@@ -1,0 +1,40 @@
+From: swood@vela.acs.oakland.edu (Scott Wood)
+Subject: Western Digital HD info needed
+Organization: Oakland University, Rochester, Michigan, U.S.A.
+Lines: 34
+NNTP-Posting-Host: vela.acs.oakland.edu
+
+I was recently loaned an older Dec 210 286 at work, and I have the option
+of adding an additional Western Digital Hard-drive to the machine.  The
+existing drive is currently a Western Digital as well, and is working fine,
+but I do not have any documentation available for configuring the master/slave
+relationship necessary for a c: d: drive setup.
+
+The first drive is currently formatted to Tandy Dos v3.3 but I am eventually
+going to upgrade both to MS Dos v 5.0
+
+The drives themselves are both model number WD95044-A circa 5-07-1991
+They are 782 cyl 4 head drives.  A note to add is that there is no exact
+configuration for these in my current bios, but it seems to work at a
+setting 17 (977 cyl 5 head, 300 write_pre, 977 landing zone).
+There are three pairs of jumper pins on the back that I presume are
+for setting up the master/slave.  Originally, the drive in the machine
+had none.  Currently, I was suggested to try the far right (looking at the
+back) for master and the middle jumper for the slave.
+
+When booted, the reinitialize seems to puke accessing the d: drive.  It does
+flicker about three times on the second drive, but then gives the error.  
+Hopefully the problem is as simple as the drive not being formatted, but not
+being a person who has ever had to actual format and unformatted drive, I
+would not even know how to do that.
+
+Any and all help on this is great fully appreciated.  If not, a number
+for Western Digital might just do as good!
+
+swood
+
+-- 
+       Hunting over in Michigan?  Don't Despair - NO CLOSED SEASON ON:
+         opossum, porcupine, weasel, red squirrel, skunk, starlings,
+        feral pigeons, English sparrows, ground squirrel & woodchuck
+          Anyway trout season opens the last Saturday this month.

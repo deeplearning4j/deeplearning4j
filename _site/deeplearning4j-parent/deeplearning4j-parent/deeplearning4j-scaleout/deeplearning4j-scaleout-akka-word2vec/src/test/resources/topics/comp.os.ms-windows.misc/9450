@@ -1,0 +1,64 @@
+From: gt4356c@prism.gatech.EDU (James Dean Barwick)
+Subject: Re: Permanaent Swap File with DOS 6.0 dbldisk
+Distribution: git
+Organization: Georgia Institute of Technology
+Lines: 58
+
+In comp.os.ms-windows.misc you write:
+
+>While reading through the DOS 6.0 book, it states that the Windows permanaent swap file will not work correctly when placed on a compressed drive.  To make things compatable,
+>I removed my Permanent swap file before starting the upgrade.  However, when all the dust settled, and I go into windows, it says that the temporary swap file is right where it always was, in the Windows directory.  My question is:  How come the temporary swap files works OK with a compressed drive, and the permanent one doesn't?
+
+you might want to look in windows FAQ for this one, but here is my best
+explanation.  But I can't guarantee that I'm not way off base...
+
+The permenant swap file is read/written to by windows by talking
+directly to the hard disk controller card.  The controller card must
+use the protocal set up by western digital (or something like that).
+Windows creates a file called spart.par in your windows directory that
+points to that file.  It then uses the physical information about your
+disk to index to information in that file.
+
+compressed disks are actually "logical" disks.  These disks have different
+characteristics than the actual physical disk.  Furthermore, the information
+on the compressed disks must be uncompressed before it is used.  (i.e it must
+go through the decompression program that traps disk reads at the operating
+system level or the BIOS level).  Because of this "inbetween" program, windows
+cannot use direct methods to read from the "logical" disk.
+
+a permenant swap file is only there to "reserve" an area of the disk that
+windows can use and to block that space from DOS.  Windows would theoretically
+not even have to access the file from DOS to use that disk space. (I don't
+know if it does or doesn't...but it checks for it somewhere everytime you
+boot windows.)
+
+a temporary swap file is just a normal DOS file that is accessed by windows
+via DOS and the BIOS.  If a disk compression program or other TSR is loaded
+the file access must go through DOS...TSR'S (disk compression)...and BIOS in
+order to be access. (i.e. NEVER USE A TEMPORARY SWAP FILE...NEVER)
+
+more on permenent swap files...
+
+i'm sure everyone who has an uncompressed part of their compressed hard disk
+has seen the message "you have selected a swap file greater than the suggested
+size...windows will only use the size suggested...do you wan't to create this
+swap file anyway" or something like that.
+
+well, a friend of mine (ROBERT) called microsoft and asked them what and why.
+what they said is that windows checks the amount of free disk space and
+divides that number by 2.  Then it checks for the largest contiguous block
+of free disk space.  Windows then suggests the smaller of the two numbers.
+
+They also said that under absolutely no circumstances...NONE!...will windows
+uses a swap file larger than the suggested size.  Well...that's what he 
+said!
+
+I call bull@#$#.  If this is true why does windows report the memory is
+available to me if it's not going to use it?
+
+any takers?
+
+James
+
+(if this doesn't get to the net, will someone post it for me?  thanks)
+

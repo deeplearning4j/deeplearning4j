@@ -1,0 +1,14 @@
+A
+Summary:
+An API launching today aims to help web and app developers make quick decisions about pricing and advertisements.
+Say a web publisher wants to find out which banner ad is most appealing to which audience, or which price point will make a certain user more likely to buy. Normally it would use multivariate A/B testing — the process of showing different versions of the same screen or screen elements to users and  gathering data on their reactions — but the process is lengthy and testing numerous variables like location, time of day, or browser used spreads the data thin.
+Synference , an API  and company that is launching today, aims to solve this.
+The Ireland-based operation uses A/B testing, machine learning and basic user data garnered from IP addresses and user agent. As the API receives user feedback — did she click on a banner or not? — Synference detects patterns of user behavior and updates its statistical model accordingly. It also allows companies to exploit this information before regular A/B testing would complete.
+The company was founded by Fergal Reid and Conrad Lee, who were both working on their PhDs in data analysis and were frustrated by what they saw to be “flawed industrial deployments of machine learning.” According to Lee, ”We’re trying to make something as simple as A/B testing, but with a statistical model and machine learning in the background.”
+Synference model dashboard
+Similar types of technology are already at use internally at large companies using their own tools like Yahoo , Microsoft and LinkedIn , which use a mix of your data, machine learning and AB testing to decide what advertisements or articles to show specific readers. Synference wants to bring that to the masses — or at least smaller businesses — using a Software-as-a-Service model. The creators will also build custom software to tailor it toward specific businesses. The company joins the likes of Myna , which also learns as it tests but finds the best choices for populations as a whole, whereas Synference makes decisions tailored to individual users.
+Lee said Synference is targeted at web and app developers–specific users with an audience that varies by user.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

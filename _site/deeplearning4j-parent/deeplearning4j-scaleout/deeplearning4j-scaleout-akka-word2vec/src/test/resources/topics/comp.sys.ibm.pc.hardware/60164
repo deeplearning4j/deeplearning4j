@@ -1,0 +1,28 @@
+From: pgeltner@netcon.smc.edu (Peter Geltner)
+Subject: Re: Soundblaster IRQ and Port settings
+Organization: Santa Monica College, Santa Monica, CA
+Lines: 23
+
+In article <1qjv95$1t1@bogus.sura.net> vargish@bogus.sura.net (Nicholas Vargish) writes:
+>A SoundBlater (SB) card is _supposed_ to share IRQ 7 with LPT1
+>(parallel printer interface 1), and in general this scheme works well.
+>However, sometimes there are conflicts -- it seemed to depend on the
+>software more than anything else. Origin games are especially bitchy
+>about having the WHOLE interrupt to themselves... :^)
+>
+>My solution was to switch the interrupt to IRQ 5, which is unreserved
+>in contemporary computers (using IRQ 5 for the drives went out with
+>the XT architechture -- DON'T put the SB in IRQ 5 if you have an XT,
+>get a new computer instead). This IRQ has been completely stable for
+>me, and I use my SB to play .mods and .wavs under Linux (a free UN*X
+>for 386 or better PC-architecture machines) with _no_ problems, as
+>well as games under DOS...
+
+I also use IRQ 5.  But there is one disadvantage.  Some games assume that
+the board is using IRQ 7 and have no way to adjust this setting.  I had
+trouble with some of the Lucas Films games.
+-- 
+
+Peter Geltner   Administrative Dean of Computing
+                Santa Monica College
+                Santa Monica, California 90405

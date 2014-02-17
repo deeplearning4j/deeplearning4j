@@ -1,0 +1,24 @@
+From: schmidt@PrakInf.TH-Ilmenau.DE (Schmidt)
+Subject: Re: POV file constructor for Unix/X11
+Nntp-Posting-Host: merkur.prakinf.tu-ilmenau.de
+Reply-To: schmidt@PrakInf.TH-Ilmenau.DE (Schmidt)
+Organization: Technische Hochschule Ilmenau
+Lines: 17
+
+In article <1r7hl1$csc@st-james.comp.vuw.ac.nz>, Craig.Humphrey@comp.vuw.ac.nz (chumphre) writes:
+|> 
+|> Hi, I'm just getting into PoVRay and I was wondering if there is a graphic
+|> package that outputs .POV files.  Any help would be appreciated.
+|> Thanks.
+|> 
+
+A very good modeling package I found is `irit' (look for irit.tar.Z).
+However there is no converter from it's format to POV format. I postet 
+a request for such a converter in this group but got no response,
+so I'm considering to write such a program myself.
+
+
+-- 
+Sebastian Schmidt			
+TU Ilmenau Institut f. praktische Informatik 
+

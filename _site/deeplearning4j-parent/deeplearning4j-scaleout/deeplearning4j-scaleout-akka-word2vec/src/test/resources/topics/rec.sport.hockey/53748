@@ -1,0 +1,84 @@
+From: c5ff@jupiter.sun.csd.unb.ca (COOK  Charlie)
+Subject: NHL Summary parse results for games played Mon, April 19, 1993
+Organization: University of New Brunswick
+Lines: 79
+
+Toronto                          1 1 1--3
+Detroit                          1 4 1--6
+First period
+     1, Detroit, Yzerman 1 (Gallant, Ciccarelli) 4:48.
+     2, Toronto, Cullen 1 (Clark, Gill) 10:44.
+Second period
+     3, Detroit, Sheppard 1 (Probert, Coffey) pp, 5:04.
+     4, Detroit, Burr 1 (Racine) sh, 6:42.
+     5, Detroit, Chiasson 1 (Coffey) pp,11:00.
+     6, Detroit, Howe 1 (Yzerman, Drake) 14:46.
+     7, Toronto, Gilmour 1 (Borschevsky, Ellett) pp, 19:59.
+Third period
+     8, Detroit, Racine 1 (Primeau, Drake) 5:10.
+     9, Toronto, Lefebvre 1 (Cullen, Pearson) 7:45.
+
+Detroit: 6    Power play: 6-2   Special goals:  pp: 2  sh: 1  Total: 3
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Burr               1    0    1
+Chiasson           1    0    1
+Ciccarelli         0    1    1
+Coffey             0    2    2
+Drake              0    2    2
+Gallant            0    1    1
+Howe               1    0    1
+Primeau            0    1    1
+Probert            0    1    1
+Racine             1    1    2
+Sheppard           1    0    1
+Yzerman            1    1    2
+
+Toronto: 3    Power play: 5-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Borschevsky        0    1    1
+Clark              0    1    1
+Cullen             1    1    2
+Ellett             0    1    1
+Gill               0    1    1
+Gilmour            1    0    1
+Lefebvre           1    0    1
+Pearson            0    1    1
+
+-----------------------------------------
+Winnipeg                         1 0 1--2
+Vancouver                        2 0 2--4
+First period
+     1, Vancouver, Adams 1 (Linden, Bure) pp, 1:23.
+     2, Vancouver, Craven 1 (Bure, Murzyn) 9:56.
+     3, Winnipeg, Steen 1 (Shannon, Housley) pp, 17:53.
+Second period
+     No scoring.
+Third period
+     4, Winnipeg, King 1 (Barnes) 3:43.
+     5, Vancouver, Linden 1(Courtnall, McLean) 12:16.
+     6, Vancouver, Ronning 1 (Courtnall) 18:31.
+
+Vancouver: 4    Power play: 6-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Adams              1    0    1
+Bure               0    2    2
+Courtnall          0    2    2
+Craven             1    0    1
+Linden             1    1    2
+McLean             0    1    1
+Murzyn             0    1    1
+Ronning            1    0    1
+
+Winnipeg: 2    Power play: 3-1
+Scorer            G    A   Pts
+---------------  ---  ---  ---
+Barnes             0    1    1
+Housley            0    1    1
+King               1    0    1
+Shannon            0    1    1
+Steen              1    0    1
+
+-----------------------------------------

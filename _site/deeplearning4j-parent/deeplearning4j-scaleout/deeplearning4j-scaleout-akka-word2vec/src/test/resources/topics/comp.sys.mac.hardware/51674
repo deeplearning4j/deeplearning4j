@@ -1,0 +1,14 @@
+From: guykuo@carson.u.washington.edu (Guy Kuo)
+Subject: Re: iisi clock upgrades
+Organization: University of Washington
+Lines: 8
+NNTP-Posting-Host: carson.u.washington.edu
+
+I have read one report of a brave soul who rewired the 40 mhz clock and a higher
+speed clock oscillator's outputs through a double throw switch to allow different
+ speeds. There was no mention of any attempts to switch speeds on the fly but
+if the SI uses timing loops anything like a Quadra for accessing its floppy
+drive, dynamic switching will wreak havoc. A Quadra must reboot after having its
+clock speed significantly changed or it will be unable to properly access its
+floppy drive.
+

@@ -1,0 +1,25 @@
+From: dfegan@lescsse.jsc.nasa.gov (Doug Egan)
+Subject: Re: Any graphics packages available for AIX ?
+Organization: LESC
+Lines: 20
+
+In <1993Apr8.122037.19260@sun1x.res.utc.com> mark@sun1x.res.utc.com (MARK STUCKY) writes:
+
+>In <1pr9qnINNiag@tahko.lpr.carel.fi>, 
+>   Ari Suutari (ari@tahko.lpr.carel.fi) wrote:
+
+>   > Does anybody know if there are any good 2d-graphics packages
+>   > available for IBM RS/6000 & AIX ? I'm looking for something
+>   > like DEC's GKS or Hewlett-Packards Starbase, both of which
+>   > have reasonably good support for different output devices
+>   > like plotters, terminals, X etc.
+
+   Try graPHIGS from IBM... It is an excellent package! :^)
+
+Doug
+ 
+--
+ Doug Egan                                  "It's not what you got -
+ Lockheed Engineering and Sciences Co.       It's what you give."          
+ Houston, TX                                                  -Tesla      
+ ***** email:  egan@blkbox.com  *****                                    

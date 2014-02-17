@@ -1,0 +1,36 @@
+From: David A. Fuess
+Subject: Re: Visual c++
+Organization: UCLLNL
+Lines: 29
+Distribution: usa
+NNTP-Posting-Host: talon.llnl.gov
+
+It is correct that VC++ is NOT considered an upgrade for C7. C7 is
+basically a DOS product, VC++ is a Windows product. As Windows is not
+an upgrade for DOS, it is a separate operating system product line, its
+utilities cannot be upgrades for DOS utilities. However, I have also
+been told that it is NOT an upgrade for QCWIN, which it should be!
+
+In article <735708181.AA00457@therose.pdx.com> Don.Hancock@f303.n105.z1.fidonet.org (Don Hancock) writes:
+>My understanding is that Visual C++ *IS* MSC8.0. Is it not? What I mean is,
+>it is intended as a logical upgrade to MSC7 (which I own). I AM VERY 
+>interested in VC++, but I can't find ANYTHING about it. Tell me more.
+>How's the editor? Is it a TRUE windows app (MSC7 - which I love - is NOT).
+>How are compile times? .exe sizes? How smart is the linker? How WELL does it
+>do DOS apps? I would like to be one of the few programmers still pumping out
+>stuff for the DOS users out there - even though I run Win3.1 (I like the
+>multitasking and I couldn't afford Desqview). Will it link 3rd party libs 
+>easily? I use LOTS of 3rd party libs in my DOS programs (too lazy to do my
+>own interfaces). How is the debugger - I make lots of mistakes (|-})?
+>Thanx.....
+>
+>.... If it wasn't for C, we would be using BASI, PASAL and OBOL!
+>___ Blue Wave/QWK v2.10
+
++---------------------------------+----------------------+
+|    _/      _/     _/    _/  _/  | David A. Fuess       |
+|   _/      _/     _/_/  _/  _/   | Dir, Center for EECS |
+|  _/      _/     _/  _/_/  _/    | Phone: (510)423-2436 |
+| _/_/_/  _/_/_/ _/    _/  _/_/_/ | Fax:   (510)422-9343 |
++-------- Lawrence Livermore National Laboratory --------+
+

@@ -1,0 +1,34 @@
+From: linnig@m2000.dseg.ti.com (Mike Linnig)
+Subject: Re: books/info on audio DSP ??
+In-Reply-To: scst83@csc.liv.ac.uk's message of 6 Apr 93 13:36:13 GMT
+Nntp-Posting-Host: m2000.dseg.ti.com
+Organization: Texas Instruments, Defense, Systems and Electronics Group.
+	<C52DsD.7pB@compsci.liverpool.ac.uk>
+Distribution: rec,sci
+Lines: 25
+
+In article <C52DsD.7pB@compsci.liverpool.ac.uk> scst83@csc.liv.ac.uk (Chris Smith) writes:
+
+> I'm looking to build a DSP for guitar processing. Hence lots of background
+> information would be really useful !
+> 
+> If anyone's got any info, could they email.....
+
+Well, I'm not sure I'd use this to process a guitar but there was a audio
+filter DSP construction article in the Sept 92 issue of QST magazine (Ham Radio
+oriented).  The DSP is available in kit form for about $120.
+
+This particular DSP filter was targetted toward processing audio to remove
+noise (static).  I built it and it really works well.  The source code is
+available too.  It makes a noisy audio signal much easier to hear.  Note that
+this is for communication applications and is not "high fidelity".
+
+
+
+--
+- - - - - - - - - - - - - - - - - - + - - - - - - - - - - - - - - - - - +
+Mike Linnig, Texas Instruments Inc. | 97.43% of all statistics are made |
+Phone: (214) 575-3597  CALL: N5QAW  | up; most of them (83.6 percent)   |
+Internet: mike.linnig@dseg.ti.com   | are wrong.                        |
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+

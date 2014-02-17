@@ -1,0 +1,39 @@
+From: de7043@medtronic.COM (Don Eller)
+Subject: Re: MIDI files on MS-Win3.1 and SoundBlaster 1.0?
+Article-I.D.: medtron.1993Apr22.190051.23597
+Organization: Medtronic, Inc.
+Lines: 31
+Nntp-Posting-Host: bhutan.inst.medtronic.com
+X-Newsreader: TIN [version 1.1 PL8]
+
+The Cybard (dudek@acsu.buffalo.edu) wrote:
+: I have a 486DX-33 computer with a SoundBlaster 1.0 card.  I'm running
+: Microsoft Windows v3.1.  I have the SB driver set up properly to play
+: normal sounds (.WAV files, etc.).  I want to play midi files through the
+: Media Player that is included with windows.  I know I have to set up the
+: patch maps or something in the MIDI-Mapper in the Control Panel.  I KNOW
+: NOTHING ABOUT MIDI.  (This is to be the way I'll get my feet wet.)
+
+: How do I set up Windows so that I can play MIDI files?
+If you install the Soundblaster windows drivers correctly, and have
+the latest drivers, the media player should be setup to play files
+authored to Microsoft's Multimedia midi authoring standard (General
+Midi), see the section in the back of the Voyetra manual in the
+Soundblaster midi upgrade kit.
+You'll find that midi files exist with all kinds of different
+mappings, so don't expect them to always sound correct without using
+some kind of midi file editor, such as Voyetra's Sequencer Plus.
+
+You can attempt to use the midi-mapper to remap the patches for
+soundblaster, but since you cannot modify the sbfm.drv you are allways
+stuck with the instruments that come with this driver.  Unless you can
+find an editor for making modifications to the instrument settings in
+sbfm.drv , I would suggest you locate the early version of
+soundblaster drivers that were mapped to mt32 voices, and the later
+drivers that are mapped to the general midi voices.   
+:   
+: -- 
+: David Thomas Dudek /  v098pwxs@ubvms.bitnet     \     __   _ The Cybard
+:  State University / dudek@sun.acsu.buffalo.edu   \   /  `-' )      ,,, 
+:    of New York   / "If music be the food of love, \  | | ()|||||||[:::}
+:     @ Buffalo   /   play on!" - Wm. Shakespeare    \ `__.-._)      ''' 

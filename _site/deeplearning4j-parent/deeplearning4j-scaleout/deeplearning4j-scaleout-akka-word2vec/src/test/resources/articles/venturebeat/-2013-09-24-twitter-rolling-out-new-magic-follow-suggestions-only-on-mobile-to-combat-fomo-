@@ -1,0 +1,11 @@
+If you use Twitter on Android or iOS, you’ll see something new as soon as your phone updates to the latest version: personalized follow recommendations.
+It’s the cure, Twitter says, to FOMO: fear of missing out.
+“If you’re like me, you occasionally feel like you’re missing out on some of the day’s great tweets, or that you’re the last to find out when someone awesome joins Twitter,” senior Twitter software engineer Venu Satuluri wrote in a blog post. “With this new feature, you’ll receive personalized recommendations when multiple people in your network follow the same user or favorite or retweet the same tweet.”
+I don’t have a pressing need to follow more people — several months ago I unfollowed about 3,000 people to make Twitter usable again — but I do appreciate the capability to see what’s trending or hot.
+Perhaps more interesting than the feature itself is the way Twitter built it.
+To create the technology behind personalized follow suggestions, Twitter created a Twitter account, @MagicRecs , which, when followed, supplies — you guessed it — personalized follow suggestions. And apparently, very good ones:
+At this point I follow everyone @MagicRecs suggests.
+— Todd Johnson (@todd534) September 14, 2013
+That enabled Twitter’s engineers to fine-tune the technology and improve it in a live and organic way, while being used by real people, and being essentially rated on the fly, in the wild. Since following MagicRecs gave you follow suggestions, Twitter could tweak the algorithms as they saw increases or decreases in the number of accepted recommendations, or even in the number of users who followed or unfollowed the account.
+In a word, genius.
+Now that same technology is coming to mobile users. iPhone and Android users of the Twitter app will see recommendations via push notifications (which can be turned off, by the way).

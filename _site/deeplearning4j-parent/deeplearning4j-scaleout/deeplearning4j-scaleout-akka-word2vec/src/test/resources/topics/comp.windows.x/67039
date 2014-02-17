@@ -1,0 +1,60 @@
+From: ramakris@csgrad.cs.vt.edu (S.Ramakrishnan)
+Subject: Mwm title-drag crashes X server (SIGPIPE)
+Organization: VPI&SU Computer Science Department, Blacksburg, VA
+Lines: 55
+
+
+   Environment:
+      mach/arch : sparc/sun4  (IPX)
+      OS	: SunOS 4.1.3
+      X11	: X11R5 (patchlevel 22)
+      Motif	: 1.2.2
+
+I bring up X server using 'startx' and /usr/bin/X11/Xsun. The following sequence
+of actions crashes the X server (SIGPIPE, errno=32, 'xinit' reports that connexion 
+to X server lost):
+
+   1. xinit -- Xsun
+   2. start mwm
+   3. start a client with a 100dpi/75dpi font.
+   4. move the window by dragging the title bar.
+
+The server dumps core due to SIGPIPE. One of the two messages is printed:
+
+  "Connection to X server lost"
+
+or
+  
+  "Connection broken (errno=32)"
+
+(I believe the first is reported by a client and the second by the server itself).
+
+Next, I ran xdm in debug level = 5. After the same set of actions, xdm reports:
+
+  select returns -1
+  Server for :0 terminated unexpectedly: status 2560
+
+
+Note:
+ * The problem doesn't occur with other window managers (twm or olwm). 
+ * I have not set LD_LIBRARY_PATH. 
+ * I am not running font server. 
+ * If I start the client with fixed width font, I do not see this problem.
+ * My font path:
+     /usr/lib/X11/fonts/misc/,/usr/lib/X11/fonts/Speedo/,/usr/lib/X11/fonts/75dpi/,/usr/lib/X11/fonts/100dpi
+
+   (I did mkfontdir in /usr/lib/X11/fonts/100dpi, /usr/lib/X11/fonts/75dpi,
+   /usr/lib/X11/fonts/PEX, /usr/lib/X11/fonts/Speedo,
+   and in /usr/lib/X11/fonts/misc).
+
+ * This problem seems to occur only on IPX machines. I do not see this 
+   problem on IPC workstations.
+
+Questions:
+ * What the hell is goin on ? :-)
+ * What does "status 2560" mean (of the server).
+
+I'd greatly appreciate any hints as to the cause of the problem.
+
+---
+S Ramakrishnan, CS Dept, McBryde Hall, VaTech

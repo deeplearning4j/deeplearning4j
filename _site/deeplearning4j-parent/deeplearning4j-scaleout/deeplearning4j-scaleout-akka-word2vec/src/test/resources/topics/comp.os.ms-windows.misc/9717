@@ -1,0 +1,32 @@
+From: bishop@baeyer.chem.fsu.edu (Greg Bishop)
+Subject: RE Diamond SS 24X
+Organization: Physics Department, FSU
+News-Software: VAX/VMS VNEWS         
+Reply-To: bishop@baeyer.chem.fsu.edu
+Lines: 25
+
+>Has anyone experienced a faint shadow at all resolutions using this
+>card. Is only in Windows. I have replaced card and am waiting on 
+>latest drivers. Also have experienced General Protection Fault Errors
+>in WSPDPSF.DRV on Winword Tools Option menu and in WINFAX setup.
+>I had a ATI Ultra but was getting Genral Protection Fault errors
+>in an SPSS application. These card manufactures must have terrible
+>quality control to let products on the market with so many bugs.
+>What a hassle. Running on Gateway 2000 DX2/50.
+>Thx Dave L
+
+I have used both version 1.17 drivers for Win 3.1 and the new 2.03 drivers.
+I have had none of these problems.  No GPF's at all.  I have a feeling that
+your problems are not with the card or drivers.  The ATI Ultra drivers are
+considered some of the most reliable on the market, and the SS 24X ones 
+seem quite good as well.  Maybe you should check BIOS problems in your
+Gateway.  I know a few people with Gateway DX2's, and all of them have
+found some problem or other with compatibility -- especially with graphics.
+
+The only GPF's I have ever had can be directly attributable to using/
+abusing applications.  I even got the newest drivers from Diamond when 
+people started complaining.  I still only have one small problem with
+them, and it is that the hardware cursor is slightly jumpy during writes/
+reads to the swap file.  
+
+Greg Bishop.

@@ -1,0 +1,16 @@
+1
+With its widespread data center infrastructure, the game industry wonders if Amazon can make cloud gaming work.
+Amazon Web Services (AWS), the cloud computing arm of the e-commerce giant, today announced a new instance type (G2) designed for applications that require 3D graphics capabilities. (Think of cloud “instances” as virtual servers that can run applications.)
+That’s huge news for cloud gaming providers like PlayCast Media and Agawi , which plan to use Amazon’s existing cloud infrastructure to stream games in the cloud. ( See more on Agawi’s app streaming plans here .)
+With this announcement, Amazon reduces the cost of streaming games to the living room to mere pennies. It’ll cost PlayCast 7 cents to stream a video game to a U.S. household for one hour, according to the company’s CEO Guy de Beer. That makes new business models like free-to-play even more viable in the living room.
+The PlayCast interface.
+“With Amazon, we get huge capacity at very low costs,” said de Beer in a conversation with VentureBeat. “It removes the upfront cost structure that basically killed OnLive, which had to develop, install, and operate thousands of servers across the U.S.”
+But an important question remains: how will the games actually play?
+“The actual user experience works,” said de Beer, after throwing a bunch of figures our way. “We’re able to slice [latency] to microseconds and service a lot of customers.”
+PlayCast is already up and running in France, Korea, and Portugal, and it’s set to roll out in the U.S. in the spring through several partner brands. De Beer declined to name the partners, but said they’re “major household names that everyone recognizes.”
+The average gaming session on PlayCast lasts 23 minutes, according to de Beer, but it’s higher for “core games” like Batman: Arkham City, Street Fighter IV, and Homefront. The company has partnerships with Atari, Capcom, Codemasters, Disney, Sega, THQ, Ubisoft, and Warner Bros, among others.
+Ubisoft, the French game publisher, is equally bullish on cloud gaming.
+“In the coming years, games streamed from the cloud are going to grow tremendously in numbers and in quality, and we believe that Amazon Web Services is becoming a new and important gaming platform,” said Patrick Allaire, Ubisoft’s cloud technology director, in a statement.
+But today’s Amazon announcement doesn’t only affect games. Autodesk , the 3D design software maker, will use Amazon’s G2 instances to make applications like Autodesk Maya, 3DS Max, and Autodesk Inventor available directly through a web browser. Cloud rendering company OTOY also demonstrated Valve games and Photoshop CS6 running in a browser.
+Menlo Park, Calif.-based startup Mainframe2 offers some of the same functionality , promising to pipe any Windows application directly from its data centers to your browser, but Amazon may be better positioned to capture the computing-intensive software market given its existing data center infrastructure.
+Related Articles

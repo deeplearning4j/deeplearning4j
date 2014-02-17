@@ -1,0 +1,53 @@
+From: bakerjp1@netnews.jhuapl.edu (Baker John P. PDD x4895 )
+Subject: How does "Differential Mode" GPS work???
+Summary: Explaination of DGPS system
+Keywords: GPS, differential, navigation, radio
+Organization: JHU/Applied Physics Laboratory
+Lines: 46
+
+
+>I understand that the new GPS boxes now have an option
+>known as "differential ready".  Apparently land-based
+>beacons tranmit GPS correction information to your GPS 
+>receiver (with differential option installed).
+
+>How does this system work?  What frequency is used for
+>the land-based beacons?
+
+>Thanks in advance,
+
+>Charlie Thompson
+>.
+
+Here's a rough sketch of how the system works.  A reference station
+with a very exactly known position computes the errors in the
+incoming GPS signals.  These errors are due to several factors
+including atmospheric distortion, SA (Selective Availability) time
+dithering, etc.  The reference unit contains complex computational 
+equipment to "back out" the errors in its position (since it knows
+where it is already).  It then transmits these corrections on a 
+broadcast which is available to any number of relatively local
+receivers.  If the receivers are nearby (<300km) and are using
+the same satellites as the reference unit, the errors should be very
+similar for the reference unit and the receiver unit.  Thus, the
+receiver unit may apply the corrections calculated by the reference
+unit.
+
+The US Coast Guard is currently (as far as I know) installing a series
+of coastline transmitters for differential GPS.  These stations will
+use existing radio towers.  I believe the frequency is to be approximately
+305 kHz.  There are many other private corporations offering DGPS signals
+on different frequencies.  For example, PinPoint ((310)-618-7076) offers
+correction signals and receiver units using an FM broadcast system
+which has stations all across the US.
+
+The correction codes are usually transmitted using the RTCM 104 format.
+Advertised accuracies espouse 1 to 5 meter errors.
+
+
+-------------------------------------------------------------------------
+John P. Baker                   | My opinions are my own.  I don't know
+Johns Hopkins University        | anyone else who wants them, anyway.
+Applied Physics Laboratory	|
+Laurel, MD  20723               | bakerjp1@aplcomm.jhuapl.edu
+--------------------------------------------------------------------------

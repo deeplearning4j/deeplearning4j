@@ -1,0 +1,22 @@
+From: capelli@vnet.IBM.COM (Ron Capelli)
+Subject: Re: detecting double points in bezier curves
+Disclaimer: This posting represents the poster's views, not those of IBM
+News-Software: UReply 3.1
+Lines: 16
+
+In <ia522B1w165w@oeinck.waterland.wlink.nl> Ferdinand Oeinck writes:
+>I'm looking for any information on detecting and/or calculating a double
+>point and/or cusp in a bezier curve.
+
+See:
+   Maureen Stone and Tony DeRose,
+   "A Geometric Characterization of Parametric Cubic Curves",
+   ACM TOG, vol 8, no 3, July 1989, pp. 147-163.
+_______________________________________________________________________
+
+...Ron Capelli                 IBM Corp.  Dept. C13,  MS. P230
+   capelli@vnet.ibm.com        PO Box 950
+   (914) 435-1673              Poughkeepsie, NY  12602
+_______________________________________________________________________
+
+"There are no answers, only cross references."

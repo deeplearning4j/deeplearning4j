@@ -1,0 +1,145 @@
+From: denning@guvax.acc.georgetown.edu
+Subject: THE CLIPPER CHIP: A TECHNICAL SUMMARY
+Distribution: world
+Organization: Georgetown University
+Lines: 139
+
+The following document summarizes the Clipper Chip, how it is used,
+how programming of the chip is coupled to key generation and the
+escrow process, and how law enforcement decrypts communications.
+Since there has been some speculation on this news group about my
+own involvement in this project, I'd like to add that I was not in
+any way involved.  I found out about it when the FBI briefed me on
+Thursday evening, April 15.  Since then I have spent considerable
+time talking with the NSA and FBI to learn more about this, and I
+attended the NIST briefing at the Department of Commerce on April 16.  
+The document below is the result of that effort. 
+
+Dorothy Denning
+---------------
+
+                     THE CLIPPER CHIP: A TECHNICAL SUMMARY
+
+                               Dorothy Denning
+
+                                April 19, 1993
+
+
+INTRODUCTION
+
+On April 16, the President announced a new initiative that will bring
+together the Federal Government and industry in a voluntary program
+to provide secure communications while meeting the legitimate needs of
+law enforcement.  At the heart of the plan is a new tamper-proof encryption
+chip called the "Clipper Chip" together with a split-key approach to
+escrowing keys.  Two escrow agencies are used, and the key parts from
+both are needed to reconstruct a key.
+
+
+CHIP STRUCTURE
+
+The Clipper Chip contains a classified 64-bit block encryption
+algorithm called "Skipjack."  The algorithm uses 80 bit keys (compared
+with 56 for the DES) and has 32 rounds of scrambling (compared with 16
+for the DES).  It supports all 4 DES modes of operation.  Throughput is
+16 Mbits a second.
+
+Each chip includes the following components:
+
+   the Skipjack encryption algorithm
+   F, an 80-bit family key that is common to all chips
+   N, a 30-bit serial number
+   U, an 80-bit secret key that unlocks all messages encrypted with the chip
+
+
+ENCRYPTING WITH THE CHIP
+
+To see how the chip is used, imagine that it is embedded in the AT&T
+telephone security device (as it will be).  Suppose I call someone and
+we both have such a device.  After pushing a button to start a secure
+conversation, my security device will negotiate a session key K with
+the device at the other end (in general, any method of key exchange can
+be used).  The key K and message stream M (i.e., digitized voice) are then
+fed into the Clipper Chip to produce two values:
+
+   E[M; K], the encrypted message stream, and 
+   E[E[K; U] + N; F], a law enforcement block.  
+
+The law enforcement block thus contains the session key K encrypted
+under the unit key U concatenated with the serial number N, all
+encrypted under the family key F.
+
+
+CHIP PROGRAMMING AND ESCROW
+
+All Clipper Chips are programmed inside a SCIF (secure computer
+information facility), which is essentially a vault.  The SCIF contains
+a laptop computer and equipment to program the chips.  About 300 chips
+are programmed during a single session.  The SCIF is located at
+Mikotronx.
+
+At the beginning of a session, a trusted agent from each of the two key
+escrow agencies enters the vault.  Agent 1 enters an 80-bit value S1
+into the laptop and agent 2 enters an 80-bit value S2. These values
+serve as seeds to generate keys for a sequence of serial numbers.
+
+To generate the unit key for a serial number N, the 30-bit value N is
+first padded with a fixed 34-bit block to produce a 64-bit block N1.
+S1 and S2 are then used as keys to triple-encrypt N1, producing a
+64-bit block R1:
+
+        R1 = E[D[E[N1; S1]; S2]; S1] .
+
+Similarly, N is padded with two other 34-bit blocks to produce N2 and
+N3, and two additional 64-bit blocks R2 and R3 are computed:  
+
+        R2 = E[D[E[N2; S1]; S2]; S1] 
+        R3 = E[D[E[N3; S1]; S2]; S1] .
+
+R1, R2, and R3 are then concatenated together, giving 192 bits. The
+first 80 bits are assigned to U1 and the second 80 bits to U2.  The
+rest are discarded.  The unit key U is the XOR of U1 and U2.  U1 and U2
+are the key parts that are separately escrowed with the two escrow
+agencies.
+
+As a sequence of values for U1, U2, and U are generated, they are
+written onto three separate floppy disks.  The first disk contains a
+file for each serial number that contains the corresponding key part
+U1.  The second disk is similar but contains the U2 values.  The third
+disk contains the unit keys U.  Agent 1 takes the first disk and agent
+2 takes the second disk.  The third disk is used to program the chips.
+After the chips are programmed, all information is discarded from the
+vault and the agents leave.  The laptop may be destroyed for additional
+assurance that no information is left behind.
+ 
+The protocol may be changed slightly so that four people are in the
+room instead of two.  The first two would provide the seeds S1 and S2,
+and the second two (the escrow agents) would take the disks back to
+the escrow agencies.
+
+The escrow agencies have as yet to be determined, but they will not
+be the NSA, CIA, FBI, or any other law enforcement agency.  One or
+both may be independent from the government.
+
+
+LAW ENFORCEMENT USE
+
+When law enforcement has been authorized to tap an encrypted line, they
+will first take the warrant to the service provider in order to get
+access to the communications line.  Let us assume that the tap is in
+place and that they have determined that the line is encrypted with
+Clipper.  They will first decrypt the law enforcement block with the
+family key F.  This gives them E[K; U] + N.  They will then take a
+warrant identifying the chip serial number N to each of the key escrow
+agents and get back U1 and U2.  U1 and U2 are XORed together to produce
+the unit key U, and E[K; U] is decrypted to get the session key K.
+Finally the message stream is decrypted.  All this will be accomplished
+through a special black box decoder operated by the FBI.
+
+
+ACKNOWLEDGMENT AND DISTRIBUTION NOTICE.  All information is based on
+information provided by NSA, NIST, and the FBI.  Permission to
+distribute this document is granted.
+
+
+    

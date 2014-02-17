@@ -1,0 +1,22 @@
+From: spowell@trentu.ca (STEFAN POWELL)
+Subject: Cool background patterns!
+News-Software: VAX/VMS VNEWS 1.41    
+Organization: Trent Computing and Telecommunications Department
+Lines: 16
+
+Here are some cool 3-D background patterns I made.
+
+Edit your CONTROL.INI and add the following lines to your [Patterns] section.
+
+Bricks=148 43 86 172 89 182 99 201
+Tile=1 43 85 43 85 43 85 255
+Tile (diagonal)=148 107 54 156 73 182 99 201
+Slats=0 170 85 170 85 170 85 255
+
+Make sure your desktop color is one of the standard 16 colors or the
+patterns might not work.  I like dark grey the best with these.
+
+If you have any cool one's of your own, please mail them to me.
+_______________________________________________________________________________
+                                             Stefan Powell - SPowell@TrentU.CA
+                                                 Peterborough, Ontario, Canada

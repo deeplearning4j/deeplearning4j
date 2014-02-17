@@ -1,0 +1,35 @@
+From: ams@Auspex.COM (Allan Schwartz)
+Subject: Re: Making an internal hard disk into an external
+Organization: Auspex Systems, Santa Clara
+Lines: 29
+Nntp-Posting-Host: auspex.auspex.com
+
+>Its not a difficult operation-- the cables and such are standard,
+>except for SCSI ID.  SCSI ID is usually three jumper pads-- labelled
+>A0-A2 on Quantums.
+
+I am trying to put a 40MB drive from my LC into a case.  It is a Conner
+CP3040A.  I can't figure out which jumpers are the SCSI ID jumpers.
+Is anyone familiar with this drive?
+
+At the end of the drive (oposite the 50 pin pibbon connector), there
+are eleven pins which look like this:
+
+
+        o o o o o   o   1
+          o o o o   o   2
+
+         L5  CR12   C37
+
+where the "o" are pins, and the "L5 CR12 C37" represent some of the
+silk screen notation near these pins.
+
+Elsewhere on the board there are four jumper pads marked E1,E2,E3,E4
+on the silk screen.
+
+Does anyone know where the SCSI ID A0,A1,A2 pins are, and where the
+drive activity light LED should be plugged into?
+
+		-allan
+-- 
+Allan M. Schwartz              +1 408 492-0900                 ams@auspex.com

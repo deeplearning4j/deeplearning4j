@@ -1,0 +1,27 @@
+From: glalonde@watson.ibm.com
+Subject: Re: Cache card for IIsi
+News-Software: IBM OS/2 PM RN (NR/2) v0.17h by O. Vishnepolsky and R. Rogers
+Lines: 18
+Reply-To: glalonde@vnet.ibm.com
+Disclaimer: This posting represents the poster's views, not necessarily those of IBM.
+Nntp-Posting-Host: xlalonde.torolab.ibm.com
+Organization: IBM Toronto Lab
+
+>
+>As of last week, Mac's Place had the Applied Engineering QuickSilver card
+>(32k cache, one PDS slot, socket for FPU) on sale for $99.00 (without FPU).
+>Regular price is $199.
+>
+>No idea if this is still going on, but I can get the phone no. if anyone is
+>interested (I found their ad in MacUser).
+>
+
+Can some people with cache cards PLEASE post speedometer numbers they get
+with the cards. I have only one report, which seems to indicate that
+a 32K cache card gives you only about a 1% speedup!! Access to memory takes
+LONGER when you have a cache card(and get a miss) thus a small cache card
+of 32K may be worth $0. I don't know what kind of numbers 64K cards get
+you. Also I found it interesting that you can disable the cache cards
+via software(read about it in the Mac IIsi tech notes from ftp.apple.com)
+
+So is $99 a good deal or not, I still don't know.

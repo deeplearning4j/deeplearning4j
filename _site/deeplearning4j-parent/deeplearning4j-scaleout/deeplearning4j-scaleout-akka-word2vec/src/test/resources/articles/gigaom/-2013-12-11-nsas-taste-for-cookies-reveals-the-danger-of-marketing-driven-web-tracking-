@@ -1,0 +1,30 @@
+photo: David Meyer
+Summary:
+Privacy advocates have always been down on cookies, but news that the NSA and GCHQ tap into their power highlights the dangers that are inherent to today’s online advertising systems.
+photo: David Meyer
+In a sense, the latest NSA revelation – that the agency and its partners tap into commercial “cookies” to track people’s web usage – isn’t that big a deal, compared with earlier leaks from former NSA contractor Edward Snowden. After all, this appears to be a technique employed to track specific targets that have already been identified. It’s not a tool of bulk, suspicionless surveillance.
+That said, the story does add to a building realization: that commercial and government surveillance are inseparable.
+While I’ve always been concerned about Google and Facebook’s evasive and occasionally duplicitous attitude towards privacy, I see a surveillance-happy government as a much greater threat, because it has the power to send a man with a gun to my door. However, when such a government can harness the invasive nature of commercial tracking, then it ceases to be a game of which one is worse.
+“Piggybacking”
+Here’s what the Washington Post ‘s story says:
+The NSA and its British counterpart, GCHQ, are “piggybacking” on cookies that are set by advertising companies, notably Google, to track users as they surf the web.
+This is done to track pre-identified individuals. It can track which websites they visit and pick out their communications from the “sea of internet data.”
+The one named target is Google’s PREF cookie, which saves users preferences such as region and font size in order to personalize experiences – and ads — across Google’s various websites.
+The NSA and GCHQ’s use of cookies can also enable “remote exploitation”, though we don’t know how or what kind of exploitation.
+We also don’t know how the NSA and GCHQ get their hands on the cookies, but other Snowden documents indicate access can be obtained through a FISA court order. This would suggest ad companies such as Google are compelled to grant access.
+The agencies can also collect location data from smartphone apps that send such data back to the advertising networks. The app developers transmit location data to the ad networks because it makes the ads on the apps more targeted and therefore more lucrative.
+Cookies crumble
+These revelations come at a funny time for the online ad industry. Privacy advocates have always been up in arms about cookies, because most people don’t actively consent to being monitored in such a close fashion, and there was a major drive to introduce a standard called “Do Not Track” (DNT), where users can set their browsers to reject cookies. However, the marketing industry hijacked the process , which subsequently collapsed in September .
+DNT is a feature of many browsers today, but the default setting is generally to allow cookies, which makes the system ineffective for purposes of obtaining widespread consent. The yes-to-cookies default came about after advertisers threatened to ignore browsers’ DNT settings in the event browser makers set the default the other way.
+With DNT an abject failure, some fear that the U.S. Congress and regulators will now step in to bring cookies under control – and to that end, Google is reportedly set to introduce a new, cookie-free “anonymous ID” system that will again track users across the web.
+Will that make a difference in the face of NSA access requests? Most probably not. No matter how anonymous the system is supposed to be, there’s no point in implementing it if it’s not tied to the user’s browser or device in some way. And if the intelligence agencies have already identified the person they’re trying to track, and they show up with a court order, the nature of the tracking mechanism itself is unlikely to make a blind bit of difference.
+The personalization problem
+All of which brings us back to the central conundrum of the surveillance scandal: can we keep the good bits of tracking while cutting out the bad? Short answer: no, unless someone makes a technological breakthrough.
+As I mentioned above, it’s not like this is a tool of dragnet government surveillance (as far as we know). And dragnet surveillance is the key problem with what the NSA, GCHQ and other agencies are doing – it runs counter to established civil liberties , such as the freedom from intrusion into your private affairs when there’s no suggestion you’ve done anything wrong.
+However, at the very least, commercial tracking creates a powerful body of evidence about an individual’s tastes and activities. If we look at hypothetical offline analogies, it’s like a private investigator following you around on behalf of retailers, who can then cough up reams of information about you as soon as the authorities come knocking – and as we now know, there’s not enough rigorous oversight to properly control that knocking.
+It’s an obnoxious system that can turn outright dangerous, and unfortunately there doesn’t seem to be any way to draw a line between those two facets of its nature. The only way to achieve that would be to create a fully anonymized ad network that doesn’t even identify the user’s browser or device, yet still enables personalization.
+That, as far as I’m aware, remains a pipedream at the time of writing. Perhaps it’s time for the tech industry to revisit DNT with new defaults in mind — and for consumers to install cookie blockers in their browsers (DoNotTrackMe and TrackerBlock spring to mind).
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

@@ -1,0 +1,103 @@
+From: Rob Shirey <shirey@mitre.org>
+Subject: ISOC Symposium on Net Security
+X-Xxmessage-Id: <A7F43AAA5A058C64@shirey-mac.mitre.org>
+X-Xxdate: Fri, 16 Apr 93 15:27:54 GMT
+Nntp-Posting-Host: shirey-mac.mitre.org
+Organization: The MITRE Corporation, McLean, Virginia, USA
+X-Useragent: Nuntius v1.1.1d20
+Lines: 94
+
+
+                             CALL FOR PAPERS
+                    The Internet Society Symposium on
+                 Network and Distributed System Security
+
+        3-4 February 1994, Catamaran Hotel, San Diego, California
+
+The symposium will bring together people who are building software and
+hardware to provide network or distributed system security services.
+The symposium is intended for those interested in practical aspects of
+network and distributed system security, rather than in theory.  Symposium
+proceedings will be published by the Internet Society.  Topics for the
+symposium include, but are not limited to, the following:
+
+*  Design and implementation of services--access control, authentication,
+   availability, confidentiality, integrity, and non-repudiation
+   --including criteria for placing services at particular protocol
+layers.
+
+*  Design and implementation of security mechanisms and support
+   services--encipherment and key management systems, authorization
+   and audit systems, and intrusion detection systems.
+
+*  Requirements and architectures for distributed applications and
+   network functions--message handling, file transport, remote
+   file access, directories, time synchronization, interactive
+   sessions, remote data base management and access, routing, voice and
+   video multicast and conferencing, news groups, network management,
+   boot services, mobile computing, and remote I/O.
+
+*  Special issues and problems in security architecture, such as
+   -- very large systems like the international Internet, and
+   -- high-speed systems like the gigabit testbeds now being built.
+
+*  Interplay between security goals and other goals--efficiency,
+   reliability, interoperability, resource sharing, and low cost.
+
+GENERAL CHAIR:
+   Dan Nessett, Lawrence Livermore National Laboratory
+
+PROGRAM CHAIRS:
+   Russ Housley, Xerox Special Information Systems
+   Rob Shirey, The MITRE Corporation
+
+PROGRAM COMMITTEE:
+   Dave Balenson, Trusted Information Systems
+   Tom Berson, Anagram Laboratories
+   Matt Bishop, Dartmouth College
+   Ed Cain, U.S. Defense Information Systems Agency
+   Jim Ellis, CERT Coordination Center
+   Steve Kent, Bolt, Beranek and Newman
+   John Linn, Independent Consultant
+   Clifford Neuman, Information Sciences Institute
+   Michael Roe, Cambridge University
+   Rob Rosenthal, U.S. National Institute of Standards and Technology
+   Jeff Schiller, Massachusetts Institute of Technology
+   Ravi Sandhu, George Mason University
+   Peter Yee, U.S. National Aeronautics and Space Administration
+
+SUBMISSIONS:  The  committee seeks both original technical papers and
+proposals for panel discussions on technical and other topics of general
+interest.  Technical papers should be 10-20 pages in length.  Panels
+should include three or four speakers.  A panel proposal must name the
+panel chair, include a one-page topic introduction authored by the chair,
+and also include one-page position summaries authored by each speaker
+Both the technical papers and the panel papers will appear in the
+proceedings.
+
+Submissions must be made by 16 August 1993.  Submissions should be made
+via electronic mail to
+
+                   1994symposium@smiley.mitre.org.
+
+Submissions may be in either of two formats:  ASCII or PostScript.  If
+the committee is unable to read a PostScript submission, it will be
+returned and ASCII requested.  Therefore, PostScript submissions should
+arrive well before 16 August.  If electronic submission is absolutely
+impossible, submissions should be sent via postal mail to
+
+                   Robert W. Shirey, Mail Stop Z202
+                   The MITRE Corporation
+                   McLean, Virginia  22102-3481  USA
+
+All submissions must include both an Internet electronic mail address and
+a postal address.  Each submission will be acknowledged through the
+medium by which it is received.  If acknowledgment is not received within
+seven days, please contact either Rob Shirey <Shirey@MITRE.org> or
+Russ Housley <Housley.McLean_CSD@xerox.com>, or telephone Mana Weigand at
+MITRE in Mclean, 703-883-5397. 
+
+Authors and panelists will be notified of acceptance by 15 October 1993.
+Instructions for preparing camera-ready copy for the proceedings will be
+postal mailed at that time.  The camera-ready copy must be received by
+15 November 1993.

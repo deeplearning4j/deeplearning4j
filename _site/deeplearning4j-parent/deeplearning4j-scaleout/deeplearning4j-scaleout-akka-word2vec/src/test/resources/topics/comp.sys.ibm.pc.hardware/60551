@@ -1,0 +1,21 @@
+From: keegan-edward@cs.yale.edu (Edward Keegan)
+Subject: DEC MT 486, Adaptec SCSI, 3COMM conflict
+Organization: Yale University Computer Science Dept., New Haven, CT 06520-2158
+Lines: 14
+Distribution: world
+NNTP-Posting-Host: thumper.cf.cs.yale.edu
+
+
+I have a DEC NT 486DX33 that has an Adaptec SCSI controller, hard disk
+and cd-rom drive. When I add a 3COMM Ethernet card (3C503) and reboot
+the system I receive an error message that a boot device cannot be
+found. Pull the 3COMM card and reboot, everything is fine. I've moved
+the controller and 3COMM card to various slots, different positions
+(slot before the controller, slot after the controller) with the
+same result. DEC hasn't responded to the problem yet. Any help would
+be appreciated.
+-- 
+Edward T. Keegan, Facility Director             E-MAIL: keegan@cs.yale.edu
+Yale University, Computer Science Department     PHONE: 1-203-432-1254
+51 Prospect Street, Room 009                       FAX: 1-203-432-0593
+New Haven, CT 06520

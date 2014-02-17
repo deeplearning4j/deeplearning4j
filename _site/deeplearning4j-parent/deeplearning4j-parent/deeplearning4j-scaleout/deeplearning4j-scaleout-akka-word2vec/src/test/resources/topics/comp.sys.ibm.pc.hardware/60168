@@ -1,0 +1,15 @@
+From: phill@dnbf01.bram.cdx.mot.com (Phil Longstaff)
+Subject: WANTED: chipset info
+Nntp-Posting-Host: ws13.bram.cdx.mot.com
+Reply-To: phill@dnbf01.bram.cdx.mot.com (Phil Longstaff)
+Organization: Motorola Codex, Mississauga, Ontario
+Lines: 8
+
+I have a 286 with an M205 motherboard.  The Last Byte memory manager (which
+I downloaded for a trial) reports the chipset is an AddTech PCCHIP1 chipset,
+and it is able to activate the ram behind segments A000-FFFF, which can then be
+used for UMBs (except for video/BIOS).  I would like to write my own driver to
+activate the memory.  Does anyone know where I can get programming information
+on this chip?
+
+Phil

@@ -1,0 +1,32 @@
+From: jeffh@ludwig.cc.uoregon.edu (Jeff Hite )
+Subject: Re: Mac Plus is constantly rebooting!
+Article-I.D.: pith.1qk7nu$ra8
+Organization: University of Oregon Network Services
+Lines: 25
+NNTP-Posting-Host: ludwig.cc.uoregon.edu
+
+In article <C5Hsyu.Dxq@hpuerca.atl.hp.com> russ@hpuerca.atl.hp.com (Russ  
+Hodes) writes:
+> Tae Shin (tshin@husc8.harvard.edu) wrote:
+> : 
+> : Basically, the Mac Pluses are constantly rebooting themselves, as if  
+the
+> : reboot button were being pushed.  Sometimes the Mac is able to fully  
+boot
+> : and display the desktop, but it is only a matter of time before it  
+reboots
+> : again.  At times, the frequency is as high as several times a minute. 
+> : 
+>    I wonder if your Mac has those little "RESET / INTERUPT" switches
+>    installed.  They are plastic devices that push on the switches which
+>    are inside the mac.  Or mabey those switches are bad and need
+>    replacing.
+
+This problem is usually a low +5 Vdc from the power supply, there is an  
+adjustment for this on the supply. If the voltage is still unstable or low  
+then the culprit is probably a bad rectifier at CR20.
+
+Jeff Hite
+Computing Center
+U of Oregon
+jeffh@ludwig.cc.uoregon.edu

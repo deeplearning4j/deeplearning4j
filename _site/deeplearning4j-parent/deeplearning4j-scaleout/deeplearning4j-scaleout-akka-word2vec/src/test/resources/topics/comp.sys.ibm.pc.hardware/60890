@@ -1,0 +1,42 @@
+From: david@c-cat.UUCP (Dave)
+Subject: Re: how to search for bad memory chips.
+Organization: Intergalactic Rest Area For Weary Travellers
+Lines: 37
+
+rnichols@cbnewsg.cb.att.com (robert.k.nichols) writes:
+
+                steps deleted
+{> ...
+{> 
+{> It's an interesting idea, but the worst-case data patterns developed to
+{> test magnetic media are totally different than the patterns used to detect
+{> common faults in memory chips.
+{> 
+I was having major memory problems a few monthes ago.
+getting parity error - system halted error message in windows.
+I ran QA/PLUS, Check It, Diagnose, as well as several shareware
+memory checkers. I had a total of 8 meg SIMM in my system.
+these store bought/ shareware memory diagnostics either ran fine
+without errors or found an error at some address that I couldn't
+place on a memory chip. Out of exahperation I came up with
+the (now deleted) steps to find bad memory chips. I found 2
+(moral : never buy memory stamped "not for sensitive or critical 
+applications" on the back.
+        anyway I did filter out all the bad memory chips using 
+combinations of 4 of the 8 meg chips and creating a RAM drive to
+test on. Although it dodn't alleviate my parity error problems
+in windows. I did manage to find bad memory chips in this manner
+It has NEVER failed to find a bad chip for me. and the commercial/
+shareware have always faild me either not finding the error or
+pointing to an addreww which I have no idea on what chip it is.
+
+p.s. man my typing stinks today and I don't feel like futzing around with 
+this line editor.
+
+                                                       -David
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+China Cat BBS                               c-cat!david@sed.csc.com
+(301)604-5976 1200-14,400 8N1               ...uunet!mimsy!anagld!c-cat!david 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

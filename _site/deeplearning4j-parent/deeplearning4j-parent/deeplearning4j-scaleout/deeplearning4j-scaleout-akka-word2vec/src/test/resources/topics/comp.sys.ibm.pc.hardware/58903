@@ -1,0 +1,64 @@
+From: hamilton@romulus.ehs.uiuc.edu (Wayne Hamilton)
+Subject: Re: Null modem: 25 pin serial
+Article-I.D.: news.C520Gs.Dyw
+Organization: University of Illinois at Urbana
+Lines: 57
+X-Newsreader: TIN [version 1.1 PL9]
+
+Bruce Maynard (drac@uumeme.chi.il.us) wrote:
+> In article <93083.215554MAL112@psuvm.psu.edu> Mitch Lewars <MAL112@psuvm.psu.edu> writes:
+> >Can someone give me the specs
+> >on a null modem cable, I ferget
+> >which get crossed.... =-)
+> >    mal112@psuvm.psu.edu
+
+> That's an easy one... carry all 25 pins straight thru, with the exception of
+> pins 2 & 3, which should be crossed...
+
+as someone else already mentioned, don't "carry thru" the other 23 pins.
+
+plan A, minimal null modem:
+	SG(7)   -  SG(7)
+	TD(2)   -  RD(3)
+	RD(3)   -  TD(2)
+if you're transfering files betwen 2 PCs, this ought to work (unless
+you have a persnickity comm program).
+
+plan B, null modem with modem control:
+	SG(7)   -  SG(7)
+	TD(2)   -  RD(3)
+	RD(3)   -  TD(2)
+	DCD(8)  -  DTR(20)
+	DTR(20) -  DCD(8)
+some comm software will wait for DCD before transferring anything.
+such software will raise DTR to enable the modem to accept a call.
+with this cable, each side's DTR will drive the other's DCD.
+
+plan C, null modem with hardware flow control:
+	SG(7)   -  SG(7)
+	TD(2)   -  RD(3)
+	RD(3)   -  TD(2)
+	RTS(4)  -  CTS(5)
+	CTS(5)  -  RTS(4)
+for high-speed transfers, you want the flow control.
+
+plan D, deluxe null modem (combine B and C):
+	SG(7)   -  SG(7)
+	TD(2)   -  RD(3)
+	RD(3)   -  TD(2)
+	RTS(4)  -  CTS(5)
+	CTS(5)  -  RTS(4)
+	DCD(8)  -  DTR(20)
+	DTR(20) -  DCD(8)
+this one is ideal.  it leaves out DSR and RI (rarely used anymore).
+if you're really paranoid, or you just have an 8th wire to spend,
+you might add:
+	FG(1)   -  FG(1)
+
+the pin numbers above are (obviously) for 25-pin connectors.
+i don't have a 9-pin pinout handy.
+
+--
+	wayne hamilton
+I'net:	hamilton@osiris.cso.uiuc.edu
+Lowtek:	Box 476, Urbana, IL 61801; (217)384-4310(voice), -4311(BBS)

@@ -1,0 +1,22 @@
+From: duncans@hotlips.Princeton.EDU (Duncan Smith)
+Subject: Question about LocalTalk/AppleShare on MS-DOS system
+Summary: How do I make AppleShare PC run properly under Windows or OS/2?
+Originator: news@nimaster
+Keywords: Windows, OS/2, AppleShare PC, LocalTalk
+Nntp-Posting-Host: hotlips.princeton.edu
+Organization: Princeton University
+Lines: 13
+
+Is anyone out there running a MS-DOS system with a LocalTalk board? I am on an
+Appletalk network, hooked up with a DayStar Digital LT200 MC LocalTalk
+Interface Board, running on a PS/2 Model 70. I'm using the AppleShare PC
+software for file server and network access. It works fine under DOS or the
+Window or OS/2 DOS box. But when I try to load it *before* Windows, so that
+every application I run could get access to it, the machine crashes hard as
+soon as I start up an application. And of course, things look pretty hopeless
+for OS/2 (but who knows). 
+
+So, does anyone have experience with this bizarre and obsolete setup?
+
+- Duncan
+- duncans@phoenix.Princeton.EDU

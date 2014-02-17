@@ -1,0 +1,19 @@
+From: henry@zoo.toronto.edu (Henry Spencer)
+Subject: Re: Need tone decoder circuit
+Organization: U of Toronto Zoology
+Lines: 14
+
+In article <5170286@hplsla.hp.com> tomb@hplsla.hp.com (Tom Bruhns) writes:
+>>Does anybody out there have a circuit that will decode a 1000Hz tone?
+>
+>Use a NE567 tone decoder PLL chip...
+
+My impression -- it's not an area I've played with much -- is that the
+much-beloved NE567 is basically obsolete.  If you want to detect a 1kHz
+tone, set a switched-capacitor filter chip to that frequency, feed your
+input to it, and see if anything comes out the other end.  The NE567 was
+what you used when good clean bandpass filters were hard to do; nowadays
+they're easy, and the results are better.
+-- 
+All work is one man's work.             | Henry Spencer @ U of Toronto Zoology
+                    - Kipling           |  henry@zoo.toronto.edu  utzoo!henry

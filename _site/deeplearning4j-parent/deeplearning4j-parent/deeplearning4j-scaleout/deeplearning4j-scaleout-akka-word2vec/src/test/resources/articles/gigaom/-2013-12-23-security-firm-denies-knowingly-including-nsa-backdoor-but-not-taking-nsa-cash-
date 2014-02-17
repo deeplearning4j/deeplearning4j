@@ -1,0 +1,18 @@
+photo: Maksim Kabakou
+Summary:
+Following allegations that RSA took $10 million from the NSA to use as default a tool we now know to have been subverted, the security outfit has denied knowing that it was signing up to betray its customers.
+photo: Maksim Kabakou
+The security outfit RSA, these days a division of EMC, has denied deliberately incorporating a known backdoor into some of its popular encryption libraries through a secret contract with the NSA.
+A few months ago, Edward Snowden’s leaks showed that the NSA — previously seen as a trusted partner of many in the security industry — had worked to undermine security standards (the analogy I always use here is that it tried to make sure all digital locks were broken, rather than just building a better lockpick). In particular, the agency had promoted the use of a random number generator called Dual_EC_DRBG, which now seems to have secretly contained a backdoor for the NSA, but which got the thumbs-up from the U.S. National Institute of Standards and Technology (NIST).
+Few security companies actually went with Dual_EC_DRBG because it was slow, but RSA did in 2004, making it the default random number generator in its widely-used BSAFE encryption libraries. After the Snowden revelations, NIST suddenly advised against the generator’s use, and RSA followed suit.
+Late last week, Reuters reported that the NSA had secretly paid RSA $10 million to use Dual_EC_DRBG as the BSAFE default. On Sunday, RSA hit back with a blog post in which it denied taking cash for using a known backdoor:
+“We made the decision to use Dual EC DRBG as the default in BSAFE toolkits in 2004, in the context of an industry-wide effort to develop newer, stronger methods of encryption. At that time, the NSA had a trusted role in the community-wide effort to strengthen, not weaken, encryption…
+“We continued using the algorithm as an option within BSAFE toolkits as it gained acceptance as a NIST standard and because of its value in FIPS compliance. When concern surfaced around the algorithm in 2007, we continued to rely upon NIST as the arbiter of that discussion…
+“RSA, as a security company, never divulges details of customer engagements, but we also categorically state that we have never entered into any contract or engaged in any project with the intention of weakening RSA’s products, or introducing potential ‘backdoors’ into our products for anyone’s use.”
+So who’s telling the truth here? Potentially everyone (barring the NSA, of course). The agency was indeed very tight with the security community, and Dual_EC_DRBG was part of a new wave of elliptic curve cryptography that allowed for shorter keys with supposedly unweakened security. NIST was, and largely remains, a highly respected institute whose recommendations are taken very seriously.
+That said, RSA’s Sunday post is notable for not once mentioning the $10 million that formed the core of Reuters’s story (the writer of which is standing firm ), and also for not actually contradicting anything in that story — Reuters didn’t outright say that RSA knew it was incorporating a backdoor.
+So the best-case scenario for RSA’s credibility is that it took cash for doing something it would have done anyway, without the offer raising any suspicions about the NSA’s motives. Which still doesn’t look terribly smart.
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

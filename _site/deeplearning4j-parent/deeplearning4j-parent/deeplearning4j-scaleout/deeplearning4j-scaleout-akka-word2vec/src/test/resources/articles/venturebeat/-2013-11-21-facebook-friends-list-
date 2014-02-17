@@ -1,0 +1,26 @@
+9
+Facebook promises that you can control who sees your friends list. But that might not always be true.
+Irene Abezgauz, a vice president of product management at Quotium,  found a vulnerability in Facebook’s “People You May Know” feature .
+In short, just about anyone on the Internet can find out who your friends are — even if you’ve made your friendships private on Facebook. They simply need to create a fake Facebook account and send you a friend request. Even if you don’t respond to the friend request, they’ll get to see list of all your friends, thanks to Facebook’s “People You May Know” feature.
+Abezgauz revealed the vulnerability at  AppSec USA 2013 , a security conference in New York.
+“It’s all about privacy and people trusting that Facebook is making the best effort to protect the privacy of users,” said Abezgauz in an interview with VentureBeat. But, she added, “It’s not about protecting the privacy of users as long as it stays out of the way of Facebook growing and expanding.”
+The “People You May Know” feature is a core element of Facebook that helps you find new connections. While it helps you build your network and connect with long-lost high school buddies and ex-coworkers, it also effectively builds out the social network’s data on who you are and who your connections are. It suggests friends to you based on mutual connections and other criteria such as work or education information.
+If you’re on a specific person’s Timeline, it will suggest people you know that are connected to that person in some way. But if your friends list is private, it shouldn’t do that.
+Let’s look at how Facebook defines People You May Know privacy before we get to the vulnerability.
+Facebook told Abezgauz: “Remember: Your friends control who can see their friendships on their own timelines. If people can see your friendship on another timeline, they’ll be able to see it in News Feed, search and other places on Facebook. They’ll also be able to see mutual friends on your timeline.”
+That opens two major issues:
+It suggests that if you have your friends list set to private, but your friend has theirs set to public, their public setting trumps your private settings.
+If you and your friend both have your connections lists set to private, but have otherwise had some “public interaction,” such as liking a public photo of your friend’s, then your connection can be revealed to the world.
+In keeping with that logic, if you and your friend both have your lists set to private, and have never had any public interaction, your private friendship should remain private, right?
+Wrong: Your friendship will still show up.
+To test this, Abezgauz created two separate, completely fresh accounts. Let’s call the fresh accounts User A and User B. Acting as both users, Abezgauz performed and observed the following:
+User A, whose friends list is already private, adds a bunch of friends who have their friends lists set to private.
+User A has no interactions with these people other than adding them as connections.
+User B, the “attacker user,” adds User A as a friend. User A does not respond.
+Facebook automatically pushes “People You May Know” to User B based on User A’s friends list.
+The results include the friends mentioned in step 1, with whom User A has had no interaction.
+Facebook’s claim that it will only show friends you’ve had public interactions with doesn’t hold up.
+To explain this, Facebook told Abezgauz, “But you have no way of knowing if the suggestions you see represent someone’s complete friend list.”
+Abezgauz told us: “I could see hundreds of suggestions. So, you know what, it’s not all of them. It’s 80 percent, so what. There’s a reason why I made my friends list private and I don’t want people from the internet just looking at who my friends are.”
+This seems like a classic case of blurred Facebook privacy lines and loopholes.
+We asked Facebook whether it could possibly see this as a privacy concern and will update with a response as soon as we hear back.

@@ -1,0 +1,40 @@
+From: bolson@carson.u.washington.edu (Edward Bolson)
+Subject: Re: Sphere from 4 points?
+Organization: University of Washington, Seattle
+Lines: 33
+Distribution: world
+NNTP-Posting-Host: carson.u.washington.edu
+
+I plan to post a summary of responses to this as soon as I have working
+code, which I will also include.  The intersection of 3 planes method
+looks best, but my implementation based on a short article in 
+Graphics Gems I doesn't work.  I may be misinterpreting, of course.
+
+I had avoided the simultaneous solution of the plane equations in favor
+of dot and cross products, but the former may actually be better.  In either
+case a matrix determinant needs to be computed (implicitly in the solution
+of linear equations).
+
+To get the planes, I was taking the midpoint of the line from, say,
+P1 to P2, and setting the normal as the "normalized" vector from P1 to P2.
+These just plugged into the formula in Graphics Gems.  HOwever, the resulting
+center point is only occasionally equidistant from all 4 of my test points
+(for different tests).  My matrix/vector math is very rusty, but it looks like
+I need to verify the formula, or use the simultaneous equation solution, which
+will require bringing in another routine I don't have (but should be easy to
+find).
+
+Another method is to first find the center of the circle defined by 2 sets
+of 3 points, and intersecting the normals from there.  This would also define
+the circle center.  However, small numerical imprecisions would make the
+lines not intersect.  Supposedly 3 planes HAVE to intersect in a unique
+point if they are not parallel.
+
+Ed
+
+Thanks to all who answered so far.
+-- 
+Ed Bolson
+University of Washington  Cardiovascular Research               (206)543-4535
+bolson@u.washington.edu (preferred)
+bolson@max.bitnet                bolson@milton.u.washington.edu (if you must)

@@ -1,0 +1,44 @@
+From: fontana@cis.ohio-state.edu (Mark Fontana)
+Subject: Homemade projector automation
+Organization: The Ohio State University Dept. of Computer and Info. Science
+Lines: 37
+Distribution: usa
+NNTP-Posting-Host: tomato.cis.ohio-state.edu
+
+
+Hi all,
+
+I'm an assistant manager at a local art theater here in Columbus.  I'd
+like to expand our show automation a bit- namely add the capability to
+use cue tapes to bring the houselights up.  Our current automation
+consoles date from the early 60's and don't provide this function.
+
+We already have the combo failsafe/contact rollers to read the cuetapes,
+and our dimmer system will raise the houselights when its fade-up control
+circuit (120 VAC) is momentarily closed, for at least 0.5 second.
+
+I've tried wiring the dimmer control to a 12V relay, activated when the
+cue tape completes the circuit.  Low tech and simple, but there's one
+problem:  In order to get the 1/2 second pulse, there needs to be
+a sh**load of cuetape on the film.  (35mm runs at 90 feet per minute,
+so to get a 1/2 second pulse, there needs to be at least 9 inches of solid
+cuetape!)
+
+Ideally, I would like to use a single cross-cue to accomplish this function.
+(A single strip of cuetape perpendicular to the length of the film)
+This would give a pulse of approximately 1/100 of a second.
+What I need is a circuit to detect the short cue and activate the relay
+for around 1/2 second.  The ability to adjust how long the relay
+is activated would be nice.  I figure this would require an RC circuit
+of some sort.  I'm sure some of you already have the solution figured
+out in your heads.  Any suggestions and schematics would be appreciated!
+
+
+Thanks,
+
+Mark Fontana
+
+-- 
+ "Of all the arts, the cinema is  |  Mark A. Fontana
+  the most important."            |  Computer and Information Science
+                    --V.I. Lenin  |  THE Ohio State University

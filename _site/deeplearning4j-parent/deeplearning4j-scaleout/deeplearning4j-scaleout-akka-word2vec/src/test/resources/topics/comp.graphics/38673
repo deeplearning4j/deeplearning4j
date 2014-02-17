@@ -1,0 +1,25 @@
+From: aron@tikal.ced.berkeley.edu (Aron Bonar)
+Subject: Re: 3d-Studio V2.01 : Any differences with previous version
+Organization: University of California, Berkeley
+Lines: 18
+Distribution: world
+NNTP-Posting-Host: tikal.ced.berkeley.edu
+
+In article <1993Apr22.021708.13381@hparc0.aus.hp.com>, doug@hparc0.aus.hp.com (Doug Parsons) writes:
+|> FOMBARON marc (fombaron@ufrima.imag.fr) wrote:
+|> : Are there significant differences between V2.01 and V2.00 ?
+|> : Thank you for helping
+|> 
+|> 
+|> No.  As I recall, the only differences are in the 3ds.set parameters - some
+|> of the defaults have changed slightly.  I'll look when I get home and let
+|> you know, but there isn't enough to actually warrant upgrading.
+|> 
+|> douginoz
+
+Wrong...the major improvements for 2.01 and 2.01a are in the use of IPAS routines
+for 3d studio.  They have increased in speed anywhere from 30-200% depending
+on which ones you use.
+
+All the Yost group IPAS routines that you can buy separate from the 3d studio
+package require the use of 2.01 or 2.01a.  They are too slow with 2.00.

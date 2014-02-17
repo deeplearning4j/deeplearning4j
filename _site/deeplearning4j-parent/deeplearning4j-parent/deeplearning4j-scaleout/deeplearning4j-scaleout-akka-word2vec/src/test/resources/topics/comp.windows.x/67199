@@ -1,0 +1,21 @@
+From: bgendler@opus.starlab.CSc.COM (Bruce Gendler)
+Subject: X/GL widget translation problem
+Article-I.D.: opus.9304221524.AA05029
+Organization: The Internet
+Lines: 14
+To: xpert@expo.lcs.mit.edu
+
+I am writing a custom widget to support the display of graphics
+and imagery.  The user of the widget will be able to specify,
+when creating it, whether it is to operate in X or GL mode.
+
+I have set up translations and actions to handle mouse button
+presses.  They work fine when the widget is in X mode.  In GL 
+mode they only work when the widget (my GL/X widget) is a child
+of a manager.  Put another way, the translations do not work 
+when the widget is configured in GL mode and is a child of a 
+shell.  Does anyone know why this is happening?
+
+Thanks in advance.
+Bruce Gendler
+bgendler@csc.com

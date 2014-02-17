@@ -1,0 +1,69 @@
+From: eb3@world.std.com (Edwin Barkdoll)
+Subject: Re: Blindsight
+Organization: The World Public Access UNIX, Brookline, MA
+Lines: 64
+
+In article <19382@pitt.UUCP> geb@cs.pitt.edu (Gordon Banks) writes:
+>In article <werner-240393161954@tol7mac15.soe.berkeley.edu> werner@soe.berkeley.edu (John Werner) writes:
+>>In article <19213@pitt.UUCP>, geb@cs.pitt.edu (Gordon Banks) wrote:
+>>> 
+>>> Explain.  I thought there were 3 types of cones, equivalent to RGB.
+>>
+>>You're basically right, but I think there are just 2 types.  One is
+>>sensitive to red and green, and the other is sensitive to blue and yellow. 
+>>This is why the two most common kinds of color-blindness are red-green and
+>>blue-yellow.
+>>
+>
+>Yes, I remember that now.  Well, in that case, the cones are indeed
+>color sensitive, contrary to what the original respondent had claimed.
+
+
+	I'm not sure who the "original respondent" was but to
+reiterate cones respond to particular portions of the spectrum, just
+as _rods_ respond to certain parts of the visible spectrum (bluegreen
+in our case, reddish in certain amphibia), just as the hoseshoe crab
+_Limulus polyphemus_ photoreceptors respond to a certain portion of
+the spectrum etc.  It is a common misconception to confound wavelength
+specificity with being color sensitive, however the two are not
+synonymous.
+	So in sum and to beat a dead horse:
+	(1) When the outputs of a cone are matched for number of
+absorbed photons _irrespective_ of the absorbed photons wavelength,
+the cone outputs are _indistinguishable_.
+	(2) Cones are simply detectors with different spectral
+sensitivities and are not any more "color sensitive" than are rods,
+ommatidia or other photoreceptors.
+	(3) Color vision arises because outputs of receptors which
+sample different parts of the spectrum (cones in this case) are
+"processed centrally".  (The handwave is intentional)
+
+	I've worked and published research on rods and cones for over
+10 years so the adherence to the belief that cones can "detect color"
+is frustrating.  But don't take my word for it.  I'm reposting a few
+excellent articles together with two rather good but oldish color
+vision texts.
+
+The texts:
+Robert Boynton (1979) _Human Color Vision_ Holt, Rhiehart and Winston
+
+Leo M. Hurvich (1981) _Color Vision_, Sinauer Associates.
+
+
+The original articles:
+Baylor and Hodgkin (1973) Detection and resolution of visual stimuli by
+turtle phoreceptors, _J. Physiol._ 234 pp163-198.
+
+Baylor Lamb and Yau (1978) Reponses of retinal rods to single photons.
+_J. Physiol._ 288 pp613-634.
+
+Schnapf et al. (1990) Visual transduction in cones of the monkey
+_Macaca fascicularis_. J. Physiol. 427 pp681-713.
+
+-- 
+Edwin Barkdoll
+barkdoll@lepomis.psych.upenn.edu
+eb3@world.std.com
+-- 
+Edwin Barkdoll
+eb3@world.std.com

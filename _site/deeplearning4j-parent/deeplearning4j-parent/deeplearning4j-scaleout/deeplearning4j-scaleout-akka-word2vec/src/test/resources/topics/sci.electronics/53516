@@ -1,0 +1,39 @@
+Subject: Re: Can Microwaves Be Used To Collect XYZ Coordinates
+From: sldf3@sol.ee.usu.edu (Weston R Beal)
+Distribution: world
+Organization: Utah State Univ. EE
+Nntp-Posting-Host: sol.ee.usu.edu
+Lines: 32
+
+In article <C5Hs5J.AG7@bcstec.ca.boeing.com>, rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter) writes:
+
+|> It seems reasonable to me that a microwave transmitter-receiver setup could 
+|> do the job. For example, say you want to map an acre lot, it'd be convenient
+|> to place MW transmitters around the lot's periphery (either 2 or 3) and then
+|> carry a hand-held recorder and walk to a point on the lot, press a button and
+|> the coords of the recorder's location is stored as digital data.
+|> 
+|> What's the chance of this working? Any systems like this already exist?
+|> What kind of accuracy could you expect? What would something like this
+|> cost to prototype? Is there a better alternative than microwaves?
+
+Of course you could develope this system, but there is already a system called Global
+Positioning Satellites.  It gives three dimensional coordinates anywhere on earth. 
+Many surveyors use this system with a differential receiver/transmitter to get
+coordinates within centimeters.  Basic receivers with resolution of a few meters (on
+a good day) are available from many sources.
+
+
+-- 
+WMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMWMW
+
+  \_      \_  \_\_\_    \_\_\_               Weston R Beal
+   \_      \_  \_    \_  \_    \_         sldf3@sol.ee.usu.edu
+    \_  \_  \_  \_\_\_    \_\_\_            sldf3@cc.usu.edu
+     \_\_  \_\_  \_  \_    \_    \_       Electrical Engineer
+      \_      \_  \_    \_  \_\_\_       Utah State University
+
+  "That's the wonderful thing about crayons; they can take you to
+   more places than a starship can."    - Guinon
+
+

@@ -1,0 +1,48 @@
+From: jeh@cmkrnl.com
+Subject: Re: A question about 120VAC outlet wiring..
+Organization: Kernel Mode Systems, San Diego, CA
+Lines: 43
+
+In article <1993Apr14.172145.27458@ecsvax.uncecs.edu>, crisp@ecsvax.uncecs.edu (Russ Crisp) writes:
+> I'm considering modernizing some old wiring in my home, and
+> I need a little advice on outlet wiring.  Several outlets
+> are the old 'two prong' type, without the ground.  Naturally,
+> the wire feeding these outlets is 12/2, WITHOUT the ground
+> wire.  I noticed at the fusebox that some circuits have the
+> 12/2 with ground, and that on these circuits, the ground
+> wire was tied to the same bus as the neutral (white) wire.
+> 
+> SO..  Here's my question.  It seems to me that I'd have the
+> same electrical circuit if I hooked the jumper from the neutral
+> over to the ground screw on new 'three prong' grounding outlets.
+> What's wrong with my reasoning here?  
+
+No.  No.  NOOO!!!
+
+The ground (green) wire is for safety.  No current is supposed to flow in it
+under normal conditions.  This means that there's normally no voltage drop in
+it either.  It is supposed to be safe to touch the ground wire... even if
+you're grounded in some other way at the same time.  
+
+The neutral (white) wire is, as Dave Vanderbyl correctly said, the return for
+the hot wire.  Since current flows in it, there's a voltage drop.  If you
+plug a heavy load into a properly-wired grounded outlet, you can commonly 
+measure a volt or so of difference between neutral and ground.  
+
+They are supposed to be connected together at the breaker panel... but nowhere,
+repeat NOwhere, else.  (Well, almost.  There are strange exceptions for things
+like sub-panels.)
+
+What you CAN do if you want three-prong outlets without additional wiring is 
+to use a GFCI outlet (or breaker, but the outlet will be cheaper).  In fact,
+depending on where you are putting your new outlet(s), a GFCI may be *required*.
+
+There is a FAQ on electrical wiring, posted regularly to rec.woodworking and
+news.answers.  It goes into great detail on these issues (including GFCIs) and
+you should probably read it before asking any more questions.  I'll mail a copy
+to you, append a copy here, and will ask the writers to cross-post it here in
+the future. 
+
+	--- Jamie Hanrahan, Kernel Mode Systems, San Diego CA
+Internet:  jeh@cmkrnl.com  Uucp: uunet!cmkrnl!jeh  CIS: 74140,2055
+

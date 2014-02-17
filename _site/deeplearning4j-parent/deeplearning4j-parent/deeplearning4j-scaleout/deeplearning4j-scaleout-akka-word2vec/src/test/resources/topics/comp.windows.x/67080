@@ -1,0 +1,60 @@
+From: prunet@zephir.inria.fr (Vincent Prunet)
+Subject: Re: Monthly Question about XCopyArea() and Expose Events
+Organization: INRIA, Sophia-Antipolis (Fr)
+Lines: 55
+
+In article <BUZZ.93Apr19125438@lion.bear.com>, buzz@bear.com (Buzz Moschetti)
+writes:
+|> (2nd posting of the question that just doesn't seem to get answered)
+|> 
+|> Suppose you have an idle app with a realized and mapped Window that
+|> contains
+|> Xlib graphics.  A button widget, when pressed, will cause a new item
+|> to be drawn in the Window.  This action clearly should not call XCopyArea()
+|> |> (or equiv) directly; instead, it should register the existence of the
+|> new
+|> item in a memory structure and let the same expose event handler that
+|> handles
+|> "regular" expose events (e.g. window manager-driven exposures) take care
+|> of rendering the new image.  Using an expose event handler is a "proper"
+|> way
+|> to do this because at the time the handler is called, the Xlib Window is
+|> guaranteed to be mapped.
+|> 
+|> The problem, of course, is that no expose event is generated if the window
+|> is already visible and mapped.  What we need to do is somehow "tickle" the
+|> Window so that the expose handler is hit with arguments that will enable
+|> it to render *just* the part of the window that contains the new item.
+|> 
+|> What is the best way to tickle a window to produce this behavior?
+
+To incrementally update the contents of windows, I use the following trick:
+
+	1. Set the window background to None,
+	2. Call XClearArea(display, window, 0, 0, 0, 0, True),
+	3. Restore the window background to its correct value.
+
+The call to XClearArea does not repaint the window background, but still
+generates exposure events for visible parts of the window.
+
+In order to let my application know that these expose events must be handled
+incrementally (something is already displayed on the screen and may need to
+be erased), I encapsulate the 3 operations with 2 self addressed client
+messages, which preserve asynchronicity between the client and the server.
+
+XGrabServer(display)
+client message (start-incremental)
+ 	background None
+	XClearArea
+	Restore background 
+client message (end-incremental)
+XUngrabServer(display)
+
+The GrabServer prevents other events to be inserted by the server in the
+critical section.
+
+---
+Vincent Prunet, Sema Group Sophia Antipolis
+INRIA       BP 93    06902 SOPHIA ANTIPOLIS Cedex  FRANCE
+prunet@sophia.inria.fr, (33) 93 65 78 42, Fax:(33) 93 65 77 66
+

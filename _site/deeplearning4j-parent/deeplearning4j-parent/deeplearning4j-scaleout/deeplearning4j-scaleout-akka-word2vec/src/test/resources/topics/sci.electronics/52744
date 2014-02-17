@@ -1,0 +1,45 @@
+From: engp2254@nusunix1.nus.sg (SOH KAM YUNG)
+Subject: Re: Protection of serial (RS232) lines
+Organization: National University of Singapore
+X-Newsreader: TIN [version 1.1 PL6]
+Lines: 39
+
+Martin John Gregory (mgregory@flash.pax.tpa.com.au) wrote:
+: I've started to look at some devices doing serial data transmission
+: over fairly decent distances in fairly noisy environments, and have
+: seen a variety of schemes for protecting the RS232 transceivers (and
+: the rest of the circuit) from transients on the serial lines.  I'm
+: left wondering what is the best way of doing this?  How necessary is
+: it?
+: [stuff deleted]
+: What is the wisdom on this out there?
+: 
+: Ta,
+: 
+: Martin.
+: 
+: 
+From what I know, protection is necessary, esp. if you plan to route
+the cables into an unknown environment (out of your control). Things
+like accidental shorts between the signal lines and power cables, or
+even lightning strikes are very likely and I don't think you like to see
+the sight of your computer going up in smoke! [Even ethernet cards are
+protected. I've looked at the one in my PC and the connector is
+protected by a gas discharge tube!]
+
+{But if you plan to use the serial cables for internal routings (i.e. in
+controlled environments), it should be reasonably safe not to have
+them.}
+
+Suggestion: look in the RS data book. They have several RS232
+transceivers that have overvoltage protection. Among them include the
+LT1080, LT1081 and MAX250 and MAX251. The Maxims are suppose to be
+electrically isolated ones but still need opto-isolators to work (don't
+ask me why. I've never used them before.
+
+Another alternative is an RS232 surge protector. Two are listed in the
+RS catalogue. If you need additional info (i.e. stock nos.), just e-mail
+me.
+
+Soh Kam Yung,
+engp2254@nusunix1.nus.sg

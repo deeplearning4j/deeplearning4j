@@ -1,0 +1,28 @@
+From: petrack@vnet.IBM.COM
+Subject: disabling all power management interrupts
+Reply-To: petrack@vnet.IBM.COM
+Disclaimer: This posting may contain no views at all
+News-Software: Usenet 3.1
+Lines: 21
+
+Could someone please do one of the following:
+1. Point to an init that allows me to turn off power management on my
+   Duo 210.
+1. Write an init that would allow me to turn off ALL power management on
+   Duo 210.
+2. Point me to documentation on power management so that I can write such
+   an init.
+3. Explain to me why such an init is totally or partially impossible.
+
+Ideally, of course, I would like to be able to turn in on and off on the
+fly.
+
+Surely such an init would be very helpful to Powerbook owners who want to
+do MIDI... I cannot imagine why it is not possible to do, unless it requires
+Apple to divluge some secret. And if that is the case, the surely APPLE
+could write the init. (Unless Apple brings out new models so fast these
+days that even THEY don't know how they work).
+
+Scott Petrack
+Petrack@haifasc3.vnet.ibm.com
+

@@ -1,0 +1,51 @@
+From: dealy@narya.gsfc.nasa.gov (Brian Dealy - CSC)
+Subject: Re: Monthly Question about XCopyArea() and Expose Events
+Organization: NASA/Goddard Space Flight Center
+Lines: 43
+Distribution: world
+NNTP-Posting-Host: narya.gsfc.nasa.gov
+Originator: dealy@narya.gsfc.nasa.gov
+
+
+|> (2nd posting of the question that just doesn't seem to get answered)
+|> 
+|> Suppose you have an idle app with a realized and mapped Window that contains
+|> Xlib graphics.  A button widget, when pressed, will cause a new item
+|> to be drawn in the Window.  This action clearly should not call XCopyArea() 
+|> (or equiv) directly; instead, it should register the existence of the new
+|> item in a memory structure and let the same expose event handler that handles
+|> "regular" expose events (e.g. window manager-driven exposures) take care
+|> of rendering the new image.  Using an expose event handler is a "proper" way
+|> to do this because at the time the handler is called, the Xlib Window is
+|> guaranteed to be mapped.
+|> 
+|> The problem, of course, is that no expose event is generated if the window
+|> is already visible and mapped.  What we need to do is somehow "tickle" the
+|> Window so that the expose handler is hit with arguments that will enable
+|> it to render *just* the part of the window that contains the new item.
+|> 
+|> What is the best way to tickle a window to produce this behavior?
+
+If I understand your problem correctly, you want to have a way to send
+exposures to your manager widget when your app-specific code draws xlib
+graphics on the window.
+
+It sounds like you might want to send an exposure using
+XSendEvent and specifying a region. If you know the region you need to
+send the exposure, generally you have the bounding rectangle of the objects,
+you can use XCreateRegion to create a region, XUnionRectWithRegion to add the
+new object polygons to the region, and then either use the region
+to clip your GC for the redraw or use XRectInRegion to test which of your
+other objects need to be redrawn. Keeping in mind that the stacking order
+of overlapping objects affects how they look.
+
+Hope it helps
+
+-- 
+Brian Dealy                |301-572-8267| It not knowing where it's at  
+dealy@kong.gsfc.nasa.gov   |            | that's important,it's knowing
+!uunet!dftsrv!kong!dealy   |            | where it's not at...  B.Dylan
+-- 
+Brian Dealy                |301-572-8267| It not knowing where it's at  
+dealy@kong.gsfc.nasa.gov   |            | that's important,it's knowing
+!uunet!dftsrv!kong!dealy   |            | where it's not at...  B.Dylan

@@ -1,0 +1,33 @@
+From: wlsmith@valve.heart.rri.uwo.ca (Wayne Smith)
+Subject: Re: IDE vs SCSI
+Organization: The John P. Robarts Research Institute, London, Ontario
+Nntp-Posting-Host: valve.heart.rri.uwo.ca
+Lines: 27
+
+In article <1qpu0uINNbt1@dns1.NMSU.Edu> bgrubb@dante.nmsu.edu (GRUBB) writes:
+>wlsmith@valve.heart.rri.uwo.ca (Wayne Smith) writes:
+>Since the Mac uses ONLY SCSI-1 for hard drives YES the "figure includes a
+>hundred $$$ for SCSI drivers"  This is sloppy people and DUMB.
+
+What group is this?  This is not a MAC group.
+
+>Ok once again with the SCSI spec list:
+
+Why the spec list again?  We are talking SCSI on a PC, not on a MAC or
+a UNIX box.  And we are talking ISA bus, or possibly EISA or VLB.
+
+This isin't comp.periphs.SCSI.
+Tell me what the performance figures are with a single SCSI drive on a PC
+with an ISA (or EISA or VLB) bus.
+
+Theoretical performance figures are not relevant to this group or this
+debate.  I'm sure that there are some platforms out there that can
+handle the 40 megs/sec of SCSI xyz wide'n'fast, but the PC isin't one of
+them.
+
+>If we are to continue this thread STATE CLEARLY WHICH SCSI you are talking 
+>about SCSI-1 or SCSI-2 or SCSI over all {SCSI-1 AND SCSI-2}
+>IT DOES MAKE A DIFFERENCE.
+
+Well maybe if the SCSI design people had their act together than maybe
+all PC's would have built in SCSI ports by now.

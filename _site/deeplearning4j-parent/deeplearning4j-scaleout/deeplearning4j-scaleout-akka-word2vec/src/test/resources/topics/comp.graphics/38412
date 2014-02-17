@@ -1,0 +1,18 @@
+From: disser@engin.umich.edu (David Disser)
+Subject: 2D bitmap interpolation
+Organization: University of Michigan
+Lines: 11
+Distribution: world
+NNTP-Posting-Host: vesuvius.engin.umich.edu
+
+
+Yesterday I wrote a program to do bilinear interpolation ala Numerical
+Recipes, with the PBMPLUS libraries.  I'm pretty happy with the results,
+but I'm looking for any already-coded non-linear interpolation schemes
+before I go ahead an try to write one.  Any pointers?
+
+--
+
+) Dave Disser                 UM-CAEN User Services         Wealth is wasted
+) disser@engin.umich.edu      229 Chrysler Center           on the old.
+) (313) 763-3067              Ann Arbor, MI 48109-2092

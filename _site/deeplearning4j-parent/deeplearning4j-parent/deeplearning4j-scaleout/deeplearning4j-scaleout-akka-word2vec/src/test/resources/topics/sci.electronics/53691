@@ -1,0 +1,22 @@
+From: v064mb9k@ubvmsd.cc.buffalo.edu (NEIL B. GANDLER)
+Subject: Need diode model for PSpice
+Organization: University at Buffalo
+Lines: 15
+News-Software: VAX/VMS VNEWS 1.41
+Nntp-Posting-Host: ubvmsd.cc.buffalo.edu
+
+
+	Im designing a circuit with just a silicon diode. I dont need
+to modify any of the parameters. But the problem will not accept the following
+statement
+		
+		.model diode D
+
+        The pspice book I have is terrible. I would appreciate any help.
+
+
+                                  Neil Gandler
+ _____________________________________________________________________________
+       Gandler Electronics
+                            Home Automation & electronic design technology
+ _____________________________________________________________________________

@@ -1,0 +1,23 @@
+From: s_ledoux@csc32.enet.dec.com (Scott LeDoux)
+Subject: Icon Animation 
+Lines: 17
+Reply-To: s_ledoux@csc32.enet.dec.com (Scott LeDoux)
+Organization: Digital Equipment Corporation -- CSC/Colorado Srpings
+
+
+Hi Folks.
+
+As part of my self-introduction to X I've been trying to do some simple
+icon animation (sort of like icondoit from mswindows).  Changing your
+own applications icon is fairly simple:  If you have a widget ID you can
+just XtSetValues on XtNiconifyPixmap (or whatever) and you're done. Alternately
+you can set window manager hints.  These methods don't seem to work with
+icons which your application doesn't specifically own.
+
+In my situation I have to change the icon of random windows sitting there in 
+my icon box so my question is:  Given a window-id, how do you change the
+icon pixure ?  A working example would be very much appreciated.  If it makes
+any difference, I'm using motif 1.1 on VMS T6.0-5KE.
+
+Thanks -
+Scott :)

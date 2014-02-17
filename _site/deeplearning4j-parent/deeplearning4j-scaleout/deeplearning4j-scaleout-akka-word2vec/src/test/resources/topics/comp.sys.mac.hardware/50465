@@ -1,0 +1,30 @@
+From: u2087546@ucsvc.ucs.unimelb.edu.au (The Jester)
+Subject: Re: info on apple 8*24GC requested.
+Organization: Comedy Company
+Lines: 25
+
+In article <1993Apr5.122613.12289@alijku05.edvz.uni-linz.ac.at>, Norbert Mueller <K360171@alijku11.edvz.uni-linz.ac.at> writes:
+>> Newsgroups: comp.sys.mac.hardware
+> In article <prudhom.733762331@iros1> Serge Prud'homme,
+> prudhom@IRO.UMontreal.CA writes:
+>> Any info on the video processor Am29000 that sit on it, any way to
+> program that
+>> chip?  What companie makes that chip?
+> > 
+> Apple was never able to provide any docs or tools to program that chip. I
+> value it as
+> the least value per $ piece of computer hardware I ever bought due to the
+> COMPLETE
+> LACK support tools. There was a refund for US-buyers of this card but we
+> Europeans
+> were left out in the rain once again...
+
+I agree completely, but there was only a refund for people who bought the GC
+with a Quadra. I have seen an alpha version of an extension from Apple called
+8.24 GC QuickTime Video which offloads QuickTime compression/decompression
+from the cpu to the AM29000 on the card. So it seems it can be done even though
+in a developer article it states that the GC can't be programmed - but they
+asked that any suggestions be sent in anyway...
+
+Steve Margelis
+Melbourne University

@@ -1,0 +1,293 @@
+From: mrr@scss3.cl.msu.edu (Mark Riordan)
+Subject: List of large integer arithmetic packages
+Organization: Michigan State University
+Lines: 285
+NNTP-Posting-Host: scss3.cl.msu.edu
+Summary: C functions to do arbitrary-precision arith
+X-Newsreader: TIN [version 1.1 PL8]
+
+This is the file BIGNUMS.TXT from ripem.msu.edu, last updated April 1993.
+
+In response to Email requests, I have assembled this list of
+large-integer arithmetic packages of which I have heard.
+Most of these are C function libraries, available in source form.
+
+For your convenience, I have placed copies of
+some of these on ripem.msu.edu (35.8.1.178).  They are
+available for anonymous FTP in the directory "pub/bignum".
+However, what I have may not be the most current version in all cases.
+
+Here they are, in no particular order:
+
+mp
+    Multiple Precision package that comes with some Unixes
+    
+    Multiple precision package accessed via -lmp flag on your
+    compiler.  Provides +, -, *, /, gcd, exponentiation,
+    sqrt.  Comes with SunOS, NeXT Mach, BBN Mach 1000, 
+    and probably a few others.  See "man mp".  
+    Object code only, of course.
+
+PARI
+    Henri Cohen, et al., Universite Bordeaux I, Paris, FRANCE
+    
+    Multiple precision desk calculator and library routines.
+    Contains optimized assembly code for Motorola 68020, 
+    semi-optimized code for SPARC, and apparently rather slow
+    generic C version.  Does both integers and reals.
+    Does vectors and matrices as well as scalars.
+    Contains a number of advanced functions, some of which I've
+    never heard of.  ("Weber's function"?)
+    Has a factorization function, primality test, & other related stuff.
+    Plenty of TEX documentation.
+    Public domain, but you can't distribute modified versions.
+    Available via anonymous FTP from math.ucla.edu.  There seem to
+    be Mac- and NeXT-specific versions there in addition to:
+    Filename:  pari-1.35a.tar.Z
+    
+Arithmetic in Global Fields  (Arith)
+    Kevin R. Coombes, David R. Grant
+    
+    Package of routines for arbitrary precision integers or
+    polynomials over finite fields.  Includes basic +, -, *, /
+    and a few others like gcd.  Source code in C.
+    Distributed under the terms of the GNU public license.
+    Includes man pages and TEX documentation.
+    Filename:  arith.tar.Z
+
+Arbitrary Precision Math Library
+    Lloyd Zusman   Los Gatos, CA
+    
+    C package which supports basic +, -, *, /.  Provides for radix
+    points (i.e., non-integers).  Not as polished as the others here.
+    Posted to comp.sources.misc in October 1988.
+    Filename:  apml.tar.Z
+    
+BigNum
+    J. Vuillemin, INRIA, FRANCE, and others.
+    Distributed by Digital Equipment Paris Research Lab (DECPRL)
+    
+    A "portable and efficient arbitrary-precision integer" package.
+    C code, with generic C "kernel", plus assembly "kernels" for
+    MC680x0, Intel i960, MIPS, NS32032, Pyramid, and of course VAX.
+    This is probably one of the better-known packages of this type.
+    Implements +, -, *, /, mod, plus logical operations OR, AND, XOR.
+    Both signed and unsigned arithmetic available.
+    Available via email from librarian@decprl.dec.com.
+    You will receive 5 shell archives.  Give your postal address
+    and you will also receive printed documentation from France.
+    Package includes TEX documentation.
+    Publicly available for non-commercial use.
+    I removed this from my archive when I heard a rumor that PRL
+    doesn't like others to distribute it.  However, BIGNUM *is*
+    distributed as part of ecpp (see below).
+
+Lenstra's package
+    Arjen Lenstra   Bellcore
+    
+    Portable unsigned integer package written entirely in C.
+    Includes +, -, *, /, exponentiation, mod, primality testing,
+    sqrt, random number generator, and a few others.  The package
+    was uncommented and undocumented; I have tried to add enough
+    comments to get by.  This is the only of these packages that I
+    have actually used.  It works well and is very portable.  
+    I haven't done any benchmarks against the others, but the code 
+    looks clever & Lenstra is an accomplished number theorist.
+    Unlike the other packages here, this one requires you to allocate
+    storage statically--only a problem if your numbers are really huge.
+    Arjen has placed the code in the public domain.  
+    Filename:  lenstra.tar.Z
+
+lenstra_3.1
+    Arjen Lenstra,  Bellcore
+
+    An improved version of Arjen's package above.  This one
+    does signed arithmetic and dynamic allocation (which can be turned
+    off as an option). Has a few new routines, too.  "lenstra_3.1" contains
+    minor bugfixes to the previously-available "lenstra_2" and "lenstra_3".
+    Filename:  lenstra_3.1.c
+
+bmp  (Brent's Multiple Precision?)
+    R. P. Brent
+
+    1981 vintage FORTRAN code to do extended precision floating &
+    fixed point arithmetic.  Includes most of the mathematical
+    functions you'd find in a FORTRAN run-time library.
+    This code is an ACM algorithm, number 524.
+    To obtain, send a mail message to  netlib@ornl.gov
+    containing the line "send mp.f from bmp" or better yet, perhaps
+    just start with "help".
+
+SPX
+    Kannan Alagappan & Joseph Tardo, DEC
+    
+    This is a huge prototype public key authentication system
+    based on RSA.  I mention it here because those who have heard
+    of SPX have probably correctly guessed that it contains a large
+    integer package and I want to inform you that the large integer
+    package it contains is indeed DEC's BigNum from France.
+    You can get a beta test copy of SPX from crl.dec.com (192.58.206.2). 
+    Use it only for testing, as it "may" expire on a certain date.
+    (I don't know whether this has expired yet.)
+
+amp  (Antti's Multiple Precision?)
+    Antti Louko   alo@kampi.hut.fi
+
+    Multiple precision integer package in C.  Includes +, -, *, /, %,
+    pow, mod, 1/x mod y, random, sqrt, gcd.  Available for non-commercial
+    use.  The package includes "share-secret", a public key system based
+    on the Diffie-Hellman algorithm.
+    This is normally part of the well-known "des-dist.tar.Z",
+    but I have removed the DES part to avoid having to deal with 
+    cryptographic export laws, and have named the result:
+    Filename:  amp.tar.Z
+
+gennum  
+    Per Bothner   U of Wisconsin-Madison
+
+    C++ routines and classes to do generic arithmetic, both
+    integer and rational.  
+    Formerly available on sevenlayer.cs.wis.edu.  However, it
+    seems to have disappeared.  Sorry.
+
+MIRACL
+    (By someone in Dublin, Ireland)
+
+    Integer and fractional multiple precision package.
+    Includes factorization, primality testing, encryption.
+    Not public domain, apparently.  It is available from the Austin
+    Code Works.  (See ads in Byte Magazine or Dr. Dobbs.)
+
+precision
+    Dave Barrett  barrettd@tigger.colorado.edu
+
+    Multiple precision integer package in C with +,-,*,/, sqrt, rand,
+    mod, pow, log.  Simple vector support.  Does dynamic allocation of memory.
+    Free as long as you don't sell it or any program that uses it.
+    Filename:  precision.tar.Z
+
+UBASIC
+    Prof. Yuji Kida, Rikkyo University, Nishi-Ikebukuro 3, Tokyo 171, Japan
+    kida@rkmath.rikkyo.ac.jp
+
+    Multiple-precision version of the BASIC programming language,
+    for MS-DOS.  Includes floating point.  Said (by Keith Briggs)
+    to be pretty fast.  Object only, I think.  ervin@morekypr.bitnet
+    says:  "This is the best package that I know of for
+    fast arithmetic.  Has a version optimized for 386 machines.  Includes
+    routines to do MPQS, the fastest currently known general factoring
+    algorithm.  An additional file is at both sites to allow MPQS to use
+    hard drives so that it can factor up to 80 digits.  Many number
+    theoretical functions are included in UBASIC.  It allows over 2500
+    digits of precision."
+    Available via anonymous FTP from shape.mps.ohio-state.edu,
+    or simtel20.army.mil, or wuarchive.wustl.edu.
+
+calc_v22
+    Unknown
+
+    MS-DOS C-like language that allows "infinite" precision.
+    Nice intrinsic functions.  ervin@morekypr.bitnet reports problems
+    when changing precision on the fly.
+    See simtel20 or wuarchive.
+
+briggs_arith
+    Keith Briggs (kbriggs@mundoe.maths.mu.oz.au)
+
+    Turbo Pascal 5 source for routines that do multiple-precision
+    +, -, *, /, sqrt, gcd, factoring, rand for integers; also includes
+    +, -, *, / and rand for rational numbers.
+    Filename:  briggs_arith.pas
+
+Institute fur Experimentelle Mathematik
+    Dr Gerhard Schneider (?)
+
+    Fast C multiple-precision subroutine library.
+    I don't know anything about it; sl25@ely.cl.cam.ac.uk says
+    to contact MAT420@DE0HRZ1A.BITNET for more info.
+    Postal Address:
+    Institute fur Experimentelle Mathematik
+    EllernStr 29
+    D4300 Essen-12    GERMANY
+
+LongInt
+    Markus Mueller (mueller@komsys.tik.ethz.ch)
+
+    "Multi precision arithmetic written in MODULA-2, with the most time critical
+    parts written in Assembler. Includes basic arithmetics (+, -, *, /, %) as
+    well as arithmetics MODULO a number. An additional module provides a
+    collection of procedures for primality testing, gcd, multiplicative
+    inverse and more. The package is part of a Privacy Enhanced Mail (PEM)
+    package which includes a PEM mailer, RSA key generator and Certificate
+    generation tools."
+
+    Source is in Modula-2, C, and assembler for Sun 3.  LongInt has
+    also been ported to MS-DOS under Logitech Modula-2 and Turbo
+    Assembler.  Availability:  free for university use (research and
+    education); otherwise, a source license is required.  To obtain,
+    write or email to:
+
+        Markus Mueller
+        Bertastrasse 7
+        CH-8953 Dietikon
+        Switzerland
+        email:  mueller@komsys.tik.ethz.ch
+
+bignum-1.2
+    Henrik.Johansson@Nexus.Comm.SE
+
+    Bignum package written in portable C.  Will in the future
+    conform to the Common Lisp functions that handles integers.
+    Currently includes +, -, *, /, exponentiation, "exptmod",
+    comparison, random numbers, and gcd.
+    Filename: bignum-1.2
+
+GNU Multiple Precision
+    GNU (Free Software Foundation) multiple precision package.
+    I haven't looked at it yet.  This is current as of April 1992,
+    but there may be a more recent version by the time you read 
+    this.  This package is very widely available on FTP sites.
+    Filename: gmp-1.2.tar.Z
+
+Elliptic Curve Primality Proving 
+    Francois Morian, France.
+
+    Large package to prove the primality of any prime.
+    Includes Inria's BIGNUM package. 
+    Obtained from ftp.inria.fr (128.93.1.26).
+    Filename: ecpp.V3.4.1.tar.Z
+
+PGP (Pretty Good Privacy)
+    Philip Zimmermann   prz@sage.cgd.ucar.EDU
+
+    Intel-based crypto package that includes bignum routines in C,
+    said to be quite fast for Intel processors.  Unix and Mac
+    versions also available.
+    The crypto package violates RSA patents, but the bignum routines
+    can be used without fear of legal repercussions.
+
+Bell's Arbitrary Precision Calculator
+    David I. Bell, Australia  (dbell@pdact.pd.necisa.oz.au)
+
+    Arbitrary-precision calculator with good online help, C-like
+    language, many builtin functions, support for integers,
+    rational numbers (they work like floating point), complex numbers,
+    matrices, strings, lists, files, "objects".  Includes 
+    gcd, primality testing, even trig functions.  Recommended.
+    (Large package, though.)  Obtained from comp.sources.unix.
+    Filename: calc-1.24.7.tar.Z
+
+Built-in support in other languages
+    Various
+
+    Multiple precision arithmetic is available in a number of 
+    programming languages, such as Lisp and ABC (cf. mcsun.eu.net).
+    Perl (by Larry Wall, available from devvax.jpl.nasa.gov)
+    includes source, in Perl, for such a package, but it's probably
+    not suitable for serious use.
+    For some of these, source code may be available.  This list is
+    long enough, so I'm not going to pursue it aggressively.
+
+Thanks to Ed Vielmetti and several others who contributed to this list.
+
+Mark Riordan   mrr@ripem.msu.edu

@@ -1,0 +1,33 @@
+From: gelldav@elof.iit.edu (David A. Geller)
+Subject: Parity Error - System Halted /anyone have any ideas?
+Organization: Illinois Institute of Technology, Chicago
+Lines: 28
+
+I recently bought an AMD 386/40.  The motherboard booklet says
+the board is a "391 WB/H."  I have 4 1x3 simms on board.  The machine
+also uses a Super IDE I/O Card (model PT-604). (of course niether
+the motherboard or the I/O card booklet clearly state who the manufacurers
+are) I'm also using a Trident 8900C SVGA card.
+
+	Anyway, that's all of the pertinent info I can think of.
+My problem is that the computer often freezes or displays "Parity Error --
+System Halted" messages depending on whether I set the Memory Parity Error
+Checking to "disabled" or "enabled" in the setup of the bios (makes sense).
+Its AMI bios (so it must be an AMI board?).
+
+	I just took it back to the dealer and they replaced all of the
+SIMMS but I keep getting the same error (more frequently now).  It all
+worked at the dealer and didn't start screwing up 'till I got home (figures).
+
+	I've tried to take out all of the SIMMS and even re-inserted them
+in reverse order, making sure that the connections were solid.
+
+	My suspicion jumps to this damn all in one HD controller/serial/
+parallel/game-port I/O card, or to the motherboard (God forbid).
+
+	CAN ANYONE HELP?
+
+Thanks, Peace,
+David Geller
+gelldav@elof.acc.iit.edu
+

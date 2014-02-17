@@ -1,0 +1,26 @@
+From: jbulf@balsa.Berkeley.EDU (Jeff Bulf)
+Subject: Re: detecting double points in bezier curves
+Reply-To: jbulf@balsa.Berkeley.EDU (Jeff Bulf)
+Organization: Kubota Pacific Computers Inc.
+Lines: 20
+
+In article <ia522B1w165w@oeinck.waterland.wlink.nl>, ferdinan@oeinck.waterland.wlink.nl (Ferdinand Oeinck) writes:
+|> I'm looking for any information on detecting and/or calculating a double
+|> point and/or cusp in a bezier curve.
+|> 
+|> An algorithm, literature reference or mail about this is very appreciated,
+
+There was a very useful article in one of the 1989 issues of
+Transactions On Graphics. I believe Maureen Stone was one of
+the authors. Sorry not to be more specific. I don't have the
+reference here with me.
+
+The article actually was more general than this, giving a way to decide
+whether a given (cubic) Bezier curve contains cusps, intersection points
+or whatever wierdness. The same treatment is also available in SIGGRAPH 89
+course notes for the course called "Math for Siggraph" or something like
+that.
+
+-- 
+	dr memory
+	jbulf@kpc.com

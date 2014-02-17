@@ -1,0 +1,64 @@
+From: alung@megatest.com (Aaron Lung)
+Subject: Re: Telephone on hook/off hok ok circuit 
+Organization: Megatest Corporation
+Lines: 59
+
+In article <1993Apr15.144826.4607@bnr.ca> moffatt@bnr.ca (John Thomson) writes:
+>: >> >Just a thought of mine here:
+>: >> >Since an on-hook line is aprox 48-50V, and off-hook it usually drops below 1
+>: >> >How about an LED in series with a zener say around 30V.
+>: >> >On-hook = LED on
+>: >> >Off-hook = LED off.
+>: >> >Would this work? If anyone tries/tried it, please let me know.
+>: >>
+>: >> Aye, there's the rub -- if you draw enough current to light an LED, the
+>: >> equipment at the phone company will think you've gone off hook.
+>: >> In the on-hook state you're not supposed to draw current.
+>: >
+>: >Which means you should just use your Digital VoltMeter. You can use an
+>: >old VOM but the phone company equipment can detect that and might think
+>: >there's something wrong with the cable.
+>: >
+>: 
+>: Look Guys, what's the problem here?  If you want a light that goes on when 
+>: the 'phone is *Off* hook, all you need it to run it in *series* with the 
+>: line, as I mentioned in my previous post.  If you want a light that goes on 
+>: when the 'phone is *on* hook, all you need is a voltage threshold detector.
+>
+>If you're going to do the series Diode thing (which is the easiest), just
+>make sure that the LED can take the current (I can't recall it off-hand, but
+>it's something like 100mA or more?)
+
+Careful now folks... Also consider the 90VAC+ @20Hz that is forced on ring
+and tip when the phone's supposed to ring!  Even with a simple zener
+and LED setup, you might end up with some carbon real quick.  Whatever
+scheme you use, make sure you've got at least 200V-rated components on 
+the frontend.
+
+Also remember that, if I'm not mistaken, the phone line is a 600ohm
+equivalent circuit.  Any current you draw from the 48V or so gets
+dropped across that 600ohms.  That's fine until you're down to roughly
+12V, when Ma Bell considers it to be off-hook.  But dropping it that
+far down is probably a big no-no.
+
+The easiest implementation to accomplish the above??
+
+    tip  ------->|-----\/\/\/\-----+----------+
+              rectifier  resistor  |          |
+              diode                |          \ 
+                                   V          /
+                          zener  /---/        \  resistor
+                                   |          /
+                                   |          |
+                                   |          V   LED
+                                   |         ---
+                                   |          |
+    ring --------------------------+----------+
+
+This is only a suggestion...go ahead and blow holes in it, but you
+get the idea.  Choose a high-efficiency LED so you don't need much
+current to get it to light up.  Choose values for the other components
+as required.
+
+aaron
+

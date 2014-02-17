@@ -1,0 +1,50 @@
+From: brentb@tamsun.tamu.edu (Brent)
+Subject: Re: Please Recommend 3D Graphics Library For Mac.
+Organization: Texas A&M Univ., Inc.
+Lines: 44
+NNTP-Posting-Host: tamsun.tamu.edu
+
+tsa@cellar.org (The Silent Assassin) writes:
+>rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter) writes:
+>
+>> Can you please offer some recommendations?
+>
+>It's really not that hard to do.  There are books out there which explain
+>everything, and the basic 3D functions, translation, rotation, shading, and
+>hidden line removal are pretty easy.  I wrote a program in a few weeks witht
+>he help of a book, and would be happy to give you my source.
+
+I think he wanted to avoid reinventing the wheel.
+I would suggest that you take your code, and submit it to
+comp.sys.mac.binaries to be distributed (including to the ftp sites). 
+Many folks, myself included, would enjoy the extra code.
+
+>	Also, Quickdraw has a lot of 3D functions built in, and Think pascal
+>can access them, and I would expect that THINK C could as well.  If you can
+>find out how to use the Quickdraw graphics library, it would be an excellent
+>choice, since it has a lot of stuff, and is built into the Mac, so should be
+>fast.
+
+Just to clarify, the 3D routines that are mentioned in various places
+on the mac are in a libray, not the ROM of the mac.  A few years ago before
+I knew anything about implementing graphics, I came across a demo of the
+Apple GrafSys3D library and it actually did a lot.  However, it is quite
+limited in the sense that it's a low-level 3D library; your code still has
+to plot individual points, draw each line, etc ad nauseum.  It has nothing
+on GL, for example, where you can handle objects.
+
+Other things to consider when talking about Apple's old 3D GrafSys library:
+
+* Unsupported;  never was and no plans exist to do so in the future
+
+* Undocumented; unless you call header files documentation...
+
+If one knows something about graphics, you could probably figure it out,
+but I'd assume there's better software available that gives better
+output and is, at the same time, programmatically nicer (i.e. easier to
+program).
+
+Just my 2% tax
+
+-Brent
+

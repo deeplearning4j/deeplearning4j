@@ -1,0 +1,20 @@
+From: buhrow@moria.nfbcal.org (Brian Buhrow)
+Subject: NEED HELP FINDING DIP SWITCH SETTINGS AND JUMPER SETTINGS FOR 386SX MOTHERBOARD
+Keywords: JUMPER SETTINGS DIP-SWITCH SETTINGS, HELP, COMPUTER 386SX
+Organization: National Federation of the Blind of California
+Lines: 14
+
+
+Hello net.  I have a 386sx motherboard with the Phoenix BIOS, an on-board
+IDE controller port, and two on-board serial ports.  Unfortunately, I don't
+have a manual for this beast and I would like to be able to disable the IDE
+controller in order to use the MFM controller I have.
+The board says it is made in Korea and it uses the Chips Chipset.  If
+anyone can give me a clue as to how to go about configuring the board so as
+not to use the IDE controller, or how to go about finding out how to do it,
+their help would be greatly appreciated.  
+	Thank you in advance for your assistance.
+Please mail buhrow@nfbcal.org with your responses as my news feed is rather
+tenuous.
+Thank you very much!
+-Brian <buhrow@nfbcal.org>

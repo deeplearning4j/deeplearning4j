@@ -1,0 +1,43 @@
+From: tclark@umaxc.weeg.uiowa.edu (Terry Clark)
+Subject: Re: CACHE or Micronics EISA/VLB Motherboard?
+Organization: University of Iowa, Iowa City, IA, USA
+Lines: 38
+
+From article <1993Apr15.205654.20845@news.cs.indiana.edu>, by "Mohammad Al-Ansari" <alansari@mango.ucs.indiana.edu>:
+> 
+> (CLIP) I am in
+> the process of purchasing an EISA/VL Bus 486 DX2-66 computer 
+> (CLIP)
+> The first is Ares and they use a Cache motherboard (that's
+> the brand of the motherboard) with OPTI chip set, the other is Micron
+> (formerly Edge Technology) and they use the Micronics EISA/VLB
+> motherboard.
+> (CLIP)
+> I would REALLY appreciate any input on this. Is the Micron machine the
+> clear choice?  Does anyone know anything positive or negative about
+> either company? Has anyone ever heard of Cache motherboards? Should I
+> go with Micron just because it has the Micronics motherboard? etc.
+> 
+> Thanks very much in advance for any information.
+> 
+> --
+> Mohammad Al-Ansari
+Get back to your vendors, or better yet the board manufactures and get
+some more info:
+   Where made.
+   Norton indexes (yeah I know BMs suck but whats a mother to do?)
+   number of slots, and types, # ESIA and # 32 bit?
+   Any IDE or SCSI on board?
+   How easy to upgrade RAM, location and # of pins.
+   OVERDRIVE?
+   Oscilator kits?
+   Does it have a 16550 UART?
+   Who's BIOS?
+
+These might make you feel better about either system, but I must 
+agree that Ares with 7 days of 24 hr Tech and 2 year warranty is
+encouraging.
+________________________________________________________________
+  Terry Clark                           tclark@umaxc.uiowa.edu 
+  You want an Opinion - You don't pay me enough for an Opinion
+

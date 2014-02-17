@@ -1,0 +1,49 @@
+From: steve-b@access.digex.com (Steve Brinich)
+Subject: Re: Clipper considered harmful
+Organization: Express Access Online Communications, Greenbelt, MD USA
+Lines: 42
+Distribution: inet
+NNTP-Posting-Host: access.digex.net
+
+ > > Criminals who very badly want inscrutable tactical communications
+ > >(specifically the terrorists and drug dealers who proponents of key escrow
+ > >cite as threats) will be highly motivated to steal the cipher phone of
+ > >a legitimate user, and to kill this person or hold them hostage so
+ > >discovery of compromise of the device will be delayed.
+
+ >Why doing it in such a rough manner? It is much more professional to
+ >steal the chip from the phone and even to replace it with a
+ >pin-compatible do-nothing chip that does not encrypt at all. Chances
+ >are that the victim will not notice anything, especially if it is done
+ >professionally.
+
+  Assuming that the bad guys can easily obtain substitute chips which don't
+cause any noticeable effect to either the user or the person at the other end
+of the line (if there is any significant difficulty to obtaining such chips,
+some of the criminals will decide to fall back on the murder/kidnap method).
+
+ > > Once a suitable collection of devices is stolen, criminals can communicate
+ > >with impunity (assuming the cipher system carries no trapdoors apart from
+ > >key escrow) until and unless the compromise is discovered by some other
+ > >means.
+
+ > No, because the Feds will still be able to decrypt the conversations.
+ >True, they'll blame the wrong guys, but nevertheless one cannot say
+ >something like "The drugs arrive tommorrow on the ship 'Terminus'"
+ >when the Feds are listening, even if they cannot identify who the
+ >speaker is.
+
+ This assumes that the Feds are tapping Clipper phones belonging to ordinary
+citizens (getting such a phone is the whole point of the crime under
+discussion).  To be sure, I wouldn't put it past them -- but raising the
+possibility of such crime has the benefit of forcing the Feds to either
+'fess up about such intentions in advance or state that using Clipper
+exposes the user to an additional criminal threat. <g>
+
+ > No, the criminals will just use some secure encryption. The new
+ >proposal does not stop criminals; it ensures that the government will
+ >be able to wiretap the average citizen and stops the casual snooper.
+ >To me, it also clearly looks as a step towards outlawing any other
+ >strong encryption devices.
+
+  Agreed.

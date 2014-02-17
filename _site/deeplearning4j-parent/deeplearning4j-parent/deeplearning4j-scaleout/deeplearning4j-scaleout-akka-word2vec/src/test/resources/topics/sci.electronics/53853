@@ -1,0 +1,47 @@
+From: kludge@grissom.larc.nasa.gov (Scott Dorsey)
+Subject: Re: Power, signal surges in home...
+Organization: NASA Langley Research Center and Reptile Farm
+Lines: 41
+NNTP-Posting-Host: grissom.larc.nasa.gov
+
+In article <DRAND.93Apr20150701@spinner.osf.org> drand@spinner.osf.org (Douglas S. Rand) writes:
+>In article <randall.735251839@woof> randall@informix.com (Randall Rhea) writes:
+>
+>   Hams can legally run up to 1500 watts.  It is very unlikely, however,
+>   that a ham would be running that kind of power from a car.  Ham rigs
+>
+>Not possible either.  You'd need about a 300 amp alternator for
+>just the amplifier.  I can just see it.  You need to slow
+>down on a downgrade,  so you hit the push to talk button.
+
+Now, that indeed is possible.  A good friend of mine is running about 1 KW
+PeP from his car.  Yes, he does have a second alternator.  Yes, he calls
+the rig an "electronic brake" since the engine noticeably slows when the
+key is down.
+
+My car, unfortunately, has so much computer junk under the hood that it's
+astonishingly sensitive to RFI.  If I key a 2W HT over the engine with
+the hood open, the car loses timing due to the RF leaking into the 
+distributor pickup.  Very poor design.
+
+I will, however, point out that ham radio operators are usually quite willing
+to help when interference is detected.  Remember that any interference is
+wasted power; if I put out 1W in the TV band, that's 1W that I am not putting
+out in the band I am trying to transmit on, and 1W can often be the difference
+between a nice card hanging on the wall, and nothing.  CBers, however, are
+usually not as helpful.  Most illegal CBers, however, will stop operation
+when you inform them of a problem.  The rest of them will stop operation when
+you inform the local FCC office of the problem (in writing, and giving details
+and addresses).
+
+>Last, you can usually tell ham radio vs. CB.  Ham operators are
+>required to declare their call (sign) every so many minutes (no more
+>than 10).  So if you hear "This is WA1QT" or some other call starting
+>with A, W or K and no more than 6 total characters, you heard a ham.
+>CB'ers probably won't sign (I don't know that they're even required
+>to) and fire/police have other private ids.
+
+Good advice.  Hams will frequently give their call, and will never use
+a "handle."  They are less apt to use immense amounts of profanity as well,
+but that's not to say that they don't from time to time.  
+--scott

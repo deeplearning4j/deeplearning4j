@@ -1,0 +1,45 @@
+From: wijkstra@fwi.uva.nl (Marcel Wijkstra (AIO))
+Subject: Re: BW hardcopy of colored window?
+Keywords: color hardcopy print
+Nntp-Posting-Host: ic.fwi.uva.nl
+Organization: FWI, University of Amsterdam
+Lines: 38
+
+mars@ixos.de (Martin Stein) writes:
+
+#I use xwd/xpr (from the X11R5 dist.) and various programs of the
+#ppm-tools to print hardcopies of colored X windows. My problem is,
+
+I don't like xpr. It gives (at least, the X11R4 version does) louzy
+output: the hardcopy looks very grainy to me.
+Instead, I use pnmtops. This takes full advantage PostScript, and
+lets the printer do the dirty job of dithering a (graylevel)
+image to black and white dots.
+
+So: if you have a PostScript printer, try:
+	xwdtopnm <xwdfile> |	# convert to PPM
+	[ppmtopgm |]		# .. to graylevel for smaller file to print
+	pnmtops -noturn |	# .. to PostScript
+	lpr			# print
+
+pnmtops Has several neat options, but use them with care:
+If you want your image to be 4" wide, use:
+	pnmtops -noturn -scale 100 -width 4
+-noturn Prevents the image from being rotated (if it is wider than it
+	is high)
+-width 4 Specifies the PAPER width (not the image width - see below)
+-scale 100 Is used because if the image is small, it may fit within a
+	width less than 4", and will thus be printed smaller than 4" wide.
+	If you first scale it up a lot, it will certainly not fit in 4", and
+	will be scaled down by pnmtops automatically to fit the specified
+	paper width. 
+	In short: pnmtops will scale an image down to fit the paper size,
+	but it will not blow it up automatically.
+
+Hope this helps.
+Marcel.
+-- 
+ X	   Marcel Wijkstra   AIO   (wijkstra@fwi.uva.nl)
+|X|	     Faculty of Mathematics and Computer Science	
+ X	       University of Amsterdam   The Netherlands
+======Life stinks. Fortunately, I've got a cold.========

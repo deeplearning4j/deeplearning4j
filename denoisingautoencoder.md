@@ -1,23 +1,24 @@
 ---
-title: deeplearning4j
+title: 
 layout: default
 ---
 
 
-### Single Network/Denoising Autoencoder
+# denoising autoencoder
 
 An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simple equals the input -- thereby becoming useless. 
 
 Denoising autoencoders are an extension of the basic autoencoder, and represent a stochastic version of the autoencoder. Denoising autoencoders attempt to address identity-function risk by randomly corrupting input (i.e. introducing noise) that the autoencoder must then reconstruct, or denoise. 
 
-PARAMETERS
+### parameters
 
-####Corruption Level - The amount of noise to apply to the input. This is a percentage. Typically 30% (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.
+#### corruption level 
+The amount of noise to apply to the input. This is a percentage. Typically 30% (0.3) is fine, but if you have a small amount of data, you may want to consider adding more.
 
 
 INPUT
 
-### Initiating a denoising autoencoder
+### initiating a denoising autoencoder
 
 Setting up a single-thread denoising autoencoder is easy. 
 

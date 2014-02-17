@@ -1,0 +1,30 @@
+From: bear@kestrel.fsl.noaa.gov (Bear Giles)
+Subject: Re: Why the clipper algorithm is secret
+Organization: Forecast Systems Labs, NOAA, Boulder, CO USA
+Lines: 25
+
+In article <C5pstr.Lu2@panix.com> dfl@panix.com (Danny O'Bedlam) writes:
+>	The algorithm is classified because a military contract (or similar
+>government equivalent to military) has been let for this "proprietary"
+>design that the Feds say that NSA developed.  Is there a patent?  Is that
+>patent publicly available?  My betting is that that too is classified.
+
+Unless there has been a _major_ change in the law, there's no such beast
+as a "classified patent."  Patents exist to encourage communications and
+develop the state of the art. 
+
+(The 17-year lock is a nuisance, but historically has been pretty trivial.
+It's only in an industry which doubles performance every three years (or
+18 months, for some hardware) that 17 years is an eternity).
+
+The same thing applies in civilian development: you can't patent something 
+_and_ declare it a "trade secret."  However, you can (and should) mark all
+software (including proprietary code) "unpublished copyright" so that it
+ever does get exposed you still have some legal protection.
+
+(Post-Berne this isn't required, since everything is "born copyrighted."
+But it takes a while for people to learn the new rules).
+
+-- 
+Bear Giles
+bear@fsl.noaa.gov

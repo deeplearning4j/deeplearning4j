@@ -1,0 +1,28 @@
+From: dick@bart.starnet.com (Dick Montgomery)
+Subject: Re: X-window for PC
+Organization: StarNet Communications Corp.
+Lines: 23
+
+Briefly, StarNet Communications has four PC X server packages.
+
+	Micro X-lite		$ 75.00
+		Includes integrated tcp/ip, runs in 640KB, no arcs().
+
+	Micro X-enlite		$150.00
+		Includes integrated tcp/ip, runs under DOS, shape extension
+		   "     interface to Novell tcp/ip
+
+	Micro X-DOS		$345.00		($225 ea. in a 5-pack)
+		Includes integrated tcp/ip, runs under DOS, shape extension
+		   "     interface to Novell tcp/ip, FTP's PC/TCP, & PC-NFS.
+
+	Micro X-WIN		$425.00		($300 ea. in a 5-pack)
+		Includes Lanera TCPOpen tcp/ip stack & utilities
+		   "     interface to FTP's PC/TCP, Sun's PC-NFS, & WinSock.
+
+For more information contact:
+----------------------------------------------------------------
+StarNet Communications		FAX:	   1-408-739-0936
+3073 Lawrence Expressway	Voice:	   1-408-739-0881
+Santa Clara, Ca.  95051		E-mail     microx@starnet.com
+----------------------------------------------------------------

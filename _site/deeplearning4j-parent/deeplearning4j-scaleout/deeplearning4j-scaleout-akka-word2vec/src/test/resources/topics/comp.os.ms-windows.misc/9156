@@ -1,0 +1,107 @@
+From: daa7365@tamuts.tamu.edu (Diego A. Aranda)
+Subject: Windows Shareware Monthly (INFORMATION)
+Article-I.D.: tamsun.1ps35rINNfpd
+Organization: Texas A&M University, College Station
+Lines: 100
+NNTP-Posting-Host: tamuts.tamu.edu
+
+
+Windows Shareware Monthly (WSM) is an on-line forum for information about the
+newest and best Windows 3.x and NT shareware/freeware software. 
+
+WSM is a compilation of submissions from shareware/freeware authors in a single
+Windows .HLP (Help System) file.  All types of software may be submitted for
+entry in WSM - utilities, applications, games, programming tools, etc.
+
+WSM benefits Windows shareware/freeware authors by allowing them to publicize
+their software releases, inform users of updated versions, and to increase
+their installed base of users.  Those searching for specific Windows software
+will benefit by having a complete list of available software available at their
+fingertips - complete with feature lists, current prices, and any other
+relevant information.
+
+Windows software authors may submit entries to Windows Shareware Monthly in the
+following manner:
+
+1. Compose a short summary of the function of the software.  Include all
+   special features which are unique to your product and which set it apart
+   from other programs in the genre.  Be sure to include specific details
+   such as: the current release version, where the software is available,
+   how much the registration fee costs, how much disk space is required, any
+   special requirements (e.g. sound card, or VBRUN200.DLL, etc.), how the
+   author may be contacted, etc.  Because text is highly compressible, the
+   summary may be as long as is necessary, however, it is best to keep it
+   short.  A good guideline is a single screenful of 12-point text at 640x480
+   resolution.  Order forms and other such addendum may be included if desired.
+   All submissions whould be in plain text (ASCII) format.  Formatting will
+   be exactly as it is submitted - I will simply cut and paste text files
+   into a Help Authoring system.  If you require special formatting 
+   conventions - such as boldface text or italics, or a larger font size,
+   indicate so CLEARLY within the text file.  For best results, use Windows
+   NotePad to create the .TXT file. 
+ 
+2. Include up to 100k of Windows-format .BMP (bitmap) screen-shots which
+   display the workings or special features of each program.  Special cases
+   (rendering applications for example) which require 256-color bitmaps may
+   submit up to 250k of .BMP files - all other should observe the 100k limit
+   and use 16-color format.  For maximum compatiblity with the software which
+   will be used to create the WSM .HLP file (Stefan Olson's Help Writer's
+   Assistant for Windows), please save the bitmaps with Windows Paintbrush or
+   WinGIF. 
+
+3. Include a 16-color .BMP of the program's icon (.ICO file).  Many programs
+   are available to convert .ICO to .BMP format, or Windows Paintbrush may be
+   used.  The .BMP will be embedded in the summary text.
+
+4. Double-check for spelling errors, formatting corrections, etc.  
+
+5. Compress the .TXT file, the .BMP of the program icon, and any additional
+   .BMPs into a single file using PKZIP (any version).
+
+6. Submit the entry by UUENCODING the .ZIPfile, and e-mailing it to:
+   
+   DAA7365@TAMUTS.TAMU.EDU
+
+   if submitting via the Internet or Compuserve. If submitting via America
+   Online, send a brief message indicating submission, and append the .ZIP
+   file, then e-mail to:
+
+   DiegoAA
+
+7. If any changes are required, or a new version is released, complete
+   the above procedures again.  Send all submissions to the @TAMUTS address,
+   and any comments, suggestions, criticisms, to DAA7365@RIGEL.TAMU.EDU.
+
+All entries received before the deadline will be included in the subsequent
+edition of WSM.  The editor will not be held responsible for any errors, and
+we reserve the right to make changes to the entries.
+
+WSM is not limited to shareware/freeware software.  A special area will be
+devoted to commercially available Windows 3.x and NT software.  Commercial
+software authors should follow the same steps above, with the exception of
+the limitations on size - the .TXT file and .BMPs may be as large as required
+(and as large as is practical for transmission over phone lines).  There
+is no charge for the publishing of either shareware/freeware or commercial
+product entries.  
+
+Advertisements for computer hardware, software, bulletin boards, etc. may
+be submitted as well. Again, the same procedures apply, with the exception of
+the size limitations.  There is no charge for advertising space.  The first
+ten advertisements submitted each month will be included; subsequent
+submissions will not be included due to size constraints.
+
+WSM is currently looking for persons willing to devote the time to author
+columns within WSM.  A C/C++ programing section, a Visual Basic section, and
+two Windows-specific opinion/advice columns are envisioned.  All work will
+be on a voluntary basis.  If you wish to aid WSM and author a monthly column
+on one of the above topics, please send us mail at DAA7365@TAMUTS.TAMU.EDU or
+DiegoAA on America Online.
+ 
+The first edition of WSM will be distributed May 1st via America Online,
+Compuserve, and the Internet.  The deadline for submissions is April 28th.
+The first edition filename will be WSM-1.ZIP, with each subsequent monthly
+release continuing in the series naming convention (WSM-2.ZIP, etc.).  Each
+edition will be released on the first of each month, and the deadline for
+submission will be at least three days before release. 
+
+ 

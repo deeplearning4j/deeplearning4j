@@ -1,0 +1,52 @@
+From: petrack@vnet.IBM.COM
+Subject: Serial Line connection between Duo 210 and PC???
+Reply-To: petrack@vnet.IBM.COM
+Disclaimer: This posting may contain no views at all
+News-Software: Usenet 3.1
+Lines: 45
+
+I have tried almost everything under the sun to get a null modem connection
+between a Mac Duo 210 and a PC. I have used MacKermit and VersaTerm on
+the Mac side. I have used Procomm, Kermit, and Softerm (on OS/2) on
+the PC (or PS) side. I have used non-Hardware handshaking and hardware
+ahdshaking cables. And know MY hands are shaking from the effort. Nothing
+has allowed file transfers from the Mac to the PS.
+
+In general, I can type back and forth with no trouble, but only if both sides
+are set to speeds OVER 9600 baud. I cannot send files from the Mac to the
+PS at all, and file transfers from the Duo to the PS are not possible.
+When I do a straight ascii send, I can send from the PS to the Duo flawlessly.
+I can send Binhex files this way quite fast, and I know that the
+transmission is error free.
+But straight ascii sent from the Mac to the PS is full of errors.
+Unless, of course, I do text pacing so slow that it is like human
+typing. (well, like 2-3 times faster than human typing).
+
+I would like to hear from ANYONE who has been able to transfer files
+from a Duo 210 to a PS via modem or null modem. If you can do it, please
+tell me your EXACT combination of hardware and software. Obviously, I am
+talking of a true serial port modem, not the express modem. Maybe some
+kind soul with access to a modem and a Duo 210 can check this out for me.
+
+Right now, I am of the opinion that it won't work at high speeds because
+of the power interrupts on the Duo, and it won't work at low speeds
+because of some crazy reason I don't understand.
+
+Could I hear from someone attesting that they can really pump information
+out the serial port of a Duo 210 fast? Like via a modem or via a
+sys-ex dump?
+
+Could anyone with a Duo help me out?? I am going absolutely INSANE.
+I wanna know if the problem is MY Duo, or all Duo 210s, or all Duos,
+or just me.
+
+Yes, I have checked the cable 1,000,000 times. And not only can I type
+back and forth, but Zterm alerts the users if s/he uses hardware handshaking
+and CTS is down. So I know that hardware handshaking is working. And also,
+According to Zterm port stats, the buffer never overflows.
+
+Please help me figure out what's going on...
+
+Scott Petrack
+Petrack@haifasc3.vnet.ibm.com
+

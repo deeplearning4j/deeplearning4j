@@ -1,0 +1,41 @@
+From: Markowitz@DOCKMASTER.NCSC.MIL
+Subject: exportability of PKZIP (was: RE: RC2)
+Organization: Yale CS Mail/News Gateway
+Lines: 36
+
+Vesselin Bontchev (bontchev@fbihh.informatik.uni-hamburg.de) writes:
+
+>>Markowitz@DOCKMASTER.NCSC.MIL writes:  >>> It is interesting to note
+in this regard that permission to export >>> PKZIP's encryption scheme
+has twice been denied by NSA.  Draw you own >>> conclusions.
+
+>>Uh, I'm afraid that your information is slightly out of date...
+PKWare >>has obtained a license to export their program to the whole
+world, >>except a very limited list of countries...  Draw your own
+conclusions >>about the strength of the algorithm...  :-)
+
+Sorry if I was less than clear.  :-) I was referring to our own efforts
+to receive export permission from NSA for the PKZIP encryption
+algorithm, not to any effort on the part of Phil Katz or PKWare.
+
+I should point out that the original version of this algorithm was
+designed by Roger Schlafly and that WE (meaning Roger and myself) were
+twice denied an export license for it.  The second go 'round was just
+this past fall.
+
+I had no knowledge of Phil's attempts in this.  I do not even *know* for
+sure if he choose to implement the algorithm as it was designed by
+Roger, though I *believe* that was at least the case for versions prior
+to 2.0.  And then there's the question of key management.  :-)
+
+And even if our applications were identical, there is no reason to
+assume the NSA would treat them that way.  :-)
+
+-mjm
+
+----------
+  Michael J. Markowitz, VP R&D      markowitz@dockmaster.ncsc.mil
+  Information Security Corp.        708 405-0500, fax: 708 405-0506
+  1141 Lake Cook Rd., Suite D       MCI:  363-1959
+  Deerfield, IL  60302              CIS: 76206,2617
+

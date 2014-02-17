@@ -1,0 +1,32 @@
+From: franke@andrej.informatik.rwth-aachen.de (Christian Franke)
+Subject: Info about Fast Centronics, ECP, EPP
+Organization: Rechnerbetrieb Informatik - RWTH Aachen
+Lines: 25
+NNTP-Posting-Host: andrej.informatik.rwth-aachen.de
+Keywords: Centronics, ECP, EPP
+
+Hello,
+
+in the EDN magazine I found a note about the new C&T 82C735
+I/O Controller. It support several parallel port protocols,
+including
+	Fast Centronics
+	Microsoft Enhanced Capabilities Protocol (ECP)
+	Enhanced Parallel Port (EPP)
+The last two handle data rates up to 2Mbytes/sec.
+
+Is there any specification about these protocols available?
+
+Regards,
+
+	Christian Franke
+
+	Aachen University of Technology
+	Informatik I
+	Ahornstrasse 55
+	W-5100 Aachen
+	Germany
+	Tel.: +49.241.80-21111
+	E-Mail: franke@informatik.rwth-aachen.de
+
+

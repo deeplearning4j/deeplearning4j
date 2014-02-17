@@ -1,0 +1,33 @@
+From: dudek@daeron.mcrcim.mcgill.edu (Gregory Dudek)
+Subject: Re: IIci -> Q700 upgrade?
+Nntp-Posting-Host: daeron.mcrcim.mcgill.edu
+Organization: McGill Research Centre for Intelligent Machines
+Lines: 28
+
+In article <C5HA0x.11oq@austin.ibm.com> $LOGIN@austin.ibm.com writes:
+>
+>A while ago I posted a note asking for specs on the Quadra 700, and opinions on
+>the Q700 upgrade of a IIci vs. an accelerator card.  So far no responsed that
+>I've noticed.  Please let me know what you think of these possible upgrade
+>paths:  Cost, efficiency, pros/cons, etc.. Thanks!
+
+  Complete Q700 are best obtained from your dealer or some recent
+copy of MacWorld or MacUser.  My foggy memory suggests that the most relevant
+comparison factors vis-a-vis a IIci are as follows:
+
+  25 MHz 68040
+  16 Mhz data path (don't recall this for sure, but it's slower
+      than Q 950 style machines for sure).
+  Ethertalk card on-board
+  Audio in/out
+  4 MB RAM on motherboard
+  4 SIMM slots
+  2 NuBus slots.
+  More flexible build-in video than the CI.  Uses VRAM.
+
+In comparison, a IIci with an accelerator won't give you
+  audio or ethernet  or the same video options.
+  With a 68040 accelerator, CPU performance can be comparable but I
+  think it ends up costing more.
+
+Greg Dudek

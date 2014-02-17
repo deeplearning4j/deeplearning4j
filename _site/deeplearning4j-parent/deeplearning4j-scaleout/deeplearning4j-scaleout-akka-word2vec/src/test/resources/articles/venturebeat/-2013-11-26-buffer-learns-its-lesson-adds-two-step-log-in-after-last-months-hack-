@@ -1,0 +1,6 @@
+0
+Last month’s big hack has given Buffer a crash course in security.
+The social sharing app suspended its service last month  after a hack let attackers post on user’s Facebook and Twitter accounts.
+Now, Buffer says it’s learned a lot from the experience and  is bolstering its app security so that a the hack can’t happen again . For one, Buffer users can now turn on two-step login, which lets them require an extra security code each time they log in.
+The logic behind two-step login and authentication, the latter of which most of the big tech companies have adopted, is that hackers have a much harder time getting into your account if they need two factors — your email address and a security code — rather than just one. It’s not foolproof, but it’s better than the alternative.
+Alongside two-step login, Buffer says it’s also resetting breached credentials and encrypting the access tokens that lets it post to users’ social media accounts. Buffer also says it’s forcing its team members to turn on two-factor authentication for their own Google, Github, and Dropbox accounts, which, frankly, they should have already done. But let’s focus on the positive!

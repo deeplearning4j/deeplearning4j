@@ -1,0 +1,15 @@
+From: rajan@cco.caltech.edu (Rajan Ranga)
+Subject: An external timer
+Article-I.D.: gap.1pli7gINNi6b
+Organization: California Institute of Technology, Pasadena
+Lines: 8
+NNTP-Posting-Host: fleming.caltech.edu
+
+I was wondering if anyone knows of a chip that that is similar to
+the internal timer 0 on the Intel 80C188?  I want a timer that has
+a Maxcount A and B and the output should the same as Intel's timer.  I called
+Intel and they told me that they don't make such a chip.  Any suggestions
+are welcome.  Thanks in advance.
+
+Rajan Ranga
+E-mail: rajan@cco.caltech.edu

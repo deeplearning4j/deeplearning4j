@@ -1,0 +1,19 @@
+From: ferdinan@oeinck.waterland.wlink.nl (Ferdinand Oeinck)
+Subject: Re: Distance between two Bezier curves
+Organization: My own node in Groningen, NL.
+Lines: 14
+
+pes@hutcs.cs.hut.fi (Pekka Siltanen) writes:
+
+> Suppose two cubic Bezier curves (control points V1,..,V4 and W1,..,W4)
+> which have equal first and last control points (V1 = W1, V4 = W4). How do I 
+> get upper bound for distance between these curves. 
+
+Which distance? The distance between one point (t = ti) on the first curve
+and a point on the other curve with same parameter (u = ti)?
+
+> 
+> Any references appreciated. Thanks in anvance.
+> 
+> Pekka Siltanen
+

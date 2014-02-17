@@ -1,0 +1,71 @@
+From: lanzo@tekelec.com (Mark Lanzo)
+Subject: Re: Title for XTerm
+Reply-To: lanzo@tekelec.com (Mark Lanzo)
+Organization: Tekelec Inc., Raleigh NC
+Lines: 65
+
+In a prior article naoumov@physics.unc.edu (Sergei Naoumov) writes:
+
+  > Hey guys!
+  > I work on many stations and would like this name and current logname
+  > to be in a title of Xterm when it's open and a machine name only
+  > when it's closed. In other words, I want $HOST and $LOGNAME to appear
+  > as a title of opened XTerm and $HOST when XTerm is closed.
+  > How can I do it?
+
+[Apologies if I'm answering something already answered in the FAQ.
+Our news feed has been losing a lot of articles lately - so I haven't
+seen the FAQ lately to check.]
+
+
+Two ways:
+ 
+ 1) When you start the xterm, you can use command line options:
+         -n ICON_NAME           To set the icon label
+         -T WINDOW_TITLE        To set the window title
+         -title WINDOW_TITLE    Equivalent to -T WINDOW_TITLE
+
+ 2) You can use escape sequences to change things on the fly:
+
+    The basic escape sequence is:
+	ESC ] <P> ; <SOME_ARBITARY_TEXT> BEL
+
+    where ESC and BEL are the ASCII ESCAPE and BELL characters,
+    <P> is an ASCII decimal digit -- '2', '1', or '0', depending
+    on whether you are trying to set the window or icon title,
+    or both, and <SOME_ARBITARY_TEXT> is your desired label string.
+
+    Hence, this command will set the window & icon title:
+         echo "\033]0;YOUR_TITLE_GOES_HERE\007\c" 
+
+    To set just the icon title:
+         echo "\033]1;YOUR_TITLE_GOES_HERE\007\c" 
+
+    To set just the window title:
+         echo "\033]2;YOUR_TITLE_GOES_HERE\007\c" 
+
+    Of course, you may have to fiddle with exact syntax,
+    depending on how the echo command works on your system
+    and what shell you are using (I've shown System-V semantics
+    under Bourne or Korn shells).
+
+    [Hint for Sun OS users:  use /usr/5bin/echo instead of
+    /bin/echo or Csh's built-in echo.  Otherwise you'll have
+    to embed literal ESC and BEL characters in the string
+    instead of using convenient octal sequences.]
+
+    If you want your titlebar updated continously, say to show
+    your current directory, hostname, or somesuch, then you'll
+    have to see if you can coerce your shell into spitting out
+    the appropriate escape sequences when it prompts for commands.
+    Sometimes you can just put the appropriate escape sequence
+    in the prompt string itself, sometimes not ...
+
+
++-------------------------------------------------------+------- /// -----+
+| Mark Lanzo   KD4QLZ  lanzo@tekelec.com   919-460-5576 |    \\\///       |
++-------------------------------------------------------+---- \XX/ -------+
+
+    
+
+

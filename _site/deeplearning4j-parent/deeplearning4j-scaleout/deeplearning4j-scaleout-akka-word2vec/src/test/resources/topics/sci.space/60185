@@ -1,0 +1,20 @@
+From: roland@sics.se (Roland Karlsson)
+Subject: Re: Magellan Venus Maps (Thanks)
+In-Reply-To: baalke@kelvin.jpl.nasa.gov's message of 30 Mar 1993 00:34 UT
+Lines: 14
+Organization: Swedish Institute of Computer Science, Kista
+
+
+Thanks Ron and Peter for some very nice maps.
+
+I have an advice though.  You wrote that the maps were reduced to 256
+colors.  As far ad I understand JPEG pictures gets much better (and
+the compressed files smaller) if you use the original 3 color 24 bit
+data when converting to JPEG.
+
+Thanks again,
+
+--
+Roland Karlsson             SICS, PO Box 1263, S-164 28 KISTA, SWEDEN
+Internet: roland@sics.se    Tel: +46 8 752 15 40          Fax: +46 8 751 72 30
+Telex: 812 6154 7011 SICS   Ttx: 2401-812 6154 7011=SICS

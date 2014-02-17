@@ -1,0 +1,112 @@
+From: kadie@cs.uiuc.edu (Carl M Kadie)
+Subject: [EFF] Initial EFF Analysis of Clinton Privacy and Security Proposal
+Organization: University of Illinois, Dept. of Comp. Sci., Urbana, IL
+Lines: 107
+
+[An article from comp.org.eff.news, EFFector Online 5.06 - Carl]
+
+                       April 16, 1993
+
+      INITIAL EFF ANALYSIS OF CLINTON PRIVACY AND SECURITY  
+                           PROPOSAL
+
+       The Clinton Administration today made a major announcement 
+on cryptography policy which will effect the privacy and security of 
+millions of Americans.  The first part of the plan is to begin a 
+comprehensive inquiry into major communications privacy issues 
+such as export controls which have effectively denied most people 
+easy access to robust encryption as well as law enforcement issues 
+posed by new technology.
+
+       However, EFF is very concerned that the Administration has 
+already reached a conclusion on one critical part of the inquiry, before 
+any public comment or discussion has been allowed.  Apparently, the 
+Administration is going to use its leverage to get all telephone 
+equipment vendors to adopt a voice encryption standard developed 
+by the National Security Agency. The so-called "Clipper Chip" is an 
+80-bit, split key escrowed encryption scheme which will be built into 
+chips manufactured by a military contractor.  Two separate escrow 
+agents would store users' keys, and be required to turn them over 
+law enforcement upon presentation of a valid warrant.  The 
+encryption scheme used is to be classified, but they chips will be 
+available to any manufacturer for incorporation into their 
+communications products.
+
+       This proposal raises a number of serious concerns .
+
+       First, the Administration appears to be adopting a solution 
+before conducting an inquiry.  The NSA-developed Clipper chip may 
+not be the most secure product. Other vendors or developers may 
+have better schemes. Furthermore, we should not rely on the 
+government as the sole source for Clipper or any other chips.  Rather,
+independent chip manufacturers should be able to produce chipsets 
+based on open standards.
+
+       Second, an algorithm can not be trusted unless it can be tested. 
+Yet the Administration proposes to keep the chip algorithm 
+classified.  EFF believes that any standard adopted ought to be public 
+and open.  The public will only have confidence in the security of a 
+standard that is open to independent, expert scrutiny.  
+
+       Third, while the use of the split-key, dual-escrowed 
+system may prove to be a reasonable balance between privacy and 
+law enforcement needs, the details of this scheme must be explored 
+publicly before it is adopted.  What will give people confidence in the 
+safety of their keys?  Does disclosure of keys to a third party waive 
+individual's fifth amendment rights in subsequent criminal 
+inquiries?  
+
+       In sum, the Administration has shown great sensitivity to the 
+importance of these issues by planning a comprehensive inquiry into 
+digital privacy and security.  However, the "Clipper chip" solution 
+ought to be considered as part of the inquiry, not be adopted before 
+the discussion even begins.
+
+DETAILS OF THE PROPOSAL:
+
+ESCROW
+
+The 80-bit key will be divided between two escrow agents, each of 
+whom hold 40 bits of each key.  Upon presentation of a valid 
+warrant, the two escrow agents would have to turn the key parts 
+over to law enforcement agents.  Most likely the Attorney General 
+will be asked to identify appropriate escrow agents.  Some in the 
+Administration have suggested one non-law enforcement federal 
+agency, perhaps the Federal Reserve, and one non-governmental 
+organization.  But, there is no agreement on the identity of the agents 
+yet.
+
+Key registration would be done by the manufacturer of the 
+communications device.  A key is tied to the device, not to the person 
+using it.
+
+CLASSIFIED ALGORITHM AND THE POSSIBILITY OF BACK DOORS
+
+The Administration claims that there are no back door means by 
+which the government or others could break the code without 
+securing keys from the escrow agents and that the President will 
+be told there are no back doors to this classified algorithm.  In order 
+to prove this, Administration sources are interested in arranging for 
+an all-star crypto cracker team to come in, under a security 
+arrangement, and examine the algorithm for trap doors.  The results 
+of the investigation would then be made public.
+
+GOVERNMENT AS MARKET DRIVER
+
+In order to get a market moving, and to show that the government 
+believes in the security of this system, the feds will be the first big 
+customers for this product.  Users will include the FBI, Secret Service, 
+VP Al Gore, and maybe even the President. 
+
+FROM MORE INFORMATION CONTACT:
+
+Jerry Berman, Executive Director
+Daniel J. Weitzner, Senior Staff Counsel
+
+
+
+
+
+-- 
+Carl Kadie -- I do not represent any organization; this is just me.
+ = kadie@cs.uiuc.edu =

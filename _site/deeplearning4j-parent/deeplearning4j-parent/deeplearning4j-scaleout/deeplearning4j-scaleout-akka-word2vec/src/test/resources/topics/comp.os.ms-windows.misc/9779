@@ -1,0 +1,25 @@
+Subject: Re: Windows for WorkGroups and LAN Workplace
+From: Flint.Waters@uwyo.edu (Flint Waters)
+Distribution: comp.os.ms-windows.apps,comp.os.ms-windows.misc,world
+Organization: University of Wyoming
+Nntp-Posting-Host: sheriff.uwyo.edu
+Lines: 18
+
+>Hey, sounds great. Does that mean that W4WG works with ODI? I thought it    
+>uses NDIS.        
+
+WFWG does use NDIS but it cooperates well with the NDIS shim for ODI.
+(I've heard that it is as fast as NDIS direct)
+                            
+>                                                
+>My problem is that Lan Workplace with all its drivers uses up most of my    
+>UMBs, so I'd hate to have to load many more drivers to make W4WG work       
+>along.           
+
+The additional TSR load is minimal.  I think I eat another  20K total.
+This is worth it to me since it allows me to get to my Windows NT 
+box.  Novell hasn't released a decent NT Novell client yet so I share
+through my WFWG box.         
+                                               
+This solution is very usable.
+

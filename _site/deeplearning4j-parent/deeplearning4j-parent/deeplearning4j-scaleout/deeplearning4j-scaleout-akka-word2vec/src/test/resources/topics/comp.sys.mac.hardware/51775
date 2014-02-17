@@ -1,0 +1,60 @@
+From: pino@gammow.berkeley.edu (Jose L. Pino)
+Subject: Re: wrong RAM in Duo?
+Organization: U. C. Berkeley
+Lines: 53
+Distribution: world
+NNTP-Posting-Host: gammow.berkeley.edu
+
+Here is the MacWeek article describing the DUO ram situation.
+(w/o permission.  I hope that is ok)
+
+Jose
+
+Bad RAM brings some Duos down. (random access memory boards for Apple
+Macintosh PowerBook Duos) 
+MacWEEK v7, n7 (Feb 15, 1993):132.
+
+COPYRIGHT Coastal Associates Publishing L.P. 1993
+
+By Raines Cohen
+
+     Austin, Texas - Some third-party memory-expansion cards for PowerBook
+Duos depart from Apple specs in ways that could cause crashes, data loss
+and other problems.
+
+     Technology Works Inc., a RAM and network vendor based here, last week
+issued a warning about three problems it said it had found in Duo RAM
+products from some competing vendors, which it declined to identify.
+Other vendors and an Apple spokeswoman confirmed that the problems exist.
+
+     > Self-refresh.  The Duos require a kind of dynamic RAM called
+selfrefreshing, which can recharge itself while the system sleeps.  But
+Technology Works said some vendors have sold Duo cards with
+nonselfrefreshing DRAM, which can cause the system to lose data or fail to
+wake from sleep.
+
+     Most leading memory manufacturers include the letter V in the part
+number stamped on their self-refreshing chips; nonself-refreshing chips
+instead have an L, according to TechWorks.  The chip label, however, may
+not tell the whole story.  Newer Technology of Wichita, Kan., said it uses
+nonself-refreshing chips but adds its own circuitry to keep them refreshed
+while the Duo sleeps.
+
+     > Speed.  Some RAM-card vendors have put 80-nanosecond DRAM on Duo
+cards rather than the 70-nanosecond type the 230 requires, Technology
+Works said.  However, some chips labeled as 80- or 85-nanosecond are
+certified by the manufacturer to run at a higher speed.
+
+     Kingston Technology Corp. of Fountain Valley, Calif., said it offers
+Duo RAM cards with 80-nanosecond chips, but only for the Duo 210, which is
+compatible with the slower chips.
+
+     > Space.  Technology Works charged and Apple officials confirmed that
+some third-party cards are too large to fit properly, forcing the corner
+of the Duo keyboard up and preventing the system from starting up normally
+when in a Duo Dock.
+
+     Lifetime Memory Products Inc. of Huntington Beach, Calif., said it
+originally shipped cards with this problem but has since offered all
+customers free upgrades to cards that fit.
+

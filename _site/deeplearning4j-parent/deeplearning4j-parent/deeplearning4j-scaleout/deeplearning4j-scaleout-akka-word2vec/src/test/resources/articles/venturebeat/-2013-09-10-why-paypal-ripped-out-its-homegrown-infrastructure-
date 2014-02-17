@@ -1,0 +1,15 @@
+1
+SAN FRANCISCO –  PayPal is currently the largest payment service in the world, with over 132 million active customers making seven million payments each day. That’s a huge infrastructure challenge, especially as the company continues to expand globally.
+The company recently made the decision to move its infrastructure to OpenStack  rather than relying on a homegrown solution. OpenStack is a cloud-computing project providing infrastructure-as-a-service (IaaS) to the largest technology companies.
+Onstage at CloudBeat 2013  today, Paypal’s senior engineers discussed in-depth how they ripped out existing infrastructure and replaced it with an alternative. They hoped to automate processes, rather than having developers and infrastructure engineers manually input information, which is both painstaking and time-consuming.
+The goal, according to Paypal senior development manager Stan Hsu, was to build an entirely new system for deploying applications.
+“We didn’t need to have 10,000 people [managing the infrastructure]. We only needed a few people to understand the system,” said Hsu.
+The company used technology from Puppet Labs , an IT automation software service, to make these changes. Hsu spoke about a few of the challenges his team faced and the pressure to get it right. After all, a tiny mistake could prove highly costly.
+“Every second is $5,200 in payments… every second counts,” said Hsu. In addition, payments companies are deeply concerned about security. The development team needs to ensure that customer credit card information won’t be hacked.
+“We really could not afford for anything to go wrong,” Hsu stressed.
+Puppet Labs chief executive Luke Kanies said that Paypal benefitted by accessing all the open-source code available to the community. “You can express your infrastructure as code,” he said.
+This “common language for developers” made it easier for PayPal’s developers fix bugs in a matter of seconds. Hsu describes the new infrastructure as “developer-driven.”
+This infrastructure shift is helping PayPal stay innovative and agile so it can beat out the competition.
+“The key question is how we enable PayPal to be successful, but enable agility,” said Saran Mandair, the company’s senior director of platform engineering. Mandair said that PayPal has subsequently become a keen proponent of open APIs, open source technologies, and the idea of sharing its significant “brain power” with the community at large.
+He concluded that it’s one of the key ways that PayPal can “still compete with innovative startups that are coming at us.”
+VentureBeat is creating an index of the top 'arms merchants' of the cloud . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.

@@ -1,0 +1,263 @@
+From: leech@cs.unc.edu (Jon Leech)
+Subject: Space FAQ 12/15 - Controversial Questions
+Keywords: Frequently Asked Questions
+Article-I.D.: cs.controversy_733694426
+Expires: 6 May 1993 20:00:26 GMT
+Distribution: world
+Organization: University of North Carolina, Chapel Hill
+Lines: 252
+Supersedes: <controversy_730956589@cs.unc.edu>
+NNTP-Posting-Host: mahler.cs.unc.edu
+
+Archive-name: space/controversy
+Last-modified: $Date: 93/04/01 14:39:06 $
+
+CONTROVERSIAL QUESTIONS
+
+    These issues periodically come up with much argument and few facts being
+    offered. The summaries below attempt to represent the position on which
+    much of the net community has settled. Please DON'T bring them up again
+    unless there's something truly new to be discussed. The net can't set
+    public policy, that's what your representatives are for.
+
+
+    WHAT HAPPENED TO THE SATURN V PLANS
+
+    Despite a widespread belief to the contrary, the Saturn V blueprints
+    have not been lost. They are kept at Marshall Space Flight Center on
+    microfilm.
+
+    The problem in re-creating the Saturn V is not finding the drawings, it
+    is finding vendors who can supply mid-1960's vintage hardware (like
+    guidance system components), and the fact that the launch pads and VAB
+    have been converted to Space Shuttle use, so you have no place to launch
+    from.
+
+    By the time you redesign to accommodate available hardware and re-modify
+    the launch pads, you may as well have started from scratch with a clean
+    sheet design.
+
+
+    WHY DATA FROM SPACE MISSIONS ISN'T IMMEDIATELY AVAILABLE
+
+    Investigators associated with NASA missions are allowed exclusive access
+    for one year after the data is obtained in order to give them an
+    opportunity to analyze the data and publish results without being
+    "scooped" by people uninvolved in the mission. However, NASA frequently
+    releases examples (in non-digital form, e.g. photos) to the public early
+    in a mission.
+
+
+    RISKS OF NUCLEAR (RTG) POWER SOURCES FOR SPACE PROBES
+
+    There has been extensive discussion on this topic sparked by attempts to
+    block the Galileo and Ulysses launches on grounds of the plutonium
+    thermal sources being dangerous. Numerous studies claim that even in
+    worst-case scenarios (shuttle explosion during launch, or accidental
+    reentry at interplanetary velocities), the risks are extremely small.
+    Two interesting data points are (1) The May 1968 loss of two SNAP 19B2
+    RTGs, which landed intact in the Pacific Ocean after a Nimbus B weather
+    satellite failed to reach orbit. The fuel was recovered after 5 months
+    with no release of plutonium. (2) In April 1970, the Apollo 13 lunar
+    module reentered the atmosphere and its SNAP 27 RTG heat source, which
+    was jettisoned, fell intact into the 20,000 feet deep Tonga Trench in
+    the Pacific Ocean. The corrosion resistant materials of the RTG are
+    expected to prevent release of the fuel for a period of time equal to 10
+    half-lives of the Pu-238 fuel or about 870 years [DOE 1980].
+
+    To make your own informed judgement, some references you may wish to
+    pursue are:
+
+    A good review of the technical facts and issues is given by Daniel
+    Salisbury in "Radiation Risk and Planetary Exploration-- The RTG
+    Controversy," *Planetary Report*, May-June 1987, pages 3-7. Another good
+    article, which also reviews the events preceding Galileo's launch,
+    "Showdown at Pad 39-B," by Robert G. Nichols, appeared in the November
+    1989 issue of *Ad Astra*. (Both magazines are published by pro-space
+    organizations, the Planetary Society and the National Space Society
+    respectively.)
+
+    Gordon L Chipman, Jr., "Advanced Space Nuclear Systems" (AAS 82-261), in
+    *Developing the Space Frontier*, edited by Albert Naumann and Grover
+    Alexander, Univelt, 1983, p. 193-213.
+
+    "Hazards from Plutonium Toxicity", by Bernard L. Cohen, Health Physics,
+    Vol 32 (may) 1977, page 359-379.
+
+    NUS Corporation, Safety Status Report for the Ulysses Mission: Risk
+    Analysis (Book 1). Document number is NUS 5235; there is no GPO #;
+    published Jan 31, 1990.
+
+    NASA Office of Space Science and Applications, *Final Environmental
+    Impact Statement for the Ulysses Mission (Tier 2)*, (no serial number or
+    GPO number, but probably available from NTIS or NASA) June 1990.
+
+    [DOE 1980] U.S.  Department of Energy, *Transuranic Elements in the
+    Environment*, Wayne C.  Hanson, editor; DOE Document No.  DOE/TIC-22800;
+    Government Printing Office, Washington, D.C., April 1980.)
+
+
+    IMPACT OF THE SPACE SHUTTLE ON THE OZONE LAYER
+
+    From time to time, claims are made that chemicals released from
+    the Space Shuttle's Solid Rocket Boosters (SRBs) are responsible
+    for a significant amount of damage to the ozone layer. Studies
+    indicate that they in reality have only a minute impact, both in
+    absolute terms and relative to other chemical sources. The
+    remainder of this item is a response from the author of the quoted
+    study, Charles Jackman.
+
+    The atmospheric modelling study of the space shuttle effects on the
+    stratosphere involved three independent theoretical groups, and was
+    organized by Dr. Michael Prather, NASA/Goddard Institute for Space
+    Studies.  The three groups involved Michael Prather and Maria Garcia
+    (NASA/GISS), Charlie Jackman and Anne Douglass (NASA/Goddard Space
+    Flight Center), and Malcolm Ko and Dak Sze (Atmospheric and
+    Environmental Research, Inc.).  The effort was to look at the effects
+    of the space shuttle and Titan rockets on the stratosphere.
+
+    The following are the estimated sources of stratospheric chlorine:
+
+       Industrial sources:    300,000,000 kilograms/year
+	  Natural sources:     75,000,000 kilograms/year
+	  Shuttle sources:	  725,000 kilograms/year
+
+    The shuttle source assumes 9 space shuttles and 6 Titan rockets are
+    launched yearly. Thus the launches would add less than 0.25% to the
+    total stratospheric chlorine sources.
+
+    The effect on ozone is minimal:  global yearly average total ozone would
+    be decreased by 0.0065%. This is much less than total ozone variability
+    associated with volcanic activity and solar flares.
+
+    The influence of human-made chlorine products on ozone is computed
+    by atmospheric model calculations to be a 1% decrease in globally
+    averaged ozone between 1980 and 1990. The influence of the space shuttle and
+    Titan rockets on the stratosphere is negligible.  The launch
+    schedule of the Space Shuttle and Titan rockets would need to be
+    increased by over a factor of a hundred in order to have about
+    the same effect on ozone as our increases in industrial halocarbons
+    do at the present time.
+
+    Theoretical results of this study have been published in _The Space
+    Shuttle's Impact on the Stratosphere_, MJ Prather, MM Garcia, AR
+    Douglass, CH Jackman, M.K.W. Ko and N.D. Sze, Journal of Geophysical
+    Research, 95, 18583-18590, 1990.
+
+    Charles Jackman, Atmospheric Chemistry and Dynamics Branch,
+    Code 916, NASA/Goddard Space Flight Center,
+    Greenbelt, MD  20771
+
+    Also see _Chemical Rockets and the Environment_, A McDonald, R Bennett,
+    J Hinshaw, and M Barnes, Aerospace America, May 1991.
+
+
+    HOW LONG CAN A HUMAN LIVE UNPROTECTED IN SPACE
+
+    If you *don't* try to hold your breath, exposure to space for half a
+    minute or so is unlikely to produce permanent injury. Holding your
+    breath is likely to damage your lungs, something scuba divers have to
+    watch out for when ascending, and you'll have eardrum trouble if your
+    Eustachian tubes are badly plugged up, but theory predicts -- and animal
+    experiments confirm -- that otherwise, exposure to vacuum causes no
+    immediate injury. You do not explode. Your blood does not boil. You do
+    not freeze. You do not instantly lose consciousness.
+
+    Various minor problems (sunburn, possibly "the bends", certainly some
+    [mild, reversible, painless] swelling of skin and underlying tissue)
+    start after ten seconds or so. At some point you lose consciousness from
+    lack of oxygen. Injuries accumulate. After perhaps one or two minutes,
+    you're dying. The limits are not really known.
+
+    References:
+
+    _The Effect on the Chimpanzee of Rapid Decompression to a Near Vacuum_,
+    Alfred G. Koestler ed., NASA CR-329 (Nov 1965).
+
+    _Experimental Animal Decompression to a Near Vacuum Environment_, R.W.
+    Bancroft, J.E. Dunn, eds, Report SAM-TR-65-48 (June 1965), USAF School
+    of Aerospace Medicine, Brooks AFB, Texas.
+
+
+    HOW THE CHALLENGER ASTRONAUTS DIED
+
+    The Challenger shuttle launch was not destroyed in an explosion. This is
+    a well-documented fact; see the Rogers Commission report, for example.
+    What looked like an explosion was fuel burning after the external tank
+    came apart. The forces on the crew cabin were not sufficient to kill the
+    astronauts, never mind destroy their bodies, according to the Kerwin
+    team's medical/forensic report.
+
+    The astronauts were killed when the more-or-less intact cabin hit the
+    water at circa 200MPH, and their bodies then spent several weeks
+    underwater. Their remains were recovered, and after the Kerwin team
+    examined them, they were sent off to be buried.
+
+
+    USING THE SHUTTLE BEYOND LOW EARTH ORBIT
+
+    You can't use the shuttle orbiter for missions beyond low Earth orbit
+    because it can't get there. It is big and heavy and does not carry
+    enough fuel, even if you fill part of the cargo bay with tanks.
+
+    Furthermore, it is not particularly sensible to do so, because much of
+    that weight is things like wings, which are totally useless except in
+    the immediate vicinity of the Earth. The shuttle orbiter is highly
+    specialized for travel between Earth's surface and low orbit. Taking it
+    higher is enormously costly and wasteful. A much better approach would
+    be to use shuttle subsystems to build a specialized high-orbit
+    spacecraft.
+
+    [Yet another concise answer by Henry Spencer.]
+
+
+    THE "FACE ON MARS"
+
+    There really is a big rock on Mars that looks remarkably like a humanoid
+    face. It appears in two different frames of Viking Orbiter imagery:
+    35A72 (much more facelike in appearance, and the one more often
+    published, with the Sun 10 degrees above western horizon) and 70A13
+    (with the Sun 27 degrees from the west).
+
+    Science writer Richard Hoagland has championed the idea that the Face is
+    artificial, intended to resemble a human, and erected by an
+    extraterrestrial civilization. Most other analysts concede that the
+    resemblance is most likely accidental. Other Viking images show a
+    smiley-faced crater and a lava flow resembling Kermit the Frog elsewhere
+    on Mars. There exists a Mars Anomalies Research Society (sorry, don't
+    know the address) to study the Face.
+
+    The Mars Observer mission will carry an extremely high-resolution
+    camera, and better images of the formation will hopefully settle this
+    question in a few years. In the meantime, speculation about the Face is
+    best carried on in the altnet group alt.alien.visitors, not sci.space or
+    sci.astro.
+
+    V. DiPeitro and G. Molenaar, *Unusual Martian Surface Features*, Mars
+    Research, P.O. Box 284, Glen Dale, Maryland, USA, 1982. $18 by mail.
+
+    R.R. Pozos, *The Face of Mars*, Chicago Review Press, 1986. [Account of
+    an interdisciplinary speculative conference Hoagland organized to
+    investigate the Face]
+
+    R.C. Hoagland, *The Monuments of Mars: A City on the Edge of Forever*,
+    North Atlantic Books, Berkeley, California, USA, 1987. [Elaborate
+    discussion of evidence and speculation that formations near the Face
+    form a city]
+
+    M.J. Carlotto, "Digital Imagery Analysis of Unusual Martian Surface
+    Features," *Applied Optics*, 27, pp. 1926-1933, 1987. [Extracts
+    three-dimensional model for the Face from the 2-D images]
+
+    M.J. Carlotto & M.C. Stein, "A Method of Searching for Artificial
+    Objects on Planetary Surfaces," *Journal of the British Interplanetary
+    Society*, Vol. 43 no. 5 (May 1990), p.209-216. [Uses a fractal image
+    analysis model to guess whether the Face is artificial]
+
+    B. O'Leary, "Analysis of Images of the `Face' on Mars and Possible
+    Intelligent Origin," *JBIS*, Vol. 43 no. 5 (May 1990), p. 203-208.
+    [Lights Carlotto's model from the two angles and shows it's consistent;
+    shows that the Face doesn't look facelike if observed from the surface]
+
+
+NEXT: FAQ #13/15 - Space activist/interest/research groups & space publications

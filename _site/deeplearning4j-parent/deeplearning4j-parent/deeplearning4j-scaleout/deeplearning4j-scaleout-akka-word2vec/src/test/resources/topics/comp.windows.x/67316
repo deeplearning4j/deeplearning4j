@@ -1,0 +1,22 @@
+From: beck@irzr17.inf.tu-dresden.de (Andre Beck)
+Subject: Re: Title for XTerm
+Organization: Dept. of Computer Science, TU Dresden, Germany.
+Lines: 14
+Distribution: world
+Reply-To: Andre_Beck@IRS.Inf.TU-Dresden.DE
+NNTP-Posting-Host: irzr17.inf.tu-dresden.de
+
+
+Yet again,
+
+the escape sequences you are speaking about here are non standard and
+dangerous. In fact, an ANSI compliant sequence parser HANGS on them.
+
+Why are there such strange ESC sequences instead of compatible DSC ?
+
+--
++-o-+--------------------------------------------------------------+-o-+
+| o |                \\\-  Brain Inside -///                       | o |
+| o |                    ^^^^^^^^^^^^^^^                           | o |
+| o | Andre' Beck (ABPSoft) mehl: Andre_Beck@IRS.Inf.TU-Dresden.de | o |
++-o-+--------------------------------------------------------------+-o-+

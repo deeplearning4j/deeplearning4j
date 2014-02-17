@@ -1,0 +1,40 @@
+From: strnlght@netcom.com (David Sternlight)
+Subject: Re: Would "clipper" make a good cover for other encryption method?
+Organization: DSI/USCRPAC
+Lines: 35
+
+In article <EACHUS.93Apr20140314@spectre.mitre.org> eachus@spectre.mitre.org
+(Robert I. Eachus) writes:
+>
+>  But, if you are making custom equipment in any case, why not just
+>roll your own Clipper implementation and report the wrong keys to the
+>Escrow agency?  (Tells us who is going to be in the chip business if
+>this thing goes through--NSA, and those with something to hide from
+>NSA.)
+
+This won't work if there is a checksum on the keys you don't know about.
+Neither will registering a clipper chip and then substituting a
+"counterfeit" one if the serial number contains a checksum.
+
+Chances are the government has thought of this, and "just anyone" won't be
+permitted access to enough of the internals to make a "fake" clipper chip.
+Chances are that the government has classified some details of the internals
+at a very high level, and manufacturers are required to observe security
+safeguards and clearances corresponding to that level.
+
+While not perfect, it would prevent Joe Hacker from rolling his own spoofing
+chip, since not many counterfeiters can survive a background investigation.
+Some of the more notorious self-styled dissidents here, for example, have
+already got their heads so high above the tall grass that they'd have little
+chance of getting a clearance.
+
+Of course it's not impossible that someone do this, but probably extremely
+difficult. Chances are there will also be very heavy criminal penalties for
+phony clipper chips, on some national security/classified info grounds or
+other, thus making the game not worth the candle.
+
+-- 
+David Sternlight         Great care has been taken to ensure the accuracy of
+                         our information, errors and omissions excepted.  
+
+

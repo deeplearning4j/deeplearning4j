@@ -1,0 +1,30 @@
+9
+In San Francisco, entrepreneurs are proving that technology can be a force for social good. A small but dedicated group has its sights on the homeless community and is building innovative tech to connect people with basic services.
+This help is sorely needed, given that homelessness in San Francisco is on the rise. With an estimated 6,500 people living without adequate shelter, most locals have grown accustomed to seeing and interacting with homeless folks as part of life in this city.
+Hacking homelessness
+This is the latest in an occasional series examining technology innovation by and for the homeless community.
+Social media giving SF homeless a helping hand
+Homeless to hacker : How the Maker Movement changed one man’s life
+One techie’s next gig? Converting city buses into showers for the SF homeless
+But web designer Rose Broome is eager to prove that mobile apps and web-based services can make a difference. In a matter of weeks, Broome and mobile developer Zac Witte created an iPhone app called HandUp that helps you donate to homeless people living in shelters and outdoors in your neighborhood.
+“People always ask where the startups are that are solving important problems. Well, here we are,” said Broome.
+In an interview, Broome stressed that many of her friends in the tech community want to give to individual homeless people they meet. However, they fear their cash would not be spent on clothing, food, and other essentials but instead would feed a drug or alcohol addiction.
+A homeless person can sign up for a HandUp card.
+HandUp is designed to alleviate these concerns and benefit people in need. Signing up just takes a few minutes. Around 50 homeless people have registered in the past week, in part due to the support of local nonprofit  Coalition on Homelessness .
+Once a homeless member has expressed interest, HandUp’s team notes some basic information, such as her first name and neighborhood, and generates a profile and custom paper card.
+The member can then hand out the card to stranger or familiar face in the community.
+Herein lies the innovation: The card contains information for people to donate via a secure SMS system, and the transaction can be carried out on an iPhone.
+The recipient can only redeem the donation at Project Homeless Connect , a San Francisco-based organization that provides housing support, medical care, food, pharmacy gift cards, and other basic essentials.
+Stanley Jackson has handed out about 300 cards since he signed up for HandUp on Thursday. His profile contains some biographical information and lists his most pressing needs. Stanley grew up in Oakland, lost six brothers and one sister to violence. His dream is to meet Bill Gates. He is saving up for dentures, shoes, shirts, and of course, housing. On his first day, Stanley earned $28 through HandUp, which he used for a Walgreens gift card and a bus pass.
+“I will give out a few hundred cards today,” he told me. “I try to be friendly, and only give out cards to people who I think might donate.” People have told him that it’s a safer way to donate, so he intends to continue using HandUp.
+To donate $3 or more to Stanley, text GIVE 3 TO STANLEY to 415-651-4483.
+The app just launched on Thursday, but Broome and Witte have already set up meetings with Walgreens , Safeway , and other large grocery chains so people can redeem a HandUp donation in stores. They are also in talks with shelters and other community organizations that help people gain new skills and access job opportunities.
+“My long-term goal is for people to use the card to fund housing or a shelter bed,” said Broome. She is still considering various options for a business model for HandUp, including voluntary follow-on donations from contributors.
+She would not consider taking a cut of the transaction, so donor money won’t go to administrative costs. “Currently in our beta, 100 percent of the donations go to members,” she stressed. “We’d like to keep it that way.”
+Use the HandUp app to donate to a person in need.
+The app was created using payments service Stripe  (donors only need to submit credit card information once) and cloud communications API Twilio . Both companies are based in San Francisco.
+Broome is working with a lawyer to certify HandUp as a B corporation (a semi-non-profit, essentially), which highlights the company’s social mission to potential investors. Online petition site Change.org is one of a small number of well-funded B corporations; the aforementioned startup  recently raised $15 million from mission-driven investors Omidyar Network.
+Broome is convinced that companies like HandUp and Change.org are just the beginning, especially given that investors are also eager to give back . This trend is often referred to as social entrepreneurship. There is no clear-cut definition, but most founders in this space would agree that the overarching goal is to use business process to drive social or environmental impact.
+HandUp is enrolled in startup accelerator program Tumml , which provides entrepreneurs with $20,000 and mentorship to help them solve urban problems. Through this network, Broome has connected with SF.Citi , which was spearheaded by investor Ron Conway to encourage the tech sector to get involved with civic causes.
+Broome is also the founder of the Homeless Innovation meetup , a San Francisco-based group that meets monthly to brainstorm ideas.
+Want to help the homeless? Project Homeless Connect is running a new program called Everyday Connect. Follow  @PHCSF  / hashtag #EDCDailyNeed to donate much-needed items to the community, including wheelchairs, computer parts, dentures, and clothing. Sf.citi will donate a dollar to Project Homeless Connect for every new Twitter follower. More on that here . 

@@ -1,0 +1,46 @@
+From: Rob Earhart <earhart+@CMU.EDU>
+Subject: Re: Animation with XPutImage()?
+Organization: Pittsburgh Supercomputing Center
+Lines: 38
+	<1993Apr22.092830.2190@infodev.cam.ac.uk>
+NNTP-Posting-Host: po5.andrew.cmu.edu
+In-Reply-To: <1993Apr22.092830.2190@infodev.cam.ac.uk>
+
+dcr@mail.ast.cam.ac.uk (Derek C. Richardson) writes:
+> Shared memory PutImage (also mentioned by nkissebe@delphi.beckman.uiuc.edu,
+> Nick Kisseberth) looks interesting, but I need someone to point me to some
+> documentation. Is this method likely to give better results than server-
+> resident pixmaps? I'd also be interested in looking at the XView code
+> mentioned above...
+
+  There's documentation on how to use the shared memory extension in the
+X11R5 distribution.
+
+  Actually, I just finished writing a motif animation program...
+(take-lots-of-image-data-and-display-it-pretty-darn-fast). When using
+on-server pixmaps or shared memory, I had to insert a delay loop to keep
+it from going too quickly :). Testing both methods side by side, they
+were just about equal.
+
+  The advantage of SHM is that your X server doesn't grow to ridiculous
+sizes; but pixmaps can work over a network and *are* removed if your
+application dies (one tends to use ipcrm manually quite a bit when
+debugging SHM apps).
+
+  Shared memory also has the problem that some operating systems (e.g.
+Ultrix) seem to allow only a small number of segments (~6) to be
+attached to a process at once; consequently, a redraw becomes
+XShmAttach();XShmPutImage();XShmDetach(); on Dec systems. And Dec's 24
+bit displays (like the ones I tend to use most often) don't seem to
+support the extension (maybe someone compiled them wrong?), and using
+pixmaps causes the X server to crash (failed mallocs), so one *has* to
+use the local unix domain socket (which really isn't that bad; one
+copies the info three times per redraw instead of one).
+
+  In short: allowing all three forms of display, within the program is a
+Good Thing (minus SHM if running over a network), and let the user pick
+whatever feels fastest.
+
+  (I just use an ximagehandler class and forget about it :)
+
+  )Rob

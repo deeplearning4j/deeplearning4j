@@ -1,0 +1,18 @@
+From: tthiel@cs.uiuc.edu (Terry Thiel)
+Subject: Re: Help! How to test SIMMs?
+Organization: University of Illinois, Dept. of Comp. Sci., Urbana, IL
+Lines: 13
+
+ytwu@magnus.acs.ohio-state.edu (Yih-Tyng Wu) writes:
+>Hello,
+>  I just got some SIMMs,  at least one of which does not work. I don't know if 
+>there is a software that can test SIMMs thoroughly or I could just rely on the 
+>RAM test performed by my computer during the start up. When I installed a dead 
+>SIMM into an LC or  an LC II, there would be a strange music and no display on 
+>the screen. Why? I need your help! Thanks in advance
+>Yih-Tyng
+>ytwu@magnus.acs.ohio-state.edu
+
+There is a shareware ramchecker that I think is called ramcheck.  it is
+available at most ftp sites such as umich and sumex.
+-Terry

@@ -1,0 +1,45 @@
+From: baden@sys6626.bison.mb.ca (baden de bari)
+Subject: _Exhausted student needing HELP!
+Organization: System 6626 BBS, Winnipeg Manitoba Canada
+Lines: 40
+
+ 
+      Well, I've now been working on this DAMNED stepper controller board
+ since 9pm.  It's now 6am... I'm pissed off.  Period.  Alright, I can
+ drive the steppers through the 3479P's; no problem (that's with the
+ 6-wire steppers, 2 to +, and the other 4 are the phase lines).  Problem
+ 1:  I've got some 4 wire steppers.  I put the darkest line to + and the
+ other 3 to the 3479P... worked, kinda.  Tried it with a printer stepper
+ (moves the head back and forth, 4 wires), didn't work too well.  It 
+would
+ shift back and forth (use something like a 4017 instead?)  Also I've 
+been
+ trying to get a bunch of NPN's to work with it... NO LUCK... tried 
+PNP's,
+ still NO LUCK!!!  I don't know if I'm cursed on this or what, but I feel
+ my brain slowly frying with the thought of STEPPER ... ARGGG!!!
+         I don't know what's wrong with the transistor hook-up (to-220 
+pkg
+ type), also tryed the 2n2222-pkg type... no luck.
+
+                         I'm going to try getting some z's, and I hope 
+you
+ can help me with this problem.
+   If someone can please help me with this soon, it would be greatly
+   appreciated...
+
+                 Thanks.
+
+
+
+
+ 
+  _________________________________________________
+  Inspiration  |   ___                             |
+  comes to     |  \   o  baden@sys6626.bison.mb.ca |
+  those who    | (  ^  ) baden@inqmind.bison.mb.ca |
+  seek the     |   /-\      =] Baden de Bari [=    |
+  unknown.     |                                   |
+  ------------------------------------------------- 
+ 
+l

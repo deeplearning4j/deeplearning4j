@@ -1,0 +1,41 @@
+From: dtmedin@catbyte.b30.ingr.com (Dave Medin)
+Subject: Re: Police radar....Just how does it work??
+Reply-To: dtmedin@catbyte.b30.ingr.com
+Organization: Intergraph Corporation, Huntsville AL
+Lines: 35
+
+In article <1993Apr2.182216.28603@walter.bellcore.com>, deaddio@ski.bellcore.com (Michael DeAddio) writes:
+
+|> |> Question 2:
+|> |> 
+|> |> 	If I am right about the doppler(if I spell it different every time,
+|> |> maybe one will be right) effect, how does the radar get an accurate reading
+|> |> when the car containing it is moving??  It would seem to me ( for all thats
+|> |> worth) that it would need to be calibrated with the speedometer of the car
+|> |> containing it??  I am fairly sure this isn't the case, so whats the deal??
+|> 
+|> Essentially, this is actually how it is done.  The radar gun is tied into
+|> the speedometer of the car.
+
+No, it is independent of the speedometer. The gun processes two doppler
+returns--the speed of the car relative to the pavement and the speed
+of the target, taking the difference between the two. Some guns with
+a "moving mode" actually have a split beam with one beam aimed
+preferentially at the pavement.
+
+Car and Driver had a good article on traffic radar, but it was back in
+1985. I used its contents and references to defend myself against a bogus
+radar-measured ticket. It detailed "moving mode," which is easier to
+defend against because of the increased amount of variables.
+
+-- 
+--------------------------------------------------------------------
+       Dave Medin			Phone:	(205) 730-3169 (w)
+    SSD--Networking				(205) 837-1174 (h)
+    Intergraph Corp.
+       M/S GD3004 		Internet: dtmedin@catbyte.b30.ingr.com
+  Huntsville, AL 35894		UUCP:  ...uunet!ingr!b30!catbyte!dtmedin
+
+   ******* Everywhere You Look (at least around my office) *******
+
+ * The opinions expressed here are mine (or those of my machine)

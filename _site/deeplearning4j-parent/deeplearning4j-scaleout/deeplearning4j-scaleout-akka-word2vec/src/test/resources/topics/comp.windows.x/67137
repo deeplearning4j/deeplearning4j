@@ -1,0 +1,36 @@
+From: queloz@bernina.ethz.ch (Ronald Queloz)
+Subject: Store/Post events
+Organization: Swiss Federal Institute of Technology (ETH), Zurich, CH
+Lines: 31
+
+
+store and reply of mouse and keyboard events
+--------------------------------------------
+
+To produce regression tests or automatic demo's
+we would like to store all mouse and keyboard events
+produced by a user. It should be possible to filter
+the mouse and keyboard events from the server's queue
+an to store them in a file.
+This sequence of events, stored in a file, should be given 
+to the server's queue as if a user is working.
+
+
+1. Exists a tool that is capable to save and reply all
+   mouse and keyboard events (where)?
+
+2. Where one can catch these events to store them ?
+   In our case the server's queue is on a X Terminal (HP).
+   Where can we catch all events coming from a given
+   server.
+   If this is not possible, can we catch all events given
+   to a certain client and how ?
+   
+3. Where one can send a stored sequence of events to simulate a user ?
+   Is there a central dispatcher on the clients machine who manages
+   all incoming events from a given server and how can we reach it ?
+
+
+Thanks in advance
+
+Ron.

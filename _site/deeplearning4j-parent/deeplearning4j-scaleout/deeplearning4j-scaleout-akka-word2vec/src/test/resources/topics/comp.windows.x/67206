@@ -1,0 +1,46 @@
+From: drand@spinner.osf.org (Douglas S. Rand)
+Subject: Re: Writing a Motif widget
+In-Reply-To: nicholas@ibmpcug.co.uk's message of Thu, 22 Apr 1993 17:17:40 GMT
+Organization: Open Software Foundation
+Lines: 40
+
+In article <C5wApJ.DD7@ibmpcug.co.uk> nicholas@ibmpcug.co.uk (Nicholas Young) writes:
+
+   I need (probably) to write one or more new Motif widgets on the HP-UX
+   platform. Do I need the Motif private header files and source,
+   or can I make do with the public headers that are provided?
+   "Motif" includes Xt in this context.
+
+Yes.  You'll find it almost impossible without the source
+at this point.  It does depend on how ambitious you are and
+how concerned you are about compliance with the general
+interface and items like traversal.
+
+   One widget is a multi-column list (which lots of people have
+   already written, I am sure), and would therefore be probably be
+   a subclass of List rather than something simple like an Xt class.
+   Is this more difficult (in principle, not lines of code)?
+
+I'm not sure what you're asking.  You could create something
+which is very much like a true multi-column list by placing
+several lists within a geometry manager,  and putting that
+manager within an automatic scrolled window.  This wouldn't
+be good for very large lists,  but you might consider this
+as an alternative.
+
+   Alternatively, if anyone has a multi-column list widget they
+   could sell me, this might save me from having to write one!
+   Does it by any chance exist in Motif 1.2 already (I do not
+   yet have the spec)?
+
+Motif 1.2 does not have a multi-column list in it.  Have you
+looked at commercial sets?  There are also some PD 
+widget sets,  one of these might have a multi-column list
+you could port.
+
+
+--
+Douglas S. Rand <drand@osf.org>		OSF/Motif Dev.
+Snail:         11 Cambridge Center,  Cambridge,  MA  02142
+Disclaimer:    I don't know if OSF agrees with me... let's vote on it.
+Amateur Radio: KC1KJ

@@ -1,0 +1,27 @@
+From: Grant@DOCKMASTER.NCSC.MIL (Lynn R Grant)
+Subject: Re: Key Registering Bodies
+Organization: Yale CS Mail/News Gateway
+Lines: 22
+
+If we do not trust the NSA to be a registrar of Clipper Chip key halves,
+I would not trust Mitre either.  Mitre does lots of work for NSA, at least
+in the Trusted Product Evaluation Program (evaluation of commercial off the
+shelf software for its efficacy in safeguarding classified information), and
+I assume in other, less open, programs.
+
+There are at least two other FFRDCs (Federally Funded Research and Development
+Corporations) that work for NSA: Aerospace Corporation and the Institute for
+Defense Analysis.  Now, if NSA were to be untrustworthy (a position that I
+am neutral about, for purposes of this posting), it would be in a position to
+exert economic pressure upon Mitre to release key halves on demand.  It could
+just say, "If you don't cooperate with us, we'll place all our evaluation
+contracts with Aerospace and IDA."
+
+I am not saying that people at NSA, Mitre, Aerospace, or IDA are dishonest
+folk.  But since they are people, and people occasionally go bad, the
+system works better if organizations that you are depending upon to be
+independent really are.
+
+And, of course, I speak for myself, not my employer.
+
+Lynn Grant

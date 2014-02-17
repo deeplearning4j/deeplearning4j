@@ -1,0 +1,25 @@
+A recent graduate of the Berlin Startup Bootcamp incubator program, 1SDK has one goal: To help mobile gaming providers win over more paying users. Founder Anil Kutty told us how. …
+Who are you, and what do you do?
+Hi, I’m originally from New Delhi in India. Throughout my career, I have worked all over the world: Oman, USA, the Netherlands and, of course, Germany. Now I’ve moved to Berlin to work on my startup,  1SDK .
+At 1SDK, we offer a SDK (software development kit) that developers can integrate into their mobile apps and games in order to optimize the sales of in-app purchases. Using our SDK, developers are able to divide users into different categories according to their behavior and then offer them customized promotions with the help of our analytics. This increases their likeliness to buy and therefore the overall revenue.
+What did you do before 1SDK, and what made you move to Berlin?
+Before I started with 1SDK, I was involved in building Vodafone’s app store – I was the chief architect. It’s the largest operator-built app store. We started in eight EU countries and Russia. That was a real challenge, because the competition (other app stores) is, of course, just a click away. However, it was a lot of fun. Because of the things I had learned during that time, I decided to create something on my own with 1SDK.
+I first went to Silicon Valley in order to check out the scene there. Unfortunately, at that time, the product was not as developed as it is now, so I didn’t have much to show to investors. So I followed the call of Berlin, applied for Startup Bootcamp, and was selected. That really helped me to get going.
+How did you come up with the idea for 1SDK?
+As I said, I got the idea for 1SDK as a result of what I had learned while working for Vodafone. I noticed that game developers consistently demanded two things: an open in-app billing SDK that works with all app stores, and the capability to set prices for digital goods-based user behavior.
+Why is the pricing of digital goods in games such a problem?
+This is a very complex issue. Ultimately, it goes back to the age-old question of what things are worth. What is an extra life worth that you buy in a game, an upgrade for your character, or something as banal as a new hat for your character? Different people will have different answers to these questions. Some are willing to spend more, some less.
+If you set the price too high, you run the risk of missing out on sales. If you set the price too low, you aren’t tapping the full potential of your creations. We offer the opportunity to find out what different users are willing to pay and then use that information to optimise revenue – which is called dynamic pricing.
+If we take a look at the mobile gaming landscape, what jumps out is that 25 companies account for 50 percent of the revenue generated from in-app purchases. The remaining 180,000 companies have to divide the other 50 percent among themselves. We believe that this discrepancy does not exist because the 25 big companies are the only ones making great games. We believe that this is because these large companies are able to hire enough data analysts to find out what they can charge their users.
+For example, 50 of 400 employees at gaming company King – the creator of Candy Crush Saga – are data analysts. With our technology we want to make it possible for everybody to be able to compete with big studios. We see ourselves as the sling that allows David to defeat Goliath.
+What makes 1SDK different from the competition?
+Most of our competitors either provide an in-app billing solution or user analytics and customer segmentation or dynamic pricing. We deliver all of these things in a single SDK. That’s why our name is 1SDK.
+How do you earn money and how do you finance yourselves?
+Our business model consists of a base fee and a percentage of the revenue we generate for our customers. Thus we are only successful when they are successful.
+How big is the team, and is there anything you’re still looking for?
+We have a great team of five people, including a backend infrastructure guru, a veteran of the game industry, and an expert in dynamic pricing. But we are still looking for a PHP and an Android developer. We also have plans to complete another funding round. We are currently in talks with several investors.
+Imagine that you could win a lunch. Which figure from the Berlin startup scene would like to have at your table?
+Philipp Möser, the CTO of Wooga [a social network game and mobile developer] – I’d find it really interesting chatting with him.
+Where will 1SDK be in a year?
+Firstly, we’ll have completed our next round of funding. Secondly, we’ll have acquired hundreds of customers from around the world. Lastly, we also want to integrate more payment options in our SDK.
+For related posts, check out

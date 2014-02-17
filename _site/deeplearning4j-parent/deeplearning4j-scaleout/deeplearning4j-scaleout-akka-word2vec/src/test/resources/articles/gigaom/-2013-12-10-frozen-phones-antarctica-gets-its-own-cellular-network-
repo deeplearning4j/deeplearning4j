@@ -1,0 +1,20 @@
+photo: Shutterstock / grafvision
+Summary:
+The Australian government has turned on a self-contained GSM network on Macquarie Island and plans to extend it to research stations on the Antarctic mainland. The new network runs off Range Networks’ open-source cellular systems.
+photo: Shutterstock / grafvision
+The government of Australia has built a cellular network in the most inhospitable clime in its jurisdiction. I’m not talking about the Australian Outback, but rather in its Antarctic territorial claims far to the south.
+The Australian Depart of the Environment’s Antarctic Division has fielded a GSM network supplied by Range Networks at its research station on Macquarie Island , about halfway between the Australia and the frozen continent. It has plans to expand that network to three more research stations on the Antarctic mainland.
+Macquarie Island Station
+This isn’t the first time cellular connectivity has been available in Antarctica. Claro and Movistar have set up towers on the continent to connect research bases, but those systems have essentially been far-remote extensions of their networks back in Argentina, depending on satellite backhaul links to connect calls.
+What Range and Antarctic Division have done is built a self-contained, independent communications network that manages and switches calls on-site. It’s the equivalent of a private mobile carrier: It still needs satellites to connect to the rest of the world, but if that orbital link were to go dark in a snowstorm, the cellular network would keep on chugging, connecting calls locally.
+Range has developed a reputation for building networks in some of the world’s hardest to reach areas. Its base stations are deployed in remote regions of Zambia and Indonesia. Range is the creator and the primary backer of OpenBTS, an open-source cellular networking standard , and it’s trying to commercialize the technology with what it calls a “network in box,” a system that can easily and cheaply bring online cellular communications anywhere in the world.
+One of the key advantages to the OpenBTS architecture is it’s entirely built on software. It uses software-defined radios to create the air interface that links to any regular GSM phone, but once you get past the tower, the proprietary base station and mobile core elements built into a regular GSM network all disappear. Its network just looks like an IP communications server that can run on commodity hardware or even in the cloud.
+The Australian government is definitely taking advantage of those OpenBTS capabilities to overhaul its communications network at the research station. It’s running its landline and cellular communications off of the same equipment. “They already have a VoIP desk-phone network in place,” said Jacob Winkler, who heads of sales and business development at Range. “The cellular phones become extensions on that network.”
+In addition, the research station is also using the cellular network to replace an old paging network used to wirelessly upload data from its myriad of scientific and environmental monitoring equipment. Now data is shipped back to the research station via SMS.
+Right now the network is in place at Macquarie Island facility, which has about 30 buildings and hosts between 16-40 travelers depending on the season. But the system is capable of supporting up to 400 mobile phones and 800 landline extensions.
+As the Antarctic Division expands to other research stations on the continent, new Range base stations will become part of the larger cellular grid, creating a network with coverage of 150 square kilometers (93 square miles). Range will also build a network on a 110-man research vessel, extending the network onto the open ocean.
+Feature image courtesy of Shutterstock user grafvision; Research station photo courtesy of Australian Antarctic Division; Cell tower image courtesy of  Shutterstock user Pavel Ignatov .
+Related research
+Subscriber Content
+?
+Subscriber content comes from Gigaom Research, bridging the gap between breaking news and long-tail research. Visit any of our reports to learn more and subscribe.

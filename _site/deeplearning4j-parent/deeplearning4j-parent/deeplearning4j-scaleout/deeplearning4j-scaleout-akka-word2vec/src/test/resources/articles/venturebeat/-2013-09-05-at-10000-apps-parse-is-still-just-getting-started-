@@ -1,0 +1,10 @@
+Facebook’s sole focus: mobile
+In June, Parse announced it had reached the 100,000 app mark , with more than 20,000 of those apps coming into the Parse fold since April (when Facebook acquired the company).
+The reason that number will continue to grow rapidly, said Yu, is due to the entire paradigm of the modern web and Parse’s design from Day Zero.
+“In 2006, we were all wrong about what the endpoints of the Internet would be. It’s not going to be the desktop computer,” said Yu, delving deep into Parse’s backstory. “The numbers of mobile devices will dwarf … the number of desktops.”
+So since 2006, layers of abstraction — IaaS, PaaS, BaaS, etc. — began to come between servers and frontend code. But as both clients and servers get “fat,” Yu said, there’s been a trend among devs to build from a place closer to bare metal for control and efficiency.
+Unfortunately, with control comes complexity — in particular, building for multiple browsers and mobile platforms.
+Yu said Parse started out with the philosophy, “The client is king. … We tried to make our SDKs so you don’t have to switch contexts and break your flow.
+“We went from the client side down and slowly exposed layer after layer. In order to start mobile-first, you must build for a high-quality client.”
+Today, Parse has unveiled five new products (which we’ll be covering very shortly) to expand its definition of “everywhere” even further to including gaming, analytics, email, and more. Stay tuned for more details from Parse Developer Day.
+VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

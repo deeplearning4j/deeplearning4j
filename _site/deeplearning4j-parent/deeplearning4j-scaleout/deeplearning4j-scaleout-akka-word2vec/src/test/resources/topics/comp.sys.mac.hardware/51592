@@ -1,0 +1,16 @@
+Distribution: world
+From: Thomas_n.a._Krebs@mcontent.apana.org.au
+Organization: MacContent BBS, Doncaster, Victoria, Australia
+Return-Receipt-To: Thomas_n.a._Krebs@mcontent.apana.org.au
+Subject: Re: LC Ram Upgrade will be SLOW!
+Lines: 9
+
+Yes! what you are saying is absolutey true, but what you fail to mention is the
+fact that the LCIII uses the new 72 pin simms which allow 32 bit access to
+each simm. In the case of the LC III, it only has one simm slot, but accesses will
+be 32 bits wides.
+***************************************************************************
+ The views expressed in this posting those of the individual author only. 
+[BBS Number:(613) 848-1346      MacContent is Victoria’s first Iconic BBS!]
+***************************************************************************
+

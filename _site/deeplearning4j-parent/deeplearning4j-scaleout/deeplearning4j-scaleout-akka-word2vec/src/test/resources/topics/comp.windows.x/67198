@@ -1,0 +1,30 @@
+From: osyjm@cs.montana.edu (Jaye Mathisen)
+Subject: XTERM patches for Alpha OSF 1.2?
+Article-I.D.: coe.1993Apr22.233646.20017
+Organization: CS
+Lines: 24
+
+
+
+Well, after massaging the Dec.cf, osf.def, (can't remember the exact names)
+from OSF into my normal X11R5 distribution, everything compiles and links
+fine, but xterm doesn't run.
+
+
+Warning: Representation size 8 must match superclass's to override background
+Warning: translation table syntax error: Modifier or '<' expected
+Warning: ... found while parsing 'p^#j?;'P)=#'
+X Error of failed request:  BadColor (invalid Colormap parameter)
+  Major opcode of failed request:  85 (X_AllocNamedColor)
+  Resource id in failed request:  0x0
+  Serial number of failed request:  18
+  Current serial number in output stream:  18
+
+Other than this, all the other core X stuff seems to be working OK.  Any
+hints/tips appreciated, patches would be primo.
+
+Thanks.
+-- 
+ Jaye Mathisen, COE Systems Manager                (406) 994-4780
+ 410 Roberts Hall,Dept. of Computer Science
+ Montana State University,Bozeman MT 59717	osyjm@cs.montana.edu

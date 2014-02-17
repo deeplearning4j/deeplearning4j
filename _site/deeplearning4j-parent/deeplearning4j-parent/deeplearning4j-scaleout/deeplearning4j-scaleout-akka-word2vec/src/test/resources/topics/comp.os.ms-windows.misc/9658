@@ -1,0 +1,37 @@
+From: spitz@ana.med.uni-muenchen.de (Richard Spitz)
+Subject: Re: Windows for WorkGroups and LAN Workplace
+Reply-To: spitz@ana.med.uni-muenchen.de (Richard Spitz)
+Organization: Inst. f. Anaesthesiologie der LMU, Muenchen (Germany)
+Distribution: comp.os.ms-windows.apps,comp.os.ms-windows.misc,comp.os.ms-,world
+Lines: 30
+
+Flint.Waters@uwyo.edu (Flint Waters) writes:
+
+
+>>Now does anyone know if it is possible to use W4WG and Lan Workplace
+>>for DOS at the same time. 
+
+>Yup.  We're using both and they work just fine.  Hopefully, someday WFWG
+>will communicate over LWP TCPIP.  Right now we have to load NetBeui.
+
+>I use ODI with ODINSUP and all works well.
+
+Hey, sounds great. Does that mean that W4WG works with ODI? I thought it   
+uses NDIS.                                                                 
+                                                                           
+My problem is that Lan Workplace with all its drivers uses up most of my   
+UMBs, so I'd hate to have to load many more drivers to make W4WG work      
+along.                                                                      
+                                                                            
+I read in a German computer magazine that TCP/IP support for W4WG is just   
+around the corner. Anybody have any news about this?                        
+                                                                            
+Regards, Richard                                                            
+
+-- 
++----------------------------+-------------------------------------------+
+| Dr. Richard Spitz          | INTERNET: spitz@ana.med.uni-muenchen.de   |
+| EDV-Gruppe Anaesthesie     | Tel     : +49-89-7095-3421                |
+| Klinikum Grosshadern       | FAX     : +49-89-7095-8886                |
+| Munich, Germany            |                                           |
++----------------------------+-------------------------------------------+

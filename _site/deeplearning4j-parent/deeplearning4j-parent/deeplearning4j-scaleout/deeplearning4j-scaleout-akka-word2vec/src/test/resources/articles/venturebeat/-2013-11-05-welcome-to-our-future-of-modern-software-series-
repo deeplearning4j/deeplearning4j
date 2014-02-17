@@ -1,0 +1,14 @@
+0
+VentureBeat is pleased to present this series, brought to you by New Relic , on the revolutionary transformations happening right now in software development.
+Gone are the days when developers, working in traditional “waterfall” development chains, worked on a predictable, monolithic stack of technology. In the old days, you knew what you were dealing with, from hardware to operating system to drivers to libraries to application software.
+Now, with the explosion of mobile and web-based apps and the triumph of “agile” approaches to software development, everything is different.
+In the “modern software” world, everything is distributed:
+Hardware includes smartphones, tablets, laptops, and in some cases even embedded devices or wearables in addition to the good old back-end servers (though even some of those are now in the cloud rather than behind your firewall).
+Operating systems include the gamut: Windows, OS X, iOS, Android, Chrome OS, and more
+Device capabilities are all over the place, from tiny e-ink screens on watches to Ultra HD, 4K screens on desktop workstations and televisions
+Software can be delivered as mobile apps, as HTML5 websites, as browser extensions, as traditional client software, or as some combination of the above
+Cloud-based processing can incorporate thousands of nodes distributed around the globe, which can appear or disappear in an instant as they’re needed
+What’s more, developers don’t even know exactly how what they are working on will be used the way they used to. Even IT managers have to deal with Bring Your Own Device (BYOD) environments where the employees they serve could be using almost any device — and expect their corporate apps to work equally well on all of them.
+In this modern software world, what’s a developer to do? On the one hand, this world produces new complexities and new challenges. On the other hand, it provides a wealth of new resources and tools — often at far lower cost than ever before.
+In this series of 12 posts, we’ll bring you details on how companies are dealing with these changes. We’ll have consumer and enterprise case studies for you to learn from. We’ll explain application performance management (APM) and software analytics, and how you can benefit from them. We’ll explore the dream of a global, enterprise dashboard — and the complementary vision of an open, modular, enterprise technology stack. And we’ll talk about how you can build and motivate teams to develop and iterate apps in an agile, flexible way.
+So stay tuned — we’ve got a lot to show you.

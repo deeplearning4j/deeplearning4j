@@ -29,17 +29,19 @@
                    <li><a href="//index.html">Neural Nets Overview</a></li>
                     <ul>
                         <li><a href="//restrictedboltzmannmachine.html">Restricted Boltzmann Machine</a></li>
-                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann</a></li>
+                        <li><a href="//continuousrestrictedboltzmannmachine.html">Continuous Restricted Boltzmann Machine</a></li>
                         <li><a href="//denoisingautoencoder.html">Denoising Autoencoder</a></li>
                     </ul>
-                   <li>Multilayer Neural Nets</li>
+                   <li><a href="//multinetwork.html">Multilayer Neural Nets</a></li>
                     <ul>
+
                         <li><a href="//deepbeliefnetwork.html">Deep-Belief Network</a></li>
                         <li><a href="//continuousdeepbeliefnetwork.html">Continuous Deep-Belief Network</a></li>
                         <li><a href="//stackeddenoisingautoencoder.html">Stacked Denoising Autoencoder</a></li>
                     </ul>
+                    <li><a href="//mnist.html">MNIST Tutorial</a></li>
                     <li><a href="//word2vec.html">Word2vec</a></li>
-                    <li><a href="//data-sets.html">Data Sets and Machine Learning</a></li>
+                    <li><a href="//data-sets-ml.html">Data Sets and Machine Learning</a></li>
                     <li><a href="//examples.html">Motivating Examples</a></li>
                     <li><a href="//glossary.html">Glossary</a></li>
                     <li><a href="//about.html">About</a></li>
@@ -67,9 +69,27 @@
 
 <p>Also called a Loss Function. An objective function is a heuristic function for reducing prediction error in a machine-learning algorithm.</p>
 
+<h3><a name="etl">ETL</a></h3>
+
+<p>Extract, transform, load: Data is loaded from disk in to memory with the proper transforms such as <a href="#binarization">binarization</a> and <a href="#normalization">normalization</a></p>
+
+<h3><a name="binarization">Binarization</a></h3>
+
+<p>The process of transforming data in to a set of zeros and 1s. An example would be grayscaling an image by tranforming a picture from the 0-255 spectrum to a zero or 1 spectrum. </p>
+
+<h3><a name="normalization">Normalization</a></h3>
+
+<p>The process of transforming the data in to a range of 0 to 1. </p>
+
 <h3><a name="reconstructionentropy">Reconstruction Entropy</a></h3>
 
 <p>After applying Gaussian noise, a kind of statistical white noise, to the data, this objective function punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. </p>
+
+<h3><a name="etl"></a> ETL: Extract, transform, load: Data is loaded from disk in to memory with the proper transforms such as <a href="#binarization">binarization</a> and <a href="#normalization">normalization</a></h3>
+
+<h3><a name="binarization"></a> Binarization: The process of transforming data in to a set of zeros and 1s. An example would be grayscaling an image by tranforming a picture from the 0-255 spectrum to a zero or 1 spectrum.</h3>
+
+<h3><a name="normalization"></a> Normalization: The process of transforming the data in to a range of 0 to 1.</h3>
 
 
 <br /><br /><br />

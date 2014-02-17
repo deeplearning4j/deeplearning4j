@@ -1,0 +1,43 @@
+From: whit@carson.u.washington.edu (John Whitmore)
+Subject: Re: A question about 120VAC outlet wiring..
+Keywords: outlet
+Article-I.D.: shelley.1qkm8iINN92t
+Distribution: world
+Organization: University of Washington, Seattle
+Lines: 34
+NNTP-Posting-Host: carson.u.washington.edu
+
+In article <1qids1INNebl@chnews.intel.com> crichmon@sedona.intel.com (Chris Richmond) writes:
+>
+>In article <1993Apr14.193122.20818@mprgate.mpr.ca>, vanderby@mprgate.mpr.ca (David Vanderbyl) writes:
+>> In article <1993Apr14.172145.27458@ecsvax.uncecs.edu>, crisp@ecsvax.uncecs.edu (Russ Crisp) writes:
+
+>> |> I'm considering modernizing some old wiring in my home, and
+>> |> I need a little advice on outlet wiring.  Several outlets
+>> |> are the old 'two prong' type, without the ground.  Naturally,
+>> |> the wire feeding these outlets is 12/2, WITHOUT the ground
+>> |> wire.  I noticed at the fusebox that some circuits have the
+>> |> 12/2 with ground, and that on these circuits, the ground
+>> |> wire was tied to the same bus as the neutral (white) wire.
+
+>> This is contrary to the electrical code and should be fixed.
+
+>Well, my house was built just last year, and the breaker box is wired the
+>same way.  
+
+	There SHOULD be a connection of the GROUND wire to a ground
+in the breaker box.  There also should be a connection of the NEUTRAL
+wire to a ground in the breaker box.  There should be no other 
+place in the building where such a connection occurs (i.e. not in
+any of the outlet boxes).
+
+	The NEUTRAL (white) wire is a 'grounding conductor' for
+the plug, and is NOT safe to touch, while the GROUND (green)
+wire is a 'protective ground' and carries no current unless
+some kind of electrical fault has occurred.  It's safe
+to touch the protective ground, but not to touch the 
+grounding conductor (because there is current in the grounding
+conductor, its outlet-box end will not be at the same ground
+potential as its breaker-box end).
+
+	John Whitmore

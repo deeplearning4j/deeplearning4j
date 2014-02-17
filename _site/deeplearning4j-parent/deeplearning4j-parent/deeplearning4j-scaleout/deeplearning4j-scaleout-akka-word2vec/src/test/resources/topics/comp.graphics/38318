@@ -1,0 +1,18 @@
+From: rgc3679@bcstec.ca.boeing.com (Robert G. Carpenter)
+Subject: Re: Please Recommend 3D Graphics Library F
+Organization: Boeing
+Lines: 13
+
+Sorry about not mentioning platform... my original post was to mac.programmer,
+and then decided to post here to comp.graphics.
+
+I'd like the 3D software to run on primarily Mac in either C, Object Pascal
+(Think or MPW). But, I'll port to Windows later, so a package that runs on
+Mac and has a Windows version would be ideal.
+
+I'm looking for a package that has low upfront costs, and reasonable licensing
+costs... of course :)
+
+BobC
+
+

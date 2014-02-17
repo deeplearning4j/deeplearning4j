@@ -1,0 +1,40 @@
+From: jim@jagubox.gsfc.nasa.gov (Jim Jagielski)
+Subject: Re: Quadra SCSI Problems???
+Lines: 34
+Reply-To: jim@jagubox.gsfc.nasa.gov (Jim Jagielski)
+Organization: NASA/Goddard Space Flight Center
+
+noah@apple.com (Noah Price) writes:
+
+>In article <1qm2hvINNseq@shelley.u.washington.edu>,
+>tzs@stein2.u.washington.edu (Tim Smith) wrote:
+>> 
+>> > ATTENTION: Mac Quadra owners: Many storage industry experts have
+>> > concluded that Mac Quadras suffer from timing irregularities deviating
+>> > from the standard SCSI specification. This results in silent corruption
+>> > of data when used with some devices, including ultra-modern devices.
+>> > Although I will not name the devices, since it is not their fault...
+
+>That's fine, but would you name the "industy experts" so I can try to track
+>this down?
+
+Who knows... I just quoted what was "written" in SCSI Director...
+
+>> This doesn't sound right to me.  Don't Quadras use the 53C96?  If so, the
+>> Mac has nothing to do with the SCSI timing.  That's all handled by the
+>> chip.
+
+>Yup.  That's why I'm kinda curious... most SCSI problems I've encountered
+>are due to cabling.
+
+I've tried calling Transoft Corp about this and have either gotten the
+response "Huh?" to "Yep" to "Nah"... You would expect that a damaging state-
+ment like this would have _some_ "data" to back it up...
+
+Anyone want Transoft's phone number?
+-- 
+    Jim Jagielski               |  "And he's gonna stiff me. So I say,
+    jim@jagubox.gsfc.nasa.gov   |   'Hey! Lama! How about something,
+    NASA/GSFC, Code 734.4       |   you know, for the effort!'"
+    Greenbelt, MD 20771         |
+

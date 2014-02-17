@@ -1,0 +1,33 @@
+From: charles@trintex.uucp (Charles Emmons)
+Subject: Version control for MAC and PC LAN
+Organization: Prodigy Services Co.
+Lines: 28
+
+We have a LAN where we are doing development on product for multiple platforms. 
+For the moment we are only working on MAC and DOS/Windows. The department has   
+always used sneaker net to transport files to the MAC, since it requires a      
+filter to strip out the <LF> characters.                                        
+
+Until recently no one concidered using any version control to mediate, and as   
+a result, the 5 programmers spent a great deal of time merging files together   
+at the end of each week so that a new system could be build. We are now trying  
+to streamline this process, but are hampered by the lack of software that will  
+allow us to share files across PC and MAC platforms.                            
+
+I understand that PVCS used to do this, but that they no longer support the MAC 
+product (anyone know why ??  Polytron ?).                                       
+
+I have seen people ask about development in multiple platforms, so I assume that
+ours is not a new problem.  Who has had to deal with it ?  What solutions have  
+you come up with?                                                               
+
+thanks in advance for any and all suggestions via posting or EMAIL. If there are
+enough EMAIL responses then I will post a synopsis of the knowledge.            
+
+-Charles Emmons                                                                 
+
+-- 
+ Charles Emmons        | charles@trintex.uucp         | These opinions are
+ Prodigy Services Co.  | charles%trintex@uunet.uu.net | mine alone, unless
+ White Plains NY 10601 | Voice 914-993-8856           | you would like to
+ PRODIGY ID - KJRD82A  | FAX   914-993-8659           | share them.

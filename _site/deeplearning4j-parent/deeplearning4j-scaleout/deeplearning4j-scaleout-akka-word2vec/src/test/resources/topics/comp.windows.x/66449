@@ -1,0 +1,19 @@
+From: lemons@cadsys.enet.dec.com
+Subject: Xremote into X11R6?
+Reply-To: lemons@cadsys.enet.dec.com ()
+Organization: Digital Equipment Corporation
+Lines: 12
+X-Newsreader: mxrn 6.18
+
+
+Hi!
+
+I remember reading (or hallucinating) that NCD's PC-Xremote functionality had 
+been given, by NCD, to MIT for inclusion in X11R6.  Is this true?  If so,
+(set mode/cheap) can I just wait for X11R6 to get compressed serial line
+X server support?
+
+Thanks!
+
+Terry Lemons
+Digital Equipment Corporation
