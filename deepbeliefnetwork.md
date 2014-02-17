@@ -16,10 +16,9 @@ Deep belief networks are used to recognize and generate images, video sequences 
 Please also see [the multilayer network parameters common to all multilayer networks]({{ site.baseurl }}/multinetwork.html)
 
 #### k 
-The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
+K is the number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
 composing the restricted boltzmann machine. A typical value of 1 is fine.
-
 
 ### initiating a deep-belief network
 

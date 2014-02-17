@@ -3,20 +3,15 @@ title:
 layout: default
 ---
 
-DataSets
+Data sets
 ====================================
 
+[Data sets](../com/ccc/deeplearning/datasets/DataSet.html) are a pair of input-output matrix pairs. 
 
-[Datasets](../com/ccc/deeplearning/datasets/DataSet.html) are a pair of input output matrix pairs. Sub data sets ( one pair at a certain row)
+Subdata sets (one pair at a certain row) are accessible via a get(i) similar to a list. The matrices of a data set are used as inputs and labels into the neural networks in the pretraining and finetuning steps, respectively.
 
-are accessible via a get(i) similar to a list. The matrices of a data set are used as inputs and labels in to the neural networks in the
+Data sets are usually composed by [data set iterators](../com/ccc/deeplearning/datasets/iterator/DataSetIterator.html).
 
-pretrain and finetune steps respectively.
+Data set iterators know how to compose and turn an input such as text or image into a matrix digestible by a neural network.
 
-Data sets are usually composed by [data set iterators](../com/ccc/deeplearning/datasets/iterator/DataSetIterator.html)
-
-Data Set Iterators know how to compose and turn an input such as text or an image in to a matrix digestible
-
-by a neural network.
-
-Typical operations performed in data set iterators include data etl, transforms ([binarization](../glossary.html#binarization),[normalization](../glossary.html#normalization))
+Typical operations performed in data set iterators include data etl, transforms ([binarization](../glossary.html#binarization),[normalization](../glossary.html#normalization)).

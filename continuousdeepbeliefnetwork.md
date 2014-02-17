@@ -3,10 +3,9 @@ title:
 layout: default
 ---
 
+# continuous deep-belief network
 
-# continuous deep-belief net
-
-Deep belief networks are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous deep belief networks accept decimals. That is the only difference. 
+Deep-belief networks are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous deep belief networks accept decimals. That is the only difference. 
 
 ### parameters  
 Please also see [the multi layer network parameters common to all multi layer networks](../multinetwork.html).
