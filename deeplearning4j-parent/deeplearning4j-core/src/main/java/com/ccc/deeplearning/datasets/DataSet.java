@@ -3,10 +3,10 @@ package com.ccc.deeplearning.datasets;
 import java.io.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persistable {
+public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persistable,Iterable<DataSet> {
 
 	private static final long serialVersionUID = 1935520764586513365L;
 	private static Logger log = LoggerFactory.getLogger(DataSet.class);
@@ -75,6 +75,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return new DataSet(in,out);
 	}
 
+	
+	
+	public int numInputs() {
+		return getFirst().columns;
+	}
+	
 	public void validate() {
 		if(getFirst().rows != getSecond().rows)
 			throw new IllegalStateException("Invalid dataset");
@@ -398,6 +404,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public Iterator<DataSet> iterator() {
+		return asList().iterator();
 	}
 
 }
