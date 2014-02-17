@@ -7,15 +7,11 @@ layout: default
 
 By now, you should have read about Single-Layer Neural Networks (if you haven't read about them, you can [here](({{ site.baseurl }}/singlelayernetwork.html)).
 
-A multilayer network is a stacked representation of a [single-layer neural network]({{ site.baseurl }}/singlelayernetwork.html).
-
-The input layer is tacked onto the first-layer neural network and a [feed-forward network]({{ site.baseurl }}/glossary.html#feedforward). Each subsequent layer from the input layer on uses the output of the previous layer as its input.
+A multilayer network is a stacked representation of a [single-layer neural network]({{ site.baseurl }}/singlelayernetwork.html). The input layer is tacked onto the first-layer neural network and a [feed-forward network]({{ site.baseurl }}/glossary.html#feedforward). Each subsequent layer from the input layer on uses the output of the previous layer as its input.
 
 A multilayer network will accept the same kinds of inputs as a single-layer network. The multilayer network parameters are also typically the same as their single-layer network counterparts.
 
-The output layer for a multilayer network is typically a [logistic regression classifier](http://en.wikipedia.org/wiki/Multinomial_logistic_regression), which sorts results in zeros and ones.
-
-This is a discriminatory layer used for classification of input features based on the final hidden layer of the deep network.
+The output layer for a multilayer network is typically a [logistic regression classifier](http://en.wikipedia.org/wiki/Multinomial_logistic_regression), which sorts results in zeros and ones. This is a discriminatory layer used for classification of input features based on the final hidden layer of the deep network.
 
 A multi layer network is composed of the following kinds of layers:
 
