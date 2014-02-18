@@ -10,20 +10,38 @@ import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cc.mallet.cluster.KMeans;
+
+import com.ccc.deeplearning.distancefunction.DistanceFunction;
+import com.ccc.deeplearning.distancefunction.EuclideanDistance;
+/**
+ * Shamelessly based on:
+ * https://github.com/pmerienne/trident-ml/blob/master/src/main/java/com/github/pmerienne/trident/ml/clustering/KMeans.java
+ * 
+ * adapted to jblas double matrices
+ * @author Adam Gibson
+ *
+ */
 public class KMeansClustering implements Serializable {
 
 
 	private static final long serialVersionUID = 338231277453149972L;
 	private static Logger log = LoggerFactory.getLogger(KMeansClustering.class);
-	
+
 	private List<Long> counts = null;
 	private DoubleMatrix centroids;
 	private List<DoubleMatrix> initFeatures = new ArrayList<DoubleMatrix>();
+	private Class<DistanceFunction> clazz;
 
 	private Integer nbCluster;
 
-	public KMeansClustering(Integer nbCluster) {
+	public KMeansClustering(Integer nbCluster,Class<? extends DistanceFunction> clazz) {
 		this.nbCluster = nbCluster;
+	}
+
+
+	public KMeansClustering(Integer nbCluster) {
+		this(nbCluster,EuclideanDistance.class);
 	}
 
 
@@ -67,12 +85,22 @@ public class KMeansClustering implements Serializable {
 		DoubleMatrix currentCentroid;
 		for (int i = 0; i < this.nbCluster; i++) {
 			currentCentroid = this.centroids.getRow(i);
-			distribution.put(i,currentCentroid.distance2(features));
+			distribution.put(i,getDistance(currentCentroid,features));
 		}
 
 		return distribution;
 	}
 
+
+	private double getDistance(DoubleMatrix m1,DoubleMatrix m2) {
+		DistanceFunction function = null;
+		try {
+			function = clazz.getConstructor(DoubleMatrix.class).newInstance(m1);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} 
+		return function.apply(m2);
+	}
 
 	public DoubleMatrix getCentroids() {
 		return this.centroids;
@@ -87,9 +115,8 @@ public class KMeansClustering implements Serializable {
 		Double currentDistance;
 		for (int i = 0; i < this.centroids.rows; i++) {
 			currentCentroid = this.centroids.getRow(i);
-			log.info("Current centroid " + currentCentroid.length);
 			if (currentCentroid != null) {
-				currentDistance = currentCentroid.distance2(features);
+				currentDistance = getDistance(currentCentroid,features);
 				if (currentDistance < minDistance) {
 					minDistance = currentDistance;
 					nearestCentroidIndex = i;
@@ -173,7 +200,7 @@ public class KMeansClustering implements Serializable {
 			features = this.initFeatures.get(i);
 			nearestCentroidIndex = this.nearestCentroid(features);
 			nearestCentroid = this.centroids.getRow(nearestCentroidIndex);
-			sum += MatrixFunctions.pow(features.distance2(nearestCentroid), 2);
+			sum += MatrixFunctions.pow(getDistance(features,nearestCentroid), 2);
 			dxs.put(i,sum);
 		}
 
