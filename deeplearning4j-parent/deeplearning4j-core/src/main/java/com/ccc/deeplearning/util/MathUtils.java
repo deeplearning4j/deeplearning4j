@@ -226,7 +226,7 @@ public class MathUtils  {
 	 * @param count the count of a word or character in a given string or document
 	 * @return 1+ log(10) count
 	 */
-	public static double td(int count) {
+	public static double tf(int count) {
 		return count > 0 ? 1 + Math.log10(count) : 0;
 	}
 	/**
