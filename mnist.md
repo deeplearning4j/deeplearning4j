@@ -19,12 +19,88 @@ To begin with, you’ll take an image from your [training?] data set and binariz
 <!---
 CODE HERE
 -->
-Now you should have a matrix of ones and zeros, and that’s the input you’ll feed into your neural network. A restricted Boltzmann machine will look at that input and learn patterns among the ones and zeros that correlate with significant features; i.e. features that lead to lower erros. 
+The [MnistDataSetIterator](../docs/com/ccc/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
-Next, you deliberately corrupt the data. You’re basically throwing noise at it for the same reason that denoising autoencoders do. You need to prove to yourself that your net is not simply reproducing the input as output, a pitfall known as the identity function. Only when the algorithm is capable of taking bad data and ignoring the noise can it be trusted to learn unsupervised. 
+A DataSetIterator is used in the following way:
 
-Restricted Boltzmann machines learn by executing a repeated steps of contrastive divergence; i.e. they take stochastic steps through various combinations of coefficient weights to test which ones lead it closest to its benchmark. 
 
-That ensemble of steps is called conjugate gradient, which is a way the machine has of determining when it’s done. When error ceases to diminish, and starts to increase, it has overshot its local optimum. 
+         DataSetIterator iter = ....;
 
-When the training on one data cell is complete, you will be shown the image it has reconstructed, based on the features it selected as relevant. That image ought to resemble a real number. Then it moves on to the next
+         while(iter.hasNext()) {
+         	DataSet next = iter.next();
+         	//do stuff with the data set
+         }
+
+
+Typically a DataSetIterator handles inputs and data set specific concerns such as binarizing or normalization.
+
+
+
+For Mnist specifically, the following does the trick.
+         
+         //Train on batches of 10 out of 60000
+         DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
+
+The reason for specifying the batch size as well as the number of examples is to allow flexibility with respect to the number of examples
+
+the user may want to look at.
+
+
+Next, we want to train a DeepBelief Network on classifying mnist, the following snippet does the trick here:
+
+         //Train on batches of 10 out of 60000
+         DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
+  
+        //obtain the number of columns directly, this allows you to be agnostic to the number of training input columns.
+        DataSet first = fetcher.next();
+		int numIns = first.getFirst().columns;
+		int numLabels = first.getSecond().columns;
+		//you may want to tune the number of layers here
+		int[] layerSizes = {500,500,500};
+		double lr = 0.001;
+        /*
+         *  Build the dbn with the number of inputs, don't render weights (otherwise specify the number of training epochs you want to display weights on)
+         *  No momentun, regularization, numLabels is 10 (0-9)
+         *
+         */
+		DBN dbn = new DBN.Builder().numberOfInputs(numIns)
+				.renderWeights(0).withMomentum(0).useRegularization(false)
+				.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
+				.hiddenLayerSizes(layerSizes).build();
+      
+        //pretrain and finetune the network on the first input, then the next ones where necessary
+		do  {
+			dbn.pretrain(first.getFirst(),1, lr, 1000);
+             dbn.finetune(first.getSecond(),lr, 1000);
+			
+			if(fetcher.hasNext())
+				first = fetcher.next();
+		} while(fetcher.hasNext());
+
+		
+       //reset the iterator; we will now calculate f-scores
+       //note that this is for demo purposes only, you would typically do a test set and cross validation
+		fetcher.reset();
+		first = fetcher.next();
+		Evaluation eval = new Evaluation();
+
+
+        //test on the data set
+		do {
+
+
+			DoubleMatrix predicted = dbn.predict(first.getFirst());
+			log.info("Predicting\n " + first.getSecond().toString().replaceAll(";","\n"));
+			log.info("Prediction was " + predicted.toString().replaceAll(";","\n"));
+			eval.eval(first.getSecond(), predicted);
+			if(fetcher.hasNext())
+				first = fetcher.next();
+		}while(fetcher.hasNext());
+		
+
+		System.out.println(eval.stats());
+
+
+
+
+
