@@ -49,3 +49,15 @@ Next, create a training set for the machine. For the sake of visual brevity, a t
 This will train the specified denoising autoencoder with a corruption level of 0.3 and a learning rate of 0.1 learning rate on the x matrix in the dataset.
 
 
+
+
+You can test your input with the following:
+
+    System.out.println(da.reconstruct(xor.getFirst()));
+
+
+ If you see percentages where 1s are in the original input that is a good indicator your autoencoder
+
+ is learning the structure of the data.
+
+
