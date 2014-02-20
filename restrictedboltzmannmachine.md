@@ -85,3 +85,20 @@ Note that RBMs take binary input.
 
        System.out.println(r.reconstruct(v).toString());
 
+
+You can test your trained network by feeding it unstructured data and checking the output. [MORE EXPLANATION HERE?]
+
+Here are the code blocks for a multithread restricted Boltzmann machine:
+
+Create the machine:
+
+CODE BLOCK MACHINE CREATION TK
+
+Create the training set:
+
+CODE BLOCK TRAINING SET TK
+
+Train the machine:
+
+CODE BLOCK TRAINING THE MACHINE TK
+
