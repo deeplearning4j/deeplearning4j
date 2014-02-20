@@ -4,6 +4,9 @@ layout: default
 
 # neural nets overview 
 
+
+####[Getting Started](../gettingstarted.md)
+
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. Deep learning is a name for a certain type of stacked neural network composed of several node layers. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
 Deep-learning networks are distinguished from the more commonplace single hidden layer neural networks by their depth; that is, the number of node layers through which data is passed in a multistep process of pattern recognition. Three or more intermediate layers between input and output is deep learning. Anything less is simply machine learning. 
@@ -17,3 +20,5 @@ In the process, these networks come to recognize correlations between certain re
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome. That is, given raw data, a deep-learning network might generate output indicating that the input data is 90 percent likely to represent a person. 
 
 The documentation below will show you how to set up, and train with sample data, several types of deep-learning networks, including single- and multithread versions of the networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
+
+

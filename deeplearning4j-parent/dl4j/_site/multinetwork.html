@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title margin-left="55px";>deeplearning4j</title>
+        <meta name="viewport" content="width=device-width">
+
+        <!-- syntax highlighting CSS -->
+  <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" media="all" href="css/bootstrap-responsive.min.css">
+  <link rel="stylesheet" type="text/css" media="all" href="css/global.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script type="text/javascript" language="javascript" charset="utf-8" src="js/bootstrap.min.js"></script>
+
+    </head>
+
+    <body>
+
+        <div class="site">
+          <div class="header" style="margin-left:55px;">
+            <h1 class="title" ><a href="/">deeplearning4j</a></h1>
+            <a class="extra" href="/">home</a>
+            <a class="extra" style="margin-left:10px;" href="/">about</a>
+            <a class="extra" style="margin-left:10px;" href="/">contact</a>
+          </div>
+          <br /><br /><br />
+          <div class="span3">
+                <br />
+                <ul>
+                   <li>
+                    <ul>
+                    <li><a href="/restrictedboltzmannmachine.html">Single Network/Restricted Boltzmann Machine</a></li>
+                    <li><a href="/stackeddenoisingautoencoder.html">Single Network/Denoising Autoencoder</a></li>
+                    <li><a href="/multinetwork.html">Multinetwork/Deep Belief Network</a></li>
+                    <li><a href="/multinetwork.html">Multinetwork/Stacked Denoising Autoencoder</a></li>
+                    </ul></li>
+                    <li><a href="/word2vec.html">Word2vec</a></li>
+                    <li><a href="/examples.html">Motivating Examples</a></li>
+                </ul>
+                    </div>
+          <div class="span8">
+
+    <h1>deeplearning4j</h1>
+
+    <p>Up to this point we have assumed you have read about Single Layer Neural Networks, if not please start at: [link]</p>
+
+<h1>Creating Deep-Learning Networks</h1>
+
+<p>A multi layer network is a stacked representation of a <a href="//singlelayernetwork.html">single layer neural network</a>.</p>
+
+<p>The input layer is tacked on to the first layer neural network and a <a href="//glossary.html#feedforward">feed forward network</a>.</p>
+
+<p>Each subsequent layer from the input then uses the output of the previous layer as its input.</p>
+
+<p>A multi layer network will accept all of the same kinds of inputs as a single layer network.</p>
+
+<p>The multi layer network parameters are also typically the same as their single layer network counterparts.</p>
+
+<p>The output layer for a multi layer network is typically a <a href="http://en.wikipedia.org/wiki/Multinomial_logistic_regression">logistic regression classifier</a>.</p>
+
+<p>This is a discriminatory layer used for classification of input features based on the final hidden layer of the deep network.</p>
+
+<p>A multi layer network is composed of the following kinds of layers</p>
+
+<p>k single layer networks </p>
+
+<p>a softmax regression output layer.</p>
+
+<p>Training a multi layer network:</p>
+
+<h2>PARAMETERS</h2>
+
+<h3>Learning Rate: Typical value is between 0.001 and 0.1. The learning rate, or step rate, is the rate</h3>
+
+<p>at which a function steps within a search space. Smaller learning rates mean higher training times,</p>
+
+<p>but may lead to more precise results.</p>
+
+<h3>Momentum: An extra factor in determining how fast an optimization algorithm converges.</h3>
+
+<h3>L2: L2 Regularization constant: This is the lambda discussed in the equation <a href="http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm">here</a></h3>
+
+<p>Pretrain Step:</p>
+
+<p>For pre training (learning the features via reconstruction at each layer) each network is trained and then the input of that is piped in to the next layer.</p>
+
+<p>Finetune step:</p>
+
+<p>Finally, the <a href="http://en.wikipedia.org/wiki/Multinomial_logistic_regression">logistic regression</a> output layer is trained, and then back prop happens for each layer.</p>
+
+<p>If you are curious about the internals of the dj4j implementation, please see <a href="//doc/com/ccc/deeplearning/nn/BaseMultiLayerNetwork">BaseMultiLayerNetwork</a></p>
+
+<p>Below are the different kinds of Multi Layer Networks:</p>
+
+<p><a href="//stackeddenoisingautoencoder.html">Stacked Denoising AutoEncoders</a>
+<a href="//deepbeliefnetwork.html">Deep Belief Networks</a>
+<a href="//continuousdeepbeliefnetwork.html">Continuous Deep Belief Networks</a></p>
+
+
+<br /><br /><br />
+          </div> 
+          <br /><br /><br />
+          <div class="span2">
+                    </div>
+          
+        </div>
+
+    </body>
+    <div class="footer">
+
+             <div class="span8">
+                            
+            <div class="contact" style="text-align:right">
+              <p>
+                <a href="https://github.com/agibsonccc">github.com/agibsonccc</a><br />
+                <a href="https://twitter.com/dl4j1">twitter.com/dl4j1</a><br />
+                <a href=="mailto:0@blix.io">0@blix.io</a><br />
+              </p>
+            </div>
+            </div>
+           <div class="span2">
+                    </div>
+          </div>
+</html>
