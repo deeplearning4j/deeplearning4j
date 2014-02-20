@@ -42,15 +42,20 @@ This created a continuous restricted boltzmann machine with the number of inputs
 The number of outputs are 10.
 
 
-Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much more substantial.)
+Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are 
+clearly much more substantial.)
 
- DoubleMatrix input = new DoubleMatrix(new double[][]{
+double[][] data = new double[][] {
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
 				{0.5, 0.3,  0.5, 0.,  0.,  0.},
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
 				{0.,  0.,  0.5, 0.3, 0.5, 0.},
 				{0.,  0.,  0.5, 0.4, 0.5, 0.},
-				{0.,  0.,  0.5, 0.5, 0.5, 0.}});
+				{0.,  0.,  0.5, 0.5, 0.5, 0.}
+			};
+
+
+ DoubleMatrix input = new DoubleMatrix();
 
 Now that you have instantiated the machine and created the training set, it's time to train the network. 
 
@@ -60,11 +65,13 @@ Now that you have instantiated the machine and created the training set, it's ti
 
 You can test your trained network by feeding it unstructured data and checking the output. 
 
+double[][] data = new double[][] {
+				{0.5, 0.5, 0., 0., 0., 0.},
+				{0., 0., 0., 0.5, 0.5, 0.}
+
+	};
 
 
-
- DoubleMatrix test = new DoubleMatrix(new double[][]
-				{{0.5, 0.5, 0., 0., 0., 0.},
-				{0., 0., 0., 0.5, 0.5, 0.}});
+ DoubleMatrix test = new DoubleMatrix(data);
 
  System.out.println(r.reconstruct(test).toString());
