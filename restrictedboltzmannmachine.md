@@ -3,36 +3,48 @@ title:
 layout: default
 ---
 
-# restricted boltzmann machine
 
-To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make stochastic decisions about whether to be on or off." A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). 
+### Restricted Boltzmann machine
 
-[RBMs](.{{ site.baseurl }}/glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, RBMs are the first neural network we'll tackle.
+To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make stochastic decisions about whether to be on or off." A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). [RBMs](.{{ site.baseurl }}/glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, RBMs are the first neural network we'll tackle.
 
-### parameters 
 
-Please also see [the single layer network parameters common to all single networks]({{ site.baseurl }}/singlelayernetwork.html)
 
-### k 
 
-K is the number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
+PARAMETERS - Please also see [the single layer network parameters common to all single networks]({{ site.baseurl }}/singlelayernetwork.html)
 
-<!---
-### bias 
+k - The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the markov chain
 
-HIDDEN AND VISIBLE
+composing the restricted boltzmann machine. A typical value of 1 is fine.
+
+
+
+BIAS - HIDDEN AND VISIBLE
 
 SHOW CONNECTION BETWEEN MATRIX AND DRAWING OF NODES, MAPPING NUMBERS TO CONNECTIONS
 
 EXPLAIN WHAT THE WEIGHTS MEAN
 
-### initiating a restricted Boltzmann machine 
+### Initiating a restricted Boltzmann machine 
 
 Setting up a single-thread restricted Boltzmann machine is easy. 
 
 To create the machine, you simply instantiate an object of the [class](../doc/com/ccc/deeplearning/rbm/RBM.html).
 
-CODE BLOCK MACHINE CREATION TK
+
+		RBM rbm = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand)
+				.useRegularization(false).withMomentum(0).build();
+
+
+The RBM uses the builder pattern to setup config, for example, this will handle the following:
+
+Number of visible (input) units: 784
+Number of hidden (output) units: 400
+withRandom(specify an RNG)
+useRegularization(use L2?)
+Momentum: Use momentum or not?
+
+
 
 Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much more substantial.)
 
