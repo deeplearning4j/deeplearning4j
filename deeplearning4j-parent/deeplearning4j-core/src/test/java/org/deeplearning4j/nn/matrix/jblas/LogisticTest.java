@@ -49,33 +49,6 @@ public class LogisticTest {
 
 
 	@Test
-	public void testMnist() throws IOException {
-		MnistDataSetIterator fetcher = new MnistDataSetIterator(1,60000);
-		DataSet d = fetcher.next();
-
-
-		int inputColumns = d.getFirst().columns;
-		int outputs = d.numOutcomes();
-		LogisticRegression l = new LogisticRegression.Builder()
-		.numberOfInputs(inputColumns).numberOfOutputs(outputs).build();
-		Evaluation e = new Evaluation();
-
-		while(fetcher.hasNext()) {
-			d = fetcher.next();
-			for(int i = 0; i < 1000; i++) {
-				l.train(d.getFirst(), d.getSecond(), 0.1);
-			}
-
-			log.info("Loss " + l.negativeLogLikelihood());
-
-			DoubleMatrix predict = l.predict(d.getFirst());
-			e.eval(d.getSecond(), predict);
-			log.info(e.stats());
-
-		}
-	}
-
-	@Test
 	public void testLogistic() {
 		LogisticRegression log2 = new LogisticRegression(xTestMatrix,x[0].length,2);
 		double learningRate = 0.01;
