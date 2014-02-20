@@ -38,11 +38,11 @@ To create the machine, you simply instantiate an object of the [class](../doc/co
 
 The RBM uses the builder pattern to setup config, for example, this will handle the following:
 
-Number of visible (input) units: 784
-Number of hidden (output) units: 400
-withRandom(specify an RNG)
-useRegularization(use L2?)
-Momentum: Use momentum or not?
+###Number of visible (input) units: 784
+###Number of hidden (output) units: 400
+###withRandom(specify an RNG)
+###useRegularization(use L2?)
+###Momentum: Use momentum or not?
 
 
 
