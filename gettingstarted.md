@@ -1,5 +1,9 @@
 #Getting Started
 
+---
+layout: default
+---
+
 
 
 ##Setup
