@@ -10,15 +10,16 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.word2vec.Word2Vec;
+import org.deeplearning4j.word2vec.iterator.Word2VecDataFetcher;
+import org.deeplearning4j.word2vec.loader.Word2VecLoader;
+import org.deeplearning4j.word2vec.similarity.Word2VecSimilarity;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.iterator.Word2VecDataFetcher;
-import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 
 public class Word2VecSimilarityTest {
 	private Word2VecDataFetcher fetcher;

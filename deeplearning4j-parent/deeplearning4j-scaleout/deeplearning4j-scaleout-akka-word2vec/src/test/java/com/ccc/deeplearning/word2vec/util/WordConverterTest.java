@@ -6,12 +6,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.deeplearning4j.word2vec.Word2Vec;
+import org.deeplearning4j.word2vec.loader.Word2VecLoader;
+import org.deeplearning4j.word2vec.util.Window;
+import org.deeplearning4j.word2vec.util.Windows;
+import org.deeplearning4j.word2vec.util.WordConverter;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
 
 public class WordConverterTest {
 

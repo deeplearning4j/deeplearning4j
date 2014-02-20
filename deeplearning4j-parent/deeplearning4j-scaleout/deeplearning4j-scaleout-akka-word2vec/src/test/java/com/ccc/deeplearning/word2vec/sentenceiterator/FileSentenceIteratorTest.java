@@ -2,6 +2,7 @@ package com.ccc.deeplearning.word2vec.sentenceiterator;
 import static org.junit.Assert.*;
 import java.io.File;
 
+import org.deeplearning4j.word2vec.sentenceiterator.FileSentenceIterator;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 

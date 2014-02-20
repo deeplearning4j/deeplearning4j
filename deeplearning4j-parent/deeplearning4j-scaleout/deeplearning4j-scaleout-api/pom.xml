@@ -1,17 +1,13 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.agibsonccc.deeplearning</groupId>
+    <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
   </parent>
-  <groupId>org.agibsonccc.deeplearning</groupId>
   <artifactId>deeplearning4j-scaleout-api</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>deeplearning4j-scaleout-api</name>
-  <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -19,13 +15,12 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.agibsonccc.deeplearning</groupId>
+    	<groupId>org.deeplearning4j</groupId>
     	<artifactId>deeplearning4j-core</artifactId>
-    	<version>0.0.1-SNAPSHOT</version>
+    	<version>${project.version}</version>
     </dependency>
     <dependency>
     	<groupId>org.json</groupId>

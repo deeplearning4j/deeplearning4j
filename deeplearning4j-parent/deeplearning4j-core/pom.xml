@@ -1,15 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>deeplearning4j-core</artifactId>
 	<parent>
-		<groupId>org.agibsonccc.deeplearning</groupId>
+		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.0.1</version>
 	</parent>
 	<properties>
 		<logback.version>1.0.6</logback.version>
-
+        <spring.version>3.2.5.RELEASE</spring.version>
+        <mallet.version>2.0.7</mallet.version>
 	</properties>
 
 
@@ -57,7 +57,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
-			<version>3.2.5.RELEASE</version>
+			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -76,7 +76,7 @@
 		<dependency>
 			<groupId>cc.mallet</groupId>
 			<artifactId>mallet</artifactId>
-			<version>2.0.7</version>
+			<version>${mallet.version}</version>
 		</dependency>
 	</dependencies>
 </project>
