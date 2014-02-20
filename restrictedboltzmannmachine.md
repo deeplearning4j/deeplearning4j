@@ -3,29 +3,30 @@ title:
 layout: default
 ---
 
+# restricted boltzmann machine
 
-### Restricted Boltzmann machine
+To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make stochastic decisions about whether to be on or off." A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). 
 
-To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make stochastic decisions about whether to be on or off." A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). [RBMs](.{{ site.baseurl }}/glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, RBMs are the first neural network we'll tackle.
+[RBMs](.{{ site.baseurl }}/glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, RBMs are the first neural network we'll tackle.
 
+### parameters 
 
+Please also see [the single layer network parameters common to all single networks]({{ site.baseurl }}/singlelayernetwork.html)
 
+### k 
 
-PARAMETERS - Please also see [the single layer network parameters common to all single networks]({{ site.baseurl }}/singlelayernetwork.html)
+K is the number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
-k - The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the markov chain
+<!---
+### bias 
 
-composing the restricted boltzmann machine. A typical value of 1 is fine.
-
-
-
-BIAS - HIDDEN AND VISIBLE
+HIDDEN AND VISIBLE
 
 SHOW CONNECTION BETWEEN MATRIX AND DRAWING OF NODES, MAPPING NUMBERS TO CONNECTIONS
 
 EXPLAIN WHAT THE WEIGHTS MEAN
 
-### Initiating a restricted Boltzmann machine 
+### initiating a restricted Boltzmann machine 
 
 Setting up a single-thread restricted Boltzmann machine is easy. 
 

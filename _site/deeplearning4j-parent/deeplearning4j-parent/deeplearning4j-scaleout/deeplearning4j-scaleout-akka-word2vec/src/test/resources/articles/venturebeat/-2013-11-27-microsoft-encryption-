@@ -1,9 +1,0 @@
-2
-Like Yahoo and Google, Microsoft is now looking at rallying its engineering teams to encrypt all of the data flying between its data centers.
-The company, which has reportedly helped the NSA circumvent its own encryption for certain services in the past, is the latest to be concerned with the organization’s “MUSCULAR” program , according to the Washington Post . Through this program, the U.S. National Security Agency allegedly tapped the fiber optic cables connecting Google and Yahoo’s data centers to silently slip behind their perimeters and collect information.
-Since the report surfaced, both Google and Yahoo have expressed their concern , vowing to use 2048-bit key encryption on these lines. Microsoft will follow suit and begin encrypting its own fiber optic cables, according to the Post’s sources.
-Neither Google nor Yahoo encrypted the data on these fiber optic cables, trusting the connections between its highly secured data centers. However, recent reports suggest that the fiber optic cable company,  Level 3 Communications, may have worked with the government to give it the necessary access to these powerful lines.
-The NSA’s supposed tapping of these cables must seem like a slap in the face to Yahoo, Google, and Microsoft. In June, the companies all caught flack after NSA-leaker Edward Snowden revealed that they and other tech companies have been providing volumes of photo, video, audio, communications, and more data to the NSA.
-At the time, Microsoft was also called out for giving the NSA access to Outlook data prior to its encryption . But it seems the NSA wanted more — even though it says it doesn’t.
-The agency told the Post:
-“NSA’s focus is on targeting the communications of valid foreign intelligence targets, not on collecting and exploiting a class of communications or services that would sweep up communications that are not of bona fide foreign intelligence interest to the U.S. government.”

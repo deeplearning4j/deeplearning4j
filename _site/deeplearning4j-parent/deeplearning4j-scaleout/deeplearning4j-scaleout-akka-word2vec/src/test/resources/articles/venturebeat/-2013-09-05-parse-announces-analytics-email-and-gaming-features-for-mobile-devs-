@@ -1,9 +1,0 @@
-Facebook’s sole focus: mobile
-First, Parse is partnering with Unity to bring its mobile backend as a service to the Unity game engine, Parse CEO Ilya Sukhar announced today at his company’s Developer Day in San Francisco.
-Using six lines of C# and the Unity IDE, devs will be able to create “really immersive cross-platform” games, said Sukhar.
-Parse also unveiled Background Jobs to schedule recurring tasks (such as batch emailing inactive users), and two new cloud modules — one for image manipulation and one for user sessions.
-But perhaps most exciting of all is the analytics features announced today. Custom Analytics in Parse will let devs “track arbitrary events with an arbitrary set of dimensions … all via the same beautiful interfaces you’re accustomed to in the Dashboard,” we read today on the company blog .
-Doing analytics on your own, in Excel, is a royal pain, said Sukhar. In keeping with the company’s philosophy of making a DMV-like experience invisible, Sukhar & Co. decided to tackle general analytics for their next big product rollout.
-Recently, the company also added two lesser analytics products for push notifications and API requests.
-Stay tuned for more stories, including one-on-one interviews with Parse and Facebook execs, from Parse Developer Day.
-VentureBeat is creating an index of the most exciting cloud-based services for developers . Take a look at our initial suggestions and  complete the survey  to help us build a definitive index. We’ll publish the official index later this month, and for those who fill out surveys, we’ll send you an expanded report free of charge.  Speak with the analyst who put this survey together to get more in-depth information,  inquire within .

@@ -3,31 +3,21 @@ title:
 layout: default
 ---
 
+# continuous restricted boltzmann
 
-### Single Network/Continuous Restricted Boltzmann machine
+A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word count vectors that are normalized to probabilities.
 
+### parameters 
 
-A continuous Restricted Boltzmann Machine is a form of RBM that accepts
+Please also see [the single-layer network parameters common to all single-layer networks]({{ site.baseurl }}/singlelayernetwork.html).
 
-continuous input via a different flavor of contrastive divergence sampling.
+### k
 
-This allows it to handle things like word count vectors that are normalized to probabilities
+K is number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
-or pixels of an image.
-
-
-
-###PARAMETERS Please also see [the single layer network parameters common to all single networks]({{ site.baseurl }}/singlelayernetwork.html)
-
-####k - The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the markov chain
-
-composing the restricted boltzmann machine. A typical value of 1 is fine.
-
-
-
-
-
-### Initiating a continuous restricted Boltzmann machine
+Composing the restricted Boltzmann machine. A typical value of 1 is fine.
+<!---
+### initiating a continuous restricted Boltzmann machine
 
 Setting up a single-thread continuous restricted Boltzmann machine is easy. 
 

@@ -3,33 +3,33 @@ title: deeplearning4j
 layout: default
 ---
 
-# Creating Deep-Learning Networks
+# creating deep-learning networks
 
-## Single thread
+## single thread
 
 While single-threaded and multithreaded deep-learning networks are just two ways of distributing the task load, real differences arise between single network and multinetwork deep-learning systems, as well as stochastic and nonstochastic generative models.
 
 Single-network neural nets are composed of just two layers, like a [cat's cradle](https://en.wikipedia.org/wiki/File:Cat's_cradle_soldier's_bed.png). Multinetwork nets link double-layer nets together in long chains, each one functioning as a subnetwork in its own right. 
-### Continuous Restricted Boltzmann Machine
+
+### continuous restricted boltzmann machine
 
 Restricted Boltzmann machines are composed of binomial neurons; that is, they can only activated with the values one and zero. Continuous restricted Boltzmann machines accept decimals. That is the only difference. 
 
-PARAMETERS
+### parameters
 
-INPUT
+### input
 
-
-### Single Network/Denoising Autoencoder
+### denoising autoencoder
 
 An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simple equals the input -- thereby becoming useless. 
 
 Denoising autoencoders are an extension of the basic autoencoder, and represent a stochastic version of the autoencoder. Denoising autoencoders attempt to address identity-function risk by randomly corrupting input (i.e. introducing noise) that the autoencoder must then reconstruct, or denoise. 
+<!---
+### parameters
 
-PARAMETERS
+### input
 
-INPUT
-
-### Initiating a denoising autoencoder
+### initiating a denoising autoencoder
 
 Setting up a single-thread denoising autoencoder is easy. 
 
