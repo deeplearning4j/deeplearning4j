@@ -1,2 +1,0 @@
-#!/bin/bash
-java -cp lib/* com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor.ActorNetworkRunnerApp "$@"

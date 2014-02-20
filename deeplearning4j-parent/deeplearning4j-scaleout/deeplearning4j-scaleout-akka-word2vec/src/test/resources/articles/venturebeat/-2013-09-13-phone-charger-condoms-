@@ -1,9 +1,0 @@
-2
-Believe it or not, we’ve come to a place in this world where your phone needs a condom, too.
-Int3.cc , a community of developers who are “trying to research and learn more about embedded device development and security,” created a little condom-like sleeve that goes over a USB charger. It cuts off access to the data-transferring pins and only allows your device to connect to the power supply.
-Because phones get diseases just like humans do.
-Charging stations are quickly becoming ubiquitous in airports, conference centers, and other venues where people might need to plug in for a few minutes and jet off. They’re often very convenient, but the chargers might not actually be safe. It’s possible that one of these devices could actually transfer malware onto your phone or steal information without you knowing.
-“If you’re going to run around plugging your phone into strange USB ports, at least be safe about it. ;-),” reads Int3.cc’s description.
-Look at Mactans. A group of white-hat hackers from the Georgia Institute of Technology created a fake Apple charger that when plugged in actually took full control over your phone — even if it was locked. From there it could silently download a fake app that infected your phone with data-grabbing malware. But it doesn’t stop when you unplug your phone. Even when disconnected, the group was able to access and control the phone remotely.
-This kind of a attack is sometimes called “juice jacking,” as noted by The Verge . Really, that just makes us think of third-grade bullies stealing our juice boxes, but whatever.
-The condom is currently out of stock, but Int3.cc says it will get the next batch of condoms on Sept. 16.
