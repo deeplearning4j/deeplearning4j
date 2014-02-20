@@ -70,22 +70,18 @@ Next, create a training set for the machine. For the sake of visual brevity, a t
 		DoubleMatrix d = new DoubleMatrix(data);
 
 Now that you have instantiated the machine and created the training set, it's time to train the network. 
+This will run contrastive divergence till convergence with a learning rate of 0.01, a k of 1, and the input
+specified earlier.  The last snippet will construct a new training set and show the reconstructed input.
 
-CODE BLOCK TRAINING THE MACHINE TK
+Note that RBMs take binary input.
 
-You can test your trained network by feeding it unstructured data and checking the output. [MORE EXPLANATION HERE?]
 
-Here are the code blocks for a multithread restricted Boltzmann machine:
 
-Create the machine:
+		rbm.trainTillConvergence(0.01,1,d);
+		
+		DoubleMatrix v = new DoubleMatrix(new double[][]
+				{{1, 1, 0, 0, 0, 0},
+				{0, 0, 0, 1, 1, 0}});	
 
-CODE BLOCK MACHINE CREATION TK
-
-Create the training set:
-
-CODE BLOCK TRAINING SET TK
-
-Train the machine:
-
-CODE BLOCK TRAINING THE MACHINE TK
+       System.out.println(r.reconstruct(v).toString());
 
