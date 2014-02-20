@@ -45,7 +45,7 @@ The number of outputs are 10.
 Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are 
 clearly much more substantial.)
 
-double[][] data = new double[][] {
+      double[][] data = new double[][] {
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
 				{0.5, 0.3,  0.5, 0.,  0.,  0.},
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
@@ -55,11 +55,13 @@ double[][] data = new double[][] {
 			};
 
 
- DoubleMatrix input = new DoubleMatrix();
+       DoubleMatrix input = new DoubleMatrix(data);
 
 Now that you have instantiated the machine and created the training set, it's time to train the network. 
 
 		rbm.trainTillConvergence(0.01,1,input);
+
+This trains the rbm till convergence with a learning rate of 0.01, a k of 1, and the specified input.
 
 
 
