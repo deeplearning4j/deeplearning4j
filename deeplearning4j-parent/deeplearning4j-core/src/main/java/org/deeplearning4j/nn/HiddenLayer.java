@@ -44,7 +44,7 @@ public class HiddenLayer implements Serializable {
 
 		if(W == null) {
 
-			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+			NormalDistribution u = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
 			this.W = DoubleMatrix.zeros(nIn,nOut);
 
@@ -75,7 +75,7 @@ public class HiddenLayer implements Serializable {
 			this.rng = rng;
 
 		if(W == null) {
-			NormalDistribution u = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+			NormalDistribution u = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
 			this.W = DoubleMatrix.zeros(nIn,nOut);
 

@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 
-import org.deeplearning4j.base.DeepLearningTest;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
@@ -18,7 +17,9 @@ public class MnistFetcherTest extends BaseDataFetcherTest {
 	
 	@Test
 	public void testMnistFetcher() throws IOException {
-		Pair<DoubleMatrix,DoubleMatrix> pair = DeepLearningTest.getMnistExample(1);
+		DataSetFetcher fetcher = getFetcher();
+		fetcher.fetch(10);
+		Pair<DoubleMatrix,DoubleMatrix> pair = fetcher.next();
 		int inputColumns = pair.getFirst().columns;
 		int outputColumns = 10;
 		testFetcher(fetcher, inputColumns, outputColumns);

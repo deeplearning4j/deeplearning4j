@@ -99,9 +99,9 @@ public class LogisticRegression implements Serializable {
 							))
 							.columnSums().mean() + reg;
 		}
-		
-		
-		
+
+
+
 		return - labels.mul(log(sigAct)).add(
 				oneMinus(labels).mul(
 						log(oneMinus(sigAct))
@@ -121,7 +121,7 @@ public class LogisticRegression implements Serializable {
 	 */
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
 		ensureValidOutcomeMatrix(y);
-		
+
 
 		this.input = x;
 		this.labels = y;
@@ -134,9 +134,9 @@ public class LogisticRegression implements Serializable {
 
 	}
 
-	
-	
-	
+
+
+
 
 	@Override
 	protected LogisticRegression clone()  {
@@ -168,8 +168,8 @@ public class LogisticRegression implements Serializable {
 		DoubleMatrix wGradient = input.transpose().mmul(dy).mul(lr);
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);
-		
-		
+
+
 	}
 
 
@@ -285,8 +285,10 @@ public class LogisticRegression implements Serializable {
 
 		public LogisticRegression build() {
 			ret = new LogisticRegression(input, nIn, nOut);
-			ret.W = W;
-			ret.b = b;
+			if(W != null)
+				ret.W = W;
+			if(b != null)
+				ret.b = b;
 			return ret;
 		}
 

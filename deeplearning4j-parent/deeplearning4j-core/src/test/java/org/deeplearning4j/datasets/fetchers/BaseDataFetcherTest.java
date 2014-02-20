@@ -27,7 +27,7 @@ public abstract class BaseDataFetcherTest {
 		assertEquals(inputColumnsExpected,fetcher.inputColumns());
 		assertEquals(totalOutcomesExpected,fetcher.totalOutcomes());
 		assertEquals(true,fetcher.hasMore());
-		assertEquals(true,fetcher.next() == null && fetcher.hasMore());
+		assertEquals(true,fetcher.next() != null && fetcher.hasMore());
 		
 	}
 	

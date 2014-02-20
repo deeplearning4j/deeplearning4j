@@ -32,7 +32,7 @@ public class DAMnistTest {
 		DoubleMatrix vBias = da.getvBias();
 		int numMistakes = 0;
 
-		da.trainTillConverge(first.getFirst(), 0.1, 0.6);
+		da.trainTillConvergence(first.getFirst(), 0.1, 0.6);
 
 
 

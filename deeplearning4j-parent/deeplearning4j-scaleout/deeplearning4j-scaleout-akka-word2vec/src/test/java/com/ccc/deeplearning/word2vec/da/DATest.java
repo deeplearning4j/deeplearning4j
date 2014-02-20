@@ -104,7 +104,7 @@ public class DATest {
 		for(int i = 0; i < 2000; i++) {
 
 
-			r.trainTillConverge(input, 0.1,corruption);
+			r.trainTillConvergence(input, 0.1,corruption);
 			/*StringTokenizer tokenizer = new StringTokenizer(new InputHomogenization(example).transform());
 			while(tokenizer.hasMoreTokens()) {
 				String token = tokenizer.nextToken();
