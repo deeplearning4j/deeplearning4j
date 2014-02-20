@@ -4,14 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.word2vec.util.Window;
+import org.deeplearning4j.word2vec.util.Windows;
+import org.deeplearning4j.word2vec.viterbi.CounterUtil;
+import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.word2vec.viterbi.Viterbi;
+import org.deeplearning4j.word2vec.viterbi.ViterbiUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.berkeley.CounterMap;
-import com.ccc.deeplearning.util.MatrixUtil;
-import com.ccc.deeplearning.word2vec.util.Window;
-import com.ccc.deeplearning.word2vec.util.Windows;
 
 public class ViterbiTest {
 

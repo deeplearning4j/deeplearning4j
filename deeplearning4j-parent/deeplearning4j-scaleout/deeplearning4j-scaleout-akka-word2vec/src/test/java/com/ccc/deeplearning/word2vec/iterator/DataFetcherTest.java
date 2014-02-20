@@ -6,13 +6,14 @@ import static org.junit.Assume.*;
 import java.io.File;
 import java.util.Arrays;
 
+import org.deeplearning4j.word2vec.Word2Vec;
+import org.deeplearning4j.word2vec.iterator.Word2VecDataFetcher;
+import org.deeplearning4j.word2vec.sentenceiterator.FileSentenceIterator;
+import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.sentenceiterator.FileSentenceIterator;
-import com.ccc.deeplearning.word2vec.sentenceiterator.SentenceIterator;
 
 public class DataFetcherTest {
 

@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.agibsonccc.deeplearning</groupId>
+    <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
   </parent>
   <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
   <build>
@@ -20,14 +20,14 @@
 	</build>
   <dependencies>
   	<dependency>
-  		<groupId>org.agibsonccc.deeplearning</groupId>
+  		<groupId>org.deeplearning4j</groupId>
   		<artifactId>deeplearning4j-scaleout-akka</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   	<dependency>
-  		<groupId>org.agibsonccc.deeplearning</groupId>
+  		<groupId>org.deeplearning4j</groupId>
   		<artifactId>deeplearning4j-core</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   	<dependency>
   		<groupId>nz.ac.waikato.cms.weka</groupId>

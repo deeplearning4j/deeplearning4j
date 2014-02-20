@@ -13,17 +13,17 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
+import org.deeplearning4j.scaleout.zookeeper.ZookeeperBuilder;
+import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
+import org.deeplearning4j.scaleout.zookeeper.ZookeeperPathBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ccc.deeplearning.scaleout.conf.Conf;
-import com.ccc.deeplearning.scaleout.zookeeper.ZooKeeperConfigurationRegister;
-import com.ccc.deeplearning.scaleout.zookeeper.ZookeeperBuilder;
-import com.ccc.deeplearning.scaleout.zookeeper.ZookeeperConfigurationRetriever;
-import com.ccc.deeplearning.scaleout.zookeeper.ZookeeperPathBuilder;
 
 public class TestZookeeperRegister {
 	private static Logger log = LoggerFactory.getLogger(TestZookeeperRegister.class);

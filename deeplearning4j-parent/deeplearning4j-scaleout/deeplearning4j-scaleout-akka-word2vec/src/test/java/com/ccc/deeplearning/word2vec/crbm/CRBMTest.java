@@ -8,6 +8,14 @@ import java.util.StringTokenizer;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.rbm.CRBM;
+import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.word2vec.Word2Vec;
+import org.deeplearning4j.word2vec.loader.Word2VecLoader;
+import org.deeplearning4j.word2vec.ner.InputHomogenization;
+import org.deeplearning4j.word2vec.util.Window;
+import org.deeplearning4j.word2vec.util.WindowConverter;
+import org.deeplearning4j.word2vec.util.Windows;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.junit.Test;
@@ -15,14 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import com.ccc.deeplearning.rbm.CRBM;
-import com.ccc.deeplearning.util.MatrixUtil;
-import com.ccc.deeplearning.word2vec.Word2Vec;
-import com.ccc.deeplearning.word2vec.loader.Word2VecLoader;
-import com.ccc.deeplearning.word2vec.ner.InputHomogenization;
-import com.ccc.deeplearning.word2vec.util.Window;
-import com.ccc.deeplearning.word2vec.util.WindowConverter;
-import com.ccc.deeplearning.word2vec.util.Windows;
 
 public class CRBMTest {
 

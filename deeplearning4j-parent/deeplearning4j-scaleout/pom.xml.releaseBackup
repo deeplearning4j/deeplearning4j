@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.deeplearning4j</groupId>
+		<artifactId>deeplearning4j-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>deeplearning4j-scaleout</artifactId>
+	<packaging>pom</packaging>
+	<name>DeepLearning4j-scaleout-parent</name>
+	<modules>
+		<module>deeplearning4j-scaleout-akka</module>
+		<module>deeplearning4j-scaleout-api</module>
+		<module>deeplearning4j-scaleout-core</module>
+		<module>deeplearning4j-scaleout-akka-word2vec</module>
+		<module>deeplearning4j-scaleout-zookeeper</module>
+	</modules>
+</project>
