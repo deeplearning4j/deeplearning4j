@@ -65,13 +65,16 @@ Now that you have instantiated the machine and created the training set, it's ti
 
 You can test your trained network by feeding it unstructured data and checking the output. 
 
-double[][] data = new double[][] {
+     
+
+
+     double[][] data = new double[][] {
 				{0.5, 0.5, 0., 0., 0., 0.},
 				{0., 0., 0., 0.5, 0.5, 0.}
+ 
+	 };
 
-	};
 
+     DoubleMatrix test = new DoubleMatrix(data);
 
- DoubleMatrix test = new DoubleMatrix(data);
-
- System.out.println(r.reconstruct(test).toString());
+    System.out.println(r.reconstruct(test).toString());
