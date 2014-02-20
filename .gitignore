@@ -10,3 +10,4 @@ README.md~
 *.log
 .project
 .classpath
+_site/

@@ -1,7 +1,0 @@
-A
-Summary:
-On this week’s Structure Show a look at Google’s cloud prospects; how Netflix is engineering a way around last year’s Chrismas Eve snafu, and why startups should use Amazon’s cloud services — but stick with the basics.
-Should startups stick with cloud even after they’ve been around for awhile?   Some say probably not , but Parse.ly CTO Andrew Montalenti has argued that for most startups it’s best to stick with cloud — Amazon Web Services specifically.
-AWS achieves economies of scale which, he said, you can’t achieve in a colo site or in your own server room.  Montalenti talks more about his company’s decision to stick with cloud on this week’s podcast. He is a big AWS fan but one who also draws the line when it comes to higher level AWS services which he avoids. Why?  that age-old fear of vendor lock-in. If you share his view, you should probably know about  the Apache libcloud project
-But first, Derrick Harris and I hash out how Netflix has helped its cause by finding a way to dynamically stream workloads across AWS regions.   Hopefully, that means no repeats of last year’s  Christmas Eve meltdown. 
-It’s a fun one, so have a listen.

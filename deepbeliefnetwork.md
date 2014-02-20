@@ -3,24 +3,20 @@ title:
 layout: default
 ---
 
-
 # deep-belief network
 
 For our purposes, a [deep-belief network](http://www.scholarpedia.org/article/Deep_belief_networks) can be defined as a stack of restricted Boltzmann machines in which each layer communicates with its previous and subsequent layers, while the nodes of any single layer do not communicate with each other laterally. With the exception of the  first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes before, and as the input layer to the lower nodes after. It is a network of networks. 
 
-Deep belief networks are used to recognize and generate images, video sequences and motion-capture data. 
-
+Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. 
 
 ### parameters
 
 Please also see [the multilayer network parameters common to all multilayer networks]({{ site.baseurl }}/multinetwork.html)
 
 #### k 
-The number of times to run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain.
 
-composing the restricted boltzmann machine. A typical value of 1 is fine.
-
-
+K is the number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain. In composing the restricted Boltzmann machine, a typical value is one.
+<!---
 ### initiating a deep-belief network
 
 Setting up a single-thread deep belief network is easy. 
