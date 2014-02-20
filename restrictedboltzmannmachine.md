@@ -90,19 +90,14 @@ Note that RBMs take binary input.
        System.out.println(r.reconstruct(v).toString());
 
 
-You can test your trained network by feeding it unstructured data and checking the output. [MORE EXPLANATION HERE?]
+You can test your trained network by feeding it unstructured data and checking the output.
 
-Here are the code blocks for a multithread restricted Boltzmann machine:
+A trained RBM will learn the structure of the data fed to it. The only thing to understand here
 
-Create the machine:
+is that the RBM learns how to reconstruct the data.
 
-CODE BLOCK MACHINE CREATION TK
+You can intrepet the numbers as percentages. Anywhere where the number is not zero in the reconstruct
 
-Create the training set:
+is a good indication that the network learned the input. We can get in to a better example
 
-CODE BLOCK TRAINING SET TK
-
-Train the machine:
-
-CODE BLOCK TRAINING THE MACHINE TK
-
+in some tutorials.
