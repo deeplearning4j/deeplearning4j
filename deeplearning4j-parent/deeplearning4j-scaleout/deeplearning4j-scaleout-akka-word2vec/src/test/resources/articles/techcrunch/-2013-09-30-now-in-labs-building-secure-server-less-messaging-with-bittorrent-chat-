@@ -1,9 +1,0 @@
-Joe October 7, 2013 at 5:38 am
-I read the following in a CNET article:
-“Eventually, the service is expected to work with other instant-messaging accounts … but for now it requires a BitTorrent account.”
-This doesn’t make sense. Why should this type of communication require any type of account? it seems to defeat the whole purpose of anonymity.
-I suggested a similar type of application in the bittorent developer general forum. The idea was to be similar to Sync which uses secrets, only that the secrets would be PKI-based (publib/private-key). No accounts should be necessary (or desirable) for this to work.
-Is the article at CNET wrong, and they made assumptions? Or does the group working on Bittorrent Chat plan to require the use of accounts for communicating using the system?
-Raymondpogi December 16, 2013 at 12:38 am
-Just create a handshake between user. Once the handshake connection is established between you and the contact (1 or more), messages/data will move between you and the contact, no middle man. If disconnected, your Mobile can check the last sequence, and proceed once connection restored.
-Encrypted data will only stay at the source device/mobile only.

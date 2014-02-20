@@ -1,9 +1,0 @@
-2
-Last week, on December 25, an Australian research firm published the details on a major security weakness in Snapchat.
-Today, it appears that someone has used that exploit to collect 4.6 million usernames, and their associated phone numbers, and publish them on a website.
-Snapchat users can breathe easy — for a minute or two. For now, the phone numbers don’t include the last two digits. It’s also not clear how legitimate this data is, although The Next Web reports that there is now a  web-based Snapchat checker script  that can check any username to see if it’s in the database.
-Dazzlepod, a site that aims to help people find out if their account information has been compromised in various security leaks, also has published a searchable version of the Snapchat list , so you can look for your username.
-The site, Snapchat.db , is pretty straightforward: You can download all 4.6 million records as a SQL dump or as a CSV text file. “For now, we have censored the last two digits of the phone numbers in order to minimize spam and abuse,” the site says. “Feel free to contact us to ask for the uncensored database. Under certain circumstances, we may agree to release it.”
-Just below that is information that people can use to send Bitcoin donations or to send a private message to the site’s creators.
-Snapchat.db appears to be made possible thanks to a massive Snapchat security hole that Gibson Research published on Christmas day, allowing hackers to use Snapchat’s API to match usernames with phone numbers, and to create bogus accounts en masse. The researchers told ZDNet at the time that hackers could use the exploit to “automatically build profiles about users, which could be sold for a lot of money.”
-Gibson Research also noted that Snapchat had known about the vulnerability for four months, and alleged that the company could have fixed it with “ten lines of code.”
