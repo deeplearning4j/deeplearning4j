@@ -79,9 +79,13 @@ Note that RBMs take binary input.
 
 		rbm.trainTillConvergence(0.01,1,d);
 		
-		DoubleMatrix v = new DoubleMatrix(new double[][]
-				{{1, 1, 0, 0, 0, 0},
-				{0, 0, 0, 1, 1, 0}});	
+        double[][] testData = new double[][]
+			{
+			    {1, 1, 0, 0, 0, 0},
+				{0, 0, 0, 1, 1, 0}
+			};
+
+		DoubleMatrix v = new DoubleMatrix(testData);	
 
        System.out.println(r.reconstruct(v).toString());
 
