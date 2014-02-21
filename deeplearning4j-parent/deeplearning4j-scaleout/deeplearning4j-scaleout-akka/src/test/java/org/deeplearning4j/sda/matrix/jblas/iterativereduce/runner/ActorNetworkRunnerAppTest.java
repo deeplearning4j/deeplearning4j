@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 
 import org.apache.curator.test.TestingServer;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.multilayer.ActorNetworkRunnerApp;
+import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunnerApp;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
 import org.junit.After;

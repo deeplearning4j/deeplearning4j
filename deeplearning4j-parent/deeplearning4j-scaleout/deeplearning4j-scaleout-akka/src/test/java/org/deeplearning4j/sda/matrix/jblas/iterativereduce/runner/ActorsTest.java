@@ -3,9 +3,9 @@ package org.deeplearning4j.sda.matrix.jblas.iterativereduce.runner;
 import static org.junit.Assert.assertEquals;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.core.ResetMessage;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.core.actor.BatchActor;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.multilayer.MasterActor;
+import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
+import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
+import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.junit.AfterClass;

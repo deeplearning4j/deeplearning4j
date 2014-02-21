@@ -2,9 +2,9 @@ package org.deeplearning4j.iterativereduce.actor;
 
 import java.io.Serializable;
 
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.core.ResetMessage;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.core.ShutdownMessage;
-import org.deeplearning4j.matrix.jblas.iterativereduce.actor.multilayer.MasterActor;
+import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
+import org.deeplearning4j.iterativereduce.actor.core.ShutdownMessage;
+import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.word2vec.iterator.Word2VecDataSetIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

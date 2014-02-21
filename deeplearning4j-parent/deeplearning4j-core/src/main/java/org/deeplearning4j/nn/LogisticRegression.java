@@ -8,6 +8,8 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
+import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -73,6 +75,33 @@ public class LogisticRegression implements Serializable {
 
 	}
 
+	/**
+	 * Run conjugate gradient with the given x and y
+	 * @param x the input to use
+	 * @param y the labels to use
+	 * @param learningRate the learning rate
+	 * @param epochs the number of epochs to use
+	 */
+	public void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
+		this.input = x;
+		this.labels = y;
+		trainTillConvergence(learningRate,epochs);
+		
+	}
+	
+	/**
+	 * Run conjugate gradient
+	 * @param learningRate the learning rate to train with
+	 * @param numEpochs the number of epochs
+	 */
+	public void trainTillConvergence(double learningRate, int numEpochs) {
+		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
+		NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
+		g.optimize(numEpochs);
+		
+	}
+	
+	
 	/**
 	 * Averages the given logistic regression 
 	 * from a mini batch in to this one
