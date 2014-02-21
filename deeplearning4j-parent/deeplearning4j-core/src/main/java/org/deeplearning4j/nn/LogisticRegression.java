@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn;
 
-import static org.deeplearning4j.util.MatrixUtil.ensureValidOutcomeMatrix;
 import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
@@ -9,6 +8,7 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 import java.io.Serializable;
 
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
+import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -71,6 +71,8 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate to use
 	 */
 	public void train(DoubleMatrix x,double lr) {
+		MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
+
 		train(x,labels,lr);
 
 	}
@@ -79,10 +81,12 @@ public class LogisticRegression implements Serializable {
 	 * Run conjugate gradient with the given x and y
 	 * @param x the input to use
 	 * @param y the labels to use
-	 * @param learningRate the learning rate
-	 * @param epochs the number of epochs to use
+	 * @param learningRate
+	 * @param epochs
 	 */
 	public void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
+		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
+
 		this.input = x;
 		this.labels = y;
 		trainTillConvergence(learningRate,epochs);
@@ -118,6 +122,7 @@ public class LogisticRegression implements Serializable {
 	 * @return the negative log likelihood of the model
 	 */
 	public double negativeLogLikelihood() {
+		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
 		//weight decay
 		if(useRegularization) {
@@ -149,8 +154,7 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate
 	 */
 	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
-		ensureValidOutcomeMatrix(y);
-
+		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
 		this.labels = y;
@@ -187,6 +191,8 @@ public class LogisticRegression implements Serializable {
 	 * @return the gradient (bias and weight matrix)
 	 */
 	public LogisticRegressionGradient getGradient(double lr) {
+		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
+
 		//input activation
 		DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
 		//difference of outputs

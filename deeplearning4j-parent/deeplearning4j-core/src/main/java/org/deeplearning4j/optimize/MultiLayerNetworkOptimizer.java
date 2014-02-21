@@ -39,7 +39,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
-		MatrixUtil.ensureValidOutcomeMatrix(labels);
 		network.feedForward(network.getInput());
 		//sample from the final layer in the network and train on the result
 		DoubleMatrix layerInput = network.getSigmoidLayers()[network.getSigmoidLayers().length - 1].sample_h_given_v();
@@ -51,11 +50,9 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		}
 		
 		
-		if(!network.isForceNumEpochs()) {
-			LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(network.getLogLayer(),lr);
-			NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
-			g.optimize(epochs);
-		}
+		if(!network.isForceNumEpochs()) 
+			network.getLogLayer().trainTillConvergence(lr, epochs);
+		
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
