@@ -16,6 +16,8 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.util.MathUtils;
 import org.jblas.DoubleMatrix;
@@ -49,6 +51,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		
 	}
 
+	public DataSetIterator iterator(int batches) {
+		List<DataSet> list = this.dataSetBatches(batches);
+		return new ListDataSetIterator(list);
+	}
+	
+	
 	public DataSet copy() {
 		return new DataSet(getFirst(),getSecond());
 	}

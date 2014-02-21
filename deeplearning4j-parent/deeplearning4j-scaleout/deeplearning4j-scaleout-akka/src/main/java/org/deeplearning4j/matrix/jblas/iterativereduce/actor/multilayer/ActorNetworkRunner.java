@@ -117,7 +117,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
-		ActorRef batchActor = system.actorOf(Props.create(new BatchActor.BatchActorFactory(iter,c.getNumPasses())));
+		
+		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
+
+		
+		ActorRef batchActor = system.actorOf(pool.props(Props.create(new BatchActor.BatchActorFactory(iter,c.getNumPasses()))));
+		
+		
 		
 		system.actorOf(Props.create(DoneReaper.class));
 		
@@ -286,6 +292,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	public void train() {
 		if(iter.hasNext())
 			train(iter.next());
+		
+		else
+			log.warn("No data found");
 	}
 
 	public void train(Pair<DoubleMatrix,DoubleMatrix> input) {
