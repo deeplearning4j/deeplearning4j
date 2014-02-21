@@ -56,6 +56,8 @@ public class LogisticTest {
 			log2.train(xMatrix, yMatrix, learningRate);
 			learningRate *= 0.95;
 		}
+		
+		
 		log.info(log2.predict(xTestMatrix).toString());
 
 
@@ -87,4 +89,28 @@ public class LogisticTest {
 	}
 
 
+	@Test
+	public void testIrisCg() throws IOException {
+		IrisDataFetcher fetcher = new IrisDataFetcher();
+		fetcher.fetch(110);
+
+		DataSet iris = fetcher.next();
+		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
+				.build();
+		
+		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 0.001, 1000);
+		
+		fetcher.fetch(40);
+		iris = fetcher.next();
+
+		DoubleMatrix predicted = classifier.predict(iris.getFirst());		
+
+
+		Evaluation eval = new Evaluation();
+		eval.eval(iris.getSecond(), predicted);
+
+		log.info(eval.stats());
+
+	}
+	
 }
