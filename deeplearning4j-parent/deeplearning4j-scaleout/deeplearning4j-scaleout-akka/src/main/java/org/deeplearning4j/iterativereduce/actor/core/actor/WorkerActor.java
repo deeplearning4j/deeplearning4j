@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.iterativereduce.actor.core.ShutdownMessage;
 import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -16,13 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-
 import akka.actor.ActorRef;
 import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
-import akka.actor.UntypedActor;
 import akka.actor.SupervisorStrategy.Directive;
-import akka.cluster.Cluster;
+import akka.actor.UntypedActor;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -49,7 +46,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double learningRate;
 	protected double corruptionLevel;
 	protected Object[] extraParams;
-
+	protected boolean useRegularization;
 
 	public final static String SYSTEM_NAME = "Workers";
 
@@ -152,7 +149,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		numVisible = conf.getnIn();
 		numHiddenNeurons = hiddenLayerSizes.length;
 		seed = conf.getSeed();
-
+		useRegularization = conf.isUseRegularization();
 		learningRate = conf.getPretrainLearningRate();
 		preTrainEpochs = conf.getPretrainEpochs();
 		fineTuneEpochs = conf.getFinetuneEpochs();

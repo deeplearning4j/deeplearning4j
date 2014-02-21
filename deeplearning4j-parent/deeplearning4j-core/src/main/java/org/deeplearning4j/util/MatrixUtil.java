@@ -1,6 +1,5 @@
 package org.deeplearning4j.util;
 
-import org.apache.commons.lang3.Range;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
@@ -15,6 +14,16 @@ import org.slf4j.LoggerFactory;
 
 public class MatrixUtil {
 	private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
+	
+	
+	
+	public static void complainAboutMissMatchedMatrices(DoubleMatrix d1,DoubleMatrix d2) {
+		if(d1 == null || d2 == null)
+			throw new IllegalArgumentException("No null matrices allowed");
+		if(d1.rows != d2.rows)
+			throw new IllegalArgumentException("Matrices must have same rows");
+		
+	}
 	
 	
 	public static DataSet xorData(int n) {

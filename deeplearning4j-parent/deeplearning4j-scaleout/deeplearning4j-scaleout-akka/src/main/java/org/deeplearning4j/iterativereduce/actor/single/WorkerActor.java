@@ -109,6 +109,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);
@@ -116,7 +117,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		RandomGenerator rng = new MersenneTwister(conf.getSeed());
 		network = new BaseNeuralNetwork.Builder<>()
 				.numberOfVisible(numVisible).numHidden(numHidden)
-				.withRandom(rng)
+				.withRandom(rng).useRegularization(useRegularization)
 				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz()).build();
 
 	}
