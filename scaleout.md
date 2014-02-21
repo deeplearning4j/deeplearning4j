@@ -50,12 +50,12 @@ An example snippet on training a network is the following:
     Note that this relies on having a zookeeper instance setup. Otherwise the system will stall.
 
 
-===Nuances
+Nuances
 =============================
 
 
 
-====ActorNetworkRunner
+ActorNetworkRunner
 
      Note that there are two different ActorNetworkRunners. One meant for single and another meant for multi.
      
@@ -63,16 +63,16 @@ An example snippet on training a network is the following:
 
 
 
-====Roles
+Roles
 
-    =====Master - Used for multithreading and for seeding a cluster.
+    Master - Used for multithreading and for seeding a cluster.
 
-    ====Worker - Used for connecting to a master network runner for lending cpu power.
-
-
+    Worker - Used for connecting to a master network runner for lending cpu power.
 
 
-====Conf
+
+
+Conf
 
     The configuration class has a lot of knobs.
 
