@@ -9,6 +9,7 @@ These patterns allow for time saving when doing data analysis,
 
 trend discovery, and labeling of certain types of data (images, text, sound, time series,...)
 
+[![Build Status](https://api.travis-ci.org/agibsonccc/java-deeplearning.png)](https://api.travis-ci.org/agibsonccc/java-deeplearning)
 
 
 
