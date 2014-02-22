@@ -11,12 +11,13 @@ Maven coordinates:
 
 
 Singular Neural nets:
-
+=========================
+       
        <dependency>
-  <groupId>org.deeplearning4j</groupId>
-  <artifactId>deeplearning4j-core</artifactId>
-  <version>0.0.0.2</version>
-        </dependency>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-core</artifactId>
+         <version>0.0.0.2</version>
+      </dependency>
 
 
 
@@ -24,11 +25,12 @@ Singular Neural nets:
 
 Scaleout for Multithreaded/Clustering:
 ========================================
- <dependency>
-  <groupId>org.deeplearning4j</groupId>
-  <artifactId>deeplearning4j-scaleout-akka</artifactId>
-  <version>0.0.1</version>
-</dependency>
+       
+        <dependency>
+         <groupId>org.deeplearning4j</groupId>
+           <artifactId>deeplearning4j-scaleout-akka</artifactId>
+         <version>0.0.1</version>
+        </dependency>
 
 
 
@@ -38,8 +40,8 @@ Scaleout for Multithreaded/Clustering:
 Text analysis:
 =======================
 
-<dependency>
-  <groupId>org.deeplearning4j</groupId>
-  <artifactId>deeplearning4j-scaleout-akka</artifactId>
-  <version>0.0.1</version>
-</dependency>
+         <dependency>
+           <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-scaleout-akka</artifactId>
+             <version>0.0.1</version>
+          </dependency>
