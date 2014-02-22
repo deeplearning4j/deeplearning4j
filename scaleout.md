@@ -42,8 +42,6 @@ Here's a snippet for training a network:
 
 This relies on having a zookeeper instance setup -- otherwise the system will stall.
 
-# nuances
-
 ### ActorNetworkRunner
 
 There are two different ActorNetworkRunners: one for single and another for multi. Both have similar APIs so they're easy to use, but that can also lead to confusion.
