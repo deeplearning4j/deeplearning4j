@@ -1,27 +1,20 @@
 Deep Learning for Java
 =====================================
 
-Deep Learning is a form of state of the art machine learning
+Deep learning is a form of state-of-the-art machine learning that can learn to recognize patterns in data unsupervised.
 
-capable of learning patterns in data on its own.
+Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as images, text, sound and time series.
 
-These patterns allow for time saving when doing data analysis,
+[![Build Status](https://api.travis-ci.org/agibsonccc/java-deeplearning.png)](https://api.travis-ci.org/agibsonccc/java-deeplearning).
 
-trend discovery, and labeling of certain types of data (images, text, sound, time series,...)
-
-[![Build Status](https://api.travis-ci.org/agibsonccc/java-deeplearning.png)](https://api.travis-ci.org/agibsonccc/java-deeplearning)
+See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials, definitions and other resources on the discipline.
 
 
-
-See http://deeplearning4j.org/  for uses, tutorials, and the like.
-
-
-Maven coordinates:
-===========================
+# Maven coordinates
 
 
-Singular Neural nets:
-=========================
+
+## Singular neural nets
        
        <dependency>
         <groupId>org.deeplearning4j</groupId>
@@ -33,8 +26,7 @@ Singular Neural nets:
 
 
 
-Scaleout for Multithreaded/Clustering:
-========================================
+## Scaleout for Multithreaded/Clustering
        
         <dependency>
          <groupId>org.deeplearning4j</groupId>
@@ -47,8 +39,7 @@ Scaleout for Multithreaded/Clustering:
 
 
 
-Text analysis:
-=======================
+## Text analysis
 
          <dependency>
            <groupId>org.deeplearning4j</groupId>
