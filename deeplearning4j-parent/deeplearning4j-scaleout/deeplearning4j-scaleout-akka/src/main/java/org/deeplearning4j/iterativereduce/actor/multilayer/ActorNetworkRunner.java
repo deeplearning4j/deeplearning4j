@@ -257,7 +257,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
 		try {
-			Thread.sleep(15000);
+			log.info("Waiting for cluster to go up...");
+			Thread.sleep(30000);
+			log.info("Done waiting");
 		} catch (InterruptedException e1) {
 			Thread.currentThread().interrupt();
 		}
@@ -269,7 +271,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);
 
-
+		log.info("Published results");
 	}
 
 
