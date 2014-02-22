@@ -4,30 +4,24 @@ layout: default
 ---
 
 
-Output Interpretation
-=====================================
+# output interpretation
 
 
-Neural networks can be hard to interpret. You will often ask questions such as: "How accurate is my model?" or "What do these numbers mean?"
+Neural networks can be hard to interpret. You will often ask questions like "How accurate is my model?" or "What do these numbers mean?"
 
+Each kind of neural network has different kinds of output. 
 
-Each kind of neural network has different kinds of output. A single layered network learns to reconstruct input.
+For example, a single-layer network learns to reconstruct input. This is best illustrated by discussing images. The best way to interpret reconstruciton is to see how well an image is reconstructed after the data is "noised" and fed into a neural network. 
 
-Due to the nature of the problem, this is best described with images. The best way for interpreting reconstruciton is
+As you follow the MNIST tutorial, the best way to gauge your performace is to compare the initial image and network output side by side.
 
-to see how well an image is reconstructed after being fed in to a neural network. Following the tutorial from MNIST,
+Another example: Multilayer networks are discriminatory classifiers; that is, they label things. 
 
-the best way would be to compare the images side by side and visualize the results.
+In machine learning, one metric used to determine how well a classifier performs is called an F1 measure. The F1 measure is a number between zero and one that explains how well the network performed on training. It is analogous to a percentage, with 1 the equivalent of 100 percent.
 
-Multi layer networks are discriminatory classifiers, aka they label things. In Machine Learning, one metric 
+DL4J has a class called [Evaluation](../doc/org/deeplearning4j/eval/Evaluation.html) that will output F1 for you.
 
-we use to determine how well a classifier performs is called an F1 measure. 
-
-This is a number on a range from zero to one (think percentages) that explains how well the network performed on training.
-
-DL4J has a class called [Evaluation](../doc/org/deeplearning4j/eval/Evaluation.html) that will output this number for you.
-
-An example usage is follows:
+Here's one way to use it: 
 
          
          BaseMultiLayerNetwork network = ....;
@@ -47,11 +41,13 @@ An example usage is follows:
 
 
 
-This basic example takes the actual labels(a binary matrix where 1 is the label) and the guesses (probabilies of each label)
+Each label is a binary matrix of 1 row and, say, 10 columns, with each column representing a number from one to 10. (The number of columns will vary with the number of possible outcomes, or labels.) There can only be a single 1 in this matrix, and it is located in the column representing the number labeled. That is, a [0 1 0 0 0 0 0 0 0 0] is two, and so forth. 
 
-and compares them against each other to match the label. You can create one evaluation class and use that to track statitistics over time.
+Each label is then assigned a likelihood of how accurately it describes the input, according to the features recognized by your network. Those probabilities are the network's guesses. At the end of your test, you compare the highest-probability label with the actual number that was the input. The aggregate of these comparisons is your accuracy rate, or f score. 
 
-One will want to usually predict lots of data. Using a data set iterator, we could do soemthing like this:
+In fact, you can enter any number of inputs at once. Each of them will be a row in your binary matrix. And the number of rows in your binary input matrix will be equal to the number of rows in your binary out matrix of guesses.
+
+You can also create one evaluation class to track statitistics over time. Using a data set iterator, you could do something like this:
 
 
 
@@ -72,8 +68,4 @@ One will want to usually predict lots of data. Using a data set iterator, we cou
 
 
 
-This will allow you to iterate over a data set and cumulatively add to the results. The eval.stats() call will print the confusion matrices and f scores at the very bottom.
-
-This is a good indicator of performance.
-
-
+This will allow you to iterate over a data set and cumulatively add to the results. The eval.stats() call will print the confusion matrices and f scores at the bottom. Those scores are good indicators of performance. 
