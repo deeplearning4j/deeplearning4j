@@ -59,7 +59,7 @@ public class LogisticRegression implements Serializable {
 	 * with the given learning rate
 	 * @param lr the learning rate to use
 	 */
-	public void train(double lr) {
+	public synchronized void train(double lr) {
 		train(input,labels,lr);
 	}
 
@@ -70,7 +70,7 @@ public class LogisticRegression implements Serializable {
 	 * @param x the input to use
 	 * @param lr the learning rate to use
 	 */
-	public void train(DoubleMatrix x,double lr) {
+	public synchronized void train(DoubleMatrix x,double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
 
 		train(x,labels,lr);
@@ -84,35 +84,35 @@ public class LogisticRegression implements Serializable {
 	 * @param learningRate
 	 * @param epochs
 	 */
-	public void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
+	public synchronized void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
 		this.labels = y;
 		trainTillConvergence(learningRate,epochs);
-		
+
 	}
-	
+
 	/**
 	 * Run conjugate gradient
 	 * @param learningRate the learning rate to train with
 	 * @param numEpochs the number of epochs
 	 */
-	public void trainTillConvergence(double learningRate, int numEpochs) {
+	public synchronized void trainTillConvergence(double learningRate, int numEpochs) {
 		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
 		NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
 		g.optimize(numEpochs);
-		
+
 	}
-	
-	
+
+
 	/**
 	 * Averages the given logistic regression 
 	 * from a mini batch in to this one
 	 * @param l the logistic regression to average in to this one
 	 * @param batchSize  the batch size
 	 */
-	public void merge(LogisticRegression l,int batchSize) {
+	public synchronized void merge(LogisticRegression l,int batchSize) {
 		W.addi(l.W.subi(W).div(batchSize));
 		b.addi(l.b.subi(b).div(batchSize));
 	}
@@ -121,7 +121,7 @@ public class LogisticRegression implements Serializable {
 	 * Objective function:  minimize negative log likelihood
 	 * @return the negative log likelihood of the model
 	 */
-	public double negativeLogLikelihood() {
+	public synchronized double negativeLogLikelihood() {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
 		//weight decay
@@ -134,13 +134,15 @@ public class LogisticRegression implements Serializable {
 							.columnSums().mean() + reg;
 		}
 
+		else {
+			return - labels.mul(log(sigAct)).add(
+					oneMinus(labels).mul(
+							log(oneMinus(sigAct))
+							))
+							.columnSums().mean();
 
 
-		return - labels.mul(log(sigAct)).add(
-				oneMinus(labels).mul(
-						log(oneMinus(sigAct))
-						))
-						.columnSums().mean();
+		}
 
 	}
 
@@ -153,7 +155,7 @@ public class LogisticRegression implements Serializable {
 	 * @param y the labels to train on
 	 * @param lr the learning rate
 	 */
-	public void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+	public synchronized void train(DoubleMatrix x,DoubleMatrix y, double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
@@ -190,7 +192,7 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate to use for training
 	 * @return the gradient (bias and weight matrix)
 	 */
-	public LogisticRegressionGradient getGradient(double lr) {
+	public synchronized LogisticRegressionGradient getGradient(double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
 		//input activation
@@ -217,7 +219,7 @@ public class LogisticRegression implements Serializable {
 	 * Each row will be the likelihood of a label given that example
 	 * @return a probability distribution for each row
 	 */
-	public DoubleMatrix predict(DoubleMatrix x) {
+	public synchronized DoubleMatrix predict(DoubleMatrix x) {
 		return softmax(x.mmul(W).addRowVector(b));
 	}	
 
