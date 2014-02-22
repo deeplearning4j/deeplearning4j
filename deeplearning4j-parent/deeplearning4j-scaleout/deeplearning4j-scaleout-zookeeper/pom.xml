@@ -3,10 +3,10 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.0.0.3</version>
+		<version>0.0.0.4-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
-  <version>0.0.0.3</version>
+  <version>0.0.0.4-SNAPSHOT</version>
 	<properties>
 		<zookeeper.version>3.4.5</zookeeper.version>
 	</properties>
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-core</artifactId>
-			<version>0.0.0.3</version>
+			<version>0.0.0.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
