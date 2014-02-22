@@ -112,9 +112,11 @@ public class BatchActor extends UntypedActor {
 				Thread.currentThread().interrupt();
 			}
 
-			if(iter.hasNext())
+			if(iter.hasNext()) {
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						iter.next()), mediator);
+			}
+				
 
 		}
 
