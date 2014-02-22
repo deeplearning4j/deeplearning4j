@@ -1,8 +1,0 @@
-2
-Amazon.com wants to keep growing its popular public-cloud business despite threats from legions of competitors, and one way it’s doing that is by adding new services all the time. The company launched yet another new offering again today at the second annual re:Invent conference in Las Vegas.
-Following his announcement of new API-monitoring and virtual-desktop cloud services, Andy Jassy, Amazon Web Services’ senior vice president, revealed a service aimed at mobile application developers called AppStream .
-AppStream runs on Amazon cloud’s new GPU instances , called G2, Jassy said, so computationally intensive applications can run on a much wider spectrum of mobile devices — not just the latest powerful gadgets.
-“What it allows you to do is … build whatever the application is that you want to stream, he said. “You stream it from the cloud, … and it appears to the end user like it’s streaming from their local device. The quality is that high.”
-AppStream depends on a protocol called STX, which Jassy said is “optimized for video encoding and consistent video playback.” AppStream looks out for changes in network conditions and interaction from end users, and it can scale up when demand rises to provide a consistent streaming experience for end users, Jassy said.
-Some companies, such as Agawi and Numecent , rely at least partly on Amazon’s cloud to do application streaming. It will be interesting to watch such companies deal with competition from Amazon.
-Developers can sign up for a free limited preview of AppStream now. To learn more about the service, check out this Amazon video:

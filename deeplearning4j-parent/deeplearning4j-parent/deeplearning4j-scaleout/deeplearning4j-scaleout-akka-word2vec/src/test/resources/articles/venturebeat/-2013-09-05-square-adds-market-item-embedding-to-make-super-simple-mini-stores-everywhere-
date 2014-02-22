@@ -1,9 +1,0 @@
-1
-Mobile payments company Square is making selling products online as simple as embedding a YouTube video in your blog.
-The company unveiled the Square Market — an online storefront for small businesses — two months ago. Now it’s adding “market item embedding” to allow everyone to embed items for sale on their websites and blogs. The result is that a simple link to your handmade beeswax candles becomes a simple buy-now opportunity.
-Which means that if you can copy and paste, you can sell online.
-Companies like Shopify have made building and launching online stores super easy. But for some small businesses, the hassle of building and managing an entire e-commerce initiative might be too much, when all they want to do is sell five items. That’s the niche that Square is targeting.
-To start embedding products, of course, you’ll need a Square Market account, and you’ll have to have set up at least some of your products for sale there. Once that’s done, you can embed them into a blog post, on a website, or in a Tumblr feed simply by clicking the embed icon, copying the HTML, and pasting it into your site.
-Helpfully, Square Market will show you a preview of what your item will look like on the site.
-Interestingly, as the Square engineering blog highlights, those with just a little more technical skill can include the Square Market embed script in their site headers and then simply link to items for sale with a basic HTML link, plus a CSS class of “sq-market-embed,” to achieve the same effect.
-Adding an item to your site will allow visitors to buy it, of course, and sales will be completed on the Square Market.
