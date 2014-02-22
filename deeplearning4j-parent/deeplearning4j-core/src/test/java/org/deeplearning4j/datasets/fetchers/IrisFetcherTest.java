@@ -9,14 +9,14 @@ public class IrisFetcherTest extends BaseDataFetcherTest {
 
 	@Override
 	public DataSetFetcher getFetcher() {
-	    return new IrisDataFetcher();
+		return new IrisDataFetcher();
 	}
 
 	@Test
 	public void testIrisFetcher() {
-		testFetcher(fetcher, 4, 3);
 		this.testFetchBatchSize(10);
+		testFetcher(fetcher, 4, 3);
 	}
-	
-	
+
+
 }

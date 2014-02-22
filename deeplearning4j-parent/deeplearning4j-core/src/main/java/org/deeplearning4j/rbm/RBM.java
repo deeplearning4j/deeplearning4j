@@ -250,6 +250,9 @@ public class RBM extends BaseNeuralNetwork {
 
 	}
 
+	/**
+	 * Note: k is the first input in params.
+	 */
 	@Override
 	public void trainTillConvergence(DoubleMatrix input, double lr,
 			Object[] params) {

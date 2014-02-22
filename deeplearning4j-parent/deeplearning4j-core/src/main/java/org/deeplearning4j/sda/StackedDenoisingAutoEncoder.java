@@ -94,6 +94,10 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	@Override
 	public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
 			Object[] otherParams) {
+		if(otherParams == null) {
+			otherParams = new Object[]{0.01,0.3,1000};
+		}
+		
 		Double lr = (Double) otherParams[0];
 		Double corruptionLevel = (Double) otherParams[1];
 		Integer epochs = (Integer) otherParams[2];
