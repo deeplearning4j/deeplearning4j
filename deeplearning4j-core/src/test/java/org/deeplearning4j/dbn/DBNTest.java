@@ -1,26 +1,14 @@
 package org.deeplearning4j.dbn;
 
-import static org.junit.Assert.*;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.base.DeepLearningTest;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.dbn.CDBN;
-import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.rbm.CRBM;
 import org.deeplearning4j.transformation.MultiplyScalar;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +71,6 @@ public class DBNTest  extends DeepLearningTest {
 	}
 
 	@Test
-	@Ignore
 	public void testCDBN() {
 		DoubleMatrix x = new DoubleMatrix( new double[][] 
 				{{0.4, 0.5, 0.5, 0.,  0.,  0.},
