@@ -23,7 +23,7 @@ public class ListDataSetIterator implements DataSetIterator {
 	private int curr = 0;
 	private int batch = 10;
 	private List<DataSet> list;
-
+	
 	public ListDataSetIterator(Collection<DataSet> coll,int batch) {
 		list = new ArrayList<>(coll);
 		this.batch = batch;
@@ -40,12 +40,12 @@ public class ListDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
-	public boolean hasNext() {
+	public synchronized boolean hasNext() {
 		return curr < list.size();
 	}
 
 	@Override
-	public DataSet next() {
+	public synchronized DataSet next() {
 		int range = curr + batch;
 		if(range >= list.size()) {
 			range = list.size();
@@ -77,7 +77,7 @@ public class ListDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
-	public void reset() {
+	public synchronized void reset() {
 		curr = 0;
 	}
 
@@ -87,7 +87,7 @@ public class ListDataSetIterator implements DataSetIterator {
 	}
 
 	@Override
-	public int cursor() {
+	public synchronized int cursor() {
 		return curr;
 	}
 
