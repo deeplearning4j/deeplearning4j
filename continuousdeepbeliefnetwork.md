@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# deep-belief network
+# continuous deep-belief network
 
 
 
