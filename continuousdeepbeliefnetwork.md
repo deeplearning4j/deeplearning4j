@@ -31,7 +31,7 @@ To create the machine, you simply instantiate an object of the [class]({{ site.b
 
     
    //training data and labels
-   DoubleMatrix x = new DoubleMatrix( 
+  " DoubleMatrix x = new DoubleMatrix( 
                new double[][] 
 				{
 
@@ -87,7 +87,7 @@ To create the machine, you simply instantiate an object of the [class]({{ site.b
 
 		Evaluation eval = new Evaluation();
 		eval.eval(y, predict);
-		System.out.println(eval.stats());
+		System.out.println(eval.stats());"
 
 
 This will print out the f score of the prediction. 
