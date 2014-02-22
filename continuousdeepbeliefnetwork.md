@@ -33,6 +33,7 @@ To create the machine, you simply instantiate an object of the [class]({{ site.b
    //training data and labels
    DoubleMatrix x = new DoubleMatrix( new double[][] 
 				{
+
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
 				{0.5, 0.3,  0.5, 0.,  0.,  0.},
 				{0.4, 0.5, 0.5, 0.,  0.,  0.},
@@ -43,7 +44,8 @@ To create the machine, you simply instantiate an object of the [class]({{ site.b
 
 		DoubleMatrix  y = new DoubleMatrix(new double[][]
 				{
-					{1, 0},
+					
+			   {1, 0},
 				{1, 0},
 				{1, 0},
 				{0, 1},
