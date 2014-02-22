@@ -1,6 +1,15 @@
 Deep Learning for Java
 =====================================
 
+Deep Learning is a form of state of the art machine learning
+
+capable of learning patterns in data on its own.
+
+These patterns allow for time saving when doing data analysis,
+
+trend discovery, and labeling of certain types of data (images, text, sound, time series,...)
+
+
 
 
 See http://deeplearning4j.org/  for uses, tutorials, and the like.
