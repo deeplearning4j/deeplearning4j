@@ -26,7 +26,7 @@ See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials
 
 
 
-## Scaleout for Multithreaded/Clustering
+## Scaleout for multithreaded methods and clustering
        
         <dependency>
          <groupId>org.deeplearning4j</groupId>
