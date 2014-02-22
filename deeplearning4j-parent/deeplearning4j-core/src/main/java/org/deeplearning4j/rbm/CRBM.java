@@ -27,22 +27,24 @@ public class CRBM extends RBM {
 	private static final long serialVersionUID = 598767790003731193L;
 
 
-	public CRBM() {}
+	
 
 
-
-	public CRBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
-			DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
-		super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn,dist);
+	public CRBM() {
+		super();
 	}
 
-
-
-	public CRBM(int n_visible, int n_hidden, DoubleMatrix W,
-			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		super(n_visible, n_hidden, W, hbias, vbias, rng,fanIn,null);
+	public CRBM(DoubleMatrix input, int n_visible, int n_hidden,
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
+			RandomGenerator rng, double fanIn, RealDistribution dist) {
+		super(input, n_visible, n_hidden, W, hbias, vbias, rng, fanIn, dist);
 	}
 
+	public CRBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
+			DoubleMatrix vbias, RandomGenerator rng, double fanIn,
+			RealDistribution dist) {
+		super(nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
+	}
 
 	@Override
 	public DoubleMatrix propDown(DoubleMatrix h) {

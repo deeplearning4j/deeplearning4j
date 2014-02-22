@@ -16,8 +16,8 @@ public class MnistFetcher {
 	private static Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 	private static final String trainingFilesURL = "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz";
 
-	private static final String trainingFilesFilename = "train-images-idx3-ubyte.gz";
-	public static final String trainingFilesFilename_unzipped = "train-images-idx3-ubyte";
+	private static final String trainingFilesFilename = "train-images-idx1-ubyte.gz";
+	public static final String trainingFilesFilename_unzipped = "train-images-idx1-ubyte";
 
 	private static final String trainingFileLabelsURL = "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz";
 	private static final String trainingFileLabelsFilename = "train-labels-idx1-ubyte.gz";
