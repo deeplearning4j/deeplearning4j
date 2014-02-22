@@ -4,18 +4,11 @@ layout: default
 ---
 
 
-Scaleout - Use Iterative Reduce on multi threaded training
-=====================================================================
+# scaleout: use iterative reduce on multithreaded training
 
+Training a neural network is time consuming without some kind of parallelism. The scaleout module in deeplearning4j-scalout uses akka for both clustering for distributed computing as well as multithreaded computing.
 
-Training a neural network is often time consuming without some kind of parallelism.
-
-The scaleout module in deeplearning4j-scalout uses akka for both clustering for distributed computing
-
-as well as multithreaded computing.
-
-
-An example snippet on training a network is the following:
+Here's a snippet for training a network:
 
 
 
@@ -45,47 +38,31 @@ An example snippet on training a network is the following:
 
 
 
-===ZooKeeper
+## ZooKeeper
 
-    Note that this relies on having a zookeeper instance setup. Otherwise the system will stall.
+This relies on having a zookeeper instance setup -- otherwise the system will stall.
 
+# nuances
 
-Nuances
-=============================
+### ActorNetworkRunner
 
+There are two different ActorNetworkRunners: one for single and another for multi. Both have similar APIs so they're easy to use, but that can also lead to confusion.
 
+If your cluster does not start after calling train, this is likely a race condition of sending the data for training relative to the cluster starting. Submit a pull request if that's the case.
 
-ActorNetworkRunner
-
-     Note that there are two different ActorNetworkRunners. One meant for single and another meant for multi.
-     
-     Both have similar apis for ease of use, but this can also lead to confusion.
-
-     Another thing of note: If your cluster does not start after calling train, this is likely a race condition
-
-     of sending the data for training relative to the cluster starting, submit a pull request if this is the case.
-
-     After training, all models are saved in the same directory as where the user started. These models will benamed
-
-     nn-model-*.bin.
-
-     This is the output of the network. These neural networks are parameter averaged.
+After training, all models are saved in the same directory where the user started. These models will be named nn-model-*.bin. That's the output of the network. (These neural networks are parameter averaged.)
 
 
-Roles
+### Roles
 
-    Master - Used for multithreading and for seeding a cluster.
+Master: Used for multithreading and for seeding a cluster.
 
-    Worker - Used for connecting to a master network runner for lending cpu power.
+Worker: Used for connecting to a master network runner for lending cpu power.
 
 
 
 
-Conf
+### Conf
 
-    The configuration class has a lot of knobs.
-
-    Keep in mind that this conf handles both the single layer network and the multi layer networks.
-
-    Call multiLayerClazz or setNeuralNetworkClazz respectively. 
+The configuration class has a lot of knobs. It handles both the single-layer network and the multilayer networks. Call multiLayerClazz or setNeuralNetworkClazz, respectively. 
 
