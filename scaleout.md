@@ -61,6 +61,15 @@ ActorNetworkRunner
      
      Both have similar apis for ease of use, but this can also lead to confusion.
 
+     Another thing of note: If your cluster does not start after calling train, this is likely a race condition
+
+     of sending the data for training relative to the cluster starting, submit a pull request if this is the case.
+
+     After training, all models are saved in the same directory as where the user started. These models will benamed
+
+     nn-model-*.bin.
+
+     This is the output of the network. These neural networks are parameter averaged.
 
 
 Roles
