@@ -50,14 +50,11 @@ If your cluster does not start after calling train, this is likely a race condit
 
 After training, all models are saved in the same directory where the user started. These models will be named nn-model-*.bin. That's the output of the network. (These neural networks are parameter averaged.)
 
-
 ### Roles
 
-Master: Used for multithreading and for seeding a cluster.
+*Master*: Used for multithreading and for seeding a cluster.
 
-Worker: Used for connecting to a master network runner for lending cpu power.
-
-
+*Worker*: Used for connecting to a master network runner for lending cpu power.
 
 
 ### Conf
