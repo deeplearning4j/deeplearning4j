@@ -18,19 +18,22 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 import akka.japi.Function;
 
@@ -44,7 +47,7 @@ import com.google.common.collect.Lists;
 public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor implements DeepLearningConfigurable,ComputableMaster<E> {
 
 	protected Conf conf;
-	protected static Logger log = LoggerFactory.getLogger(MasterActor.class);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected E masterResults;
 	protected List<E> updates = new ArrayList<E>();
 	protected EpochDoneListener<E> listener;
@@ -55,6 +58,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String MASTER = "result";
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
+	Cluster cluster = Cluster.get(getContext().system());
+
+
 
 	//number of batches over time
 	protected int partition = 1;
@@ -78,6 +84,25 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		setup(conf);
 
 
+	}
+
+
+
+
+	@Override
+	public void preStart() throws Exception {
+		super.preStart();
+		log.info("Pre start on master");
+	}
+
+
+
+
+	@Override
+	public void postStop() throws Exception {
+		super.postStop();
+		log.info("Post stop on master");
+		cluster.unsubscribe(getSelf());
 	}
 
 
@@ -196,7 +221,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
 			final int j = i;
-			Futures.future(new Callable<Void>() {
+			Future<Void> f = Futures.future(new Callable<Void>() {
 
 				@Override
 				public Void call() throws Exception {
@@ -205,10 +230,23 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 							new ArrayList<>(splitList.get(j))), getSelf());
 					return null;
 				}
-				
-			},context().system().dispatcher());
-		}
+
+			},context().dispatcher());
 			
+			f.onComplete(new OnComplete<Void>() {
+
+				@Override
+				public void onComplete(Throwable arg0, Void arg1)
+						throws Throwable {
+					if(arg0 != null)
+						throw arg0;
+				}
+				
+			}, context().dispatcher());
+			
+			
+		}
+
 
 	}
 

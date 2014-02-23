@@ -1,9 +1,5 @@
 package org.deeplearning4j.iterativereduce.actor.single;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -161,41 +157,17 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				throw new IllegalStateException("Unable to initialize no dataset to train");
 
 			masterAddress  = startBackend(null,"master",conf,iter);
-
-
-			//wait for start
+			
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(30000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-
-
-			system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
-
-			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
-			//There is a one to one join to system requirement for the cluster
-			Cluster.get(system).join(masterAddress);
-
-			//join with itself
-			startBackend(masterAddress,"master",conf,iter);
-
-
-			Conf c = conf.copy();
-
-			//Wait for backend to be up
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-
-			startWorker(masterAddress,c);
+			
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 					this), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					epochs), mediator);
-			log.info("Setup master with epochs " + epochs);
+			
+
 		}
 
 		else {
@@ -220,27 +192,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			log.info("Setup worker nodes");
 		}
 
-		writeMasterAddress();
 	}
 
-	private void writeMasterAddress() {
-		String temp = System.getProperty("java.io.tmpdir");
-		File f = new File(temp,"masteraddress");
-		if(f.exists()) 
-			f.delete();
-		try {
-			f.createNewFile();
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
-			bos.write(masterAddress.toString().getBytes());
-			bos.flush();
-			bos.close();
-		}catch(IOException e) {
-			log.error("Unable to create file for master address",e);
-		}
-		f.deleteOnExit();
-
-
-	}
+	
 
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		this.samples = list;

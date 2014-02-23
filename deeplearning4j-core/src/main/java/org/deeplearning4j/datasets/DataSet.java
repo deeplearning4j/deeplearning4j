@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets;
 import java.io.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -39,6 +41,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	private static final long serialVersionUID = 1935520764586513365L;
 	private static Logger log = LoggerFactory.getLogger(DataSet.class);
 
+
+	public DataSet() {
+		this(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
+	}
+
 	public DataSet(Pair<DoubleMatrix,DoubleMatrix> pair) {
 		this(pair.getFirst(),pair.getSecond());
 	}
@@ -47,53 +54,66 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		super(first, second);
 		if(first.rows != second.rows)
 			throw new IllegalStateException("Invalid data set; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
-		
-		
+
+
 	}
 
 	public DataSetIterator iterator(int batches) {
 		List<DataSet> list = this.dataSetBatches(batches);
 		return new ListDataSetIterator(list);
 	}
-	
-	
+
+
 	public DataSet copy() {
 		return new DataSet(getFirst(),getSecond());
 	}
-	
-	
+
+
 	public static DataSet empty() {
 		return new DataSet(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
 	}
-	
+
 	public static DataSet merge(List<DataSet> data) {
 		if(data.isEmpty())
 			throw new IllegalArgumentException("Unable to merge empty dataset");
-		DataSet first = data.iterator().next();
-
-		DoubleMatrix in = new DoubleMatrix(data.size(),first.getFirst().columns);
-		DoubleMatrix out = new DoubleMatrix(data.size(),first.getSecond().columns);
-
+		DataSet first = data.get(0);
+		int numExamples = totalExamples(data);
+		DoubleMatrix in = new DoubleMatrix(numExamples,first.getFirst().columns);
+		DoubleMatrix out = new DoubleMatrix(numExamples,first.getSecond().columns);
+		int count = 0;
 
 		for(int i = 0; i < data.size(); i++) {
-			in.putRow(i,data.get(i).getFirst());
-			out.putRow(i,data.get(i).getSecond());
+			DataSet d1 = data.get(i);
+			for(int j = 0; j < d1.numExamples(); j++) {
+				DataSet example = d1.get(j);
+				in.putRow(count,example.getFirst());
+				out.putRow(count,example.getSecond());
+				count++;
+			}
+
 
 		}
 		return new DataSet(in,out);
 	}
 
-	
-	
+	private static int totalExamples(Collection<DataSet> coll) {
+		int count = 0;
+		for(DataSet d : coll)
+			count += d.numExamples();
+		return count;
+	}
+
+
+
 	public int numInputs() {
 		return getFirst().columns;
 	}
-	
+
 	public void validate() {
 		if(getFirst().rows != getSecond().rows)
 			throw new IllegalStateException("Invalid dataset");
 	}
-	
+
 	public int outcome() {
 		if(this.numExamples() > 1)
 			throw new IllegalStateException("Unable to derive outcome for dataset greater than one row");
@@ -103,23 +123,40 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	public DataSet get(int i) {
 		return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
 	}
-	
+
 	public List<List<DataSet>> batchBy(int num) {
 		return Lists.partition(asList(),num);
 	}
-	
-	
-	
-	
+
+
+	/**
+	 * Gets the label distribution (counts of each possible outcome)
+	 * @return the counts of each possible outcome
+	 */
+	public Counter<Integer> outcomeCounts() {
+		List<DataSet> list = asList();
+		Counter<Integer> ret = new Counter<>();
+		for(int i = 0; i < list.size(); i++) {
+			ret.incrementCount(list.get(i).outcome(),1.0);
+		}
+		return ret;
+	}
+
+
+	/**
+	 * Partitions the data set by the specified number.
+	 * @param num the number to split by
+	 * @return the paritioned data set
+	 */
 	public List<DataSet> dataSetBatches(int num) {
 		List<List<DataSet>> list =  Lists.partition(asList(),num);
 		List<DataSet> ret = new ArrayList<>();
 		for(List<DataSet> l : list)
 			ret.add(DataSet.merge(l));
 		return ret;
-	
+
 	}
-	
+
 
 	/**
 	 * Sorts the dataset by label:
@@ -366,8 +403,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return getFirst().rows;
 	}
 
-	
-	
+
+
 
 	@Override
 	public String toString() {
@@ -391,7 +428,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	@Override
 	public void write(OutputStream os) {
 		DataOutputStream dos = new DataOutputStream(os);
-		
+
 		try {
 			getFirst().out(dos);
 			getSecond().out(dos);
@@ -399,7 +436,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		
+
 	}
 
 	@Override

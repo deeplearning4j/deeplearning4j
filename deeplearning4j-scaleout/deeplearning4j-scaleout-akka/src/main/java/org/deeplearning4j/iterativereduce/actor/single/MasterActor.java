@@ -10,6 +10,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
+import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -17,6 +18,7 @@ import org.deeplearning4j.scaleout.iterativereduce.single.UpdateableSingleImpl;
 import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
+import akka.actor.Address;
 import akka.actor.Props;
 import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
@@ -66,14 +68,26 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public void setup(Conf conf) {
 		//use the rng with the given seed
 		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
-		BaseNeuralNetwork matrix = new BaseNeuralNetwork.Builder<>()
+		@SuppressWarnings("unchecked")
+		BaseNeuralNetwork network = new BaseNeuralNetwork.Builder<>()
 				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
 				.withRandom(rng).withL2(conf.getL2())
 				.withMomentum(conf.getMomentum())
 				.numberOfVisible(conf.getnIn())
 				.numHidden(conf.getnOut())
 				.build();
-		masterResults = new UpdateableSingleImpl(matrix);
+		
+
+		context().system().actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
+
+		Address masterAddress = Cluster.get(context().system()).selfAddress();
+
+		ActorNetworkRunner.startWorker(masterAddress,conf);
+		
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				conf.getPretrainEpochs()), mediator);
+		log.info("Setup master with epochs " + conf.getPretrainEpochs());
+		masterResults = new UpdateableSingleImpl(network);
 
 	}
 
