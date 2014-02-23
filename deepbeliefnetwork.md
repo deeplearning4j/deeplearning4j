@@ -21,7 +21,7 @@ K is the number of times you run [contrastive divergence]({{ site.baseurl }}/glo
 
 Setting up a single-thread deep belief network is easy. 
 
-To create the machine, you simply instantiate an object of the [class]({{ site.baseurl }}/doc/com/ccc/deeplearning/dbn/DBN.html).
+To create the machine, you simply instantiate an object of the class [DBN]({{ site.baseurl }}/doc/com/ccc/deeplearning/dbn/DBN.html).
 
 
        RandomGenerator rng = new MersenneTwister(123);
@@ -42,11 +42,7 @@ To create the machine, you simply instantiate an object of the [class]({{ site.b
 
 This is a little more complicated than the singular input. 
 
-This creates a deep belief network with the specified hidden layer sizes (3 hidden layers at 2 hidden units each)
-
-the number of inputs being 2, 2 outputs, no regularization, the specified random number generator, and no momentum.
-
-
+This creates a deep-belief network with the specified hidden layer sizes (three hidden layers at two hidden units each); the number of inputs being two; two outputs; no regularization; the specified random number generator; and no momentum.
 
 Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much more substantial.)
 
@@ -55,19 +51,12 @@ Next, create a training set for the machine. For the sake of visual brevity, a t
 		DoubleMatrix x = d.getFirst();
 		DoubleMatrix y = d.getSecond();
 
-An xor dataset is generated here with the number of columns being 10. A data set is a pair of x,y matrices such that each matrix is one row.
+An xor dataset is generated here with 10 columns. A data set is a pair of x,y matrices such that each matrix is one row.
 
         dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
 		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
-The pretrain and finetune steps above (see above for the other parameters) train the network.
-
-
-
-
-You can test your trained network by feeding it unstructured data and checking the output. 
-
-The output here will be a prediction of whether the specified input is true or false based on the rules of xor.
+Those pretraining and finetuning steps train the network. You can test your trained network by feeding it unstructured data and checking the output. The output here will be a prediction of whether the specified input is true or false based on the rules of xor.
 
 
 		DoubleMatrix predict = dbn.predict(x);
@@ -77,16 +66,9 @@ The output here will be a prediction of whether the specified input is true or f
 		System.out.println(eval.stats());
 
 
-This will print out the f score of the prediction. 
+This will print out the f score of the prediction.
 
-The eval class combined confusion matrices and f1 scores to allow for easy display and evaluation of data
+Note that the eval class combines confusion matrices and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. The f1 score will be a percentage. It's basically the probability that your guess are correct correct. Eighty-six percent or more is pretty good.
 
-by allowing input of outcome matrices. This is useful for tracking how well your network is training over time.
-
-The f1 score will be a percentage similar to a probability of being correct: (86%+ is good.)
-
-
-If there's issues, try modifying the hidden layer sizes, and tweaking other parameters to work on 
-
-getting your f1 score up.
+If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get your f1 score up.
 
