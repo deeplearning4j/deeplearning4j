@@ -31,11 +31,15 @@ The learning rate, or step rate, is the rate at which a function steps through t
 
 Momentum is an additional factor in determining how fast an optimization algorithm converges on the optimum point. 
 
+If you're bored, and you want to speed up the training, increase the momentum. But you should know that higher speeds can lower a model's accuracy. 
+
+To dig deeper, momentum is a variable between zero and one that is applied as a factor to the derivative of the rate of change of the matrix. It affects the change rate of the weights over time. 
+
 ### L2 regularization constant 
 
-This is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
+This is the lambda discussed in [this equation](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
 
-*pretraining step*
+*Pretraining step*
 
 For pretraining -- i.e. learning the features via reconstruction at each layer -- each layer is trained and then the output is piped to the next layer.
 
