@@ -44,7 +44,8 @@ public class DBNTest  extends DeepLearningTest {
 
 		DBN dbn = new DBN.Builder()
 		.transformWeightsAt(0, new MultiplyScalar(1000))
-		.transformWeightsAt(1, new MultiplyScalar(100)).hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns).renderWeights(0)
+		.transformWeightsAt(1, new MultiplyScalar(100)).hiddenLayerSizes(hiddenLayerSizes)
+		.numberOfInputs(nIns).renderWeights(0)
 		.useRegularization(false).withMomentum(0).withDist(new NormalDistribution(0,0.001))
 		.numberOfOutPuts(nOuts).withRng(rng).build();
 
