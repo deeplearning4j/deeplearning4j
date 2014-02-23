@@ -47,7 +47,7 @@ For pretraining -- i.e. learning the features via reconstruction at each layer -
 
 Finally, the [logistic regression](http://en.wikipedia.org/wiki/Multinomial_logistic_regression) output layer is trained, and then back propagation happens for each layer.
 
-If you're curious about the internals of the dl4j implementation, please see [BaseMultiLayerNetwork]({{ site.baseurl }}/doc/com/ccc/deeplearning/nn/BaseMultiLayerNetwork)
+If you're curious about the internals of the dl4j implementation, please see [BaseMultiLayerNetwork]({{ site.baseurl }}/doc/com/ccc/deeplearning/nn/BaseMultiLayerNetwork).
 
 Below are the different kinds of multilayer networks:
 
