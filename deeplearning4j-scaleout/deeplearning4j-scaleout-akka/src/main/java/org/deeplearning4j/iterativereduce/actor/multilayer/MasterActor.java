@@ -18,7 +18,9 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
+import akka.actor.Address;
 import akka.actor.Props;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.japi.Creator;
 
@@ -73,6 +75,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 				.build();
 		masterResults = new UpdateableImpl(matrix);
+		
+		Conf c = conf.copy();
+		
+		Address masterAddress = Cluster.get(context().system()).selfAddress();
+		
+		log.info("Starting worker");
+		ActorRef worker = ActorNetworkRunner.startWorker(masterAddress,c);
+		
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				conf.getPretrainEpochs()), mediator);
+		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
+				worker), mediator);
+		
 
 	}
 

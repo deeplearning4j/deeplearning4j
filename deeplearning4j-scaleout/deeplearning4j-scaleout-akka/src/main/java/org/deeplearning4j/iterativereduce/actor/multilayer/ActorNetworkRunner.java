@@ -109,7 +109,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		
 		ActorRef batchActor = system.actorOf(pool.props(Props.create(new BatchActor.BatchActorFactory(iter,c.getNumPasses()))));
 		
-		
+		log.info("Started batch actor");
 		
 		system.actorOf(Props.create(DoneReaper.class));
 		
@@ -120,7 +120,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				(joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 				Cluster.get(system).join(realJoinAddress);
 				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor), "active", PoisonPill.getInstance(), "master"));
-				return realJoinAddress;
+		return realJoinAddress;
 	}
 
 
@@ -137,13 +137,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		int cores = Runtime.getRuntime().availableProcessors();
 		ActorRef ref = system.actorOf(new RoundRobinPool(cores).props(p), "worker");
 		
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
+		log.info("Worker joining cluster");
 		Cluster.get(system).join(contactAddress);
+		
+		
 		return ref;
 	}
 
@@ -168,49 +165,34 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 			if(iter == null)
 				throw new IllegalStateException("Unable to initialize no dataset to train");
-
+			
+			log.info("Starting master");
 			masterAddress  = startBackend(null,"master",conf,iter);
-
-
-			//wait for start
+			
+			
 			try {
 				Thread.sleep(30000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-
-
+		
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+					this), mediator);
+			
+			log.info("Starting model saver");
 			ActorRef ref = system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
 			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
 					ref), mediator);
 			
-			
+		
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
 
-			//join with itself
-			startBackend(masterAddress,"master",conf,iter);
-
-
-			Conf c = conf.copy();
+		
 			
-
-			//Wait for backend to be up
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-
-			ActorRef worker = startWorker(masterAddress,c);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					this), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					epochs), mediator);
-			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-					worker), mediator);
 			
+		
 			log.info("Setup master with epochs " + epochs);
 		}
 
@@ -225,7 +207,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			//Wait for backend to be up
 
 			try {
-				Thread.sleep(5000);
+				Thread.sleep(30000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
@@ -267,6 +249,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		//ensure the trainer is known so the next iteration can happen
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				this), mediator);
+		log.info("Started pipeline");
 		//start the pipeline
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);

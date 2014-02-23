@@ -10,8 +10,6 @@ import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -20,11 +18,14 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.japi.Creator;
 import akka.japi.Function;
 
@@ -35,7 +36,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	protected E e;
 	protected E results;
-	private static Logger log = LoggerFactory.getLogger(WorkerActor.class);
+	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected int fineTuneEpochs;
 	protected int preTrainEpochs;
 	protected int[] hiddenLayerSizes;
@@ -47,6 +48,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double corruptionLevel;
 	protected Object[] extraParams;
 	protected boolean useRegularization;
+	Cluster cluster = Cluster.get(getContext().system());
 
 	public final static String SYSTEM_NAME = "Workers";
 
@@ -61,6 +63,20 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
 				getSelf()), mediator);
+	}
+
+
+	@Override
+	public void postStop() throws Exception {
+		super.postStop();
+		log.info("Post stop on worker actor");
+		cluster.unsubscribe(getSelf());
+	}
+	
+	@Override
+	public void preStart() throws Exception {
+		super.preStart();
+		log.info("Pre start on worker");
 	}
 
 
