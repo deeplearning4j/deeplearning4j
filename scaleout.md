@@ -38,7 +38,7 @@ Here's a snippet for training a network:
 
 
 
-## ZooKeeper
+### ZooKeeper
 
 This relies on having a zookeeper instance setup -- otherwise the system will stall.
 
