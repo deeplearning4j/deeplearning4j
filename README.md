@@ -1,48 +1,93 @@
 Deep Learning for Java
 =====================================
 
-Deep learning is a form of state-of-the-art machine learning that can learn to recognize patterns in data unsupervised.
+Leverages matrix operations built on top of 
 
-Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as images, text, sound and time series.
+the BLAS linear algebra libraries for faster 
 
-[![Build Status](https://api.travis-ci.org/agibsonccc/java-deeplearning.png)](https://api.travis-ci.org/agibsonccc/java-deeplearning).
+performance over your standard java libraries.
 
-See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials, definitions and other resources on the discipline.
+Includes the following algorithms:
+
+DBN - Deep belief networks; restricted boltzmann machines stacked as layers
+CDBN - Continuous Deep Belief Networks; contiuous layer at the front
+RBM - Restricted Boltzmann Machines
+CRBM - Continuous Restricted Boltzmann Machines
+SdA- Stacked Denoising AutoEncoders
+DenoisingAutoEncoders
 
 
-# Maven coordinates
+
+Typically building a network will look something like this.
 
 
 
-## Singular neural nets
+        BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
+                                .numberOfInputs(conf.getInt(N_IN)).numberOfOutPuts(conf.getInt(OUT)).withClazz(conf.getClazz(CLASS))
+                                .hiddenLayerSizes(conf.getIntsWithSeparator(LAYER_SIZES, ",")).withRng(rng)
+                                .build();
+
+
+Configuration is based on the constants specified in DeepLearningConfigurable.
+
+
+  Usage for the command line app: com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor.ActorNetworkRunnerApp
+  
+  Options:
        
-       <dependency>
-        <groupId>org.deeplearning4j</groupId>
-        <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.0.2</version>
-      </dependency>
+        Required:
+        
+        -a algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)
+        -i number of inputs (columns in the input matrix)
+        -o number of outputs for the network
+        -data dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)
+        
+        Optional:
+        
+         -fte number of fine tune epochs to train on (default: 100)
+        
+         -pte number of epochs for pretraining (default: 100)
+        
+         -r   seed value for the random number generator (default: 123)
+        
+         -ftl the starter fine tune learning rate (default: 0.1)
+        
+         -ptl  the starter fine tune learning rate (default: 0.1)
+        
+         -sp   number of inputs to split by default: 10
+        
+         -e   number of examples to train on: if unspecified will just train on everything found
+        
+         DBN/CDBN:
+        
+         -k the k for rbms (default: 1)
+         
+         SDA:
+        
+         -c corruption level (for denoising autoencoders) (default: 0.3)
+         
+         Cluster:
+         
+             -h the host to connect to as a master (default: 127.0.0.1)
+             -t type of worker
+             -ad address of master worker
 
 
 
+Training tips:
 
-
-## Scaleout for multithreaded methods and clustering
-       
-        <dependency>
-         <groupId>org.deeplearning4j</groupId>
-           <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.1</version>
-        </dependency>
-
-
-
+      For classification: Due to heavy sampling leveraged in deep learning, try to have 
+      
+      training batches (each row in a training matrix is an individual part of a batch)
+      
+      It is reccomended to have one class of each label in each training batch to
+      
+      minimize sampling error (See Hinton's Practical Guide to RBMs)
 
 
 
-## Text analysis
+Maven central and other support coming soon.
 
-         <dependency>
-           <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-             <version>0.0.1</version>
-          </dependency>
+
+
+Apache 2 Licensed
