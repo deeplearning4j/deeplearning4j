@@ -19,7 +19,7 @@ See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.0.2</version>
+         <version>0.0.2</version>
       </dependency>
 
 
@@ -31,7 +31,7 @@ See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials
         <dependency>
          <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.1</version>
+         <version>0.0.2</version>
         </dependency>
 
 
@@ -44,5 +44,5 @@ See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials
          <dependency>
            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-akka</artifactId>
-             <version>0.0.1</version>
+             <version>0.0.2</version>
           </dependency>
