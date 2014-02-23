@@ -15,11 +15,9 @@ Please also see [the single-layer network parameters common to all single-layer 
 
 K is number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it is a sample of the Markov chain. Composing the restricted Boltzmann machine, a typical value for k is 1.
 
-## initiating a continuous restricted Boltzmann machine
+## initiating a CRBM
 
-Setting up a single-thread continuous restricted Boltzmann machine is easy. 
-
-To create the machine, you simply instantiate an object of the class [CRBM]({{ site.baseurl }}/doc/com/ccc/deeplearning/rbm/CRBM.html).
+Setting up a single-thread continuous restricted Boltzmann machine is easy. To create the machine, you simply instantiate an object of the class [CRBM]({{ site.baseurl }}/doc/com/ccc/deeplearning/rbm/CRBM.html).
     
 
      DoubleMatrix input = new DoubleMatrix(new double[][]{
@@ -56,9 +54,7 @@ Now that you have instantiated the machine and created the training set, it's ti
 
 		rbm.trainTillConvergence(0.01,1,input);
 
-This trains the CRBM until convergence with a learning rate of 0.01, a k of 1, and the specified input.
-
-You can test your trained network by feeding it unstructured data and checking the output. 
+This trains the CRBM until convergence with a learning rate of 0.01, a k of 1, and the specified input. You can test your trained network by feeding it unstructured data and checking the output. 
 
      
 
