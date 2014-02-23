@@ -21,7 +21,7 @@ K is the number of times you run [contrastive divergence]({{ site.baseurl }}/glo
 
 Setting up a single-thread deep belief network is easy. 
 
-To create the machine, you simply instantiate an object of the [class]({{ site.baseurl }}/doc/com/ccc/deeplearning/dbn/CDBN.html).
+To create the machine, you simply instantiate an object of the class [CDBN]({{ site.baseurl }}/doc/com/ccc/deeplearning/dbn/CDBN.html).
 
     
 	    //training data and labels
