@@ -92,7 +92,7 @@ public class RBM extends BaseNeuralNetwork {
 
 
 	@Override
-	public synchronized NeuralNetworkGradient getGradient(Object[] params) {
+	public NeuralNetworkGradient getGradient(Object[] params) {
 		int k = (int) params[0];
 		double learningRate = (double) params[1];
 		/*

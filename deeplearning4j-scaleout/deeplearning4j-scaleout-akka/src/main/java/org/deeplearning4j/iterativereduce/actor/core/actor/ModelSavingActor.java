@@ -3,16 +3,15 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.concurrent.Callable;
 
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
+import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.dispatch.Futures;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Creator;
@@ -30,7 +29,7 @@ public class ModelSavingActor extends UntypedActor {
 	private String pathToSave;
 	private ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-
+	private Cluster cluster = Cluster.get(context().system());
 
 	public ModelSavingActor(String pathToSave) {
 		this.pathToSave = pathToSave;
@@ -44,6 +43,19 @@ public class ModelSavingActor extends UntypedActor {
 
 	}
 
+	
+	@Override
+	public void postStop() throws Exception {
+		super.postStop();
+		log.info("Post stop on model saver");
+		cluster.unsubscribe(getSelf());
+	}
+	
+	@Override
+	public void preStart() throws Exception {
+		super.preStart();
+		log.info("Pre start on model saver");
+	}
 
 	@Override
 	@SuppressWarnings("unchecked")

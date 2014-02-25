@@ -61,8 +61,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				getSelf()), mediator);
+		
 	}
 
 
