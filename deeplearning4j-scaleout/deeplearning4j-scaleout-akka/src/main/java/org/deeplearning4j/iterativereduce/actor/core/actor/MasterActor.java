@@ -168,6 +168,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
 				log.info("Saving new model");
+
 				mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
 						new FinetuneMessage(masterResults)), mediator);
 				
@@ -176,16 +177,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				epochsComplete++;
 				batchActor.tell(up, getSelf());
 				updates.clear();
-
-				if(epochsComplete == conf.getNumPasses()) {
-					isDone = true;
-					/*log.info("All done; shutting down");
-					//send a shutdown signal
-					mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
-							new ShutdownMessage()), getSelf());*/
-					//Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());
-
-				}
 
 			}
 
@@ -200,10 +191,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 			isDone = true;
 			log.info("All done; shutting down");
-			//send a shutdown signal
-			/*mediator.tell(new DistributedPubSubMediator.Publish(SHUTDOWN,
-					new ShutdownMessage()), getSelf());
-			Cluster.get(this.getContext().system()).down(Cluster.get(getContext().system()).selfAddress());*/
+			
 
 		}
 
@@ -333,7 +321,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public abstract void complete(DataOutputStream ds);
 
 	@Override
-	public E getResults() {
+	public synchronized E getResults() {
 		return masterResults;
 	}
 

@@ -88,12 +88,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			log.info("Subscribed to " + ack.toString());
 		}
-		/*else if(message instanceof ShutdownMessage) {
-			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString() );
-			if(!context().system().isTerminated())
-				context().system().shutdown();
-		}*/
-
+		
 		else if(message instanceof List) {
 			List<Pair<DoubleMatrix,DoubleMatrix>> input = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
 			updateTraining(input);
@@ -102,6 +97,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 		else if(message instanceof UpdateMessage) {
 			UpdateMessage<E> m = (UpdateMessage<E>) message;
+			log.info("Updating worker");
 			results = m.getUpdateable().get();
 		}
 		else
@@ -133,6 +129,9 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 			@Override
 			public void onComplete(Throwable arg0, E work) throws Throwable {
+				if(arg0 != null)
+					throw arg0;
+
 				log.info("Updating parent actor...");
 				//update parameters in master param server
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
