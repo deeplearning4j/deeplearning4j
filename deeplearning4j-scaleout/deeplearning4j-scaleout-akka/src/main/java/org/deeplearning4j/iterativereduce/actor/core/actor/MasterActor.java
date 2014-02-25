@@ -1,18 +1,26 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.FinishMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
+import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
@@ -59,6 +67,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
+	protected ScheduledExecutorService iterChecker;
 
 
 
@@ -79,9 +88,34 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				getSelf()), mediator);
 		setup(conf);
+		iterChecker = Executors.newScheduledThreadPool(1);
+		iterChecker.scheduleAtFixedRate(new Runnable() {
+
+			@Override
+			public void run() {
+				log.info("Updating model...");
+				File save = new File("nn-model.bin");
+				if(save.exists()) {
+					File parent = save.getParentFile();
+					save.renameTo(new File(parent,save.getName() + "-" + System.currentTimeMillis()));
+				}
+				try {
+					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(save));
+					Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) masterResults;
+					u.get().write(bos);
+					bos.flush();
+					bos.close();
+					log.info("saved model to " + "nn-model.bin");
+
+				}catch(Exception e) {
+					throw new RuntimeException(e);
+				}
+				
+				
+			}
+
+		}, 10,60, TimeUnit.SECONDS);
 
 
 	}
@@ -133,8 +167,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			updates.add(up);
 			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
-				if(listener != null)
-					listener.epochComplete(masterResults);
+				log.info("Saving new model");
+				mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
+						new FinetuneMessage(masterResults)), mediator);
+				
 				//reset the dataset
 				batchActor.tell(new ResetMessage(), getSelf());
 				epochsComplete++;

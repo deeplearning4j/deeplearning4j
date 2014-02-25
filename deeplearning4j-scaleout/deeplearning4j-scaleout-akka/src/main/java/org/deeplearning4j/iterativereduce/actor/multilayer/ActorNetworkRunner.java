@@ -6,12 +6,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
-import org.deeplearning4j.iterativereduce.actor.core.actor.DoneReaper;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.SimpleClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
@@ -22,6 +22,7 @@ import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
@@ -34,6 +35,8 @@ import akka.contrib.pattern.ClusterClient;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 
 import com.typesafe.config.Config;
@@ -111,7 +114,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		
 		log.info("Started batch actor");
 		
-		system.actorOf(Props.create(DoneReaper.class));
 		
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
@@ -147,7 +149,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 	@Override
-	public void setup(Conf conf) {
+	public void setup(final Conf conf) {
 
 
 
@@ -181,8 +183,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			
 			log.info("Starting model saver");
 			ActorRef ref = system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
-			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-					ref), mediator);
 			
 		
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
@@ -212,8 +212,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				Thread.currentThread().interrupt();
 			}
 
-			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-					worker), mediator);
+		
 			
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
@@ -226,11 +225,33 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		//store it in zookeeper for service discovery
 		conf.setMasterUrl(getMasterAddress().toString());
 
-		//register the configuration to zookeeper
-		ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
-		reg.register();
-		reg.close();
+		scala.concurrent.Future<Void> f = Futures.future(new Callable<Void>() {
 
+			@Override
+			public Void call() throws Exception {
+				log.info("Registering with zookeeper; if the logging stops here, ensure zookeeper is started");
+				//register the configuration to zookeeper
+				ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
+				reg.register();
+				reg.close();
+				return null;
+			}
+			
+		},system.dispatcher());
+		
+		f.onComplete(new OnComplete<Void>() {
+
+			@Override
+			public void onComplete(Throwable arg0, Void arg1) throws Throwable {
+				if(arg0 != null)
+					throw arg0;
+				log.info("Registered conf with zookeeper");
+
+			}
+			
+		}, system.dispatcher());
+		
+		
 	}
 
 	
@@ -287,11 +308,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		this.result = result;
 		mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
 				new FinetuneMessage(result)), mediator);
-		if(!iter.hasNext()) {
-			mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-					iter), mediator);
-		}
-
+		
 
 	}
 

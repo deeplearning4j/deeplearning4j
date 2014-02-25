@@ -9,7 +9,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
-import org.deeplearning4j.iterativereduce.actor.core.actor.DoneReaper;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -40,8 +39,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				getSelf()), mediator);
+	
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
@@ -85,10 +83,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				conf.getPretrainEpochs()), mediator);
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				worker), mediator);
 		
-
 	}
 
 

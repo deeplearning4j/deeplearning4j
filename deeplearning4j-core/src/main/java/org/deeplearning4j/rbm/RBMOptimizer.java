@@ -3,7 +3,6 @@ package org.deeplearning4j.rbm;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
-import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.jblas.DoubleMatrix;
 
 
@@ -20,7 +19,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	}
 
 	@Override
-	public synchronized void getValueGradient(double[] buffer) {
+	public  void getValueGradient(double[] buffer) {
 		int k = (int) extraParams[0];
 		numTimesIterated++;
 		//adaptive k based on the number of iterations.

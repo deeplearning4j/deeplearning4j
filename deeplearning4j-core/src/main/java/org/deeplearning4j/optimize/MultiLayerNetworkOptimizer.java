@@ -5,8 +5,6 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

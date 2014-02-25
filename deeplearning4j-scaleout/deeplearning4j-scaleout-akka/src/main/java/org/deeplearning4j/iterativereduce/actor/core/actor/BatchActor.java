@@ -1,6 +1,5 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -14,13 +13,10 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.japi.Creator;
 
 
@@ -40,8 +36,6 @@ public class BatchActor extends UntypedActor {
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(FINETUNE, getSelf()), getSelf());
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				getSelf()), mediator);
 		iterChecker = Executors.newScheduledThreadPool(1);
 		iterChecker.scheduleAtFixedRate(new Runnable() {
 
@@ -50,12 +44,12 @@ public class BatchActor extends UntypedActor {
 				if(BatchActor.this.maxReset == numTimesReset) {
 					log.info("Shutting down via batch actor and max resets");
 					/*mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.SHUTDOWN,
-							new ShutdownMessage()),mediator);*/
+							new ShutdownMessage()),mediator);
 					try {
 						iterChecker.awaitTermination(60,TimeUnit.SECONDS);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
-					}
+					}*/
 				}
 			}
 
@@ -78,64 +72,24 @@ public class BatchActor extends UntypedActor {
 			FinetuneMessage m = (FinetuneMessage) message;
 			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
 			final UpdateableImpl save = SerializationUtils.clone(result);
-			Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
+			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
+					save), mediator);
 
-				@Override
-				public UpdateableImpl call() throws Exception {					
-					mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
-							save), mediator);
-					return save;
-				}
-
-			}, context().dispatcher());
-			
-			
-			f.onComplete(new OnComplete<UpdateableImpl>() {
-
-				@Override
-				public void onComplete(Throwable arg0, UpdateableImpl arg1)
-						throws Throwable {
-					if(arg0 != null)
-						throw arg0;
-				}
-			
-			},context().dispatcher());
-			
-
+			log.info("Broadcasting another dataset");
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
 					result), mediator);
 
-			//This needs to happen to wait for state to propagate.
-			try {
-				Thread.sleep(15000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
 
 			if(iter.hasNext()) {
+				log.info("Propagating new work to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						iter.next()), mediator);
 			}
-				
 
+			
+			else
+				unhandled(message);
 		}
-
-		/*else if(message instanceof ShutdownMessage) {
-			log.info("Shutting down system for worker with address " + Cluster.get(context().system()).selfAddress().toString());
-			if(!context().system().isTerminated())
-				context().system().shutdown();
-		}*/
-		else if(iter.hasNext()) {
-			//start the pipeline
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					iter.next()), mediator);
-
-		}
-		else
-			unhandled(message);
-		//each time the batch actor is pinged; check the status via the reaper; shutdown if done
-		mediator.tell(new DistributedPubSubMediator.Publish(DoneReaper.REAPER,
-				iter), mediator);
 	}
 
 
