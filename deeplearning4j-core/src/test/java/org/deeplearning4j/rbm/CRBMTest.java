@@ -33,10 +33,12 @@ public class CRBMTest extends DeepLearningTest {
 
 		RandomGenerator g = new MersenneTwister(123);
 
-		CRBM r = new CRBM.Builder().numberOfVisible(input.getRow(0).columns).numHidden(10).withRandom(g).build();
-
-
-		r.trainTillConvergence(input, 0.01, new Object[]{1,0.01,1});
+		CRBM r = new CRBM.Builder().renderWeights(200)
+		.numberOfVisible(input.getRow(0).columns).withSparsity(0.01)
+		.numHidden(4).withRandom(g).build();
+		r.getW().muli(1000);
+	
+		r.trainTillConvergence(input, 0.0001, new Object[]{1,0.0001,1000});
 		
 		
 		DoubleMatrix test = new DoubleMatrix(new double[][]
@@ -45,7 +47,7 @@ public class CRBMTest extends DeepLearningTest {
 
 
 		log.info(r.reconstruct(test).toString());
-
+		log.info("Cross entropy " + r.getReConstructionCrossEntropy());
 	}
 
 	

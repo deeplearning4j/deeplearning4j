@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.zip.GZIPInputStream;
@@ -22,14 +23,20 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 	private Iterator<File> fileIterator;
 	private Queue<String> cache;
 	private LineIterator currLineIterator;
-	private File dir;
-
-	public FileSentenceIterator(SentencePreProcessor preProcessor,File dir) {
+	private File file;
+	/**
+	 * Takes a single file or directory
+	 * @param preProcessor the sentence pre processor
+	 * @param file the file or folder to iteratoe over
+	 */
+	public FileSentenceIterator(SentencePreProcessor preProcessor,File file) {
 		super(preProcessor);
-		this.dir = dir;
+		this.file = file;
 		cache = new java.util.concurrent.ConcurrentLinkedDeque<>();
-		fileIterator = FileUtils.iterateFiles(dir, null, true);
-
+		if(file.isDirectory())
+			fileIterator = FileUtils.iterateFiles(file, null, true);
+		else
+			fileIterator = Arrays.asList(file).iterator();
 	}
 
 	public FileSentenceIterator(File dir) {
@@ -111,7 +118,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 
 	@Override
 	public void reset() {
-		fileIterator = FileUtils.iterateFiles(dir, null, true);
+		fileIterator = FileUtils.iterateFiles(file, null, true);
 
 
 	}
