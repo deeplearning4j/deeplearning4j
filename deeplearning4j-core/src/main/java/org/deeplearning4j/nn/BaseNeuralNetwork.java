@@ -682,9 +682,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				if(classes == null || classes.length < 0)
 					throw new RuntimeException("Unable to get runtime parameter types");
 				
+				Class<?> clazz = classes[0];
 				
 				//input matrix found
-				if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
+				if(classes != null && classes.length > 0 && clazz.isAssignableFrom(Integer.class) || clazz.isPrimitive()) {
 					try {
 						ret = (E) curr.newInstance(numVisible, numHidden, 
 								W, hBias,vBias, gen,fanIn,dist);
