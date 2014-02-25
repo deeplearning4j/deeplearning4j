@@ -49,7 +49,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	@Override
-	public UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
+	public synchronized UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
 			Collection<UpdateableImpl> masterUpdates) {
 
 

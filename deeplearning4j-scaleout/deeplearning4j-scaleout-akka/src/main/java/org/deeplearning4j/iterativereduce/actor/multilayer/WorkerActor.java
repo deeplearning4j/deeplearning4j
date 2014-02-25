@@ -126,12 +126,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public UpdateableImpl compute(List<UpdateableImpl> records) {
+	public synchronized UpdateableImpl compute(List<UpdateableImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public UpdateableImpl compute() {
+	public synchronized UpdateableImpl compute() {
 		log.info("Training network");
 		network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
 		return new UpdateableImpl(network);
