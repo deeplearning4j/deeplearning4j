@@ -679,7 +679,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			for(int i = 0; i < c.length; i++) {
 				Constructor<?> curr = c[i];
 				Class<?>[] classes = curr.getParameterTypes();
-
+				if(classes == null || classes.length < 0)
+					throw new RuntimeException("Unable to get runtime parameter types");
+				
+				
 				//input matrix found
 				if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(Integer.class) || classes[0].isPrimitive()) {
 					try {
