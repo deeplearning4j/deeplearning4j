@@ -40,21 +40,22 @@ public class RBMTest extends DeepLearningTest {
 				{0,0,1,1,0,0},
 				{0,0,1,1,1,0},
 				{0,0,1,1,1,0}
-			};
+				};
 
 		DoubleMatrix d = new DoubleMatrix(data);
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder().numberOfVisible(6).numHidden(2).withRandom(g).build();
+		RBM r = new RBM.Builder().withSparsity(0.01).renderWeights(200)
+		.numberOfVisible(6).numHidden(4).withRandom(g).build();
+		r.getW().muli(1000);
 
-		
 		r.trainTillConvergence(d, 0.01, new Object[]{1,0.01,1000});
-		
+
 		DoubleMatrix v = new DoubleMatrix(new double[][]
 				{{1, 1, 0, 0, 0, 0},
 				{0, 0, 0, 1, 1, 0}});	
 
-		log.info(r.reconstruct(v).toString());
+		log.info("Reconstruction " + r.reconstruct(v).toString());
 
 		NeuralNetwork r2 = r.clone();
 		assertEquals(r2.getnVisible(),r.nVisible);
@@ -62,10 +63,9 @@ public class RBMTest extends DeepLearningTest {
 		assertEquals(r2.getW(),r.W);
 		assertEquals(r2.gethBias(),r.hBias);
 		assertEquals(r2.getvBias(),r.vBias);
-		for(int i = 0; i < 10; i++) {
-			r2.trainTillConvergence(d, 0.1, new Object[]{1,0.01,1000});
-			log.info("Cross entropy " + r.getReConstructionCrossEntropy());
-		}
+		r2.trainTillConvergence(d, 0.1, new Object[]{1,0.01,1000});
+		log.info("Cross entropy " + r.getReConstructionCrossEntropy());
+
 
 	}
 
