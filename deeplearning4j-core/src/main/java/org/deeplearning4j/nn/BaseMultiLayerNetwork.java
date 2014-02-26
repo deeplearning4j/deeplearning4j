@@ -75,6 +75,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	//sometimes we may need to transform weights; this allows a 
 	//weight transform upon layer setup
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+	//hidden bias transforms; for initialization
+	private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
+	//visible bias transforms for initialization
+	private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
+
 	private boolean shouldBackProp = true;
 	//whether to only train a certain number of epochs
 	private boolean forceNumEpochs = false;
@@ -285,6 +290,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		applyTransforms();
 	}
 
+
+	public synchronized Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
+		return hiddenBiasTransforms;
+	}
+
+	public synchronized Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
+		return visibleBiasTransforms;
+	}
 
 	public synchronized int getnIns() {
 		return nIns;
@@ -783,7 +796,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.weightTransforms = network.weightTransforms;
 		this.sparsity = network.sparsity;
 		this.toDecode = network.toDecode;
-		
+		this.visibleBiasTransforms = network.visibleBiasTransforms;
+		this.hiddenBiasTransforms = network.hiddenBiasTransforms;
 		this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
 		for(int i = 0; i < sigmoidLayers.length; i++)
 			this.sigmoidLayers[i] = network.sigmoidLayers[i].clone();
@@ -832,6 +846,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(int i = 0; i < layers.length; i++) {
 			if(weightTransforms.containsKey(i)) 
 				layers[i].setW(weightTransforms.get(i).apply(layers[i].getW()));
+			if(hiddenBiasTransforms.containsKey(i))
+				layers[i].sethBias(getHiddenBiasTransforms().get(i).apply(layers[i].gethBias()));
+			if(this.visibleBiasTransforms.containsKey(i))
+				layers[i].setvBias(getVisibleBiasTransforms().get(i).apply(layers[i].getvBias()));
 		}
 	}
 
@@ -1091,13 +1109,26 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		protected boolean backProp = true;
 		protected boolean shouldForceEpochs = false;
 		private double sparsity = 0;
-
+		private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
+		private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
+		
 
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
 			return this;
 		}
 
+		
+		public Builder<E> withVisibleBiasTransforms(Map<Integer,MatrixTransform> visibleBiasTransforms) {
+			this.visibleBiasTransforms = visibleBiasTransforms;
+			return this;
+		}
+		
+		public Builder<E> withHiddenBiasTransforms(Map<Integer,MatrixTransform> hiddenBiasTransforms) {
+			this.hiddenBiasTransforms = hiddenBiasTransforms;
+			return this;
+		}
+		
 		/**
 		 * Forces use of number of epochs for training
 		 * SGD style rather than conjugate gradient
@@ -1289,7 +1320,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				if(dist != null)
 					ret.setDist(dist);
 				ret.getWeightTransforms().putAll(weightTransforms);
-
+				ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
+				ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
 
 				return ret;
 			} catch (InstantiationException | IllegalAccessException e) {
