@@ -37,7 +37,7 @@ public class Conf implements Serializable,Cloneable {
 	private String masterUrl;
 	private double l2;
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
-	
+	private int renderWeightEpochs = 0;
 	
 	
 	
@@ -183,6 +183,12 @@ public class Conf implements Serializable,Cloneable {
 		this.finetuneEpochs = finetuneEpochs;
 	}
 	
+	public int getRenderWeightEpochs() {
+		return renderWeightEpochs;
+	}
+	public void setRenderWeightEpochs(int renderWeightEpochs) {
+		this.renderWeightEpochs = renderWeightEpochs;
+	}
 	public Conf copy() {
 		return SerializationUtils.clone(this);
 	}
