@@ -1,18 +1,10 @@
 package org.deeplearning4j.rbm;
 
 
-import java.io.IOException;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.base.DeepLearningTest;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.rbm.CRBM;
 import org.jblas.DoubleMatrix;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

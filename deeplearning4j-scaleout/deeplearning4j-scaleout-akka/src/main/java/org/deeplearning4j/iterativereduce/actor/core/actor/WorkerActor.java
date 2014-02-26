@@ -43,6 +43,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected int numHidden;
 	protected int numVisible;
 	protected int numHiddenNeurons;
+	protected int renderWeightEpochs;
 	protected long seed;
 	protected double learningRate;
 	protected double corruptionLevel;
@@ -163,6 +164,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		numVisible = conf.getnIn();
 		numHiddenNeurons = hiddenLayerSizes.length;
 		seed = conf.getSeed();
+		renderWeightEpochs = conf.getRenderWeightEpochs();
 		useRegularization = conf.isUseRegularization();
 		learningRate = conf.getPretrainLearningRate();
 		preTrainEpochs = conf.getPretrainEpochs();

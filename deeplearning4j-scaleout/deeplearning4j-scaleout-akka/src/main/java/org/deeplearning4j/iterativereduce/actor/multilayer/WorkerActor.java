@@ -148,7 +148,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		RandomGenerator rng = new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
 		network = new BaseMultiLayerNetwork.Builder<>()
-				.useRegularization(conf.isUseRegularization())
+				.useRegularization(conf.isUseRegularization()).renderWeights(renderWeightEpochs)
 				.numberOfInputs(numVisible).numberOfOutPuts(numHidden).withActivation(conf.getFunction())
 				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng).transformWeightsAt(conf.getWeightTransforms())
 				.withClazz(conf.getMultiLayerClazz()).build();
