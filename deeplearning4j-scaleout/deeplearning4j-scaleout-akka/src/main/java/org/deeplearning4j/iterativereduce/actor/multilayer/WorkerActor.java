@@ -35,7 +35,7 @@ import akka.japi.Function;
 
 public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
 	protected BaseMultiLayerNetwork network;
-	private DoubleMatrix combinedInput;
+	protected DoubleMatrix combinedInput;
 
 	protected UpdateableImpl workerMatrix;
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();

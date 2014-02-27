@@ -22,7 +22,7 @@ import akka.japi.Creator;
 
 public class BatchActor extends UntypedActor {
 
-	private DataSetIterator iter;
+	protected DataSetIterator iter;
 	private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	private int numTimesReset;
 	private static Logger log = LoggerFactory.getLogger(BatchActor.class);
