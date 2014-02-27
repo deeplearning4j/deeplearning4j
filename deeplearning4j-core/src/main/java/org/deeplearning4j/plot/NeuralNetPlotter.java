@@ -70,12 +70,7 @@ public class NeuralNetPlotter {
 
 				});
 		plotActivations(network);
-		/*DoubleMatrix w = network.getW().transpose();
-		boolean isPerfectSquare = Math.sqrt(w.columns) % 1 == 0;
-		if(isPerfectSquare)
-			renderFilter(w,w.rows,w.columns,network.getInput().rows);
-		else
-			log.warn("Cant render good representation of filter witout perfect square, please choose different hidden layer size");*/
+	
 	}
 
 	public void plotMatrices(String[] titles,DoubleMatrix[] matrices) {

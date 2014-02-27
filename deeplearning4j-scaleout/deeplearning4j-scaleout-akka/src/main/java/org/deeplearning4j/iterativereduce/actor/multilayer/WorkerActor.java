@@ -34,13 +34,13 @@ import akka.japi.Function;
 
 
 public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
-	private BaseMultiLayerNetwork network;
+	protected BaseMultiLayerNetwork network;
 	private DoubleMatrix combinedInput;
 
 	protected UpdateableImpl workerMatrix;
-	private ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 
-	private static Logger log = LoggerFactory.getLogger(WorkerActor.class);
+	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
 	public final static String SYSTEM_NAME = "Workers";
 
 	public WorkerActor(Conf conf) {

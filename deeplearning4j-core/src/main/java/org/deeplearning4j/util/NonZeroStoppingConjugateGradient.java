@@ -45,7 +45,7 @@ public class NonZeroStoppingConjugateGradient implements Optimizer {
 	double initialStepSize = 1;
 	double tolerance = 0.00001;
 	double gradientTolerance = 0.00001;
-	int maxIterations = 1000;
+	int maxIterations = 10000;
 	private String myName = "";
 	private NeuralNetEpochListener listener;
 
