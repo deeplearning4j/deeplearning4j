@@ -113,12 +113,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				batchActor.tell(up, getSelf());
 				updates.clear();
 
-				/*if(epochsComplete == conf.getPretrainEpochs()) {
-					isDone = true;
-					
-					log.info("All done; shutting down");
-					context().system().shutdown();
-				}*/
 
 			}
 
