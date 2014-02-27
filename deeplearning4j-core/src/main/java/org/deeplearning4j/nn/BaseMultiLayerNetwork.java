@@ -838,6 +838,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
+	
+
+	/**
+	 * Pretrain the network with the given parameters 
+	 * @param input the input to train ons
+	 * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
+	 */
+	public abstract void pretrain(DoubleMatrix input,Object[] otherParams);
+
+	
 	protected void applyTransforms() {
 		if(layers == null || layers.length < 1) {
 			throw new IllegalStateException("Layers not initialized");

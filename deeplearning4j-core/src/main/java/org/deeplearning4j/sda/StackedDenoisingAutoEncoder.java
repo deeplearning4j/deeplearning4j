@@ -42,6 +42,21 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 		pretrain(this.getInput(),lr,corruptionLevel,epochs);
 	}
 
+	
+	@Override
+	public void pretrain(DoubleMatrix input, Object[] otherParams) {
+		if(otherParams == null) {
+			otherParams = new Object[]{0.01,0.3,1000};
+		}
+		
+		Double lr = (Double) otherParams[0];
+		Double corruptionLevel = (Double) otherParams[1];
+		Integer epochs = (Integer) otherParams[2];
+
+		pretrain(input, lr, corruptionLevel, epochs);
+		
+	}
+	
 	/**
 	 * Unsupervised pretraining based on reconstructing the input
 	 * from a corrupted version
@@ -140,6 +155,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 			this.clazz = StackedDenoisingAutoEncoder.class;
 		}
 	}
+
+
+	
 
 
 

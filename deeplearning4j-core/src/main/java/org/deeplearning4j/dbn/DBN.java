@@ -70,6 +70,20 @@ public class DBN extends BaseMultiLayerNetwork {
 		}
 	}
 
+	
+	
+	
+	
+	@Override
+	public void pretrain(DoubleMatrix input, Object[] otherParams) {
+		int k = (Integer) otherParams[0];
+		double lr = (Double) otherParams[1];
+		int epochs = (Integer) otherParams[2];
+		pretrain(input,k,lr,epochs);
+		
+	}
+
+
 	/**
 	 * This unsupervised learning method runs
 	 * contrastive divergence on each RBM layer in the network.
