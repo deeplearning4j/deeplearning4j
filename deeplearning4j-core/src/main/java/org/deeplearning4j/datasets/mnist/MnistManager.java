@@ -1,9 +1,10 @@
-package org.deeplearning4j.datasets;
+package org.deeplearning4j.datasets.mnist;
 
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+
 
 /**
  * <p>

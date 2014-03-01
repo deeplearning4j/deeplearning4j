@@ -1,4 +1,4 @@
-package org.deeplearning4j.datasets;
+package org.deeplearning4j.datasets.mnist;
 
 
 import java.io.FileNotFoundException;

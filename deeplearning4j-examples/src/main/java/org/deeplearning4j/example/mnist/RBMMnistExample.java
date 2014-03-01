@@ -17,12 +17,15 @@ public class RBMMnistExample {
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(500).build();
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,60000);
+		DataSetIterator iter = new MnistDataSetIterator(10,1000);
 
+		
+		
+		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,1000});
+			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.001,10000});
 		}
 
 		iter.reset();
