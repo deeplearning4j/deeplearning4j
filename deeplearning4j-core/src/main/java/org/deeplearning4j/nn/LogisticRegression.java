@@ -179,11 +179,13 @@ public class LogisticRegression implements Serializable {
 		reg.b = b.dup();
 		reg.W = W.dup();
 		reg.l2 = this.l2;
-		reg.labels = this.labels.dup();
+		if(this.labels != null)
+			reg.labels = this.labels.dup();
 		reg.nIn = this.nIn;
 		reg.nOut = this.nOut;
 		reg.useRegularization = this.useRegularization;
-		reg.input = this.input.dup();
+		if(this.input != null)
+			reg.input = this.input.dup();
 		return reg;
 	}
 

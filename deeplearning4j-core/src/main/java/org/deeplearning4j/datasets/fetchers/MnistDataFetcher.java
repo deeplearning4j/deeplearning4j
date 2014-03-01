@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.MnistManager;
+import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
