@@ -137,6 +137,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 				"clusterClient");
 		Props p = WorkerActor.propsFor(clusterClient, conf);
 		int cores = Runtime.getRuntime().availableProcessors();
+		
 		ActorRef ref = system.actorOf(new RoundRobinPool(cores).props(p), "worker");
 		
 		log.info("Worker joining cluster");
