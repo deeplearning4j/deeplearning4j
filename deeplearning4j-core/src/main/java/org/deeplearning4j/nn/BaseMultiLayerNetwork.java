@@ -94,6 +94,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private DoubleMatrix  columnMeans;
 	//divide by the std deviation
 	private DoubleMatrix columnStds;
+	private boolean initCalled = false;
 	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
@@ -255,8 +256,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		this.input = input.dup();
+		if(!initCalled)
+			init();
+		else
+			this.feedForward(input);
+	}
+
+	public void init() {
 		DoubleMatrix layerInput = input;
 		int inputSize;
+		if(nLayers < 1)
+			throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
+
+		this.layers = new NeuralNetwork[nLayers];
 
 		// construct multi-layer
 		for(int i = 0; i < this.nLayers; i++) {
@@ -271,7 +283,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				sigmoidLayers[i].setActivationFunction(activation);
 			}
 			else {
-				layerInput = sigmoidLayers[i - 1].sample_h_given_v();
+				if(this.input != null)
+					layerInput = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
 				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
 				sigmoidLayers[i].setActivationFunction(activation);
@@ -284,13 +297,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		// layer for output using LogisticRegression
-		this.logLayer = new LogisticRegression(layerInput, this.hiddenLayerSizes[this.nLayers-1], this.nOuts);
-		this.logLayer.setUseRegularization(this.isUseRegularization());
-		this.logLayer.setL2(this.getL2());
-
-
+		this.logLayer = new LogisticRegression.Builder()
+		.useRegularization(useRegularization).numberOfInputs(this.hiddenLayerSizes[this.nLayers-1])
+		.numberOfOutputs(nOuts).withL2(l2).build();
 		dimensionCheck();
 		applyTransforms();
+		initCalled = true;
+
 	}
 
 
@@ -389,7 +402,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(NeuralNetwork network : layers) {
 			gradient.add(network.getGradient(params));
 		}
-		
+
 		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
 		return new MultiLayerGradient(gradient,g2);
 	}
@@ -404,8 +417,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return logLayer;
 	}
 
+	/**
+	 * Note that if input isn't null
+	 * and the layers are null, this is a way
+	 * of initializing the neural network
+	 * @param input
+	 */
 	public synchronized void setInput(DoubleMatrix input) {
 		this.input = input;
+		if(input != null && this.layers == null)
+			this.initializeLayers(input);
 	}
 
 	public synchronized DoubleMatrix getInput() {
@@ -509,7 +530,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 	@Override
-	protected BaseMultiLayerNetwork clone() {
+	public BaseMultiLayerNetwork clone() {
 		BaseMultiLayerNetwork ret = new Builder<>().withClazz(getClass()).buildEmpty();
 		ret.update(this);
 		return ret;
@@ -787,12 +808,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param network the network to get parameters from
 	 */
 	protected void update(BaseMultiLayerNetwork network) {
-		this.layers = new NeuralNetwork[network.layers.length];
-		for(int i = 0; i < layers.length; i++) {
-			this.layers[i] = network.layers[i].clone();
+		if(network.layers != null && network.layers.length > 0) {
+			this.layers = new NeuralNetwork[network.layers.length];
+			for(int i = 0; i < layers.length; i++) 
+				this.layers[i] = network.layers[i].clone();
+
 		}
+
+
 		this.hiddenLayerSizes = network.hiddenLayerSizes;
-		this.logLayer = network.logLayer.clone();
+		if(network.logLayer != null)
+			this.logLayer = network.logLayer.clone();
 		this.nIns = network.nIns;
 		this.nLayers = network.nLayers;
 		this.nOuts = network.nOuts;
@@ -817,9 +843,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.toDecode = network.toDecode;
 		this.visibleBiasTransforms = network.visibleBiasTransforms;
 		this.hiddenBiasTransforms = network.hiddenBiasTransforms;
-		this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
-		for(int i = 0; i < sigmoidLayers.length; i++)
-			this.sigmoidLayers[i] = network.sigmoidLayers[i].clone();
+		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
+			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
+			for(int i = 0; i < sigmoidLayers.length; i++)
+				this.sigmoidLayers[i] = network.sigmoidLayers[i].clone();
+
+		}
 
 
 	}
@@ -857,7 +886,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
-	
+
 
 	/**
 	 * Pretrain the network with the given parameters 
@@ -866,7 +895,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public abstract void pretrain(DoubleMatrix input,Object[] otherParams);
 
-	
+
 	protected void applyTransforms() {
 		if(layers == null || layers.length < 1) {
 			throw new IllegalStateException("Layers not initialized");
@@ -1140,24 +1169,24 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private double sparsity = 0;
 		private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
 		private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
-		
+
 
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
 			return this;
 		}
 
-		
+
 		public Builder<E> withVisibleBiasTransforms(Map<Integer,MatrixTransform> visibleBiasTransforms) {
 			this.visibleBiasTransforms = visibleBiasTransforms;
 			return this;
 		}
-		
+
 		public Builder<E> withHiddenBiasTransforms(Map<Integer,MatrixTransform> hiddenBiasTransforms) {
 			this.hiddenBiasTransforms = hiddenBiasTransforms;
 			return this;
 		}
-		
+
 		/**
 		 * Forces use of number of epochs for training
 		 * SGD style rather than conjugate gradient
@@ -1351,7 +1380,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.getWeightTransforms().putAll(weightTransforms);
 				ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
 				ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
+				if(hiddenLayerSizes == null)
+					throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
 
+				ret.init();
 				return ret;
 			} catch (InstantiationException | IllegalAccessException e) {
 				throw new RuntimeException(e);

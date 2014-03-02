@@ -174,7 +174,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 			
 			
 			try {
-				Thread.sleep(30000);
+				Thread.sleep(60000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}

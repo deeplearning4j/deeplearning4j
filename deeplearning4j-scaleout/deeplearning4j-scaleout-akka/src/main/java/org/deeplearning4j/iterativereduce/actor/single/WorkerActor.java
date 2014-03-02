@@ -2,12 +2,10 @@ package org.deeplearning4j.iterativereduce.actor.single;
 
 import java.util.List;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.single.UpdateableSingleImpl;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -18,7 +16,6 @@ import akka.actor.Props;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
-import akka.japi.Creator;
 
 /**
  * Single worker actor for handling sub batches
@@ -69,9 +66,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-		else if(message instanceof UpdateMessage) {
-			UpdateMessage<UpdateableSingleImpl> m = (UpdateMessage<UpdateableSingleImpl>) message;
-			workerResult = (UpdateableSingleImpl) m.getUpdateable().get();
+		else if(message instanceof Updateable) {
+			workerResult = (UpdateableSingleImpl) message;
 			this.network = workerResult.get();
 		}
 		else
@@ -101,6 +97,15 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	@Override
 	public UpdateableSingleImpl compute() {
+		while(network == null) {
+			log.info("Unable to process; waiting till network is initialized");
+			try {
+				Thread.sleep(15000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		
 		network.trainTillConvergence(combinedInput, learningRate, extraParams);
 		return new UpdateableSingleImpl(network);
 	}

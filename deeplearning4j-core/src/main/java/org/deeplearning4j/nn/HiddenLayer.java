@@ -155,7 +155,8 @@ public class HiddenLayer implements Serializable {
 		HiddenLayer layer = new HiddenLayer();
 		layer.b = b.dup();
 		layer.W = W.dup();
-		layer.input = input.dup();
+		if(input != null)
+			layer.input = input.dup();
 		layer.activationFunction = activationFunction;
 		layer.nOut = nOut;
 		layer.nIn = nIn;
@@ -168,7 +169,8 @@ public class HiddenLayer implements Serializable {
 		HiddenLayer layer = new HiddenLayer();
 		layer.b = b.dup();
 		layer.W = W.transpose();
-		layer.input = input.transpose();
+		if(input != null)
+			layer.input = input.transpose();
 		layer.activationFunction = activationFunction;
 		layer.nOut = nIn;
 		layer.nIn = nOut;
@@ -176,8 +178,8 @@ public class HiddenLayer implements Serializable {
 		return layer;
 	}
 
-	
-	
+
+
 	/**
 	 * Trigger an activation with the last specified input
 	 * @return the activation of the last specified input

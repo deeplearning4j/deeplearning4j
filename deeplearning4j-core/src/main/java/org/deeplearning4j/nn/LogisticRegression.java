@@ -298,10 +298,23 @@ public class LogisticRegression implements Serializable {
 		private DoubleMatrix W;
 		private LogisticRegression ret;
 		private DoubleMatrix b;
+		private double l2;
 		private int nIn;
 		private int nOut;
 		private DoubleMatrix input;
-
+		private boolean useRegualarization;
+		
+		
+		
+		public Builder withL2(double l2) {
+			this.l2 = l2;
+			return this;
+		}
+		
+		public Builder useRegularization(boolean regularize) {
+			this.useRegualarization = regularize;
+			return this;
+		}
 
 		public Builder withWeights(DoubleMatrix W) {
 			this.W = W;
@@ -329,6 +342,8 @@ public class LogisticRegression implements Serializable {
 				ret.W = W;
 			if(b != null)
 				ret.b = b;
+			ret.useRegularization = useRegualarization;
+			ret.l2 = l2;
 			return ret;
 		}
 
