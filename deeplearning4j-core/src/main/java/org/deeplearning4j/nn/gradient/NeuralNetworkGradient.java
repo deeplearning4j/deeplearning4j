@@ -60,6 +60,28 @@ public class NeuralNetworkGradient implements Serializable,Persistable {
 				+ ((wGradient == null) ? 0 : wGradient.hashCode());
 		return result;
 	}
+	
+	/**
+	 * Adds the given gradient and this one together
+	 * @param gradient the gradient to add
+	 */
+	public void add(NeuralNetworkGradient gradient) {
+		wGradient.addi(gradient.getwGradient());
+		vBiasGradient.addi(gradient.getvBiasGradient());
+		hBiasGradient.addi(gradient.gethBiasGradient());
+	}
+	
+	/**
+	 * Divides the gradients by the given number
+	 * @param num the number to divie by
+	 */
+	public void div(int num) {
+		wGradient.divi(num);
+		vBiasGradient.divi(num);
+		hBiasGradient.divi(num);
+	}
+	
+	
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)

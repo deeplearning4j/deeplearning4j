@@ -10,19 +10,19 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
  * @author Adam Gibson
  *
  */
-public abstract class ComputableWorkerImpl implements ComputableWorker<UpdateableImpl> {
+public abstract class ComputableWorkerImpl implements ComputableWorker<UpdateableGradientImpl> {
 
-	protected UpdateableImpl workerResult;
+	protected UpdateableGradientImpl workerResult;
 
 	
 
 	@Override
-	public UpdateableImpl getResults() {
+	public UpdateableGradientImpl getResults() {
 		return workerResult;
 	}
 
 	@Override
-	public void update(UpdateableImpl t) {
+	public void update(UpdateableGradientImpl t) {
 		this.workerResult = t;
 	}
 

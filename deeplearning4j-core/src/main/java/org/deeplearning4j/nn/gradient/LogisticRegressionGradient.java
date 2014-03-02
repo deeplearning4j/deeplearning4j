@@ -12,6 +12,25 @@ public class LogisticRegressionGradient implements Serializable {
 	private DoubleMatrix bGradient;
 	
 	
+	
+	/**
+	 * Divies the gradient by the given number (used in averaging)
+	 * @param num the number to divide by
+	 */
+	public void div(int num) {
+		wGradient.divi(num);
+		bGradient.divi(num);
+	}
+	
+	/**
+	 * Sums this gradient with the given one
+	 * @param gradient the gradient to add
+	 */
+	public void add(LogisticRegressionGradient gradient) {
+		wGradient.addi(gradient.getwGradient());
+		bGradient.addi(gradient.getbGradient());
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

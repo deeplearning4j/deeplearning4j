@@ -43,6 +43,14 @@ public class MultiLayerGradient implements Persistable {
 		this.logRegGradient = read.logRegGradient;
 	}
 
+	public void div(int num) {
+		for(NeuralNetworkGradient g : gradients)
+			g.div(num);
+		
+			
+	}
+	
+	
 	public synchronized List<NeuralNetworkGradient> getGradients() {
 		return gradients;
 	}

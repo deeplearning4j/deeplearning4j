@@ -9,19 +9,19 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.gradient.MultiLayerGradient;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
 
-public class UpdateableGradientImpl implements Updateable<NeuralNetworkGradient> {
+public class UpdateableGradientImpl implements Updateable<MultiLayerGradient> {
 
 
 	private static final long serialVersionUID = 6547025785641217642L;
-	private NeuralNetworkGradient wrapped;
-	private Class<? extends NeuralNetworkGradient> clazz;
+	private MultiLayerGradient wrapped;
+	private Class<? extends MultiLayerGradient> clazz;
 
 
-	public UpdateableGradientImpl(NeuralNetworkGradient matrix) {
+	public UpdateableGradientImpl(MultiLayerGradient matrix) {
 		wrapped = matrix;
 		if(clazz == null)
 			clazz = matrix.getClass();
@@ -52,12 +52,12 @@ public class UpdateableGradientImpl implements Updateable<NeuralNetworkGradient>
 	}
 
 	@Override
-	public NeuralNetworkGradient get() {
+	public MultiLayerGradient get() {
 		return wrapped;
 	}
 
 	@Override
-	public void set(NeuralNetworkGradient type) {
+	public void set(MultiLayerGradient type) {
 		this.wrapped = type;
 	}
 
