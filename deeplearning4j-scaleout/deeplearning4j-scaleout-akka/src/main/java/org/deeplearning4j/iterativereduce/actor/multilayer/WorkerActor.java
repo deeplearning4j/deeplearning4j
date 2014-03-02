@@ -56,11 +56,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	public static Props propsFor(ActorRef actor,Conf conf) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf));
+		return Props.create(WorkerActor.class,actor,conf);
 	}
 
 	public static Props propsFor(Conf conf) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf));
+		return Props.create(WorkerActor.class,conf);
 	}
 
 
@@ -80,6 +80,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof UpdateMessage) {
 			UpdateMessage<UpdateableImpl> m = (UpdateMessage<UpdateableImpl>) message;
 			setWorkerUpdateable(m.getUpdateable().get());
+			this.network = m.getUpdateable().get().get();
 		}
 		else
 			unhandled(message);
@@ -146,14 +147,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);
-
-		RandomGenerator rng = new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
-		network = new BaseMultiLayerNetwork.Builder<>()
-				.useRegularization(conf.isUseRegularization()).renderWeights(renderWeightEpochs)
-				.numberOfInputs(numVisible).numberOfOutPuts(numHidden).withActivation(conf.getFunction())
-				.hiddenLayerSizes(hiddenLayerSizes).withRng(rng).transformWeightsAt(conf.getWeightTransforms())
-				.withClazz(conf.getMultiLayerClazz()).build();
-
 	}
 
 
@@ -215,26 +208,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-
-	public static class WorkerActorFactory implements Creator<WorkerActor> {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 381253681712601968L;
-
-		public WorkerActorFactory(Conf conf) {
-			this.conf = conf;
-		}
-
-		private Conf conf;
-
-		@Override
-		public WorkerActor create() throws Exception {
-			return new WorkerActor(conf);
-		}
-
-	}
 
 
 }

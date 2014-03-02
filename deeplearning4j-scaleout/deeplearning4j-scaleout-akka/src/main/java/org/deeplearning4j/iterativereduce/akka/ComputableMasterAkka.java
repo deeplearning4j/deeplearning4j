@@ -7,8 +7,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
+import org.deeplearning4j.scaleout.iterativereduce.multi.ComputableMasterImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.ComputableMasterImpl;
 
 
 

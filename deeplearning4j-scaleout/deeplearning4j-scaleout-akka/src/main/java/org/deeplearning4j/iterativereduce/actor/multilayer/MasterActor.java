@@ -14,7 +14,6 @@ import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
@@ -22,7 +21,6 @@ import akka.actor.Address;
 import akka.actor.Props;
 import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.japi.Creator;
 
 
 /**
@@ -44,7 +42,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
-		return Props.create(new MasterActor.MasterActorFactory(conf,batchActor));
+		return Props.create(MasterActor.class,conf,batchActor);
 	}
 
 
@@ -82,6 +80,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		log.info("Starting worker");
 		ActorRef worker = ActorNetworkRunner.startWorker(masterAddress,c);
 		
+		log.info("Broadcasting initial master network");
+		//after worker is instantiated broadcast the master network to the worker
+		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+				new UpdateMessage<>(masterResults)), getSelf());
+		
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				conf.getPretrainEpochs()), mediator);
 		
@@ -113,7 +116,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				epochsComplete++;
 				batchActor.tell(up, getSelf());
 				updates.clear();
-
+				
 
 			}
 
@@ -159,35 +162,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else
 			unhandled(message);
-	}
-
-
-
-
-
-
-
-	public static class MasterActorFactory implements Creator<MasterActor> {
-
-		public MasterActorFactory(Conf conf,ActorRef batchActor) {
-			this.conf = conf;
-			this.batchActor = batchActor;
-		}
-
-		private Conf conf;
-		private ActorRef batchActor;
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1932205634961409897L;
-
-		@Override
-		public MasterActor create() throws Exception {
-			return new MasterActor(conf,batchActor);
-		}
-
-
-
 	}
 
 

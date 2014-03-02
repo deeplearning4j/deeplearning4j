@@ -6,10 +6,11 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.gradient.MultiLayerGradient;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.ComputableWorkerImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.jblas.DoubleMatrix;
 
 
@@ -42,14 +43,15 @@ public class ComputableWorkerAkka extends ComputableWorkerImpl implements DeepLe
 	}
 
 	@Override
-	public UpdateableImpl compute(List<UpdateableImpl> records) {
+	public UpdateableGradientImpl compute(List<UpdateableGradientImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public UpdateableImpl compute() {
+	public UpdateableGradientImpl compute() {
 		network.trainNetwork(combinedInput, outcomes,extraParams);
-		return new UpdateableImpl(network);
+		MultiLayerGradient gradient = network.getGradient(extraParams, learningRate);
+		return new UpdateableGradientImpl(gradient);
 	}
 
 	@Override
