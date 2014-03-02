@@ -21,10 +21,10 @@ public class UpdateableSingleImpl implements Updateable<BaseNeuralNetwork> {
 	private Class<? extends BaseNeuralNetwork> clazz;
 	
 
-	public UpdateableSingleImpl(BaseNeuralNetwork matrix) {
-		wrapped = matrix;
+	public UpdateableSingleImpl(BaseNeuralNetwork network) {
+		wrapped = network;
 		if(clazz == null)
-			clazz = matrix.getClass();
+			clazz = network.getClass();
 	}
 	
 	@Override

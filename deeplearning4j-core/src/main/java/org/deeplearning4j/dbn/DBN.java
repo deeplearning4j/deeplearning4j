@@ -135,6 +135,7 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
+		
 		RBM ret = new RBM.Builder().useRegularization(isUseRegularization())
 				.withMomentum(getMomentum()).withSparsity(getSparsity())
 				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)

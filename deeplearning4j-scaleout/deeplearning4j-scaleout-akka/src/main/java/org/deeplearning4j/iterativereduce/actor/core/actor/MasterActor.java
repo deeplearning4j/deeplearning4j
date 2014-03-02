@@ -18,7 +18,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.FinishMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
-import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -115,7 +114,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				
 			}
 
-		}, 10,60, TimeUnit.SECONDS);
+		}, 120,60, TimeUnit.SECONDS);
 
 
 	}
@@ -196,7 +195,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		}
 
 		//broadcast new weights to workers
-		else if(message instanceof UpdateMessage) {
+		else if(message instanceof Updateable) {
 			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 					message), getSelf());
 		}

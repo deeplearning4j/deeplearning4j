@@ -3,23 +3,18 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-
 import akka.actor.ActorRef;
 import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
@@ -30,7 +25,6 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
-import akka.japi.Creator;
 import akka.japi.Function;
 
 
@@ -77,10 +71,15 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-		else if(message instanceof UpdateMessage) {
-			UpdateMessage<UpdateableImpl> m = (UpdateMessage<UpdateableImpl>) message;
-			setWorkerUpdateable(m.getUpdateable().get());
-			this.network = m.getUpdateable().get().get();
+		else if(message instanceof Updateable) {
+			UpdateableImpl m = (UpdateableImpl) message;
+			setWorkerUpdateable(m);
+			log.info("Updated worker network");
+			if(m.get() == null) {
+				log.warn("Unable to initialize network; network was null");
+				throw new IllegalArgumentException("Network was null");
+			}
+			this.network = m.get().clone();
 		}
 		else
 			unhandled(message);
@@ -135,6 +134,15 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public synchronized UpdateableImpl compute() {
 		log.info("Training network");
+		while(network == null) {
+			log.info("Unable to process; waiting till network is initialized");
+			try {
+				Thread.sleep(15000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		
 		network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
 		return new UpdateableImpl(network);
 	}

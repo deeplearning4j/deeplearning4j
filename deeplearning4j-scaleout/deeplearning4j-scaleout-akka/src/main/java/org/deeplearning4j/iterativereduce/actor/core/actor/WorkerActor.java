@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
@@ -96,10 +95,9 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 		}
 
-		else if(message instanceof UpdateMessage) {
-			UpdateMessage<E> m = (UpdateMessage<E>) message;
+		else if(message instanceof Updateable) {
 			log.info("Updating worker");
-			results = m.getUpdateable().get();
+			results = (E) message;
 		}
 		else
 			unhandled(message);

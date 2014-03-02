@@ -9,11 +9,12 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
-import org.deeplearning4j.iterativereduce.actor.core.UpdateMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.single.UpdateableSingleImpl;
 import org.jblas.DoubleMatrix;
 
@@ -67,7 +68,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public void setup(Conf conf) {
 		//use the rng with the given seed
-		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
+		RandomGenerator rng =  new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
 		@SuppressWarnings("unchecked")
 		BaseNeuralNetwork network = new BaseNeuralNetwork.Builder<>()
 				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
@@ -95,7 +96,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		log.info("Broadcasting initial master network");
 		//after worker is instantiated broadcast the master network to the worker
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-				new UpdateMessage<>(masterResults)), getSelf());
+				masterResults), getSelf());
 		
 
 	}
@@ -144,7 +145,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		//broadcast new weights to workers
-		else if(message instanceof UpdateMessage) {
+		else if(message instanceof Updateable) {
 			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 					message), getSelf());
 		}

@@ -102,7 +102,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
-		ActorRef batchActor = system.actorOf(Props.create(new BatchActor.BatchActorFactory(iter,c.getNumPasses())));
+		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,c.getNumPasses()));
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
