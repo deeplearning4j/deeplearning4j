@@ -49,6 +49,17 @@ public abstract class BaseHdfsDataSetIterator implements DataSetIterator {
 	}
 
 
+
+	/**
+	 * Reads a file from hdfs in to a string.
+	 * Note that this is not smart on large files, 
+	 * however I will not hand hold you here.
+	 * 
+	 * 
+	 * @param path the path to read from
+	 * @return the contents of the file
+	 * @throws Exception
+	 */
 	public String readStringFromPath(String path) throws Exception {
 		return readStringFromPath(new Path(path));
 	}

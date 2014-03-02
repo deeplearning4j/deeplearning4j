@@ -31,6 +31,11 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A set of utils for basic hdfs operations
+ * @author Adam Gibson
+ *
+ */
 public class HdfsUtils {
 
 	private HdfsUtils(){}
@@ -102,7 +107,9 @@ public class HdfsUtils {
 		return conf.get("hdfs.host");
 	}
 
-	/**
+	public static void setHadoopUser(String userName) {
+		System.setProperty("HADOOP_USER_NAME", userName);
+	}
 
 
 	/**
@@ -330,6 +337,10 @@ public class HdfsUtils {
 		}
 
 	}
+	
+	
+	
+	
 	public static void createFile(String path,Configuration conf) throws Exception  {
 		createFile(path,conf,true);
 
@@ -360,11 +371,7 @@ public class HdfsUtils {
 		return ret;
 	}
 	public static String getUser() {
-		String name;
-		name = System.getProperty("user.name");
-		if(name==null)
-			name="hdfs";
-		return name;
+		return "hdfs";
 	}
 	public static String getUserPath() {
 		return "/user/" + getUser() + "/";

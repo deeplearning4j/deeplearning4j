@@ -183,7 +183,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 					this), mediator);
 			
 			log.info("Starting model saver");
-			ActorRef ref = system.actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
+			ActorRef ref = system.actorOf(Props.create(ModelSavingActor.class,",model-saver"));
 			
 		
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;

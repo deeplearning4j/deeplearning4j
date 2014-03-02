@@ -1,9 +1,9 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 
+import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
+import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
@@ -14,7 +14,6 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.japi.Creator;
 
 
 
@@ -30,11 +29,18 @@ public class ModelSavingActor extends UntypedActor {
 	private ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	private Cluster cluster = Cluster.get(context().system());
-
+	private ModelSaver modelSaver = new DefaultModelSaver();
+	
 	public ModelSavingActor(String pathToSave) {
 		this.pathToSave = pathToSave;
+		modelSaver = new DefaultModelSaver(new File(pathToSave));
 	}
 
+	public ModelSavingActor(ModelSaver saver) {
+		this.modelSaver = saver;
+	}
+
+	
 
 	{
 		mediator.tell(new DistributedPubSubMediator.Subscribe(SAVE, getSelf()), getSelf());
@@ -62,15 +68,7 @@ public class ModelSavingActor extends UntypedActor {
 	public void onReceive(final Object message) throws Exception {
 		if(message instanceof Updateable) {
 			Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
-			File save = new File(pathToSave);
-			if(save.exists()) {
-				File parent = save.getParentFile();
-				save.renameTo(new File(parent,save.getName() + "-" + System.currentTimeMillis()));
-			}
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(save));
-			u.get().write(bos);
-			bos.flush();
-			bos.close();
+			modelSaver.save(u.get());
 			log.info("saved model to " + pathToSave);
 
 
@@ -81,22 +79,7 @@ public class ModelSavingActor extends UntypedActor {
 	}
 
 
-	public static class ModelSavingActorFactory implements Creator<ModelSavingActor> {
-
-		private static final long serialVersionUID = 6450982780084088162L;
-		private String path;
-
-
-		public ModelSavingActorFactory(String path) {
-			this.path = path;
-		}
-
-		@Override
-		public ModelSavingActor create() throws Exception {
-			return new ModelSavingActor(path);
-		}
-
-	}
+	
 
 
 }
