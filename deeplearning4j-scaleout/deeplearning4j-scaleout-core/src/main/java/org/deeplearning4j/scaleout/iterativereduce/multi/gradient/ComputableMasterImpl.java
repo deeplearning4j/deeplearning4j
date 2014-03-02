@@ -13,9 +13,9 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
  * @author Adam Gibson
  *
  */
-public abstract class ComputableMasterImpl implements ComputableMaster<UpdateableImpl>{
+public abstract class ComputableMasterImpl implements ComputableMaster<UpdateableGradientImpl>{
 
-	protected UpdateableImpl masterResults;
+	protected UpdateableGradientImpl masterResults;
 	
 	@Override
 	public void complete(DataOutputStream ds) {
@@ -23,7 +23,7 @@ public abstract class ComputableMasterImpl implements ComputableMaster<Updateabl
 	}
 
 	@Override
-	public UpdateableImpl getResults() {
+	public UpdateableGradientImpl getResults() {
 		return masterResults;
 	}
 
