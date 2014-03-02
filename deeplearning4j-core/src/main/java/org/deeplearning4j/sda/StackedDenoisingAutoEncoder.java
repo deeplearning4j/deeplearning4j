@@ -85,7 +85,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				}
 			}
 			else
-				layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr});
+				layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
 
 
 		}	

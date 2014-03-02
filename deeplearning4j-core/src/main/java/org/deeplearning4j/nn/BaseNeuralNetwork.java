@@ -84,8 +84,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @param rng the rng, if not a seed of 1234 is used.
 	 */
 	public BaseNeuralNetwork(int nVisible, int nHidden, 
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn) {
-		this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn,null);
+			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+		this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn,dist);
 
 	}
 
@@ -667,41 +667,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		}
 
 		public E build() {
-			if(input != null) 
-				return buildWithInput();
-			else 
-				return buildWithoutInput();
+			return buildWithInput();
+
 		}
 
-		@SuppressWarnings("unchecked")
-		private  E buildWithoutInput() {
-			Constructor<?>[] c = clazz.getDeclaredConstructors();
-			for(int i = 0; i < c.length; i++) {
-				Constructor<?> curr = c[i];
-				Class<?>[] classes = curr.getParameterTypes();
-				if(classes == null || classes.length < 1)
-					continue;
-				
-				Class<?> clazz = classes[0];
-				
-				//input matrix found
-				if(classes != null && classes.length > 0 && clazz.isAssignableFrom(Integer.class) || clazz.isPrimitive()) {
-					try {
-						ret = (E) curr.newInstance(numVisible, numHidden, 
-								W, hBias,vBias, gen,fanIn,dist);
-						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
-						ret.useRegularization = this.useRegularization;
-						return ret;
-					}catch(Exception e) {
-						throw new RuntimeException(e);
-					}
-
-				}
-			}
-			return ret;
-		}
-
-
+	
 		@SuppressWarnings("unchecked")
 		private  E buildWithInput()  {
 			Constructor<?>[] c = clazz.getDeclaredConstructors();
