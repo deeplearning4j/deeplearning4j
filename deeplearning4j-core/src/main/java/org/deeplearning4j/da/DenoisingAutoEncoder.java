@@ -32,12 +32,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public DenoisingAutoEncoder() {}
 
 
-
-
-
-
-
-
 	public DenoisingAutoEncoder(DoubleMatrix input, int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng,double fanIn,RealDistribution dist) {

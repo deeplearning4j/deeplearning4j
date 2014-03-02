@@ -9,6 +9,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,24 +37,24 @@ public class BatchActor extends UntypedActor {
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(FINETUNE, getSelf()), getSelf());
-		iterChecker = Executors.newScheduledThreadPool(1);
+	/*	iterChecker = Executors.newScheduledThreadPool(1);
 		iterChecker.scheduleAtFixedRate(new Runnable() {
 
 			@Override
 			public void run() {
 				if(BatchActor.this.maxReset == numTimesReset) {
 					log.info("Shutting down via batch actor and max resets");
-					/*mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.SHUTDOWN,
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.SHUTDOWN,
 							new ShutdownMessage()),mediator);
 					try {
 						iterChecker.awaitTermination(60,TimeUnit.SECONDS);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
-					}*/
+					}
 				}
 			}
 
-		}, 10,60, TimeUnit.SECONDS);
+		}, 10,60, TimeUnit.SECONDS);*/
 
 	}
 
@@ -70,8 +71,8 @@ public class BatchActor extends UntypedActor {
 
 		else if(message instanceof FinetuneMessage) {
 			FinetuneMessage m = (FinetuneMessage) message;
-			UpdateableGradientImpl result = (UpdateableGradientImpl) m.getUpdateable();
-			final UpdateableGradientImpl save = SerializationUtils.clone(result);
+			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
+			final UpdateableImpl save = SerializationUtils.clone(result);
 			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
 					save), mediator);
 
