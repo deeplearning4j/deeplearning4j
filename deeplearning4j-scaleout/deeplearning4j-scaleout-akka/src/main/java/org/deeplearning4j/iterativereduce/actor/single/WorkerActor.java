@@ -48,11 +48,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	public static Props propsFor(ActorRef actor,Conf conf) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf));
+		return Props.create(WorkerActor.class,conf);
 	}
 
 	public static Props propsFor(Conf conf) {
-		return Props.create(new WorkerActor.WorkerActorFactory(conf));
+		return Props.create(WorkerActor.class,conf);
 	}
 
 
@@ -72,6 +72,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof UpdateMessage) {
 			UpdateMessage<UpdateableSingleImpl> m = (UpdateMessage<UpdateableSingleImpl>) message;
 			workerResult = (UpdateableSingleImpl) m.getUpdateable().get();
+			this.network = workerResult.get();
 		}
 		else
 			unhandled(message);
@@ -113,13 +114,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);
-
-		RandomGenerator rng = new MersenneTwister(conf.getSeed());
-		network = new BaseNeuralNetwork.Builder<>()
-				.numberOfVisible(numVisible).numHidden(numHidden)
-				.withRandom(rng).useRegularization(useRegularization)
-				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz()).build();
-
 	}
 
 
@@ -135,25 +129,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
-	public static class WorkerActorFactory implements Creator<WorkerActor> {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 381253681712601968L;
-
-		public WorkerActorFactory(Conf conf) {
-			this.conf = conf;
-		}
-
-		private Conf conf;
-
-		@Override
-		public WorkerActor create() throws Exception {
-			return new WorkerActor(conf);
-		}
-
-	}
+	
 
 
 }

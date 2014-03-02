@@ -2,14 +2,10 @@ package org.deeplearning4j.iterativereduce.akka.gradient;
 
 import java.util.Collection;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.ComputableMasterImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 
 
 
@@ -19,13 +15,15 @@ public class ComputableMasterAkka extends ComputableMasterImpl implements DeepLe
 
 
 	@Override
-	public UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
-			Collection<UpdateableImpl> masterUpdates) {
+	public UpdateableGradientImpl compute(Collection<UpdateableGradientImpl> workerUpdates,
+			Collection<UpdateableGradientImpl> masterUpdates) {
 		
-
-		DeepLearningAccumulator acc = new DeepLearningAccumulator();
-		for(UpdateableImpl m : workerUpdates) 
+		GradientAccumulator acc = new GradientAccumulator();
+		
+		for(UpdateableGradientImpl m : workerUpdates) 
 			acc.accumulate(m.get());
+		
+		
 		
 		masterResults.set(acc.averaged());
 
@@ -34,15 +32,10 @@ public class ComputableMasterAkka extends ComputableMasterImpl implements DeepLe
 
 	@Override
 	public void setup(Conf conf) {
-		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
-		BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
-		.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-		.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
-		.build();
-		masterResults = new UpdateableImpl(matrix);
-
-
+		
 	}
+
+
 
 
 }

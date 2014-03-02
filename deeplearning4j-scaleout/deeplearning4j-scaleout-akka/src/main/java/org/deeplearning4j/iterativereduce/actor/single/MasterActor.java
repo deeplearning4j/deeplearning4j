@@ -84,10 +84,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		ActorNetworkRunner.startWorker(masterAddress,conf);
 		
+		
+		
+		
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				conf.getPretrainEpochs()), mediator);
 		log.info("Setup master with epochs " + conf.getPretrainEpochs());
 		masterResults = new UpdateableSingleImpl(network);
+		
+		log.info("Broadcasting initial master network");
+		//after worker is instantiated broadcast the master network to the worker
+		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+				new UpdateMessage<>(masterResults)), getSelf());
+		
 
 	}
 
