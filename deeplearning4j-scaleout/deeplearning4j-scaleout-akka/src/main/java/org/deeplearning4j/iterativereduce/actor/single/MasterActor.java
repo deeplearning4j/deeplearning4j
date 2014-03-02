@@ -78,7 +78,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.build();
 		
 
-		context().system().actorOf(Props.create(new ModelSavingActor.ModelSavingActorFactory("nn-model.bin")),",model-saver");
+		context().system().actorOf(Props.create(ModelSavingActor.class,"nn-model.bin"),",model-saver");
 
 		Address masterAddress = Cluster.get(context().system()).selfAddress();
 
