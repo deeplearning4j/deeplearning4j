@@ -7,6 +7,7 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;

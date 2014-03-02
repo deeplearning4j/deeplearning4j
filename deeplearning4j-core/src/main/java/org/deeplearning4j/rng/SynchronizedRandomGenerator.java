@@ -15,6 +15,10 @@ import org.apache.commons.math3.random.RandomGenerator;
  * @version $Id: SynchronizedRandomGenerator.java 1416643 2012-12-03 19:37:14Z tn $
  */
 public class SynchronizedRandomGenerator implements RandomGenerator,Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4947634620529508555L;
 	/** Object to which all calls will be delegated. */
 	private final RandomGenerator wrapped;
 

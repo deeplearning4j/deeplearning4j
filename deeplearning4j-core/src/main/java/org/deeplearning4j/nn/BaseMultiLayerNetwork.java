@@ -18,6 +18,9 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
+import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.gradient.MultiLayerGradient;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.rbm.CRBM;
 import org.deeplearning4j.rbm.RBM;
@@ -374,6 +377,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	/**
+	 * Gets the multi layer gradient for this network.
+	 * This includes calculating the gradients for each layer
+	 * @param params the params to pass (k, corruption level,...)
+	 * @param lr the learning rate to use for logistic regression
+	 * @return the multi layer gradient for the whole network
+	 */
+	public MultiLayerGradient getGradient(Object[] params,double lr) {
+		List<NeuralNetworkGradient> gradient = new ArrayList<NeuralNetworkGradient>();
+		for(NeuralNetwork network : layers) {
+			gradient.add(network.getGradient(params));
+		}
+		
+		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
+		return new MultiLayerGradient(gradient,g2);
+	}
 
 
 

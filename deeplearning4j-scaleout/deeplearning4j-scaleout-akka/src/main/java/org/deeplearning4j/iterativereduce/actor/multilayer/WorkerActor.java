@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected BaseMultiLayerNetwork network;
 	protected DoubleMatrix combinedInput;
 
-	protected UpdateableImpl workerMatrix;
+	protected UpdateableImpl workerUpdateable;
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 
 	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
@@ -78,7 +79,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof UpdateMessage) {
 			UpdateMessage<UpdateableImpl> m = (UpdateMessage<UpdateableImpl>) message;
-			setWorkerMatrix(m.getUpdateable().get());
+			setWorkerUpdateable(m.getUpdateable().get());
 		}
 		else
 			unhandled(message);
@@ -170,12 +171,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	@Override
 	public synchronized UpdateableImpl getResults() {
-		return workerMatrix;
+		return workerUpdateable;
 	}
 
 	@Override
 	public synchronized void update(UpdateableImpl t) {
-		this.workerMatrix = t;
+		this.workerUpdateable = t;
 	}
 
 
@@ -199,14 +200,20 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
-	public synchronized UpdateableImpl getWorkerMatrix() {
-		return workerMatrix;
+	
+
+
+	public synchronized UpdateableImpl getWorkerUpdateable() {
+		return workerUpdateable;
 	}
 
 
-	public synchronized void setWorkerMatrix(UpdateableImpl workerMatrix) {
-		this.workerMatrix = workerMatrix;
+	public synchronized void setWorkerUpdateable(UpdateableImpl workerUpdateable) {
+		this.workerUpdateable = workerUpdateable;
 	}
+
+
+
 
 
 	public static class WorkerActorFactory implements Creator<WorkerActor> {

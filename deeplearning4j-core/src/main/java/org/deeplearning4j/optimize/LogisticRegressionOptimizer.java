@@ -3,7 +3,7 @@ package org.deeplearning4j.optimize;
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.LogisticRegression;
-import org.deeplearning4j.nn.LogisticRegressionGradient;
+import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 
 
 import cc.mallet.optimize.Optimizable;

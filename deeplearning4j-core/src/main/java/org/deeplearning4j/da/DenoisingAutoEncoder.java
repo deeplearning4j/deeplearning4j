@@ -10,7 +10,7 @@ import java.io.Serializable;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.NeuralNetworkGradient;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;

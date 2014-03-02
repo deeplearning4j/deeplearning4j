@@ -9,7 +9,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,8 +70,8 @@ public class BatchActor extends UntypedActor {
 
 		else if(message instanceof FinetuneMessage) {
 			FinetuneMessage m = (FinetuneMessage) message;
-			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
-			final UpdateableImpl save = SerializationUtils.clone(result);
+			UpdateableGradientImpl result = (UpdateableGradientImpl) m.getUpdateable();
+			final UpdateableGradientImpl save = SerializationUtils.clone(result);
 			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
 					save), mediator);
 
