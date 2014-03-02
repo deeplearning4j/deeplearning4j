@@ -58,8 +58,8 @@ public class SdaTest {
 
 
 		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder()
-		.hiddenLayerSizes(hidden_layer_sizes_arr).forceEpochs()
-		.numberOfInputs(xor.getFirst().columns).numberOfOutPuts(n_outs).renderWeights(0)
+		.hiddenLayerSizes(hidden_layer_sizes_arr)
+		.numberOfInputs(xor.getFirst().columns).numberOfOutPuts(xor.getSecond().columns).renderWeights(0)
 		.useRegularization(false).withMomentum(0.).withRng(rng).build();		
 
 
