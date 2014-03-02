@@ -7,8 +7,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.ComputableMasterImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.ComputableMasterImpl;
 
 
 
@@ -26,9 +26,9 @@ public class ComputableMasterAkka extends ComputableMasterImpl implements DeepLe
 		for(UpdateableImpl m : workerUpdates) 
 			acc.accumulate(m.get());
 		
-		masterMatrix.set(acc.averaged());
+		masterResults.set(acc.averaged());
 
-		return masterMatrix;
+		return masterResults;
 	}
 
 	@Override
@@ -38,7 +38,7 @@ public class ComputableMasterAkka extends ComputableMasterImpl implements DeepLe
 		.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 		.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 		.build();
-		masterMatrix = new UpdateableImpl(matrix);
+		masterResults = new UpdateableImpl(matrix);
 
 
 	}

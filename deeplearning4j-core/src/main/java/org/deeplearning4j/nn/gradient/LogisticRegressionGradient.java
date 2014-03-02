@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.gradient;
 
 import java.io.Serializable;
 
@@ -10,6 +10,8 @@ public class LogisticRegressionGradient implements Serializable {
 	private static final long serialVersionUID = -2843336269630396562L;
 	private DoubleMatrix wGradient;
 	private DoubleMatrix bGradient;
+	
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

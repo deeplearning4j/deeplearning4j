@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.jblas.DoubleMatrix;
 
 public interface NeuralNetwork extends Serializable,Cloneable {

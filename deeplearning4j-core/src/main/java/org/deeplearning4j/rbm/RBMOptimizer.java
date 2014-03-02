@@ -1,7 +1,7 @@
 package org.deeplearning4j.rbm;
 
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.NeuralNetworkGradient;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
 

@@ -14,6 +14,7 @@ import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
@@ -68,11 +69,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public void setup(Conf conf) {
 		//use the rng with the given seed
 		RandomGenerator rng =  new MersenneTwister(conf.getSeed());
-		BaseMultiLayerNetwork matrix = new BaseMultiLayerNetwork.Builder<>()
+		BaseMultiLayerNetwork network = new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 				.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
 				.build();
-		masterResults = new UpdateableImpl(matrix);
+		masterResults = new UpdateableImpl(network);
 		
 		Conf c = conf.copy();
 		

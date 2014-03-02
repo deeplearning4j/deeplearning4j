@@ -17,7 +17,7 @@ import org.deeplearning4j.iterativereduce.actor.core.actor.SimpleClusterListener
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -49,14 +49,14 @@ import com.typesafe.config.ConfigFactory;
  * @author Adam Gibson
  *
  */
-public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<UpdateableImpl> {
+public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<UpdateableGradientImpl> {
 
 
 	private static final long serialVersionUID = -4385335922485305364L;
 	private transient ActorSystem system;
 	private Integer currEpochs = 0;
 	private Integer epochs;
-	private UpdateableImpl result;
+	private UpdateableGradientImpl result;
 	private ActorRef mediator;
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
 	private static String systemName = "ClusterSystem";
@@ -302,7 +302,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 	@Override
-	public void epochComplete(UpdateableImpl result) {
+	public void epochComplete(UpdateableGradientImpl result) {
 		currEpochs++;
 
 		//update the final available result
@@ -313,7 +313,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 	}
 
-	public UpdateableImpl getResult() {
+	public UpdateableGradientImpl getResult() {
 		return result;
 	}
 
