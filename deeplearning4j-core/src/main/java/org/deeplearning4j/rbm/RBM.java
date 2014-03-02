@@ -40,11 +40,7 @@ public class RBM extends BaseNeuralNetwork {
 	protected NeuralNetworkOptimizer optimizer;
 	public RBM() {}
 
-	public RBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-			DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
-		super(nVisible, nHidden, W, hbias, vbias, rng,fanIn);
-		
-	}
+
 
 
 	public RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,

@@ -40,11 +40,7 @@ public class CRBM extends RBM {
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng, fanIn, dist);
 	}
 
-	public CRBM(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-			DoubleMatrix vbias, RandomGenerator rng, double fanIn,
-			RealDistribution dist) {
-		super(nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
-	}
+	
 
 	@Override
 	public DoubleMatrix propDown(DoubleMatrix h) {
