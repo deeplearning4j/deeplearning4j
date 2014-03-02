@@ -3,7 +3,6 @@ package org.deeplearning4j.scaleout.iterativereduce.multi.gradient;
 import java.io.DataOutputStream;
 
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 
 
 
