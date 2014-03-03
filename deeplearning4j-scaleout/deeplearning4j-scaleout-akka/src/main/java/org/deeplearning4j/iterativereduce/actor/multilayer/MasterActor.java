@@ -5,13 +5,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
@@ -39,7 +36,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
-	
+
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
@@ -57,7 +54,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		for(UpdateableImpl m : workerUpdates) 
 			acc.accumulate(m.get());
 
-		masterResults.set(acc.averaged());
+		if(masterResults == null)
+			masterResults = new UpdateableImpl(acc.averaged());
+		else
+			masterResults.set(acc.averaged());
 
 		return masterResults;
 	}
@@ -66,32 +66,25 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	@Override
 	public void setup(Conf conf) {
-		//use the rng with the given seed
-		RandomGenerator rng =  new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
-		
-		BaseMultiLayerNetwork network = new BaseMultiLayerNetwork.Builder<>()
-				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-				.hiddenLayerSizes(conf.getLayerSizes()).withRng(rng)
-				.build();
-		masterResults = new UpdateableImpl(network);
-		
+
+
 		Conf c = conf.copy();
-		
+
 		Address masterAddress = Cluster.get(context().system()).selfAddress();
-		
+
 		log.info("Starting worker");
-		ActorRef worker = ActorNetworkRunner.startWorker(masterAddress,c);
-		
+		ActorNetworkRunner.startWorker(masterAddress,c);
+
 		log.info("Broadcasting initial master network");
-		
-		
+
+
 		//after worker is instantiated broadcast the master network to the worker
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
-		
+
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				conf.getPretrainEpochs()), mediator);
-		
+
 	}
 
 
@@ -115,21 +108,18 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				masterResults = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterResults);
-				//reset the dataset
-				//batchActor.tell(new ResetMessage(), getSelf());
-				epochsComplete++;
-				batchActor.tell(up, getSelf());
-				updates.clear();
 				
+				epochsComplete++;
+				batchActor.tell(masterResults, getSelf());
+				updates.clear();
+				log.info("Broadcasting weights");
+				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+						masterResults), getSelf());
 
 			}
+			
+			
 
-		}
-
-		//broadcast new weights to workers
-		else if(message instanceof Updateable) {
-			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-					message), getSelf());
 		}
 
 
@@ -137,7 +127,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof List || message instanceof Pair) {
 
 			if(message instanceof List) {
-				List<Pair<DoubleMatrix,DoubleMatrix>> list = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+				List<DataSet> list = (List<DataSet>) message;
 				//each pair in the matrix pairs maybe multiple rows
 				splitListIntoRows(list);
 				//delegate split to workers
@@ -147,15 +137,15 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			//ensure split then send to workers
 			else if(message instanceof Pair) {
-				Pair<DoubleMatrix,DoubleMatrix> pair = (Pair<DoubleMatrix,DoubleMatrix>) message;
+				DataSet pair = (DataSet) message;
 
 				//split pair up in to rows to ensure parallelism
 				List<DoubleMatrix> inputs = pair.getFirst().rowsAsList();
 				List<DoubleMatrix> labels = pair.getSecond().rowsAsList();
 
-				List<Pair<DoubleMatrix,DoubleMatrix>> pairs = new ArrayList<>();
+				List<DataSet> pairs = new ArrayList<>();
 				for(int i = 0; i < inputs.size(); i++) {
-					pairs.add(new Pair<>(inputs.get(i),labels.get(i)));
+					pairs.add(new DataSet(inputs.get(i),labels.get(i)));
 				}
 
 
