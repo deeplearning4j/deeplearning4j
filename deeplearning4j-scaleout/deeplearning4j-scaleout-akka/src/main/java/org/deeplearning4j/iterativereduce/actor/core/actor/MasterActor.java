@@ -15,9 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
-import org.deeplearning4j.iterativereduce.actor.core.FinishMessage;
-import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -101,6 +99,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				}
 				try {
 					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(save));
+					@SuppressWarnings("unchecked")
 					Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) masterResults;
 					u.get().write(bos);
 					bos.flush();
@@ -149,97 +148,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public abstract void setup(Conf conf);
 
 
-	@SuppressWarnings({ "unchecked" })
-	@Override
-	public void onReceive(Object message) throws Exception {
-		if (message instanceof DistributedPubSubMediator.SubscribeAck) {
-			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
-			log.info("Subscribed " + ack.toString());
-		}
-		else if(message instanceof EpochDoneListener) {
-			listener = (EpochDoneListener<E>) message;
-			log.info("Set listener");
-		}
-
-		else if(message instanceof Updateable) {
-			E up = (E) message;
-			updates.add(up);
-			if(updates.size() >= partition) {
-				masterResults = this.compute(updates, updates);
-				log.info("Saving new model");
-
-				mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
-						new FinetuneMessage(masterResults)), mediator);
-				
-				//reset the dataset
-				batchActor.tell(new ResetMessage(), getSelf());
-				epochsComplete++;
-				batchActor.tell(up, getSelf());
-				updates.clear();
-
-			}
-
-		}
-		else if(message instanceof FinishMessage) {
-			if(!updates.isEmpty()) {
-				masterResults = this.compute(updates, updates);
-				if(listener != null)
-					listener.epochComplete(masterResults);
-
-			}
-
-			isDone = true;
-			log.info("All done; shutting down");
-			
-
-		}
-
-		//broadcast new weights to workers
-		else if(message instanceof Updateable) {
-			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-					message), getSelf());
-		}
-
-
-		//list of examples
-		else if(message instanceof List || message instanceof Pair) {
-
-			if(message instanceof List) {
-				List<Pair<DoubleMatrix,DoubleMatrix>> list = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
-				//each pair in the matrix pairs maybe multiple rows
-				splitListIntoRows(list);
-				//delegate split to workers
-				sendToWorkers(list);
-
-			}
-
-			//ensure split then send to workers
-			else if(message instanceof Pair) {
-				Pair<DoubleMatrix,DoubleMatrix> pair = (Pair<DoubleMatrix,DoubleMatrix>) message;
-
-				//split pair up in to rows to ensure parallelism
-				List<DoubleMatrix> inputs = pair.getFirst().rowsAsList();
-				List<DoubleMatrix> labels = pair.getSecond().rowsAsList();
-
-				List<Pair<DoubleMatrix,DoubleMatrix>> pairs = new ArrayList<>();
-				for(int i = 0; i < inputs.size(); i++) {
-					pairs.add(new Pair<>(inputs.get(i),labels.get(i)));
-				}
-
-
-				sendToWorkers(pairs);
-
-			}
-		}
-
-		else
-			unhandled(message);
-	}
-
-
-	protected void sendToWorkers(List<Pair<DoubleMatrix,DoubleMatrix>> pairs) {
+	
+	protected void sendToWorkers(List<DataSet> pairs) {
 		int split = conf.getSplit();
-		final List<List<Pair<DoubleMatrix,DoubleMatrix>>> splitList = Lists.partition(pairs, split);
+		final List<List<DataSet>> splitList = Lists.partition(pairs, split);
 		partition = splitList.size();
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
@@ -275,8 +187,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 
-	protected void splitListIntoRows(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
-		Queue<Pair<DoubleMatrix,DoubleMatrix>> q = new ArrayDeque<>(list);
+	protected void splitListIntoRows(List<DataSet> list) {
+		Queue<DataSet> q = new ArrayDeque<>(list);
 		list.clear();
 		log.info("Splitting list in to rows...");
 		while(!q.isEmpty()) {
@@ -289,7 +201,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				throw new IllegalArgumentException("Label rows not equal to input rows");
 
 			for(int i = 0; i < inputRows.size(); i++) {
-				list.add(new Pair<DoubleMatrix,DoubleMatrix>(inputRows.get(i),labelRows.get(i)));
+				list.add(new DataSet(inputRows.get(i),labelRows.get(i)));
 			}
 		}
 	}

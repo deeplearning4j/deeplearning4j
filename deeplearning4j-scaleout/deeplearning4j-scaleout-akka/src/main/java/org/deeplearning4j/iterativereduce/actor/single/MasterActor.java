@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
@@ -44,7 +45,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
-		return Props.create(new MasterActor.MasterActorFactory(conf,batchActor));
+		return Props.create(MasterActor.class,conf,batchActor);
 	}
 
 
@@ -155,7 +156,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof List || message instanceof Pair) {
 
 			if(message instanceof List) {
-				List<Pair<DoubleMatrix,DoubleMatrix>> list = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+				List<DataSet> list = (List<DataSet>) message;
 				//each pair in the matrix pairs maybe multiple rows
 				splitListIntoRows(list);
 				//delegate split to workers
@@ -165,15 +166,15 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			//ensure split then send to workers
 			else if(message instanceof Pair) {
-				Pair<DoubleMatrix,DoubleMatrix> pair = (Pair<DoubleMatrix,DoubleMatrix>) message;
+				DataSet pair = (DataSet) message;
 
 				//split pair up in to rows to ensure parallelism
 				List<DoubleMatrix> inputs = pair.getFirst().rowsAsList();
 				List<DoubleMatrix> labels = pair.getSecond().rowsAsList();
 
-				List<Pair<DoubleMatrix,DoubleMatrix>> pairs = new ArrayList<>();
+				List<DataSet> pairs = new ArrayList<>();
 				for(int i = 0; i < inputs.size(); i++) {
-					pairs.add(new Pair<>(inputs.get(i),labels.get(i)));
+					pairs.add(new DataSet(inputs.get(i),labels.get(i)));
 				}
 
 
@@ -186,41 +187,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			unhandled(message);
 	}
 
-
-
-
-
-
-
-	public static class MasterActorFactory implements Creator<MasterActor> {
-
-		public MasterActorFactory(Conf conf,ActorRef batchActor) {
-			this.conf = conf;
-			this.batchActor = batchActor;
-		}
-
-		private Conf conf;
-		private ActorRef batchActor;
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1932205634961409897L;
-
-		@Override
-		public MasterActor create() throws Exception {
-			return new MasterActor(conf,batchActor);
-		}
-
-
-
-	}
-
-
 	@Override
 	public void complete(DataOutputStream ds) {
-		this.masterResults.get().write(ds);
+		masterResults.get().write(ds);
 	}
-
 
 
 }

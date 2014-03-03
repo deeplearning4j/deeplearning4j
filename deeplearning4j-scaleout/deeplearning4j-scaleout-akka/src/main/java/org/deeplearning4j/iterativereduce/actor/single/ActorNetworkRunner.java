@@ -12,7 +12,6 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
-import org.deeplearning4j.iterativereduce.actor.core.actor.SimpleClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -142,10 +141,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 
 		system = ActorSystem.create(systemName);
-
-		// Create an actor that handles cluster domain events
-		system.actorOf(Props.create(SimpleClusterListener.class),
-				"clusterListener");
 
 
 		mediator = DistributedPubSubExtension.get(system).mediator();
