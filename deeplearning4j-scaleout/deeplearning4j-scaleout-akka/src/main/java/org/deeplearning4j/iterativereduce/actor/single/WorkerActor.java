@@ -115,7 +115,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void setup(Conf conf) {
 		super.setup(conf);

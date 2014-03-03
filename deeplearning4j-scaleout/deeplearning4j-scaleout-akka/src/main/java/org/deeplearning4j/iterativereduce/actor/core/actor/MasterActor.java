@@ -1,23 +1,17 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
-import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
-import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
@@ -39,7 +33,6 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.japi.Creator;
 import akka.japi.Function;
 
 import com.google.common.collect.Lists;
@@ -86,35 +79,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 		setup(conf);
-		iterChecker = Executors.newScheduledThreadPool(1);
-		iterChecker.scheduleAtFixedRate(new Runnable() {
-
-			@Override
-			public void run() {
-				log.info("Updating model...");
-				File save = new File("nn-model.bin");
-				if(save.exists()) {
-					File parent = save.getParentFile();
-					save.renameTo(new File(parent,save.getName() + "-" + System.currentTimeMillis()));
-				}
-				try {
-					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(save));
-					@SuppressWarnings("unchecked")
-					Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) masterResults;
-					u.get().write(bos);
-					bos.flush();
-					bos.close();
-					log.info("saved model to " + "nn-model.bin");
-
-				}catch(Exception e) {
-					throw new RuntimeException(e);
-				}
-				
-				
-			}
-
-		}, 120,60, TimeUnit.SECONDS);
-
+		
 
 	}
 
@@ -207,27 +172,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 
-	public static abstract class MasterActorFactory<E> implements Creator<MasterActor<Updateable<E>>> {
-
-		public MasterActorFactory(Conf conf,ActorRef batchActor) {
-			this.conf = conf;
-			this.batchActor = batchActor;
-		}
-
-		protected Conf conf;
-		protected ActorRef batchActor;
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1932205634961409897L;
-
-		@Override
-		public abstract MasterActor<Updateable<E>> create() throws Exception;
-
-
-
-	}
-
+	
 	@Override
 	public abstract void complete(DataOutputStream ds);
 
