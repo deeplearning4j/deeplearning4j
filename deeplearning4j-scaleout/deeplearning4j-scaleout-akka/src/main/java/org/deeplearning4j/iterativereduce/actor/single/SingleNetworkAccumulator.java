@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.jblas.DoubleMatrix;
 
 
 public class SingleNetworkAccumulator {

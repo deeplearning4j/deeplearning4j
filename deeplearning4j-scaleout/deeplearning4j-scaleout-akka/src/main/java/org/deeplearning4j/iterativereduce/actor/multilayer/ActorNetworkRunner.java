@@ -36,7 +36,7 @@ import akka.routing.RoundRobinPool;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-import scala.concurrent.Future;;
+import scala.concurrent.Future;
 /**
  * Controller for coordinating model training for a neural network based
  * on parameters across a cluster for akka.

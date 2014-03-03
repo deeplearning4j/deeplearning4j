@@ -9,8 +9,8 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.jblas.DoubleMatrix;
 
@@ -77,13 +77,17 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		log.info("Broadcasting initial master network");
 
+		BaseMultiLayerNetwork network = new BaseMultiLayerNetwork.Builder<>()
+				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+				.hiddenLayerSizes(conf.getLayerSizes())
+				.build();
+		masterResults = new UpdateableImpl(network);
+
+
 
 		//after worker is instantiated broadcast the master network to the worker
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
-
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				conf.getPretrainEpochs()), mediator);
 
 	}
 
@@ -108,7 +112,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				masterResults = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterResults);
-				
+
 				epochsComplete++;
 				batchActor.tell(masterResults, getSelf());
 				updates.clear();
@@ -117,8 +121,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 						masterResults), getSelf());
 
 			}
-			
-			
+
+
 
 		}
 

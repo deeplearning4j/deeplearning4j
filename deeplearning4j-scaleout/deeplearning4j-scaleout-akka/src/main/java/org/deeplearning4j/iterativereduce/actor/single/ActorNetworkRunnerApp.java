@@ -8,7 +8,6 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.scaleout.conf.ExtraParamsBuilder;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
@@ -19,6 +18,8 @@ import org.kohsuke.args4j.spi.DoubleOptionHandler;
 import org.kohsuke.args4j.spi.IntOptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import bsh.ParseException;
 
 /**
  * Main command line app for handling workers or starting up a master for training a neural network:
@@ -110,6 +111,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 
 
+	@SuppressWarnings("unchecked")
 	public void exec() throws Exception {
 
 		//this is just a worker node: load everything from the master. All we should need is the ip of the master

@@ -14,7 +14,12 @@ import akka.actor.UntypedActor;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
-
+/**
+ * Handles the data set iterator.
+ * This includes disseminating new data sets to the cluster.
+ * @author Adam Gibson
+ *
+ */
 public class BatchActor extends UntypedActor {
 
 	protected DataSetIterator iter;
@@ -42,7 +47,7 @@ public class BatchActor extends UntypedActor {
 		else if(message instanceof FinetuneMessage) {
 			FinetuneMessage m = (FinetuneMessage) message;
 			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
-			final UpdateableImpl save = SerializationUtils.clone(result);
+			UpdateableImpl save = SerializationUtils.clone(result);
 			log.info("Saving model");
 			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
 					save), mediator);

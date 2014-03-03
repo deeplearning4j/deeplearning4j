@@ -24,7 +24,6 @@ import akka.actor.Address;
 import akka.actor.Props;
 import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.japi.Creator;
 
 
 /**
