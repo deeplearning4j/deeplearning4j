@@ -2,7 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
+import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
@@ -44,8 +44,8 @@ public class BatchActor extends UntypedActor {
 			iter.reset();
 		}
 
-		else if(message instanceof FinetuneMessage) {
-			FinetuneMessage m = (FinetuneMessage) message;
+		else if(message instanceof MoreWorkMessage) {
+			MoreWorkMessage m = (MoreWorkMessage) message;
 			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
 			UpdateableImpl save = SerializationUtils.clone(result);
 			log.info("Saving model");

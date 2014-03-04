@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
@@ -69,8 +70,11 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	/**
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor to use for data set distribution
+	 * @param params extra params (implementation dependent)
+	 * 
 	 */
-	public MasterActor(Conf conf,ActorRef batchActor) {
+	public MasterActor(Conf conf,ActorRef batchActor,Object[] params) {
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
@@ -79,11 +83,21 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 		setup(conf);
-		
+
 
 	}
 
+	/**
+	 * Creates the master and the workers with this given conf
+	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor to use for data set distribution
+	 * 
+	 */
+	public MasterActor(Conf conf,ActorRef batchActor) {
+		this(conf,batchActor,null);
 
+
+	}
 
 
 	@Override
@@ -113,7 +127,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public abstract void setup(Conf conf);
 
 
-	
+
 	protected void sendToWorkers(List<DataSet> pairs) {
 		int split = conf.getSplit();
 		final List<List<DataSet>> splitList = Lists.partition(pairs, split);
@@ -132,7 +146,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				}
 
 			},context().dispatcher());
-			
+
 			f.onComplete(new OnComplete<Void>() {
 
 				@Override
@@ -141,10 +155,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					if(arg0 != null)
 						throw arg0;
 				}
-				
+
 			}, context().dispatcher());
-			
-			
+
+
 		}
 
 
@@ -172,7 +186,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 
-	
+
 	@Override
 	public abstract void complete(DataOutputStream ds);
 

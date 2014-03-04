@@ -5,9 +5,9 @@ import java.io.Serializable;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
 
-public class FinetuneMessage implements Serializable {
+public class MoreWorkMessage implements Serializable {
 
-	public FinetuneMessage(Updateable<?> updateable) {
+	public MoreWorkMessage(Updateable<?> updateable) {
 		super();
 		this.updateable = updateable;
 	}

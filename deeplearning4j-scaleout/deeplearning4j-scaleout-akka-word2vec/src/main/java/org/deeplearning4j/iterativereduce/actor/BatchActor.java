@@ -60,32 +60,7 @@ public class BatchActor extends UntypedActor implements Serializable {
 
 
 
-	public static class BatchActorFactory implements Creator<BatchActor> {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -2260113511909990862L;
-
-		public BatchActorFactory(Word2VecDataSetIterator iter) {
-			if(iter == null)
-				throw new IllegalArgumentException("Iter can't be null");
-			this.iter = iter;
-		}
-
-		private Word2VecDataSetIterator iter;
-
-		@Override
-		public BatchActor create() throws Exception {
-			return new BatchActor(iter);
-		}
-
-
-
-	}
-
-
-
+	
 	public int getNumTimesReset() {
 		return numTimesReset;
 	}

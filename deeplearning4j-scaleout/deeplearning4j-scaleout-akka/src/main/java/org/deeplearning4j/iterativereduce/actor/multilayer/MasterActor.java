@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -15,10 +16,14 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 import akka.actor.Address;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.cluster.Cluster;
+import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.routing.RoundRobinPool;
 
 
 /**
@@ -28,7 +33,7 @@ import akka.contrib.pattern.DistributedPubSubMediator;
  */
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
-
+	protected BaseMultiLayerNetwork network;
 
 	/**
 	 * Creates the master and the workers with this given conf
@@ -43,6 +48,23 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return Props.create(MasterActor.class,conf,batchActor);
 	}
 
+
+
+	/**
+	 * Creates the master and the workers with this given conf
+	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor for the cluster, this
+	 * will manage dataset dispersion
+	 * @param network the neural network to use
+	 */
+	public MasterActor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network) {
+		super(conf,batchActor,new Object[]{network});
+
+	}
+
+	public static Props propsFor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network) {
+		return Props.create(MasterActor.class,conf,batchActor,network);
+	}
 
 
 	@Override
@@ -66,28 +88,42 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	@Override
 	public void setup(Conf conf) {
+		log.info("Starting workers");
+		ActorSystem system = ActorSystem.create(context().system().name());
 
+		Props p = WorkerActor.propsFor(conf);
+		int cores = Runtime.getRuntime().availableProcessors();
+		
+		system.actorOf(new RoundRobinPool(cores).props(p));
 
-		Conf c = conf.copy();
-
-		Address masterAddress = Cluster.get(context().system()).selfAddress();
-
-		log.info("Starting worker");
-		ActorNetworkRunner.startWorker(masterAddress,c);
-
+		
+		try {
+			Thread.sleep(15000);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		
+		
 		log.info("Broadcasting initial master network");
 
-		BaseMultiLayerNetwork network = new BaseMultiLayerNetwork.Builder<>()
+		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 				.hiddenLayerSizes(conf.getLayerSizes())
-				.build();
+				.build() : this.network;
 		masterResults = new UpdateableImpl(network);
 
+		Cluster.get(context().system()).registerOnMemberUp(new Runnable() {
 
+			@Override
+			public void run() {
+				//after worker is instantiated broadcast the master network to the worker
+				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+						masterResults), getSelf());				
+			}
+			
+		});
 
-		//after worker is instantiated broadcast the master network to the worker
-		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-				masterResults), getSelf());
+		
 
 	}
 
@@ -114,9 +150,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					listener.epochComplete(masterResults);
 
 				epochsComplete++;
-				batchActor.tell(masterResults, getSelf());
+				//tell the batch actor to send out another dataset
+				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
 				updates.clear();
 				log.info("Broadcasting weights");
+				//replicate the network
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());
 

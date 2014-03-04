@@ -1,5 +1,6 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,18 +9,18 @@ import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.iterativereduce.actor.core.FinetuneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
-import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.gradient.UpdateableGradientImpl;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Address;
@@ -35,23 +36,21 @@ import akka.routing.RoundRobinPool;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-
-import scala.concurrent.Future;
 /**
  * Controller for coordinating model training for a neural network based
  * on parameters across a cluster for akka.
  * @author Adam Gibson
  *
  */
-public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneListener<UpdateableGradientImpl> {
+public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable {
 
 
 	private static final long serialVersionUID = -4385335922485305364L;
 	private transient ActorSystem system;
-	private Integer currEpochs = 0;
 	private Integer epochs;
-	private UpdateableGradientImpl result;
+	private UpdateableImpl result;
 	private ActorRef mediator;
+	private BaseMultiLayerNetwork startingNetwork;
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
 	private static String systemName = "ClusterSystem";
 	private String type = "master";
@@ -62,11 +61,24 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * Master constructor
 	 * @param type the type (worker)
 	 * @param iter the dataset to use
+	 * @param startingNetwork a starting neural network
 	 */
-	public ActorNetworkRunner(String type,DataSetIterator iter) {
+	public ActorNetworkRunner(String type,DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
 		this.type = type;
 		this.iter = iter;
+		this.startingNetwork = startingNetwork;
 	}
+	
+	/**
+	 * Master constructor
+	 * @param type the type (worker)
+	 * @param iter the dataset to use
+	 * @param startingNetwork a starting neural network
+	 */
+	public ActorNetworkRunner(String type,DataSetIterator iter) {
+		this(type,iter,null);
+	}
+
 
 	/**
 	 * Master constructor
@@ -74,7 +86,17 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * @param iter the dataset to use
 	 */
 	public ActorNetworkRunner(DataSetIterator iter) {
-		this("master",iter);
+		this("master",iter,null);
+	}
+
+	
+	/**
+	 * Master constructor
+	 * @param type the type (worker)
+	 * @param iter the dataset to use
+	 */
+	public ActorNetworkRunner(DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
+		this("master",iter,startingNetwork);
 	}
 
 	/**
@@ -105,8 +127,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * @param c the neural network configuration
 	 * @return the actor for this backend
 	 */
-	public static Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
-		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
+	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
+		Config conf = ConfigFactory.parseString("akka.cluster.roles=[master,worker]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
 
@@ -121,30 +143,17 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
-		Address realJoinAddress =
-				(joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
-				Cluster.get(system).join(realJoinAddress);
-				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor), "active", PoisonPill.getInstance(), "master"));
+		Address realJoinAddress = (joinAddress == null) ? 
+				Cluster.get(system).selfAddress() 
+				: joinAddress;
+	    Cluster.get(system).join(realJoinAddress);
+	    Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
+	    system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
 
 
-	public static ActorRef startWorker(Address contactAddress,Conf conf) {
-		// Override the configuration of the port
-
-		ActorSystem system = ActorSystem.create(systemName);
-
-		Props p = WorkerActor.propsFor(conf);
-		int cores = Runtime.getRuntime().availableProcessors();
-
-
-		log.info("Worker joining cluster");
-		Cluster.get(system).join(contactAddress);
-
-		ActorRef ref = system.actorOf(ClusterSingletonManager.defaultProps(new RoundRobinPool(cores).props(p), "active", PoisonPill.getInstance(), "worker"));
-		return ref;
-	}
-
+	
 
 
 	@Override
@@ -188,11 +197,16 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 
 		else {
 
-			Conf c = conf.copy();
+
+			log.info("Starting workers");
+			ActorSystem system = ActorSystem.create(systemName);
+
+			Props p = WorkerActor.propsFor(conf);
+			int cores = Runtime.getRuntime().availableProcessors();
+			
+			system.actorOf(new RoundRobinPool(cores).props(p));
 
 
-
-			startWorker(masterAddress,c);
 
 			//Wait for backend to be up
 
@@ -290,28 +304,12 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	}
 
 
-	@Override
-	public void epochComplete(UpdateableGradientImpl result) {
-		currEpochs++;
+	
 
-		//update the final available result
-		this.result = result;
-		mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.FINETUNE,
-				new FinetuneMessage(result)), mediator);
-
-
-	}
-
-	public UpdateableGradientImpl getResult() {
+	public UpdateableImpl getResult() {
 		return result;
 	}
 
-
-
-	@Override
-	public void finish() {
-
-	}
 
 	public Address getMasterAddress() {
 		return masterAddress;

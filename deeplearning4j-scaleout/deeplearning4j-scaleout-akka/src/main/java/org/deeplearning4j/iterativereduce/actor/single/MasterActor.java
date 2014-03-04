@@ -13,6 +13,7 @@ import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
@@ -34,6 +35,24 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableSingleImpl> {
 
 
+	protected NeuralNetwork intialNetwork;
+	
+
+	/**
+	 * Creates the master and the workers with this given conf
+	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor to use for data distribution
+	 * @param initialNetwork the initial neural network to use
+	 */
+	public MasterActor(Conf conf,ActorRef batchActor, NeuralNetwork intialNetwork) {
+		super(conf,batchActor);
+	}
+
+	public static Props propsFor(Conf conf,ActorRef batchActor, NeuralNetwork intialNetwork) {
+		return Props.create(MasterActor.class,conf,batchActor,intialNetwork);
+	}
+
+	
 
 	/**
 	 * Creates the master and the workers with this given conf
