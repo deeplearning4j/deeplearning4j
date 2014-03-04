@@ -13,6 +13,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.single.UpdateableSingleImpl;
@@ -52,7 +53,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	private List<Pair<DoubleMatrix,DoubleMatrix>> samples;
 	private UpdateableSingleImpl result;
 	private  ActorRef mediator;
-
+	private NeuralNetwork startingNetwork;
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
 	private static String systemName = "ClusterSystem";
 	private String type = "master";
@@ -69,6 +70,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 		this.iter = iter;
 	}
 
+	
+	/**
+	 * Master constructor
+	 * @param type the type (worker)
+	 * @param iter the dataset to use
+	 * @param network the network to start with
+	 */
+	public ActorNetworkRunner(String type,DataSetIterator iter,NeuralNetwork network) {
+		this.type = type;
+		this.iter = iter;
+		this.startingNetwork = network;
+	}
 	/**
 	 * The worker constructor
 	 * @param type the type to use
@@ -97,18 +110,21 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,EpochDoneLis
 	 * @param c the neural network configuration
 	 * @return the actor for this backend
 	 */
-	public static Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
+	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[" + role + "]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
 		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,c.getNumPasses()));
+		
+		Props masterProps = this.startingNetwork != null ? MasterActor.propsFor(c,batchActor,startingNetwork) : MasterActor.propsFor(c,batchActor);
+		
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
 		Address realJoinAddress =
 				(joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 				Cluster.get(system).join(realJoinAddress);
-				system.actorOf(ClusterSingletonManager.defaultProps(MasterActor.propsFor(c,batchActor), "active", PoisonPill.getInstance(), "master"));
+	   system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
 
