@@ -69,8 +69,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	}
 
 
-	
-	
+
+
 	public static DataSet empty() {
 		return new DataSet(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
 	}
@@ -98,7 +98,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return new DataSet(in,out);
 	}
 
-	
+
 	public void shuffle() {
 		List<DataSet> list = asList();
 		Collections.shuffle(list);
@@ -106,8 +106,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		setFirst(ret.getFirst());
 		setSecond(ret.getSecond());
 	}
-	
-	
+
+
 	private static int totalExamples(Collection<DataSet> coll) {
 		int count = 0;
 		for(DataSet d : coll)
@@ -388,12 +388,13 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 			Set<Integer> added = new HashSet<Integer>();
 			for(int i = 0; i < numSamples; i++) {
 				int picked = rng.nextInt(numExamples());
-				while(added.contains(picked)) {
-					picked = rng.nextInt(numExamples());
+				if(!withReplacement)
+					while(added.contains(picked)) {
+						picked = rng.nextInt(numExamples());
 
-				}
-				examples.putRow(i,getFirst().getRow(i));
-				outcomes.putRow(i,getSecond().getRow(i));
+					}
+				examples.putRow(i,get(picked).getFirst());
+				outcomes.putRow(i,get(picked).getSecond());
 
 			}
 			return new DataSet(examples,outcomes);
