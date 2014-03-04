@@ -79,13 +79,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.warn("Unable to initialize network; network was null");
 				throw new IllegalArgumentException("Network was null");
 			}
-			this.network = m.get().clone();
+			
+			setNetwork(m.get().clone());
 		}
 		else
 			unhandled(message);
 	}
 
-	private synchronized void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+	private  void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
 		for(int i = 0; i < list.size(); i++) {
@@ -102,7 +103,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			public UpdateableImpl call() throws Exception {
 
 				UpdateableImpl work = compute();
-
+				log.info("Updating parent actor...");
+				//update parameters in master param server
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						work), getSelf());	
 				return work;
 			}
 
@@ -112,13 +116,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			@Override
 			public void onComplete(Throwable arg0, UpdateableImpl work) throws Throwable {
-				if(arg0 != null)
+				if(arg0 != null) {
+					log.error("Unable to process work ",arg0);
 					throw arg0;
 
-				log.info("Updating parent actor...");
-				//update parameters in master param server
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						work), getSelf());				
+				}
+			
+							
 			}
 
 		}, context().dispatcher());
@@ -127,14 +131,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public synchronized UpdateableImpl compute(List<UpdateableImpl> records) {
+	public  UpdateableImpl compute(List<UpdateableImpl> records) {
 		return compute();
 	}
 
 	@Override
-	public synchronized UpdateableImpl compute() {
+	public  UpdateableImpl compute() {
 		log.info("Training network");
-		while(network == null) {
+		while(getNetwork() == null) {
 			log.info("Unable to process; waiting till network is initialized");
 			try {
 				Thread.sleep(15000);
@@ -143,8 +147,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 		}
 		
-		network.trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
-		return new UpdateableImpl(network);
+		getNetwork().trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
+		return new UpdateableImpl(getNetwork());
 	}
 
 	@Override
@@ -171,7 +175,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	@Override
-	public synchronized UpdateableImpl getResults() {
+	public  UpdateableImpl getResults() {
 		return workerUpdateable;
 	}
 
