@@ -17,11 +17,8 @@ import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Address;
-import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.cluster.Cluster;
-import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
 
