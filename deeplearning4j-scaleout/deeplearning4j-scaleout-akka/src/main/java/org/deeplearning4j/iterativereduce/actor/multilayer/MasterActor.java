@@ -18,7 +18,6 @@ import org.jblas.DoubleMatrix;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.cluster.Cluster;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
 
@@ -108,17 +107,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
 				.build() : this.network;
 		masterResults = new UpdateableImpl(network);
-
-		Cluster.get(context().system()).registerOnMemberUp(new Runnable() {
-
-			@Override
-			public void run() {
-				//after worker is instantiated broadcast the master network to the worker
-				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-						masterResults), getSelf());				
-			}
-			
-		});
+		
+		//after worker is instantiated broadcast the master network to the worker
+		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+				masterResults), getSelf());	
 
 		
 

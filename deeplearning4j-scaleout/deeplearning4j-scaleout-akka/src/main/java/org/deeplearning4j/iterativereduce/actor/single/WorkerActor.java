@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.single.UpdateableSingleImpl;
@@ -66,6 +67,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
+		else if(message instanceof NeuralNetwork) {
+			this.network = (BaseNeuralNetwork) message;
+			log.info("Set network");
+		}
+		
 		else if(message instanceof Updateable) {
 			workerResult = (UpdateableSingleImpl) message;
 			this.network = workerResult.get();
