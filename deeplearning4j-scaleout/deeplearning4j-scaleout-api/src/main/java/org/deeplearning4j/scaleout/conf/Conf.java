@@ -21,6 +21,7 @@ public class Conf implements Serializable,Cloneable {
 	private int k;
 	private long seed = 123;
 	private double corruptionLevel = 0.3;
+	private double sparsity = 0;
 	private ActivationFunction function = new Sigmoid();
 	private int[] layerSizes = new int[]{300,300,300};
 	private int pretrainEpochs = 1000;
@@ -45,6 +46,12 @@ public class Conf implements Serializable,Cloneable {
 	
 	
 	
+	public synchronized double getSparsity() {
+		return sparsity;
+	}
+	public synchronized void setSparsity(double sparsity) {
+		this.sparsity = sparsity;
+	}
 	public Map<Integer, MatrixTransform> getWeightTransforms() {
 		return weightTransforms;
 	}
