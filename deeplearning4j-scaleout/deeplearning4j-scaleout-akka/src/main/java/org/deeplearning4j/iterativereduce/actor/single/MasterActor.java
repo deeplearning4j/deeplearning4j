@@ -91,7 +91,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		@SuppressWarnings("unchecked")
 		BaseNeuralNetwork network = new BaseNeuralNetwork.Builder<>()
 				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
-				.withRandom(rng).withL2(conf.getL2())
+				.withRandom(rng).withL2(conf.getL2()).renderWeights(conf.getRenderWeightEpochs())
 				.withMomentum(conf.getMomentum())
 				.numberOfVisible(conf.getnIn())
 				.numHidden(conf.getnOut())
