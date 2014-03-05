@@ -105,7 +105,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-				.hiddenLayerSizes(conf.getLayerSizes())
+				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
 				.build() : this.network;
 		masterResults = new UpdateableImpl(network);
 

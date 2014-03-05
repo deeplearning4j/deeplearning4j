@@ -216,6 +216,10 @@ public class NonZeroStoppingConjugateGradient implements Optimizer {
 			if (eval != null) {
 				eval.evaluate(optimizable, iterations);
 			}
+			
+			if(listener != null) {
+				listener.epochDone(iterationCount);
+			}
 		}
 		return false;
 	}
