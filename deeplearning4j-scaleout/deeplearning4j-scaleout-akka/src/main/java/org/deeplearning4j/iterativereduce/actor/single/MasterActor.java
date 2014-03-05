@@ -36,7 +36,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	protected NeuralNetwork intialNetwork;
-	
+
 
 	/**
 	 * Creates the master and the workers with this given conf
@@ -52,7 +52,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return Props.create(MasterActor.class,conf,batchActor,intialNetwork);
 	}
 
-	
+
 
 	/**
 	 * Creates the master and the workers with this given conf
@@ -90,33 +90,34 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		RandomGenerator rng =  new SynchronizedRandomGenerator(new MersenneTwister(conf.getSeed()));
 		@SuppressWarnings("unchecked")
 		BaseNeuralNetwork network = new BaseNeuralNetwork.Builder<>()
-				.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
-				.withRandom(rng).withL2(conf.getL2()).renderWeights(conf.getRenderWeightEpochs())
-				.withMomentum(conf.getMomentum())
-				.numberOfVisible(conf.getnIn())
-				.numHidden(conf.getnOut())
-				.build();
-		
+		.withClazz((Class<? extends BaseNeuralNetwork>) conf.getNeuralNetworkClazz())
+		.withRandom(rng).withL2(conf.getL2()).renderWeights(conf.getRenderWeightEpochs())
+		.withMomentum(conf.getMomentum())
+		.numberOfVisible(conf.getnIn())
+		.withSparsity(conf.getSparsity())
+		.numHidden(conf.getnOut())
+		.build();
+
 
 		context().system().actorOf(Props.create(ModelSavingActor.class,"nn-model.bin"),",model-saver");
 
 		Address masterAddress = Cluster.get(context().system()).selfAddress();
 
 		ActorNetworkRunner.startWorker(masterAddress,conf);
-		
-		
-		
-		
+
+
+
+
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				conf.getPretrainEpochs()), mediator);
 		log.info("Setup master with epochs " + conf.getPretrainEpochs());
 		masterResults = new UpdateableSingleImpl(network);
-		
+
 		log.info("Broadcasting initial master network");
 		//after worker is instantiated broadcast the master network to the worker
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
-		
+
 
 	}
 
@@ -156,7 +157,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					batchActor.tell(up, getSelf());
 					updates.clear();
 				}
-				
+
 
 
 			}
