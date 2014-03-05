@@ -7,7 +7,6 @@ layout: default
 Running deeplearning4j in distributed mode is accessible with the following.
 
 
-       #!/bin/bash
        java -cp "lib/*"   -Xmx5g -Xms5g -server -XX:+UseTLAB   -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:MaxTenuringThreshold=0 -XX:CMSInitiatingOccupancyFraction=60  -XX:+CMSParallelRemarkEnabled -XX:+CMSPermGenSweepingEnabled -XX:+CMSClassUnloadingEnabled org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunnerApp -h train1 -t worker
 
 
