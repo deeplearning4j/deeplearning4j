@@ -70,6 +70,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			updateTraining(input);
 
 		}
+		
+		else if(message instanceof BaseMultiLayerNetwork) {
+			this.network = (BaseMultiLayerNetwork) message;
+			log.info("Set network");
+		}
 
 		else if(message instanceof Updateable) {
 			UpdateableImpl m = (UpdateableImpl) message;
