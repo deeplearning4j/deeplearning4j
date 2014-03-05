@@ -13,7 +13,7 @@ Running deeplearning4j in distributed mode is accessible with the following.
 The key here is the -h and -t command line parameters. The -h points at a zookeeper node where the configuration is stored and the -t specifies a worker node.
 
 Service discovery happens when deeplearning4j stores the configuration upon startup. 
-[../doc/deeplearning4j/iterativereduce/actor/multilayer/ActorNetworkRunner.html](ActorNetworkRunner)
+[ActorNetworkRunner](../doc/deeplearning4j/iterativereduce/actor/multilayer/ActorNetworkRunner.html)
 
 runs and starts both a local worker node  and a master which stores the configuration specified in the master.
 
