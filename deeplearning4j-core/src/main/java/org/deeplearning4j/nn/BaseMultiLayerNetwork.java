@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -268,6 +269,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(nLayers < 1)
 			throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
 
+		if(this.dist == null)
+			dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+		
 		this.layers = new NeuralNetwork[nLayers];
 
 		// construct multi-layer
@@ -279,16 +283,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			if(i == 0) {
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
-				sigmoidLayers[i].setActivationFunction(activation);
+				sigmoidLayers[i] = new HiddenLayer.Builder()
+				.nIn(inputSize).nOut(this.hiddenLayerSizes[i]).withActivation(activation)
+				.withRng(rng).withRng(rng).withInput(layerInput).dist(dist)
+				.build();
 			}
 			else {
 				if(this.input != null)
 					layerInput = sigmoidLayers[i - 1].sample_h_given_v();
 				// construct sigmoid_layer
-				this.sigmoidLayers[i] = new HiddenLayer(inputSize, this.hiddenLayerSizes[i], null, null, rng,layerInput);
-				sigmoidLayers[i].setActivationFunction(activation);
-
+				sigmoidLayers[i] = new HiddenLayer.Builder()
+				.nIn(inputSize).nOut(this.hiddenLayerSizes[i]).withActivation(activation)
+				.withRng(rng).withRng(rng).withInput(layerInput).dist(dist)
+				.build();
 
 			}
 

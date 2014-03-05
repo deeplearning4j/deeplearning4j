@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 import java.io.Serializable;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.activation.ActivationFunction;
@@ -26,47 +27,28 @@ public class HiddenLayer implements Serializable {
 	private RandomGenerator rng;
 	private DoubleMatrix input;
 	private ActivationFunction activationFunction = new Sigmoid();
-
+	private RealDistribution dist;
 
 	private HiddenLayer() {}
 
 	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
-		this.nIn = nIn;
-		this.nOut = nOut;
-		this.input = input;
-		this.activationFunction = activationFunction;
-
-		if(rng == null) {
-			this.rng = new MersenneTwister(1234);
-		}
-		else 
-			this.rng = rng;
-
-		if(W == null) {
-
-			NormalDistribution u = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-
-			this.W = DoubleMatrix.zeros(nIn,nOut);
-
-			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
-		}
-
-		else 
-			this.W = W;
-
-
-		if(b == null) 
-			this.b = DoubleMatrix.zeros(nOut);
-		else 
-			this.b = b;
+		this(nIn,nOut,W,b,rng,input,activationFunction,null);
 	}
 
 
 	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
+		this(nIn,nOut,W,b,rng,input,null,null);
+	}
+
+
+
+
+	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction,RealDistribution dist) {
 		this.nIn = nIn;
 		this.nOut = nOut;
 		this.input = input;
+		if(activationFunction != null)
+			this.activationFunction = activationFunction;
 
 		if(rng == null) {
 			this.rng = new MersenneTwister(1234);
@@ -74,13 +56,17 @@ public class HiddenLayer implements Serializable {
 		else 
 			this.rng = rng;
 
+		if(dist == null)
+			this.dist = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+		else
+			this.dist = dist;
+
 		if(W == null) {
-			NormalDistribution u = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 
 			this.W = DoubleMatrix.zeros(nIn,nOut);
 
 			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(u.sample(this.W.columns)));
+				this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
 		}
 
 		else 
@@ -93,6 +79,41 @@ public class HiddenLayer implements Serializable {
 			this.b = b;
 	}
 
+
+	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,RealDistribution dist) {
+		this.nIn = nIn;
+		this.nOut = nOut;
+		this.input = input;
+
+		
+		if(rng == null) 
+			this.rng = new MersenneTwister(1234);
+
+		else 
+			this.rng = rng;
+
+		if(dist == null)
+			this.dist = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+		else
+			this.dist = dist;
+
+		if(W == null) {
+
+			this.W = DoubleMatrix.zeros(nIn,nOut);
+
+			for(int i = 0; i < this.W.rows; i++) 
+				this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
+		}
+
+		else 
+			this.W = W;
+
+
+		if(b == null) 
+			this.b = DoubleMatrix.zeros(nOut);
+		else 
+			this.b = b;
+	}
 	public synchronized int getnIn() {
 		return nIn;
 	}
@@ -157,6 +178,8 @@ public class HiddenLayer implements Serializable {
 		layer.W = W.dup();
 		if(input != null)
 			layer.input = input.dup();
+		if(dist != null)
+			layer.dist = dist;
 		layer.activationFunction = activationFunction;
 		layer.nOut = nOut;
 		layer.nIn = nIn;
@@ -171,6 +194,8 @@ public class HiddenLayer implements Serializable {
 		layer.W = W.transpose();
 		if(input != null)
 			layer.input = input.transpose();
+		if(dist != null)
+			layer.dist = dist;
 		layer.activationFunction = activationFunction;
 		layer.nOut = nIn;
 		layer.nIn = nOut;
@@ -236,7 +261,12 @@ public class HiddenLayer implements Serializable {
 		private RandomGenerator rng;
 		private DoubleMatrix input;
 		private ActivationFunction activationFunction = new Sigmoid();
-
+		private RealDistribution dist;
+		
+		public Builder dist(RealDistribution dist) {
+			this.dist = dist;
+			return this;
+		}
 
 		public Builder nIn(int nIn) {
 			this.nIn = nIn;
@@ -276,6 +306,7 @@ public class HiddenLayer implements Serializable {
 		public HiddenLayer build() {
 			HiddenLayer ret =  new HiddenLayer(nIn,nOut,W,b,rng,input); 
 			ret.activationFunction = activationFunction;
+			ret.dist = dist;
 			return ret;
 		}
 

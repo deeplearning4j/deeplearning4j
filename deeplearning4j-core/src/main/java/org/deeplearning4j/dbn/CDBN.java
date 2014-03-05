@@ -21,27 +21,29 @@ public class CDBN extends DBN {
 	
 	public CDBN() {}
 	
-	public CDBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
+	public CDBN(int nIn, int[] hiddenLayerSizes, int nOuts, int nLayers,
 			RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
-		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng, input,labels);
+		super(nIn, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
 	}
 
-	public CDBN(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers,
+	public CDBN(int nIns, int[] hiddenLayerSizes, int nOuts, int nLayers,
 			RandomGenerator rng) {
-		super(n_ins, hidden_layer_sizes, n_outs, n_layers, rng);
+		super(nIns, hiddenLayerSizes, nOuts, nLayers, rng);
 	}
 
+	
+	
 	@Override
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		if(index == 0)
-			return new CRBM.Builder().useRegularization(isUseRegularization())
+			return new CRBM.Builder().useRegularization(isUseRegularization()).withDistribution(getDist())
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 		else
-			return new RBM.Builder().useRegularization(isUseRegularization())
+			return new RBM.Builder().useRegularization(isUseRegularization()).withDistribution(getDist())
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
