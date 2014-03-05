@@ -134,7 +134,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 			int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
-		.withHBias(hbias).withInput(input).withWeights(W)
+		.withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist())
 		.withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias)
 		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
 		.withSparsity(this.getSparsity()).renderWeights(getRenderWeightsEveryNEpochs()).fanIn(getFanIn())
