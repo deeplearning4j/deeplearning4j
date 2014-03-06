@@ -8,6 +8,7 @@ import java.util.List;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
+import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
@@ -145,6 +146,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof WorkerState) {
 			log.info("Added worker " + message.toString());
 			this.addWorker((WorkerState) message);
+		}
+		
+		else if(message instanceof NeedsModelMessage) {
+			log.info("Sending networks over");
+			getSender().tell(masterResults.get(),getSelf());
 		}
 		
 		else if(message instanceof String) {
