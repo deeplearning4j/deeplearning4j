@@ -35,7 +35,7 @@ public class MnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.pretrain(next.getFirst(), 1, 0.01, 1000);
-			dbn.finetune(next.getSecond(), 0.01, 1000);
+			//dbn.finetune(next.getSecond(), 0.01, 1000);
 		}
 		
 		

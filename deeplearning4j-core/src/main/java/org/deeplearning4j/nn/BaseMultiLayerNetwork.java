@@ -199,6 +199,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	
+	
+	public double getReconstructionCrossEntropy() {
+	    double sum = 0;
+	    for(int i = 0; i < nLayers; i++) {
+	    	sum += layers[i].getReConstructionCrossEntropy();
+	    }
+	    
+	    sum /= (double) nLayers;
+	    return sum;
+	}
+	
+	
 	/**
 	 * Set as decoder for another neural net
 	 * designed for encoding (primary output is

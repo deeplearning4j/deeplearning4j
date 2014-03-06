@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -41,6 +42,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double learningRate;
 	protected double corruptionLevel;
 	protected Object[] extraParams;
+	protected String id;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 
@@ -55,7 +57,15 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-		
+		id = UUID.randomUUID().toString();
+		//replicate the network
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				register()), getSelf());
+		log.info("Registered with master " + id);
+	}
+
+	public WorkerState register() {
+		return new WorkerState(this.id,getSelf());
 	}
 
 
@@ -65,7 +75,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
 	}
-	
+
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
@@ -116,7 +126,15 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		});
 	}
 
-	
+	/**
+	 * Flags this worker as available to the master
+	 */
+	public void availableForWork() {
+		//replicate the network
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				id), getSelf());
+	}
+
 	@Override
 	public E getResults() {
 		return results;
