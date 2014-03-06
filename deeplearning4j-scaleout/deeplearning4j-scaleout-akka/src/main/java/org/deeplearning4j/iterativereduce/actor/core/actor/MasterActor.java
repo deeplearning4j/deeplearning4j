@@ -131,10 +131,20 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public abstract void setup(Conf conf);
 
 
-
-	protected void sendToWorkers(List<DataSet> pairs) {
+	/**
+	 * Delegates the list of datasets to the workers.
+	 * Each worker receives a portion of work and
+	 * changes its status to unavailable, this
+	 * will block till a worker is available.
+	 * 
+	 * This work pull pattern ensures that no duplicate work
+	 * is flowing (vs publishing) and also allows for
+	 * proper batching of resources and input splits.
+	 * @param datasets the datasets to train
+	 */
+	protected void sendToWorkers(List<DataSet> datasets) {
 		int split = conf.getSplit();
-		final List<List<DataSet>> splitList = Lists.partition(pairs, split);
+		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
@@ -145,6 +155,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				public Void call() throws Exception {
 					log.info("Sending off work for batch " + j);
 					boolean foundWork = false;
+					//loop till a worker is available; this throttles output
 					while(!foundWork) {
 						for(WorkerState state : workers.values()) {
 							if(state.isAvailable()) {
@@ -182,7 +193,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 
-
+	/**
+	 * Splits the input such that each dataset is only one row
+	 * @param list the list of datasets to batch
+	 */
 	protected void splitListIntoRows(List<DataSet> list) {
 		Queue<DataSet> q = new ArrayDeque<>(list);
 		list.clear();
