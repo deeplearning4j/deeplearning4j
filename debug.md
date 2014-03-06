@@ -17,7 +17,5 @@ Activations should start out gray. If they're black and white, the weights are t
 
 ![Alt text](../img/activations.png)
 
-For a more in-depth exploration of the topic, see:
-
-[Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf). by Jason Yosinski and Hod Lipson
+For a more in-depth exploration of the topic, see [Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf), by Jason Yosinski and Hod Lipson.
 
