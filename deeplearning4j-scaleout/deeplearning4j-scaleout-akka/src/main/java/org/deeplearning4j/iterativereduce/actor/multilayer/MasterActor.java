@@ -8,6 +8,7 @@ import java.util.List;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
+import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -18,6 +19,10 @@ import org.jblas.DoubleMatrix;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.cluster.routing.AdaptiveLoadBalancingPool;
+import akka.cluster.routing.ClusterRouterPool;
+import akka.cluster.routing.ClusterRouterPoolSettings;
+import akka.cluster.routing.SystemLoadAverageMetricsSelector;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
 
@@ -87,10 +92,17 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		log.info("Starting workers");
 		ActorSystem system = ActorSystem.create(context().system().name());
 
-		Props p = WorkerActor.propsFor(conf);
-		int cores = Runtime.getRuntime().availableProcessors();
-		
-		system.actorOf(new RoundRobinPool(cores).props(p));
+		Props p = new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(WorkerActor.propsFor(conf));
+		int totalInstances = 100;
+		int maxInstancesPerNode = 3;
+		boolean allowLocalRoutees = true;
+		String useRole = "worker";
+		system.actorOf(
+		    new ClusterRouterPool(new AdaptiveLoadBalancingPool(
+		        SystemLoadAverageMetricsSelector.getInstance(), 0),
+		        new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
+		            allowLocalRoutees, useRole)).props(p), "worker");
+
 
 		
 		try {
@@ -129,7 +141,30 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			listener = (EpochDoneListener<UpdateableImpl>) message;
 			log.info("Set listener");
 		}
+		
+		else if(message instanceof WorkerState) {
+			log.info("Added worker " + message.toString());
+			this.addWorker((WorkerState) message);
+		}
+		
+		else if(message instanceof String) {
+			WorkerState state = this.workers.get(message.toString());
+			if(state == null) {
+				state = new WorkerState(message.toString(),getSender());
+				state.setAvailable(true);
+				log.info("Worker " + state.getWorkerId() + " available for work");
 
+			}
+			else {
+				state.setAvailable(true);
+				log.info("Worker " + state.getWorkerId() + " available for work");
+
+			}
+		}
+		
+		
+		
+		
 		else if(message instanceof UpdateableImpl) {
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
@@ -138,7 +173,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				masterResults = this.compute(updates, updates);
 				if(listener != null)
 					listener.epochComplete(masterResults);
-
+				
 				epochsComplete++;
 				//tell the batch actor to send out another dataset
 				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());

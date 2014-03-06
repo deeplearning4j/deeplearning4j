@@ -4,8 +4,12 @@ import java.io.DataOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -58,6 +62,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ScheduledExecutorService iterChecker;
+	protected Set<String> workerIds = new HashSet<String>();
+	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
 
 
 
@@ -139,8 +145,16 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				@Override
 				public Void call() throws Exception {
 					log.info("Sending off work for batch " + j);
-					mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-							new ArrayList<>(splitList.get(j))), getSelf());
+					for(WorkerState state : workers.values()) {
+						if(state.isAvailable()) {
+							state.getRef().tell(new ArrayList<>(splitList.get(j)),getSelf());
+							log.info("Delegated work to worker " + state.getWorkerId());
+							state.setAvailable(false);
+							break;
+						}
+					}
+					
+					
 					return null;
 				}
 
@@ -170,7 +184,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		list.clear();
 		log.info("Splitting list in to rows...");
 		while(!q.isEmpty()) {
-			Pair<DoubleMatrix,DoubleMatrix> pair = q.poll();
+			DataSet pair = q.poll();
 			List<DoubleMatrix> inputRows = pair.getFirst().rowsAsList();
 			List<DoubleMatrix> labelRows = pair.getSecond().rowsAsList();
 			if(inputRows.isEmpty())
@@ -184,6 +198,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		}
 	}
 
+
+	public void addWorker(WorkerState state) {
+		this.workers.put(state.getWorkerId(),state);
+	}
 
 
 	@Override
@@ -252,18 +270,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 
-
-
-	public static String getBROADCAST() {
-		return BROADCAST;
-	}
-
-
-
-
-	public static String getRESULT() {
-		return MASTER;
-	}
 
 
 }

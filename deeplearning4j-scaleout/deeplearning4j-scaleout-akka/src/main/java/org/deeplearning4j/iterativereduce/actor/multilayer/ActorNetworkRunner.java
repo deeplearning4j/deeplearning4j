@@ -27,6 +27,10 @@ import akka.actor.Address;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.cluster.Cluster;
+import akka.cluster.routing.AdaptiveLoadBalancingPool;
+import akka.cluster.routing.ClusterRouterPool;
+import akka.cluster.routing.ClusterRouterPoolSettings;
+import akka.cluster.routing.SystemLoadAverageMetricsSelector;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
@@ -133,10 +137,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		ActorSystem system = ActorSystem.create(systemName, conf);
 
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
-
-
 		ActorRef batchActor = system.actorOf(pool.props(Props.create(BatchActor.class,iter)));
 
+	    Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
+
+		
 		log.info("Started batch actor");
 
 
@@ -147,7 +152,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				Cluster.get(system).selfAddress() 
 				: joinAddress;
 	    Cluster.get(system).join(realJoinAddress);
-	    Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
 	    system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
@@ -191,6 +195,34 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
 			//There is a one to one join to system requirement for the cluster
 			Cluster.get(system).join(masterAddress);
+			//store it in zookeeper for service discovery
+			conf.setMasterUrl(getMasterAddress().toString());
+
+			Future<Void> f = Futures.future(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					log.info("Registering with zookeeper; if the logging stops here, ensure zookeeper is started");
+					//register the configuration to zookeeper
+					ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
+					reg.register();
+					reg.close();
+					return null;
+				}
+
+			},system.dispatcher());
+
+			f.onComplete(new OnComplete<Void>() {
+
+				@Override
+				public void onComplete(Throwable arg0, Void arg1) throws Throwable {
+					if(arg0 != null)
+						throw arg0;
+					log.info("Registered conf with zookeeper");
+
+				}
+
+			}, system.dispatcher());
 
 			log.info("Setup master with epochs " + epochs);
 		}
@@ -202,9 +234,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			ActorSystem system = ActorSystem.create(systemName);
 
 			Props p = WorkerActor.propsFor(conf);
-			int cores = Runtime.getRuntime().availableProcessors();
 			
-			system.actorOf(new RoundRobinPool(cores).props(p));
+			int totalInstances = 100;
+			int maxInstancesPerNode = 3;
+			boolean allowLocalRoutees = true;
+			String useRole = "worker";
+			system.actorOf(
+			    new ClusterRouterPool(new AdaptiveLoadBalancingPool(
+			        SystemLoadAverageMetricsSelector.getInstance(), 0),
+			        new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
+			            allowLocalRoutees, useRole)).props(p), "worker");
+
+
 
 
 
@@ -226,35 +267,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			log.info("Setup worker nodes");
 		}
 
-		//store it in zookeeper for service discovery
-		conf.setMasterUrl(getMasterAddress().toString());
-
-		Future<Void> f = Futures.future(new Callable<Void>() {
-
-			@Override
-			public Void call() throws Exception {
-				log.info("Registering with zookeeper; if the logging stops here, ensure zookeeper is started");
-				//register the configuration to zookeeper
-				ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
-				reg.register();
-				reg.close();
-				return null;
-			}
-
-		},system.dispatcher());
-
-		f.onComplete(new OnComplete<Void>() {
-
-			@Override
-			public void onComplete(Throwable arg0, Void arg1) throws Throwable {
-				if(arg0 != null)
-					throw arg0;
-				log.info("Registered conf with zookeeper");
-
-			}
-
-		}, system.dispatcher());
-
+	
 
 	}
 

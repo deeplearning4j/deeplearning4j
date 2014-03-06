@@ -15,7 +15,8 @@ public class RBMMnistExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(500).build();
+		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).renderWeights(100).build();
+		r.getW().muli(1000);
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,1000);
 

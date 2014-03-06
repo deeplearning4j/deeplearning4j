@@ -72,7 +72,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 		
 		else if(message instanceof BaseMultiLayerNetwork) {
-			this.network = (BaseMultiLayerNetwork) message;
+			setNetwork((BaseMultiLayerNetwork) message);
 			log.info("Set network");
 		}
 
@@ -124,9 +124,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				if(arg0 != null) {
 					log.error("Unable to process work ",arg0);
 					throw arg0;
-
+					
 				}
-			
+				
+				//flag as available to master
+				availableForWork();
 							
 			}
 
@@ -141,7 +143,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public  UpdateableImpl compute() {
+	public  synchronized UpdateableImpl compute() {
 		log.info("Training network");
 		while(getNetwork() == null) {
 			log.info("Unable to process; waiting till network is initialized");
