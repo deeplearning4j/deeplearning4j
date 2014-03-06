@@ -57,7 +57,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-		id = UUID.randomUUID().toString();
+		id = generateId();
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				register()), getSelf());
@@ -68,6 +68,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		return new WorkerState(this.id,getSelf());
 	}
 
+	public String generateId() {
+		return UUID.randomUUID().toString();
+
+	}
+	
 
 	@Override
 	public void postStop() throws Exception {

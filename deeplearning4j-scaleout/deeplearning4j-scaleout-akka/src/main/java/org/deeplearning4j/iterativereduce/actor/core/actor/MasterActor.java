@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -145,14 +144,19 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				@Override
 				public Void call() throws Exception {
 					log.info("Sending off work for batch " + j);
-					for(WorkerState state : workers.values()) {
-						if(state.isAvailable()) {
-							state.getRef().tell(new ArrayList<>(splitList.get(j)),getSelf());
-							log.info("Delegated work to worker " + state.getWorkerId());
-							state.setAvailable(false);
-							break;
+					boolean foundWork = false;
+					while(!foundWork) {
+						for(WorkerState state : workers.values()) {
+							if(state.isAvailable()) {
+								state.getRef().tell(new ArrayList<>(splitList.get(j)),getSelf());
+								log.info("Delegated work to worker " + state.getWorkerId());
+								state.setAvailable(false);
+								foundWork = true;
+								break;
+							}
 						}
 					}
+					
 					
 					
 					return null;
