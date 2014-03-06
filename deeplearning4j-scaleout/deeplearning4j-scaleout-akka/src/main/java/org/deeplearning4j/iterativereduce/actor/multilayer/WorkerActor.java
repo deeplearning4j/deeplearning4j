@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -146,7 +147,9 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public  synchronized UpdateableImpl compute() {
 		log.info("Training network");
 		while(getNetwork() == null) {
-			log.info("Unable to process; waiting till network is initialized");
+			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+					new NeedsModelMessage()), getSelf());	
 			try {
 				Thread.sleep(15000);
 			} catch (InterruptedException e) {
