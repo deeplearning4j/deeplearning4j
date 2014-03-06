@@ -45,7 +45,7 @@ public class DefaultModelSaver implements ModelSaver {
 
 	@Override
 	public void save(Serializable ser) {
-		if(rewrite) {
+		if(!rewrite) {
 			String path = file.getAbsolutePath();
 			if(file.exists()) {
 				file.renameTo(new File(file.getParentFile(),file.getName() + "-" + System.currentTimeMillis()));

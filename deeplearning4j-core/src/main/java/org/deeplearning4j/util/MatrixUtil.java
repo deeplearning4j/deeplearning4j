@@ -143,7 +143,25 @@ public class MatrixUtil {
 		}
 		return found;
 	}
+
 	
+	public static double min(DoubleMatrix matrix) {
+		double ret = matrix.get(0);
+		for(int i = 0; i < matrix.length; i++) {
+			if(matrix.get(i) < ret)
+				ret = matrix.get(i);
+		}
+		return ret;
+	}
+	
+	public static double max(DoubleMatrix matrix) {
+		double ret = matrix.get(0);
+		for(int i = 0; i < matrix.length; i++) {
+			if(matrix.get(i) > ret)
+				ret = matrix.get(i);
+		}
+		return ret;
+	}
 	
 	public static void ensureValidOutcomeMatrix(DoubleMatrix out) {
 		boolean found = false;
