@@ -15,32 +15,20 @@ Note the -h and -t command-line parameters at the end. The -h points at a zookee
 
 Service discovery happens when deeplearning4j stores the configuration upon startup. [ActorNetworkRunner](../doc/deeplearning4j/iterativereduce/actor/multilayer/ActorNetworkRunner.html) runs and starts both a local worker node and a master that stores the configuration specified in the master.
 
-runs and starts both a local worker node  and a master which stores the configuration specified in the master.
-
-The worker then picks this up from zookeeper and akka actors on the worker will automatically join the cluster
-
-thanks to akka's gossip protocol.
+The worker then picks this up from zookeeper, and akka actors on the worker will automatically join the cluster thanks to akka's gossip protocol.
 
 
-Setting host of akka cluster
-======================================
+## setting host of akka cluster
 
+First, ensure that the host for akka is set properly. If you set the host to 0.0.0.0 or localhost when trying to cluster, external workers will not be able to resolve the IP.
 
-Ensure the host for akka is set properly.
-
-If you set the host to 0.0.0.0 or localhost when trying to cluster, external workers will not be able to resolve the IP.
-
-The fix to this is setting up your hosts file with an "agreed upon host".
-
-Set this with the following property:
+You can fix this by setting up your hosts file with an "agreed upon host" via the following property:
 
           -Dakka.remote.netty.tcp.hostname=yourhostname
 
-
- In your code, you can also do 
+ You can also include this in your code: 
 
           System.setProperty("akka.remote.netty.tcp.hostname","yourhostname");
 
 
- This must happen before initializing your ActorNetworkRunner.
-The worker then picks this up from zookeeper. [Akka actors](http://doc.akka.io/docs/akka/snapshot/general/actors.html) on the worker will automatically join the cluster thanks to akka's gossip protocol.
+You'll need to address the hosts file issue before initializing your ActorNetworkRunner. The worker then picks this up from zookeeper, just as above. [Akka actors](http://doc.akka.io/docs/akka/snapshot/general/actors.html) on the worker will automatically join the cluster thanks to akka's gossip protocol.
