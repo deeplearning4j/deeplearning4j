@@ -39,13 +39,19 @@ public class Conf implements Serializable,Cloneable {
 	private double l2;
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	private int renderWeightEpochs = 0;
+	private String masterAbsPath;
 	
 	
 	
 	
 	
 	
-	
+	public synchronized String getMasterAbsPath() {
+		return masterAbsPath;
+	}
+	public synchronized void setMasterAbsPath(String masterAbsPath) {
+		this.masterAbsPath = masterAbsPath;
+	}
 	public synchronized double getSparsity() {
 		return sparsity;
 	}

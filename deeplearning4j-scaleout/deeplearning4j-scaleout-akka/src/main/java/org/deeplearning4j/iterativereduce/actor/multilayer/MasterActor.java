@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
@@ -20,10 +21,6 @@ import org.jblas.DoubleMatrix;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.cluster.routing.AdaptiveLoadBalancingPool;
-import akka.cluster.routing.ClusterRouterPool;
-import akka.cluster.routing.ClusterRouterPoolSettings;
-import akka.cluster.routing.SystemLoadAverageMetricsSelector;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
 
@@ -91,28 +88,26 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public void setup(Conf conf) {
 		log.info("Starting workers");
-		ActorSystem system = ActorSystem.create(context().system().name());
-
-		Props p = new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(WorkerActor.propsFor(conf));
-		int totalInstances = 100;
-		int maxInstancesPerNode = 3;
-		boolean allowLocalRoutees = true;
-		String useRole = "worker";
-		system.actorOf(
-		    new ClusterRouterPool(new AdaptiveLoadBalancingPool(
-		        SystemLoadAverageMetricsSelector.getInstance(), 0),
-		        new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
-		            allowLocalRoutees, useRole)).props(p), "worker");
-
-
+		ActorSystem system = context().system();
 		
+		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
+		//start local workers
+		Props p = pool.props(WorkerActor.propsFor(conf));
+		system.actorOf(p, "worker");
+
+
+
+
+
+		//Wait for backend to be up
+
 		try {
-			Thread.sleep(15000);
+			Thread.sleep(30000);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		
-		
+
+
 		log.info("Broadcasting initial master network");
 
 		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
@@ -144,7 +139,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 		
 		else if(message instanceof WorkerState) {
-			log.info("Added worker " + message.toString());
 			this.addWorker((WorkerState) message);
 		}
 		
@@ -159,13 +153,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				state = new WorkerState(message.toString(),getSender());
 				state.setAvailable(true);
 				log.info("Worker " + state.getWorkerId() + " available for work");
-
+				getSender().tell("",getSelf());
 			}
 			else {
 				state.setAvailable(true);
 				log.info("Worker " + state.getWorkerId() + " available for work");
 
 			}
+			
+			getSender().tell(new Ack(),getSelf());
+
 		}
 		
 		

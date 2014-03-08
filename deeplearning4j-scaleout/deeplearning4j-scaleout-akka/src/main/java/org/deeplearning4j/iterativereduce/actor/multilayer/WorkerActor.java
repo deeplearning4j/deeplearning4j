@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -47,6 +48,27 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
+
+
+		//subscribe to broadcasts from master (location agnostic)
+		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
+
+
+	}
+
+	public WorkerActor(ActorRef clusterClient,Conf conf) {
+		super(conf,clusterClient);
+		setup(conf);
+		//subscribe to broadcasts from workers (location agnostic)
+		mediator.tell(new Put(getSelf()), getSelf());
+
+		//subscribe to broadcasts from master (location agnostic)
+		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
+
+
+		//subscribe to broadcasts from master (location agnostic)
+		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
+
 	}
 
 
@@ -71,10 +93,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			updateTraining(input);
 
 		}
-		
+
 		else if(message instanceof BaseMultiLayerNetwork) {
 			setNetwork((BaseMultiLayerNetwork) message);
 			log.info("Set network");
+		}
+
+		else if(message instanceof Ack) {
+			log.info("Ack from master on worker " + id);
 		}
 
 		else if(message instanceof Updateable) {
@@ -85,7 +111,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.warn("Unable to initialize network; network was null");
 				throw new IllegalArgumentException("Network was null");
 			}
-			
+
 			setNetwork(m.get().clone());
 		}
 		else
@@ -125,12 +151,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				if(arg0 != null) {
 					log.error("Unable to process work ",arg0);
 					throw arg0;
-					
+
 				}
-				
+
 				//flag as available to master
 				availableForWork();
-							
+
 			}
 
 		}, context().dispatcher());
@@ -149,14 +175,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		while(getNetwork() == null) {
 			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					new NeedsModelMessage()), getSelf());	
+					new NeedsModelMessage(id)), getSelf());	
 			try {
 				Thread.sleep(15000);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
-		
+
 		getNetwork().trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
 		return new UpdateableImpl(getNetwork());
 	}
@@ -215,7 +241,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
-	
+
 
 
 	public synchronized UpdateableImpl getWorkerUpdateable() {
