@@ -55,7 +55,6 @@ public class ListDataSetIterator implements DataSetIterator {
 		}
 		
 		DataSet d = DataSet.merge(r);
-		
 		return d;
 	}
 

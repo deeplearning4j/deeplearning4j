@@ -15,11 +15,13 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
+import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
+import org.deeplearning4j.scaleout.zookeeper.ZooKeeperRunner;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,6 +213,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				@Override
 				public Void call() throws Exception {
 					log.info("Registering with zookeeper; if the logging stops here, ensure zookeeper is started");
+					if(!PortTaken.portTaken(2181)) {
+						log.info("No zookeeper found; starting an embedded zookeeper");
+						startEmbeddedZooKeeper();
+					}
+					
 					//register the configuration to zookeeper
 					ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
 					reg.register();
@@ -277,6 +284,30 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	}
 
+	
+	private void startEmbeddedZooKeeper() {
+		Future<Void> f = Futures.future(new Callable<Void>() {
+
+			@Override
+			public Void call() throws Exception {
+				ZooKeeperRunner runner = new ZooKeeperRunner();
+				runner.run();
+				return null;
+			}
+			
+		},system.dispatcher());
+		
+		
+		f.onComplete(new OnComplete<Void>() {
+
+			@Override
+			public void onComplete(Throwable arg0, Void arg1) throws Throwable {
+				if(arg0 != null)
+					throw arg0;
+			}
+			
+		},system.dispatcher());
+	}
 
 
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
