@@ -8,6 +8,10 @@ import org.deeplearning4j.base.IrisUtils;
 public class IrisDataFetcher extends BaseDataFetcher {
 
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4566329799221375262L;
 	public final static int NUM_EXAMPLES = 150;
 	
 	public IrisDataFetcher() {

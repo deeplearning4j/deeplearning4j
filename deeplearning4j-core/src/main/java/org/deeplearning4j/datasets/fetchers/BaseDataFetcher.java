@@ -2,7 +2,6 @@ package org.deeplearning4j.datasets.fetchers;
 
 import java.util.List;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
 import org.deeplearning4j.util.MatrixUtil;
@@ -10,7 +9,12 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * A base class for assisting with creation of matrices
+ * with the data set fetcher
+ * @author Adam Gibson
+ *
+ */
 public abstract class BaseDataFetcher implements DataSetFetcher {
 	
 	/**
@@ -24,11 +28,21 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	protected int totalExamples;
 	protected static Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);
 	
-	
+	/**
+	 * Creates a feature vector
+	 * @param numRows the number of examples
+ 	 * @return a feature vector
+	 */
 	protected DoubleMatrix createInputMatrix(int numRows) {
 		return new DoubleMatrix(numRows,inputColumns);
 	}
 	
+	/**
+	 * Creates an output label matrix
+	 * @param outcomeLabel the outcome label to use
+	 * @return a binary vector where 1 is set to the
+	 * index specified by outcomeLabel
+	 */
 	protected DoubleMatrix createOutputVector(int outcomeLabel) {
 		return MatrixUtil.toOutcomeVector(outcomeLabel, numOutcomes);
 	}
@@ -37,7 +51,11 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 		return new DoubleMatrix(numRows,numOutcomes);
 	}
 	
-	protected void initializeCurrFromList(List<Pair<DoubleMatrix,DoubleMatrix>> examples) {
+	/**
+	 * Initializes this data set fetcher from the passed in datasets
+	 * @param examples the examples to use
+	 */
+	protected void initializeCurrFromList(List<DataSet> examples) {
 		
 		if(examples.isEmpty())
 			log.warn("Warning: empty dataset from the fetcher");

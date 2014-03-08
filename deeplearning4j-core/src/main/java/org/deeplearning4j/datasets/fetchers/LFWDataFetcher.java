@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.base.LFWLoader;
-import org.deeplearning4j.berkeley.Pair;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.datasets.DataSet;
 
 
 /**
@@ -15,6 +14,10 @@ import org.jblas.DoubleMatrix;
  */
 public class LFWDataFetcher extends BaseDataFetcher {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7473748140401804666L;
 	private LFWLoader loader = new LFWLoader();
 	public final static int NUM_IMAGES = 13233;
 
@@ -42,7 +45,7 @@ public class LFWDataFetcher extends BaseDataFetcher {
 
 
 		//we need to ensure that we don't overshoot the number of examples total
-		List<Pair<DoubleMatrix,DoubleMatrix>> toConvert = new ArrayList<>();
+		List<DataSet> toConvert = new ArrayList<>();
 
 		for(int i = 0; i < numExamples; i++,cursor++) {
 			if(!hasMore())
