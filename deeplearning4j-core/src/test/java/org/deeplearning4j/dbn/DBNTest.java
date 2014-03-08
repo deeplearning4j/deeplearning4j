@@ -5,7 +5,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.transformation.MultiplyScalar;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
