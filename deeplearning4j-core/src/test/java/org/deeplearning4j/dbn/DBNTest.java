@@ -3,7 +3,6 @@ package org.deeplearning4j.dbn;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.base.DeepLearningTest;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.transformation.MultiplyScalar;
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 
 
-public class DBNTest  extends DeepLearningTest {
+public class DBNTest {
 
 	private static Logger log = LoggerFactory.getLogger(DBNTest.class);
 

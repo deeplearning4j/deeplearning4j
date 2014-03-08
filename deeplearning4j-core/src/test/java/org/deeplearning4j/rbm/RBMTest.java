@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.base.DeepLearningTest;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -12,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class RBMTest extends DeepLearningTest {
+public class RBMTest  {
 
 	private static Logger log = LoggerFactory.getLogger(RBMTest.class);
 
