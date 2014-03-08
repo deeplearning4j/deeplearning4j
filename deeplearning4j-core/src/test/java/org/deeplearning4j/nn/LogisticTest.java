@@ -72,9 +72,7 @@ public class LogisticTest {
 		DataSet iris = fetcher.next();
 		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
 				.build();
-		for(int i = 0; i < 1000; i++)
-			classifier.train(iris.getFirst(), iris.getSecond(), 0.1);
-
+		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 0.01, 10000);
 		fetcher.fetch(40);
 		iris = fetcher.next();
 
