@@ -4,13 +4,17 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
+import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -22,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import scala.concurrent.Future;
 import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.Address;
 import akka.actor.PoisonPill;
@@ -31,6 +36,7 @@ import akka.cluster.routing.AdaptiveLoadBalancingPool;
 import akka.cluster.routing.ClusterRouterPool;
 import akka.cluster.routing.ClusterRouterPoolSettings;
 import akka.cluster.routing.SystemLoadAverageMetricsSelector;
+import akka.contrib.pattern.ClusterClient;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
@@ -60,7 +66,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private String type = "master";
 	private Address masterAddress;
 	private DataSetIterator iter;
-
+	protected ActorRef masterActor;
+	
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
@@ -72,7 +79,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		this.iter = iter;
 		this.startingNetwork = startingNetwork;
 	}
-	
+
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
@@ -93,7 +100,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		this("master",iter,null);
 	}
 
-	
+
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
@@ -139,9 +146,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 		ActorRef batchActor = system.actorOf(pool.props(Props.create(BatchActor.class,iter)));
 
-	    Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
+		Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
 
-		
+
 		log.info("Started batch actor");
 
 
@@ -151,13 +158,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		Address realJoinAddress = (joinAddress == null) ? 
 				Cluster.get(system).selfAddress() 
 				: joinAddress;
-	    Cluster.get(system).join(realJoinAddress);
-	    system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
+				Cluster.get(system).join(realJoinAddress);
+	   masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
 				return realJoinAddress;
 	}
 
 
-	
+
 
 
 	@Override
@@ -197,7 +204,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			Cluster.get(system).join(masterAddress);
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
-
+			conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
+			log.info("Stored master path of " + conf.getMasterAbsPath());
 			Future<Void> f = Futures.future(new Callable<Void>() {
 
 				@Override
@@ -229,21 +237,19 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 		else {
 
-
+			 Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [%s]",conf.getMasterUrl())).
+				      withFallback(ConfigFactory.load());
 			log.info("Starting workers");
-			ActorSystem system = ActorSystem.create(systemName);
-
-			Props p = WorkerActor.propsFor(conf);
+			ActorSystem system = ActorSystem.create(systemName,conf2);
+			system.actorOf(Props.create(ClusterListener.class));
+			Set<ActorSelection> initialContacts = new HashSet<ActorSelection>();
+			initialContacts.add(system.actorSelection(masterAddress + "/user/receptionist"));
 			
-			int totalInstances = 100;
-			int maxInstancesPerNode = 3;
-			boolean allowLocalRoutees = true;
-			String useRole = "worker";
-			system.actorOf(
-			    new ClusterRouterPool(new AdaptiveLoadBalancingPool(
-			        SystemLoadAverageMetricsSelector.getInstance(), 0),
-			        new ClusterRouterPoolSettings(totalInstances, maxInstancesPerNode,
-			            allowLocalRoutees, useRole)).props(p), "worker");
+			
+			ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
+					"clusterClient");
+			Props p = WorkerActor.propsFor(clusterClient,conf);
+			system.actorOf(p, "worker");
 
 
 
@@ -267,7 +273,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			log.info("Setup worker nodes");
 		}
 
-	
+
 
 	}
 
@@ -317,7 +323,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-	
+
 
 	public UpdateableImpl getResult() {
 		return result;

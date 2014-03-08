@@ -11,11 +11,13 @@ import org.jblas.DoubleMatrix;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
+import akka.cluster.ClusterEvent.MemberEvent;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -45,10 +47,16 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected String id;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
-
+	protected ActorRef clusterClient;
 	public final static String SYSTEM_NAME = "Workers";
+	protected final Cancellable registerTask;
+
 
 	public WorkerActor(Conf conf) {
+		this(conf,null);
+	}
+
+	public WorkerActor(Conf conf,ActorRef client) {
 		setup(conf);
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
@@ -61,7 +69,10 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				register()), getSelf());
-		log.info("Registered with master " + id);
+		this.registerTask = getContext().system().scheduler().schedule(Duration.Zero(), Duration.fromNanos(100000),context().system().actorSelection(conf.getMasterAbsPath()).anchor() , register(), context().dispatcher(), getSelf());
+
+
+		log.info("Registered with master " + id + " at master " + conf.getMasterAbsPath());
 	}
 
 	public WorkerState register() {
@@ -72,18 +83,20 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		return UUID.randomUUID().toString();
 
 	}
-	
+
 
 	@Override
 	public void postStop() throws Exception {
 		super.postStop();
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
+		registerTask.cancel();
 	}
 
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
+		cluster.subscribe(getSelf(), MemberEvent.class);
 		log.info("Pre start on worker");
 	}
 

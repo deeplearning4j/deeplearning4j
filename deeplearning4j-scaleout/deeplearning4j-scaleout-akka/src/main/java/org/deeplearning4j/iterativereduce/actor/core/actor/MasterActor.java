@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
@@ -60,7 +59,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
-	protected ScheduledExecutorService iterChecker;
 	protected Set<String> workerIds = new HashSet<String>();
 	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
 
@@ -82,8 +80,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
-		mediator.tell(new Put(getSelf()), getSelf());
-
+		
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 		setup(conf);
@@ -103,11 +100,16 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	}
 
+	
+	
 
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
-		log.info("Pre start on master");
+		mediator.tell(new Put(getSelf()), getSelf());
+		ActorRef self = self();
+		log.info("Setup master with path " + self.path());
+		log.info("Pre start on master " + this.self().path().toString());
 	}
 
 
@@ -160,6 +162,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 						for(WorkerState state : workers.values()) {
 							if(state.isAvailable()) {
 								state.getRef().tell(new ArrayList<>(splitList.get(j)),getSelf());
+								//replicate the network
+								mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
+										new ArrayList<>(splitList.get(j))), getSelf());
 								log.info("Delegated work to worker " + state.getWorkerId());
 								state.setAvailable(false);
 								foundWork = true;
@@ -167,9 +172,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 							}
 						}
 					}
-					
-					
-					
+
+
+
 					return null;
 				}
 
@@ -218,7 +223,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 	public void addWorker(WorkerState state) {
-		this.workers.put(state.getWorkerId(),state);
+		if(!this.workers.containsKey(state.getWorkerId())) {
+			this.workers.put(state.getWorkerId(),state);
+			log.info("Added worker with id " + state.getWorkerId());
+		}
 	}
 
 
