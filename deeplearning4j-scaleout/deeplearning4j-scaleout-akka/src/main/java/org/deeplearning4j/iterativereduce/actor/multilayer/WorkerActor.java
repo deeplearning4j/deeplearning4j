@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
+import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -208,6 +209,16 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 		});
 	}
+
+
+	@Override
+	public void aroundPostStop() {
+		super.aroundPostStop();
+		//replicate the network
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				new ClearWorker(id)), getSelf());
+	}
+
 
 
 	@Override
