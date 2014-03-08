@@ -37,11 +37,34 @@ Typically, a DataSetIterator handles inputs and data-set-specific concerns like 
 
 The reason we specify the batch size as well as the number of examples is so the user can choose how many examples they want to look at.
 
+
+Note to windows uers, in place of the line below, please do the following:
+
+
+             1. Download the preserialized mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
+
+             2. Use the following dataset iterator, this one is equivalent to the one below:
+                  
+
+                   DataSet d = new DataSet();
+                   BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("path/to/your/file")));
+                   d.load(bis);
+                   bis.close();
+
+
+
+                 DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
+
+
+
 Next, we want to train a deep-belief network to reconstruct the MNIST data set. This is done with following snippet:
 
          //Train on batches of 10 out of 60000
+         //Unix only
          DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
-  
+         
+
+
         //obtain the number of columns directly, this allows you to be agnostic to the number of training input columns.
         DataSet first = fetcher.next();
 		int numIns = first.getFirst().columns;
@@ -90,6 +113,9 @@ Next, we want to train a deep-belief network to reconstruct the MNIST data set. 
 		
 
 		System.out.println(eval.stats());
+
+
+
 
 
 
