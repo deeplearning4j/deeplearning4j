@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.base.MnistFetcher;
-import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
@@ -20,6 +20,10 @@ import org.jblas.DoubleMatrix;
  */
 public class MnistDataFetcher extends BaseDataFetcher {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3218754671561789818L;
 	private transient MnistManager man;
 	public final static int NUM_EXAMPLES = 60000;
 	private String tempRoot = System.getProperty("java.io.tmpdir");
@@ -54,7 +58,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 
 		//we need to ensure that we don't overshoot the number of examples total
-		List<Pair<DoubleMatrix,DoubleMatrix>> toConvert = new ArrayList<>();
+		List<DataSet> toConvert = new ArrayList<>();
 
 		for(int i = 0; i < numExamples; i++,cursor++) {
 			if(!hasMore())
@@ -90,7 +94,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 				if(!found)
 					throw new IllegalStateException("Found a matrix without an outcome");
 
-				toConvert.add(new Pair<>(in,out));
+				toConvert.add(new DataSet(in,out));
 			} catch (IOException e) {
 				throw new IllegalStateException("Unable to read image");
 

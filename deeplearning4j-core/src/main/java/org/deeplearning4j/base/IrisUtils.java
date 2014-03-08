@@ -8,6 +8,7 @@ import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.springframework.core.io.ClassPathResource;
@@ -17,10 +18,11 @@ import org.springframework.core.io.ClassPathResource;
 public class IrisUtils {
 
 	
-	public static List<Pair<DoubleMatrix,DoubleMatrix>> loadIris(int from,int to) throws IOException {
+	public static List<DataSet> loadIris(int from,int to) throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
+		@SuppressWarnings("unchecked")
 		List<String> lines = IOUtils.readLines(resource.getInputStream());
-		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
+		List<DataSet> list = new ArrayList<>();
 		DoubleMatrix ret = DoubleMatrix.ones(to, 4);
 		List<String> outcomeTypes = new ArrayList<String>();
 		double[][] outcomes = new double[lines.size()][3];
@@ -45,7 +47,7 @@ public class IrisUtils {
 		ret = ret.mul(0.01);
 		
 		for(int i = 0; i < ret.rows; i++) {
-			list.add(new Pair<>(ret.getRow(i),new DoubleMatrix(outcomes[i])));
+			list.add(new DataSet(ret.getRow(i),new DoubleMatrix(outcomes[i])));
 		}
 		
 		
@@ -54,8 +56,9 @@ public class IrisUtils {
 
 
 	
-	public static Pair<DoubleMatrix,DoubleMatrix> loadIris() throws IOException {
+	public static DataSet loadIris() throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
+		@SuppressWarnings("unchecked")
 		List<String> lines = IOUtils.readLines(resource.getInputStream());
 		Collections.shuffle(lines);
 		Collections.rotate(lines, 3);
@@ -82,12 +85,13 @@ public class IrisUtils {
 		ret = MatrixUtil.roundToTheNearest(ret, 10000);
 		MatrixUtil.discretizeColumns(ret,4);
 		ret = ret.mul(0.01);
-		return new Pair<>(ret,new DoubleMatrix(outcomes));
+		return new DataSet(ret,new DoubleMatrix(outcomes));
 	}
 
 
 	public static Pair<DoubleMatrix,DoubleMatrix> loadIris(int rows) throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
+		@SuppressWarnings("unchecked")
 		List<String> lines = IOUtils.readLines(resource.getInputStream());
 		Collections.shuffle(lines);
 		Collections.rotate(lines, 3);

@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ImageLoader;
 import org.deeplearning4j.util.MatrixUtil;
@@ -73,11 +74,11 @@ public class LFWLoader {
 	
 	
 	
-	public Pair<DoubleMatrix,DoubleMatrix> getDataFor(int i) {
+	public DataSet getDataFor(int i) {
 		File image = new File(images.get(i));
 		int outcome = outcomes.indexOf(image.getParentFile().getAbsolutePath());
 		try {
-			return new Pair<DoubleMatrix,DoubleMatrix>(loader.asRowVector(image),MatrixUtil.toOutcomeVector(outcome, outcomes.size()));
+			return new DataSet(loader.asRowVector(image),MatrixUtil.toOutcomeVector(outcome, outcomes.size()));
 		} catch (Exception e) {
 			throw new IllegalStateException("Unable to get data for image " + i + " for path " + images.get(i));
 		}
