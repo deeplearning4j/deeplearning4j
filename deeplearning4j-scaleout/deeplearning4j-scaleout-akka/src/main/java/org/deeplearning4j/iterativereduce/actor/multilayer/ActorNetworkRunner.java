@@ -34,10 +34,6 @@ import akka.actor.Address;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.cluster.Cluster;
-import akka.cluster.routing.AdaptiveLoadBalancingPool;
-import akka.cluster.routing.ClusterRouterPool;
-import akka.cluster.routing.ClusterRouterPoolSettings;
-import akka.cluster.routing.SystemLoadAverageMetricsSelector;
 import akka.contrib.pattern.ClusterClient;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
@@ -144,7 +140,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		Config conf = ConfigFactory.parseString("akka.cluster.roles=[master,worker]").
 				withFallback(ConfigFactory.load());
 		ActorSystem system = ActorSystem.create(systemName, conf);
-
+		addShutDownForSystem(system);
+		
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 		ActorRef batchActor = system.actorOf(pool.props(Props.create(BatchActor.class,iter)));
 
@@ -175,7 +172,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 		system = ActorSystem.create(systemName);
-
+		addShutDownForSystem(system);
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
 		epochs = conf.getPretrainEpochs();
@@ -284,6 +281,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	}
 
+	
+	private void addShutDownForSystem(final ActorSystem system) {
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				Cluster cluster = Cluster.get(system);
+				cluster.leave(cluster.selfAddress());
+			}
+			
+		}));
+	}
 	
 	private void startEmbeddedZooKeeper() {
 		Future<Void> f = Futures.future(new Callable<Void>() {
