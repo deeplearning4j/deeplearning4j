@@ -20,4 +20,4 @@ Below are pre serialized datasets for use with deeplearning4j. These datasets ca
 
 
 
-[https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](Mnist Dataset)
+[Mnist Dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
