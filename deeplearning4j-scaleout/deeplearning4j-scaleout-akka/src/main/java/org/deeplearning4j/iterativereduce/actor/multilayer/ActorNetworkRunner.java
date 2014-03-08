@@ -289,10 +289,12 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			public void run() {
 				Cluster cluster = Cluster.get(system);
 				cluster.leave(cluster.selfAddress());
+				system.shutdown();
 			}
 			
 		}));
 	}
+
 	
 	private void startEmbeddedZooKeeper() {
 		Future<Void> f = Futures.future(new Callable<Void>() {
