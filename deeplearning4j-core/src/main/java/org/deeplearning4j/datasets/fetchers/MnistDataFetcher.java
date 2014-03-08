@@ -22,11 +22,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 	private transient MnistManager man;
 	public final static int NUM_EXAMPLES = 60000;
-
+	private String tempRoot = System.getProperty("java.io.tmpdir");
+	private String rootMnist = tempRoot + File.separator + "MNIST" + File.separator;
+	
+	
 	public MnistDataFetcher() throws IOException {
-		if(!new File("/tmp/mnist").exists())
+		if(!new File(rootMnist).exists())
 			new MnistFetcher().downloadAndUntar();
-		man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
+		man = new MnistManager(rootMnist+ MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
 		numOutcomes = 10;
 		totalExamples = NUM_EXAMPLES;
 		//1 based cursor
@@ -58,7 +61,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 				break;
 			if(man == null) {
 				try {
-					man = new MnistManager("/tmp/MNIST/" + MnistFetcher.trainingFilesFilename_unzipped,"/tmp/MNIST/" + MnistFetcher.trainingFileLabelsFilename_unzipped);
+					man = new MnistManager(rootMnist + MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
