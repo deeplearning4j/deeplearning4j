@@ -50,6 +50,7 @@ public class LFWLoader {
 		//each subdir is a person
 		numNames = lfwDir.getAbsoluteFile().listFiles().length;
 		
+		@SuppressWarnings("unchecked")
 		Collection<File> allImages = FileUtils.listFiles(lfwDir, org.apache.commons.io.filefilter.FileFileFilter.FILE, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY);
 		for(File f : allImages) {
 			images.add(f.getAbsolutePath());
