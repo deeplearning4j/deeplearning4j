@@ -3,14 +3,13 @@ package org.deeplearning4j.rbm;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.base.DeepLearningTest;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class CRBMTest extends DeepLearningTest {
+public class CRBMTest {
 
 	private static Logger log = LoggerFactory.getLogger(CRBMTest.class);
 	@Test
