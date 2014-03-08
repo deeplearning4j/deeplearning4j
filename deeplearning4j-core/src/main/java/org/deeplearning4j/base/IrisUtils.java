@@ -47,7 +47,7 @@ public class IrisUtils {
 		ret = ret.mul(0.01);
 		
 		for(int i = 0; i < ret.rows; i++) {
-			list.add(new DataSet(ret.getRow(i),new DoubleMatrix(outcomes[i])));
+			list.add(new DataSet(ret.getRow(i),new DoubleMatrix(outcomes[i]).transpose()));
 		}
 		
 		
