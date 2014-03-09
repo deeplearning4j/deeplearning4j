@@ -35,16 +35,16 @@ To create the machine, you simply instantiate an object of the class [DBN]({{ si
 		int fineTuneEpochs = 1000;
 
 
-   DBN dbn = new DBN.Builder().hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
+        DBN dbn = new DBN.Builder().hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
 		.useRegularization(false).withMomentum(0)
 		.numberOfOutPuts(nOuts).withRng(rng).build();
 
 
 This is a little more complicated than the singular input. 
 
-This creates a deep-belief network with the specified hidden layer sizes (three hidden layers at two hidden units each); the number of inputs being two; two outputs; no regularization; the specified random number generator; and no momentum.
+It creates a deep-belief network with the specified hidden layer sizes (three hidden layers at two hidden units each); the number of inputs being two; two outputs; no regularization; the specified random number generator; and no momentum.
 
-Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much more substantial.)
+Next, your create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much more substantial.)
 
         int n = 10;
 		DataSet d = MatrixUtil.xorData(n);
