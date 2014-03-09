@@ -161,7 +161,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					while(!foundWork) {
 						for(WorkerState state : workers.values()) {
 							if(state.isAvailable()) {
-								state.getRef().tell(new ArrayList<>(splitList.get(j)),getSelf());
 								//replicate the network
 								mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
 										new ArrayList<>(splitList.get(j))), getSelf());

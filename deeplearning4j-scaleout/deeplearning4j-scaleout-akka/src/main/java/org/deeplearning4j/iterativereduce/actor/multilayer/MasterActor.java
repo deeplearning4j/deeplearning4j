@@ -173,7 +173,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				state = new WorkerState(message.toString(),getSender());
 				state.setAvailable(true);
 				log.info("Worker " + state.getWorkerId() + " available for work");
-				getSender().tell("",getSelf());
+				getSender().tell(new Ack(),getSelf());
 			}
 			else {
 				state.setAvailable(true);
