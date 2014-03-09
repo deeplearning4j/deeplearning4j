@@ -33,4 +33,4 @@ The process of transforming the data to span a range from 0 to 1.
 Also called a Loss Function. An objective function is a heuristic function for reducing prediction error in a machine-learning algorithm.
 
 ###<a name="reconstructionentropy">Reconstruction Entropy</a> 
-After applying Gaussian noise, a kind of statistical white noise, to the data, this objective function punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
+After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
