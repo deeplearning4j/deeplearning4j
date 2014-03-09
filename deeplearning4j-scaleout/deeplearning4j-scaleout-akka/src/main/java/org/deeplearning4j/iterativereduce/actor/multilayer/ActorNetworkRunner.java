@@ -252,7 +252,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			
 			ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
 					"clusterClient");
-			Props p = WorkerActor.propsFor(clusterClient,conf);
+			
+			RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
+			
+			
+			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf));
 			system.actorOf(p, "worker");
 
 

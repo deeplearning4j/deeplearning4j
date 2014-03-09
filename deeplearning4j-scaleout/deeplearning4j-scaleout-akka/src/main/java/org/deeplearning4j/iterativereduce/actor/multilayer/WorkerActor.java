@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
@@ -37,7 +39,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	protected UpdateableImpl workerUpdateable;
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-
+	protected Cancellable heartbeat;
 	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
 	public final static String SYSTEM_NAME = "Workers";
 
@@ -69,7 +71,18 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
+		heartbeat = context().system().scheduler().schedule(Duration.apply(10, TimeUnit.SECONDS), Duration.apply(1, TimeUnit.SECONDS), new Runnable() {
 
+			@Override
+			public void run() {
+				log.info("Sending heartbeat to master");
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						id), getSelf());	
+				
+			}
+			
+		}, context().dispatcher());
+		
 	}
 
 
@@ -217,6 +230,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				new ClearWorker(id)), getSelf());
+		heartbeat.cancel();
 	}
 
 
