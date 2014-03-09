@@ -21,7 +21,7 @@ To create the machine, you simply instantiate an object of the class [DenoisingA
 
 
 
-    			DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(1).numHidden(1).build();
+    	DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(1).numHidden(1).build();
 
 
 That's how you set up a denoising autoencoder with one visible layer and one hidden layer.
@@ -32,14 +32,14 @@ Next, create a training set for the machine. For the sake of visual brevity, a t
 		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(xor.getFirst().columns).numHidden(2).build();
         
         double lr = 0.1;
-	   da.trainTillConvergence(xor.getFirst(), lr, 0.3); 
+	    da.trainTillConvergence(xor.getFirst(), lr, 0.3); 
 
 This will train the specified denoising autoencoder with a corruption level of 0.3 and a learning rate of 0.1 on the x matrix in the dataset.
 
 You can test your input with this snippet:
 
-    System.out.println(da.reconstruct(xor.getFirst()));
+        System.out.println(da.reconstruct(xor.getFirst()));
 
- If you see percentages rather than zeros, that's a good indicator your autoencoder is learning the structure of the data.
+If you see percentages rather than zeros, that's a good indicator your autoencoder is learning the structure of the data.
 
 
