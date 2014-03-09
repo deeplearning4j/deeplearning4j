@@ -145,7 +145,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * @param datasets the datasets to train
 	 */
 	protected void sendToWorkers(List<DataSet> datasets) {
-		int split = conf.getSplit();
+		int split = this.workers.size();
 		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
 		log.info("Found partition of size " + partition);

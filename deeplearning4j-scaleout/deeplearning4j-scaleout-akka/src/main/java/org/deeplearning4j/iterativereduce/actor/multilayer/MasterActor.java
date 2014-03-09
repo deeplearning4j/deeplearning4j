@@ -9,6 +9,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
+import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
@@ -146,6 +147,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof NeedsModelMessage) {
 			log.info("Sending networks over");
 			getSender().tell(masterResults.get(),getSelf());
+		}
+		
+		else if(message instanceof DoneMessage) {
+			log.info("Received done message");
+			masterResults = this.compute(updates, updates);
+			if(listener != null)
+				listener.epochComplete(masterResults);
+			
+			epochsComplete++;
+			updates.clear();
+			batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+
+			
 		}
 		
 		else if(message instanceof ClearWorker) {

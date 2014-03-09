@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
@@ -56,6 +57,10 @@ public class BatchActor extends UntypedActor {
 				log.info("Propagating new work to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						iter.next()), mediator);
+			}
+			else if(!iter.hasNext()) {
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						DoneMessage.getInstance()), mediator);
 			}
 
 
