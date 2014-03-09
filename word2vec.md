@@ -14,6 +14,4 @@ The way we measure words' proximity to each other is through [cosine similarity]
 Here's a graph of words associated with "China" using Word2vec:
 
 ![Alt text](../img/word2vec.png)
-<!---
-Word2Vec is implemented [here]({{ site.baseurl }}/doc/com/ccc/deeplearning/word2vec/Word2Vec.html).
--->
+
