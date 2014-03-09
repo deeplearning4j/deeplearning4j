@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# data sets and machine learning
+# data sets and ML
 
 Machine learning typically works with three data sets: training, dev and test. All three should randomly sample a larger body of data.
 
@@ -17,7 +17,7 @@ The third set is your test. It functions as a seal of approval, and you don’t 
 
 If you don’t achieve validation, go back to dev, examine the quality of your data and look at your pre-processing techniques. If they do, that’s validation you can publish.
 
-# custom data sets
+### custom data sets
 
 To create a custom data set, you first create a custom [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html).
 
