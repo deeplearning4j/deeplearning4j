@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
@@ -71,7 +72,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
-		heartbeat = context().system().scheduler().schedule(Duration.apply(10, TimeUnit.SECONDS), Duration.apply(1, TimeUnit.SECONDS), new Runnable() {
+		heartbeat = context().system().scheduler().schedule(Duration.apply(10, TimeUnit.SECONDS), Duration.apply(10, TimeUnit.SECONDS), new Runnable() {
 
 			@Override
 			public void run() {
@@ -103,7 +104,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			log.info("Subscribed to " + ack.toString());
 		}
 		else if(message instanceof List) {
-			List<Pair<DoubleMatrix,DoubleMatrix>> input = (List<Pair<DoubleMatrix,DoubleMatrix>>) message;
+			List<DataSet> input = (List<DataSet>) message;
 			updateTraining(input);
 
 		}
@@ -132,7 +133,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			unhandled(message);
 	}
 
-	private  void updateTraining(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+	private  void updateTraining(List<DataSet> list) {
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
 		for(int i = 0; i < list.size(); i++) {
