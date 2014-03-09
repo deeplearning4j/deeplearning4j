@@ -11,7 +11,11 @@ One use of deep-learning networks is [named-entity recognition](https://en.wikip
 
 ## object recognition
 
-Object recognition is the ability to identify arbitrary objects in text such as balls, animals, or even faces. This is typically used in engineering applications to identify shapes for modeling purposes. This is also used by social networks for tagging of photos.
+Object recognition is the ability to identify arbitrary objects in text such as balls, animals, or even faces. This is typically used in engineering applications to identify shapes for modeling purposes. This is also used by social networks for tagging of photos. 
+
+Here's one example of faces clusted by a neural net:
+
+![Alt text](../img/faces_tsne.jpg)
 
 ## speech to text
 
