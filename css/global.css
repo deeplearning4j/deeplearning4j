@@ -7,6 +7,9 @@
 body {
   padding-top: 55px;
   background-color:#F2F2EB;
+  font-size: 16px;
+  line-height: 26px;
+  font-family: Georgia;
 }
 
 #navigation {
@@ -125,9 +128,7 @@ h3 {text-align:left}
   
   #main-content > .container {
     padding: 0 15px;
-    font-size: 16px;
-    line-height: 26px;
-    font-family: Georgia;
+
   }
   
   #footer > .container {
