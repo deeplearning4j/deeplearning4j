@@ -11,11 +11,17 @@ An activation for a neural network is defined as the mapping of the input to the
 ###<a name="binarization">Binarization</a> 
 The process of transforming data in to a set of zeros and ones. An example would be gray-scaling an image by transforming a picture from the 0-255 spectrum to a 0-1 spectrum. 
 
+### <a name="confusionmatrix">Confusion Matrix</a>
+Also known as an error matrix or contingency table. Confusions matrices allow you to see if your algorithm is systematically confusing two labels, by contrasting your net's predictions against a benchmark.
+
 ###<a name="etl">ETL</a>  
 Extract, transform, load: Data is loaded from disk into memory with the proper transforms such as [binarization](#binarization) and [normalization](#normalization).
 
 ### <a name="feedforwardneuralnetwork">Feed-Forward Network</a>
 A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network.
+
+### <a name="gaussian">Gaussian Distribution</a>
+A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
 ### <a name="nonlineartransformfunction">Nonlinear Transform Function</a>  
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function).
