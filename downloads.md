@@ -4,10 +4,9 @@ layout: default
 ---
 
 
-data set downloads
-===================
+# data set downloads
 
-Below are preserialized datasets that can be downloaded directly for use with deeplearning4j. They're in the correct format for ingestion. Here's how they can be loaded:
+Below are preserialized datasets that can be downloaded directly for use with deeplearning4j. Preserialized means they're in the correct format for ingestion. Here's how they can be loaded:
 
 
              DataSet d = new DataSet();
