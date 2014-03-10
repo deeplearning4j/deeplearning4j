@@ -37,7 +37,6 @@ public class S3Uploader extends BaseS3 {
 		//bucket didn't exist: create it
 		client.createBucket(bucketName);
 		client.putObject(bucketName, file.getName(), file);
-
 		
 	}
 

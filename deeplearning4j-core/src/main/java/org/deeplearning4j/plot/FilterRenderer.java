@@ -75,17 +75,7 @@ public class FilterRenderer {
 
 	}
 
-	/**
-	 * 
-	 * Figure 2. Histograms of hBias, W, vBias (top row) 
-	 * and the last batch updates to each (bottom row). 
-	 * 
-	 */
-	public void renderAllHistograms(NeuralNetwork nn) {
 
-
-
-	}
 
 	public int computeHistogramBucketIndex(double min, double stepSize, double value, int numberBins) {
 
@@ -364,6 +354,8 @@ public class FilterRenderer {
 			e.printStackTrace();
 		}
 
+		
+		
 		g2d.dispose();
 
 	}
@@ -466,6 +458,9 @@ public class FilterRenderer {
 
 		try {
 			saveImageToDisk( img, filename );
+			
+			FilterPanel panel = new FilterPanel(img);
+			panel.setVisible(true);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
