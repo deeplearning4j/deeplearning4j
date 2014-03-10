@@ -85,6 +85,7 @@ body {
 }
 #heading h1, #heading h2, #heading h3, #heading h4, #heading h5, #heading p {
   text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 30px rgba(0,0,0,0.25);
+  font-family: Arial, sans-serif;
 }
 
 #heading h1 {
@@ -93,6 +94,7 @@ body {
   text-transform:uppercase;
   letter-spacing: -1px;
   color: #fff;
+  font-family: Arial, sans-serif;
 }
 
 #heading h4 {
@@ -115,7 +117,11 @@ body {
   background-color: #f5f5f5;
 }
 
-h3 {text-align:left}
+h3 {
+
+  text-align: left;
+  font-family: Arial, sans-serif;
+}
 
 /** alternate responsive traits **/
 @media(max-width:767px) {
