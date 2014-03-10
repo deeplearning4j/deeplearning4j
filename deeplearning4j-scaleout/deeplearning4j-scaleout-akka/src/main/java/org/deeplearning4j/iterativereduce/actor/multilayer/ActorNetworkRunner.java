@@ -142,7 +142,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 */
 	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
 		final ActorSystem system = ActorSystem.create(systemName);
-		addShutDownForSystem(system);
+		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
 
@@ -156,14 +156,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
 		final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
-		
+
 		if(exec == null)
 			exec = Executors.newScheduledThreadPool(2);
-		
-		
+
+
 		Cluster cluster = Cluster.get(system);
 		cluster.join(realJoinAddress);
-		
+
 		exec.schedule(new Runnable() {
 
 			@Override
@@ -179,12 +179,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		log.info("Started master with address " + realJoinAddress.toString());
 		c.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
 		log.info("Set master abs path " + c.getMasterAbsPath());
-		
+
 		return realJoinAddress;
 	}
 
-
-
+	
 
 
 	@Override
@@ -193,7 +192,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 		system = ActorSystem.create(systemName);
-		addShutDownForSystem(system);
+		ActorRefUtils.addShutDownForSystem(system);
 		mediator = DistributedPubSubExtension.get(system).mediator();
 
 		epochs = conf.getPretrainEpochs();
@@ -225,38 +224,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
 			conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
-			log.info("Stored master path of " + conf.getMasterAbsPath());
-			Future<Void> f = Futures.future(new Callable<Void>() {
-
-				@Override
-				public Void call() throws Exception {
-					log.info("Registering with zookeeper; if the logging stops here, ensure zookeeper is started");
-					if(!PortTaken.portTaken(2181)) {
-						log.info("No zookeeper found; starting an embedded zookeeper");
-						startEmbeddedZooKeeper();
-					}
-					
-					//register the configuration to zookeeper
-					ZooKeeperConfigurationRegister reg = new ZooKeeperConfigurationRegister(conf,"master","localhost",2181);
-					reg.register();
-					reg.close();
-					return null;
-				}
-
-			},system.dispatcher());
-
-			f.onComplete(new OnComplete<Void>() {
-
-				@Override
-				public void onComplete(Throwable arg0, Void arg1) throws Throwable {
-					if(arg0 != null)
-						throw arg0;
-					log.info("Registered conf with zookeeper");
-
-				}
-
-			}, system.dispatcher());
-
+		
+			ActorRefUtils.registerConfWithZooKeeper(conf, system);
+			
 			log.info("Setup master with epochs " + epochs);
 		}
 
@@ -265,46 +235,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			Conf c = conf.copy();
 			Cluster cluster = Cluster.get(system);
 			cluster.join(masterAddress);
-			
+
 			startWorker(masterAddress,c);
-
-
-			 Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [%s]",conf.getMasterUrl())).
-				      withFallback(ConfigFactory.load());
-			log.info("Starting workers");
-			ActorSystem system = ActorSystem.create(systemName,conf2);
-			system.actorOf(Props.create(ClusterListener.class));
-			Set<ActorSelection> initialContacts = new HashSet<ActorSelection>();
-			initialContacts.add(system.actorSelection(masterAddress + "/user/receptionist"));
-			
-			
-			ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
-					"clusterClient");
-			
-			RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
-			
-			
-			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf));
-			system.actorOf(p, "worker");
-
-
-
-
-
-			//Wait for backend to be up
-
-			try {
-				Thread.sleep(30000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-
-
-
-			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
-			//There is a one to one join to system requirement for the cluster
-			Cluster.get(system).join(masterAddress);
-
 
 			log.info("Setup worker nodes");
 		}
@@ -313,13 +245,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	}
 
-	
+
 	public  void startWorker(final Address contactAddress,Conf conf) {
 		// Override the configuration of the port
 		Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [\"" + contactAddress.toString() + "\"]")).
 				withFallback(ConfigFactory.load());
 		final ActorSystem system = ActorSystem.create(systemName,conf2);
-		addShutDownForSystem(system);
+		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
 		log.info("Attempting to join node " + contactAddress);
@@ -331,9 +263,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 		ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
 				"clusterClient");
-		
-		
-		
+
+
+
 		Props p = pool.props(WorkerActor.propsFor(clusterClient,conf));
 		system.actorOf(p, "worker");
 
@@ -344,46 +276,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 	}
-	
-	private void addShutDownForSystem(final ActorSystem system) {
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				Cluster cluster = Cluster.get(system);
-				cluster.leave(cluster.selfAddress());
-				system.shutdown();
-			}
-			
-		}));
-	}
 
 	
-	private void startEmbeddedZooKeeper() {
-		Future<Void> f = Futures.future(new Callable<Void>() {
-
-			@Override
-			public Void call() throws Exception {
-				ZooKeeperRunner runner = new ZooKeeperRunner();
-				runner.run();
-				return null;
-			}
-			
-		},system.dispatcher());
-		
-		
-		f.onComplete(new OnComplete<Void>() {
-
-			@Override
-			public void onComplete(Throwable arg0, Void arg1) throws Throwable {
-				if(arg0 != null)
-					throw arg0;
-			}
-			
-		},system.dispatcher());
-	}
-
-
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
