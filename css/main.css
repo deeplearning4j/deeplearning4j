@@ -20,7 +20,9 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-size: 100%; }
+  font-size: 100%; 
+  font-family: Arial, sans-serif;
+  }
 
 h1 { margin-bottom: 1em; }
 p { margin: 1em 0; }
