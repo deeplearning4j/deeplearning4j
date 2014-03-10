@@ -54,7 +54,7 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	}
 
 	@Override
-	public BaseMultiLayerNetwork get() {
+	public synchronized BaseMultiLayerNetwork get() {
 		return wrapped;
 	}
 

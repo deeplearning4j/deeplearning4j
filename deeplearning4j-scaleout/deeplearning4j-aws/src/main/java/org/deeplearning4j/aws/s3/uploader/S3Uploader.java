@@ -25,6 +25,8 @@ public class S3Uploader extends BaseS3 {
 	
 	public void upload(File file,String bucketName) {
 		AmazonS3 client = new AmazonS3Client(creds);
+		bucketName = ensureValidBucketName(bucketName);
+
 		List<Bucket> buckets = client.listBuckets();
 		for(Bucket b : buckets) 
 			if(b.getName().equals(bucketName)) {
@@ -39,9 +41,23 @@ public class S3Uploader extends BaseS3 {
 		
 	}
 
+	private String ensureValidBucketName(String bucketName) {
+		String formatted = bucketName.replaceAll("\\s+","_");
+		int length = bucketName.length();
+		if(length >= 62)
+			length = 62;
+		formatted = formatted.substring(0,length);
+		formatted = formatted.replace(".","d");
+		formatted = formatted.toLowerCase();
+		if(formatted.endsWith("-"))
+			formatted = formatted.substring(0,length - 1);
+		
+		return formatted;
+	}
+	
 	public void upload(InputStream is,String name,String bucketName) {
 		AmazonS3 client = getClient();
-	
+		bucketName = ensureValidBucketName(bucketName);
 		List<Bucket> buckets = client.listBuckets();
 		ObjectMetadata med = new ObjectMetadata();
 		for(Bucket b : buckets) 
