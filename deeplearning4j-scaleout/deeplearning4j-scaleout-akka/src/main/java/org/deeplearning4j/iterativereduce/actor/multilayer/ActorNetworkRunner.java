@@ -262,6 +262,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 		else {
 
+			Conf c = conf.copy();
+			Cluster cluster = Cluster.get(system);
+			cluster.join(masterAddress);
+			
+			startWorker(masterAddress,c);
+
+
 			 Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [%s]",conf.getMasterUrl())).
 				      withFallback(ConfigFactory.load());
 			log.info("Starting workers");
@@ -306,6 +313,37 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	}
 
+	
+	public  void startWorker(final Address contactAddress,Conf conf) {
+		// Override the configuration of the port
+		Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [\"" + contactAddress.toString() + "\"]")).
+				withFallback(ConfigFactory.load());
+		final ActorSystem system = ActorSystem.create(systemName,conf2);
+		addShutDownForSystem(system);
+
+		system.actorOf(Props.create(ClusterListener.class));
+		log.info("Attempting to join node " + contactAddress);
+		log.info("Starting workers");
+		Set<ActorSelection> initialContacts = new HashSet<ActorSelection>();
+		initialContacts.add(system.actorSelection(contactAddress + "/user/"));
+
+		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
+
+		ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
+				"clusterClient");
+		
+		
+		
+		Props p = pool.props(WorkerActor.propsFor(clusterClient,conf));
+		system.actorOf(p, "worker");
+
+		Cluster cluster = Cluster.get(system);
+		cluster.join(contactAddress);
+
+		log.info("Worker joining cluster");
+
+
+	}
 	
 	private void addShutDownForSystem(final ActorSystem system) {
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
