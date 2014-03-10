@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
+import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
+import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
@@ -30,7 +31,6 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.japi.Function;
 
 
@@ -57,6 +57,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
 
+		heartbeat();
 
 	}
 
@@ -72,19 +73,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
-		heartbeat = context().system().scheduler().schedule(Duration.apply(10, TimeUnit.SECONDS), Duration.apply(10, TimeUnit.SECONDS), new Runnable() {
 
-			@Override
-			public void run() {
-				log.info("Sending heartbeat to master");
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						id), getSelf());	
-				
-			}
-			
-		}, context().dispatcher());
-		
+		heartbeat();
+
 	}
+
+
+
 
 
 	public static Props propsFor(ActorRef actor,Conf conf) {
@@ -95,6 +90,36 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return Props.create(WorkerActor.class,conf);
 	}
 
+	protected void confirmWorking() {
+		//reply
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				current), getSelf());	
+	}
+
+	protected void finishedWork() {
+		current.setDone(true);
+		log.info("Finished work " + id);
+		//reply
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				current), getSelf());	
+		current = null;
+	}
+
+
+	protected void heartbeat() {
+		heartbeat = context().system().scheduler().schedule(Duration.apply(10, TimeUnit.SECONDS), Duration.apply(10, TimeUnit.SECONDS), new Runnable() {
+
+			@Override
+			public void run() {
+				log.info("Sending heartbeat to master");
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						id), getSelf());	
+
+			}
+
+		}, context().dispatcher());
+
+	}
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -103,9 +128,15 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			log.info("Subscribed to " + ack.toString());
 		}
-		else if(message instanceof List) {
-			List<DataSet> input = (List<DataSet>) message;
+
+		else if(message instanceof Job) {
+			Job j = (Job) message;
+			log.info("Confirmation from " + j.getWorkerId() + " on work");
+			this.current = j;
+			List<DataSet> input = (List<DataSet>) j.getWork();
+			confirmWorking();
 			updateTraining(input);
+
 
 		}
 
@@ -133,7 +164,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			unhandled(message);
 	}
 
-	private  void updateTraining(List<DataSet> list) {
+	protected  void updateTraining(List<DataSet> list) {
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
 		for(int i = 0; i < list.size(); i++) {
@@ -159,24 +190,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}, getContext().dispatcher());
 
-		f.onComplete(new OnComplete<UpdateableImpl>() {
-
-			@Override
-			public void onComplete(Throwable arg0, UpdateableImpl work) throws Throwable {
-				if(arg0 != null) {
-					log.error("Unable to process work ",arg0);
-					throw arg0;
-
-				}
-
-				//flag as available to master
-				availableForWork();
-
-			}
-
-		}, context().dispatcher());
-
-
+		ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
 	}
 
 	@Override
@@ -199,6 +213,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		getNetwork().trainNetwork(this.getCombinedInput(),this.getOutcomes(),extraParams);
+		finishedWork();
 		return new UpdateableImpl(getNetwork());
 	}
 

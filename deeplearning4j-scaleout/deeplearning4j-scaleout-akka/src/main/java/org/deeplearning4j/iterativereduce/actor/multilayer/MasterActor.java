@@ -3,17 +3,19 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
+import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
-import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -35,6 +37,8 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
 	protected BaseMultiLayerNetwork network;
+	protected Map<String,Job> currentJobs = new HashMap<String,Job>();
+
 
 	/**
 	 * Creates the master and the workers with this given conf
@@ -91,7 +95,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public void setup(Conf conf) {
 		log.info("Starting workers");
 		ActorSystem system = context().system();
-		
+
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 		//start local workers
 		Props p = pool.props(WorkerActor.propsFor(conf));
@@ -117,13 +121,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs()).useRegularization(conf.isUseRegularization())
 				.withSparsity(conf.getSparsity())
 				.build() : this.network;
-		masterResults = new UpdateableImpl(network);
-		
-		//after worker is instantiated broadcast the master network to the worker
-		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-				masterResults), getSelf());	
+				masterResults = new UpdateableImpl(network);
 
-		
+				//after worker is instantiated broadcast the master network to the worker
+				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+						masterResults), getSelf());	
+
+
 
 	}
 
@@ -135,68 +139,60 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			log.info("Subscribed " + ack.toString());
 		}
-		else if(message instanceof EpochDoneListener) {
-			listener = (EpochDoneListener<UpdateableImpl>) message;
-			log.info("Set listener");
-		}
-		
+
+
 		else if(message instanceof WorkerState) {
 			this.addWorker((WorkerState) message);
 		}
-		
+
 		else if(message instanceof NeedsModelMessage) {
 			log.info("Sending networks over");
 			getSender().tell(masterResults.get(),getSelf());
 		}
-		
+
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
 			masterResults = this.compute(updates, updates);
-			if(listener != null)
-				listener.epochComplete(masterResults);
-			
+
 			epochsComplete++;
 			updates.clear();
 			batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
 
-			
+
 		}
-		
+
 		else if(message instanceof ClearWorker) {
 			log.info("Removing worker with id " + ((ClearWorker) message).getId());
 			this.workers.remove(((ClearWorker) message).getId());
 		}
-		
+
 		else if(message instanceof String) {
 			WorkerState state = this.workers.get(message.toString());
 			if(state == null) {
 				state = new WorkerState(message.toString(),getSender());
 				state.setAvailable(true);
 				log.info("Worker " + state.getWorkerId() + " available for work");
-				getSender().tell(new Ack(),getSelf());
 			}
 			else {
 				state.setAvailable(true);
 				log.info("Worker " + state.getWorkerId() + " available for work");
 
 			}
-			
-			getSender().tell(new Ack(),getSelf());
+
+			getSender().tell(Ack.getInstance(),getSelf());
 
 		}
-		
-		
-		
-		
+
+
+
+
 		else if(message instanceof UpdateableImpl) {
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
 			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
-				if(listener != null)
-					listener.epochComplete(masterResults);
-				
+
 				epochsComplete++;
 				//tell the batch actor to send out another dataset
 				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
@@ -210,6 +206,20 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
+		}
+
+		//receive ack from worker
+		else if(message instanceof Job) {
+			Job j = (Job) message;
+			if(!j.isDone()) {
+				currentJobs.put(j.getWorkerId(),j);
+				log.info("Ack from worker " + j.getWorkerId() + " on job");
+			}
+			else {
+				log.info("Job " + j.getWorkerId() + " finished");
+				currentJobs.remove(j.getWorkerId());
+			}
+			
 		}
 
 

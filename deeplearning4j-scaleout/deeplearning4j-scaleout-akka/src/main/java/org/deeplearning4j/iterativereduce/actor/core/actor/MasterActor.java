@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.DataOutputStream;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,7 +14,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.iterativereduce.actor.core.api.EpochDoneListener;
+import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
@@ -32,7 +34,6 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Function;
@@ -50,7 +51,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected E masterResults;
 	protected List<E> updates = new ArrayList<E>();
-	protected EpochDoneListener<E> listener;
 	protected ActorRef batchActor;
 	protected int epochsComplete;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
@@ -80,7 +80,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
-		
+
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 		setup(conf);
@@ -100,8 +100,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	}
 
-	
-	
+
+
 
 	@Override
 	public void preStart() throws Exception {
@@ -133,6 +133,27 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public abstract void setup(Conf conf);
 
 
+
+	/**
+	 * Finds the next available worker based on current states
+	 * @return the next available worker, blocks till a worker is found
+	 */
+	protected WorkerState nextAvailableWorker() {
+		boolean foundWork = false;
+		//loop till a worker is available; this throttles output
+		while(!foundWork) {
+			for(WorkerState state : workers.values()) {
+				if(state.isAvailable()) {
+					foundWork = true;
+					return  state;
+				}
+			}
+		}
+
+		//should never happen
+		return null;
+	}
+
 	/**
 	 * Delegates the list of datasets to the workers.
 	 * Each worker receives a portion of work and
@@ -151,45 +172,30 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
 			final int j = i;
+			
+			
 			Future<Void> f = Futures.future(new Callable<Void>() {
 
 				@Override
 				public Void call() throws Exception {
 					log.info("Sending off work for batch " + j);
-					boolean foundWork = false;
-					//loop till a worker is available; this throttles output
-					while(!foundWork) {
-						for(WorkerState state : workers.values()) {
-							if(state.isAvailable()) {
-								//replicate the network
-								mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
-										new ArrayList<>(splitList.get(j))), getSelf());
-								log.info("Delegated work to worker " + state.getWorkerId());
-								state.setAvailable(false);
-								foundWork = true;
-								break;
-							}
-						}
-					}
-
-
+					//block till there's an available worker
+					WorkerState state = nextAvailableWorker();
+					List<DataSet> work = new ArrayList<>(splitList.get(j));
+					//wrap in a job for additional metadata
+					Job j2 = new Job(state.getWorkerId(),(Serializable) work);
+					//replicate the network
+					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
+							j2), getSelf());
+					log.info("Delegated work to worker " + state.getWorkerId());
+					state.setAvailable(false);
 
 					return null;
 				}
 
 			},context().dispatcher());
 
-			f.onComplete(new OnComplete<Void>() {
-
-				@Override
-				public void onComplete(Throwable arg0, Void arg1)
-						throws Throwable {
-					if(arg0 != null)
-						throw arg0;
-				}
-
-			}, context().dispatcher());
-
+			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
 
 		}
 
@@ -220,7 +226,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		}
 	}
 
-
+	/**
+	 * Adds a worker state to this master
+	 * @param state the state to add
+	 */
 	public void addWorker(WorkerState state) {
 		if(!this.workers.containsKey(state.getWorkerId())) {
 			this.workers.put(state.getWorkerId(),state);
@@ -272,15 +281,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public List<E> getUpdates() {
 		return updates;
 	}
-
-
-
-
-	public EpochDoneListener<E> getListener() {
-		return listener;
-	}
-
-
 
 
 	public ActorRef getBatchActor() {

@@ -3,6 +3,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 import java.util.List;
 import java.util.UUID;
 
+import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
@@ -45,6 +46,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double corruptionLevel;
 	protected Object[] extraParams;
 	protected String id;
+	protected Job current;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
