@@ -132,7 +132,8 @@ public class NeuralNetPlotter {
 
 			log.info("Rendering weights " + filePath);
 			log.error(IOUtils.readLines(is.getErrorStream()).toString());
-
+			FilterRenderer render = new FilterRenderer();
+			render.renderFilters(network.getW(), filePath, network.getW().rows / network.getW().columns, network.getW().columns / network.getW().rows);
 		}catch(Exception e) {
 
 		}
