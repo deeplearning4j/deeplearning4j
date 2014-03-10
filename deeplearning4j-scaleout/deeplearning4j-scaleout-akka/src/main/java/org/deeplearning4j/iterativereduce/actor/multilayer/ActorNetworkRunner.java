@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -65,7 +68,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private Address masterAddress;
 	private DataSetIterator iter;
 	protected ActorRef masterActor;
-	
+	private transient ScheduledExecutorService exec;
+
 	/**
 	 * Master constructor
 	 * @param type the type (worker)
@@ -137,29 +141,46 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 * @return the actor for this backend
 	 */
 	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
-		Config conf = ConfigFactory.parseString("akka.cluster.roles=[master,worker]").
-				withFallback(ConfigFactory.load());
-		ActorSystem system = ActorSystem.create(systemName, conf);
+		final ActorSystem system = ActorSystem.create(systemName);
 		addShutDownForSystem(system);
-		
-		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
-		ActorRef batchActor = system.actorOf(pool.props(Props.create(BatchActor.class,iter)));
 
-		Props masterProps = startingNetwork != null ? MasterActor.propsFor(c, batchActor, startingNetwork) : MasterActor.propsFor(c,batchActor);
+		system.actorOf(Props.create(ClusterListener.class));
 
+		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter),"batch");
 
 		log.info("Started batch actor");
 
+		Props masterProps = startingNetwork != null ? MasterActor.propsFor(c,batchActor,startingNetwork) : MasterActor.propsFor(c,batchActor);
 
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
-		Address realJoinAddress = (joinAddress == null) ? 
-				Cluster.get(system).selfAddress() 
-				: joinAddress;
-				Cluster.get(system).join(realJoinAddress);
-	   masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "active", PoisonPill.getInstance(), "master"));
-				return realJoinAddress;
+		final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
+		
+		if(exec == null)
+			exec = Executors.newScheduledThreadPool(2);
+		
+		
+		Cluster cluster = Cluster.get(system);
+		cluster.join(realJoinAddress);
+		
+		exec.schedule(new Runnable() {
+
+			@Override
+			public void run() {
+				Cluster cluster = Cluster.get(system);
+				cluster.publishCurrentClusterState();
+			}
+
+		}, 10, TimeUnit.SECONDS);
+
+		masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
+
+		log.info("Started master with address " + realJoinAddress.toString());
+		c.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
+		log.info("Set master abs path " + c.getMasterAbsPath());
+		
+		return realJoinAddress;
 	}
 
 
