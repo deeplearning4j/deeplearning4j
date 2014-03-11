@@ -850,6 +850,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.columnStds = network.columnStds;
 		this.columnSums = network.columnSums;
 		this.errorTolerance = network.errorTolerance;
+		this.renderWeightsEveryNEpochs = network.renderWeightsEveryNEpochs;
 		this.forceNumEpochs = network.forceNumEpochs;
 		this.input = network.input;
 		this.l2 = network.l2;

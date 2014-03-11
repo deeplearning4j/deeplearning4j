@@ -122,6 +122,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs()).useRegularization(conf.isUseRegularization())
 				.withSparsity(conf.getSparsity())
 				.build() : this.network;
+				if(conf.getColumnMeans() != null)
+					network.setColumnMeans(conf.getColumnMeans());
+				if(conf.getColumnStds() != null)
+					network.setColumnStds(conf.getColumnStds());
+				
 				masterResults = new UpdateableImpl(network);
 
 				//after worker is instantiated broadcast the master network to the worker

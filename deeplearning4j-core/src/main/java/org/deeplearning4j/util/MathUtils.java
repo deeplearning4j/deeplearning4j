@@ -1234,6 +1234,6 @@ public class MathUtils  {
 	}
 
 	public static double randomDoubleBetween(double begin,double end) {
-		return	begin + (Math.random() * ((end - begin) + 1));
+		return	begin + (Math.random() * ((end - begin)));
 	}
 }
