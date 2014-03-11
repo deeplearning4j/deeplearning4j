@@ -46,7 +46,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double corruptionLevel;
 	protected Object[] extraParams;
 	protected String id;
-	protected Job current;
+	private Job current;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
@@ -366,6 +366,20 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		this.results = results;
 	}
 
+	public synchronized Job getCurrent() {
+		return current;
+	}
+
+	public synchronized void setCurrent(Job current) {
+		this.current = current;
+	}
+
+	/**
+	 * Clears the current job
+	 */
+	protected void clearCurrentJob() {
+		setCurrent(null);
+	}
 
 
 }

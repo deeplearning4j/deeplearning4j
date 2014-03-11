@@ -93,16 +93,16 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected void confirmWorking() {
 		//reply
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				current), getSelf());	
+				getCurrent()), getSelf());	
 	}
 
 	protected void finishedWork() {
-		current.setDone(true);
+		getCurrent().setDone(true);
 		log.info("Finished work " + id);
 		//reply
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				current), getSelf());	
-		current = null;
+				getCurrent()), getSelf());	
+		clearCurrentJob();
 	}
 
 
@@ -132,7 +132,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof Job) {
 			Job j = (Job) message;
 			log.info("Confirmation from " + j.getWorkerId() + " on work");
-			this.current = j;
+			setCurrent(j);
 			List<DataSet> input = (List<DataSet>) j.getWork();
 			confirmWorking();
 			updateTraining(input);
