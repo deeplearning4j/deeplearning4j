@@ -70,7 +70,13 @@ public class NeuralNetPlotter {
 
 				});
 		plotActivations(network);
-	
+		
+		FilterRenderer render = new FilterRenderer();
+		try {
+			render.renderFilters(network.getW(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void plotMatrices(String[] titles,DoubleMatrix[] matrices) {
@@ -133,7 +139,8 @@ public class NeuralNetPlotter {
 			log.info("Rendering weights " + filePath);
 			log.error(IOUtils.readLines(is.getErrorStream()).toString());
 			FilterRenderer render = new FilterRenderer();
-			render.renderFilters(network.getW(), filePath, network.getW().rows / network.getW().columns, network.getW().columns / network.getW().rows);
+			int weights = (int) Math.sqrt(network.getW().columns);
+			render.renderFilters(network.getW(), filePath, weights , weights);
 		}catch(Exception e) {
 
 		}

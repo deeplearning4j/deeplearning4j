@@ -11,11 +11,14 @@ public class FilterPanel extends JPanel {
 
 	public FilterPanel(BufferedImage image) {
 		this.image = image;
+		setVisible(true);
+		validate();
+		
 	}
 
 	@Override
 	public void paintComponent(Graphics g) {
-		super.paint(g);
+		super.paintComponent(g);
 		g.drawImage(image, 0, 0, null); // see javadoc for more info on the parameters            
 
 	}
