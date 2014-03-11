@@ -1,6 +1,7 @@
 package org.deeplearning4j.plot;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
@@ -469,6 +470,10 @@ public class FilterRenderer {
 
 				FilterPanel panel = new FilterPanel(img);
 				frame.add(panel);
+				Dimension d = new Dimension(numberCols * patchWidth , numPatchRows * patchHeight);
+				frame.setSize(d);
+				frame.setMinimumSize(d);
+				panel.setMinimumSize(d);
 				frame.pack();
 				frame.setVisible(true);
 				Thread.sleep(10000);
