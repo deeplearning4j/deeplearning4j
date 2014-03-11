@@ -465,7 +465,7 @@ public class FilterRenderer {
 			if(!ge.isHeadlessInstance()) {
 				log.info("Rendering frame...");
 				JFrame frame = new JFrame();
-		        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
 				FilterPanel panel = new FilterPanel(img);
 				frame.add(panel);
