@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -18,18 +17,16 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
-import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.scaleout.zookeeper.ZooKeeperConfigurationRegister;
-import org.deeplearning4j.scaleout.zookeeper.ZooKeeperRunner;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
@@ -41,8 +38,6 @@ import akka.contrib.pattern.ClusterClient;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 
 import com.typesafe.config.Config;
@@ -142,6 +137,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 */
 	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
 		final ActorSystem system = ActorSystem.create(systemName);
+	
 		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
@@ -227,6 +223,15 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		
 			ActorRefUtils.registerConfWithZooKeeper(conf, system);
 			
+			
+			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
+
+				@Override
+				public void run() {
+					log.info("Current cluster members " + Cluster.get(system).readView().members());
+				}
+				
+			},system.dispatcher());
 			log.info("Setup master with epochs " + epochs);
 		}
 
@@ -237,7 +242,15 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			cluster.join(masterAddress);
 
 			startWorker(masterAddress,c);
+			
+			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
 
+				@Override
+				public void run() {
+					log.info("Current cluster members " + Cluster.get(system).readView().members());
+				}
+				
+			},system.dispatcher());
 			log.info("Setup worker nodes");
 		}
 

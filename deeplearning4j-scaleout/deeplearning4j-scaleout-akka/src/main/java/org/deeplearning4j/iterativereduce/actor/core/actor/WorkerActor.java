@@ -377,7 +377,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	/**
 	 * Clears the current job
 	 */
-	protected void clearCurrentJob() {
+	protected synchronized void clearCurrentJob() {
 		setCurrent(null);
 	}
 

@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
@@ -38,8 +39,10 @@ public class BatchActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if(message instanceof DistributedPubSubMediator.SubscribeAck) {
-			log.info("Susbcribed");
+		if(message instanceof DistributedPubSubMediator.SubscribeAck || message instanceof DistributedPubSubMediator.UnsubscribeAck) {
+			log.info("Susbcribed batch actor");
+			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+					message), getSelf());	
 		}
 		else if(message instanceof ResetMessage) {
 			iter.reset();

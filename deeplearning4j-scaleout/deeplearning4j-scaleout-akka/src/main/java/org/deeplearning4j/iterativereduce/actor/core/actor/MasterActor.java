@@ -83,6 +83,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
+		
 		setup(conf);
 
 

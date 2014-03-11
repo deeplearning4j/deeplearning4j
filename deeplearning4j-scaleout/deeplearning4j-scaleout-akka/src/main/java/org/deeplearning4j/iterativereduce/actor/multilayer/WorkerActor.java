@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
@@ -97,11 +98,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	protected void finishedWork() {
-		getCurrent().setDone(true);
-		log.info("Finished work " + id);
-		//reply
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				getCurrent()), getSelf());	
+		if(getCurrent() != null) {
+			getCurrent().setDone(true);
+			log.info("Finished work " + id);
+			//reply
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+					getCurrent()), getSelf());	
+		}
+		
 		clearCurrentJob();
 	}
 
@@ -124,8 +128,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@SuppressWarnings("unchecked")
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if (message instanceof DistributedPubSubMediator.SubscribeAck) {
+		if (message instanceof DistributedPubSubMediator.SubscribeAck || message instanceof DistributedPubSubMediator.UnsubscribeAck) {
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
+			//reply
+			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+					message), getSelf());	
+			
 			log.info("Subscribed to " + ack.toString());
 		}
 

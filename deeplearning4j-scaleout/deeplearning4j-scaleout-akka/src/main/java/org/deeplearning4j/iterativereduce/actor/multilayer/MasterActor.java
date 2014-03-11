@@ -11,6 +11,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
@@ -135,8 +136,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@SuppressWarnings({ "unchecked" })
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if (message instanceof DistributedPubSubMediator.SubscribeAck) {
+		if (message instanceof DistributedPubSubMediator.SubscribeAck || message instanceof DistributedPubSubMediator.UnsubscribeAck) {
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
+			//reply
+			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+					message), getSelf());	
+			
+			
 			log.info("Subscribed " + ack.toString());
 		}
 

@@ -1,24 +1,53 @@
 package org.deeplearning4j.iterativereduce.actor.core;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.duration.Duration;
+
+import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.MemberEvent;
 import akka.cluster.ClusterEvent.MemberRemoved;
 import akka.cluster.ClusterEvent.MemberUp;
 import akka.cluster.ClusterEvent.UnreachableMember;
+import akka.contrib.pattern.DistributedPubSubExtension;
+import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class ClusterListener extends UntypedActor {
 	LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	Cluster cluster = Cluster.get(getContext().system());
-
+	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+	public final static String TOPICS = "topics";
+	private List<String> topics = new ArrayList<String>();
+	private Cancellable topicTask;
 	//subscribe to cluster changes
 	@Override
 	public void preStart() {
 		//#subscribe
 		cluster.subscribe(getSelf(), MemberEvent.class);
+		//replicate the network
+		mediator.tell(new DistributedPubSubMediator.Subscribe(TOPICS,getSelf()), getSelf());
 		log.info("Subscribed to cluster events");
+		topicTask = context().system().scheduler().schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
+
+			@Override
+			public void run() {
+				log.info("Current topics " + topics);
+				//reply
+				mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+						topics), getSelf());
+			}
+			
+		}, context().dispatcher());
+		
+		
+		
 		//#subscribe
 	}
 
@@ -27,6 +56,8 @@ public class ClusterListener extends UntypedActor {
 	public void postStop() {
 		cluster.unsubscribe(getSelf());
 		log.info("UnSubscribed to cluster events");
+		topicTask.cancel();
+	
 
 	}
 
@@ -47,7 +78,24 @@ public class ClusterListener extends UntypedActor {
 		} else if (message instanceof MemberEvent) {
 			// ignore
 
-		} else {
+		} 
+		
+		else if(message instanceof DistributedPubSubMediator.SubscribeAck) {
+			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
+			topics.add(ack.subscribe().topic());
+		}
+		
+		else if(message instanceof DistributedPubSubMediator.UnsubscribeAck) {
+			DistributedPubSubMediator.UnsubscribeAck unsub = (DistributedPubSubMediator.UnsubscribeAck) message;
+			topics.remove(unsub.unsubscribe().topic());
+		}
+		
+		else if(message instanceof List) {
+			log.info("Topics sent " + message);
+		}
+		
+		
+		else {
 			unhandled(message);
 		}
 
