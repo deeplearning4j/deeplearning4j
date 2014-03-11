@@ -3,7 +3,9 @@ package org.deeplearning4j.plot;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -18,6 +20,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.WindowConstants;
 
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.util.MatrixUtil;
@@ -354,8 +357,8 @@ public class FilterRenderer {
 			e.printStackTrace();
 		}
 
-		
-		
+
+
 		g2d.dispose();
 
 	}
@@ -458,9 +461,21 @@ public class FilterRenderer {
 
 		try {
 			saveImageToDisk( img, filename );
-			
-			FilterPanel panel = new FilterPanel(img);
-			panel.setVisible(true);
+			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+			if(!ge.isHeadlessInstance()) {
+				log.info("Rendering frame...");
+				JFrame frame = new JFrame();
+		        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+				FilterPanel panel = new FilterPanel(img);
+				frame.add(panel);
+				frame.pack();
+				frame.setVisible(true);
+				Thread.sleep(10000);
+				frame.dispose();
+				
+			}
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

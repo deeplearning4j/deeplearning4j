@@ -26,6 +26,7 @@ public class MnistExampleMultiThreaded {
 		c.setFinetuneLearningRate(0.01);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
+		c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);

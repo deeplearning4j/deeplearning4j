@@ -864,6 +864,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.toDecode = network.toDecode;
 		this.visibleBiasTransforms = network.visibleBiasTransforms;
 		this.hiddenBiasTransforms = network.hiddenBiasTransforms;
+		
 		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
 			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
 			for(int i = 0; i < sigmoidLayers.length; i++)
