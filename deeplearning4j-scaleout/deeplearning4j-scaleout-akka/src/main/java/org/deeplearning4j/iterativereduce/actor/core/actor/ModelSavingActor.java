@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.File;
 
+import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
 import org.deeplearning4j.nn.Persistable;
@@ -72,6 +73,12 @@ public class ModelSavingActor extends UntypedActor {
 			log.info("saved model to " + pathToSave);
 
 
+		}
+		else if(message instanceof DistributedPubSubMediator.UnsubscribeAck || message instanceof DistributedPubSubMediator.SubscribeAck) {
+			//reply
+			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+					message), getSelf());	
+			log.info("Sending sub/unsub over");
 		}
 		
 		else
