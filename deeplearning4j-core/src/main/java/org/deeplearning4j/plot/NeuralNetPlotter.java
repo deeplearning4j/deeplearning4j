@@ -75,7 +75,7 @@ public class NeuralNetPlotter {
 		try {
 			render.renderFilters(network.getW(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows));
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			log.error("Unable to plot filter, continuing...",e);
 		}
 	}
 
