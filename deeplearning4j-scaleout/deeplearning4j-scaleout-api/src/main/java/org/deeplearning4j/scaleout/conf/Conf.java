@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.transformation.MatrixTransform;
+import org.jblas.DoubleMatrix;
 
 
 public class Conf implements Serializable,Cloneable {
@@ -40,7 +41,8 @@ public class Conf implements Serializable,Cloneable {
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
 	private int renderWeightEpochs = 0;
 	private String masterAbsPath;
-	
+	private DoubleMatrix columnMeans;
+	private DoubleMatrix columnStds;
 	
 	
 	
@@ -133,6 +135,20 @@ public class Conf implements Serializable,Cloneable {
 		this.layerSizes = layerSizes;
 	}
 	
+	
+	
+	public synchronized DoubleMatrix getColumnMeans() {
+		return columnMeans;
+	}
+	public synchronized void setColumnMeans(DoubleMatrix columnMeans) {
+		this.columnMeans = columnMeans;
+	}
+	public synchronized DoubleMatrix getColumnStds() {
+		return columnStds;
+	}
+	public synchronized void setColumnStds(DoubleMatrix columnStds) {
+		this.columnStds = columnStds;
+	}
 	public void setLayerSizes(Integer[] layerSizes) {
 		this.layerSizes = new int[layerSizes.length];
 		for(int i = 0; i < layerSizes.length; i++)
