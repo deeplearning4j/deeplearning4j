@@ -13,9 +13,8 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	protected int k = -1;
 	protected int numTimesIterated = 0;
 	
-	public RBMOptimizer(BaseNeuralNetwork network, double lr,
-			Object[] trainingParams) {
-		super(network, lr, trainingParams);
+	public RBMOptimizer(BaseNeuralNetwork network, Object[] trainingParams) {
+		super(network,trainingParams);
 	}
 
 	@Override
@@ -36,7 +35,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 		     this.k = 15;
 		
 		k = this.k;
-		NeuralNetworkGradient gradient = network.getGradient(new Object[]{k,lr});
+		NeuralNetworkGradient gradient = network.getGradient(new Object[]{k});
 	
 		DoubleMatrix wAdd = gradient.getwGradient();
 		DoubleMatrix vBiasAdd = gradient.getvBiasGradient();

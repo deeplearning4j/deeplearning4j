@@ -104,7 +104,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public void trainTillConvergence(DoubleMatrix x, double lr,double corruptionLevel) {
 		if(x != null)
 			this.input = x;
-		optimizer = new DenoisingAutoEncoderOptimizer(this, lr, new Object[]{corruptionLevel,lr});
+		optimizer = new DenoisingAutoEncoderOptimizer(this,new Object[]{corruptionLevel});
 		optimizer.train(x);
 	}
 
@@ -114,10 +114,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	 * @param lr the learning rate
 	 * @param corruptionLevel the corruption level to train with
 	 */
-	public void train(DoubleMatrix x, double lr, double corruptionLevel) {
+	public void train(DoubleMatrix x,double corruptionLevel) {
 
 		this.input = x;
-		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
+		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel});
 		vBias.addi(gradient.getvBiasGradient());
 		W.addi(gradient.getwGradient());
 		hBias.addi(gradient.gethBiasGradient());
@@ -141,11 +141,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 	@Override
-	public void trainTillConvergence(DoubleMatrix input, double lr,
-			Object[] params) {
+	public void trainTillConvergence(DoubleMatrix input,Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new DenoisingAutoEncoderOptimizer(this, lr, params);
+		optimizer = new DenoisingAutoEncoderOptimizer(this, params);
 		optimizer.train(input);
 	}
 
@@ -162,9 +161,9 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 	@Override
-	public void train(DoubleMatrix input, double lr, Object[] params) {
+	public void train(DoubleMatrix input,Object[] params) {
 		double corruptionLevel = (double) params[0];
-		train(input, lr, corruptionLevel);
+		train(input, corruptionLevel);
 	}
 
 

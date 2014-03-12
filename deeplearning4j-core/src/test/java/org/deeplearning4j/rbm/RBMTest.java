@@ -36,7 +36,7 @@ public class RBMTest  {
 		.numberOfVisible(6).numHidden(4).withRandom(g).build();
 		r.getW().muli(1000);
 
-		r.trainTillConvergence(d, 0.01, new Object[]{1,0.01,1000});
+		r.trainTillConvergence(d,  new Object[]{1,0.01,1000});
 
 		DoubleMatrix v = new DoubleMatrix(new double[][]
 				{{1, 1, 0, 0, 0, 0},
@@ -50,7 +50,7 @@ public class RBMTest  {
 		assertEquals(r2.getW(),r.W);
 		assertEquals(r2.gethBias(),r.hBias);
 		assertEquals(r2.getvBias(),r.vBias);
-		r2.trainTillConvergence(d, 0.1, new Object[]{1,0.01,1000});
+		r2.trainTillConvergence(d, new Object[]{1,0.01,1000});
 		log.info("Cross entropy " + r.getReConstructionCrossEntropy());
 
 

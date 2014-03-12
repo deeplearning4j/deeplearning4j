@@ -417,23 +417,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param lr the learning rate to use for logistic regression
 	 * @return the multi layer gradient for the whole network
 	 */
-	public MultiLayerGradient getGradient(Object[] params,double lr) {
+	public MultiLayerGradient getGradient(Object[] params) {
 		List<NeuralNetworkGradient> gradient = new ArrayList<NeuralNetworkGradient>();
 		for(NeuralNetwork network : layers) {
 			gradient.add(network.getGradient(params));
 		}
 
-		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
+		LogisticRegressionGradient g2 = logLayer.getGradient();
 		return new MultiLayerGradient(gradient,g2);
 	}
 
 
 
-	public synchronized DoubleMatrix getLabels() {
+	public  DoubleMatrix getLabels() {
 		return labels;
 	}
 
-	public synchronized LogisticRegression getLogLayer() {
+	public  LogisticRegression getLogLayer() {
 		return logLayer;
 	}
 
