@@ -12,13 +12,15 @@ import org.jblas.DoubleMatrix;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
+import akka.actor.Address;
+import akka.actor.AddressFromURIString;
 import akka.actor.OneForOneStrategy;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.MemberEvent;
+import akka.contrib.pattern.ClusterReceptionistExtension;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -26,11 +28,16 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.Function;
 
-
+/**
+ * Baseline worker actor class
+ * @author Adam Gibson
+ *
+ * @param <E>
+ */
 public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor implements DeepLearningConfigurable,ComputableWorker<E> {
 	protected DoubleMatrix combinedInput,outcomes;
 
-	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+	protected ActorRef mediator;
 	protected E e;
 	protected E results;
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
@@ -51,8 +58,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
 	public final static String SYSTEM_NAME = "Workers";
-	protected final Cancellable registerTask;
-
+	protected String masterPath;
+	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 
 	public WorkerActor(Conf conf) {
 		this(conf,null);
@@ -60,6 +67,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 	public WorkerActor(Conf conf,ActorRef client) {
 		setup(conf);
+
+
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
 
@@ -71,9 +80,10 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				register()), getSelf());
-		this.registerTask = getContext().system().scheduler().schedule(Duration.Zero(), Duration.fromNanos(100000),context().system().actorSelection(conf.getMasterAbsPath()).anchor() , register(), context().dispatcher(), getSelf());
 
+		this.clusterClient = client;
 
+		masterPath = conf.getMasterAbsPath();
 		log.info("Registered with master " + id + " at master " + conf.getMasterAbsPath());
 	}
 
@@ -92,7 +102,6 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		super.postStop();
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
-		registerTask.cancel();
 	}
 
 	@Override
@@ -100,6 +109,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		super.preStart();
 		cluster.subscribe(getSelf(), MemberEvent.class);
 		log.info("Pre start on worker");
+
 	}
 
 
@@ -131,6 +141,14 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		fineTuneEpochs = conf.getFinetuneEpochs();
 		corruptionLevel = conf.getCorruptionLevel();
 		extraParams = conf.getDeepLearningParams();
+		String url = conf.getMasterUrl();
+		this.masterPath = conf.getMasterAbsPath();
+		Address a = AddressFromURIString.apply(url);
+		Cluster.get(context().system()).join(a);
+
+		mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+
+		availableForWork();
 	}
 
 
@@ -150,9 +168,12 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	 * Flags this worker as available to the master
 	 */
 	public void availableForWork() {
+		log.info("Flagging availability of self " + id + " as available");
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				id), getSelf());
+				new WorkerState(id,getSelf())), getSelf());
+		//context().actorSelection(masterPath).tell(register(), getSelf());
+		//this.clusterClient.tell(register(),getSelf());
 	}
 
 	@Override
@@ -166,218 +187,218 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 
-	public synchronized DoubleMatrix getCombinedInput() {
+	public  DoubleMatrix getCombinedInput() {
 		return combinedInput;
 	}
 
 
 
 
-	public synchronized void setCombinedInput(DoubleMatrix combinedInput) {
+	public  void setCombinedInput(DoubleMatrix combinedInput) {
 		this.combinedInput = combinedInput;
 	}
 
 
 
 
-	public synchronized DoubleMatrix getOutcomes() {
+	public  DoubleMatrix getOutcomes() {
 		return outcomes;
 	}
 
 
 
 
-	public synchronized void setOutcomes(DoubleMatrix outcomes) {
+	public  void setOutcomes(DoubleMatrix outcomes) {
 		this.outcomes = outcomes;
 	}
 
 
 
 
-	public synchronized ActorRef getMediator() {
+	public  ActorRef getMediator() {
 		return mediator;
 	}
 
 
 
 
-	public synchronized void setMediator(ActorRef mediator) {
+	public  void setMediator(ActorRef mediator) {
 		this.mediator = mediator;
 	}
 
 
 
 
-	public synchronized E getE() {
+	public  E getE() {
 		return e;
 	}
 
 
 
 
-	public synchronized void setE(E e) {
+	public  void setE(E e) {
 		this.e = e;
 	}
 
 
 
 
-	public synchronized int getFineTuneEpochs() {
+	public  int getFineTuneEpochs() {
 		return fineTuneEpochs;
 	}
 
 
 
 
-	public synchronized void setFineTuneEpochs(int fineTuneEpochs) {
+	public  void setFineTuneEpochs(int fineTuneEpochs) {
 		this.fineTuneEpochs = fineTuneEpochs;
 	}
 
 
 
 
-	public synchronized int getPreTrainEpochs() {
+	public  int getPreTrainEpochs() {
 		return preTrainEpochs;
 	}
 
 
 
 
-	public synchronized void setPreTrainEpochs(int preTrainEpochs) {
+	public  void setPreTrainEpochs(int preTrainEpochs) {
 		this.preTrainEpochs = preTrainEpochs;
 	}
 
 
 
 
-	public synchronized int[] getHiddenLayerSizes() {
+	public  int[] getHiddenLayerSizes() {
 		return hiddenLayerSizes;
 	}
 
 
 
 
-	public synchronized void setHiddenLayerSizes(int[] hiddenLayerSizes) {
+	public  void setHiddenLayerSizes(int[] hiddenLayerSizes) {
 		this.hiddenLayerSizes = hiddenLayerSizes;
 	}
 
 
 
 
-	public synchronized int getNumHidden() {
+	public  int getNumHidden() {
 		return numHidden;
 	}
 
 
 
 
-	public synchronized void setNumHidden(int numHidden) {
+	public  void setNumHidden(int numHidden) {
 		this.numHidden = numHidden;
 	}
 
 
 
 
-	public synchronized int getNumVisible() {
+	public  int getNumVisible() {
 		return numVisible;
 	}
 
 
 
 
-	public synchronized void setNumVisible(int numVisible) {
+	public  void setNumVisible(int numVisible) {
 		this.numVisible = numVisible;
 	}
 
 
 
 
-	public synchronized int getNumHiddenNeurons() {
+	public  int getNumHiddenNeurons() {
 		return numHiddenNeurons;
 	}
 
 
 
 
-	public synchronized void setNumHiddenNeurons(int numHiddenNeurons) {
+	public  void setNumHiddenNeurons(int numHiddenNeurons) {
 		this.numHiddenNeurons = numHiddenNeurons;
 	}
 
 
 
 
-	public synchronized long getSeed() {
+	public  long getSeed() {
 		return seed;
 	}
 
 
 
 
-	public synchronized void setSeed(long seed) {
+	public  void setSeed(long seed) {
 		this.seed = seed;
 	}
 
 
 
 
-	public synchronized double getLearningRate() {
+	public  double getLearningRate() {
 		return learningRate;
 	}
 
 
 
 
-	public synchronized void setLearningRate(double learningRate) {
+	public  void setLearningRate(double learningRate) {
 		this.learningRate = learningRate;
 	}
 
 
 
 
-	public synchronized double getCorruptionLevel() {
+	public  double getCorruptionLevel() {
 		return corruptionLevel;
 	}
 
 
 
 
-	public synchronized void setCorruptionLevel(double corruptionLevel) {
+	public  void setCorruptionLevel(double corruptionLevel) {
 		this.corruptionLevel = corruptionLevel;
 	}
 
 
 
 
-	public synchronized Object[] getExtraParams() {
+	public  Object[] getExtraParams() {
 		return extraParams;
 	}
 
 
 
 
-	public synchronized void setExtraParams(Object[] extraParams) {
+	public  void setExtraParams(Object[] extraParams) {
 		this.extraParams = extraParams;
 	}
 
 
 
 
-	public synchronized void setResults(E results) {
+	public  void setResults(E results) {
 		this.results = results;
 	}
 
-	public synchronized Job getCurrent() {
+	public  Job getCurrent() {
 		return current;
 	}
 
-	public synchronized void setCurrent(Job current) {
+	public  void setCurrent(Job current) {
 		this.current = current;
 	}
 
 	/**
 	 * Clears the current job
 	 */
-	protected synchronized void clearCurrentJob() {
+	protected  void clearCurrentJob() {
 		setCurrent(null);
 	}
 

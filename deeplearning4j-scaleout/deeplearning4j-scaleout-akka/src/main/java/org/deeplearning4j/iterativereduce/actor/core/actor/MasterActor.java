@@ -6,12 +6,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
@@ -30,6 +29,7 @@ import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
+import akka.contrib.pattern.ClusterReceptionistExtension;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
@@ -59,8 +59,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
-	protected Set<String> workerIds = new HashSet<String>();
 	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
+	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 
 
 
@@ -83,8 +83,17 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
-		
+
 		setup(conf);
+
+		context().system().scheduler().schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
+
+			@Override
+			public void run() {
+				log.info("Current workers " + workers.keySet());
+			}
+
+		}, context().dispatcher());
 
 
 	}
@@ -139,12 +148,14 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * Finds the next available worker based on current states
 	 * @return the next available worker, blocks till a worker is found
 	 */
-	protected WorkerState nextAvailableWorker() {
+	protected  WorkerState nextAvailableWorker() {
 		boolean foundWork = false;
 		//loop till a worker is available; this throttles output
 		while(!foundWork) {
 			for(WorkerState state : workers.values()) {
+
 				if(state.isAvailable()) {
+					log.info("Found next available worker " + state.getWorkerId());
 					foundWork = true;
 					return  state;
 				}
@@ -170,11 +181,15 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		int split = this.workers.size();
 		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
+		if(splitList.size() < workers.size()) {
+			log.warning("You may want to reconfigure your batch sizes, the current partition rate does not match the number of available workers");
+		}
+		
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
 			final int j = i;
-			
-			
+
+
 			Future<Void> f = Futures.future(new Callable<Void>() {
 
 				@Override

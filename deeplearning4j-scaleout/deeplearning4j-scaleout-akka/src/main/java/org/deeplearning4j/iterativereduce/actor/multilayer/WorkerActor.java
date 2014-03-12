@@ -34,7 +34,11 @@ import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
 import akka.japi.Function;
 
-
+/**
+ * Iterative reduce actor for handling batch sizes
+ * @author Adam Gibson
+ *
+ */
 public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
 	protected BaseMultiLayerNetwork network;
 	protected DoubleMatrix combinedInput;
@@ -83,6 +87,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
+	@Override
+	public void preStart() throws Exception {
+		super.preStart();
+		availableForWork();
+	}
+
 	public static Props propsFor(ActorRef actor,Conf conf) {
 		return Props.create(WorkerActor.class,actor,conf);
 	}
@@ -117,7 +127,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			public void run() {
 				log.info("Sending heartbeat to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						id), getSelf());	
+						register()), getSelf());	
 
 			}
 
@@ -207,7 +217,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public  synchronized UpdateableImpl compute() {
+	public   UpdateableImpl compute() {
 		log.info("Training network");
 		while(getNetwork() == null) {
 			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
@@ -265,27 +275,27 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public synchronized void update(UpdateableImpl t) {
+	public  void update(UpdateableImpl t) {
 		this.workerUpdateable = t;
 	}
 
 
-	public synchronized BaseMultiLayerNetwork getNetwork() {
+	public  BaseMultiLayerNetwork getNetwork() {
 		return network;
 	}
 
 
-	public synchronized void setNetwork(BaseMultiLayerNetwork network) {
+	public  void setNetwork(BaseMultiLayerNetwork network) {
 		this.network = network;
 	}
 
 
-	public synchronized DoubleMatrix getCombinedInput() {
+	public  DoubleMatrix getCombinedInput() {
 		return combinedInput;
 	}
 
 
-	public synchronized void setCombinedInput(DoubleMatrix combinedInput) {
+	public  void setCombinedInput(DoubleMatrix combinedInput) {
 		this.combinedInput = combinedInput;
 	}
 
@@ -293,12 +303,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	public synchronized UpdateableImpl getWorkerUpdateable() {
+	public  UpdateableImpl getWorkerUpdateable() {
 		return workerUpdateable;
 	}
 
 
-	public synchronized void setWorkerUpdateable(UpdateableImpl workerUpdateable) {
+	public  void setWorkerUpdateable(UpdateableImpl workerUpdateable) {
 		this.workerUpdateable = workerUpdateable;
 	}
 

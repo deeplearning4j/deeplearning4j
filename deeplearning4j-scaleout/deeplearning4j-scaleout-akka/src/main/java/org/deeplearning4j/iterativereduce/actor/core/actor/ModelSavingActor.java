@@ -11,6 +11,7 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
+import akka.contrib.pattern.ClusterReceptionistExtension;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
@@ -31,7 +32,8 @@ public class ModelSavingActor extends UntypedActor {
 	private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	private Cluster cluster = Cluster.get(context().system());
 	private ModelSaver modelSaver = new DefaultModelSaver();
-	
+	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
+
 	public ModelSavingActor(String pathToSave) {
 		this.pathToSave = pathToSave;
 		modelSaver = new DefaultModelSaver(new File(pathToSave));
@@ -41,7 +43,7 @@ public class ModelSavingActor extends UntypedActor {
 		this.modelSaver = saver;
 	}
 
-	
+
 
 	{
 		mediator.tell(new DistributedPubSubMediator.Subscribe(SAVE, getSelf()), getSelf());
@@ -50,14 +52,14 @@ public class ModelSavingActor extends UntypedActor {
 
 	}
 
-	
+
 	@Override
 	public void postStop() throws Exception {
 		super.postStop();
 		log.info("Post stop on model saver");
 		cluster.unsubscribe(getSelf());
 	}
-	
+
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
@@ -80,13 +82,13 @@ public class ModelSavingActor extends UntypedActor {
 					message), getSelf());	
 			log.info("Sending sub/unsub over");
 		}
-		
+
 		else
 			unhandled(message);
 	}
 
 
-	
+
 
 
 }
