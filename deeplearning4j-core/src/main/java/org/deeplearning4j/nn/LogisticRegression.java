@@ -114,8 +114,17 @@ public class LogisticRegression implements Serializable {
 	 * @param batchSize  the batch size
 	 */
 	public synchronized void merge(LogisticRegression l,int batchSize) {
-		W.addi(l.W.subi(W).div(batchSize));
-		b.addi(l.b.subi(b).div(batchSize));
+		if(this.useRegularization) {
+
+			W.addi(l.W.subi(W).div(batchSize));
+			b.addi(l.b.subi(b).div(batchSize));
+		}
+
+		else {
+			W.addi(l.W.subi(W));
+			b.addi(l.b.subi(b));
+		}
+
 	}
 
 	/**
@@ -303,14 +312,14 @@ public class LogisticRegression implements Serializable {
 		private int nOut;
 		private DoubleMatrix input;
 		private boolean useRegualarization;
-		
-		
-		
+
+
+
 		public Builder withL2(double l2) {
 			this.l2 = l2;
 			return this;
 		}
-		
+
 		public Builder useRegularization(boolean regularize) {
 			this.useRegualarization = regularize;
 			return this;
