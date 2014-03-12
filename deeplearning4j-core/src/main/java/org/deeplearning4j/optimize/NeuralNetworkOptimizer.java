@@ -23,9 +23,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	
 
 
-	public NeuralNetworkOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
+	public NeuralNetworkOptimizer(BaseNeuralNetwork network,Object[] trainingParams) {
 		this.network = network;
-		this.lr = lr;
 		this.extraParams = trainingParams;
 	}
 
@@ -44,7 +43,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		if(opt == null)
 			opt = new NonZeroStoppingConjugateGradient(this,this);
 		opt.setTolerance(tolerance);
-		int epochs = (int) extraParams[2];
+		int epochs = (int) extraParams[1];
 		opt.optimize(epochs);
 
 

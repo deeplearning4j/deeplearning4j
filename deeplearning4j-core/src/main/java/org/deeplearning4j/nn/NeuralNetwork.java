@@ -5,6 +5,7 @@ import java.io.Serializable;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.jblas.DoubleMatrix;
 
 public interface NeuralNetwork extends Serializable,Cloneable {
@@ -66,13 +67,16 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	public void setFanIn(double fanIn);
 	
 	
+	public AdaGrad getAdaGrad();
+	public void setAdaGrad(AdaGrad adaGrad);
+	
 	public double l2RegularizedCoefficient();
 	
 	public double getReConstructionCrossEntropy();
 	
-	public void train(DoubleMatrix input,double lr,Object[] params);
+	public void train(DoubleMatrix input,Object[] params);
 	
-	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
+	public void trainTillConvergence(DoubleMatrix input,Object[] params);
 	/**
 	 * Performs a network merge in the form of
 	 * a += b - a / n

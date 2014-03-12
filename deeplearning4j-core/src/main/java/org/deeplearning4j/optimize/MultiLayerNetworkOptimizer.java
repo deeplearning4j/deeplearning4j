@@ -49,12 +49,12 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		
 		
 		if(!network.isForceNumEpochs()) 
-			network.getLogLayer().trainTillConvergence(lr, epochs);
+			network.getLogLayer().trainTillConvergence(epochs);
 		
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
-				network.getLogLayer().train(layerInput, labels, lr);
+				network.getLogLayer().train(layerInput, labels);
 			}
 		}
 		

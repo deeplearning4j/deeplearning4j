@@ -8,6 +8,7 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
@@ -35,7 +36,7 @@ public class LogisticRegression implements Serializable {
 	//weight decay; l2 regularization
 	private double l2 = 0.01;
 	private boolean useRegularization = true;
-
+	private AdaGrad adaGrad;
 	private LogisticRegression() {}
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
@@ -44,6 +45,7 @@ public class LogisticRegression implements Serializable {
 		this.nIn = nIn;
 		this.nOut = nOut;
 		W = DoubleMatrix.zeros(nIn,nOut);
+		this.adaGrad = new AdaGrad(nIn,nOut);
 		b = DoubleMatrix.zeros(nOut);
 	}
 
@@ -60,8 +62,8 @@ public class LogisticRegression implements Serializable {
 	 * with the given learning rate
 	 * @param lr the learning rate to use
 	 */
-	public synchronized void train(double lr) {
-		train(input,labels,lr);
+	public  void train() {
+		train(input,labels);
 	}
 
 
@@ -69,12 +71,11 @@ public class LogisticRegression implements Serializable {
 	 * Train with the given input
 	 * and the currently set labels
 	 * @param x the input to use
-	 * @param lr the learning rate to use
 	 */
-	public synchronized void train(DoubleMatrix x,double lr) {
+	public  void train(DoubleMatrix x) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
 
-		train(x,labels,lr);
+		train(x,labels);
 
 	}
 
@@ -85,12 +86,12 @@ public class LogisticRegression implements Serializable {
 	 * @param learningRate
 	 * @param epochs
 	 */
-	public synchronized void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
+	public  void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, int epochs) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
 		this.labels = y;
-		trainTillConvergence(learningRate,epochs);
+		trainTillConvergence(epochs);
 
 	}
 
@@ -99,8 +100,8 @@ public class LogisticRegression implements Serializable {
 	 * @param learningRate the learning rate to train with
 	 * @param numEpochs the number of epochs
 	 */
-	public synchronized void trainTillConvergence(double learningRate, int numEpochs) {
-		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
+	public  void trainTillConvergence(int numEpochs) {
+		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this);
 		NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
 		g.optimize(numEpochs);
 
@@ -113,7 +114,7 @@ public class LogisticRegression implements Serializable {
 	 * @param l the logistic regression to average in to this one
 	 * @param batchSize  the batch size
 	 */
-	public synchronized void merge(LogisticRegression l,int batchSize) {
+	public  void merge(LogisticRegression l,int batchSize) {
 		if(this.useRegularization) {
 
 			W.addi(l.W.subi(W).div(batchSize));
@@ -131,7 +132,7 @@ public class LogisticRegression implements Serializable {
 	 * Objective function:  minimize negative log likelihood
 	 * @return the negative log likelihood of the model
 	 */
-	public synchronized double negativeLogLikelihood() {
+	public  double negativeLogLikelihood() {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
 		//weight decay
@@ -165,14 +166,13 @@ public class LogisticRegression implements Serializable {
 	 * @param y the labels to train on
 	 * @param lr the learning rate
 	 */
-	public synchronized void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+	public  void train(DoubleMatrix x,DoubleMatrix y) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
 		this.labels = y;
 
-		//DoubleMatrix regularized = W.transpose().mul(l2);
-		LogisticRegressionGradient gradient = getGradient(lr);
+		LogisticRegressionGradient gradient = getGradient();
 
 		W.addi(gradient.getwGradient());
 		b.addi(gradient.getbGradient());
@@ -188,6 +188,7 @@ public class LogisticRegression implements Serializable {
 		LogisticRegression reg = new LogisticRegression();
 		reg.b = b.dup();
 		reg.W = W.dup();
+		reg.adaGrad = this.adaGrad;
 		reg.l2 = this.l2;
 		if(this.labels != null)
 			reg.labels = this.labels.dup();
@@ -204,7 +205,7 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate to use for training
 	 * @return the gradient (bias and weight matrix)
 	 */
-	public synchronized LogisticRegressionGradient getGradient(double lr) {
+	public  LogisticRegressionGradient getGradient() {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
 		//input activation
@@ -214,7 +215,8 @@ public class LogisticRegression implements Serializable {
 		//weight decay
 		if(useRegularization)
 			dy.divi(input.rows);
-		DoubleMatrix wGradient = input.transpose().mmul(dy).mul(lr);
+		DoubleMatrix wGradient = input.transpose().mmul(dy);
+		wGradient = wGradient.mul(adaGrad.getLearningRates(wGradient));
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);
 
@@ -231,73 +233,73 @@ public class LogisticRegression implements Serializable {
 	 * Each row will be the likelihood of a label given that example
 	 * @return a probability distribution for each row
 	 */
-	public synchronized DoubleMatrix predict(DoubleMatrix x) {
+	public  DoubleMatrix predict(DoubleMatrix x) {
 		return softmax(x.mmul(W).addRowVector(b));
 	}	
 
 
 
-	public synchronized int getnIn() {
+	public  int getnIn() {
 		return nIn;
 	}
 
-	public synchronized void setnIn(int nIn) {
+	public  void setnIn(int nIn) {
 		this.nIn = nIn;
 	}
 
-	public synchronized int getnOut() {
+	public  int getnOut() {
 		return nOut;
 	}
 
-	public synchronized void setnOut(int nOut) {
+	public  void setnOut(int nOut) {
 		this.nOut = nOut;
 	}
 
-	public synchronized DoubleMatrix getInput() {
+	public  DoubleMatrix getInput() {
 		return input;
 	}
 
-	public synchronized void setInput(DoubleMatrix input) {
+	public  void setInput(DoubleMatrix input) {
 		this.input = input;
 	}
 
-	public synchronized DoubleMatrix getLabels() {
+	public  DoubleMatrix getLabels() {
 		return labels;
 	}
 
-	public synchronized void setLabels(DoubleMatrix labels) {
+	public  void setLabels(DoubleMatrix labels) {
 		this.labels = labels;
 	}
 
-	public synchronized DoubleMatrix getW() {
+	public  DoubleMatrix getW() {
 		return W;
 	}
 
-	public synchronized void setW(DoubleMatrix w) {
+	public  void setW(DoubleMatrix w) {
 		W = w;
 	}
 
-	public synchronized DoubleMatrix getB() {
+	public  DoubleMatrix getB() {
 		return b;
 	}
 
-	public synchronized void setB(DoubleMatrix b) {
+	public  void setB(DoubleMatrix b) {
 		this.b = b;
 	}
 
-	public synchronized double getL2() {
+	public  double getL2() {
 		return l2;
 	}
 
-	public synchronized void setL2(double l2) {
+	public  void setL2(double l2) {
 		this.l2 = l2;
 	}
 
-	public synchronized boolean isUseRegularization() {
+	public  boolean isUseRegularization() {
 		return useRegularization;
 	}
 
-	public synchronized void setUseRegularization(boolean useRegularization) {
+	public  void setUseRegularization(boolean useRegularization) {
 		this.useRegularization = useRegularization;
 	}
 

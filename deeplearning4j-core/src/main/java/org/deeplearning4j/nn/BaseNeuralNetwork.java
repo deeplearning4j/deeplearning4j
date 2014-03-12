@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -71,6 +72,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public int renderWeightsEveryNumEpochs = -1;
 	public double fanIn = -1;
 	public boolean useRegularization = true;
+	public AdaGrad vBiasAdaGrad;
+	public AdaGrad hBiasAdaGrad;
+	public AdaGrad adaGrad;
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -170,6 +174,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
+		this.adaGrad = new AdaGrad(W.rows,W.columns);
+
 		if(this.hBias == null) {
 			this.hBias = DoubleMatrix.zeros(nHidden);
 			/*
@@ -179,18 +185,20 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			//this.hBias.subi(4);
 		}
 
+		this.hBiasAdaGrad =  new AdaGrad(hBias.rows,hBias.columns);
+		
 		if(this.vBias == null) {
-			if(this.input != null) {
-
+			if(this.input != null) 
 				this.vBias = DoubleMatrix.zeros(nVisible);
 
 
-			}
+
 			else
 				this.vBias = DoubleMatrix.zeros(nVisible);
 		}
 
 
+		this.vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
 
 	}
 
@@ -267,6 +275,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		try {
 			NeuralNetwork ret = getClass().newInstance();
 			ret.sethBias(hBias.dup());
+			ret.setAdaGrad(adaGrad);
 			ret.setvBias(vBias.dup());
 			ret.setnHidden(getnHidden());
 			ret.setnVisible(getnVisible());
@@ -281,6 +290,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+
+	public  AdaGrad getAdaGrad() {
+		return adaGrad;
+	}
+	public  void setAdaGrad(AdaGrad adaGrad) {
+		this.adaGrad = adaGrad;
+	}
 	@Override
 	public RealDistribution getDist() {
 		return dist;
@@ -298,17 +314,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			hBias.addi(network.gethBias().subi(hBias).divi(batchSize));
 			vBias.addi(network.getvBias().subi(vBias).divi(batchSize));
 		}
-		
+
 		else {
 			W.addi(network.getW().mini(W));
 			hBias.addi(network.gethBias().subi(hBias));
 			vBias.addi(network.getvBias().subi(vBias));
 		}
-	
+
 	}
 
 
-	
+
 	/**
 	 * Copies params from the passed in network
 	 * to this one
@@ -369,8 +385,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		}
 
 		double ret =  - inner.rowSums().mean();
-		
-		
+
+
 		return ret;
 	}
 
@@ -542,14 +558,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return lossFunction(null);
 	}
 
+	public  boolean isUseRegularization() {
+		return useRegularization;
+	}
+	public  void setUseRegularization(boolean useRegularization) {
+		this.useRegularization = useRegularization;
+	}
+
+
 	/**
 	 * Train one iteration of the network
 	 * @param input the input to train on
-	 * @param lr the learning rate to train at
-	 * @param params the extra params (k, corruption level,...)
+=	 * @param params the extra params (k, corruption level,...)
 	 */
 	@Override
-	public abstract void train(DoubleMatrix input,double lr,Object[] params);
+	public abstract void train(DoubleMatrix input,Object[] params);
 
 	@Override
 	public double squaredLoss() {
@@ -680,7 +703,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
-	
+
 		@SuppressWarnings("unchecked")
 		private  E buildWithInput()  {
 			Constructor<?>[] c = clazz.getDeclaredConstructors();
@@ -706,7 +729,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			return ret;
 		}
 	}
-	
-	
+
+
 
 }
