@@ -21,6 +21,9 @@ public class RBMMnistExample {
 =======
 		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).build();
 		r.getW().muli(1000);
+<<<<<<< HEAD
+>>>>>>> parent of 3c239c8... found adagrad trick
+=======
 >>>>>>> parent of 3c239c8... found adagrad trick
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,1000);
