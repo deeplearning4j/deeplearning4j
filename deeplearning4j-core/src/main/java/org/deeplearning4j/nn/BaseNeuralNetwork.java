@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -71,6 +72,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public int renderWeightsEveryNumEpochs = -1;
 	public double fanIn = -1;
 	public boolean useRegularization = true;
+	public boolean useAdaGrad = false;
+
+	public AdaGrad wAdaGrad;
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -170,6 +174,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
+		if(useAdaGrad)
+			this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+
 		if(this.hBias == null) {
 			this.hBias = DoubleMatrix.zeros(nHidden);
 			/*
@@ -243,6 +250,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+
+
+
+
+	@Override
+	public AdaGrad getAdaGrad() {
+		return this.wAdaGrad;
+	}
+	@Override
+	public void setAdaGrad(AdaGrad adaGrad) {
+		this.wAdaGrad = adaGrad;
+	}
+
 	@Override
 	public NeuralNetwork transpose() {
 		try {
@@ -253,7 +273,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnHidden());
 			ret.setW(W.transpose());
 			ret.setRng(getRng());
+			ret.setAdaGrad(wAdaGrad);
 			ret.setDist(getDist());
+
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -273,6 +295,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setW(W.dup());
 			ret.setRng(getRng());
 			ret.setDist(getDist());
+			ret.setAdaGrad(wAdaGrad);
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -298,17 +321,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			hBias.addi(network.gethBias().subi(hBias).divi(batchSize));
 			vBias.addi(network.getvBias().subi(vBias).divi(batchSize));
 		}
-		
+
 		else {
 			W.addi(network.getW().mini(W));
 			hBias.addi(network.gethBias().subi(hBias));
 			vBias.addi(network.getvBias().subi(vBias));
 		}
-	
+
 	}
 
 
-	
+
 	/**
 	 * Copies params from the passed in network
 	 * to this one
@@ -325,6 +348,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.nVisible = n.nVisible;
 		this.rng = n.rng;
 		this.sparsity = n.sparsity;
+		this.wAdaGrad = n.wAdaGrad;
+
 	}
 
 	/**
@@ -363,14 +388,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				.add(oneMinus(input)
 						.mul(log(oneMinus(sigV))));
 		double l = inner.length;
-		if(this.useRegularization) {
+		if(useRegularization) {
 			double normalized = l + l2RegularizedCoefficient();
 			return - inner.rowSums().mean() / normalized;
 		}
 
 		double ret =  - inner.rowSums().mean();
-		
-		
+
+
 		return ret;
 	}
 
@@ -581,7 +606,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double fanIn = 0.1;
 		private boolean useRegularization = true;
 		private RealDistribution dist;
+		private boolean useAdaGrad = false;
 
+		public Builder<E> useAdaGrad(boolean useAdaGrad) {
+			this.useAdaGrad = useAdaGrad;
+			return this;
+		}
 
 		public Builder<E> withDistribution(RealDistribution dist) {
 			this.dist = dist;
@@ -680,7 +710,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
-	
+
 		@SuppressWarnings("unchecked")
 		private  E buildWithInput()  {
 			Constructor<?>[] c = clazz.getDeclaredConstructors();
@@ -696,6 +726,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret.l2 = this.l2;
 						ret.momentum = this.momentum;
 						ret.useRegularization = this.useRegularization;
+						ret.useAdaGrad = this.useAdaGrad;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);
@@ -706,7 +737,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			return ret;
 		}
 	}
-	
-	
+
+
 
 }

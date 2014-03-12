@@ -70,17 +70,17 @@ public class DBN extends BaseMultiLayerNetwork {
 		}
 	}
 
-	
-	
-	
-	
+
+
+
+
 	@Override
 	public void pretrain(DoubleMatrix input, Object[] otherParams) {
 		int k = (Integer) otherParams[0];
 		double lr = (Double) otherParams[1];
 		int epochs = (Integer) otherParams[2];
 		pretrain(input,k,lr,epochs);
-		
+
 	}
 
 
@@ -135,13 +135,15 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		
-		RBM ret = new RBM.Builder().useRegularization(isUseRegularization())
-				.withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist())
-				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
-				.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
-				.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
-				.fanIn(getFanIn()).build();
+
+		RBM ret = new RBM.Builder()
+		.useRegularization(isUseRegularization())
+		.useAdaGrad(isUseAdaGrad())
+		.withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist())
+		.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
+		.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
+		.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
+		.fanIn(getFanIn()).build();
 		return ret;
 	}
 

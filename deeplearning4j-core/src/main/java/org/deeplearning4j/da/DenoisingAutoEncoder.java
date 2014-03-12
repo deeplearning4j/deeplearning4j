@@ -188,12 +188,16 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias = L_h1;
 
 		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
-		L_W.muli(lr);
+		
+		if(useAdaGrad)
+		   L_W.muli(wAdaGrad.getLearningRates(L_W));
+		else 
+			L_W.muli(lr);
 
 
-		if(useRegularization) {
+		if(useRegularization) 
 			L_W.subi(W.muli(l2));
-		}
+		
 
 		if(momentum != 0)
 			L_W.muli(1 - momentum);
