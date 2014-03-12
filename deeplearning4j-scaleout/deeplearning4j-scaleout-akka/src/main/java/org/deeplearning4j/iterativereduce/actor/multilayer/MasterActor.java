@@ -25,7 +25,9 @@ import org.jblas.DoubleMatrix;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
+import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
 
@@ -44,12 +46,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	/**
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor that handles data set dispersion
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
 
 	}
 
+
+	/**
+	 * Creates the master and the workers with this given conf
+	 * @param conf the neural net config to use
+	 * @param batchActor the batch actor that handles data set dispersion
+	 */
 	public static Props propsFor(Conf conf,ActorRef batchActor) {
 		return Props.create(MasterActor.class,conf,batchActor);
 	}
@@ -96,16 +105,17 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public void setup(Conf conf) {
 		log.info("Starting workers");
 		ActorSystem system = context().system();
-
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 		//start local workers
 		Props p = pool.props(WorkerActor.propsFor(conf));
+		p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
+
 		system.actorOf(p, "worker");
 
 
 
 
-
+	
 		//Wait for backend to be up
 
 		try {
@@ -153,7 +163,14 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 		else if(message instanceof WorkerState) {
-			this.addWorker((WorkerState) message);
+			WorkerState s = (WorkerState) message;
+			if(s.getWorkerId() != null) {
+				this.addWorker(s);
+				getSender().tell(Ack.getInstance(),getSelf());
+
+			}
+			
+			
 		}
 
 		else if(message instanceof NeedsModelMessage) {
@@ -203,6 +220,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
 			if(updates.size() >= partition) {
 				masterResults = this.compute(updates, updates);
+				for(String key : workers.keySet()) {
+					workers.get(key).setAvailable(true);
+					log.info("Freeing " + key + " for work post batch completion");
+				}
 
 				epochsComplete++;
 				//tell the batch actor to send out another dataset

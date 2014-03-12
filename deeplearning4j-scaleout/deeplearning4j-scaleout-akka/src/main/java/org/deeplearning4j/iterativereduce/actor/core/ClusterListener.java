@@ -34,7 +34,7 @@ public class ClusterListener extends UntypedActor {
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Subscribe(TOPICS,getSelf()), getSelf());
 		log.info("Subscribed to cluster events");
-		topicTask = context().system().scheduler().schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
+		/*topicTask = context().system().scheduler().schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
 
 			@Override
 			public void run() {
@@ -43,11 +43,11 @@ public class ClusterListener extends UntypedActor {
 				mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
 						topics), getSelf());
 			}
-			
+
 		}, context().dispatcher());
-		
-		
-		
+		 */
+
+
 		//#subscribe
 	}
 
@@ -56,8 +56,9 @@ public class ClusterListener extends UntypedActor {
 	public void postStop() {
 		cluster.unsubscribe(getSelf());
 		log.info("UnSubscribed to cluster events");
-		topicTask.cancel();
-	
+		if(topicTask != null)
+			topicTask.cancel();
+
 
 	}
 
@@ -79,22 +80,22 @@ public class ClusterListener extends UntypedActor {
 			// ignore
 
 		} 
-		
+
 		else if(message instanceof DistributedPubSubMediator.SubscribeAck) {
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			topics.add(ack.subscribe().topic());
 		}
-		
+
 		else if(message instanceof DistributedPubSubMediator.UnsubscribeAck) {
 			DistributedPubSubMediator.UnsubscribeAck unsub = (DistributedPubSubMediator.UnsubscribeAck) message;
 			topics.remove(unsub.unsubscribe().topic());
 		}
-		
+
 		else if(message instanceof List) {
 			log.info("Topics sent " + message);
 		}
-		
-		
+
+
 		else {
 			unhandled(message);
 		}

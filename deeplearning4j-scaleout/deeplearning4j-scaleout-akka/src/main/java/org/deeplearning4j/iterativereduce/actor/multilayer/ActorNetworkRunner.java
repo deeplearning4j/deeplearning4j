@@ -153,6 +153,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		 */
 		final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 
+		
+		c.setMasterUrl(realJoinAddress.toString());
+		
 		if(exec == null)
 			exec = Executors.newScheduledThreadPool(2);
 
@@ -211,7 +214,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 					this), mediator);
 
 			log.info("Starting model saver");
-			system.actorOf(Props.create(ModelSavingActor.class,",model-saver"));
+			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
 
 
 			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;

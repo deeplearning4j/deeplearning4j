@@ -19,19 +19,19 @@ public class MnistExampleMultiThreaded {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(160,60000);
+		DataSetIterator iter = new MnistDataSetIterator(80,60000);
 		
 		Conf c = new Conf();
-		c.setFinetuneEpochs(1000);
-		c.setFinetuneLearningRate(0.01);
+		c.setFinetuneEpochs(10000);
+		c.setFinetuneLearningRate(0.001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
-		c.setRenderWeightEpochs(1000);
+		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.01,1000});
+		c.setDeepLearningParams(new Object[]{1,0.001,1000});
 	
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
 		runner.setup(c);
