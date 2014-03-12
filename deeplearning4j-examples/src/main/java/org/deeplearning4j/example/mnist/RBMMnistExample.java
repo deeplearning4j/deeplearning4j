@@ -9,17 +9,19 @@ import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RBMMnistExample {
 
-	private static Logger log = LoggerFactory.getLogger(RBMMnistExample.class);
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
+<<<<<<< HEAD
 		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).renderWeights(100).build();
+=======
+		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).build();
+		r.getW().muli(1000);
+>>>>>>> parent of 3c239c8... found adagrad trick
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,1000);
 
