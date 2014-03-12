@@ -16,17 +16,10 @@ public class RBMMnistExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-<<<<<<< HEAD
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).renderWeights(100).build();
-=======
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).build();
-		r.getW().muli(1000);
-<<<<<<< HEAD
->>>>>>> parent of 3c239c8... found adagrad trick
-=======
->>>>>>> parent of 3c239c8... found adagrad trick
+		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).useRegularization(true).build();
+
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,1000);
+		DataSetIterator iter = new MnistDataSetIterator(10,100);
 
 		
 		
@@ -34,11 +27,20 @@ public class RBMMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), new Object[]{1,100});
+			r.trainTillConvergence(next.getFirst(), new Object[]{1,10000});
 		}
 
 		iter.reset();
 
+/*
+		while(iter.hasNext()) {
+			DataSet next = iter.next();
+			//train with k = 1 0.01 learning rate and 1000 epochs
+			FilterRenderer render = new FilterRenderer();
+			render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+		}
+		*/
+		
 		//Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
 		while(iter.hasNext()) {
 			DataSet first = iter.next();
