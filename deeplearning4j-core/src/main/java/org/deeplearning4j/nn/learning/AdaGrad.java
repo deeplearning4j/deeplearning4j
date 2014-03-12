@@ -81,7 +81,7 @@ public class AdaGrad implements Serializable {
 		addLastIterationGradient();
 		DoubleMatrix gAdd = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
 		this.adjustedGradient = gradient.div(gAdd);
-		this.adjustedGradient.mul(masterStepSize);
+		this.adjustedGradient.mul(masterStepSize).neg();
 		return adjustedGradient;
 	}
 
