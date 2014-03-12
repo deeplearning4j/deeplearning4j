@@ -1,6 +1,8 @@
 package org.deeplearning4j.example.mnist;
 
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
@@ -20,6 +22,7 @@ public class MnistExampleMultiThreaded {
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(80,60000);
+		
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);

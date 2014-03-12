@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -53,7 +54,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double corruptionLevel;
 	protected Object[] extraParams;
 	protected String id;
-	private Job current;
+	protected AtomicReference<Job> current;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
@@ -68,7 +69,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	public WorkerActor(Conf conf,ActorRef client) {
 		setup(conf);
 
-
+		this.current = new AtomicReference<>(null);
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
 
@@ -388,11 +389,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 	public  Job getCurrent() {
-		return current;
+		return this.current.get();
 	}
 
 	public  void setCurrent(Job current) {
-		this.current = current;
+		this.current.set(current);
 	}
 
 	/**

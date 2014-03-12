@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.plot.NeuralNetPlotter;
+import org.deeplearning4j.scaleout.conf.Conf;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +37,9 @@ public class TestMnistRender {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFirst());
-			
+			dbn.layers[0].setInput(next.getFirst());
 			NeuralNetPlotter plotter = new NeuralNetPlotter();
-			plotter.plotWeights(dbn.layers[0]);
+			plotter.plotNetworkGradient(dbn.layers[0], dbn.layers[0].getGradient(Conf.getDefaultRbmParams()));
 		
 			log.info("Current stats " + eval.stats());
 		}

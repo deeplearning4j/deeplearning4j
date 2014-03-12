@@ -17,22 +17,25 @@ public class Job implements Serializable {
 	private boolean done;
 	private String workerId;
 	private Serializable work;
+	private boolean pretrain;
 	
-	public Job(String workerId, Serializable work) {
-		this(false,workerId,work);
+	public Job(String workerId, Serializable work,boolean pretrain) {
+		this(false,workerId,work,pretrain);
 	}
 	
-	public Job(boolean done, String workerId, Serializable work) {
+	public Job(boolean done, String workerId, Serializable work,boolean pretrain) {
 		super();
 		this.done = done;
 		this.workerId = workerId;
 		this.work = work;
+		this.pretrain = pretrain;
 	}
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (done ? 1231 : 1237);
+		result = prime * result + (pretrain ? 1231 : 1237);
 		result = prime * result + ((work == null) ? 0 : work.hashCode());
 		result = prime * result
 				+ ((workerId == null) ? 0 : workerId.hashCode());
@@ -48,6 +51,8 @@ public class Job implements Serializable {
 			return false;
 		Job other = (Job) obj;
 		if (done != other.done)
+			return false;
+		if (pretrain != other.pretrain)
 			return false;
 		if (work == null) {
 			if (other.work != null)
@@ -80,6 +85,14 @@ public class Job implements Serializable {
 	}
 	public void setWork(Serializable work) {
 		this.work = work;
+	}
+
+	public synchronized boolean isPretrain() {
+		return pretrain;
+	}
+
+	public synchronized void setPretrain(boolean pretrain) {
+		this.pretrain = pretrain;
 	}
 	
 	
