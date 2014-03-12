@@ -19,7 +19,7 @@ public class RBMMnistExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).build();
+		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).renderWeights(100).build();
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,1000);
 
@@ -29,10 +29,7 @@ public class RBMMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), new Object[]{1,10000});
-		
-			FilterRenderer render = new FilterRenderer();
-			render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+			r.trainTillConvergence(next.getFirst(), new Object[]{1,100});
 		}
 
 		iter.reset();
