@@ -2,6 +2,8 @@ pom.xml.releaseBackup
 target/
 application.home_IS_UNDEFINEiD
 README.md~
+*.jpg
+*.png
 *.bin
 *.releaseBackup
 *model*
