@@ -1,11 +1,14 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
@@ -13,18 +16,24 @@ import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
+import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
+import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
+
+import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
@@ -41,8 +50,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	protected BaseMultiLayerNetwork network;
 	protected Map<String,Job> currentJobs = new HashMap<String,Job>();
-
-
+	protected Cancellable ensureNoLeftOvers;
+	protected AtomicLong lastUpdated = new AtomicLong(System.currentTimeMillis());
 	/**
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
@@ -115,7 +124,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	
+
 		//Wait for backend to be up
 
 		try {
@@ -136,18 +145,61 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					network.setColumnMeans(conf.getColumnMeans());
 				if(conf.getColumnStds() != null)
 					network.setColumnStds(conf.getColumnStds());
-				
+
 				masterResults = new UpdateableImpl(network);
 
 				//after worker is instantiated broadcast the master network to the worker
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());	
+				//every minute check the batch and if after one minute there are no more updates
+				//clear them out and recirculate
+				ensureNoLeftOvers = context().system().scheduler()
+						.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
 
+							@Override
+							public void run() {
+
+								if(!updates.isEmpty() && currentJobs.isEmpty()) {
+									log.info("Forcing next iteration");
+									nextIteration();
+								}
+
+
+							}
+
+						}, context().dispatcher());
 
 
 	}
 
+	
+	
 
+	@Override
+	public void postStop() throws Exception {
+		super.postStop();
+		ensureNoLeftOvers.cancel();
+	}
+
+
+	protected void nextIteration() {
+		masterResults = this.compute(updates, updates);
+		for(String key : workers.keySet()) {
+			workers.get(key).setAvailable(true);
+			log.info("Freeing " + key + " for work post batch completion");
+		}
+
+		epochsComplete++;
+		//tell the batch actor to send out another dataset
+		if(!isDone())
+			batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+		updates.clear();
+		log.info("Broadcasting weights");
+		//replicate the network
+		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+				masterResults), getSelf());
+	}
+	
 	@SuppressWarnings({ "unchecked" })
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -156,8 +208,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			//reply
 			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
 					message), getSelf());	
-			
-			
+
+
 			log.info("Subscribed " + ack.toString());
 		}
 
@@ -169,8 +221,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				getSender().tell(Ack.getInstance(),getSelf());
 
 			}
-			
-			
+
+
+		}
+
+		else if(message instanceof GiveMeMyJob) {
+			GiveMeMyJob j = (GiveMeMyJob) message;
+			Job j2 = this.currentJobs.get(j.getId());
+			j.setJob(j2);
+			log.info("Returning current job for worker " + j.getId());
+			mediator.tell(new DistributedPubSubMediator.Publish(j.getId(),
+					j), getSelf());	
+
+
 		}
 
 		else if(message instanceof NeedsModelMessage) {
@@ -184,7 +247,28 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			epochsComplete++;
 			updates.clear();
-			batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+
+
+			if(pretrain) {
+				batchActor.tell(ResetMessage.getInstance(), getSelf());
+				log.info("Switching to finetune mode");
+				pretrain = false;
+				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
+				
+				for(String key : workers.keySet()) {
+					workers.get(key).setAvailable(true);
+					log.info("Freeing " + key + " for work post batch completion");
+				}
+
+				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+
+
+			}
+
+			else {
+				isDone = true;
+				log.info("Done training!");
+			}
 
 
 		}
@@ -218,23 +302,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
-			if(updates.size() >= partition) {
-				masterResults = this.compute(updates, updates);
-				for(String key : workers.keySet()) {
-					workers.get(key).setAvailable(true);
-					log.info("Freeing " + key + " for work post batch completion");
-				}
+			if(updates.size() >= partition) 
+				nextIteration();
 
-				epochsComplete++;
-				//tell the batch actor to send out another dataset
-				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
-				updates.clear();
-				log.info("Broadcasting weights");
-				//replicate the network
-				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-						masterResults), getSelf());
-
-			}
+			
 
 
 
@@ -251,7 +322,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.info("Job " + j.getWorkerId() + " finished");
 				currentJobs.remove(j.getWorkerId());
 			}
-			
+
 		}
 
 
@@ -268,7 +339,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 
 			//ensure split then send to workers
-			else if(message instanceof Pair) {
+			else if(message instanceof DataSet) {
 				DataSet pair = (DataSet) message;
 
 				//split pair up in to rows to ensure parallelism

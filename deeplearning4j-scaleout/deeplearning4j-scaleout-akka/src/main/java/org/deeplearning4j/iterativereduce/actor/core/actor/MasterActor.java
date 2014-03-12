@@ -53,6 +53,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected List<E> updates = new ArrayList<E>();
 	protected ActorRef batchActor;
 	protected int epochsComplete;
+	protected boolean pretrain = true;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	public static String BROADCAST = "broadcast";
 	public static String MASTER = "result";
@@ -61,7 +62,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	Cluster cluster = Cluster.get(getContext().system());
 	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-
+	
 
 
 	//number of batches over time
@@ -199,7 +200,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					WorkerState state = nextAvailableWorker();
 					List<DataSet> work = new ArrayList<>(splitList.get(j));
 					//wrap in a job for additional metadata
-					Job j2 = new Job(state.getWorkerId(),(Serializable) work);
+					Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
 					//replicate the network
 					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
 							j2), getSelf());

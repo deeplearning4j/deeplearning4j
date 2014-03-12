@@ -828,6 +828,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param network the network to get parameters from
 	 */
 	protected void update(BaseMultiLayerNetwork network) {
+		
+		
+		
 		if(network.layers != null && network.layers.length > 0) {
 			this.layers = new NeuralNetwork[network.layers.length];
 			for(int i = 0; i < layers.length; i++) 

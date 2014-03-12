@@ -155,6 +155,24 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	}
 
 
+	public DataSet filterBy(int[] labels) {
+		List<DataSet> list = asList();
+		List<DataSet> newList = new ArrayList<DataSet>();
+		List<Integer> labelList = new ArrayList<Integer>();
+		for(int i : labels)
+			labelList.add(i);
+		for(DataSet d : list) {
+			if(labelList.contains(d.getLabel(d))) {
+				newList.add(d);
+			}
+		}
+
+		return DataSet.merge(newList);
+	}
+
+
+
+
 	/**
 	 * Partitions the data set by the specified number.
 	 * @param num the number to split by
