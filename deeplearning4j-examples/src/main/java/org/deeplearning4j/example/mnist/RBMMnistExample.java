@@ -17,7 +17,7 @@ public class RBMMnistExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder()
-		.numberOfVisible(784)
+		.numberOfVisible(784).useAdaGrad(false)
 		.numHidden(500)
 		.build();
 		//batches of 10, 60000 examples total

@@ -120,6 +120,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		else 
 			this.rng = rng;
 		this.W = W;
+		if(this.W != null)
+			this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+
 		this.vBias = vbias;
 		this.hBias = hbias;
 
@@ -174,8 +177,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
-		if(useAdaGrad)
-			this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+		this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
 
 		if(this.hBias == null) {
 			this.hBias = DoubleMatrix.zeros(nHidden);
