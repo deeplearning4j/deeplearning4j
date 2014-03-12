@@ -97,6 +97,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private DoubleMatrix columnStds;
 	private boolean initCalled = false;
 	/*
+	 * Use adagrad or not
+	 */
+	private boolean useAdaGrad = false;
+	
+	/*
 	 * Hinton's Practical guide to RBMS:
 	 * 
 	 * Learning rate updates over time.
@@ -317,7 +322,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		// layer for output using LogisticRegression
-		this.logLayer = new LogisticRegression.Builder()
+		this.logLayer = new LogisticRegression.Builder().useAdaGrad(useAdaGrad)
 		.useRegularization(useRegularization).numberOfInputs(this.hiddenLayerSizes[this.nLayers-1])
 		.numberOfOutputs(nOuts).withL2(l2).build();
 		dimensionCheck();
@@ -327,75 +332,75 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
-	public synchronized Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
+	public  Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
 		return hiddenBiasTransforms;
 	}
 
-	public synchronized Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
+	public  Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
 		return visibleBiasTransforms;
 	}
 
-	public synchronized int getnIns() {
+	public  int getnIns() {
 		return nIns;
 	}
 
-	public synchronized void setnIns(int nIns) {
+	public  void setnIns(int nIns) {
 		this.nIns = nIns;
 	}
 
-	public synchronized int getnOuts() {
+	public  int getnOuts() {
 		return nOuts;
 	}
 
-	public synchronized void setnOuts(int nOuts) {
+	public  void setnOuts(int nOuts) {
 		this.nOuts = nOuts;
 	}
 
-	public synchronized int getnLayers() {
+	public  int getnLayers() {
 		return nLayers;
 	}
 
-	public synchronized void setnLayers(int nLayers) {
+	public  void setnLayers(int nLayers) {
 		this.nLayers = nLayers;
 	}
 
-	public synchronized double getMomentum() {
+	public  double getMomentum() {
 		return momentum;
 	}
 
-	public synchronized void setMomentum(double momentum) {
+	public  void setMomentum(double momentum) {
 		this.momentum = momentum;
 	}
 
-	public synchronized double getL2() {
+	public  double getL2() {
 		return l2;
 	}
 
-	public synchronized void setL2(double l2) {
+	public  void setL2(double l2) {
 		this.l2 = l2;
 	}
 
-	public synchronized boolean isUseRegularization() {
+	public  boolean isUseRegularization() {
 		return useRegularization;
 	}
 
-	public synchronized void setUseRegularization(boolean useRegularization) {
+	public  void setUseRegularization(boolean useRegularization) {
 		this.useRegularization = useRegularization;
 	}
 
-	public synchronized void setSigmoidLayers(HiddenLayer[] sigmoidLayers) {
+	public  void setSigmoidLayers(HiddenLayer[] sigmoidLayers) {
 		this.sigmoidLayers = sigmoidLayers;
 	}
 
-	public synchronized void setLogLayer(LogisticRegression logLayer) {
+	public  void setLogLayer(LogisticRegression logLayer) {
 		this.logLayer = logLayer;
 	}
 
-	public synchronized void setShouldBackProp(boolean shouldBackProp) {
+	public  void setShouldBackProp(boolean shouldBackProp) {
 		this.shouldBackProp = shouldBackProp;
 	}
 
-	public synchronized void setLayers(NeuralNetwork[] layers) {
+	public  void setLayers(NeuralNetwork[] layers) {
 		this.layers = layers;
 	}
 
@@ -429,11 +434,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-	public synchronized DoubleMatrix getLabels() {
+	public  DoubleMatrix getLabels() {
 		return labels;
 	}
 
-	public synchronized LogisticRegression getLogLayer() {
+	public  LogisticRegression getLogLayer() {
 		return logLayer;
 	}
 
@@ -443,21 +448,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * of initializing the neural network
 	 * @param input
 	 */
-	public synchronized void setInput(DoubleMatrix input) {
+	public  void setInput(DoubleMatrix input) {
 		this.input = input;
 		if(input != null && this.layers == null)
 			this.initializeLayers(input);
 	}
 
-	public synchronized DoubleMatrix getInput() {
+	public  DoubleMatrix getInput() {
 		return input;
 	}
 
-	public synchronized HiddenLayer[] getSigmoidLayers() {
+	public  HiddenLayer[] getSigmoidLayers() {
 		return sigmoidLayers;
 	}
 
-	public synchronized NeuralNetwork[] getLayers() {
+	public  NeuralNetwork[] getLayers() {
 		return layers;
 	}
 
@@ -465,7 +470,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Compute activations from input to output of the output layer
 	 * @return the list of activations for each layer
 	 */
-	public synchronized List<DoubleMatrix> feedForward(DoubleMatrix input) {
+	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
 		if(this.input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
 		DoubleMatrix currInput = input;
@@ -483,7 +488,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return activations;
 	}
 
-	private synchronized void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
+	private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
 		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
 		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
 		ActivationFunction derivative = sigmoidLayers[0].getActivationFunction();
@@ -838,7 +843,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		}
 
-
+		this.useAdaGrad = network.useAdaGrad;
 		this.hiddenLayerSizes = network.hiddenLayerSizes;
 		if(network.logLayer != null)
 			this.logLayer = network.logLayer.clone();
@@ -882,7 +887,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Negative log likelihood of the model
 	 * @return the negative log likelihood of the model
 	 */
-	public synchronized double negativeLogLikelihood() {
+	public  double negativeLogLikelihood() {
 		double ret  = 0.0;
 		for(int i = 0; i < nLayers; i++) {
 			double sum = (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0);
@@ -1037,117 +1042,117 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.columnSums = columnSums;
 	}
 
-	public synchronized int[] getHiddenLayerSizes() {
+	public  int[] getHiddenLayerSizes() {
 		return hiddenLayerSizes;
 	}
 
-	public synchronized void setHiddenLayerSizes(int[] hiddenLayerSizes) {
+	public  void setHiddenLayerSizes(int[] hiddenLayerSizes) {
 		this.hiddenLayerSizes = hiddenLayerSizes;
 	}
 
-	public synchronized RandomGenerator getRng() {
+	public  RandomGenerator getRng() {
 		return rng;
 	}
 
-	public synchronized void setRng(RandomGenerator rng) {
+	public  void setRng(RandomGenerator rng) {
 		this.rng = rng;
 	}
 
-	public synchronized RealDistribution getDist() {
+	public  RealDistribution getDist() {
 		return dist;
 	}
 
-	public synchronized void setDist(RealDistribution dist) {
+	public  void setDist(RealDistribution dist) {
 		this.dist = dist;
 	}
 
-	public synchronized MultiLayerNetworkOptimizer getOptimizer() {
+	public  MultiLayerNetworkOptimizer getOptimizer() {
 		return optimizer;
 	}
 
-	public synchronized void setOptimizer(MultiLayerNetworkOptimizer optimizer) {
+	public  void setOptimizer(MultiLayerNetworkOptimizer optimizer) {
 		this.optimizer = optimizer;
 	}
 
-	public synchronized ActivationFunction getActivation() {
+	public  ActivationFunction getActivation() {
 		return activation;
 	}
 
-	public synchronized void setActivation(ActivationFunction activation) {
+	public  void setActivation(ActivationFunction activation) {
 		this.activation = activation;
 	}
 
-	public synchronized boolean isToDecode() {
+	public  boolean isToDecode() {
 		return toDecode;
 	}
 
-	public synchronized void setToDecode(boolean toDecode) {
+	public  void setToDecode(boolean toDecode) {
 		this.toDecode = toDecode;
 	}
 
-	public synchronized boolean isShouldInit() {
+	public  boolean isShouldInit() {
 		return shouldInit;
 	}
 
-	public synchronized void setShouldInit(boolean shouldInit) {
+	public  void setShouldInit(boolean shouldInit) {
 		this.shouldInit = shouldInit;
 	}
 
-	public synchronized double getFanIn() {
+	public  double getFanIn() {
 		return fanIn;
 	}
 
-	public synchronized void setFanIn(double fanIn) {
+	public  void setFanIn(double fanIn) {
 		this.fanIn = fanIn;
 	}
 
-	public synchronized int getRenderWeightsEveryNEpochs() {
+	public  int getRenderWeightsEveryNEpochs() {
 		return renderWeightsEveryNEpochs;
 	}
 
-	public synchronized void setRenderWeightsEveryNEpochs(
+	public  void setRenderWeightsEveryNEpochs(
 			int renderWeightsEveryNEpochs) {
 		this.renderWeightsEveryNEpochs = renderWeightsEveryNEpochs;
 	}
 
-	public synchronized Map<Integer, MatrixTransform> getWeightTransforms() {
+	public  Map<Integer, MatrixTransform> getWeightTransforms() {
 		return weightTransforms;
 	}
 
-	public synchronized void setWeightTransforms(
+	public  void setWeightTransforms(
 			Map<Integer, MatrixTransform> weightTransforms) {
 		this.weightTransforms = weightTransforms;
 	}
 
-	public synchronized double getSparsity() {
+	public  double getSparsity() {
 		return sparsity;
 	}
 
-	public synchronized void setSparsity(double sparsity) {
+	public  void setSparsity(double sparsity) {
 		this.sparsity = sparsity;
 	}
 
-	public synchronized double getLearningRateUpdate() {
+	public  double getLearningRateUpdate() {
 		return learningRateUpdate;
 	}
 
-	public synchronized void setLearningRateUpdate(double learningRateUpdate) {
+	public  void setLearningRateUpdate(double learningRateUpdate) {
 		this.learningRateUpdate = learningRateUpdate;
 	}
 
-	public synchronized double getErrorTolerance() {
+	public  double getErrorTolerance() {
 		return errorTolerance;
 	}
 
-	public synchronized void setErrorTolerance(double errorTolerance) {
+	public  void setErrorTolerance(double errorTolerance) {
 		this.errorTolerance = errorTolerance;
 	}
 
-	public synchronized void setLabels(DoubleMatrix labels) {
+	public  void setLabels(DoubleMatrix labels) {
 		this.labels = labels;
 	}
 
-	public synchronized void setForceNumEpochs(boolean forceNumEpochs) {
+	public  void setForceNumEpochs(boolean forceNumEpochs) {
 		this.forceNumEpochs = forceNumEpochs;
 	}
 
@@ -1167,6 +1172,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	public void setColumnStds(DoubleMatrix columnStds) {
 		this.columnStds = columnStds;
+	}
+
+
+
+	public  boolean isUseAdaGrad() {
+		return useAdaGrad;
+	}
+
+	public  void setUseAdaGrad(boolean useAdaGrad) {
+		this.useAdaGrad = useAdaGrad;
 	}
 
 
@@ -1194,7 +1209,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private double sparsity = 0;
 		private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
 		private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
-
+		private boolean useAdaGrad = false;
+		
+		public Builder<E> useAdGrad(boolean useAdaGrad) {
+			this.useAdaGrad = useAdaGrad;
+			return this;
+		}
 
 		public Builder<E> withSparsity(double sparsity) {
 			this.sparsity = sparsity;
@@ -1398,6 +1418,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setL2(l2);
 				ret.setForceNumEpochs(shouldForceEpochs);
 				ret.setUseRegularization(useRegularization);
+				ret.setUseAdaGrad(useAdaGrad);
+				
 				if(activation != null)
 					ret.setActivation(activation);
 				if(dist != null)

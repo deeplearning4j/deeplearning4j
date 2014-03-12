@@ -8,6 +8,7 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
@@ -35,7 +36,9 @@ public class LogisticRegression implements Serializable {
 	//weight decay; l2 regularization
 	private double l2 = 0.01;
 	private boolean useRegularization = true;
-
+	private boolean useAdaGrad = false;
+	private AdaGrad adaGrad;
+	
 	private LogisticRegression() {}
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
@@ -44,6 +47,7 @@ public class LogisticRegression implements Serializable {
 		this.nIn = nIn;
 		this.nOut = nOut;
 		W = DoubleMatrix.zeros(nIn,nOut);
+		adaGrad = new AdaGrad(nIn,nOut);
 		b = DoubleMatrix.zeros(nOut);
 	}
 
@@ -113,7 +117,7 @@ public class LogisticRegression implements Serializable {
 	 * @param l the logistic regression to average in to this one
 	 * @param batchSize  the batch size
 	 */
-	public synchronized void merge(LogisticRegression l,int batchSize) {
+	public void merge(LogisticRegression l,int batchSize) {
 		if(this.useRegularization) {
 
 			W.addi(l.W.subi(W).div(batchSize));
@@ -174,6 +178,8 @@ public class LogisticRegression implements Serializable {
 		//DoubleMatrix regularized = W.transpose().mul(l2);
 		LogisticRegressionGradient gradient = getGradient(lr);
 
+		
+		
 		W.addi(gradient.getwGradient());
 		b.addi(gradient.getbGradient());
 
@@ -214,7 +220,12 @@ public class LogisticRegression implements Serializable {
 		//weight decay
 		if(useRegularization)
 			dy.divi(input.rows);
-		DoubleMatrix wGradient = input.transpose().mmul(dy).mul(lr);
+		DoubleMatrix wGradient = input.transpose().mmul(dy);
+		if(useAdaGrad)
+			wGradient.muli(this.adaGrad.getLearningRates(wGradient));
+		else
+			wGradient.muli(lr);
+		
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);
 
@@ -312,7 +323,12 @@ public class LogisticRegression implements Serializable {
 		private int nOut;
 		private DoubleMatrix input;
 		private boolean useRegualarization;
-
+		private boolean useAdaGrad = false;
+		
+		public Builder useAdaGrad(boolean useAdaGrad) {
+			this.useAdaGrad = useAdaGrad; 
+			return this;
+		}
 
 
 		public Builder withL2(double l2) {
@@ -353,6 +369,8 @@ public class LogisticRegression implements Serializable {
 				ret.b = b;
 			ret.useRegularization = useRegualarization;
 			ret.l2 = l2;
+			ret.useAdaGrad = useAdaGrad;
+			
 			return ret;
 		}
 

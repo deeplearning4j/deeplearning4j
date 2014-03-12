@@ -16,22 +16,22 @@ public class RBMMnistExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).build();
-		r.getW().muli(1000);
+		RBM r = new RBM.Builder()
+		.numberOfVisible(784)
+		.numHidden(500)
+		.build();
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,1000);
+		DataSetIterator iter = new MnistDataSetIterator(100,10);
 
-		
-		
-		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.001,10000});
+				r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,1000});
+				FilterRenderer render = new FilterRenderer();
+				render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+			
+			}
 		
-			FilterRenderer render = new FilterRenderer();
-			render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
-		}
 
 		iter.reset();
 
@@ -48,7 +48,7 @@ public class RBMMnistExample {
 				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
 				d.title = "REAL";
 				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
+				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
 				d2.title = "TEST";
 				d2.draw();
 				Thread.sleep(10000);

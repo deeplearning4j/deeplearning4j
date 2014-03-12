@@ -38,12 +38,14 @@ public class CDBN extends DBN {
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		if(index == 0)
-			return new CRBM.Builder().useRegularization(isUseRegularization()).withDistribution(getDist())
+			return new CRBM.Builder().useRegularization(isUseRegularization())
+					.withDistribution(getDist()).useAdaGrad(isUseAdaGrad())
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 		else
-			return new RBM.Builder().useRegularization(isUseRegularization()).withDistribution(getDist())
+			return new RBM.Builder().useAdaGrad(isUseAdaGrad())
+		.useRegularization(isUseRegularization()).withDistribution(getDist())
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
