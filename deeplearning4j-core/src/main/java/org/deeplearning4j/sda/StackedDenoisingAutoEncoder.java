@@ -82,6 +82,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				for(int epoch = 0; epoch < epochs; epoch++) {
 					layers[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
 					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
+					getLayers()[i].epochDone(epoch);
+
 				}
 			}
 			else

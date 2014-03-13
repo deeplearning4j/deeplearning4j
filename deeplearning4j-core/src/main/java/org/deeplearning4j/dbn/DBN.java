@@ -116,7 +116,7 @@ public class DBN extends BaseMultiLayerNetwork {
 				for(int epoch = 0; epoch < epochs; epoch++) {
 					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
 					getLayers()[i].train(layerInput, learningRate,new Object[]{k,learningRate});
-
+					getLayers()[i].epochDone(epoch);
 				}
 			}
 			else

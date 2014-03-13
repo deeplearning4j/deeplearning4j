@@ -4,6 +4,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -21,7 +22,7 @@ public class MnistExampleMultiThreaded {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(80,60000);
+		DataSetIterator iter = new RawMnistDataSetIterator(80,60000);
 		
 		
 		Conf c = new Conf();
@@ -34,7 +35,7 @@ public class MnistExampleMultiThreaded {
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.01,1000});
+		c.setDeepLearningParams(new Object[]{1,0.001,1000});
 	
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
 		runner.setup(c);

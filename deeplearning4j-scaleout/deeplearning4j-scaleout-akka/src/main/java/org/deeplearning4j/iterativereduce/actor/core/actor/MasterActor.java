@@ -61,6 +61,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
 	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
+	protected Map<String,Job> currentJobs = new HashMap<String,Job>();
+
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 	
 
@@ -201,6 +203,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					List<DataSet> work = new ArrayList<>(splitList.get(j));
 					//wrap in a job for additional metadata
 					Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
+					currentJobs.put(state.getWorkerId(),j2);
+					
 					//replicate the network
 					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
 							j2), getSelf());

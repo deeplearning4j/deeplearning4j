@@ -6,12 +6,13 @@ import java.util.List;
 
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
+import org.deeplearning4j.util.DeepLearningGradientAscent;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cc.mallet.optimize.Optimizable;
+import cc.mallet.optimize.Optimizer;
 
 /**
  * Performs basic beam search based on the network's loss function
@@ -38,12 +39,12 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient NonZeroStoppingConjugateGradient opt;
+	protected transient Optimizer opt;
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new NonZeroStoppingConjugateGradient(this,this);
-		opt.setTolerance(tolerance);
+			opt = new org.deeplearning4j.util.NonZeroStoppingConjugateGradient(this,this);
+		//opt.setTolerance(tolerance);
 		int epochs = (int) extraParams[2];
 		opt.optimize(epochs);
 
@@ -161,7 +162,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return -network.getReConstructionCrossEntropy();
+		return network.getReConstructionCrossEntropy();
 	}
 
 

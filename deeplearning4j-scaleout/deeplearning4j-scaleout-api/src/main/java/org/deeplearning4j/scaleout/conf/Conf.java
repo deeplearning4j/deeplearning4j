@@ -43,11 +43,17 @@ public class Conf implements Serializable,Cloneable {
 	private String masterAbsPath;
 	private DoubleMatrix columnMeans;
 	private DoubleMatrix columnStds;
+	private boolean useAdaGrad = false;
 	
 	
 	
 	
-	
+	public synchronized boolean isUseAdaGrad() {
+		return useAdaGrad;
+	}
+	public synchronized void setUseAdaGrad(boolean useAdaGrad) {
+		this.useAdaGrad = useAdaGrad;
+	}
 	public synchronized String getMasterAbsPath() {
 		return masterAbsPath;
 	}

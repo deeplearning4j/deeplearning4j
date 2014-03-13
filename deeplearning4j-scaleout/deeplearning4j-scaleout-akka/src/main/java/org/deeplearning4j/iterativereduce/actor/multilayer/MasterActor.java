@@ -4,9 +4,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,7 +28,6 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 
 import scala.concurrent.duration.Duration;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
@@ -49,7 +46,6 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
 	protected BaseMultiLayerNetwork network;
-	protected Map<String,Job> currentJobs = new HashMap<String,Job>();
 	protected Cancellable ensureNoLeftOvers;
 	protected AtomicLong lastUpdated = new AtomicLong(System.currentTimeMillis());
 	/**
@@ -139,7 +135,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs()).useRegularization(conf.isUseRegularization())
-				.withSparsity(conf.getSparsity())
+				.withSparsity(conf.getSparsity()).useAdGrad(conf.isUseAdaGrad())
 				.build() : this.network;
 				if(conf.getColumnMeans() != null)
 					network.setColumnMeans(conf.getColumnMeans());

@@ -21,7 +21,7 @@ public class AdaGrad implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -4754127927704099888L;
-	private double masterStepSize = 10; // default for masterStepSize (this is the numerator)
+	private double masterStepSize = 0.01; // default for masterStepSize (this is the numerator)
 	//private double squaredGradientSum = 0;
 	public DoubleMatrix historicalGradient;
 	public DoubleMatrix adjustedGradient;
