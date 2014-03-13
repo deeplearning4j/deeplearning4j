@@ -5,6 +5,8 @@ README.md~
 *.bin
 *.releaseBackup
 *model*
+*.jpg
+*.png
 *.bin
 *.out
 *~
