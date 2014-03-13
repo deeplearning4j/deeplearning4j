@@ -27,16 +27,17 @@ public class MnistExampleMultiThreaded {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(0.001);
+		c.setFinetuneLearningRate(0.01);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
+		c.setUseAdaGrad(false);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);
-		c.setUseRegularization(true);
-		c.setDeepLearningParams(new Object[]{1,0.001,1000});
-	
+		c.setUseRegularization(false);
+		c.setDeepLearningParams(new Object[]{1,0.01,1000});
+		c.setRenderWeightEpochs(1000);
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
 		runner.setup(c);
 		runner.train();

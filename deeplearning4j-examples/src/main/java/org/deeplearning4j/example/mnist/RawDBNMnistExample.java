@@ -44,9 +44,9 @@ public class RawDBNMnistExample {
 		
 		if(args.length < 2) {
 			dbn = new DBN.Builder()
-			.hiddenLayerSizes(new int[]{500,400,250})
+			.hiddenLayerSizes(new int[]{500,400,250}).renderWeights(10)
 			.numberOfInputs(784).numberOfOutPuts(10)
-			.useRegularization(false)
+			.useRegularization(false).useAdGrad(true)
 			.build();
 			
 		}
@@ -64,11 +64,11 @@ public class RawDBNMnistExample {
 			long after = System.currentTimeMillis();
 			log.info("Pretrain took " + TimeUnit.MILLISECONDS.toSeconds((after - now)) + " seconds");
 			
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-pretrain-dbn.bin-" + numIters));
+			/*BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-pretrain-dbn.bin-" + numIters));
 			dbn.write(bos);
 			bos.flush();
 			bos.close();
-			log.info("Saved dbn");
+			log.info("Saved dbn");*/
 			numIters++;
 			
 			
@@ -102,7 +102,7 @@ public class RawDBNMnistExample {
 			eval.eval(labels, predict);
 		}
 		
-		log.info("Prediciton f scores and accuracy");
+		log.info("Prediction f scores and accuracy");
 		log.info(eval.stats());
 		
 	}

@@ -43,7 +43,7 @@ public class RawMnistGradientDescent {
 		DBN dbn = null;
 
 		if(args.length < 2) {
-			dbn = new DBN.Builder().useAdGrad(false)
+			dbn = new DBN.Builder().useAdGrad(true)
 			.hiddenLayerSizes(new int[]{500,400,250})
 			.renderWeights(100)
 			.numberOfInputs(784).numberOfOutPuts(10)

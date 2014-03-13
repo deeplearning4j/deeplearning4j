@@ -148,14 +148,15 @@ public class RBM extends BaseNeuralNetwork {
 			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
 		else 
 			wGradient.muli(learningRate);
-		
+
 		//weight decay via l2 regularization
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
 		if(momentum != 0)
 			wGradient.muli( 1 - momentum);
 
-		wGradient.divi(input.rows);
+		if(useRegularization)
+			wGradient.divi(input.rows);
 
 		DoubleMatrix hBiasGradient = null;
 

@@ -21,7 +21,7 @@ public class AdaGrad implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -4754127927704099888L;
-	private double masterStepSize = 0.01; // default for masterStepSize (this is the numerator)
+	private double masterStepSize = 1; // default for masterStepSize (this is the numerator)
 	//private double squaredGradientSum = 0;
 	public DoubleMatrix historicalGradient;
 	public DoubleMatrix adjustedGradient;
@@ -69,8 +69,8 @@ public class AdaGrad implements Serializable {
 			this.historicalGradient = this.historicalGradient.mul(this.autoCorrect).add(MatrixUtil.oneMinus(historicalGradient)).mul(gradientsSquared);
 
 		DoubleMatrix gAdd = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
-		this.adjustedGradient = gradient.div(gAdd);
-		this.adjustedGradient.mul(masterStepSize).neg();
+		this.adjustedGradient = MatrixFunctions.abs(gradient.div(gAdd));
+		this.adjustedGradient.mul(masterStepSize);
 		
 		return adjustedGradient;
 	}
