@@ -1,7 +1,6 @@
 package org.deeplearning4j.da;
 
 import static org.deeplearning4j.util.MathUtils.binomial;
-import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 
@@ -13,7 +12,6 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
 
 /**
@@ -58,30 +56,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-	/**
-	 * Negative log likelihood of the current input given
-	 * the corruption level
-	 * @param corruptionLevel the corruption level to use
-	 * @return the negative log likelihood of the auto encoder
-	 * given the corruption level
-	 */
-	public double negativeLoglikelihood(double corruptionLevel) {
-		DoubleMatrix corrupted = getCorruptedInput(input, corruptionLevel);
-		DoubleMatrix y = getHiddenValues(corrupted);
-		DoubleMatrix z = getReconstructedInput(y);
-		if(this.useRegularization) {
-			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
-
-			return - input.mul(log(z)).add(
-					oneMinus(input).mul(log(oneMinus(z)))).
-					columnSums().mean() + reg;
-		}
-
-		return - input.mul(log(z)).add(
-				oneMinus(input).mul(log(oneMinus(z)))).
-				columnSums().mean();
-	}
-
+	
 
 
 	// Encode
@@ -154,8 +129,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 	@Override
 	public double lossFunction(Object[] params) {
-		double corruptionLevel = (double) params[0];
-		return negativeLoglikelihood(corruptionLevel);
+		return negativeLoglikelihood();
 	}
 
 
