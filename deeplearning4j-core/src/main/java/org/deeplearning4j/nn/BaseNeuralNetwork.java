@@ -18,6 +18,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -635,6 +636,18 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	@Override
+	public void epochDone(int epoch) {
+		int plotEpochs = getRenderEpochs();
+		if(plotEpochs <= 0)
+			return;
+		if(epoch % plotEpochs == 0 || epoch == 0) {
+			NeuralNetPlotter plotter = new NeuralNetPlotter();
+			plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}));
+		}
+	}
+	
+	
 
 	public static class Builder<E extends BaseNeuralNetwork> {
 		private E ret = null;

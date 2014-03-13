@@ -6,9 +6,10 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.optimize.NeuralNetEpochListener;
 import org.jblas.DoubleMatrix;
 
-public interface NeuralNetwork extends Serializable,Cloneable {
+public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener {
 
 	public abstract int getnVisible();
 
@@ -71,6 +72,9 @@ public interface NeuralNetwork extends Serializable,Cloneable {
 	public double fanIn();
 	public void setFanIn(double fanIn);
 	
+	
+	
+	void epochDone(int epoch);
 	
 	public double l2RegularizedCoefficient();
 	
