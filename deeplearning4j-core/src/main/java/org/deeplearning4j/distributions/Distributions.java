@@ -25,7 +25,21 @@ public class Distributions {
 	 * and a max of fanIn
 	 */
 	public static RealDistribution uniform(RandomGenerator rng,double fanIn) {
+		fanIn = Math.abs(fanIn);
 		return new UniformRealDistribution(rng,-fanIn,fanIn);
+	}
+	
+	/**
+	 * Returns a uniform distribution 
+	 * based on the number of ins and outs
+	 * @param rng the rng to use
+	 * @param nIn the number of inputs
+	 * @param nOut the number of outputs
+	 * @return
+	 */
+	public static RealDistribution uniform(RandomGenerator rng,int nIn,int nOut) {
+		double fanIn = -4 * Math.sqrt(6. / (nOut + nIn));
+		return uniform(rng,fanIn);
 	}
 	
 	/**

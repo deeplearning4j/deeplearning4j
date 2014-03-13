@@ -34,7 +34,7 @@ public class MnistExampleMultiThreaded {
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.001,1000});
+		c.setDeepLearningParams(new Object[]{1,0.01,1000});
 	
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
 		runner.setup(c);

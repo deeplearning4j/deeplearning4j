@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.util.MathUtils;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
@@ -107,6 +108,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		setSecond(ret.getSecond());
 	}
 
+	
+	public void normalize() {
+		MatrixUtil.normalizeMatrix(getFirst());
+	}
+	
 
 	private static int totalExamples(Collection<DataSet> coll) {
 		int count = 0;

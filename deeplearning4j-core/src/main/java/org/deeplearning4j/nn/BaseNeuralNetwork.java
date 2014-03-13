@@ -371,6 +371,51 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	/**
+	 * Negative log likelihood of the current input given
+	 * the corruption level
+	 * @param corruptionLevel the corruption level to use
+	 * @return the negative log likelihood of the auto encoder
+	 * given the corruption level
+	 */
+	public double negativeLoglikelihood() {
+		DoubleMatrix z = this.reconstruct(input);
+		if(this.useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
+			return - input.mul(log(z)).add(
+					oneMinus(input).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
+		}
+
+		return - input.mul(log(z)).add(
+				oneMinus(input).mul(log(oneMinus(z)))).
+				columnSums().mean();
+	}
+
+
+	/**
+	 * Negative log likelihood of the current input given
+	 * the corruption level
+	 * @return the negative log likelihood of the auto encoder
+	 * given the corruption level
+	 */
+	public double negativeLoglikelihood(DoubleMatrix input) {
+		DoubleMatrix z = this.reconstruct(input);
+		if(this.useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
+			return - input.mul(log(z)).add(
+					oneMinus(input).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
+		}
+
+		return - input.mul(log(z)).add(
+				oneMinus(input).mul(log(oneMinus(z)))).
+				columnSums().mean();
+	}
+
+	
+	/**
 	 * Reconstruction entropy.
 	 * This compares the similarity of two probability
 	 * distributions, in this case that would be the input
