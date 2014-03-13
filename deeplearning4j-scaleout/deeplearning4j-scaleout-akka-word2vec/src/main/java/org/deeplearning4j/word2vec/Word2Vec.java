@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.MapFactory;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.util.MatrixUtil;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import scala.concurrent.Future;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;

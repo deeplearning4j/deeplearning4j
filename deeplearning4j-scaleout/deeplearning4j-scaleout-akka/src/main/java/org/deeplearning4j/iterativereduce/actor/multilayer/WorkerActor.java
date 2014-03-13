@@ -228,6 +228,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				//update parameters in master param server
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						work), getSelf());	
+				
+				//update the worker by sending the job back acknowledging completion
+				getCurrent().setDone(true);
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						getCurrent()), getSelf());	
 				return work;
 			}
 
