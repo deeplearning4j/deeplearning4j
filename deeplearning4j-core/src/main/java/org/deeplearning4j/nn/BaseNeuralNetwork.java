@@ -344,17 +344,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	@Override
 	public void merge(NeuralNetwork network,int batchSize) {
-		if(this.useRegularization) {
-			W.addi(network.getW().mini(W).div(batchSize));
-			hBias.addi(network.gethBias().subi(hBias).divi(batchSize));
-			vBias.addi(network.getvBias().subi(vBias).divi(batchSize));
-		}
-
-		else {
-			W.addi(network.getW().mini(W));
-			hBias.addi(network.gethBias().subi(hBias));
-			vBias.addi(network.getvBias().subi(vBias));
-		}
+		W.addi(network.getW().sub(W).div(batchSize));
+		hBias.addi(network.gethBias().sub(hBias).divi(batchSize));
+		vBias.addi(network.getvBias().subi(vBias).divi(batchSize));
 
 	}
 
