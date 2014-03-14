@@ -3,6 +3,7 @@ package org.deeplearning4j.example.mnist;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +13,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -41,12 +43,15 @@ public class RawDBNMnistExample {
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
 		DBN dbn = null;
+		List<MultiLayerGradientListener> listeners = new ArrayList<>();
+		
+		
 		
 		if(args.length < 2) {
 			dbn = new DBN.Builder()
 			.hiddenLayerSizes(new int[]{500,400,250})
 			.numberOfInputs(784).numberOfOutPuts(10)
-			.useRegularization(false)
+			.useRegularization(false).withMultiLayerGradientListeners(listeners)
 			.build();
 			
 		}

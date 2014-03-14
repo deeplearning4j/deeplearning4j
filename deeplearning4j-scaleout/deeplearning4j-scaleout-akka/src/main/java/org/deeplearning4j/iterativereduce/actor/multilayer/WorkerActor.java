@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
+import org.deeplearning4j.iterativereduce.actor.core.AlreadyWorking;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
@@ -49,6 +50,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected Cancellable heartbeat;
 	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
 	public final static String SYSTEM_NAME = "Workers";
+	protected int numTimesReceivedNullJob = 0;
+
 
 	public WorkerActor(Conf conf) {
 		super(conf);
@@ -150,12 +153,24 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof Job) {
 			Job j = (Job) message;
-			log.info("Confirmation from " + j.getWorkerId() + " on work");
-			setCurrent(j);
-			List<DataSet> input = (List<DataSet>) j.getWork();
-			confirmWorking();
-			updateTraining(input);
+			
+			
+			if(getCurrent() != null) {
+				log.info("Job sent when already had job");
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						new AlreadyWorking(id)), getSelf());	
+			}
+			
+			else {
 
+				log.info("Confirmation from " + j.getWorkerId() + " on work");
+				setCurrent(j);
+				List<DataSet> input = (List<DataSet>) j.getWork();
+				confirmWorking();
+				updateTraining(input);
+
+			}
+			
 
 		}
 
@@ -170,10 +185,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob g = (GiveMeMyJob) message;
-			if(g.getJob() == null)
-				throw new IllegalArgumentException("Job for worker " + id + " given back was null");
 
-			current.set(g.getJob());
+			if(g.getJob() == null) {
+				this.blockTillJobAvailable();
+			}
+
+			else
+				current.set(g.getJob());
 			log.info("Got job again for id " + id);
 		}
 
@@ -195,7 +213,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 
 			else {
-				setWorkerUpdateable(m);
+				setWorkerUpdateable(m.clone());
 				log.info("Updated worker network");
 				if(m.get() == null) {
 					log.warn("Unable to initialize network; network was null");
@@ -260,8 +278,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 	}
-	
-	
+
+
 	protected void blockTillNetworkAvailable() {
 		while(getNetwork() == null) {
 			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
@@ -275,7 +293,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 	}
-	
+
 
 	@Override
 	public  UpdateableImpl compute(List<UpdateableImpl> records) {
@@ -283,7 +301,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public   UpdateableImpl compute() {
+	public  synchronized UpdateableImpl compute() {
 		log.info("Training network");
 		blockTillNetworkAvailable();
 		//ensure job exists

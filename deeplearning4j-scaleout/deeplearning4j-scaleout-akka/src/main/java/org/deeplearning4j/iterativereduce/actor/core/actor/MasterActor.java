@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
@@ -60,8 +61,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
-	protected Map<String, WorkerState> workers = new HashMap<String, WorkerState>();
-	protected Map<String,Job> currentJobs = new HashMap<String,Job>();
+	protected Map<String, WorkerState> workers = new ConcurrentHashMap<>();
+	protected Map<String,Job> currentJobs = new ConcurrentHashMap<>();
 
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 	
@@ -151,7 +152,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * Finds the next available worker based on current states
 	 * @return the next available worker, blocks till a worker is found
 	 */
-	protected  WorkerState nextAvailableWorker() {
+	protected  synchronized WorkerState nextAvailableWorker() {
 		boolean foundWork = false;
 		//loop till a worker is available; this throttles output
 		while(!foundWork) {
