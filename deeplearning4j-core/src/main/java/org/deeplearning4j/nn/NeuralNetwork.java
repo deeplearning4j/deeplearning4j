@@ -1,9 +1,11 @@
 package org.deeplearning4j.nn;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetEpochListener;
@@ -11,45 +13,47 @@ import org.jblas.DoubleMatrix;
 
 public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener {
 
-	public abstract int getnVisible();
+	public  int getnVisible();
 
-	public abstract void setnVisible(int nVisible);
+	public  void setnVisible(int nVisible);
 
-	public abstract int getnHidden();
+	public  int getnHidden();
 
-	public abstract void setnHidden(int nHidden);
+	public  void setnHidden(int nHidden);
 
-	public abstract DoubleMatrix getW();
+	public  DoubleMatrix getW();
 
-	public abstract void setW(DoubleMatrix w);
+	public  void setW(DoubleMatrix w);
 
-	public abstract DoubleMatrix gethBias();
+	public  DoubleMatrix gethBias();
 
-	public abstract void sethBias(DoubleMatrix hBias);
+	public  void sethBias(DoubleMatrix hBias);
 
-	public abstract DoubleMatrix getvBias();
+	public  DoubleMatrix getvBias();
 
-	public abstract void setvBias(DoubleMatrix vBias);
+	public  void setvBias(DoubleMatrix vBias);
 
-	public abstract RandomGenerator getRng();
+	public  RandomGenerator getRng();
 
-	public abstract void setRng(RandomGenerator rng);
+	public  void setRng(RandomGenerator rng);
 
-	public abstract DoubleMatrix getInput();
+	public  DoubleMatrix getInput();
 
-	public abstract void setInput(DoubleMatrix input);
+	public  void setInput(DoubleMatrix input);
 	
 	
 	public double squaredLoss();
 	
 	
 	public double getSparsity();
-	public abstract void setSparsity(double sparsity);
+	public  void setSparsity(double sparsity);
 	
 	public void setDist(RealDistribution dist);
 	public RealDistribution getDist();
 	
 	
+	List<NeuralNetworkGradientListener> getGradientListeners();
+	void setGradientListeners(List<NeuralNetworkGradientListener> gradientListeners);
 	
 	
 	public AdaGrad getAdaGrad();

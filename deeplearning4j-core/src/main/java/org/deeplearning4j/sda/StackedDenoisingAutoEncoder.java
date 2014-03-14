@@ -141,7 +141,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
 		.withSparsity(this.getSparsity()).renderWeights(getRenderWeightsEveryNEpochs()).fanIn(getFanIn())
 		.build();
-
+		
+		if(gradientListeners.get(index) != null)
+			ret.setGradientListeners(gradientListeners.get(index));
 		return ret;
 	}
 

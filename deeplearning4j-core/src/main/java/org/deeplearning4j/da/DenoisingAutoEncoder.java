@@ -182,7 +182,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
 		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
 
-		return new NeuralNetworkGradient(L_W,L_vbias_mean,L_hbias_mean);
+		NeuralNetworkGradient gradient = new NeuralNetworkGradient(L_W,L_vbias_mean,L_hbias_mean);
+		this.triggerGradientEvents(gradient);
+		
+		return gradient;
 	}
 
 

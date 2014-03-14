@@ -173,7 +173,9 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0).mul(learningRate);
 
 
-		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
+		NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
+		this.triggerGradientEvents(gradient);
+		return gradient;
 	}
 
 

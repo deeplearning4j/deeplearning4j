@@ -144,6 +144,8 @@ public class DBN extends BaseMultiLayerNetwork {
 		.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
 		.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
 		.fanIn(getFanIn()).build();
+		if(gradientListeners.get(index) != null)
+			ret.setGradientListeners(gradientListeners.get(index));
 		return ret;
 	}
 
