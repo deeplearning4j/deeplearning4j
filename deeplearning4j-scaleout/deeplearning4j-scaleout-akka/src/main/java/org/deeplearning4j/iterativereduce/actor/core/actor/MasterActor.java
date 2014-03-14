@@ -151,7 +151,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * Finds the next available worker based on current states
 	 * @return the next available worker, blocks till a worker is found
 	 */
-	protected  synchronized WorkerState nextAvailableWorker() {
+	protected   WorkerState nextAvailableWorker() {
 		boolean foundWork = false;
 		//loop till a worker is available; this throttles output
 		while(!foundWork) {
