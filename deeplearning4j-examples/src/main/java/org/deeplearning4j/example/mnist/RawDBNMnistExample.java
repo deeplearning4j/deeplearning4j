@@ -64,11 +64,11 @@ public class RawDBNMnistExample {
 			long after = System.currentTimeMillis();
 			log.info("Pretrain took " + TimeUnit.MILLISECONDS.toSeconds((after - now)) + " seconds");
 			
-			/*BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-pretrain-dbn.bin-" + numIters));
+			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-pretrain-dbn.bin-" + numIters));
 			dbn.write(bos);
 			bos.flush();
 			bos.close();
-			log.info("Saved dbn");*/
+			log.info("Saved dbn");
 			numIters++;
 			
 			
