@@ -10,12 +10,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -75,6 +78,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public boolean useRegularization = true;
 	public boolean useAdaGrad = false;
 
+	
+	public List<NeuralNetworkGradientListener> gradientListeners;
+	
 	public AdaGrad wAdaGrad;
 
 	public BaseNeuralNetwork() {}
@@ -205,6 +211,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	public  List<NeuralNetworkGradientListener> getGradientListeners() {
+		return gradientListeners;
+	}
+	public  void setGradientListeners(
+			List<NeuralNetworkGradientListener> gradientListeners) {
+		this.gradientListeners = gradientListeners;
+	}
 	@Override
 	public void setRenderEpochs(int renderEpochs) {
 		this.renderWeightsEveryNumEpochs = renderEpochs;
@@ -253,9 +266,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+	/**
+	 * Triggers network gradient listeners. This should be called in 
+	 * getGradient
+	 * @param gradient the gradient that triggered the event
+	 */
+	protected void triggerGradientEvents(NeuralNetworkGradient gradient) {
+		if(gradientListeners != null && !gradientListeners.isEmpty()) {
+			for(NeuralNetworkGradientListener listener : gradientListeners) {
+				listener.onGradient(gradient);
+			}
+		}
+	}
 
 
-
+	
 
 	@Override
 	public AdaGrad getAdaGrad() {
@@ -635,6 +660,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return -loss;
 	}
 
+	
+	
+	
 
 	@Override
 	public void epochDone(int epoch) {

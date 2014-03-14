@@ -1,10 +1,7 @@
 package org.deeplearning4j.instrumentation.gradient;
 
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

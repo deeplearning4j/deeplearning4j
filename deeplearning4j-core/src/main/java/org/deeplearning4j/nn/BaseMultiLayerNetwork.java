@@ -17,6 +17,8 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.dbn.CDBN;
+import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
+import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
@@ -78,11 +80,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private boolean useRegularization = true;
 	//sometimes we may need to transform weights; this allows a 
 	//weight transform upon layer setup
-	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
 	//hidden bias transforms; for initialization
-	private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
+	private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
 	//visible bias transforms for initialization
-	private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
+	private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
 	private boolean shouldBackProp = true;
 	//whether to only train a certain number of epochs
@@ -127,6 +129,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public double errorTolerance = 0.0001;
 
+	/* Gradient listeners for each neural network */
+	protected Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
+
+	protected List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+	
+	
 	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
 
@@ -151,6 +159,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.sigmoidLayers = new HiddenLayer[nLayers];
 		this.layers = createNetworkLayers(nLayers);
 
+		
+		
 		if(rng == null)   
 			this.rng = new MersenneTwister(123);
 
@@ -429,7 +439,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
-		return new MultiLayerGradient(gradient,g2);
+		
+
+		MultiLayerGradient ret =  new MultiLayerGradient(gradient,g2);
+		
+		if(multiLayerGradientListeners != null && !multiLayerGradientListeners.isEmpty()) {
+			for(MultiLayerGradientListener listener : multiLayerGradientListeners) {
+				listener.onMultiLayerGradient(ret);
+			}
+		}
+	
+		return ret;
 	}
 
 
@@ -1203,13 +1223,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private boolean useRegularization = true;
 		private double momentum;
 		private RealDistribution dist;
-		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
 		protected boolean backProp = true;
 		protected boolean shouldForceEpochs = false;
 		private double sparsity = 0;
-		private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<Integer,MatrixTransform>();
-		private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<Integer,MatrixTransform>();
+		private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
+		private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
 		private boolean useAdaGrad = false;
+		private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
+		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+		
+		
+		
+		public Builder<E> withMultiLayerGradientListeners(List<MultiLayerGradientListener> multiLayerGradientListeners) {
+			this.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
+			return this;
+		}
+		
+		public Builder<E> withGradientListeners(Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners) {
+			this.gradientListeners.putAll(gradientListeners);
+			return this;
+		}
 		
 		public Builder<E> useAdGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad;
@@ -1419,7 +1453,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setForceNumEpochs(shouldForceEpochs);
 				ret.setUseRegularization(useRegularization);
 				ret.setUseAdaGrad(useAdaGrad);
-				
 				if(activation != null)
 					ret.setActivation(activation);
 				if(dist != null)
@@ -1427,6 +1460,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.getWeightTransforms().putAll(weightTransforms);
 				ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
 				ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
+				ret.gradientListeners.putAll(gradientListeners);
+				ret.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
+				
 				if(hiddenLayerSizes == null)
 					throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
 
