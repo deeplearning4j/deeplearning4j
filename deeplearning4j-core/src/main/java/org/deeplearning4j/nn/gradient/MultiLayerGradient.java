@@ -12,7 +12,7 @@ import org.deeplearning4j.util.SerializationUtils;
  * @author Adam Gibson
  *
  */
-public class MultiLayerGradient implements Persistable {
+public class MultiLayerGradient implements Persistable,Cloneable {
 
 	/**
 	 * 
@@ -51,19 +51,32 @@ public class MultiLayerGradient implements Persistable {
 	}
 	
 	
-	public synchronized List<NeuralNetworkGradient> getGradients() {
+	@Override
+	public MultiLayerGradient clone() {
+		return org.apache.commons.lang3.SerializationUtils.clone(this);
+	}
+
+	public void addGradient(MultiLayerGradient other) {
+		for(int i = 0;i < gradients.size(); i++) {
+			gradients.get(i).add(other.getGradients().get(i));
+		}
+		
+		logRegGradient.add(other.getLogRegGradient());
+	}
+	
+	public  List<NeuralNetworkGradient> getGradients() {
 		return gradients;
 	}
 
-	public synchronized void setGradients(List<NeuralNetworkGradient> gradients) {
+	public  void setGradients(List<NeuralNetworkGradient> gradients) {
 		this.gradients = gradients;
 	}
 
-	public synchronized LogisticRegressionGradient getLogRegGradient() {
+	public  LogisticRegressionGradient getLogRegGradient() {
 		return logRegGradient;
 	}
 
-	public synchronized void setLogRegGradient(
+	public  void setLogRegGradient(
 			LogisticRegressionGradient logRegGradient) {
 		this.logRegGradient = logRegGradient;
 	}

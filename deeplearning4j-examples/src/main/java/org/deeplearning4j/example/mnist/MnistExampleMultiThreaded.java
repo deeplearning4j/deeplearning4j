@@ -32,6 +32,7 @@ public class MnistExampleMultiThreaded {
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
+		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
 		c.setDeepLearningParams(new Object[]{1,0.01,1000});

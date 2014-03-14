@@ -162,7 +162,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return network.getReConstructionCrossEntropy();
+		return -network.getReConstructionCrossEntropy();
 	}
 
 

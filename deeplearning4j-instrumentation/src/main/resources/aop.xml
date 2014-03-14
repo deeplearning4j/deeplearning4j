@@ -1,0 +1,7 @@
+<aspectj>
+  <aspects>
+    <aspect name="GradientStatisticsAspect"/>
+  </aspects>
+  <weaver options="-verbose -Xset:weaveJavaxPackages=true -Xset:weaveJavaPackages=true">
+  </weaver>
+</aspectj>
