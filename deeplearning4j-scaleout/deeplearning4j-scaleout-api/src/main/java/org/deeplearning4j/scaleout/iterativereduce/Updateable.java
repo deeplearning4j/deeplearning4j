@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  *
  * @param <RECORD_TYPE>
  */
-public interface Updateable<RECORD_TYPE> extends Serializable {
+public interface Updateable<RECORD_TYPE> extends Serializable,Cloneable {
 
 	ByteBuffer toBytes();
 	

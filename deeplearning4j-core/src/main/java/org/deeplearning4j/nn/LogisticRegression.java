@@ -64,7 +64,7 @@ public class LogisticRegression implements Serializable {
 	 * with the given learning rate
 	 * @param lr the learning rate to use
 	 */
-	public synchronized void train(double lr) {
+	public  void train(double lr) {
 		train(input,labels,lr);
 	}
 
@@ -75,7 +75,7 @@ public class LogisticRegression implements Serializable {
 	 * @param x the input to use
 	 * @param lr the learning rate to use
 	 */
-	public synchronized void train(DoubleMatrix x,double lr) {
+	public  void train(DoubleMatrix x,double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
 
 		train(x,labels,lr);
@@ -89,7 +89,7 @@ public class LogisticRegression implements Serializable {
 	 * @param learningRate
 	 * @param epochs
 	 */
-	public synchronized void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
+	public  void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
@@ -135,7 +135,7 @@ public class LogisticRegression implements Serializable {
 	 * Objective function:  minimize negative log likelihood
 	 * @return the negative log likelihood of the model
 	 */
-	public synchronized double negativeLogLikelihood() {
+	public  double negativeLogLikelihood() {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
 		//weight decay
@@ -169,7 +169,7 @@ public class LogisticRegression implements Serializable {
 	 * @param y the labels to train on
 	 * @param lr the learning rate
 	 */
-	public synchronized void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+	public  void train(DoubleMatrix x,DoubleMatrix y, double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
@@ -210,7 +210,7 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate to use for training
 	 * @return the gradient (bias and weight matrix)
 	 */
-	public synchronized LogisticRegressionGradient getGradient(double lr) {
+	public  LogisticRegressionGradient getGradient(double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
 		//input activation
@@ -242,73 +242,74 @@ public class LogisticRegression implements Serializable {
 	 * Each row will be the likelihood of a label given that example
 	 * @return a probability distribution for each row
 	 */
-	public synchronized DoubleMatrix predict(DoubleMatrix x) {
+	public  DoubleMatrix predict(DoubleMatrix x) {
+		this.input = x;
 		return softmax(x.mmul(W).addRowVector(b));
 	}	
 
 
 
-	public synchronized int getnIn() {
+	public  int getnIn() {
 		return nIn;
 	}
 
-	public synchronized void setnIn(int nIn) {
+	public  void setnIn(int nIn) {
 		this.nIn = nIn;
 	}
 
-	public synchronized int getnOut() {
+	public  int getnOut() {
 		return nOut;
 	}
 
-	public synchronized void setnOut(int nOut) {
+	public  void setnOut(int nOut) {
 		this.nOut = nOut;
 	}
 
-	public synchronized DoubleMatrix getInput() {
+	public  DoubleMatrix getInput() {
 		return input;
 	}
 
-	public synchronized void setInput(DoubleMatrix input) {
+	public  void setInput(DoubleMatrix input) {
 		this.input = input;
 	}
 
-	public synchronized DoubleMatrix getLabels() {
+	public  DoubleMatrix getLabels() {
 		return labels;
 	}
 
-	public synchronized void setLabels(DoubleMatrix labels) {
+	public  void setLabels(DoubleMatrix labels) {
 		this.labels = labels;
 	}
 
-	public synchronized DoubleMatrix getW() {
+	public  DoubleMatrix getW() {
 		return W;
 	}
 
-	public synchronized void setW(DoubleMatrix w) {
+	public  void setW(DoubleMatrix w) {
 		W = w;
 	}
 
-	public synchronized DoubleMatrix getB() {
+	public  DoubleMatrix getB() {
 		return b;
 	}
 
-	public synchronized void setB(DoubleMatrix b) {
+	public  void setB(DoubleMatrix b) {
 		this.b = b;
 	}
 
-	public synchronized double getL2() {
+	public  double getL2() {
 		return l2;
 	}
 
-	public synchronized void setL2(double l2) {
+	public  void setL2(double l2) {
 		this.l2 = l2;
 	}
 
-	public synchronized boolean isUseRegularization() {
+	public  boolean isUseRegularization() {
 		return useRegularization;
 	}
 
-	public synchronized void setUseRegularization(boolean useRegularization) {
+	public  void setUseRegularization(boolean useRegularization) {
 		this.useRegularization = useRegularization;
 	}
 

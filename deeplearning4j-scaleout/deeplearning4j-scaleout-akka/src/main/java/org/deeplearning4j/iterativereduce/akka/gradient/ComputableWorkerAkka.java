@@ -50,7 +50,7 @@ public class ComputableWorkerAkka extends ComputableWorkerImpl implements DeepLe
 	@Override
 	public UpdateableGradientImpl compute() {
 		network.trainNetwork(combinedInput, outcomes,extraParams);
-		MultiLayerGradient gradient = network.getGradient(extraParams, learningRate);
+		MultiLayerGradient gradient = network.getGradient(extraParams);
 		return new UpdateableGradientImpl(gradient);
 	}
 

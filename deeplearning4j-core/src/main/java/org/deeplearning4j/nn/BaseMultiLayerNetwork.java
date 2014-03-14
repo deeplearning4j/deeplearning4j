@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
@@ -425,6 +426,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	
+	public void initialize(DataSet data) {
+		setInput(data.getFirst());
+		feedForward(data.getFirst());
+		this.labels = data.getSecond();
+		logLayer.setLabels(labels);
+	}
+	
+	
 	/**
 	 * Gets the multi layer gradient for this network.
 	 * This includes calculating the gradients for each layer
@@ -441,7 +451,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		double lr = 0.01;
 		if(params.length >= 2)
 		   lr = (double) params[1];
-
+		
+		this.feedForward(input);
 		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
 
 

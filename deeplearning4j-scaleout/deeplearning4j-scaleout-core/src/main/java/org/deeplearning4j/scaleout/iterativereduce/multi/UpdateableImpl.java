@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
@@ -54,7 +55,7 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	}
 
 	@Override
-	public synchronized BaseMultiLayerNetwork get() {
+	public  BaseMultiLayerNetwork get() {
 		return wrapped;
 	}
 
@@ -66,6 +67,11 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	@Override
 	public void write(DataOutputStream dos) {
 		wrapped.write(dos);
+	}
+
+	@Override
+	public UpdateableImpl clone()  {
+		return SerializationUtils.clone(this);
 	}
 
 
