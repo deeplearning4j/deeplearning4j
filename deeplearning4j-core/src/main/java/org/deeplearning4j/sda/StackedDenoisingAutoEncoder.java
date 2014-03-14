@@ -38,21 +38,22 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	}
 
 
-	public void pretrain(  double corruptionLevel,  int epochs) {
-		pretrain(this.getInput(),corruptionLevel,epochs);
+	public void pretrain( double lr,  double corruptionLevel,  int epochs) {
+		pretrain(this.getInput(),lr,corruptionLevel,epochs);
 	}
 
 	
 	@Override
 	public void pretrain(DoubleMatrix input, Object[] otherParams) {
 		if(otherParams == null) {
-			otherParams = new Object[]{0.3,1000};
+			otherParams = new Object[]{0.01,0.3,1000};
 		}
 		
-		Double corruptionLevel = (Double) otherParams[0];
-		Integer epochs = (Integer) otherParams[1];
+		Double lr = (Double) otherParams[0];
+		Double corruptionLevel = (Double) otherParams[1];
+		Integer epochs = (Integer) otherParams[2];
 
-		pretrain(input, corruptionLevel, epochs);
+		pretrain(input, lr, corruptionLevel, epochs);
 		
 	}
 	
@@ -65,7 +66,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	 * corruption level should be) the percent of inputs to corrupt
 	 * @param epochs the number of iterations to run
 	 */
-	public void pretrain(DoubleMatrix input,double corruptionLevel,  int epochs) {
+	public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
 		if(this.getInput() == null)
 			initializeLayers(input.dup());
 
@@ -79,12 +80,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
 			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
-					layers[i].train(layerInput,new Object[]{corruptionLevel});
+					layers[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
 					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
+					getLayers()[i].epochDone(epoch);
+
 				}
 			}
 			else
-				layers[i].trainTillConvergence(layerInput, new Object[]{corruptionLevel,epochs});
+				layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
 
 
 		}	
@@ -116,7 +119,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 		Double corruptionLevel = (Double) otherParams[1];
 		Integer epochs = (Integer) otherParams[2];
 
-		pretrain(input,corruptionLevel, epochs);
+		pretrain(input, lr, corruptionLevel, epochs);
 		if(otherParams.length <= 3)
 			finetune(labels, lr, epochs);
 		else {
@@ -138,7 +141,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
 		.withSparsity(this.getSparsity()).renderWeights(getRenderWeightsEveryNEpochs()).fanIn(getFanIn())
 		.build();
-
+		if(gradientListeners.get(index) != null)
+			ret.setGradientListeners(gradientListeners.get(index));
 		return ret;
 	}
 

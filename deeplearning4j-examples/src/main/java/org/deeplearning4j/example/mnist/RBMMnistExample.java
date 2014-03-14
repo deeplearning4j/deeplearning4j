@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
@@ -16,30 +17,31 @@ public class RBMMnistExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		RBM r = new RBM.Builder().numberOfVisible(784).numHidden(400).useRegularization(true).build();
+		RBM r = new RBM.Builder()
+		.numberOfVisible(784)
+		.numHidden(400)
+		.build();
+
 
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,100);
+		DataSetIterator iter = new MnistDataSetIterator(10,20);
 
-		
-		
-		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), new Object[]{1,10000});
+			r.trainTillConvergence(next.getFirst(), 0.1, new Object[]{1,0.01,1000});
+			
+
 		}
+
 
 		iter.reset();
 
-/*
-		while(iter.hasNext()) {
-			DataSet next = iter.next();
-			//train with k = 1 0.01 learning rate and 1000 epochs
-			FilterRenderer render = new FilterRenderer();
-			render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
-		}
-		*/
+		FilterRenderer render = new FilterRenderer();
+		render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+
+		
+	
 		
 		//Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
 		while(iter.hasNext()) {
@@ -54,7 +56,7 @@ public class RBMMnistExample {
 				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
 				d.title = "REAL";
 				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
+				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
 				d2.title = "TEST";
 				d2.draw();
 				Thread.sleep(10000);

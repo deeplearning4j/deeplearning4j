@@ -170,10 +170,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob g = (GiveMeMyJob) message;
+			if(g.getJob() == null)
+				throw new IllegalArgumentException("Job for worker " + id + " given back was null");
+
 			current.set(g.getJob());
 			log.info("Got job again for id " + id);
 		}
-		
+
 		else if(message instanceof Updateable) {
 			UpdateableImpl m = (UpdateableImpl) message;
 			if(m.get() == null) {
@@ -187,10 +190,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 						Thread.currentThread().interrupt();
 					}
 				}
-				
-			
+
+
 			}
-			
+
 			else {
 				setWorkerUpdateable(m);
 				log.info("Updated worker network");
@@ -201,7 +204,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 				setNetwork(m.get().clone());
 			}
-			
+
 		}
 		else
 			unhandled(message);
@@ -222,12 +225,17 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			@Override
 			public UpdateableImpl call() throws Exception {
+				while(getCurrent() == null) {
+					log.info("Calling for job on worker " + id);
+
+				}
 
 				UpdateableImpl work = compute();
 				log.info("Updating parent actor...");
 				//update parameters in master param server
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						work), getSelf());	
+
 				return work;
 			}
 
@@ -236,14 +244,25 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
 	}
 
-	@Override
-	public  UpdateableImpl compute(List<UpdateableImpl> records) {
-		return compute();
-	}
+	protected void blockTillJobAvailable()	 {
+		while(this.getCurrent() == null) {
 
-	@Override
-	public   UpdateableImpl compute() {
-		log.info("Training network");
+
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+					new GiveMeMyJob(id,null)), getSelf());	
+
+			log.info("Waiting on null job");
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+
+	}
+	
+	
+	protected void blockTillNetworkAvailable() {
 		while(getNetwork() == null) {
 			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
@@ -255,21 +274,21 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 		}
 
-		while(this.getCurrent() == null) {
-			
-			
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					new GiveMeMyJob(id,null)), getSelf());	
-			
-			log.info("Waiting on null job");
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		
-		
+	}
+	
+
+	@Override
+	public  UpdateableImpl compute(List<UpdateableImpl> records) {
+		return compute();
+	}
+
+	@Override
+	public   UpdateableImpl compute() {
+		log.info("Training network");
+		blockTillNetworkAvailable();
+		//ensure job exists
+		blockTillJobAvailable();
+
 		if(this.getCurrent().isPretrain()) {
 			log.info("Worker " + id + " pretraining");
 			getNetwork().pretrain(this.getCombinedInput(), extraParams);

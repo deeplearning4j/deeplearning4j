@@ -70,17 +70,17 @@ public class DBN extends BaseMultiLayerNetwork {
 		}
 	}
 
-	
-	
-	
-	
+
+
+
+
 	@Override
 	public void pretrain(DoubleMatrix input, Object[] otherParams) {
 		int k = (Integer) otherParams[0];
 		double lr = (Double) otherParams[1];
 		int epochs = (Integer) otherParams[2];
 		pretrain(input,k,lr,epochs);
-		
+
 	}
 
 
@@ -115,12 +115,12 @@ public class DBN extends BaseMultiLayerNetwork {
 			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
 					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-					getLayers()[i].train(layerInput,new Object[]{k});
-
+					getLayers()[i].train(layerInput, learningRate,new Object[]{k,learningRate});
+					getLayers()[i].epochDone(epoch);
 				}
 			}
 			else
-				getLayers()[i].trainTillConvergence(layerInput, new Object[]{k,learningRate,epochs});
+				getLayers()[i].trainTillConvergence(layerInput, learningRate, new Object[]{k,learningRate,epochs});
 
 
 		}
@@ -135,13 +135,17 @@ public class DBN extends BaseMultiLayerNetwork {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
+
+		RBM ret = new RBM.Builder()
+		.useRegularization(isUseRegularization())
+		.useAdaGrad(isUseAdaGrad())
+		.withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist())
+		.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
+		.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
+		.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
+		.fanIn(getFanIn()).build();
 		
-		RBM ret = new RBM.Builder().useRegularization(isUseRegularization())
-				.withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist())
-				.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
-				.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
-				.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
-				.fanIn(getFanIn()).build();
+		ret.setGradientListeners(gradientListeners.get(index));
 		return ret;
 	}
 

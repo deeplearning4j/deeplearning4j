@@ -57,7 +57,7 @@ public class RBM extends BaseNeuralNetwork {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this,new Object[]{k});
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate});
 		optimizer.train(input);
 	}
 
@@ -72,16 +72,17 @@ public class RBM extends BaseNeuralNetwork {
 	 * Other insights:
 	 *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
 	 *    
+	 * @param learningRate the learning rate to scale by
 	 * @param k the number of iterations to do
 	 * @param input the input to sample from
 	 */
-	public void contrastiveDivergence(int k,DoubleMatrix input) {
+	public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		NeuralNetworkGradient gradient = getGradient(new Object[]{k});
-		W.subi(gradient.getwGradient());
-		hBias.subi(gradient.gethBiasGradient());
-		vBias.subi(gradient.getvBiasGradient());
+		NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate});
+		W.addi(gradient.getwGradient());
+		hBias.addi(gradient.gethBiasGradient());
+		vBias.addi(gradient.getvBiasGradient());
 
 	}
 
@@ -89,6 +90,7 @@ public class RBM extends BaseNeuralNetwork {
 	@Override
 	public NeuralNetworkGradient getGradient(Object[] params) {
 		int k = (int) params[0];
+		double learningRate = (double) params[1];
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
@@ -141,8 +143,12 @@ public class RBM extends BaseNeuralNetwork {
 		 * Update gradient parameters
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans));
-		wGradient = wGradient.mul(adaGrad.getLearningRates(wGradient));
-		
+
+		if(useAdaGrad)
+			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
+		else 
+			wGradient.muli(learningRate);
+
 		//weight decay via l2 regularization
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
@@ -152,27 +158,20 @@ public class RBM extends BaseNeuralNetwork {
 		if(useRegularization)
 			wGradient.divi(input.rows);
 
-		
-		
 		DoubleMatrix hBiasGradient = null;
 
 		if(this.sparsity != 0) {
 			//all hidden units must stay around this number
-			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0);
-			hBiasGradient = hBiasGradient.mul(this.hBiasAdaGrad.getLearningRates(hBiasGradient));
+			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0).mul(learningRate);
 		}
 		else {
 			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
-			hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient));
-
+			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
 		}
 
-
-		
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
-		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
-		vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient));
+		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0).mul(learningRate);
+
 
 		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 	}
@@ -257,10 +256,11 @@ public class RBM extends BaseNeuralNetwork {
 	 * Note: k is the first input in params.
 	 */
 	@Override
-	public void trainTillConvergence(DoubleMatrix input,Object[] params) {
+	public void trainTillConvergence(DoubleMatrix input, double lr,
+			Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, params);
+		optimizer = new RBMOptimizer(this, lr, params);
 		optimizer.train(input);
 	}
 
@@ -270,9 +270,9 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 	@Override
-	public void train(DoubleMatrix input, Object[] params) {
+	public void train(DoubleMatrix input,double lr, Object[] params) {
 		int k = (int) params[0];
-		contrastiveDivergence( k, input);
+		contrastiveDivergence(lr, k, input);
 	}
 
 

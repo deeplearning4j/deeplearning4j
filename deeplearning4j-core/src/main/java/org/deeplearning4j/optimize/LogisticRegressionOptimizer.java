@@ -15,12 +15,14 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 	 */
 	private static final long serialVersionUID = 5229426347154854746L;
 	private LogisticRegression logReg;
+	private double lr;
 	
 	
 	
-	public LogisticRegressionOptimizer(LogisticRegression logReg) {
+	public LogisticRegressionOptimizer(LogisticRegression logReg, double lr) {
 		super();
 		this.logReg = logReg;
+		this.lr = lr;
 	}
 
 	@Override
@@ -64,7 +66,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public void getValueGradient(double[] buffer) {
-		LogisticRegressionGradient grad = logReg.getGradient();
+		LogisticRegressionGradient grad = logReg.getGradient(lr);
 		for(int i = 0; i < buffer.length; i++) {
 			if(i < logReg.getW().length)
 				buffer[i] = grad.getwGradient().get(i);

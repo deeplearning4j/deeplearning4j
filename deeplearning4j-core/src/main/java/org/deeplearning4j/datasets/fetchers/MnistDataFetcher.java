@@ -28,9 +28,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
 	public final static int NUM_EXAMPLES = 60000;
 	private String tempRoot = System.getProperty("java.io.tmpdir");
 	private String rootMnist = tempRoot + File.separator + "MNIST" + File.separator;
-	
-	
-	public MnistDataFetcher() throws IOException {
+	private boolean binarize = true;
+
+
+
+	public MnistDataFetcher(boolean binarize) throws IOException {
 		if(!new File(rootMnist).exists())
 			new MnistFetcher().downloadAndUntar();
 		man = new MnistManager(rootMnist+ MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
@@ -48,6 +50,10 @@ public class MnistDataFetcher extends BaseDataFetcher {
 		inputColumns = ArrayUtil.flatten(image).length;
 
 
+	}
+
+	public MnistDataFetcher() throws IOException {
+		this(true);
 	}
 
 	@Override
@@ -74,13 +80,21 @@ public class MnistDataFetcher extends BaseDataFetcher {
 			//note data normalization
 			try {
 				DoubleMatrix in = MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage()));
+				if(binarize)
 				for(int d = 0; d < in.length; d++) {
-					if(in.get(d) > 30) {
-						in.put(d,1);
+					if(binarize) {
+						if(in.get(d) > 30) {
+							in.put(d,1);
+						}
+						else 
+							in.put(d,0);
+						
 					}
-					else 
-						in.put(d,0);
+					
+					
 				}
+				else
+					in = MatrixUtil.normalizeByRowSums(in);
 
 
 				DoubleMatrix out = createOutputVector(man.readLabel());

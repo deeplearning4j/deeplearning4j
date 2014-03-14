@@ -11,8 +11,8 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 	
 	private static final long serialVersionUID = 1815627091142129009L;
 
-	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network,Object[] trainingParams) {
-		super(network,trainingParams);
+	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
+		super(network,lr,trainingParams);
 	}
 
 	@Override

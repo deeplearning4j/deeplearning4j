@@ -29,7 +29,7 @@ public class CRBMTest {
 		.numHidden(4).withRandom(g).build();
 		r.getW().muli(1000);
 	
-		r.trainTillConvergence(input, new Object[]{1,0.0001,1000});
+		r.trainTillConvergence(input,0.01,new Object[]{1,0.0001,1000});
 		
 		
 		DoubleMatrix test = new DoubleMatrix(new double[][]

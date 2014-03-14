@@ -65,7 +65,7 @@ public class SdaTest {
 
 		DoubleMatrix x = xor.getFirst();
 
-		sda.pretrain(x,corruption_level, pretraining_epochs);
+		sda.pretrain(x,pretrain_lr, corruption_level, 1000);
 		// finetune
 
 		sda.finetune(xor.getSecond(),finetune_lr, finetune_epochs);

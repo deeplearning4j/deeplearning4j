@@ -1,7 +1,6 @@
 package org.deeplearning4j.da;
 
 import static org.deeplearning4j.util.MathUtils.binomial;
-import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 
@@ -13,7 +12,6 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
 
 /**
@@ -58,30 +56,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-	/**
-	 * Negative log likelihood of the current input given
-	 * the corruption level
-	 * @param corruptionLevel the corruption level to use
-	 * @return the negative log likelihood of the auto encoder
-	 * given the corruption level
-	 */
-	public double negativeLoglikelihood(double corruptionLevel) {
-		DoubleMatrix corrupted = getCorruptedInput(input, corruptionLevel);
-		DoubleMatrix y = getHiddenValues(corrupted);
-		DoubleMatrix z = getReconstructedInput(y);
-		if(this.useRegularization) {
-			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
-
-			return - input.mul(log(z)).add(
-					oneMinus(input).mul(log(oneMinus(z)))).
-					columnSums().mean() + reg;
-		}
-
-		return - input.mul(log(z)).add(
-				oneMinus(input).mul(log(oneMinus(z)))).
-				columnSums().mean();
-	}
-
+	
 
 
 	// Encode
@@ -104,7 +79,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public void trainTillConvergence(DoubleMatrix x, double lr,double corruptionLevel) {
 		if(x != null)
 			this.input = x;
-		optimizer = new DenoisingAutoEncoderOptimizer(this,new Object[]{corruptionLevel});
+		optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel});
 		optimizer.train(x);
 	}
 
@@ -114,10 +89,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	 * @param lr the learning rate
 	 * @param corruptionLevel the corruption level to train with
 	 */
-	public void train(DoubleMatrix x,double corruptionLevel) {
+	public void train(DoubleMatrix x,double lr,double corruptionLevel) {
 
 		this.input = x;
-		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel});
+		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
 		vBias.addi(gradient.getvBiasGradient());
 		W.addi(gradient.getwGradient());
 		hBias.addi(gradient.gethBiasGradient());
@@ -141,10 +116,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 	@Override
-	public void trainTillConvergence(DoubleMatrix input,Object[] params) {
+	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new DenoisingAutoEncoderOptimizer(this, params);
+		optimizer = new DenoisingAutoEncoderOptimizer(this,lr, params);
 		optimizer.train(input);
 	}
 
@@ -153,18 +128,22 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 	@Override
 	public double lossFunction(Object[] params) {
-		double corruptionLevel = (double) params[0];
-		return negativeLoglikelihood(corruptionLevel);
+		return negativeLoglikelihood();
 	}
 
 
 
 
 	@Override
-	public void train(DoubleMatrix input,Object[] params) {
+	public void train(DoubleMatrix input,double lr,Object[] params) {
 		double corruptionLevel = (double) params[0];
-		train(input, corruptionLevel);
-	}
+		
+		this.input = input;
+		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
+		
+		vBias.addi(gradient.getvBiasGradient());
+		W.addi(gradient.getwGradient());
+		hBias.addi(gradient.gethBiasGradient());	}
 
 
 
@@ -187,12 +166,16 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias = L_h1;
 
 		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
-		L_W.muli(lr);
+		
+		if(useAdaGrad)
+		   L_W.muli(wAdaGrad.getLearningRates(L_W));
+		else 
+			L_W.muli(lr);
 
 
-		if(useRegularization) {
+		if(useRegularization) 
 			L_W.subi(W.muli(l2));
-		}
+		
 
 		if(momentum != 0)
 			L_W.muli(1 - momentum);
@@ -203,7 +186,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
 		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
 
-		return new NeuralNetworkGradient(L_W,L_vbias_mean,L_hbias_mean);
+		NeuralNetworkGradient gradient = new NeuralNetworkGradient(L_W,L_vbias_mean,L_hbias_mean);
+		this.triggerGradientEvents(gradient);
+		
+		return gradient;
 	}
 
 

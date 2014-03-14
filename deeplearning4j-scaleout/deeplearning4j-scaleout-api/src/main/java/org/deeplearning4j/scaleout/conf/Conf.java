@@ -1,10 +1,14 @@
 package org.deeplearning4j.scaleout.conf;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
+import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.ActivationFunction;
@@ -43,11 +47,33 @@ public class Conf implements Serializable,Cloneable {
 	private String masterAbsPath;
 	private DoubleMatrix columnMeans;
 	private DoubleMatrix columnStds;
-	
-	
-	
-	
-	
+	private boolean useAdaGrad = false;
+	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
+	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+
+
+
+
+	public  Map<Integer, List<NeuralNetworkGradientListener>> getGradientListeners() {
+		return gradientListeners;
+	}
+	public  void setGradientListeners(
+			Map<Integer, List<NeuralNetworkGradientListener>> gradientListeners) {
+		this.gradientListeners = gradientListeners;
+	}
+	public  List<MultiLayerGradientListener> getMultiLayerGradientListeners() {
+		return multiLayerGradientListeners;
+	}
+	public synchronized void setMultiLayerGradientListeners(
+			List<MultiLayerGradientListener> multiLayerGradientListeners) {
+		this.multiLayerGradientListeners = multiLayerGradientListeners;
+	}
+	public synchronized boolean isUseAdaGrad() {
+		return useAdaGrad;
+	}
+	public synchronized void setUseAdaGrad(boolean useAdaGrad) {
+		this.useAdaGrad = useAdaGrad;
+	}
 	public synchronized String getMasterAbsPath() {
 		return masterAbsPath;
 	}
@@ -134,9 +160,9 @@ public class Conf implements Serializable,Cloneable {
 	public void setLayerSizes(int[] layerSizes) {
 		this.layerSizes = layerSizes;
 	}
-	
-	
-	
+
+
+
 	public synchronized DoubleMatrix getColumnMeans() {
 		return columnMeans;
 	}
@@ -154,7 +180,7 @@ public class Conf implements Serializable,Cloneable {
 		for(int i = 0; i < layerSizes.length; i++)
 			this.layerSizes[i] = layerSizes[i];
 	}
-	
+
 	public int getPretrainEpochs() {
 		return pretrainEpochs;
 	}
@@ -204,14 +230,14 @@ public class Conf implements Serializable,Cloneable {
 		this.deepLearningParams = deepLearningParams;
 	}
 
-	
+
 	public int getFinetuneEpochs() {
 		return finetuneEpochs;
 	}
 	public void setFinetuneEpochs(int finetuneEpochs) {
 		this.finetuneEpochs = finetuneEpochs;
 	}
-	
+
 	public int getRenderWeightEpochs() {
 		return renderWeightEpochs;
 	}
@@ -221,7 +247,7 @@ public class Conf implements Serializable,Cloneable {
 	public Conf copy() {
 		return SerializationUtils.clone(this);
 	}
-	
+
 	/**
 	 * Corruption level of 0.3 and learning rate of 0.01
 	 * and 1000 epochs

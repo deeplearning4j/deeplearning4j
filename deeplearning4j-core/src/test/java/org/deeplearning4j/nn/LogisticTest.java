@@ -51,8 +51,10 @@ public class LogisticTest {
 	@Test
 	public void testLogistic() {
 		LogisticRegression log2 = new LogisticRegression(xTestMatrix,x[0].length,2);
+		double learningRate = 0.01;
 		for(int i = 0; i < 1000; i++) {
-			log2.train(xMatrix, yMatrix);
+			log2.train(xMatrix, yMatrix,learningRate);
+			learningRate *= 0.95;
 		}
 		
 		
@@ -70,7 +72,7 @@ public class LogisticTest {
 		DataSet iris = fetcher.next();
 		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
 				.build();
-		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 10000);
+		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 0.01,10000);
 		fetcher.fetch(40);
 		iris = fetcher.next();
 
@@ -94,7 +96,7 @@ public class LogisticTest {
 		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
 				.build();
 		
-		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 1000);
+		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(),0.01, 1000);
 		
 		fetcher.fetch(40);
 		iris = fetcher.next();

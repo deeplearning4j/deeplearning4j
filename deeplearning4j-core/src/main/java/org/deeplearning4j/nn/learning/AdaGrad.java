@@ -21,7 +21,7 @@ public class AdaGrad implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -4754127927704099888L;
-	private double masterStepSize = 0.01; // default for masterStepSize (this is the numerator)
+	private double masterStepSize = 1; // default for masterStepSize (this is the numerator)
 	//private double squaredGradientSum = 0;
 	public DoubleMatrix historicalGradient;
 	public DoubleMatrix adjustedGradient;
@@ -53,35 +53,25 @@ public class AdaGrad implements Serializable {
 	}
 
 
-	/**
-	 * square gradient, then add to ongoing sum
-	 * 
-	 * @param gradient
-	 */
-	private void addLastIterationGradient() {
-		//this.squaredGradientSum += gradient * gradient;
-
-		DoubleMatrix gradientsSquared = MatrixFunctions.pow(gradient, 2);
-		if(first) 
-			this.historicalGradient = gradientsSquared;
-
-		else 
-			this.historicalGradient = this.historicalGradient.mul(this.autoCorrect).add(MatrixUtil.oneMinus(historicalGradient)).mul(gradientsSquared);
-
-
-
-
-	}
 
 
 
 
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
 		this.gradient = gradient;
-		addLastIterationGradient();
+		DoubleMatrix gradientsSquared = MatrixFunctions.pow(gradient, 2);
+		if(first) {
+			this.historicalGradient = gradientsSquared;
+			first = false;
+		}
+
+		else 
+			this.historicalGradient = this.historicalGradient.mul(this.autoCorrect).add(MatrixUtil.oneMinus(historicalGradient)).mul(gradientsSquared);
+
 		DoubleMatrix gAdd = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
 		this.adjustedGradient = gradient.div(gAdd);
 		this.adjustedGradient.mul(masterStepSize);
+		
 		return adjustedGradient;
 	}
 
