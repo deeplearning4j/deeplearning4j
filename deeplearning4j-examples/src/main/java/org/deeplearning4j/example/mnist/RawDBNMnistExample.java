@@ -44,9 +44,9 @@ public class RawDBNMnistExample {
 		
 		if(args.length < 2) {
 			dbn = new DBN.Builder()
-			.hiddenLayerSizes(new int[]{500,400,250}).renderWeights(10)
+			.hiddenLayerSizes(new int[]{500,400,250})
 			.numberOfInputs(784).numberOfOutPuts(10)
-			.useRegularization(false).useAdGrad(true)
+			.useRegularization(false)
 			.build();
 			
 		}
@@ -60,7 +60,7 @@ public class RawDBNMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			long now = System.currentTimeMillis();
-			dbn.pretrain(next.getFirst(), 1, 0.001, 1000);
+			dbn.pretrain(next.getFirst(), 1, 0.01, 1000);
 			long after = System.currentTimeMillis();
 			log.info("Pretrain took " + TimeUnit.MILLISECONDS.toSeconds((after - now)) + " seconds");
 			
