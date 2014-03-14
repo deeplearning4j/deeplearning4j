@@ -132,6 +132,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.info("Sending heartbeat to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						register()), getSelf());	
+				
+				if(getCurrent() == null) {
+					availableForWork();
+				}
+				
 
 			}
 
@@ -253,7 +258,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				//update parameters in master param server
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						work), getSelf());	
-
+				finishedWork();
+				availableForWork();
 				return work;
 			}
 

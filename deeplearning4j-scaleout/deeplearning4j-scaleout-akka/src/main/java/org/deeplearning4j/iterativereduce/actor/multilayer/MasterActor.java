@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,6 +22,7 @@ import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
+import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -36,6 +38,7 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
+import akka.dispatch.Futures;
 import akka.routing.RoundRobinPool;
 
 
@@ -157,11 +160,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 							@Override
 							public void run() {
-
-								if(!updates.isEmpty() && currentJobs.isEmpty()) {
+								log.info("Status check on next iteration");
+								if(!updates.isEmpty() && currentJobs.isEmpty() || everyWorkerAvailable()) {
 									log.info("Forcing next iteration");
 									nextIteration();
 								}
+
+								log.info("Current jobs left " + currentJobs.keySet());
 
 
 							}
@@ -172,6 +177,24 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
+
+	protected boolean everyWorkerAvailable() {
+		for(WorkerState s : workers.values())
+			if(!s.isAvailable())
+				return false;
+		return true;
+	}
+
+	protected void setWorkerDone(String id) {
+		if(this.workers == null || id == null || !this.workers.containsKey(id))
+			return;
+		
+		WorkerState state = this.workers != null ? this.workers.get(id) : null;
+		if(state != null)
+			this.workers.get(id).setAvailable(true);
+		if(this.currentJobs != null && this.currentJobs.containsKey(id))
+			this.currentJobs.remove(id);
+	}
 
 
 	@Override
@@ -185,6 +208,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		masterResults = this.compute(updates, updates);
 		for(String key : workers.keySet()) {
 			workers.get(key).setAvailable(true);
+			currentJobs.remove(key);
 			log.info("Freeing " + key + " for work post batch completion");
 		}
 
@@ -263,7 +287,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 
 				for(String key : workers.keySet()) {
-					workers.get(key).setAvailable(true);
+					setWorkerDone(key);
 					log.info("Freeing " + key + " for work post batch completion");
 				}
 
@@ -281,31 +305,43 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		else if(message instanceof AlreadyWorking) {
-			AlreadyWorking a = (AlreadyWorking) message;
-			WorkerState state = this.workers.get(a.getId());
-			if(state != null) {
-				state.setAvailable(false);
-				log.info("Worker " + state.getWorkerId() + " available for work");
-				Job j = currentJobs.get(a.getId());
-				if(j != null) {
-					log.info("Redispatching work for id " + j.getWorkerId());
-					WorkerState worker = this.nextAvailableWorker();
-					j.setWorkerId(worker.getWorkerId());
-					//replicate the network
-					mediator.tell(new DistributedPubSubMediator.Publish(worker.getWorkerId(),
-							j), getSelf());
-					log.info("Delegated work to worker " + state.getWorkerId());
+			final AlreadyWorking a = (AlreadyWorking) message;
+
+			scala.concurrent.Future<Void> f = Futures.future(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					WorkerState state = workers.get(a.getId());
+					if(state != null) {
+						state.setAvailable(false);
+						log.info("Worker " + state.getWorkerId() + " available for work");
+						Job j = currentJobs.get(a.getId());
+						if(j != null) {
+							log.info("Redispatching work for id " + j.getWorkerId());
+							WorkerState worker = nextAvailableWorker();
+							j.setWorkerId(worker.getWorkerId());
+							//replicate the network
+							mediator.tell(new DistributedPubSubMediator.Publish(worker.getWorkerId(),
+									j), getSelf());
+							log.info("Delegated work to worker " + state.getWorkerId());
+						}
+
+					}					
+					return null;
 				}
-			
-			}
-			
-			
-			
+
+			}, context().dispatcher());
+
+			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
+
+
+
 		}
-		
+
 		else if(message instanceof ClearWorker) {
 			log.info("Removing worker with id " + ((ClearWorker) message).getId());
 			this.workers.remove(((ClearWorker) message).getId());
+			this.currentJobs.remove(((ClearWorker) message).getId());
 		}
 
 		else if(message instanceof String) {
@@ -313,6 +349,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			if(state == null) {
 				state = new WorkerState(message.toString(),getSender());
 				state.setAvailable(true);
+
 				log.info("Worker " + state.getWorkerId() + " available for work");
 			}
 			else {
@@ -332,7 +369,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
-			if(updates.size() >= partition) 
+			if(updates.size() >= partition || everyWorkerAvailable() || currentJobs.isEmpty()) 
 				nextIteration();
 
 		}
@@ -346,7 +383,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 			else {
 				log.info("Job " + j.getWorkerId() + " finished");
-				currentJobs.remove(j.getWorkerId());
+				setWorkerDone(j.getWorkerId());
 			}
 
 		}

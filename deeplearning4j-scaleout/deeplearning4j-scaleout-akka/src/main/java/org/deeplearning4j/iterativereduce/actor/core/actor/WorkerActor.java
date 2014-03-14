@@ -173,6 +173,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				new WorkerState(id,getSelf())), getSelf());
+		
+		Job j = new Job(id, null,true);
+		j.setDone(true);
+		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+				j), getSelf());
 		//context().actorSelection(masterPath).tell(register(), getSelf());
 		//this.clusterClient.tell(register(),getSelf());
 	}

@@ -34,7 +34,7 @@ public class GradientChangerExample {
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = null;
 		if(args.length < 2) {
-			iter = new RawMnistDataSetIterator(10,60000);
+			iter = new RawMnistDataSetIterator(80,60000);
 		}
 		else {
 			int start = Integer.parseInt(args[1]);
@@ -55,18 +55,18 @@ public class GradientChangerExample {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(0.00001);
+		c.setFinetuneLearningRate(0.000001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
-		c.setUseAdaGrad(false);
+		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
 		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.00001,1000});
-		//c.setRenderWeightEpochs(1000);
+		c.setDeepLearningParams(new Object[]{1,0.000001,1000});
+		c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);

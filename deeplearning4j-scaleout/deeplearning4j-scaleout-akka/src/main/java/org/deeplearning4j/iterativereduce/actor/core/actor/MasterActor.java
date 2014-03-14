@@ -163,6 +163,13 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					return  state;
 				}
 			}
+			
+			log.info("Waiting on next worker...");
+			try {
+				Thread.sleep(15000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 
 		//should never happen
