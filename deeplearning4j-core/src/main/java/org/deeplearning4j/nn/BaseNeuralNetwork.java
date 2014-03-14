@@ -10,14 +10,18 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -72,9 +76,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public int renderWeightsEveryNumEpochs = -1;
 	public double fanIn = -1;
 	public boolean useRegularization = true;
-	public AdaGrad vBiasAdaGrad;
-	public AdaGrad hBiasAdaGrad;
-	public AdaGrad adaGrad;
+	public boolean useAdaGrad = false;
+
+	
+	public List<NeuralNetworkGradientListener> gradientListeners;
+	
+	public AdaGrad wAdaGrad;
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -120,6 +127,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		else 
 			this.rng = rng;
 		this.W = W;
+		if(this.W != null)
+			this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+
 		this.vBias = vbias;
 		this.hBias = hbias;
 
@@ -174,7 +184,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 		}
 
-		this.adaGrad = new AdaGrad(W.rows,W.columns);
+		this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
 
 		if(this.hBias == null) {
 			this.hBias = DoubleMatrix.zeros(nHidden);
@@ -185,24 +195,29 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			//this.hBias.subi(4);
 		}
 
-		this.hBiasAdaGrad =  new AdaGrad(hBias.rows,hBias.columns);
-		
 		if(this.vBias == null) {
-			if(this.input != null) 
+			if(this.input != null) {
+
 				this.vBias = DoubleMatrix.zeros(nVisible);
 
 
-
+			}
 			else
 				this.vBias = DoubleMatrix.zeros(nVisible);
 		}
 
 
-		this.vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
 
 	}
 
 
+	public synchronized List<NeuralNetworkGradientListener> getGradientListeners() {
+		return gradientListeners;
+	}
+	public synchronized void setGradientListeners(
+			List<NeuralNetworkGradientListener> gradientListeners) {
+		this.gradientListeners = gradientListeners;
+	}
 	@Override
 	public void setRenderEpochs(int renderEpochs) {
 		this.renderWeightsEveryNumEpochs = renderEpochs;
@@ -251,6 +266,31 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+	/**
+	 * Triggers network gradient listeners. This should be called in 
+	 * getGradient
+	 * @param gradient the gradient that triggered the event
+	 */
+	protected void triggerGradientEvents(NeuralNetworkGradient gradient) {
+		if(gradientListeners != null && !gradientListeners.isEmpty()) {
+			for(NeuralNetworkGradientListener listener : gradientListeners) {
+				listener.onGradient(gradient);
+			}
+		}
+	}
+
+
+	
+
+	@Override
+	public AdaGrad getAdaGrad() {
+		return this.wAdaGrad;
+	}
+	@Override
+	public void setAdaGrad(AdaGrad adaGrad) {
+		this.wAdaGrad = adaGrad;
+	}
+
 	@Override
 	public NeuralNetwork transpose() {
 		try {
@@ -261,7 +301,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnVisible(getnHidden());
 			ret.setW(W.transpose());
 			ret.setRng(getRng());
+			ret.setAdaGrad(wAdaGrad);
 			ret.setDist(getDist());
+
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -275,13 +317,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		try {
 			NeuralNetwork ret = getClass().newInstance();
 			ret.sethBias(hBias.dup());
-			ret.setAdaGrad(adaGrad);
 			ret.setvBias(vBias.dup());
 			ret.setnHidden(getnHidden());
 			ret.setnVisible(getnVisible());
 			ret.setW(W.dup());
 			ret.setRng(getRng());
 			ret.setDist(getDist());
+			ret.setAdaGrad(wAdaGrad);
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -290,13 +332,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
-
-	public  AdaGrad getAdaGrad() {
-		return adaGrad;
-	}
-	public  void setAdaGrad(AdaGrad adaGrad) {
-		this.adaGrad = adaGrad;
-	}
 	@Override
 	public RealDistribution getDist() {
 		return dist;
@@ -341,6 +376,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.nVisible = n.nVisible;
 		this.rng = n.rng;
 		this.sparsity = n.sparsity;
+		this.wAdaGrad = n.wAdaGrad;
+
 	}
 
 	/**
@@ -359,6 +396,51 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	/**
+	 * Negative log likelihood of the current input given
+	 * the corruption level
+	 * @param corruptionLevel the corruption level to use
+	 * @return the negative log likelihood of the auto encoder
+	 * given the corruption level
+	 */
+	public double negativeLoglikelihood() {
+		DoubleMatrix z = this.reconstruct(input);
+		if(this.useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
+			return - input.mul(log(z)).add(
+					oneMinus(input).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
+		}
+
+		return - input.mul(log(z)).add(
+				oneMinus(input).mul(log(oneMinus(z)))).
+				columnSums().mean();
+	}
+
+
+	/**
+	 * Negative log likelihood of the current input given
+	 * the corruption level
+	 * @return the negative log likelihood of the auto encoder
+	 * given the corruption level
+	 */
+	public double negativeLoglikelihood(DoubleMatrix input) {
+		DoubleMatrix z = this.reconstruct(input);
+		if(this.useRegularization) {
+			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+
+			return - input.mul(log(z)).add(
+					oneMinus(input).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
+		}
+
+		return - input.mul(log(z)).add(
+				oneMinus(input).mul(log(oneMinus(z)))).
+				columnSums().mean();
+	}
+
+	
 	/**
 	 * Reconstruction entropy.
 	 * This compares the similarity of two probability
@@ -379,7 +461,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				.add(oneMinus(input)
 						.mul(log(oneMinus(sigV))));
 		double l = inner.length;
-		if(this.useRegularization) {
+		if(useRegularization) {
 			double normalized = l + l2RegularizedCoefficient();
 			return - inner.rowSums().mean() / normalized;
 		}
@@ -558,21 +640,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return lossFunction(null);
 	}
 
-	public  boolean isUseRegularization() {
-		return useRegularization;
-	}
-	public  void setUseRegularization(boolean useRegularization) {
-		this.useRegularization = useRegularization;
-	}
-
-
 	/**
 	 * Train one iteration of the network
 	 * @param input the input to train on
-=	 * @param params the extra params (k, corruption level,...)
+	 * @param lr the learning rate to train at
+	 * @param params the extra params (k, corruption level,...)
 	 */
 	@Override
-	public abstract void train(DoubleMatrix input,Object[] params);
+	public abstract void train(DoubleMatrix input,double lr,Object[] params);
 
 	@Override
 	public double squaredLoss() {
@@ -585,7 +660,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return -loss;
 	}
 
+	
+	
+	
 
+	@Override
+	public void epochDone(int epoch) {
+		int plotEpochs = getRenderEpochs();
+		if(plotEpochs <= 0)
+			return;
+		if(epoch % plotEpochs == 0 || epoch == 0) {
+			NeuralNetPlotter plotter = new NeuralNetPlotter();
+			plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}));
+		}
+	}
+	
+	
 
 	public static class Builder<E extends BaseNeuralNetwork> {
 		private E ret = null;
@@ -604,7 +694,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double fanIn = 0.1;
 		private boolean useRegularization = true;
 		private RealDistribution dist;
+		private boolean useAdaGrad = false;
 
+		public Builder<E> useAdaGrad(boolean useAdaGrad) {
+			this.useAdaGrad = useAdaGrad;
+			return this;
+		}
 
 		public Builder<E> withDistribution(RealDistribution dist) {
 			this.dist = dist;
@@ -719,6 +814,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret.l2 = this.l2;
 						ret.momentum = this.momentum;
 						ret.useRegularization = this.useRegularization;
+						ret.useAdaGrad = this.useAdaGrad;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);

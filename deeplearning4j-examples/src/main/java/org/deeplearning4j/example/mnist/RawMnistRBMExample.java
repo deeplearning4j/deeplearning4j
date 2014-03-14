@@ -3,7 +3,7 @@ package org.deeplearning4j.example.mnist;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.plot.FilterRenderer;
@@ -11,38 +11,37 @@ import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 
-public class RBMMnistExample {
+public class RawMnistRBMExample {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder()
-		.numberOfVisible(784)
-		.numHidden(400)
+		.numberOfVisible(784).useAdaGrad(false)
+		.numHidden(500).renderWeights(1000).withDistribution(Distributions.uniform(new MersenneTwister(123), 784, 500))
 		.build();
 
 
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,20);
-
+		DataSetIterator iter = new RawMnistDataSetIterator(10,20);
+		//for(int i = 0; i < 30; i++)  {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), 0.1, new Object[]{1,0.01,1000});
-			
+			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,1000});
 
 		}
 
 
+
 		iter.reset();
 
-		FilterRenderer render = new FilterRenderer();
-		render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+		//}
 
-		
-	
-		
+
+
+
 		//Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
 		while(iter.hasNext()) {
 			DataSet first = iter.next();
@@ -66,6 +65,7 @@ public class RBMMnistExample {
 
 
 		}
+
 
 	}
 
