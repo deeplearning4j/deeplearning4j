@@ -10,6 +10,7 @@ README.md~
 *.bin
 *.out
 *~
+model-saver-*
 mnist-pretrain-dbn.bin-*
 .settings/
 *.log
