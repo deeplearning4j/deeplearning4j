@@ -10,6 +10,7 @@ README.md~
 *.bin
 *.out
 *~
+mnist-pretrain-dbn.bin-*
 .settings/
 *.log
 .project
