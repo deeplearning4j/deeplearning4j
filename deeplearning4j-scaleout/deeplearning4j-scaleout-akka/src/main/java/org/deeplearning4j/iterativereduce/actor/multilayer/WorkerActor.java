@@ -12,6 +12,7 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
+import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -26,16 +27,11 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
-import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
-import akka.actor.SupervisorStrategy;
-import akka.actor.SupervisorStrategy.Directive;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
-import akka.japi.Function;
-import akka.pattern.Patterns;
 
 /**
  * Iterative reduce actor for handling batch sizes
@@ -191,7 +187,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob g = (GiveMeMyJob) message;
-			
+
 			if(g.getJob() == null) {
 				this.blockTillJobAvailable();
 			}
@@ -199,6 +195,23 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			else
 				current.set(g.getJob());
 			log.info("Got job again for id " + id);
+		}
+
+		else if(message instanceof NeedsStatus) {
+			log.info("Sending status update to master");
+			if(getCurrent() == null) {
+				log.info("Null job sending job done to worker");
+				Job j = new Job(id,null, false);
+				j.setDone(true);
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						j), getSelf());	
+
+
+			}
+			else
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						getCurrent()), getSelf());	
+
 		}
 
 		else if(message instanceof Updateable) {
@@ -251,11 +264,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
 
-		
-		
-		
-		
-		
+
+
+
+
+
 		for(int i = 0; i < list.size(); i++) {
 			newInput.putRow(i,list.get(i).getFirst());
 			newOutput.putRow(i,list.get(i).getSecond());
@@ -273,13 +286,19 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					//update parameters in master param server
 					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 							new GiveMeMyJob(id, null)), getSelf());	
+					Thread.sleep(1000);
+
 				}
 
 				UpdateableImpl work = compute();
-				log.info("Updating parent actor...");
-				//update parameters in master param server
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						work), getSelf());	
+
+				if(work != null) {
+					log.info("Updating parent actor...");
+					//update parameters in master param server
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+							work), getSelf());	
+
+				}
 				finishedWork();
 				availableForWork();
 				return work;
@@ -333,7 +352,9 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		log.info("Training network");
 		blockTillNetworkAvailable();
 		//ensure job exists
-		blockTillJobAvailable();
+		//blockTillJobAvailable();
+		if(getCurrent() == null)
+			return null;
 
 		if(this.getCurrent().isPretrain()) {
 			log.info("Worker " + id + " pretraining");
@@ -359,17 +380,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		super.setup(conf);
 	}
 
-
-	@Override
-	public SupervisorStrategy supervisorStrategy() {
-		return new OneForOneStrategy(0, Duration.Zero(),
-				new Function<Throwable, Directive>() {
-			public Directive apply(Throwable cause) {
-				log.error("Problem with processing",cause);
-				return SupervisorStrategy.stop();
-			}
-		});
-	}
 
 
 	@Override
