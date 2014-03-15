@@ -5,11 +5,13 @@ import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
@@ -60,9 +62,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
-	protected Map<String, WorkerState> workers = new ConcurrentHashMap<>();
-	protected Map<String,Job> currentJobs = new ConcurrentHashMap<>();
-
+	protected Map<String, WorkerState> workers = new HashMap<>();
+	protected Map<String,Job> currentJobs = new HashMap<>();
+	protected LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<WorkerState>();
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 	
 
@@ -151,28 +153,13 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * Finds the next available worker based on current states
 	 * @return the next available worker, blocks till a worker is found
 	 */
-	protected   WorkerState nextAvailableWorker() {
-		boolean foundWork = false;
-		//loop till a worker is available; this throttles output
-		while(!foundWork) {
-			for(WorkerState state : workers.values()) {
-
-				if(state.isAvailable()) {
-					log.info("Found next available worker " + state.getWorkerId());
-					foundWork = true;
-					return  state;
-				}
-			}
-			
-			log.info("Waiting on next worker...");
-			try {
-				Thread.sleep(15000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
+	protected  WorkerState nextAvailableWorker() {
+		try {
+			return availableWorkers.take();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
-
-		//should never happen
+		
 		return null;
 	}
 
@@ -261,6 +248,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public void addWorker(WorkerState state) {
 		if(!this.workers.containsKey(state.getWorkerId())) {
 			this.workers.put(state.getWorkerId(),state);
+			this.availableWorkers.add(state);
 			log.info("Added worker with id " + state.getWorkerId());
 		}
 	}

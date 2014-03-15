@@ -50,7 +50,7 @@ public class GradientChangerExample {
 		List<MultiLayerGradientListener> listeners = new ArrayList<>();
 
 		WeightPlotListener listener = new WeightPlotListener();
-		listeners.add(listener);
+		//listeners.add(listener);
 
 		
 		Conf c = new Conf();
@@ -66,7 +66,7 @@ public class GradientChangerExample {
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
 		c.setDeepLearningParams(new Object[]{1,0.000001,1000});
-		c.setRenderWeightEpochs(1000);
+	//	c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);

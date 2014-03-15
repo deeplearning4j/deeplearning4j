@@ -194,6 +194,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			this.workers.get(id).setAvailable(true);
 		if(this.currentJobs != null && this.currentJobs.containsKey(id))
 			this.currentJobs.remove(id);
+		this.availableWorkers.add(state);
 	}
 
 
@@ -209,6 +210,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		for(String key : workers.keySet()) {
 			workers.get(key).setAvailable(true);
 			currentJobs.remove(key);
+			this.availableWorkers.add(workers.get(key));
 			log.info("Freeing " + key + " for work post batch completion");
 		}
 
@@ -349,7 +351,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			if(state == null) {
 				state = new WorkerState(message.toString(),getSender());
 				state.setAvailable(true);
-
+				addWorker(state);
 				log.info("Worker " + state.getWorkerId() + " available for work");
 			}
 			else {
