@@ -35,6 +35,7 @@ import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import akka.dispatch.Futures;
 import akka.japi.Function;
+import akka.pattern.Patterns;
 
 /**
  * Iterative reduce actor for handling batch sizes
@@ -132,11 +133,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.info("Sending heartbeat to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						register()), getSelf());	
-				
+
 				if(getCurrent() == null) {
 					availableForWork();
 				}
-				
+
 
 			}
 
@@ -158,14 +159,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof Job) {
 			Job j = (Job) message;
-			
-			
+
+
 			if(getCurrent() != null) {
 				log.info("Job sent when already had job");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						new AlreadyWorking(id)), getSelf());	
 			}
-			
+
 			else {
 
 				log.info("Confirmation from " + j.getWorkerId() + " on work");
@@ -175,7 +176,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				updateTraining(input);
 
 			}
-			
+
 
 		}
 
@@ -190,7 +191,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob g = (GiveMeMyJob) message;
-
+			
 			if(g.getJob() == null) {
 				this.blockTillJobAvailable();
 			}
@@ -201,32 +202,45 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		else if(message instanceof Updateable) {
-			UpdateableImpl m = (UpdateableImpl) message;
-			if(m.get() == null) {
-				log.info("Network is null, this worker has recently joined the cluster or the network was lost. Asking master for a copy of the current network");
-				while(this.getNetwork() == null) {
-					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-							new NeedsModelMessage(id)), getSelf());	
-					try {
-						Thread.sleep(15000);
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
+			final UpdateableImpl m = (UpdateableImpl) message;
+			Future<Void> f = Futures.future(new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+
+					if(m.get() == null) {
+						log.info("Network is null, this worker has recently joined the cluster or the network was lost. Asking master for a copy of the current network");
+						while(getNetwork() == null) {
+							mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+									new NeedsModelMessage(id)), getSelf());	
+							try {
+								Thread.sleep(15000);
+							} catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+							}
+						}
+
+
 					}
+
+					else {
+						setWorkerUpdateable(m.clone());
+						log.info("Updated worker network");
+						if(m.get() == null) {
+							log.warn("Unable to initialize network; network was null");
+							throw new IllegalArgumentException("Network was null");
+						}
+
+						setNetwork(m.get().clone());
+					}
+
+					return null;
 				}
 
+			},context().dispatcher());
 
-			}
+			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
 
-			else {
-				setWorkerUpdateable(m.clone());
-				log.info("Updated worker network");
-				if(m.get() == null) {
-					log.warn("Unable to initialize network; network was null");
-					throw new IllegalArgumentException("Network was null");
-				}
-
-				setNetwork(m.get().clone());
-			}
 
 		}
 		else
@@ -236,6 +250,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected  void updateTraining(List<DataSet> list) {
 		DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
 		DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
+
+		
+		
+		
+		
+		
 		for(int i = 0; i < list.size(); i++) {
 			newInput.putRow(i,list.get(i).getFirst());
 			newOutput.putRow(i,list.get(i).getSecond());
@@ -250,7 +270,9 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			public UpdateableImpl call() throws Exception {
 				while(getCurrent() == null) {
 					log.info("Calling for job on worker " + id);
-
+					//update parameters in master param server
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+							new GiveMeMyJob(id, null)), getSelf());	
 				}
 
 				UpdateableImpl work = compute();
