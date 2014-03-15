@@ -65,8 +65,8 @@ public class GradientChangerExample {
 		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.000001,1000});
-	//	c.setRenderWeightEpochs(1000);
+		c.setDeepLearningParams(new Object[]{1,0.000001,10000});
+		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);

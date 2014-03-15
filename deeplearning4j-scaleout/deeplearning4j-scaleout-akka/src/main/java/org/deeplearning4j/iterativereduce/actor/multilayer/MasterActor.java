@@ -20,6 +20,7 @@ import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
+import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
@@ -39,6 +40,7 @@ import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 
 
@@ -50,7 +52,7 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
 	protected BaseMultiLayerNetwork network;
-	protected Cancellable ensureNoLeftOvers;
+	protected Cancellable ensureNoLeftOvers,ensureDistribution;
 	protected AtomicLong lastUpdated = new AtomicLong(System.currentTimeMillis());
 	/**
 	 * Creates the master and the workers with this given conf
@@ -166,6 +168,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 									nextIteration();
 								}
 
+								else {
+									for(Job j : currentJobs.values()) {
+										mediator.tell(new DistributedPubSubMediator.Publish(j.getWorkerId(),
+												NeedsStatus.getInstance()), getSelf());
+									}
+								}
+
+								log.info("Available workers " + availableWorkers);
+
+
 								log.info("Current jobs left " + currentJobs.keySet());
 
 
@@ -173,7 +185,69 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 						}, context().dispatcher());
 
+				ensureDistribution = context().system().scheduler()
+						.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
 
+							@Override
+							public void run() {
+								for(final Job j : needsToBeRedistributed) {
+									scala.concurrent.Future<Void> f = Futures.future(new Callable<Void>() {
+
+										@Override
+										public Void call() throws Exception {
+											WorkerState state = workers.get(j.getWorkerId());
+											if(state != null) {
+												state.setAvailable(true);
+												log.info("Worker " + state.getWorkerId() + " unavailable for work");
+												if(j != null) {
+													log.info("Redispatching work for id " + j.getWorkerId());
+													scala.concurrent.Future<WorkerState> f = Futures.future(new Callable<WorkerState>() {
+
+														@Override
+														public WorkerState call() throws Exception {
+															log.info("Fetching new worker...");
+															WorkerState worker = nextAvailableWorker();
+															return worker;
+														}
+
+
+
+													},context().dispatcher());
+
+
+													f.onComplete(new OnComplete<WorkerState>() {
+
+														@Override
+														public void onComplete(Throwable arg0,
+																WorkerState worker) throws Throwable {
+															if(arg0 != null)
+																throw arg0;
+															log.info("Found new worker ");
+															j.setWorkerId(worker.getWorkerId());									
+
+															//replicate the network
+															mediator.tell(new DistributedPubSubMediator.Publish(worker.getWorkerId(),
+																	j), getSelf());
+															log.info("Delegated work to worker " + worker.getWorkerId());
+
+														}
+
+													}, context().dispatcher());
+
+												}
+
+											}					
+											return null;
+										}
+
+									}, context().dispatcher());
+
+									ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
+								}
+
+							}
+
+						}, context().dispatcher());
 	}
 
 
@@ -188,12 +262,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected void setWorkerDone(String id) {
 		if(this.workers == null || id == null || !this.workers.containsKey(id))
 			return;
-		
+
 		WorkerState state = this.workers != null ? this.workers.get(id) : null;
 		if(state != null)
 			this.workers.get(id).setAvailable(true);
 		if(this.currentJobs != null && this.currentJobs.containsKey(id))
 			this.currentJobs.remove(id);
+		state.setAvailable(true);
 		this.availableWorkers.add(state);
 	}
 
@@ -249,6 +324,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 		}
+
+
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob j = (GiveMeMyJob) message;
@@ -308,33 +385,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof AlreadyWorking) {
 			final AlreadyWorking a = (AlreadyWorking) message;
-
-			scala.concurrent.Future<Void> f = Futures.future(new Callable<Void>() {
-
-				@Override
-				public Void call() throws Exception {
-					WorkerState state = workers.get(a.getId());
-					if(state != null) {
-						state.setAvailable(false);
-						log.info("Worker " + state.getWorkerId() + " available for work");
-						Job j = currentJobs.get(a.getId());
-						if(j != null) {
-							log.info("Redispatching work for id " + j.getWorkerId());
-							WorkerState worker = nextAvailableWorker();
-							j.setWorkerId(worker.getWorkerId());
-							//replicate the network
-							mediator.tell(new DistributedPubSubMediator.Publish(worker.getWorkerId(),
-									j), getSelf());
-							log.info("Delegated work to worker " + state.getWorkerId());
-						}
-
-					}					
-					return null;
-				}
-
-			}, context().dispatcher());
-
-			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
+			final Job j = currentJobs.get(a.getId());
+			log.info("Adding job to be redistributed");
+			needsToBeRedistributed.add(j);
 
 
 

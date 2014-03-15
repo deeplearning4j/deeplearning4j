@@ -1,7 +1,6 @@
 package org.deeplearning4j.scaleout.zookeeper;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

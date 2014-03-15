@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -160,7 +161,9 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 				new Function<Throwable, Directive>() {
 			public Directive apply(Throwable cause) {
 				log.error("Problem with processing",cause);
-				return SupervisorStrategy.stop();
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						new ClearWorker(id)), getSelf());
+				return SupervisorStrategy.restart();
 			}
 		});
 	}
@@ -178,8 +181,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		j.setDone(true);
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				j), getSelf());
-		//context().actorSelection(masterPath).tell(register(), getSelf());
-		//this.clusterClient.tell(register(),getSelf());
+	
 	}
 
 	@Override

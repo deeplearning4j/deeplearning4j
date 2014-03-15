@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -66,7 +67,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected Map<String,Job> currentJobs = new HashMap<>();
 	protected LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<WorkerState>();
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-	
+	protected List<Job> needsToBeRedistributed = new ArrayList<>();
 
 
 	//number of batches over time
@@ -96,6 +97,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			@Override
 			public void run() {
 				log.info("Current workers " + workers.keySet());
+				//replicate the network
+				log.info("Asking for status update");
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
+						NeedsStatus.getInstance()), getSelf());
 			}
 
 		}, context().dispatcher());
@@ -155,11 +160,28 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 */
 	protected  WorkerState nextAvailableWorker() {
 		try {
-			return availableWorkers.take();
+			WorkerState ret = null;
+			do {
+				ret = availableWorkers.poll(1, TimeUnit.SECONDS);
+			}while(ret == null);
+
+			if(!ret.isAvailable()) {
+				for(WorkerState w : workers.values()) {
+					if(w.isAvailable()) {
+						availableWorkers.add(w);
+					}
+				}
+				
+				return nextAvailableWorker();
+			}
+			
+	
+			
+			return ret;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		
+
 		return null;
 	}
 
@@ -181,7 +203,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		if(splitList.size() < workers.size()) {
 			log.warning("You may want to reconfigure your batch sizes, the current partition rate does not match the number of available workers");
 		}
-		
+
 		log.info("Found partition of size " + partition);
 		for(int i = 0; i < splitList.size(); i++)  {
 			final int j = i;
@@ -194,11 +216,14 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					log.info("Sending off work for batch " + j);
 					//block till there's an available worker
 					WorkerState state = nextAvailableWorker();
+
+
+
 					List<DataSet> work = new ArrayList<>(splitList.get(j));
 					//wrap in a job for additional metadata
 					Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
 					currentJobs.put(state.getWorkerId(),j2);
-					
+
 					//replicate the network
 					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
 							j2), getSelf());
@@ -247,6 +272,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 */
 	public void addWorker(WorkerState state) {
 		if(!this.workers.containsKey(state.getWorkerId())) {
+			if(!state.isAvailable())
+				state.setAvailable(true);
+
 			this.workers.put(state.getWorkerId(),state);
 			this.availableWorkers.add(state);
 			log.info("Added worker with id " + state.getWorkerId());
@@ -268,7 +296,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				new Function<Throwable, Directive>() {
 			public Directive apply(Throwable cause) {
 				log.error("Problem with processing",cause);
-				return SupervisorStrategy.stop();
+				return SupervisorStrategy.resume();
 			}
 		});
 	}
