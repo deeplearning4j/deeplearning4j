@@ -212,13 +212,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 							@Override
 							public void run() {
-								for(final Job j : needsToBeRedistributed) {
+								while(!stateTracker.jobsToRedistribute().isEmpty()) {
+									Job remove = needsToBeRedistributed.remove(0);
 									try {
-										stateTracker.requeueJob(j);
+										stateTracker.requeueJob(remove);
 									} catch (Exception e) {
 										throw new RuntimeException(e);
 									}
 								}
+								
+								
 
 							}
 

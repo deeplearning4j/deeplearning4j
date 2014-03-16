@@ -87,11 +87,11 @@ public class Job implements Serializable {
 		this.work = work;
 	}
 
-	public synchronized boolean isPretrain() {
+	public  boolean isPretrain() {
 		return pretrain;
 	}
 
-	public synchronized void setPretrain(boolean pretrain) {
+	public void setPretrain(boolean pretrain) {
 		this.pretrain = pretrain;
 	}
 	
