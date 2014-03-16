@@ -104,9 +104,9 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
 
                          
 
-                         File yourImage = new File("path/to/your/file");
-                         Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
-                         DataSet d = v.vectorize();
+               File yourImage = new File("path/to/your/file");
+               Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+               DataSet d = v.vectorize();
 
 
 
