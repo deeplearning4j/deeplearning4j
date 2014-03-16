@@ -69,6 +69,10 @@ public class LogisticRegression implements Serializable {
 	}
 
 
+	public void resetAdaGrad(double lr) {
+		this.adaGrad = new AdaGrad(nIn,nOut,lr);
+	}
+	
 	/**
 	 * Train with the given input
 	 * and the currently set labels

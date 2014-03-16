@@ -210,7 +210,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+	
+	
 
+	@Override
+	public void resetAdaGrad(double lr) {
+		this.wAdaGrad = new AdaGrad(this.getW().rows,this.getW().columns,lr);
+	}
 	public synchronized List<NeuralNetworkGradientListener> getGradientListeners() {
 		return gradientListeners;
 	}

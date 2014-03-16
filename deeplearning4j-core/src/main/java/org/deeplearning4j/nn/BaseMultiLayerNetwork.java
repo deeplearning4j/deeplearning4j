@@ -215,6 +215,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	
+	/**
+	 * Resets adagrad with the given learning rate.
+	 * This is used for switching from the pretrain to finetune phase.
+	 * @param lr the new master learning rate to use
+	 */
+	public void resetAdaGrad(double lr) {
+		for(int i = 0; i < nLayers; i++)	 {
+			layers[i].resetAdaGrad(lr);
+		}
+		
+		logLayer.resetAdaGrad(lr);
+	}
 
 
 	public double getReconstructionCrossEntropy() {
@@ -709,6 +722,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
+	
+	
 
 	/**
 	 * Label the probabilities of the input
