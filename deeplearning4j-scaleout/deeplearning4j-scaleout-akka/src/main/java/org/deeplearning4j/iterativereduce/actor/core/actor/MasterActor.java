@@ -82,14 +82,14 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
-		
-		
+
+
 		try {
 			this.stateTracker = new ZookeeperStateTracker();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 
@@ -99,7 +99,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 			@Override
 			public void run() {
-				
+
 				try {
 					log.info("Current workers " + stateTracker.currentWorkers().keySet());
 				} catch (Exception e) {
@@ -109,11 +109,29 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				log.info("Asking for status update");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
 						NeedsStatus.getInstance()), getSelf());
+
+				while(!stateTracker.jobsToRedistribute().isEmpty()) {
+					Job j = stateTracker.jobsToRedistribute().remove(0);
+					try {
+						WorkerState state = nextAvailableWorker();
+						stateTracker.clearJob(j);
+						stateTracker.jobRequeued(j);
+						j.setWorkerId(state.getWorkerId());
+						stateTracker.addJobToCurrent(j);
+						mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
+								j), getSelf());
+						log.info("Redistributing job to worker id " + state.getWorkerId());
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
+				
+
 			}
 
 		}, context().dispatcher());
 
-		
+
 	}
 
 	/**
@@ -144,7 +162,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	}
 
-	
+
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
@@ -199,7 +217,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 */
 	protected void sendToWorkers(List<DataSet> datasets) throws Exception {
 		Collection<WorkerState> workers = stateTracker.currentWorkers().values();
-		int split = workers.size();
+		int split = this.getConf().getSplit();
 		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
 		if(splitList.size() < workers.size()) {
@@ -273,7 +291,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * @throws Exception 
 	 */
 	public void addWorker(WorkerState state) throws Exception {
-	     stateTracker.addWorker(state);
+		stateTracker.addWorker(state);
 	}
 
 
