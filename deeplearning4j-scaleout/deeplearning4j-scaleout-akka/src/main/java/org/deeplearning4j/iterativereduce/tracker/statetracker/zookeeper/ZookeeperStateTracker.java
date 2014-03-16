@@ -437,13 +437,13 @@ public class ZookeeperStateTracker implements StateTracker<Updateable<?>>, Queue
 	}
 
 	@Override
-	public synchronized Updateable<?> getCurrent() throws Exception {
+	public  Updateable<?> getCurrent() throws Exception {
 		UpdateableImpl u = (UpdateableImpl) master;
 		return u.clone();
 	}
 
 	@Override
-	public synchronized void setCurrent(Updateable<?> e) throws Exception {
+	public  void setCurrent(Updateable<?> e) throws Exception {
 		this.master = e;
 
 	}
