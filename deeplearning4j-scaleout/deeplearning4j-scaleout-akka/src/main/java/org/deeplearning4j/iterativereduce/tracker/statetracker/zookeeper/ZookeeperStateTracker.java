@@ -1,38 +1,20 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper;
-import java.util.concurrent.atomic.AtomicReference;
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.queue.DistributedIdQueue;
-import org.apache.curator.framework.recipes.queue.QueueBuilder;
-import org.apache.curator.framework.recipes.queue.QueueConsumer;
-import org.apache.curator.framework.recipes.queue.QueueSerializer;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.retry.RetryUntilElapsed;
-import org.apache.curator.utils.EnsurePath;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.data.Stat;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.scaleout.zookeeper.utils.ZkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("unchecked")
-public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, QueueConsumer<WorkerState>,QueueSerializer<WorkerState> {
+public class ZookeeperStateTracker implements StateTracker<UpdateableImpl> {
 
 	/**
 	 * 
@@ -46,14 +28,16 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, Queu
 	public final static String RESULT = "RESULT";
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile AtomicReference<UpdateableImpl> master;
+	private volatile LinkedBlockingQueue<Job> jobs = new LinkedBlockingQueue<>();
+	private volatile Map<String,WorkerState> workers = new HashMap<String,WorkerState>();
+	private volatile  List<String> topics =  new ArrayList<>();
+	private volatile List<Job> redist = new ArrayList<>();
 	private static Logger log = LoggerFactory.getLogger(ZookeeperStateTracker.class);
 
 
-	private LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<>();
+	private volatile LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<>();
 
 	public final static String CURRENT_JOBS = "JOBS";
-	private CuratorFramework jobClient,workersClient,topicsClient,resultClient;
-	private DistributedIdQueue<WorkerState>   queue;
 
 
 	public ZookeeperStateTracker() throws Exception {
@@ -62,254 +46,63 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, Queu
 
 	public ZookeeperStateTracker(String connectionString) throws Exception {
 		super();
-		jobClient = CuratorFrameworkFactory.builder().namespace(JOBS)
-				.retryPolicy(new RetryUntilElapsed(60000, 5000))
-				.ensembleProvider(new FixedEnsembleProvider(connectionString)).build();
-		jobClient.start();
 
-		jobClient.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
-
-		workersClient = CuratorFrameworkFactory.builder().namespace(WORKERS)
-				.retryPolicy(new RetryUntilElapsed(60000, 5000))
-				.ensembleProvider(new FixedEnsembleProvider(connectionString))
-				.build();
-
-		workersClient.start();
-		workersClient.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
-
-		topicsClient = CuratorFrameworkFactory.builder().namespace(TOPICS)
-				.retryPolicy(new RetryUntilElapsed(60000, 5000))
-				.ensembleProvider(new FixedEnsembleProvider(connectionString))
-				.build();
-
-
-		topicsClient.start();
-		topicsClient.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
-
-		resultClient = CuratorFrameworkFactory.builder().namespace(RESULT)
-				.retryPolicy(new RetryUntilElapsed(60000, 5000)).connectionTimeoutMs(99999999)
-				.ensembleProvider(new FixedEnsembleProvider(connectionString))
-				.build();
-
-		resultClient.start();
-		resultClient.getZookeeperClient().blockUntilConnectedOrTimedOut();
-
-
-
-
-
-
-		queue = QueueBuilder.builder(workersClient, this, this, availableWorkersPath()).buildIdQueue();
-
-		queue.start();
 	}
 
 	@Override
 	public void addJobToCurrent(Job j) throws Exception {
-		if(j.getWork() == null) {
-			log.info("Ignoring null work");
-			return;
-		}
-
-
-		List<Job> jobs = currentJobs();
 		jobs.add(j);
-		createJobsWithData(jobs);
-
+		workers.get(j.getWorkerId()).setAvailable(false);
 
 	}
 
 	@Override
 	public Map<String, WorkerState> currentWorkers() throws Exception {
-		return currentWorkers(0);
+		return workers;
+
 	}
 
-	private Map<String,WorkerState> currentWorkers(int numRetries) throws Exception {
-		Stat stat = workersClient.checkExists().forPath(currentWorkersPath());
-		if(numRetries >= 3) {
-			return new HashMap<>();
-		}
-
-		numRetries++;
-		if(stat != null && stat.getDataLength() != 0) { 
-			byte[] data = workersClient.getData().forPath(currentWorkersPath());
-
-			try {
-				Map<String, WorkerState> workers = ZkUtils.fromBytes(data, Map.class);
-				return workers;
-
-			}catch(Exception e) {
-				return currentWorkers(numRetries);
-			}
-
-
-		}
-
-		return new HashMap<>();
-	}
 
 
 	@Override
 	public  WorkerState nextAvailableWorker() throws Exception {
-		WorkerState ret =  availableWorkers.poll(30, TimeUnit.SECONDS);
-		while(ret == null) {
-			Map<String, WorkerState> workers = currentWorkers();
-			for(WorkerState w : workers.values()) {
-				if(w.isAvailable())
-					availableWorkers.add(w);
-			}
-
-			ret =  availableWorkers.poll(30, TimeUnit.SECONDS);
-
-		}
-
-		return ret;
+		return availableWorkers.take();
 	}
 
 
-	private String resultsPath() {
-		return "/" + RESULT_LOC;
-	}
 
-	private String topicsPath() {
-		return "/" + TOPICS;
-	}
-
-	private String currentJobsPath() {
-		return "/" + CURRENT_JOBS;
-	}
-
-	private String currentWorkersPath() {
-		return  "/" + CURRENT_WORKERS;
-	}
-
-	private String availableWorkersPath() {
-		return  "/" + AVAILABLE_WORKERS;
-	}
 
 	@Override
 	public void requeueJob(Job j) throws Exception {
-		if(j.getWork() == null) {
-			log.info("Ignoring null work");
-			return;
-		}
-
-		List<Job> currentJobs = new ArrayList<>();
-		currentJobs.add(j);
-		createJobsWithData(currentJobs);
-
-
-
-
-
+		redist.add(j);
 	}
 
 	@Override
 	public void setWorkerDone(String id) throws Exception {
-		Stat stat = workersClient.checkExists().forPath(currentWorkersPath());
-		if(stat != null && stat.getDataLength() != 0) { 
-			Map<String, WorkerState> workers = currentWorkers();
-			WorkerState state = workers.get(id);
-			if(state != null) {
-				state.setAvailable(true);
-				createWorkersWithData(workers);
-				queue.put(state, id);
-
-			}
-
-
-		}
+		this.workers.get(id).setAvailable(true);
+		availableWorkers.add(workers.get(id));
 
 
 	}
 
 	@Override
 	public void clearWorker(WorkerState worker) throws Exception {
-		Stat stat = workersClient.checkExists().forPath(currentWorkersPath());
-		if(stat != null && stat.getDataLength() != 0) { 
-			byte[] data = workersClient.getData().forPath( currentJobsPath());
-			Map<String, WorkerState> workers = ZkUtils.fromBytes(data, Map.class);
-			workers.remove(worker.getWorkerId());
-			createWorkersWithData(workers);
-		}
-
-
+		this.workers.remove(worker.getWorkerId());
+		availableWorkers.remove(worker);
 	}
 
 	@Override
 	public void addWorker(WorkerState worker) throws Exception {
-		Map<String, WorkerState> workers = this.currentWorkers();
-		createWorkersWithData(workers);
-		queue.put(worker, worker.getWorkerId());
+		workers.put(worker.getWorkerId(),worker);
+		availableWorkers.add(worker);
 
 
 	}
 
 
 
-	private void createJobsWithData(List<Job> jobs) {
-		createJobsWithData(jobs,0);
-	}
 
 
-
-
-	private void createJobsWithData(List<Job> currentJobs,int numTimes) {
-		if(numTimes >= 3) {
-			log.warn("Exiting...>= 3 attempts at adding data in to current jobs");
-			return;
-		}
-
-		numTimes++;
-
-		try {
-
-			EnsurePath ensurePath = new EnsurePath(currentJobsPath());
-			ensurePath.ensure(jobClient.getZookeeperClient());
-			if(jobClient.checkExists().forPath(currentJobsPath()) != null) {
-				jobClient.setData().forPath(currentJobsPath(), ZkUtils.toBytes((Serializable) currentJobs));
-			}
-
-			else
-				jobClient.create().forPath(currentJobsPath(),ZkUtils.toBytes((Serializable) currentJobs));
-
-		}catch(Exception e) {
-			createJobsWithData(currentJobs,numTimes);
-		}
-
-	}
-
-	private void createWorkersWithData(Map<String,WorkerState> workers,int numTimes) {
-		if(numTimes >= 3) {
-			log.warn("3 failures to insert workers with zk creation...exiting");
-			return;
-		}
-
-		numTimes++;
-
-
-		try {
-
-			EnsurePath ensurePath = new EnsurePath(currentWorkersPath());
-			ensurePath.ensure(workersClient.getZookeeperClient());
-
-			if(workersClient.checkExists().forPath(currentWorkersPath()) != null)
-				workersClient.setData().forPath(currentWorkersPath(),ZkUtils.toBytes((Serializable) workers));
-
-			else
-				workersClient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(currentWorkersPath(), ZkUtils.toBytes((Serializable) workers));
-
-		}catch(Exception e) {
-			createWorkersWithData(workers,numTimes);
-		}
-	}
-
-	private void createWorkersWithData(Map<String,WorkerState> workers) {
-		createWorkersWithData(workers,0);
-	}
 
 
 
@@ -325,115 +118,33 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, Queu
 
 	@Override
 	public List<Job> currentJobs() throws Exception {
-		return currentJobs(0);
+		return new ArrayList<Job>(jobs);
 	}
 
 
-	public List<Job> currentJobs(int numRetries) throws Exception {
-		if(numRetries >= 3) {
-			log.warn("Unable to obtain current jobs, exitig");
-			return Collections.emptyList();
-		}
 
-		if(jobClient.checkExists().forPath(currentJobsPath()) != null) { 
-			byte[] data = jobClient.getData().forPath(currentJobsPath());
-			try {
-				List<Job> jobs = ZkUtils.fromBytes(data, List.class);
-				return jobs;
-
-
-			}catch(Exception e) {
-				return currentJobs(numRetries);
-			}
-
-		}
-
-		return new ArrayList<>();
-	}
-
-
-	@Override
-	public void stateChanged(CuratorFramework arg0, ConnectionState arg1) {
-
-	}
-
-	@Override
-	public void consumeMessage(WorkerState arg0) throws Exception {
-		availableWorkers.add(arg0);			
-	}
-
-	@Override
-	public WorkerState deserialize(byte[] arg0) {
-		try {
-			return ZkUtils.fromBytes(arg0, WorkerState.class);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public byte[] serialize(WorkerState arg0) {
-		try {
-			return ZkUtils.toBytes(arg0);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	@Override
 	public void clearJob(Job j) throws Exception {
-		if(j.getWork() == null) {
-			log.info("Ignoring null work");
-			return;
-		}
-
-		List<Job> jobs = currentJobs();
 		jobs.remove(j);
-		createJobsWithData(jobs);
-
 	}
 
 	@Override
 	public void shutdown() {
-		if(jobClient != null)
-			jobClient.close();
-		if(workersClient != null)
-			workersClient.close();
-		if(queue != null)
-			try {
-				queue.close();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+
 
 	}
 
 	@Override
 	public void addTopic(String topic) throws Exception {
-		List<String> topics = topics();
 		topics.add(topic);
-		if(topicsClient.checkExists().forPath(topicsPath()) != null) {
-			topicsClient.setData().forPath(topicsPath(), ZkUtils.toBytes((Serializable) topics));
-		}
-
-		else {
-			topicsClient.create().creatingParentsIfNeeded().forPath(topicsPath(),ZkUtils.toBytes((Serializable) topics));
-
-		}
-
 
 
 	}
 
 	@Override
 	public List<String> topics() throws Exception {
-		if(topicsClient.checkExists().forPath(topicsPath()) != null) {
-			byte[] data = topicsClient.getData().forPath(topicsPath());
-			List<String> topics = ZkUtils.fromBytes(data, List.class);
-			return topics;
-		}
-
-		return Collections.emptyList();
+		return topics;
 	}
 
 	@Override
@@ -449,6 +160,16 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, Queu
 		else
 			this.master.set(e);
 
+	}
+
+	@Override
+	public List<Job> jobsToRedistribute() {
+		return redist;
+	}
+
+	@Override
+	public void jobRequeued(Job j) {
+		redist.remove(j);
 	}
 
 

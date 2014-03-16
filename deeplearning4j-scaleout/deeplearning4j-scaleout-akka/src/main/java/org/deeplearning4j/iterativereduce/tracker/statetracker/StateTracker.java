@@ -11,11 +11,11 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 	
-	
+	void jobRequeued(Job j);
 	
 	List<Job> currentJobs() throws Exception;
 	
-	
+	List<Job> jobsToRedistribute();
 	
 	void addTopic(String topic) throws Exception;
 	
@@ -25,7 +25,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	
 	void addJobToCurrent(Job j) throws Exception;
 	
-	Map<String,WorkerState> currentWorkers() throws Exception;;
+	Map<String,WorkerState> currentWorkers() throws Exception;
 	
 	WorkerState nextAvailableWorker() throws Exception;;
 	
@@ -42,6 +42,8 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	
 	E getCurrent() throws Exception;
 	void setCurrent(E e) throws Exception;
+	
+	
 	
 	
 	void shutdown();
