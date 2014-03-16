@@ -74,6 +74,7 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void requeueJob(Job j) throws Exception {
+		jobs.remove(j);
 		redist.add(j);
 	}
 
