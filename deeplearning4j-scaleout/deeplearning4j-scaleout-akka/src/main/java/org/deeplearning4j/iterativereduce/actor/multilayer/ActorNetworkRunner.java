@@ -282,7 +282,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 
-		Props p = pool.props(WorkerActor.propsFor(clusterClient,conf));
+		Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,null));
 		system.actorOf(p, "worker");
 
 		Cluster cluster = Cluster.get(system);

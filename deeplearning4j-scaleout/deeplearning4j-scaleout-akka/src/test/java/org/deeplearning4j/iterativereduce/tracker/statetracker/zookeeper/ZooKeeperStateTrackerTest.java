@@ -10,7 +10,6 @@ import java.util.UUID;
 import org.apache.curator.test.TestingServer;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.BaseStateKeeperTest;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +69,7 @@ public class ZooKeeperStateTrackerTest  {
 
 		StateTracker tracker = createTracker();
 		String id = UUID.randomUUID().toString();
-		WorkerState state = new WorkerState(id, null);
+		WorkerState state = new WorkerState(id);
 		state.setAvailable(true);
 		tracker.addWorker(state);
 

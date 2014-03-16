@@ -1,12 +1,14 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
+import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
-public interface StateTracker {
+public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 	
 	
@@ -14,6 +16,10 @@ public interface StateTracker {
 	List<Job> currentJobs() throws Exception;
 	
 	
+	
+	void addTopic(String topic) throws Exception;
+	
+	List<String> topics() throws Exception;
 	
 	void clearJob(Job j) throws Exception;
 	
@@ -32,6 +38,10 @@ public interface StateTracker {
 	void addWorker(WorkerState worker) throws Exception;;
 
 	boolean everyWorkerAvailable() throws Exception;;
+	
+	
+	E getCurrent() throws Exception;
+	void setCurrent(E e) throws Exception;
 	
 	
 	void shutdown();

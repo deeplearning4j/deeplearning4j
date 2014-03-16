@@ -15,6 +15,7 @@ import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
@@ -50,8 +51,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected int numTimesReceivedNullJob = 0;
 
 
-	public WorkerActor(Conf conf) {
-		super(conf);
+	public WorkerActor(Conf conf,StateTracker<UpdateableImpl> tracker) {
+		super(conf,tracker);
 		setup(conf);
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
@@ -67,8 +68,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	}
 
-	public WorkerActor(ActorRef clusterClient,Conf conf) {
-		super(conf,clusterClient);
+	public WorkerActor(ActorRef clusterClient,Conf conf,StateTracker<UpdateableImpl> tracker) {
+		super(conf,clusterClient,tracker);
 		setup(conf);
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
@@ -86,20 +87,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-
-
-	@Override
-	public void preStart() throws Exception {
-		super.preStart();
-		availableForWork();
+	public static Props propsFor(ActorRef actor,Conf conf,StateTracker<UpdateableImpl> tracker) {
+		return Props.create(WorkerActor.class,actor,conf,tracker);
 	}
 
-	public static Props propsFor(ActorRef actor,Conf conf) {
-		return Props.create(WorkerActor.class,actor,conf);
-	}
-
-	public static Props propsFor(Conf conf) {
-		return Props.create(WorkerActor.class,conf);
+	public static Props propsFor(Conf conf,StateTracker<Updateable<?>> stateTracker) {
+		return Props.create(WorkerActor.class,conf,stateTracker);
 	}
 
 	protected void confirmWorking() {
@@ -220,31 +213,16 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 				@Override
 				public Void call() throws Exception {
-
+					
 					if(m.get() == null) {
-						log.info("Network is null, this worker has recently joined the cluster or the network was lost. Asking master for a copy of the current network");
-						while(getNetwork() == null) {
-							mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-									new NeedsModelMessage(id)), getSelf());	
-							try {
-								Thread.sleep(15000);
-							} catch (InterruptedException e) {
-								Thread.currentThread().interrupt();
-							}
-						}
-
+						setNetwork(tracker.getCurrent().get());
 
 					}
 
 					else {
 						setWorkerUpdateable(m.clone());
-						log.info("Updated worker network");
-						if(m.get() == null) {
-							log.warn("Unable to initialize network; network was null");
-							throw new IllegalArgumentException("Network was null");
-						}
-
-						setNetwork(m.get().clone());
+						setNetwork(m.get());
+						
 					}
 
 					return null;
