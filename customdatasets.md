@@ -115,20 +115,19 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
 
  Text:
 
-    With text, there are 2 ways of transforming textual data in to something a neural network understands.
+ With text, there are 2 ways of transforming textual data in to something a neural network understands.
 
-    One is the bag of words approach, which takes in the whole corpus of text, and calculates a vocab.
+ One is the bag of words approach, which takes in the whole corpus of text, and calculates a vocab.
 
-     Any document is then represented as a bag of words, or a based on the vocab each word is a column with the word counts in it.
+  Any document is then represented as a bag of words, or a based on the vocab each word is a column with the word counts in it.
 
 
-     The other approach is via [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html). Word2Vec takes in to account the distributional context of a word
+  The other approach is via [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html). Word2Vec takes in to account the distributional context of a word and learns word vectors. These vectors then are concacneated in to a window vector. 
 
-          and learns word vectors. These vectors then are concacneated in to a window vector. 
-
-          If we think about a word window:
+  If we think about a word window of size 3:
 
 
                 w1 w2 w3
 
-         Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window.
+   
+   Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window.
