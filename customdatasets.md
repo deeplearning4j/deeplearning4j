@@ -102,10 +102,11 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
 
  When you go to instanitate the ImageVectorizer, you could do something like the following:
 
-                              File yourImage = new File("path/to/your/file");
-                              Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+                         
 
-                              DataSet d = v.vectorize();
+                         File yourImage = new File("path/to/your/file");
+                         Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+                         DataSet d = v.vectorize();
 
 
 
