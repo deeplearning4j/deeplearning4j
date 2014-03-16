@@ -1,5 +1,5 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper;
-
+import java.util.concurrent.atomic.AtomicReference;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("unchecked")
-public class ZookeeperStateTracker implements StateTracker<Updateable<?>>, QueueConsumer<WorkerState>,QueueSerializer<WorkerState> {
+public class ZookeeperStateTracker implements StateTracker<UpdateableImpl>, QueueConsumer<WorkerState>,QueueSerializer<WorkerState> {
 
 	/**
 	 * 
@@ -45,7 +45,7 @@ public class ZookeeperStateTracker implements StateTracker<Updateable<?>>, Queue
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
 	public final static String RESULT_LOC = "RESULT_LOC";
-	private Updateable<?> master;
+	private volatile AtomicReference<UpdateableImpl> master;
 	private static Logger log = LoggerFactory.getLogger(ZookeeperStateTracker.class);
 
 
@@ -153,7 +153,7 @@ public class ZookeeperStateTracker implements StateTracker<Updateable<?>>, Queue
 
 
 	@Override
-	public synchronized WorkerState nextAvailableWorker() throws Exception {
+	public  WorkerState nextAvailableWorker() throws Exception {
 		WorkerState ret =  availableWorkers.poll(30, TimeUnit.SECONDS);
 		while(ret == null) {
 			Map<String, WorkerState> workers = currentWorkers();
@@ -437,14 +437,17 @@ public class ZookeeperStateTracker implements StateTracker<Updateable<?>>, Queue
 	}
 
 	@Override
-	public  Updateable<?> getCurrent() throws Exception {
-		UpdateableImpl u = (UpdateableImpl) master;
+	public  UpdateableImpl getCurrent() throws Exception {
+		UpdateableImpl u =  master.get();
 		return u.clone();
 	}
 
 	@Override
-	public  void setCurrent(Updateable<?> e) throws Exception {
-		this.master = e;
+	public  void setCurrent(UpdateableImpl e) throws Exception {
+		if(this.master == null)
+			this.master = new AtomicReference<UpdateableImpl>(e);
+		else
+			this.master.set(e);
 
 	}
 

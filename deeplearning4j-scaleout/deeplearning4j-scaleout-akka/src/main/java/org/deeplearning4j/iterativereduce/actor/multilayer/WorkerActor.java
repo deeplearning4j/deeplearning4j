@@ -11,11 +11,11 @@ import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper.ZookeeperStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
@@ -87,11 +87,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	public static Props propsFor(ActorRef actor,Conf conf,StateTracker<UpdateableImpl> tracker) {
+	public static Props propsFor(ActorRef actor,Conf conf,ZookeeperStateTracker tracker) {
 		return Props.create(WorkerActor.class,actor,conf,tracker);
 	}
 
-	public static Props propsFor(Conf conf,StateTracker<Updateable<?>> stateTracker) {
+	public static Props propsFor(Conf conf,ZookeeperStateTracker stateTracker) {
 		return Props.create(WorkerActor.class,conf,stateTracker);
 	}
 
@@ -307,13 +307,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	protected void blockTillNetworkAvailable() {
 		while(getNetwork() == null) {
-			log.info("Network is null, this worker has recently joined the cluster. Asking master for a copy of the current network");
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					new NeedsModelMessage(id)), getSelf());	
 			try {
-				Thread.sleep(15000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+				setNetwork(this.tracker.getCurrent().get());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -333,19 +330,20 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		//blockTillJobAvailable();
 		if(getCurrent() == null)
 			return null;
-
+		BaseMultiLayerNetwork network = this.getNetwork();
+		
 		if(this.getCurrent().isPretrain()) {
 			log.info("Worker " + id + " pretraining");
-			getNetwork().pretrain(this.getCombinedInput(), extraParams);
+			network.pretrain(this.getCombinedInput(), extraParams);
 		}
 
 		else {
 			log.info("Worker " + id + " finetuning");
-			getNetwork().finetune(outcomes, learningRate, fineTuneEpochs);
+			network.finetune(outcomes, learningRate, fineTuneEpochs);
 		}
 
 		finishedWork();
-		return new UpdateableImpl(getNetwork());
+		return new UpdateableImpl(network);
 	}
 
 	@Override

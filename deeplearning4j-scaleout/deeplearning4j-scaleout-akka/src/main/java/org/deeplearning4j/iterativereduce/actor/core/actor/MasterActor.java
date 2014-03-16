@@ -53,7 +53,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected List<E> updates = new ArrayList<E>();
 	protected ActorRef batchActor;
-	protected StateTracker<Updateable<?>> stateTracker;
+	protected ZookeeperStateTracker stateTracker;
 	protected int epochsComplete;
 	protected boolean pretrain = true;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
@@ -284,7 +284,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	@Override
 	public synchronized E getResults() {
 		try {
-			return (E) stateTracker.getCurrent().get();
+			return (E) stateTracker.getCurrent();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

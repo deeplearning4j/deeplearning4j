@@ -22,10 +22,10 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 	private Class<? extends BaseMultiLayerNetwork> clazz;
 
 
-	public UpdateableImpl(BaseMultiLayerNetwork matrix) {
-		wrapped = matrix;
+	public UpdateableImpl(BaseMultiLayerNetwork wrapped) {
+		this.wrapped = wrapped;
 		if(clazz == null)
-			clazz = matrix.getClass();
+			clazz = wrapped.getClass();
 	}
 
 	@Override
