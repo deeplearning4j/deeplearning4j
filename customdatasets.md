@@ -71,6 +71,47 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
 
        With images, you will typically transform load the image. This can be done with an  [../doc/org/deeplearning4j/datasets/vectorizer/ImageVectorizer.html](ImageVectorizer) . An ImageVectorizer loads in the image from a file and takes the image and transforms its pixels based on the RGB spectrum.
 
+
+       One thing of note is that the ImageVectorizer takes in a label number. Typically what you will want to do is have a set of images in a folder.
+
+       The folder of the image will be the label.
+
+
+        Say you were doing digits with mnist, a dataset might be:
+                         
+                         parentdir/
+                           1/
+                            img1.png
+                            img2.png
+                           2/
+                            img3.png
+                            img4.png
+       
+
+       If you layout your image dataset such that you have a list of labels as child directories, you could do something like:
+
+
+                             File rootDir = new File("path/to/your/dir");
+                             //needs to be a list for maintaining order of labels
+                             List<String> labels = new ArrayList<String>();
+
+                             for(File f : rootDir.listFiles()) {
+                                if(f.isDirectory())
+                             	labels.add(f.getName());
+                             }
+
+        When you go to instanitate the ImageVectorizer, you could do something like the following:
+
+                              File yourImage = new File("path/to/your/file");
+                              Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+
+                              DataSet d = v.vectorize();
+
+
+
+
+
+
  Text:
 
           With text, there are 2 ways of transforming textual data in to something a neural network understands.
