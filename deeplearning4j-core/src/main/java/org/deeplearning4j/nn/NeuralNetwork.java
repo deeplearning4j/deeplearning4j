@@ -77,6 +77,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public void setFanIn(double fanIn);
 	
 	
+	void resetAdaGrad(double lr);
 	
 	void epochDone(int epoch);
 	
