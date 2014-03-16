@@ -2,22 +2,19 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.Serializable;
 
-import akka.actor.ActorRef;
 
 public class WorkerState implements Serializable {
 
 	private static final long serialVersionUID = 6984546372310389146L;
 	private String workerId;
 	private boolean isAvailable = true;
-	private ActorRef ref;
 	
 	
 	
 	
-	public WorkerState(String workerId, ActorRef ref) {
+	public WorkerState(String workerId) {
 		super();
 		this.workerId = workerId;
-		this.ref = ref;
 	}
 	
 	
@@ -33,19 +30,6 @@ public class WorkerState implements Serializable {
 	public  void setAvailable(boolean isAvailable) {
 		this.isAvailable = isAvailable;
 	}
-	public  ActorRef getRef() {
-		return ref;
-	}
-	public  void setRef(ActorRef ref) {
-		this.ref = ref;
-	}
-
-
-	@Override
-	public String toString() {
-		return "WorkerState [workerId=" + workerId + ", isAvailable="
-				+ isAvailable + "]";
-	}
 
 
 	@Override
@@ -53,7 +37,6 @@ public class WorkerState implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (isAvailable ? 1231 : 1237);
-		result = prime * result + ((ref == null) ? 0 : ref.hashCode());
 		result = prime * result
 				+ ((workerId == null) ? 0 : workerId.hashCode());
 		return result;
@@ -71,11 +54,6 @@ public class WorkerState implements Serializable {
 		WorkerState other = (WorkerState) obj;
 		if (isAvailable != other.isAvailable)
 			return false;
-		if (ref == null) {
-			if (other.ref != null)
-				return false;
-		} else if (!ref.equals(other.ref))
-			return false;
 		if (workerId == null) {
 			if (other.workerId != null)
 				return false;
@@ -83,7 +61,15 @@ public class WorkerState implements Serializable {
 			return false;
 		return true;
 	}
+
+
+	@Override
+	public String toString() {
+		return "WorkerState [workerId=" + workerId + ", isAvailable="
+				+ isAvailable + "]";
+	}
 	
-	
+
+
 
 }

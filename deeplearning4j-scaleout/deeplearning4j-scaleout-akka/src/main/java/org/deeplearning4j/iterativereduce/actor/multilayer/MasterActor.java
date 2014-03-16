@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -101,12 +102,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		DeepLearningAccumulator acc = new DeepLearningAccumulator();
 		for(UpdateableImpl m : workerUpdates) 
 			acc.accumulate(m.get());
-
+		UpdateableImpl masterResults = this.getResults();
 		if(masterResults == null)
 			masterResults = new UpdateableImpl(acc.averaged());
 		else
 			masterResults.set(acc.averaged());
 
+		try {
+			stateTracker.setCurrent(masterResults);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		
 		return masterResults;
 	}
 
@@ -118,7 +126,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		ActorSystem system = context().system();
 		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 		//start local workers
-		Props p = pool.props(WorkerActor.propsFor(conf));
+		Props p = pool.props(WorkerActor.propsFor(conf,stateTracker));
 		p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
 
 		system.actorOf(p, "worker");
@@ -150,8 +158,15 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				if(conf.getColumnStds() != null)
 					network.setColumnStds(conf.getColumnStds());
 
-				masterResults = new UpdateableImpl(network);
+				UpdateableImpl masterResults = new UpdateableImpl(network);
 
+				try {
+					this.stateTracker.setCurrent(masterResults);
+				} catch (Exception e1) {
+					throw new RuntimeException(e1);
+				}
+				
+				
 				//after worker is instantiated broadcast the master network to the worker
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());	
@@ -162,24 +177,31 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 							@Override
 							public void run() {
-								log.info("Status check on next iteration");
-								if(!updates.isEmpty() && currentJobs.isEmpty() || everyWorkerAvailable()) {
-									log.info("Forcing next iteration");
-									nextIteration();
-								}
-
-								else {
-									for(Job j : currentJobs.values()) {
-										mediator.tell(new DistributedPubSubMediator.Publish(j.getWorkerId(),
-												NeedsStatus.getInstance()), getSelf());
+								try {
+									List<Job> currentJobs = stateTracker.currentJobs();
+									Collection<WorkerState> availableWorkers = stateTracker.currentWorkers().values();
+									log.info("Status check on next iteration");
+									if(!updates.isEmpty() && currentJobs.isEmpty() || everyWorkerAvailable()) {
+										log.info("Forcing next iteration");
+										nextIteration();
 									}
+
+									else {
+										for(Job j : currentJobs) {
+											mediator.tell(new DistributedPubSubMediator.Publish(j.getWorkerId(),
+													NeedsStatus.getInstance()), getSelf());
+										}
+									}
+
+									log.info("Available workers " + availableWorkers);
+
+
+									log.info("Current jobs left " + currentJobs);
+
+
+								}catch(Exception e) {
+									throw new RuntimeException(e);
 								}
-
-								log.info("Available workers " + availableWorkers);
-
-
-								log.info("Current jobs left " + currentJobs.keySet());
-
 
 							}
 
@@ -195,6 +217,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 										@Override
 										public Void call() throws Exception {
+											Map<String,WorkerState> workers = stateTracker.currentWorkers();
 											WorkerState state = workers.get(j.getWorkerId());
 											if(state != null) {
 												state.setAvailable(true);
@@ -252,24 +275,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	protected boolean everyWorkerAvailable() {
-		for(WorkerState s : workers.values())
-			if(!s.isAvailable())
-				return false;
-		return true;
+	protected boolean everyWorkerAvailable() throws Exception {
+		return stateTracker.everyWorkerAvailable();
 	}
 
-	protected void setWorkerDone(String id) {
-		if(this.workers == null || id == null || !this.workers.containsKey(id))
-			return;
-
-		WorkerState state = this.workers != null ? this.workers.get(id) : null;
-		if(state != null)
-			this.workers.get(id).setAvailable(true);
-		if(this.currentJobs != null && this.currentJobs.containsKey(id))
-			this.currentJobs.remove(id);
-		state.setAvailable(true);
-		this.availableWorkers.add(state);
+	protected void setWorkerDone(String id) throws Exception {
+		stateTracker.setWorkerDone(id);
 	}
 
 
@@ -280,12 +291,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
-	protected void nextIteration() {
-		masterResults = this.compute(updates, updates);
+	protected void nextIteration() throws Exception {
+		UpdateableImpl masterResults = this.compute(updates, updates);
+		Map<String,WorkerState> workers = stateTracker.currentWorkers();
+
 		for(String key : workers.keySet()) {
-			workers.get(key).setAvailable(true);
-			currentJobs.remove(key);
-			this.availableWorkers.add(workers.get(key));
+			stateTracker.setWorkerDone(key);
 			log.info("Freeing " + key + " for work post batch completion");
 		}
 
@@ -298,6 +309,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
+		this.stateTracker.setCurrent(masterResults);
+		
+		
 	}
 
 	@SuppressWarnings({ "unchecked" })
@@ -329,32 +343,39 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof GiveMeMyJob) {
 			GiveMeMyJob j = (GiveMeMyJob) message;
-			Job j2 = this.currentJobs.get(j.getId());
-			if(j2 == null) {
-				log.info("There does not appear to be a job for worker " + j.getId());
+			List<Job> jobs = stateTracker.currentJobs();
+			for(Job j2 : jobs) {
+				if(j2.getWorkerId().equals(j.getId())) {
+
+					j.setJob(j2);
+
+					log.info("Returning current job for worker " + j.getId());
+
+					mediator.tell(new DistributedPubSubMediator.Publish(j.getId(),
+							j), getSelf());	
+
+
+				}
 			}
-			else {
-				j.setJob(j2);
 
-				log.info("Returning current job for worker " + j.getId());
 
-				mediator.tell(new DistributedPubSubMediator.Publish(j.getId(),
-						j), getSelf());	
 
-			}
 
 
 		}
 
 		else if(message instanceof NeedsModelMessage) {
 			log.info("Sending networks over");
-			getSender().tell(masterResults.get(),getSelf());
+			getSender().tell(getResults().get(),getSelf());
 		}
 
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
-			masterResults = this.compute(updates, updates);
+			UpdateableImpl masterResults = this.compute(updates, updates);
 
+			stateTracker.setCurrent(masterResults);
+			
+			
 			epochsComplete++;
 			updates.clear();
 
@@ -364,7 +385,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				log.info("Switching to finetune mode");
 				pretrain = false;
 				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
-
+				Map<String,WorkerState> workers = stateTracker.currentWorkers();
 				for(String key : workers.keySet()) {
 					setWorkerDone(key);
 					log.info("Freeing " + key + " for work post batch completion");
@@ -384,25 +405,31 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		else if(message instanceof AlreadyWorking) {
-			final AlreadyWorking a = (AlreadyWorking) message;
-			final Job j = currentJobs.get(a.getId());
-			log.info("Adding job to be redistributed");
-			needsToBeRedistributed.add(j);
-
+			List<Job> jobs = stateTracker.currentJobs();
+			AlreadyWorking working = (AlreadyWorking) message;
+			for(Job j : jobs) {
+				if(j.getWorkerId().equals(working.getId())) {
+					stateTracker.requeueJob(j);
+				}
+			}
 
 
 		}
 
 		else if(message instanceof ClearWorker) {
 			log.info("Removing worker with id " + ((ClearWorker) message).getId());
-			this.workers.remove(((ClearWorker) message).getId());
-			this.currentJobs.remove(((ClearWorker) message).getId());
+			ClearWorker clear = (ClearWorker) message;
+			Map<String,WorkerState> workers = stateTracker.currentWorkers();
+			WorkerState clear2 = workers.get(clear.getId());
+			if(clear != null)
+				stateTracker.clearWorker(clear2);
 		}
 
 		else if(message instanceof String) {
-			WorkerState state = this.workers.get(message.toString());
+			Map<String,WorkerState> workers = stateTracker.currentWorkers();
+			WorkerState state = workers.get(message.toString());
 			if(state == null) {
-				state = new WorkerState(message.toString(),getSender());
+				state = new WorkerState(message.toString());
 				state.setAvailable(true);
 				addWorker(state);
 				log.info("Worker " + state.getWorkerId() + " available for work");
@@ -424,6 +451,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
+			List<Job> currentJobs = stateTracker.currentJobs();
 			if(updates.size() >= partition || everyWorkerAvailable() || currentJobs.isEmpty()) 
 				nextIteration();
 
@@ -433,7 +461,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof Job) {
 			Job j = (Job) message;
 			if(!j.isDone()) {
-				currentJobs.put(j.getWorkerId(),j);
+				stateTracker.addJobToCurrent(j);
 				log.info("Ack from worker " + j.getWorkerId() + " on job");
 			}
 			else {
@@ -482,7 +510,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	@Override
 	public void complete(DataOutputStream ds) {
-		this.masterResults.get().write(ds);
+		this.getMasterResults().get().write(ds);
 	}
 
 

@@ -5,25 +5,24 @@ import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper.ZookeeperStateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.jblas.DoubleMatrix;
 
+import scala.Option;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
@@ -52,9 +51,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	protected Conf conf;
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-	protected E masterResults;
 	protected List<E> updates = new ArrayList<E>();
 	protected ActorRef batchActor;
+	protected StateTracker<Updateable<?>> stateTracker;
 	protected int epochsComplete;
 	protected boolean pretrain = true;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
@@ -63,9 +62,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String SHUTDOWN = "shutdown";
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
-	protected Map<String, WorkerState> workers = new HashMap<>();
-	protected Map<String,Job> currentJobs = new HashMap<>();
-	protected LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<WorkerState>();
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
 	protected List<Job> needsToBeRedistributed = new ArrayList<>();
 
@@ -86,7 +82,14 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
-
+		
+		
+		try {
+			this.stateTracker = new ZookeeperStateTracker();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 
@@ -96,7 +99,12 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 			@Override
 			public void run() {
-				log.info("Current workers " + workers.keySet());
+				
+				try {
+					log.info("Current workers " + stateTracker.currentWorkers().keySet());
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 				//replicate the network
 				log.info("Asking for status update");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
@@ -105,7 +113,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		}, context().dispatcher());
 
-
+		
 	}
 
 	/**
@@ -123,6 +131,20 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 
+	@Override
+	public void aroundPostRestart(Throwable reason) {
+		super.aroundPostRestart(reason);
+		log.info("Restarted because of ",reason);
+	}
+
+	@Override
+	public void aroundPreRestart(Throwable reason, Option<Object> message) {
+		super.aroundPreRestart(reason, message);
+		log.info("Restarted because of ",reason + " with message " + message.toString());
+
+	}
+
+	
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
@@ -157,32 +179,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	/**
 	 * Finds the next available worker based on current states
 	 * @return the next available worker, blocks till a worker is found
+	 * @throws Exception 
 	 */
-	protected  WorkerState nextAvailableWorker() {
-		try {
-			WorkerState ret = null;
-			do {
-				ret = availableWorkers.poll(1, TimeUnit.SECONDS);
-			}while(ret == null);
-
-			if(!ret.isAvailable()) {
-				for(WorkerState w : workers.values()) {
-					if(w.isAvailable()) {
-						availableWorkers.add(w);
-					}
-				}
-				
-				return nextAvailableWorker();
-			}
-			
-	
-			
-			return ret;
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
-		return null;
+	protected  WorkerState nextAvailableWorker() throws Exception {
+		return stateTracker.nextAvailableWorker();
 	}
 
 	/**
@@ -195,9 +195,11 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * is flowing (vs publishing) and also allows for
 	 * proper batching of resources and input splits.
 	 * @param datasets the datasets to train
+	 * @throws Exception 
 	 */
-	protected void sendToWorkers(List<DataSet> datasets) {
-		int split = this.workers.size();
+	protected void sendToWorkers(List<DataSet> datasets) throws Exception {
+		Collection<WorkerState> workers = stateTracker.currentWorkers().values();
+		int split = workers.size();
 		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
 		if(splitList.size() < workers.size()) {
@@ -222,8 +224,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					List<DataSet> work = new ArrayList<>(splitList.get(j));
 					//wrap in a job for additional metadata
 					Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
-					currentJobs.put(state.getWorkerId(),j2);
-
+					stateTracker.addJobToCurrent(j2);
 					//replicate the network
 					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
 							j2), getSelf());
@@ -269,25 +270,24 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	/**
 	 * Adds a worker state to this master
 	 * @param state the state to add
+	 * @throws Exception 
 	 */
-	public void addWorker(WorkerState state) {
-		if(!this.workers.containsKey(state.getWorkerId())) {
-			if(!state.isAvailable())
-				state.setAvailable(true);
-
-			this.workers.put(state.getWorkerId(),state);
-			this.availableWorkers.add(state);
-			log.info("Added worker with id " + state.getWorkerId());
-		}
+	public void addWorker(WorkerState state) throws Exception {
+	     stateTracker.addWorker(state);
 	}
 
 
 	@Override
 	public abstract void complete(DataOutputStream ds);
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized E getResults() {
-		return masterResults;
+		try {
+			return (E) stateTracker.getCurrent().get();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -314,7 +314,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 	public E getMasterResults() {
-		return masterResults;
+		return getResults();
 	}
 
 	public boolean isDone() {

@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
@@ -62,15 +63,16 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	public final static String SYSTEM_NAME = "Workers";
 	protected String masterPath;
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-
-	public WorkerActor(Conf conf) {
-		this(conf,null);
+	protected StateTracker<E> tracker;
+	public WorkerActor(Conf conf,StateTracker<E> tracker) {
+		this(conf,null,tracker);
 	}
 
-	public WorkerActor(Conf conf,ActorRef client) {
+	public WorkerActor(Conf conf,ActorRef client,StateTracker<E> tracker) {
 		setup(conf);
 
 		this.current = new AtomicReference<>(null);
+		this.tracker = tracker;
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
 
@@ -90,7 +92,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	}
 
 	public WorkerState register() {
-		return new WorkerState(this.id,getSelf());
+		return new WorkerState(this.id);
 	}
 
 	public String generateId() {
@@ -150,7 +152,6 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 		mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 
-		availableForWork();
 	}
 
 
@@ -175,7 +176,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		log.info("Flagging availability of self " + id + " as available");
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				new WorkerState(id,getSelf())), getSelf());
+				new WorkerState(id)), getSelf());
 		
 		Job j = new Job(id, null,true);
 		j.setDone(true);

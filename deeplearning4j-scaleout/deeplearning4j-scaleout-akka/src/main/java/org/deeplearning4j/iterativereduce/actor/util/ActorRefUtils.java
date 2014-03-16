@@ -48,6 +48,8 @@ public class ActorRefUtils {
 	 * @param system system to use
 	 */
 	public static void startEmbeddedZooKeeper(ActorSystem system) {
+		System.setProperty("jute.maxbuffer","5048583");
+		
 		Future<Void> f = Futures.future(new Callable<Void>() {
 
 			@Override
