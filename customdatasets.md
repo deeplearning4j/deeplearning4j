@@ -25,7 +25,7 @@ Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datas
 Extending a [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) lets you do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on MNIST, there are 60,000 images, and we'll handle them here in batches of 10, with this command:
 
 
-                            new MnistDataSetIterator(10,60000)
+                     new MnistDataSetIterator(10,60000)
 
 The constructor above inherits from the BaseDataSetIterator, which itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher is called by the iterator to vectorize the input data. 
 
@@ -47,7 +47,7 @@ With images, you typically transform load the image. This can be done with an [I
 
 Note that the ImageVectorizer takes in a label number. You typically want a set of images in a folder named after their label. If you're doing digits with MNIST, you're label files might look like this:
                          
-                         parentdir/
+                      parentdir/
                            1/
                             img1.png
                             img2.png
@@ -57,22 +57,22 @@ Note that the ImageVectorizer takes in a label number. You typically want a set 
 
 Given an image data set where the labels are child directories, you could do something like:
 
-                             File rootDir = new File("path/to/your/dir");
-                             //needs to be a list for maintaining order of labels
-                             List<String> labels = new ArrayList<String>();
+                       File rootDir = new File("path/to/your/dir");
+                       //needs to be a list for maintaining order of labels
+                       List<String> labels = new ArrayList<String>();
 
-                             for(File f : rootDir.listFiles()) {
-                                if(f.isDirectory())
-                             	labels.add(f.getName());
-                             }
+                       for(File f : rootDir.listFiles()) {
+                          if(f.isDirectory())
+                       	labels.add(f.getName());
+                       }
 
 When you instantiate the ImageVectorizer, you could do something like this:
 
                          
 
-               File yourImage = new File("path/to/your/file");
-               Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
-               DataSet d = v.vectorize();
+                       File yourImage = new File("path/to/your/file");
+                       Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+                       DataSet d = v.vectorize();
 
 ### text
 
@@ -86,7 +86,7 @@ Words are then grouped in windows of varying length. [Barack Obama], for example
 
 Let's take a word window of size three:
 
-                w1 w2 w3
+                        w1 w2 w3
 
 and assume that w1's vector is [1 2 3], w2's vector is [4 5 6] and w3's is [7 8 9].
 
