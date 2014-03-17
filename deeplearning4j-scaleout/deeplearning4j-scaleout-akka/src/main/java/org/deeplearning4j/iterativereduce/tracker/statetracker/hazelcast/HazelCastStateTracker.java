@@ -69,8 +69,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		}
 
-		
-		
+
+
 		jobs = h.getList(JOBS);
 		workers = h.getMap(CURRENT_WORKERS);
 		topics = h.getList(TOPICS);
@@ -86,9 +86,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		Config conf = new Config();
 		conf.getNetworkConfig().setPort(DEFAULT_HAZELCAST_PORT);
 		conf.getNetworkConfig().setPortAutoIncrement(true);
-		
-	
-		
+
+
+
 		conf.setProperty("hazelcast.initial.min.cluster.size","1");
 
 
@@ -100,8 +100,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		join.getTcpIpConfig().setConnectionTimeoutSeconds(2000);
 		join.getTcpIpConfig().addMember("127.0.0.1:5172");
-		
-		
+
+
 		ListConfig jobConfig = new ListConfig();
 		jobConfig.setName(JOBS);
 		conf.addListConfig(jobConfig);
@@ -137,8 +137,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void addJobToCurrent(Job j) throws Exception {
 		jobs.add(j);
-		workers.get(j.getWorkerId()).setAvailable(false);
-
+		WorkerState w = workers.get(j.getWorkerId());
+		w.setAvailable(false);
+		workers.put(w.getWorkerId(), w);
 	}
 
 	@Override
@@ -151,7 +152,24 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public  WorkerState nextAvailableWorker() throws Exception {
-		return availableWorkers.poll();
+		WorkerState ret = null;
+		int timesLooped = 0;
+		do {
+			ret = availableWorkers.poll();
+			timesLooped++;
+			if(timesLooped % 5 == 0) {
+				for(WorkerState w : workers.values()) {
+					if(w.isAvailable() && !availableWorkers.contains(w))  {
+						availableWorkers.add(w);
+						log.info("Adding missing worker " + w.getWorkerId());
+					}
+				}
+			}
+
+		}while(ret == null);
+
+		return ret;
+
 	}
 
 
@@ -165,7 +183,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void setWorkerDone(String id) throws Exception {
-		this.workers.get(id).setAvailable(true);
+		WorkerState w = workers.get(id);
+		w.setAvailable(true);
+		workers.put(w.getWorkerId(), w);
 		availableWorkers.add(workers.get(id));
 
 
@@ -173,7 +193,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void clearWorker(WorkerState worker) throws Exception {
-		this.workers.remove(worker.getWorkerId());
+		workers.remove(worker.getWorkerId());
 		availableWorkers.remove(worker);
 	}
 
