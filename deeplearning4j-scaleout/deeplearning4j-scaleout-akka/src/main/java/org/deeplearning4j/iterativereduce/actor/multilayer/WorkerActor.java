@@ -277,6 +277,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 							work), getSelf());	
 
 				}
+				
 				finishedWork();
 				availableForWork();
 				return work;
@@ -328,7 +329,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			return null;
 		BaseMultiLayerNetwork network = this.getNetwork();
 		
-		if(this.getCurrent().isPretrain()) {
+		if(tracker.isPretrain()) {
 			log.info("Worker " + id + " pretraining");
 			network.pretrain(this.getCombinedInput(), extraParams);
 		}

@@ -11,6 +11,10 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 	
+	boolean isPretrain();
+	void moveToFinetune();
+	
+	
 	void jobRequeued(Job j);
 	
 	List<Job> currentJobs() throws Exception;

@@ -38,12 +38,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String AVAILABLE_WORKERS = "AVAILABLE_WORKERS";
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
+	public final static String IS_PRETRAIN = "ispretrain";
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile IAtomicReference<Object> master;
 	private volatile List<Job> jobs;
 	private volatile Map<String,WorkerState> workers;
 	private volatile  List<String> topics;
 	private volatile List<Job> redist;
+	private volatile IAtomicReference<Object> isPretrain;
 	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
 	private Config config;
 	private volatile Queue<WorkerState> availableWorkers;
@@ -77,8 +79,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		redist = h.getList(REDIST);
 		availableWorkers = h.getQueue(AVAILABLE_WORKERS);
 		master = h.getAtomicReference(RESULT);
-		h.getAtomicReference(RESULT);
-
+		isPretrain = h.getAtomicReference(IS_PRETRAIN);
+		isPretrain.set(false);
 
 	}
 
@@ -290,6 +292,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		if(w != null)
 			return w.isAvailable();
 		return false;
+	}
+
+	@Override
+	public boolean isPretrain() {
+		return (boolean) isPretrain.get();
+	}
+
+	@Override
+	public void moveToFinetune() {
+		isPretrain.set(false);
 	}
 
 
