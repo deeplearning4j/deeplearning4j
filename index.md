@@ -4,8 +4,7 @@ layout: default
 
 # neural nets overview 
 
-
-####[Getting Started](../gettingstarted.html)
+If you just want to get started without fanfare, you can go [here](../gettingstarted.html).
 
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. Deep learning is a name for a certain type of stacked neural network composed of several node layers. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
