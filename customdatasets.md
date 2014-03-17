@@ -76,15 +76,13 @@ When you instantiate the ImageVectorizer, you could do something like this:
 
 ### text
 
- With text, there are 2 ways of transforming textual data in to something a neural network understands.
+There are two ways to transform textual data into forms a neural network understands.
 
- One is the bag of words approach, which takes in the whole corpus of text, and calculates a vocab.
- Any document is then represented as a bag of words, or a based on the vocab each word is a column with the word counts in it.
+The first is the bag of words (BoW) approach, which ingests the corpus of text, determines the vocabulary or lexial field, and associates a word count with each verbal unit. Any document is then represented as a so-called "bag of words." And each word found is represented as a column with word counts.
 
+The other approach is [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html), which takes in to account the distributional context of a word and learns word vectors. These vectors then are concatenated into a window vector. 
 
- The other approach is via [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html). Word2Vec takes in to account the distributional context of a word and learns word vectors. These vectors then are concacneated in to a window vector. 
-
- If we think about a word window of size 3:
+If we think about a word window of size three:
 
 
                 w1 w2 w3
