@@ -120,7 +120,19 @@ body {
   font-family: Arial, sans-serif;
 }
 
+h1 {
+
+  text-align: left;
+  font-family: Arial, sans-serif;
+}
+
 h3 {
+
+  text-align: left;
+  font-family: Arial, sans-serif;
+}
+
+h4 {
 
   text-align: left;
   font-family: Arial, sans-serif;
