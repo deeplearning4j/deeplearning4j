@@ -40,10 +40,14 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	boolean everyWorkerAvailable() throws Exception;;
 	
 	
+	boolean workerAvailable(String id);
+	
+	
 	E getCurrent() throws Exception;
 	void setCurrent(E e) throws Exception;
 	
 	
+	void jobDone(Job job);
 	
 	
 	void shutdown();
