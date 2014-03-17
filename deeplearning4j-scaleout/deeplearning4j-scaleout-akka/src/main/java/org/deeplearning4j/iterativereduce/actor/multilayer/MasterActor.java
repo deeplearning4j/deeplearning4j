@@ -6,11 +6,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.AlreadyWorking;
@@ -24,7 +22,6 @@ import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
-import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -40,8 +37,6 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubMediator;
-import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 
 
