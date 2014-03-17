@@ -190,12 +190,28 @@ public class Conf implements Serializable,Cloneable {
 	public double getPretrainLearningRate() {
 		return pretrainLearningRate;
 	}
+	
+	/**
+	 * Sets the pretrain learning rate.
+	 * Note that this will also be used for adagrad 
+	 * pretrain master learning rate
+	 * @param pretrainLearningRate the learning rate to use
+	 */
 	public void setPretrainLearningRate(double pretrainLearningRate) {
 		this.pretrainLearningRate = pretrainLearningRate;
 	}
 	public double getFinetuneLearningRate() {
 		return finetuneLearningRate;
 	}
+	
+	
+
+	/**
+	 * Sets the finetune learning rate.
+	 * Note that this will also be used for adagrad 
+	 * finetune master learning rate
+	 * @param finetuneLearningRate the learning rate to use
+	 */
 	public void setFinetuneLearningRate(double finetuneLearningRate) {
 		this.finetuneLearningRate = finetuneLearningRate;
 	}

@@ -21,13 +21,15 @@ import cc.mallet.optimize.Optimizer;
  */
 public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,Serializable,NeuralNetEpochListener {
 
-	
+
 
 
 	public NeuralNetworkOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
 		this.network = network;
 		this.lr = lr;
 		this.extraParams = trainingParams;
+		if(network.useAdaGrad)
+			network.resetAdaGrad(lr);
 	}
 
 
