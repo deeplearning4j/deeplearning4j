@@ -86,5 +86,7 @@ The default optimization algorithm used is conjugate gradient. There is also an 
 
 gradient descent in here as well. Descent and weight decrements are implemented via a reverse 
 
-objective function. 
+objective function. Since mallet is a maximizer rather than a minimzer, this will achieve
+
+the intended affect wrt the objective functions and thus allow the use of maximization search algorithms.
 
