@@ -82,7 +82,7 @@ The first is the bag of words (BoW) approach, which ingests the corpus of text, 
 
 The other approach is [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html), which takes into account the distributional context of a word and learns word vectors. A word vector is a series of numbers associated with one word. 
 
-Words are then grouped in windows of varying length. [Barack Obama], for example, is a word window with a length of two; [the United States of America] is a word window with a length of four. Each word's vector is concatenated into the window vector.
+Words are then grouped in windows of varying length. [Barack Obama], for example, is a word window with a length of two; [the United States of America] is a word window with a length of five. Each word's vector is concatenated into the window vector.
 
 Let's take a word window of size three:
 
