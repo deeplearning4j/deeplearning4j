@@ -132,6 +132,12 @@ h3 {
   font-family: Arial, sans-serif;
 }
 
+h4 {
+
+  text-align: left;
+  font-family: Arial, sans-serif;
+}
+
 /** alternate responsive traits **/
 @media(max-width:767px) {
   body {
