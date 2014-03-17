@@ -13,6 +13,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<akka.version>2.3-M1</akka.version>
 		<netty.version>3.6.6.Final</netty.version>
+		<hazelcast.version>3.2-RC2</hazelcast.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -127,6 +128,11 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-pool2</artifactId>
 			<version>2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.hazelcast</groupId>
+			<artifactId>hazelcast</artifactId>
+			<version>${hazelcast.version}</version>
 		</dependency>
 	</dependencies>
 </project>

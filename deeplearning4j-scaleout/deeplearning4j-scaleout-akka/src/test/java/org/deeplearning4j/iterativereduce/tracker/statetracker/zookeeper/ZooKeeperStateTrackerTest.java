@@ -11,6 +11,7 @@ import org.apache.curator.test.TestingServer;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class ZooKeeperStateTrackerTest  {
 	public StateTracker createTracker() {
 		try {
 
-			return new ZookeeperStateTracker("localhost:2182");
+			return new HazelCastStateTracker("localhost:2182");
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

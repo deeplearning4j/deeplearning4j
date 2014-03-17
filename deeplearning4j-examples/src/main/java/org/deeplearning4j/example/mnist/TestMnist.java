@@ -7,6 +7,7 @@ import java.io.InputStream;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.jblas.DoubleMatrix;
@@ -26,7 +27,7 @@ public class TestMnist {
 		dbn.load(is);
 
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,60000);
+		DataSetIterator iter = new RawMnistDataSetIterator(10,60000);
 
 		Evaluation eval = new Evaluation();
 

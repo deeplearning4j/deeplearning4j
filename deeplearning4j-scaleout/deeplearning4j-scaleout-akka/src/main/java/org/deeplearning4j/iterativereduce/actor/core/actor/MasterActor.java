@@ -15,7 +15,7 @@ import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper.ZookeeperStateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
@@ -53,7 +53,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected List<E> updates = new ArrayList<E>();
 	protected ActorRef batchActor;
-	protected ZookeeperStateTracker stateTracker;
+	protected HazelCastStateTracker stateTracker;
 	protected int epochsComplete;
 	protected boolean pretrain = true;
 	protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
@@ -85,7 +85,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 		try {
-			this.stateTracker = new ZookeeperStateTracker();
+			this.stateTracker = new HazelCastStateTracker();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
