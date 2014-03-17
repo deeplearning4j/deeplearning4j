@@ -12,15 +12,12 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.cluster.protobuf.msg.ClusterMessages.Join;
-
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
@@ -92,7 +89,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 
 		conf.setProperty("hazelcast.initial.min.cluster.size","1");
-
+		conf.setProperty("hazelcast.shutdownhook.enabled","false");
 
 		JoinConfig join = conf.getNetworkConfig().getJoin();
 		join.getTcpIpConfig().setEnabled(true);
