@@ -134,6 +134,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	}
 
+	
+	
+	
 	@Override
 	public void addJobToCurrent(Job j) throws Exception {
 		jobs.add(j);
@@ -233,6 +236,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void clearJob(Job j) throws Exception {
 		jobs.remove(j);
+		redist.remove(j);
 	}
 
 	@Override
@@ -272,6 +276,20 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void jobRequeued(Job j) {
 		redist.remove(j);
+	}
+
+	@Override
+	public void jobDone(Job job) {
+		jobs.remove(job);
+		redist.remove(job);
+	}
+
+	@Override
+	public boolean workerAvailable(String id) {
+		WorkerState w = this.workers.get(id);
+		if(w != null)
+			return w.isAvailable();
+		return false;
 	}
 
 

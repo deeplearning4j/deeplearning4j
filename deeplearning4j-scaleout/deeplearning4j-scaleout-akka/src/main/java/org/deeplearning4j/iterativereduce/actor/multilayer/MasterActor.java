@@ -190,6 +190,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 										for(Job j : currentJobs) {
 											mediator.tell(new DistributedPubSubMediator.Publish(j.getWorkerId(),
 													NeedsStatus.getInstance()), getSelf());
+											if(stateTracker.workerAvailable(j.getWorkerId())) {
+												log.info("Out of sync job and worker list; removing job " + j.getWorkerId());
+												stateTracker.jobDone(j);
+											}
 										}
 									}
 
@@ -365,6 +369,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			for(Job j : jobs) {
 				if(j.getWorkerId().equals(working.getId())) {
 					stateTracker.requeueJob(j);
+					break;
 				}
 			}
 
@@ -422,13 +427,14 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			else {
 				log.info("Job " + j.getWorkerId() + " finished");
 				setWorkerDone(j.getWorkerId());
+				stateTracker.jobDone(j);
 			}
 
 		}
 
 
 		//list of examples
-		else if(message instanceof List || message instanceof Pair) {
+		else if(message instanceof List || message instanceof DataSet) {
 
 			if(message instanceof List) {
 				List<DataSet> list = (List<DataSet>) message;
