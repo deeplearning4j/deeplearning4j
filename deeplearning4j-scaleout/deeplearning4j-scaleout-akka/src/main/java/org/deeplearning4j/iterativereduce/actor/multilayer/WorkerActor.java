@@ -306,13 +306,12 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	protected void blockTillNetworkAvailable() {
-		while(getNetwork() == null) {
-			try {
-				setNetwork(this.tracker.getCurrent().get());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			setNetwork(this.tracker.getCurrent().get());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
+
 
 	}
 
@@ -323,11 +322,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	@Override
-	public  synchronized UpdateableImpl compute() {
+	public  UpdateableImpl compute() {
 		log.info("Training network");
-		blockTillNetworkAvailable();
-		//ensure job exists
-		//blockTillJobAvailable();
 		if(getCurrent() == null)
 			return null;
 		BaseMultiLayerNetwork network = this.getNetwork();

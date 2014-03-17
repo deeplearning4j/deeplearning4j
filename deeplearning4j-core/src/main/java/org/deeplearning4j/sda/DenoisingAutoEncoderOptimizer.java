@@ -13,6 +13,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 
 	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
 		super(network,lr,trainingParams);
+	
 	}
 
 	@Override
