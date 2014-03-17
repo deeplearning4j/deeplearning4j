@@ -78,14 +78,18 @@ When you instantiate the ImageVectorizer, you could do something like this:
 
 There are two ways to transform textual data into forms a neural network understands.
 
-The first is the bag of words (BoW) approach, which ingests the corpus of text, determines the vocabulary or lexial field, and associates a word count with each verbal unit. Any document is then represented as a so-called "bag of words." And each word found is represented as a column with word counts.
+The first is the bag of words (BoW) approach, which ingests the corpus of text, determines the vocabulary, and associates a word count with each lexical unit. Any document is then represented as a so-called "bag of words," which is nothing more than a column of extendible rows, each one containing the word count for one lexical unit. BoW is useful in topic modelling and document classification. It primarily answers the question: What is this text about? 
 
-The other approach is [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html), which takes in to account the distributional context of a word and learns word vectors. These vectors then are concatenated into a window vector. 
+The other approach is [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html), which takes into account the distributional context of a word and learns word vectors. A word vector is a series of numbers associated with one word. 
 
-If we think about a word window of size three:
+Words are then grouped in windows of varying length. [Barack Obama], for example, is a word window with a length of two; [the United States of America] is a word window with a length of four. Each word's vector is concatenated into the window vector.
 
+Let's take a word window of size three:
 
                 w1 w2 w3
 
-   
- Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window.
+and assume that w1's vector is [1 2 3], w2's vector is [4 5 6] and w3's is [7 8 9].
+
+Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window. In this case, the window vector would be [1 2 3 4 5 6 7 8 9].
+
+Word2vec is useful for named-entity recognition, semantic role labeling, summarization, lemmatization, parts-of-speech tagging, question and answer, and relationship extraction. If BoW is macro, Word2vec is micro. It's primarily concerned with questions about elements of the text rather than the text in its entirety.
