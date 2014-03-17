@@ -43,13 +43,9 @@ After that, we can extend something called a [BaseDataFetcher](../doc/org/deeple
 
 ### images
 
-With images, you will typically transform load the image. This can be done with an  [ImageVectorizer](../doc/org/deeplearning4j/datasets/vectorizer/ImageVectorizer.html) . An ImageVectorizer loads in the image from a file and takes the image and transforms its pixels based on the RGB spectrum.
+With images, you typically transform load the image. This can be done with an [ImageVectorizer](../doc/org/deeplearning4j/datasets/vectorizer/ImageVectorizer.html), which loads the image from a file and transforms its pixels based on the RGB spectrum.
 
-One thing of note is that the ImageVectorizer takes in a label number. Typically what you will want to do is have a set of images in a folder.
-
-The folder of the image will be the label.
-
-Say you were doing digits with mnist, a dataset might be:
+Note that the ImageVectorizer takes in a label number. You typically want a set of images in a folder named after their label. If you're doing digits with MNIST, you're label files might look like this:
                          
                          parentdir/
                            1/
@@ -58,10 +54,8 @@ Say you were doing digits with mnist, a dataset might be:
                            2/
                             img3.png
                             img4.png
-       
 
-  If you layout your image dataset such that you have a list of labels as child directories, you could do something like:
-
+Given an image data set where the labels are child directories, you could do something like:
 
                              File rootDir = new File("path/to/your/dir");
                              //needs to be a list for maintaining order of labels
@@ -72,7 +66,7 @@ Say you were doing digits with mnist, a dataset might be:
                              	labels.add(f.getName());
                              }
 
- When you go to instanitate the ImageVectorizer, you could do something like the following:
+When you instantiate the ImageVectorizer, you could do something like this:
 
                          
 
@@ -80,11 +74,10 @@ Say you were doing digits with mnist, a dataset might be:
                Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
                DataSet d = v.vectorize();
 
-
-
 ### text
 
  With text, there are 2 ways of transforming textual data in to something a neural network understands.
+
  One is the bag of words approach, which takes in the whole corpus of text, and calculates a vocab.
  Any document is then represented as a bag of words, or a based on the vocab each word is a column with the word counts in it.
 
