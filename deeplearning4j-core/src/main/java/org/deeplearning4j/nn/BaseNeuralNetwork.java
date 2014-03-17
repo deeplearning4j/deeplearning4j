@@ -77,10 +77,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public double fanIn = -1;
 	public boolean useRegularization = true;
 	public boolean useAdaGrad = false;
+	//used to track if adagrad needs to be changed
+	public boolean firstTimeThrough = false;
 
-	
 	public List<NeuralNetworkGradientListener> gradientListeners;
-	
+
 	public AdaGrad wAdaGrad;
 
 	public BaseNeuralNetwork() {}
@@ -210,14 +211,18 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
-	
-	
+
+
 
 	@Override
 	public void resetAdaGrad(double lr) {
-		this.wAdaGrad = new AdaGrad(this.getW().rows,this.getW().columns,lr);
+		if(!firstTimeThrough) {
+			this.wAdaGrad = new AdaGrad(this.getW().rows,this.getW().columns,lr);
+			firstTimeThrough = false;
+		}
+
 	}
-	public synchronized List<NeuralNetworkGradientListener> getGradientListeners() {
+	public  List<NeuralNetworkGradientListener> getGradientListeners() {
 		return gradientListeners;
 	}
 	public synchronized void setGradientListeners(
@@ -286,7 +291,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
-	
+
 
 	@Override
 	public AdaGrad getAdaGrad() {
@@ -438,7 +443,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				columnSums().mean();
 	}
 
-	
+
 	/**
 	 * Reconstruction entropy.
 	 * This compares the similarity of two probability
@@ -658,9 +663,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return -loss;
 	}
 
-	
-	
-	
+
+
+
 
 	@Override
 	public void epochDone(int epoch) {
@@ -672,8 +677,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}));
 		}
 	}
-	
-	
+
+
 
 	public static class Builder<E extends BaseNeuralNetwork> {
 		private E ret = null;
