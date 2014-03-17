@@ -77,7 +77,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		availableWorkers = h.getQueue(AVAILABLE_WORKERS);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
-		isPretrain.set(false);
+		isPretrain.set(true);
 
 	}
 

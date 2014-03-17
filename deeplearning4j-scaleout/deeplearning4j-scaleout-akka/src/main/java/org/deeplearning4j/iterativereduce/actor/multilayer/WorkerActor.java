@@ -335,6 +335,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 		else {
+			network.setInput(getCombinedInput());
 			log.info("Worker " + id + " finetuning");
 			network.finetune(outcomes, learningRate, fineTuneEpochs);
 		}
