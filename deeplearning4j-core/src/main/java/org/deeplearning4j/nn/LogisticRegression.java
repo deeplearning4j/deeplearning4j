@@ -38,7 +38,7 @@ public class LogisticRegression implements Serializable {
 	private boolean useRegularization = true;
 	private boolean useAdaGrad = false;
 	private AdaGrad adaGrad;
-	
+	private boolean firstTimeThrough;
 	private LogisticRegression() {}
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
@@ -70,9 +70,12 @@ public class LogisticRegression implements Serializable {
 
 
 	public void resetAdaGrad(double lr) {
-		this.adaGrad = new AdaGrad(nIn,nOut,lr);
+		if(!firstTimeThrough) {
+			this.adaGrad = new AdaGrad(nIn,nOut,lr);
+			firstTimeThrough = false;
+		}
 	}
-	
+
 	/**
 	 * Train with the given input
 	 * and the currently set labels
@@ -182,8 +185,8 @@ public class LogisticRegression implements Serializable {
 		//DoubleMatrix regularized = W.transpose().mul(l2);
 		LogisticRegressionGradient gradient = getGradient(lr);
 
-		
-		
+
+
 		W.addi(gradient.getwGradient());
 		b.addi(gradient.getbGradient());
 
@@ -229,7 +232,7 @@ public class LogisticRegression implements Serializable {
 			wGradient.muli(this.adaGrad.getLearningRates(wGradient));
 		else
 			wGradient.mul(lr);
-		
+
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);
 
@@ -329,7 +332,7 @@ public class LogisticRegression implements Serializable {
 		private DoubleMatrix input;
 		private boolean useRegualarization;
 		private boolean useAdaGrad = false;
-		
+
 		public Builder useAdaGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad; 
 			return this;
@@ -375,7 +378,7 @@ public class LogisticRegression implements Serializable {
 			ret.useRegularization = useRegualarization;
 			ret.l2 = l2;
 			ret.useAdaGrad = useAdaGrad;
-			
+
 			return ret;
 		}
 
