@@ -20,16 +20,16 @@ All input to the deep-learning nets -- whether it's words, images or other data 
 
 ### vectorization
 
-Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is capable of iterating over a data set and vectorizing it into the appropriate format.
+Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which can iterate over data sets and vectorize them; i.e. translate them to a machine-friendly numerical form.
 
-Extending [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) allows you to do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on Mnist, there are 60,000 images, and we want to handle them in batches of 10. Here's the command to do that:
+Extending a [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) lets you do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on MNIST, there are 60,000 images, and we'll handle them here in batches of 10, with this command:
 
 
                             new MnistDataSetIterator(10,60000)
 
-That constructor inherits from the BaseDataSetIterator. The BaseDataSetIterator itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher handles vectorization of input data into a format suitable for consumption by a neural network.
+The constructor above inherits from the BaseDataSetIterator, which itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher is called by the iterator to vectorize the input data. 
 
-A [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html) is used as follows:
+Here's how you use it:
 
                      DataSetFetcher fetcher = ...;
                      //fetch n examples
@@ -37,14 +37,9 @@ A [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.ht
 
                      DataSet myData = fetcher.next();
 
+This returns the dataset for consumption by the neural network. The fetch call tells the fetcher to get the next n examples from your input source.
 
-This returns the dataset for neural network consumption. The call to fetch tells the fetcher to get the next n examples from your input source.
-
-Following that, we can extend something called a [BaseDataFetcher](../doc/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.html) .
-
-This provides a few baseline methods for converting say: output labels to an output matrix, This also includes baseline methods to think about when fetching data from an input source.
-
-Below is how to input different kinds of data in to a neural network.
+After that, we can extend something called a [BaseDataFetcher](../doc/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.html). This provides a few baseline methods for converting, say, output labels to an output matrix. It also includes a few methods to think about when fetching data from an input source. Below, we'll explore different kinds of data you can feed into a neural network.
 
 ### images
 
