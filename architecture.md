@@ -77,3 +77,14 @@ common object serialization requirements. Hazelcast is primarily being used for 
 
 This may seem redundant with zookeeper, but zookeeper does not encourage/should not be used for distributed serialization stores.
 
+Optimization Algorithms
+==========================================
+
+[Mallet](http://mallet.cs.umass.edu/optimization.php) is used for the optimization algorithms.
+
+The default optimization algorithm used is conjugate gradient. There is also an implementation of
+
+gradient descent in here as well. Descent and weight decrements are implemented via a reverse 
+
+objective function. 
+
