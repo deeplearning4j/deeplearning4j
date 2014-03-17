@@ -23,7 +23,7 @@ This is very likely to change and should be considered alpha as such. Below is t
 Matrix Computations
 =============================
 
-http://mikiobraun.github.io/jblas/
+[Jblas](http://mikiobraun.github.io/jblas/)
 
 
 Jblas uses fortran underneath for matrix computations.
@@ -44,7 +44,7 @@ matrix multiples among other things, this was thus a requirement to be as fast a
 Distributed Service Discovery
 ======================================
 
-http://zookeeper.apache.org/
+[Zookeeper](http://zookeeper.apache.org/)
 
 Zookeeper is great for distributed service discovery and configuration/cluster coordination.
 
@@ -54,7 +54,7 @@ It comes embedded in many environments already and powers a lot of famous techno
 Clustering / Distributed Computing
 =============================================
 
-http://akka.io/
+[Akka](http://akka.io/)
 
 
 Akka powers [Spark](http://spark.apache.org) underneath and is also a great parallel framework written in scala.
@@ -69,7 +69,7 @@ This allows for at scale training, but very simple serializable models at predic
 Distributed Data Structures
 =====================================
 
-http://hazelcast.org/
+[Hazelcast](http://hazelcast.org/)
 
 Hazelcast is a great distributed data structure framework for handling
 
