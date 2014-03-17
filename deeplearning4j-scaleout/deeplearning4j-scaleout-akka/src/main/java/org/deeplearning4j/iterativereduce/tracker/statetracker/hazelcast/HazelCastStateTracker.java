@@ -12,11 +12,15 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import akka.cluster.protobuf.msg.ClusterMessages.Join;
+
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.GroupConfig;
-import com.hazelcast.config.TcpIpConfig;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.ListConfig;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
@@ -46,7 +50,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static int DEFAULT_HAZELCAST_PORT = 2510;
 	public final static String CURRENT_JOBS = "JOBS";
 	private HazelcastInstance h;
-
 	public HazelCastStateTracker() throws Exception {
 		this("localhost:2181");
 
@@ -54,18 +57,20 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	public HazelCastStateTracker(String connectionString) throws Exception {
 		String[] s = connectionString.split(":");
-		if(!s.equals("localhost") && !s.equals("127.0.0.1") && !s.equals("0.0.0.0")) {
+		if(!s[0].equals("localhost") && !s[0].equals("127.0.0.1") && !s[0].equals("0.0.0.0")) {
 			ClientConfig clientConfig = new ClientConfig();
 			clientConfig.getNetworkConfig().setAddresses(Arrays.asList(s[0] + ":" + DEFAULT_HAZELCAST_PORT));
 			h = HazelcastClient.newHazelcastClient(clientConfig);
 
 		}
 		else {
-			config = new Config();
+			config =  hazelcast();			
 			h = Hazelcast.newHazelcastInstance(config);
 
 		}
 
+		
+		
 		jobs = h.getList(JOBS);
 		workers = h.getMap(CURRENT_WORKERS);
 		topics = h.getList(TOPICS);
@@ -74,6 +79,58 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		master = h.getAtomicReference(RESULT);
 		h.getAtomicReference(RESULT);
 
+
+	}
+
+	private Config hazelcast() {
+		Config conf = new Config();
+		conf.getNetworkConfig().setPort(DEFAULT_HAZELCAST_PORT);
+		conf.getNetworkConfig().setPortAutoIncrement(true);
+		
+	
+		
+		conf.setProperty("hazelcast.initial.min.cluster.size","1");
+
+
+		JoinConfig join = conf.getNetworkConfig().getJoin();
+		join.getTcpIpConfig().setEnabled(true);
+		join.getAwsConfig().setEnabled(false);
+		join.getMulticastConfig().setEnabled(false);
+
+
+		join.getTcpIpConfig().setConnectionTimeoutSeconds(2000);
+		join.getTcpIpConfig().addMember("127.0.0.1:5172");
+		
+		
+		ListConfig jobConfig = new ListConfig();
+		jobConfig.setName(JOBS);
+		conf.addListConfig(jobConfig);
+
+		MapConfig workersConfig = new MapConfig();
+		workersConfig.setName(CURRENT_WORKERS);
+
+		conf.addMapConfig(workersConfig);
+
+
+		ListConfig topicsConfig = new ListConfig();
+		topicsConfig.setName(TOPICS);
+
+		conf.addListConfig(topicsConfig);
+
+		ListConfig reDistConfig = new ListConfig();
+		reDistConfig.setName(REDIST);
+
+		conf.addListConfig(reDistConfig);
+
+
+		ListConfig availableWorkersConfig = new ListConfig();
+		availableWorkersConfig.setName(AVAILABLE_WORKERS);
+
+		conf.addListConfig(availableWorkersConfig);
+
+
+
+		return conf;
 
 	}
 
