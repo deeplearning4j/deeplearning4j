@@ -6,9 +6,9 @@ layout: default
 
 Garbage in, garbage out. 
 
-Deep learning, and machine learning more generally, needs a good training set to work properly. Collecting and constructing the training set -- a sizable body of known data -- takes time, domain-specific knowledge of where and how to gather relevant information. The training set acts as the benchmark against which deep-learning nets are trained. That is what they learn to reconstruct when they are eventually unleashed on unstructured data. 
+Deep learning, and machine learning more generally, needs a good training set to work properly. Collecting and constructing the training set -- a sizable body of known data -- takes time and domain-specific knowledge of where and how to gather relevant information. The training set acts as the benchmark against which deep-learning nets are trained. That is what they learn to reconstruct when they're eventually unleashed on unstructured data. 
 
-At this stage, lengthy human intervention is necessary to find the right raw data and transform it into a numerical representation that the algorithm can understand. Building a training set is, in a sense, pre-pre-training. For a text-based training set, you may even have to do some feature creation. 
+At this stage, human intervention is necessary to find the right raw data and transform it into a numerical representation that the deep-learning algorithm can understand. Building a training set is, in a sense, pre-pre-training. For a text-based training set, you may even have to do some feature creation. 
 
 Training sets that require much time or expertise can serve as a proprietary edge in the competitive world of data science and problem solving. The nature of the expertise is largely in telling your algorithm what matters to you through the training set. 
 
@@ -18,32 +18,18 @@ To create a useful training set, you have to understand the problem you're solvi
 
 All input to the deep-learning nets -- whether it's words, images or other data -- must be transformed into numbers known as vectors, in a process called vectorization. A vector is simply a one-column matrix with an extendible number of rows.
 
-Vectorization is done via the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html) . 
+### vectorization
 
-A [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html) is capable of iterating through a data set 
+Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which is capable of iterating over a data set and vectorizing it into the appropriate format.
 
-and vectorizing it in to the apporpriate format.
-
-Extending  [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) you get the baseline functionality
-
-of batching and data set inputs. The constructor below represents taking in a batch size and a number of inputs. For example on mnist,
-
-there are 60k images and we want them in batches of 10, the constructor for this is the following:
+Extending [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) allows you to do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on Mnist, there are 60,000 images, and we want to handle them in batches of 10. Here's the command to do that:
 
 
                             new MnistDataSetIterator(10,60000)
 
+That constructor inherits from the BaseDataSetIterator. The BaseDataSetIterator itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher handles vectorization of input data into a format suitable for consumption by a neural network.
 
-That constructor is inherited from the BaseDataSetIterator. Underneath, the BaseDataSetIterator relies on a 
-
- [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html)
-
-
- The  [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html)  handles vectorization of input data in to a format suitable for consumption by a neural network.
-
-
- A  [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html) is used as follows:
-
+A [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html) is used as follows:
 
                      DataSetFetcher fetcher = ...;
                      //fetch n examples
@@ -52,32 +38,23 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
                      DataSet myData = fetcher.next();
 
 
- This returns the dataset for neural network consumption. The call to fetch tells the fetcher to get the next n examples from your input source.
+This returns the dataset for neural network consumption. The call to fetch tells the fetcher to get the next n examples from your input source.
 
+Following that, we can extend something called a [BaseDataFetcher](../doc/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.html) .
 
- Following that, we can extend something called a [BaseDataFetcher](../doc/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.html) .
+This provides a few baseline methods for converting say: output labels to an output matrix, This also includes baseline methods to think about when fetching data from an input source.
 
- This provides a few baseline methods for converting say: output labels to an output matrix, This also includes baseline methods
+Below is how to input different kinds of data in to a neural network.
 
- to think about when fetching data from an input source.
+### images
 
+With images, you will typically transform load the image. This can be done with an  [ImageVectorizer](../doc/org/deeplearning4j/datasets/vectorizer/ImageVectorizer.html) . An ImageVectorizer loads in the image from a file and takes the image and transforms its pixels based on the RGB spectrum.
 
+One thing of note is that the ImageVectorizer takes in a label number. Typically what you will want to do is have a set of images in a folder.
 
- Below is how to input different kinds of data in to a neural network.
+The folder of the image will be the label.
 
-
-
- Images:
-
-  With images, you will typically transform load the image. This can be done with an  [ImageVectorizer](../doc/org/deeplearning4j/datasets/vectorizer/ImageVectorizer.html) . An ImageVectorizer loads in the image from a file and takes the image and transforms its pixels based on the RGB spectrum.
-
-
-  One thing of note is that the ImageVectorizer takes in a label number. Typically what you will want to do is have a set of images in a folder.
-
-  The folder of the image will be the label.
-
-
-  Say you were doing digits with mnist, a dataset might be:
+Say you were doing digits with mnist, a dataset might be:
                          
                          parentdir/
                            1/
@@ -110,10 +87,7 @@ That constructor is inherited from the BaseDataSetIterator. Underneath, the Base
 
 
 
-
-
-
- Text:
+### text
 
  With text, there are 2 ways of transforming textual data in to something a neural network understands.
  One is the bag of words approach, which takes in the whole corpus of text, and calculates a vocab.
