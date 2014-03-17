@@ -1,10 +1,8 @@
-package org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper;
+package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Queue;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
@@ -13,40 +11,51 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("unchecked")
-public class ZookeeperStateTracker implements StateTracker<UpdateableImpl> {
+import com.hazelcast.config.Config;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicReference;
+
+public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -7374372180080957334L;
 	public final static String JOBS = "org.deeplearning4j.jobs";
+	public final static String REDIST = "redist";
 	public final static String WORKERS = "org.deeplearning4j.workers";
 	public final static String CURRENT_WORKERS = "WORKERS";
 	public final static String AVAILABLE_WORKERS = "AVAILABLE_WORKERS";
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
 	public final static String RESULT_LOC = "RESULT_LOC";
-	private volatile AtomicReference<UpdateableImpl> master;
-	private volatile LinkedBlockingQueue<Job> jobs = new LinkedBlockingQueue<>();
-	private volatile Map<String,WorkerState> workers = new HashMap<String,WorkerState>();
-	private volatile  List<String> topics =  new ArrayList<>();
-	private volatile List<Job> redist = new ArrayList<>();
-	private static Logger log = LoggerFactory.getLogger(ZookeeperStateTracker.class);
-
-
-	private volatile LinkedBlockingQueue<WorkerState> availableWorkers = new LinkedBlockingQueue<>();
+	private volatile IAtomicReference<Object> master;
+	private volatile List<Job> jobs;
+	private volatile Map<String,WorkerState> workers;
+	private volatile  List<String> topics;
+	private volatile List<Job> redist;
+	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
+	private Config config = new Config();
+	private volatile Queue<WorkerState> availableWorkers;
 
 	public final static String CURRENT_JOBS = "JOBS";
+	private HazelcastInstance h;
 
-
-	public ZookeeperStateTracker() throws Exception {
+	public HazelCastStateTracker() throws Exception {
 		this("localhost:2181");
+
 	}
 
-	public ZookeeperStateTracker(String connectionString) throws Exception {
-		super();
-
+	public HazelCastStateTracker(String connectionString) throws Exception {
+		h = Hazelcast.newHazelcastInstance(config);
+		jobs = h.getList(JOBS);
+		workers = h.getMap(CURRENT_WORKERS);
+		topics = h.getList(TOPICS);
+		redist = h.getList(REDIST);
+		availableWorkers = h.getQueue(AVAILABLE_WORKERS);
+		master = h.getAtomicReference(RESULT);
+		h.getAtomicReference(RESULT);
 	}
 
 	@Override
@@ -66,7 +75,7 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public  WorkerState nextAvailableWorker() throws Exception {
-		return availableWorkers.take();
+		return availableWorkers.poll();
 	}
 
 
@@ -150,17 +159,13 @@ public class ZookeeperStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public  UpdateableImpl getCurrent() throws Exception {
-		UpdateableImpl u =  master.get();
+		UpdateableImpl u =  (UpdateableImpl) master.get();
 		return u.clone();
 	}
 
 	@Override
 	public  void setCurrent(UpdateableImpl e) throws Exception {
-		if(this.master == null)
-			this.master = new AtomicReference<UpdateableImpl>(e);
-		else
-			this.master.set(e);
-
+		this.master.set(e);
 	}
 
 	@Override

@@ -15,7 +15,7 @@ import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.zookeeper.ZookeeperStateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
@@ -87,11 +87,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	public static Props propsFor(ActorRef actor,Conf conf,ZookeeperStateTracker tracker) {
+	public static Props propsFor(ActorRef actor,Conf conf,HazelCastStateTracker tracker) {
 		return Props.create(WorkerActor.class,actor,conf,tracker);
 	}
 
-	public static Props propsFor(Conf conf,ZookeeperStateTracker stateTracker) {
+	public static Props propsFor(Conf conf,HazelCastStateTracker stateTracker) {
 		return Props.create(WorkerActor.class,conf,stateTracker);
 	}
 

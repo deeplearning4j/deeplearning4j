@@ -55,7 +55,7 @@ public class GradientChangerExample {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(1000);
-		c.setFinetuneLearningRate(0.000001);
+		c.setFinetuneLearningRate(0.0001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
 		c.setUseAdaGrad(true);
@@ -65,7 +65,7 @@ public class GradientChangerExample {
 		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.000001,1000});
+		c.setDeepLearningParams(new Object[]{1,0.0001,1000});
 		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
