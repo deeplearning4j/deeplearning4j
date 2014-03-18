@@ -5,14 +5,11 @@ layout: default
 
 # architecture
 
-DeepLearning4j uses a host of technologies for normal and distributed training, and prediction of neural networks.
-
-Below is the current architecture, an alpha version that is likely to change, based on the welcome feedback of our users.
-
+DeepLearning4j uses a handful of technologies for normal and distributed training, as well as prediction with neural networks. Below you'll find the current architecture, an alpha version that is likely to change with the welcome feedback of our users.
 
 ### matrix computations
 
-[Jblas](http://mikiobraun.github.io/jblas/) uses Fortran library for matrix computations. We chose to use Jblas as a native dependency because its matrix computations are faster than other options, and deep learning is nothing if not a series of matrix computations. The work of deep-learning nets is too computationally intense to select slow tools and expect timely results. 
+[Jblas](http://mikiobraun.github.io/jblas/) uses a Fortran library for matrix computations. We chose to use Jblas, a native dependency, because its matrix computations are faster than other options, and deep learning is nothing if not a series of matrix computations. The work of deep-learning nets is too computationally intense to select slow tools and expect timely results. 
 
 ### distributed service discovery
 
@@ -20,27 +17,12 @@ Below is the current architecture, an alpha version that is likely to change, ba
 
 ### clustering / distributed computing
 
-[Akka](http://akka.io/) is the great parallel framework written in Scala that powers [Spark](http://spark.apache.org). It has a great programming paradigm and transparent parallel computation via the actor model. This allows for training at scale as well as very simple, serializable models at prediction time.
+[Akka](http://akka.io/) is a parallel framework written in Scala that powers [Spark](http://spark.apache.org). It has a great programming paradigm and transparent parallel computation via the actor model. This allows for training at scale as well as very simple, serializable models at prediction time.
 
 ### distributed data structures
 
-[Hazelcast](http://hazelcast.org/)
-
-Hazelcast is a great distributed data structure framework for handling
-
-common object serialization requirements. Hazelcast is primarily being used for transparent data structures for state tracking.
-
-This may seem redundant with zookeeper, but zookeeper does not encourage/should not be used for distributed serialization stores.
+[Hazelcast](http://hazelcast.org/) is a distributed data structure framework for handling common object serialization requirements. It's primarily used to create transparent data structures for state tracking. While Hazelcast may seem redundant alongside zookeeper, zookeeper does not encourage and should not be used for distributed serialization stores.
 
 ### optimization algorithms
 
-[Mallet](http://mallet.cs.umass.edu/optimization.php) is used for the optimization algorithms.
-
-The default optimization algorithm used is conjugate gradient. There is also an implementation of
-
-gradient descent in here as well. Descent and weight decrements are implemented via a reverse 
-
-objective function. Since mallet is a maximizer rather than a minimzer, this will achieve
-
-the intended affect wrt the objective functions and thus allow the use of maximization search algorithms.
-
+[Mallet](http://mallet.cs.umass.edu/optimization.php) is used for the optimization algorithms. The default optimization algorithm that Mallet uses is conjugate gradient, though it also contains an  implementation of gradient descent. Descent and weight decrements are implemented via a reverse objective function. Since Mallet is a maximizer rather than a minimzer, this will achieve the intended effect with regard to the objective functions, and therefore allow the use of maximization search algorithms.
