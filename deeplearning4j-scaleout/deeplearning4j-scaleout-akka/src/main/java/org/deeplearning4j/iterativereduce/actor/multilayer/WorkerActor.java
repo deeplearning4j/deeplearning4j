@@ -158,7 +158,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 						break;
 					}
 				}
-				
+
 				if(consistent)
 					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 							new AlreadyWorking(id)), getSelf());	
@@ -338,31 +338,44 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			}
 		}
 
-		while(this.getCombinedInput() == null || this.getOutcomes() == null) {
-			try {
-				for(Job j : tracker.currentJobs()) {
-					if(j.getWorkerId().equals(id)) {
-						DataSet d = (DataSet) j.getWork();
-						combinedInput = d.getFirst();
-						outcomes = d.getSecond();
-						break;
+
+		DataSet d = null;
+
+		try {
+			for(Job j : tracker.currentJobs()) {
+				if(j.getWorkerId().equals(id)) {
+					if(j.getWork() instanceof List) {
+						@SuppressWarnings("unchecked")
+						List<DataSet> l = (List<DataSet>) j.getWork();
+						d = DataSet.merge(l);
+
 					}
+					else
+						d = (DataSet) j.getWork();
+					combinedInput = d.getFirst();
+					outcomes = d.getSecond();
+					break;
 				}
-			} catch (Exception e) {
-				throw new RuntimeException(e);
 			}
+		} catch (Exception e) {
+			throw new IllegalStateException("No job found for worker " + id,e);
+
+		}
+
+		if(d == null) {
+			throw new IllegalStateException("No job found for worker " + id);
 		}
 
 
 		if(tracker.isPretrain()) {
 			log.info("Worker " + id + " pretraining");
-			network.pretrain(this.getCombinedInput(), extraParams);
+			network.pretrain(d.getFirst(), extraParams);
 		}
 
 		else {
-			network.setInput(getCombinedInput());
+			network.setInput(d.getFirst());
 			log.info("Worker " + id + " finetuning");
-			network.finetune(outcomes, learningRate, fineTuneEpochs);
+			network.finetune(d.getSecond(), learningRate, fineTuneEpochs);
 		}
 
 		finishedWork();
