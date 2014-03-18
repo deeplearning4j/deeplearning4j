@@ -7,9 +7,9 @@ layout: default
 
 ##Setup
 
-1. DeepLearning4J requires java 7 and above.
+1. DeepLearning4J requires Java 7 or above.
 
-2. Due to heavy use of jblas, native bindings for blas are required.
+2. Due to our heavy reliance on Jblas, native bindings for Blas are required.
 
         Fedora/RHEL
 
@@ -23,10 +23,10 @@ layout: default
         Already Installed
 
         Windows
-        See [here](http://icl.cs.utk.edu/lapack-for-windows/lapack/)
+        See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
 
-3. Install from source (Maven central coming soon)
+3. Install these from source (Maven central versions coming soon).
 
 
          git clone https://github.com/agibsonccc/java-deeplearning
@@ -38,8 +38,7 @@ layout: default
          mvn clean install -DskipTests
 
 
-
-4. Use as a dependency in your project
+4. Use this as a dependency in your project.
 
       <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -49,7 +48,7 @@ layout: default
 
 
 
-5. For Multithreaded/clustering support, please use:
+5. For multithreaded/clustering support, please use:
 
        <dependency>
 			<groupId>org.deeplearning4j</groupId>
