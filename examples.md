@@ -11,12 +11,12 @@ One use of deep-learning networks is [named-entity recognition](https://en.wikip
 
 ## object recognition
 
-Object recognition is the ability to identify arbitrary objects in text such as balls, animals, or even faces. This is typically used in engineering applications to identify shapes for modeling purposes. This is also used by social networks for tagging of photos. 
+Object recognition is an algorithm's ability to identify arbitrary objects - such as balls, animals, or even faces - within larger images. This is typically used in engineering applications to identify shapes for modeling purposes. It's also used by social networks for photo tagging. Facebook's Deep Face is a good example of a deep-learning application in this realm. 
 
-Here's one example of faces clustered by a neural net:
+Here's an example of faces clustered by a neural net:
 
 ![Alt text](../img/faces_tsne.jpg)
 
 ## speech to text
 
-A deep network is capable of understanding audio signals with the right data transforms. This can be used in identifying individual snippets of sound in audio files.
+With the proper data transforms, a deep network is capable of understanding audio signals. This can be used to identify snippets of sound in larger audio files.
