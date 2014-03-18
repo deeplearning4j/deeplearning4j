@@ -7,17 +7,16 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -67,7 +66,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-
+	protected AtomicBoolean currentlyReDist = new AtomicBoolean(false);
 
 	//number of batches over time
 	protected int partition = 1;
@@ -87,6 +86,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		//subscribe to broadcasts from workers (location agnostic)
 
 
+		
 		try {
 			this.stateTracker = new HazelCastStateTracker();
 		} catch (Exception e) {
@@ -96,58 +96,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 
-		setup(conf);
-
-		context().system().scheduler().schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
-
-			@Override
-			public void run() {
-
-				try {
-					log.info("Current workers " + stateTracker.currentWorkers().keySet());
-					if(pretrain && stateTracker.currentJobs().isEmpty()) {
-						log.info("Switching to finetune mode");
-						pretrain = false;
-						stateTracker.moveToFinetune();
-						SerializationUtils.saveObject(stateTracker.getCurrent().get(), new File("pretrain-model.bin"));
-						
-						MasterActor.this.batchActor.tell(ResetMessage.getInstance(), getSelf());
-						MasterActor.this.batchActor.tell(new MoreWorkMessage((Updateable<?>) stateTracker.getCurrent().get()), getSelf());
-
-					}
-
-					else if(stateTracker.currentJobs().isEmpty()) {
-						isDone = true;
-						log.info("Done training!");
-					}
-				
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				
-				
-				
-				//replicate the network				
-				while(!stateTracker.jobsToRedistribute().isEmpty()) {
-					Job j = stateTracker.jobsToRedistribute().remove(0);
-					try {
-						WorkerState state = nextAvailableWorker();
-						stateTracker.clearJob(j);
-						stateTracker.jobRequeued(j);
-						j.setWorkerId(state.getWorkerId());
-						stateTracker.addJobToCurrent(j);
-						mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
-								j), getSelf());
-						log.info("Redistributing job to worker id " + state.getWorkerId());
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-				
-
-			}
-
-		}, context().dispatcher());
 
 
 	}
@@ -247,32 +195,21 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			final int j = i;
 
 
-			Future<Void> f = Futures.future(new Callable<Void>() {
 
-				@Override
-				public Void call() throws Exception {
-					log.info("Sending off work for batch " + j);
-					//block till there's an available worker
-					WorkerState state = nextAvailableWorker();
-					
+			log.info("Sending off work for batch " + j);
+			//block till there's an available worker
+			WorkerState state = nextAvailableWorker();
 
 
-					List<DataSet> work = new ArrayList<>(splitList.get(j));
-					//wrap in a job for additional metadata
-					Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
-					stateTracker.addJobToCurrent(j2);
-					//replicate the network
-					mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
-							j2), getSelf());
-					log.info("Delegated work to worker " + state.getWorkerId());
-					state.setAvailable(false);
 
-					return null;
-				}
+			List<DataSet> work = new ArrayList<>(splitList.get(j));
+			//wrap in a job for additional metadata
+			Job j2 = new Job(state.getWorkerId(),(Serializable) work,pretrain);
+			//replicate the network
+			mediator.tell(new DistributedPubSubMediator.Publish(state.getWorkerId(),
+					j2), getSelf());
+			log.info("Delegated work to worker " + state.getWorkerId());
 
-			},context().dispatcher());
-
-			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
 
 		}
 
@@ -318,7 +255,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public synchronized E getResults() {
+	public  E getResults() {
 		try {
 			return (E) stateTracker.getCurrent();
 		} catch (Exception e) {

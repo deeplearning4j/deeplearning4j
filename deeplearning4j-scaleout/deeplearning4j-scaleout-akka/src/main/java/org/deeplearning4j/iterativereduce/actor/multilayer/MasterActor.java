@@ -6,19 +6,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
-import org.deeplearning4j.iterativereduce.actor.core.AlreadyWorking;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
-import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
-import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
@@ -28,10 +24,8 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
@@ -47,7 +41,6 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
 	protected BaseMultiLayerNetwork network;
-	protected Cancellable ensureNoLeftOvers,ensureDistribution;
 	protected AtomicLong lastUpdated = new AtomicLong(System.currentTimeMillis());
 	/**
 	 * Creates the master and the workers with this given conf
@@ -56,6 +49,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
+		setup(conf);
 
 	}
 
@@ -80,6 +74,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network) {
 		super(conf,batchActor,new Object[]{network});
+		this.network = network;
+		setup(conf);
 
 	}
 
@@ -89,7 +85,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 	@Override
-	public synchronized UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
+	public  UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
 			Collection<UpdateableImpl> masterUpdates) {
 
 
@@ -142,7 +138,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs()).useRegularization(conf.isUseRegularization())
+				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
+				.useRegularization(conf.isUseRegularization())
 				.withSparsity(conf.getSparsity()).useAdGrad(conf.isUseAdaGrad())
 				.withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
 				.withGradientListeners(conf.getGradientListeners())
@@ -165,60 +162,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());	
 				//every minute check the batch and if after one minute there are no more updates
-				//clear them out and recirculate
-				ensureNoLeftOvers = context().system().scheduler()
-						.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
-
-							@Override
-							public void run() {
-								try {
-									List<Job> currentJobs = stateTracker.currentJobs();
-									Collection<WorkerState> availableWorkers = stateTracker.currentWorkers().values();
-									log.info("Status check on next iteration");
-
-
-
-									for(Job j : currentJobs) {
-										if(stateTracker.workerAvailable(j.getWorkerId())) {
-											log.info("Out of sync job and worker list; removing job " + j.getWorkerId());
-											stateTracker.jobDone(j);
-										}
-									}
-
-
-									log.info("Available workers " + availableWorkers);
-
-
-									log.info("Current jobs left " + currentJobs);
-
-
-								}catch(Exception e) {
-									throw new RuntimeException(e);
-								}
-
-							}
-
-						}, context().dispatcher());
-
-				ensureDistribution = context().system().scheduler()
-						.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
-
-							@Override
-							public void run() {
-								while(!stateTracker.jobsToRedistribute().isEmpty()) {
-									Job remove = stateTracker.jobsToRedistribute().remove(0);
-									try {
-										stateTracker.requeueJob(remove);
-									} catch (Exception e) {
-										throw new RuntimeException(e);
-									}
-								}
-
-
-
-							}
-
-						}, context().dispatcher());
+			
 	}
 
 
@@ -227,27 +171,17 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return stateTracker.everyWorkerAvailable();
 	}
 
-	protected void setWorkerDone(String id) throws Exception {
-		stateTracker.setWorkerDone(id);
-	}
-
 
 	@Override
 	public void postStop() throws Exception {
 		super.postStop();
-		ensureNoLeftOvers.cancel();
 	}
 
 
 	protected void nextIteration() throws Exception {
 		UpdateableImpl masterResults = this.compute(updates, updates);
-		Map<String,WorkerState> workers = stateTracker.currentWorkers();
 
-		for(String key : workers.keySet()) {
-			stateTracker.setWorkerDone(key);
-			log.info("Freeing " + key + " for work post batch completion");
-		}
-
+		
 		epochsComplete++;
 		//tell the batch actor to send out another dataset
 		if(!isDone())
@@ -289,36 +223,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-
-
-		else if(message instanceof GiveMeMyJob) {
-			GiveMeMyJob j = (GiveMeMyJob) message;
-			List<Job> jobs = stateTracker.currentJobs();
-			for(Job j2 : jobs) {
-				if(j2.getWorkerId().equals(j.getId())) {
-
-					j.setJob(j2);
-
-					log.info("Returning current job for worker " + j.getId());
-
-					mediator.tell(new DistributedPubSubMediator.Publish(j.getId(),
-							j), getSelf());	
-
-
-				}
-			}
-
-
-
-
-
-		}
-
-		else if(message instanceof NeedsModelMessage) {
-			log.info("Sending networks over");
-			getSender().tell(getResults().get(),getSelf());
-		}
-
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
 			UpdateableImpl masterResults = null;
@@ -341,11 +245,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				pretrain = false;
 				stateTracker.moveToFinetune();
 				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
-				Map<String,WorkerState> workers = stateTracker.currentWorkers();
-				for(String key : workers.keySet()) {
-					setWorkerDone(key);
-					log.info("Freeing " + key + " for work post batch completion");
-				}
+				
 
 				batchActor.tell(ResetMessage.getInstance(), getSelf());
 				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
@@ -360,19 +260,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-		else if(message instanceof AlreadyWorking) {
-			List<Job> jobs = stateTracker.currentJobs();
-			AlreadyWorking working = (AlreadyWorking) message;
-			for(Job j : jobs) {
-				if(j.getWorkerId().equals(working.getId())) {
-					stateTracker.requeueJob(j);
-					break;
-				}
-			}
-
-
-		}
-
+	
 		else if(message instanceof ClearWorker) {
 			log.info("Removing worker with id " + ((ClearWorker) message).getId());
 			ClearWorker clear = (ClearWorker) message;
@@ -411,20 +299,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			List<Job> currentJobs = stateTracker.currentJobs();
 			if(updates.size() >= partition || everyWorkerAvailable() || currentJobs.isEmpty()) 
 				nextIteration();
-
-		}
-
-		//receive ack from worker
-		else if(message instanceof Job) {
-			Job j = (Job) message;
-			if(!j.isDone()) {
-				log.info("Ack from worker " + j.getWorkerId() + " on job");
-			}
-			else {
-				log.info("Worker " + j.getWorkerId() + " is done working");
-				setWorkerDone(j.getWorkerId());
-				stateTracker.jobDone(j);
-			}
 
 		}
 

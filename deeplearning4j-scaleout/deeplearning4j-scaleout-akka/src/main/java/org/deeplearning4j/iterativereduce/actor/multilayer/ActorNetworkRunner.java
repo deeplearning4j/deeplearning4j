@@ -210,9 +210,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				Thread.currentThread().interrupt();
 			}
 
-			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					this), mediator);
-
+		
 			log.info("Starting model saver");
 			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
 
@@ -305,9 +303,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			Thread.currentThread().interrupt();
 		}
 
-		//ensure the trainer is known so the next iteration can happen
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				this), mediator);
+		
 		log.info("Started pipeline");
 		//start the pipeline
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
