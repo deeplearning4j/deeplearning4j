@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.datasets.DataSet;
@@ -15,6 +16,7 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
+import org.deeplearning4j.iterativereduce.actor.core.NoJobFound;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
@@ -23,6 +25,8 @@ import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
+
+import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -50,6 +54,31 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public MasterActor(Conf conf,ActorRef batchActor) {
 		super(conf,batchActor);
 		setup(conf);
+		forceNextPhase =  context().system().scheduler()
+				.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
+
+					@Override
+					public void run() {
+						try {
+							List<Job> currentJobs = stateTracker.currentJobs();
+							log.info("Status check on next iteration");
+
+							if(updates.size() >= partition)
+								nextIteration();
+
+
+
+							log.info("Current jobs left " + currentJobs);
+
+
+						}catch(Exception e) {
+							throw new RuntimeException(e);
+						}
+
+					}
+
+				}, context().dispatcher());
+
 
 	}
 
@@ -162,15 +191,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());	
 				//every minute check the batch and if after one minute there are no more updates
-			
+
 	}
 
 
 
-	protected boolean everyWorkerAvailable() throws Exception {
-		return stateTracker.everyWorkerAvailable();
-	}
-
+	
 
 	@Override
 	public void postStop() throws Exception {
@@ -181,7 +207,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected void nextIteration() throws Exception {
 		UpdateableImpl masterResults = this.compute(updates, updates);
 
-		
+
 		epochsComplete++;
 		//tell the batch actor to send out another dataset
 		if(!isDone())
@@ -192,9 +218,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
 		this.stateTracker.setCurrent(masterResults);
-		for(Job j : stateTracker.currentJobs()) {
-			stateTracker.clearJob(j);
-		}
+
 
 	}
 
@@ -212,17 +236,14 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 
-		else if(message instanceof WorkerState) {
-			WorkerState s = (WorkerState) message;
-			if(s.getWorkerId() != null) {
-				this.addWorker(s);
-				getSender().tell(Ack.getInstance(),getSelf());
-
-			}
-
+		
+		else if(message instanceof NoJobFound) {
+			partition--;
+			if(updates.size() >= partition) 
+				nextIteration();
 
 		}
-
+		
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
 			UpdateableImpl masterResults = null;
@@ -245,7 +266,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				pretrain = false;
 				stateTracker.moveToFinetune();
 				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
-				
+
 
 				batchActor.tell(ResetMessage.getInstance(), getSelf());
 				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
@@ -260,44 +281,28 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-	
+
 		else if(message instanceof ClearWorker) {
 			log.info("Removing worker with id " + ((ClearWorker) message).getId());
 			ClearWorker clear = (ClearWorker) message;
-			Map<String,WorkerState> workers = stateTracker.currentWorkers();
-			WorkerState clear2 = workers.get(clear.getId());
-			if(clear != null)
-				stateTracker.clearWorker(clear2);
+			
 		}
 
 		else if(message instanceof String) {
-			Map<String,WorkerState> workers = stateTracker.currentWorkers();
-			WorkerState state = workers.get(message.toString());
-			if(state == null) {
-				state = new WorkerState(message.toString());
-				state.setAvailable(true);
-				addWorker(state);
-				log.info("Worker " + state.getWorkerId() + " available for work");
-			}
-			else {
-				state.setAvailable(true);
-				log.info("Worker " + state.getWorkerId() + " available for work");
-
-			}
-
+			
 			getSender().tell(Ack.getInstance(),getSelf());
 
 		}
-
-
 
 
 		else if(message instanceof UpdateableImpl) {
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
-			List<Job> currentJobs = stateTracker.currentJobs();
-			if(updates.size() >= partition || everyWorkerAvailable() || currentJobs.isEmpty()) 
+			
+			//note that partition is always the current number of workers that was dispatched to
+			//this means that the number of workers will never outpace the number of datasets
+			if(updates.size() >= partition) 
 				nextIteration();
 
 		}
