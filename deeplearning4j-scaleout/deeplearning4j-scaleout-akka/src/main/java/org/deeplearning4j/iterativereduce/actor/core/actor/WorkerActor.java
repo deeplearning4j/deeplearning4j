@@ -71,6 +71,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		setup(conf);
 
 		this.tracker = tracker;
+		
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
 
@@ -84,11 +85,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 				register()), getSelf());
 
 		this.clusterClient = client;
-		try {
-			this.tracker.addWorker(new WorkerState(id));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		
+		tracker.availableForWork(id);
 
 		masterPath = conf.getMasterAbsPath();
 		log.info("Registered with master " + id + " at master " + conf.getMasterAbsPath());
@@ -167,6 +165,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 				log.error("Problem with processing",cause);
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						new ClearWorker(id)), getSelf());
+			
+				
 				return SupervisorStrategy.restart();
 			}
 		});

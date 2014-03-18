@@ -22,11 +22,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IList;
-import com.hazelcast.core.ILock;
 import com.hazelcast.core.IMap;
-import com.hazelcast.core.TransactionalList;
-import com.hazelcast.core.TransactionalMap;
-import com.hazelcast.transaction.TransactionContext;
 
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
@@ -45,9 +41,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile IAtomicReference<Object> master;
 	private volatile IList<Job> jobs;
-	private volatile IMap<String,WorkerState> workers;
+	private volatile IList<String> ids;
+
 	private volatile  IList<String> topics;
-	private volatile IList<WorkerState> availableWorkers;
 	private volatile IAtomicReference<Object> isPretrain;
 	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
 	private Config config;
@@ -76,14 +72,13 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 
 		jobs = h.getList(JOBS);
-		workers = h.getMap(CURRENT_WORKERS);
+		ids = h.getList(CURRENT_WORKERS);
 		topics = h.getList(TOPICS);
-		availableWorkers = h.getList(AVAILABLE_WORKERS);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
 		isPretrain.set(true);
-		
-		
+
+
 	}
 
 	private Config hazelcast() {
@@ -123,7 +118,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		conf.addListConfig(topicsConfig);
 
-	
+
 
 
 		ListConfig availableWorkersConfig = new ListConfig();
@@ -136,124 +131,26 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	}
 
-	private  TransactionContext beginTransaction() {
-		TransactionContext context = h.newTransactionContext();
 
-
-		context.beginTransaction();
-
-		return context;
-	}
 
 
 	@Override
-	public void addJobToCurrent(Job j) throws Exception {
-		TransactionContext context = beginTransaction();
-		context.getList(JOBS).add(j);
+	public boolean addJobToCurrent(Job j) throws Exception {
 		IAtomicReference<Job> r = h.getAtomicReference("job-" + j.getWorkerId());
-		while(r.get() != null) {
+		if(r.get() != null) {
 			log.info("Currently locked unable to add job for current worker");
+			return false;
 		}
-		
+
+
+
+		jobs.add(j);
 		r.set(j);
-		context.commitTransaction();
 
-
-	}
-
-	@Override
-	public Map<String, WorkerState> currentWorkers() throws Exception {
-		return new HashMap<>(workers);
-
-	}
-
-
-
-	@Override
-	public  WorkerState nextAvailableWorker() throws Exception {
-		WorkerState ret = null;
-
-		while(ret == null) {
-			for(String key : workers.keySet()) {
-				IAtomicReference<WorkerState> state = h.getAtomicReference(key);
-				if(state.get().isAvailable()) {
-					ret = workers.get(key);
-					break;
-				}
-			}
-		}
-
-		return ret;
-
-	}
-
-
-
-
-
-	@Override
-	public void clearWorker(WorkerState worker) throws Exception {
-		TransactionContext context = beginTransaction();
-
-
-
-		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
-
-
-		workers.remove(worker.getWorkerId());
-
-		
-		
-		
-		h.getLock(worker.getWorkerId()).destroy();
-		
-		
-		context.commitTransaction();
-	}
-
-	@Override
-	public void addWorker(WorkerState worker) throws Exception {
-
-		
-		log.info("Added worker " + worker.getWorkerId());
-		
-		TransactionContext context = beginTransaction();
-
-		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
-		TransactionalList<WorkerState> availableWorkers = context.getList(AVAILABLE_WORKERS);
-
-
-		workers.put(worker.getWorkerId(),worker);
-
-		IAtomicReference<WorkerState> workerRef = h.getAtomicReference(worker.getWorkerId());
-		workerRef.set(worker);
-
-
-		if(!this.availableWorkers.contains(worker))
-			availableWorkers.add(worker);
-
-		
-		
-		context.commitTransaction();
-
-	}
-
-
-
-
-
-
-
-
-
-	@Override
-	public boolean everyWorkerAvailable() throws Exception {
-		Map<String, WorkerState> workers = currentWorkers();
-		for(WorkerState state : workers.values())
-			if(!state.isAvailable())
-				return false;
 		return true;
+
 	}
+
 
 	@Override
 	public List<Job> currentJobs() throws Exception {
@@ -266,15 +163,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void clearJob(Job j) throws Exception {
 		IAtomicReference<Job> jRef = h.getAtomicReference("job-" + j.getWorkerId());
-		jRef.set(null);
+		jRef.destroy();
 		jobs.remove(j);
-
-		WorkerState state = workers.get(j.getWorkerId());
-		state.setAvailable(true);
-		workers.put(state.getWorkerId(),state);
-		
-		IAtomicReference<WorkerState> workerRef = h.getAtomicReference(j.getWorkerId());
-		workerRef.set(state);
 
 	}
 
@@ -310,7 +200,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 
 
-	
+
 
 	@Override
 	public void jobDone(Job job) {
@@ -319,11 +209,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	@Override
-	public boolean workerAvailable(String id) {
-		return h.getLock(id).isLocked();
 	}
 
 	@Override
@@ -343,42 +228,17 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	}
 
 	@Override
-	public Job jobFor(WorkerState worker) {
-		return jobFor(worker.getWorkerId());
+	public void availableForWork(String id) {
+		if(!ids.contains(id))
+			ids.add(id);
 	}
 
 	@Override
-	public void unlockWorker(String id) {
-		TransactionContext context = beginTransaction();
-
-
-
-		TransactionalList<WorkerState> availableWorkers = context.getList(AVAILABLE_WORKERS);
-		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
-
-
-		WorkerState w = workers.get(id);
-		w.setAvailable(true);
-		workers.put(w.getWorkerId(), w);
-
-		if(!this.availableWorkers.contains(workers.get(id)))
-			availableWorkers.add(workers.get(id));
-
-		availableWorkers.add(workers.get(id));
-
-		h.getAtomicReference("job-" + id).destroy();
-		IAtomicReference<WorkerState> workerRef = h.getAtomicReference(id);
-		workerRef.set(w);
-		context.commitTransaction();
+	public List<String> jobIds() {
+		return ids;
 	}
 
-	@Override
-	public void lockWorker(String id) {
-		WorkerState w = new WorkerState(id);
-		w.setAvailable(false);
-		workers.put(id, w);
-		h.getAtomicReference(id).set(w);
-	}
+
 
 
 }

@@ -1,5 +1,6 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +12,7 @@ import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.actor.core.NoJobFound;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
@@ -64,8 +66,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
 
 		heartbeat();
-		
-		
+
+
 
 	}
 
@@ -97,9 +99,15 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 	protected void confirmWorking() {
+		Job j = tracker.jobFor(id);
+
 		//reply
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				tracker.jobFor(id)), getSelf());	
+		if(j != null)
+			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+					j), getSelf());	
+
+		else
+			log.warn("Not confirming work when none to be found");
 	}
 
 
@@ -133,21 +141,46 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof Job) {
 			Job j = (Job) message;
+			Job trackerJob = tracker.jobFor(id);
+			if(trackerJob == null) {
+				tracker.addJobToCurrent(j);
+				log.info("Confirmation from " + j.getWorkerId() + " on work");
+				List<DataSet> input = (List<DataSet>) j.getWork();
+				confirmWorking();
+				updateTraining(input);
 
-			Job alreadyDoing = null;
-			
-			do {
-				alreadyDoing = tracker.jobFor(id);
-			}while(alreadyDoing != null);
-			
-			
-			log.info("Confirmation from " + j.getWorkerId() + " on work");
-			List<DataSet> input = (List<DataSet>) j.getWork();
-			tracker.addJobToCurrent(j);
-			confirmWorking();
-			updateTraining(input);
+			}
+
+			else {
+				//block till there's an available worker
+
+				Job j2 = null;
+				boolean redist = false;
 
 
+				while(!redist) {
+					List<String> ids = tracker.jobIds();
+
+					for(String s : ids) {
+						if(tracker.jobFor(s) == null) {
+
+							//wrap in a job for additional metadata
+							j2 = j;
+							j2.setWorkerId(s);
+							//replicate the network
+							mediator.tell(new DistributedPubSubMediator.Publish(s,
+									j2), getSelf());
+							log.info("Delegated work to worker " + s);
+
+							redist = true;
+							break;
+
+						}
+					}
+				}
+
+
+			}
 
 
 		}
@@ -229,8 +262,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				}
 
 				else {
+					//ensure next iteration happens by decrementing number of required batches
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+							NoJobFound.getInstance()), getSelf());
 					log.info("No job found; unlocking worker "  + id);
-					tracker.unlockWorker(id);
 				}
 
 				return work;
@@ -252,7 +287,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public  UpdateableImpl compute() {
 		log.info("Training network");
-		tracker.lockWorker(id);
 		BaseMultiLayerNetwork network = this.getNetwork();
 		while(network == null) {
 			try {
@@ -265,41 +299,26 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 		DataSet d = null;
-		Job j = null;
-		
-		
-		int numLooped = 0;
-		while(j == null && numLooped < 10) {
-			j = tracker.jobFor(id);
+		Job j = tracker.jobFor(id);
 
-			if(j != null) {
-				log.info("Found job for worker " + id);
-				if(j.getWork() instanceof List) {
-					List<DataSet> l = (List<DataSet>) j.getWork();
-					d = DataSet.merge(l);
-				}
-
-				else
-					d = (DataSet) j.getWork();
-				combinedInput = d.getFirst();
-				outcomes = d.getSecond();
+		if(j != null) {
+			log.info("Found job for worker " + id);
+			if(j.getWork() instanceof List) {
+				List<DataSet> l = (List<DataSet>) j.getWork();
+				d = DataSet.merge(l);
 			}
 
 			else
-				log.info("Job appears to be null...waiting");
-			
-			numLooped++;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-
+				d = (DataSet) j.getWork();
+			combinedInput = d.getFirst();
+			outcomes = d.getSecond();
 		}
+
+
 
 		if(j == null)
 			return null;
-		
+
 		if(d == null) {
 			throw new IllegalStateException("No job found for worker " + id);
 		}
@@ -325,7 +344,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 
-		tracker.unlockWorker(id);
 
 		return new UpdateableImpl(network);
 	}

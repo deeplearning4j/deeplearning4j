@@ -64,26 +64,7 @@ public class ZooKeeperStateTrackerTest  {
 
 
 
-	@Test
-	public void testWorkerRetrieval() throws Exception {
-		server = new TestingServer(2182);
-
-		StateTracker tracker = createTracker();
-		String id = UUID.randomUUID().toString();
-		WorkerState state = new WorkerState(id);
-		state.setAvailable(true);
-		tracker.addWorker(state);
-
-		Map<String, WorkerState> workers = tracker.currentWorkers();
-
-		assertEquals(1,workers.size());
-		WorkerState state2 = tracker.nextAvailableWorker();
-		assertEquals(state,state2);
-		
-		tracker.shutdown();
-		server.stop();
-	}
-
+	
 
 	@Test
 	public void ensureJobRetrieval() throws Exception {
