@@ -34,3 +34,7 @@ Also called a Loss Function. An objective function is a heuristic function for r
 
 ###<a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
+
+###<a name="serialization">Serialization</a> 
+Serialization is how you translate data structures or object state into storable formats. DL4J's nets are serialized.
+
