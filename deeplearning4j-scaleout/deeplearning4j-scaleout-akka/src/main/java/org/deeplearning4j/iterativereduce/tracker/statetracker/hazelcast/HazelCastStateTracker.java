@@ -21,6 +21,9 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.IList;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.IQueue;
 
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
@@ -38,14 +41,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String IS_PRETRAIN = "ispretrain";
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile IAtomicReference<Object> master;
-	private volatile List<Job> jobs;
-	private volatile Map<String,WorkerState> workers;
-	private volatile  List<String> topics;
-	private volatile List<Job> redist;
+	private volatile IList<Job> jobs;
+	private volatile IMap<String,WorkerState> workers;
+	private volatile  IList<String> topics;
+	private volatile IList<Job> redist;
 	private volatile IAtomicReference<Object> isPretrain;
 	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
 	private Config config;
-	private volatile Queue<WorkerState> availableWorkers;
+	private volatile IQueue<WorkerState> availableWorkers;
 	public final static int DEFAULT_HAZELCAST_PORT = 2510;
 	public final static String CURRENT_JOBS = "JOBS";
 	private HazelcastInstance h;
@@ -103,8 +106,10 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		ListConfig jobConfig = new ListConfig();
 		jobConfig.setName(JOBS);
+		
 		conf.addListConfig(jobConfig);
 
+		
 		MapConfig workersConfig = new MapConfig();
 		workersConfig.setName(CURRENT_WORKERS);
 
@@ -158,6 +163,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		int timesLooped = 0;
 		do {
 			ret = availableWorkers.poll();
+			if(ret == null)
+				continue;
+			
+			for(Job j : currentJobs()) {
+				if(j.getWorkerId().equals(ret.getWorkerId())) {
+					ret = null;
+					break;
+				}
+			}
+			
 			timesLooped++;
 			if(timesLooped % 5 == 0) {
 				for(WorkerState w : workers.values()) {
