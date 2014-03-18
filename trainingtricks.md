@@ -18,10 +18,10 @@ Many of these tips have already been discussed in the academic literature. Our p
 
   For an input layer of 784, you might choose an initial hidden layer of 500, and a second hidden layer of 250. No hidden layer should be less than a quarter of the input layer’s nodes. And the output layer will simply be the number of labels. 
 
-  Most deep-learning nets have three to four hidden layers, as accuracy tends to decrease beyond that depth. Typical machine learning, of course, has one hidden layer, and those nets are called Perceptrons. 
+  Larger datasets require more hidden layers. Facebook's Deep Face uses nine hidden layers on what we can only presume to be an immense corpus. Many smaller datasets might only require three or four hidden layers, with their accuracy decreasing beyond that depth. Typical machine learning, of course, has one hidden layer, and those nets are called Perceptrons. 
 
 3. Training neural networks has two steps: pre-training and fine-tuning. You’ll want to pre-train your net first on the raw data, and then save a backup, because fine-tuning will destroy the feature blend of the pretrained net. That is, a good pre-trained net is a product in itself, on which you can iteratively fine tune. In addition, pre-training can occur in several stages. Feed your net one set of raw data, pause, and then resume when you have more to feed it. 
 
   Two aspects of this process are notable. Pretraining and finetuning have different goals, and different directions. Pretraining is a form of forward propagation. The data moves through the net in one direction. Finetuning is a form of back propagation in which the direction is reversed. Pretraining learns features. Finetuning teaches the network to perform classification. It becomes specialized. 
 
-  It is also interesting to note that Hinton’s network made 30 passes in pretraining to achieve its 99 percent accuracy. 
+  It is also interesting to note that Hinton’s network made 30 passes in pretraining to achieve its 99 percent accuracy. This is only feasible with a speedy, massively parallel network that lowers the cost of iteration.
