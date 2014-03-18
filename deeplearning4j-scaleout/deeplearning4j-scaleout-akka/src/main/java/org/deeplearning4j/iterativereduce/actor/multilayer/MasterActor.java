@@ -19,7 +19,6 @@ import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NeedsModelMessage;
-import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
@@ -183,8 +182,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 									else {
 										for(Job j : currentJobs) {
-											mediator.tell(new DistributedPubSubMediator.Publish(j.getWorkerId(),
-													NeedsStatus.getInstance()), getSelf());
 											if(stateTracker.workerAvailable(j.getWorkerId())) {
 												log.info("Out of sync job and worker list; removing job " + j.getWorkerId());
 												stateTracker.jobDone(j);
@@ -212,15 +209,15 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 							@Override
 							public void run() {
 								while(!stateTracker.jobsToRedistribute().isEmpty()) {
-									Job remove = needsToBeRedistributed.remove(0);
+									Job remove = stateTracker.jobsToRedistribute().remove(0);
 									try {
 										stateTracker.requeueJob(remove);
 									} catch (Exception e) {
 										throw new RuntimeException(e);
 									}
 								}
-								
-								
+
+
 
 							}
 
@@ -264,7 +261,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 				masterResults), getSelf());
 		this.stateTracker.setCurrent(masterResults);
-
+		for(Job j : stateTracker.currentJobs()) {
+			stateTracker.clearJob(j);
+		}
 
 	}
 
@@ -325,19 +324,26 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
-			UpdateableImpl masterResults = this.compute(updates, updates);
+			UpdateableImpl masterResults = null;
+			if(!updates.isEmpty()) {
+				masterResults = this.compute(updates, updates);
 
-			stateTracker.setCurrent(masterResults);
-
-
-			epochsComplete++;
-			updates.clear();
+				stateTracker.setCurrent(masterResults);
 
 
-			if(pretrain) {
+				epochsComplete++;
+				updates.clear();
+
+			}
+
+			else 
+				masterResults = this.getMasterResults();
+
+			if(pretrain && stateTracker.currentJobs().isEmpty()) {
 				batchActor.tell(ResetMessage.getInstance(), getSelf());
 				log.info("Switching to finetune mode");
 				pretrain = false;
+				stateTracker.moveToFinetune();
 				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 				Map<String,WorkerState> workers = stateTracker.currentWorkers();
 				for(String key : workers.keySet()) {
@@ -345,12 +351,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					log.info("Freeing " + key + " for work post batch completion");
 				}
 
-				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+				batchActor.tell(ResetMessage.getInstance(), getSelf());
 
 
 			}
 
-			else {
+			else if(stateTracker.currentJobs().isEmpty()) {
 				isDone = true;
 				log.info("Done training!");
 			}
@@ -416,11 +422,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		else if(message instanceof Job) {
 			Job j = (Job) message;
 			if(!j.isDone()) {
-				stateTracker.addJobToCurrent(j);
 				log.info("Ack from worker " + j.getWorkerId() + " on job");
 			}
 			else {
-				log.info("Job " + j.getWorkerId() + " finished");
+				log.info("Worker " + j.getWorkerId() + " is done working");
 				setWorkerDone(j.getWorkerId());
 				stateTracker.jobDone(j);
 			}

@@ -46,6 +46,16 @@ public class BatchActor extends UntypedActor {
 		}
 		else if(message instanceof ResetMessage) {
 			iter.reset();
+			
+			if(iter.hasNext()) {
+				log.info("Propagating new work to master");
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						iter.next()), mediator);
+			}
+			else if(!iter.hasNext()) {
+				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+						DoneMessage.getInstance()), mediator);
+			}
 		}
 
 		else if(message instanceof MoreWorkMessage) {

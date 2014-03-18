@@ -11,7 +11,6 @@ import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
@@ -152,8 +151,25 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			if(getCurrent() != null) {
 				log.info("Job sent when already had job");
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						new AlreadyWorking(id)), getSelf());	
+				boolean consistent = false;
+				for(Job j2 : tracker.currentJobs()) {
+					if(j2.getWorkerId().equals(id)) {
+						consistent = true;
+						break;
+					}
+				}
+				
+				if(consistent)
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+							new AlreadyWorking(id)), getSelf());	
+				else {
+					log.info("Confirmation from " + j.getWorkerId() + " on work");
+					setCurrent(j);
+					List<DataSet> input = (List<DataSet>) j.getWork();
+					confirmWorking();
+					updateTraining(input);
+
+				}
 			}
 
 			else {
@@ -190,22 +206,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			log.info("Got job again for id " + id);
 		}
 
-		else if(message instanceof NeedsStatus) {
-			log.info("Sending status update to master");
-			if(getCurrent() == null) {
-				log.info("Null job sending job done to worker");
-				Job j = new Job(id,null, false);
-				j.setDone(true);
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						j), getSelf());	
 
-
-			}
-			else
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						getCurrent()), getSelf());	
-
-		}
 
 		else if(message instanceof Updateable) {
 			final UpdateableImpl m = (UpdateableImpl) message;
@@ -213,7 +214,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 				@Override
 				public Void call() throws Exception {
-					
+
 					if(m.get() == null) {
 						setNetwork(tracker.getCurrent().get());
 
@@ -222,7 +223,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					else {
 						setWorkerUpdateable(m.clone());
 						setNetwork(m.get());
-						
+
 					}
 
 					return null;
@@ -277,7 +278,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 							work), getSelf());	
 
 				}
-				
+
 				finishedWork();
 				availableForWork();
 				return work;
@@ -325,10 +326,34 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	@Override
 	public  UpdateableImpl compute() {
 		log.info("Training network");
-		if(getCurrent() == null)
+		while(getCurrent() == null)
 			return null;
 		BaseMultiLayerNetwork network = this.getNetwork();
-		
+		while(network == null) {
+			try {
+				network = tracker.getCurrent().get();
+				this.network = network;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		while(this.getCombinedInput() == null || this.getOutcomes() == null) {
+			try {
+				for(Job j : tracker.currentJobs()) {
+					if(j.getWorkerId().equals(id)) {
+						DataSet d = (DataSet) j.getWork();
+						combinedInput = d.getFirst();
+						outcomes = d.getSecond();
+						break;
+					}
+				}
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+
 		if(tracker.isPretrain()) {
 			log.info("Worker " + id + " pretraining");
 			network.pretrain(this.getCombinedInput(), extraParams);

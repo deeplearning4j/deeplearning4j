@@ -94,6 +94,12 @@ public class Job implements Serializable {
 	public void setPretrain(boolean pretrain) {
 		this.pretrain = pretrain;
 	}
+
+	@Override
+	public String toString() {
+		return "Job [done=" + done + ", workerId=" + workerId + ", pretrain="
+				+ pretrain + "]";
+	}
 	
 	
 	

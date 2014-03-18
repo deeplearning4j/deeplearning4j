@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.NeedsStatus;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
@@ -63,7 +62,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	public static String FINISH = "finish";
 	Cluster cluster = Cluster.get(getContext().system());
 	ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-	protected List<Job> needsToBeRedistributed = new ArrayList<>();
 
 
 	//number of batches over time
@@ -105,11 +103,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
-				//replicate the network
-				log.info("Asking for status update");
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.BROADCAST,
-						NeedsStatus.getInstance()), getSelf());
-
+				//replicate the network				
 				while(!stateTracker.jobsToRedistribute().isEmpty()) {
 					Job j = stateTracker.jobsToRedistribute().remove(0);
 					try {
@@ -236,7 +230,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					log.info("Sending off work for batch " + j);
 					//block till there's an available worker
 					WorkerState state = nextAvailableWorker();
-
+					
 
 
 					List<DataSet> work = new ArrayList<>(splitList.get(j));
