@@ -2,9 +2,6 @@ package org.deeplearning4j.iterativereduce.actor.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;

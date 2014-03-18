@@ -34,7 +34,7 @@ public class GradientChangerExample {
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = null;
 		if(args.length < 2) {
-			iter = new RawMnistDataSetIterator(80,160);
+			iter = new RawMnistDataSetIterator(80,60000);
 		}
 		else {
 			int start = Integer.parseInt(args[1]);
@@ -54,8 +54,8 @@ public class GradientChangerExample {
 
 		
 		Conf c = new Conf();
-		c.setFinetuneEpochs(1000);
-		c.setFinetuneLearningRate(0.01);
+		c.setFinetuneEpochs(2000);
+		c.setFinetuneLearningRate(0.0001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
 		c.setUseAdaGrad(true);
@@ -65,27 +65,21 @@ public class GradientChangerExample {
 		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.01,1000});
+		c.setDeepLearningParams(new Object[]{1,0.0001,2000});
 		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
-		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
+
+
+		if(args.length >= 1) {
+			dbn = SerializationUtils.readObject(new File(args[0]));
+		}
+		
+		ActorNetworkRunner runner = dbn == null ? new ActorNetworkRunner("master",iter) : new ActorNetworkRunner("master",iter,dbn);
 		runner.setup(c);
 		runner.train();
 		
 		/*
-		if(args.length < 2) {
-			dbn = new DBN.Builder()
-			.hiddenLayerSizes(new int[]{500,400,250})
-			.numberOfInputs(784).numberOfOutPuts(10)
-			.useRegularization(false).withMultiLayerGradientListeners(listeners)
-			.build();
-
-		}
-
-		else {
-			dbn = SerializationUtils.readObject(new File(args[0]));
-		}
 
 		int numIters = 0;
 

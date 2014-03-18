@@ -15,11 +15,17 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	void moveToFinetune();
 	
 	
-	void jobRequeued(Job j);
+	public Job jobFor(String id);
+	
+	public Job jobFor(WorkerState worker);
+	
+	
+	
+	void unlockWorker(String id);
+	void lockWorker(String id);
 	
 	List<Job> currentJobs() throws Exception;
 	
-	List<Job> jobsToRedistribute();
 	
 	void addTopic(String topic) throws Exception;
 	
@@ -33,9 +39,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	
 	WorkerState nextAvailableWorker() throws Exception;;
 	
-	void requeueJob(Job j) throws Exception;;
 	
-	void setWorkerDone(String id) throws Exception;;
 	
 	void clearWorker(WorkerState worker) throws Exception;;
 	

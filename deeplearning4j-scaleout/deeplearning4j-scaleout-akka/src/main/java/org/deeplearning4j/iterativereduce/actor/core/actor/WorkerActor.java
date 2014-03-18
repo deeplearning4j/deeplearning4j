@@ -56,7 +56,6 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected double corruptionLevel;
 	protected Object[] extraParams;
 	protected String id;
-	protected AtomicReference<Job> current;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
@@ -71,7 +70,6 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	public WorkerActor(Conf conf,ActorRef client,StateTracker<E> tracker) {
 		setup(conf);
 
-		this.current = new AtomicReference<>(null);
 		this.tracker = tracker;
 		//subscribe to broadcasts from workers (location agnostic)
 		mediator.tell(new Put(getSelf()), getSelf());
@@ -86,6 +84,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 				register()), getSelf());
 
 		this.clusterClient = client;
+		try {
+			this.tracker.addWorker(new WorkerState(id));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
 		masterPath = conf.getMasterAbsPath();
 		log.info("Registered with master " + id + " at master " + conf.getMasterAbsPath());
@@ -396,20 +399,6 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		this.results = results;
 	}
 
-	public  Job getCurrent() {
-		return this.current.get();
-	}
-
-	public  void setCurrent(Job current) {
-		this.current.set(current);
-	}
-
-	/**
-	 * Clears the current job
-	 */
-	protected  void clearCurrentJob() {
-		setCurrent(null);
-	}
 
 
 }

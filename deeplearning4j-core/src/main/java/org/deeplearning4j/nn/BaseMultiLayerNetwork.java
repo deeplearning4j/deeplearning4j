@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.rbm.CRBM;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -163,7 +164,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		if(rng == null)   
-			this.rng = new MersenneTwister(123);
+			this.rng = new SynchronizedRandomGenerator(new MersenneTwister(123));
 
 
 		else 
