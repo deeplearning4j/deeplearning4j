@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -24,6 +25,13 @@ import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IList;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
+import com.hazelcast.core.TransactionalList;
+import com.hazelcast.core.TransactionalMap;
+import com.hazelcast.core.TransactionalQueue;
+import com.hazelcast.transaction.TransactionContext;
+import com.hazelcast.transaction.TransactionOptions;
+import com.hazelcast.transaction.TransactionOptions.TransactionType;
+import com.hazelcast.transaction.impl.Transaction;
 
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
@@ -138,20 +146,31 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	}
 
-	
+	private TransactionContext beginTransaction() {
+		TransactionOptions options = new TransactionOptions().setTransactionType(TransactionType.LOCAL);
+		TransactionContext context = h.newTransactionContext(options);
+		context.beginTransaction();
+		return context;
+	}
 	
 	
 	@Override
 	public void addJobToCurrent(Job j) throws Exception {
-		jobs.add(j);
-		WorkerState w = workers.get(j.getWorkerId());
+		TransactionContext context = beginTransaction();
+		context.getList(JOBS).add(j);
+
+		WorkerState w = (WorkerState) context.getMap(CURRENT_WORKERS).get(j.getWorkerId());
 		w.setAvailable(false);
-		workers.put(w.getWorkerId(), w);
+		context.getMap(CURRENT_WORKERS).put(w.getWorkerId(), w);
+		
+		context.commitTransaction();
+		
+		
 	}
 
 	@Override
 	public Map<String, WorkerState> currentWorkers() throws Exception {
-		return workers;
+		return new HashMap<>(workers);
 
 	}
 
@@ -161,8 +180,11 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public  WorkerState nextAvailableWorker() throws Exception {
 		WorkerState ret = null;
 		int timesLooped = 0;
+		TransactionContext context = beginTransaction();
+
+		
 		do {
-			ret = availableWorkers.poll();
+			ret = (WorkerState) context.getQueue(AVAILABLE_WORKERS).poll();
 			if(ret == null)
 				continue;
 			
@@ -174,10 +196,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 			}
 			
 			timesLooped++;
+			
+			TransactionalQueue<WorkerState> availableWorkers = context.getQueue(AVAILABLE_WORKERS);
+			TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
+			
 			if(timesLooped % 5 == 0) {
 				for(WorkerState w : workers.values()) {
-					if(w.isAvailable() && !availableWorkers.contains(w))  {
-						availableWorkers.add(w);
+					if(w.isAvailable())  {
+						availableWorkers.offer(w);
 						log.info("Adding missing worker " + w.getWorkerId());
 					}
 				}
@@ -185,6 +211,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		}while(ret == null);
 
+		context.commitTransaction();
+		
 		return ret;
 
 	}
@@ -194,31 +222,55 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void requeueJob(Job j) throws Exception {
+		TransactionContext context = beginTransaction();
+		TransactionalList<Job> jobs = context.getList(JOBS);
+		TransactionalList<Job> redist = context.getList(REDIST);
+
 		jobs.remove(j);
 		redist.add(j);
+		
+		
+		context.commitTransaction();
 	}
 
 	@Override
 	public void setWorkerDone(String id) throws Exception {
+		TransactionContext context = beginTransaction();
+		TransactionalQueue<WorkerState> availableWorkers = context.getQueue(AVAILABLE_WORKERS);
+		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
+		
+		
 		WorkerState w = workers.get(id);
 		w.setAvailable(true);
 		workers.put(w.getWorkerId(), w);
-		availableWorkers.add(workers.get(id));
+		availableWorkers.offer(workers.get(id));
 
+		context.commitTransaction();
 
 	}
 
 	@Override
 	public void clearWorker(WorkerState worker) throws Exception {
+		TransactionContext context = beginTransaction();
+		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
+		
+		
 		workers.remove(worker.getWorkerId());
-		availableWorkers.remove(worker);
+		
+		context.commitTransaction();
 	}
 
 	@Override
 	public void addWorker(WorkerState worker) throws Exception {
-		workers.put(worker.getWorkerId(),worker);
-		availableWorkers.add(worker);
+		TransactionContext context = beginTransaction();
+		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
+		TransactionalQueue<WorkerState> availableWorkers = context.getQueue(AVAILABLE_WORKERS);
 
+		
+		workers.put(worker.getWorkerId(),worker);
+		availableWorkers.offer(worker);
+
+		context.commitTransaction();
 
 	}
 
@@ -249,8 +301,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void clearJob(Job j) throws Exception {
+		TransactionContext context = beginTransaction();
+		TransactionalList<Job> jobs = context.getList(JOBS);
+		TransactionalList<Job> redist = context.getList(REDIST);
+
 		jobs.remove(j);
 		redist.remove(j);
+		
+		context.commitTransaction();
 	}
 
 	@Override
@@ -289,20 +347,37 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void jobRequeued(Job j) {
+		TransactionContext context = beginTransaction();
+		TransactionalList<Job> redist = context.getList(REDIST);
+
 		redist.remove(j);
+		
+		context.commitTransaction();
 	}
 
 	@Override
 	public void jobDone(Job job) {
-		jobs.remove(job);
-		redist.remove(job);
+		try {
+			clearJob(job);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public boolean workerAvailable(String id) {
-		WorkerState w = this.workers.get(id);
-		if(w != null)
+		TransactionContext context = beginTransaction();
+		TransactionalMap<String,WorkerState> workers = context.getMap(CURRENT_WORKERS);
+		
+		WorkerState w = workers.get(id);
+		if(w != null) {
+			context.commitTransaction();
 			return w.isAvailable();
+
+		}
+		
+		context.commitTransaction();
+		
 		return false;
 	}
 

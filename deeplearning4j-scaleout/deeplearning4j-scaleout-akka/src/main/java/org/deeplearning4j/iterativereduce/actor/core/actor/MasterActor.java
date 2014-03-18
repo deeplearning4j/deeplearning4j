@@ -1,17 +1,21 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
+import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
@@ -19,6 +23,7 @@ import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableMaster;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 
 import scala.Option;
@@ -100,9 +105,28 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 				try {
 					log.info("Current workers " + stateTracker.currentWorkers().keySet());
+					if(pretrain && stateTracker.currentJobs().isEmpty()) {
+						log.info("Switching to finetune mode");
+						pretrain = false;
+						stateTracker.moveToFinetune();
+						SerializationUtils.saveObject(stateTracker.getCurrent().get(), new File("pretrain-model.bin"));
+						
+						MasterActor.this.batchActor.tell(ResetMessage.getInstance(), getSelf());
+						MasterActor.this.batchActor.tell(new MoreWorkMessage((Updateable<?>) stateTracker.getCurrent().get()), getSelf());
+
+					}
+
+					else if(stateTracker.currentJobs().isEmpty()) {
+						isDone = true;
+						log.info("Done training!");
+					}
+				
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
+				
+				
+				
 				//replicate the network				
 				while(!stateTracker.jobsToRedistribute().isEmpty()) {
 					Job j = stateTracker.jobsToRedistribute().remove(0);
