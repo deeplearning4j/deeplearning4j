@@ -15,7 +15,7 @@ Please also see [the single layer network parameters common to all single networ
 
 K is the number of times you run [contrastive divergence]({{ site.baseurl }}/glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted boltzmann machine. A typical value is 1.
 
-## initiating a restricted Boltzmann machine 
+## initiating an RBM
 
 Setting up a single-thread restricted Boltzmann machine is easy. 
 
