@@ -3,71 +3,26 @@ title:
 layout: default
 ---
 
+# architecture
+
+DeepLearning4j uses a host of technologies for normal and distributed training, and prediction of neural networks.
+
+Below is the current architecture, an alpha version that is likely to change, based on the welcome feedback of our users.
 
 
-Architecture
-==============================
+### matrix computations
 
+[Jblas](http://mikiobraun.github.io/jblas/) uses Fortran library for matrix computations. We chose to use Jblas as a native dependency because its matrix computations are faster than other options, and deep learning is nothing if not a series of matrix computations. The work of deep-learning nets is too computationally intense to select slow tools and expect timely results. 
 
+### distributed service discovery
 
+[Zookeeper](http://zookeeper.apache.org/) does distributed service discovery and configuration/cluster coordination well. It comes embedded in many environments, and powers a number of well-known technologies, like Storm and Hadoop.
 
-DeepLearning4j uses a host of technologies for both normal as well as distributed training and prediction of neural networks.
+### clustering / distributed computing
 
-This is very likely to change and should be considered alpha as such. Below is the current architecture, and feedback is always appreciated.
+[Akka](http://akka.io/) is the great parallel framework written in Scala that powers [Spark](http://spark.apache.org). It has a great programming paradigm and transparent parallel computation via the actor model. This allows for training at scale as well as very simple, serializable models at prediction time.
 
-
-
-
-
-
-Matrix Computations
-=============================
-
-[Jblas](http://mikiobraun.github.io/jblas/)
-
-
-Jblas uses fortran underneath for matrix computations.
-
-The reason for choosing jblas (and thus having native dependencies)
-
-are the matrix computations being faster.
-
-
-Neural network computaions are all computationally intense operations such as 
-
-matrix multiples among other things, this was thus a requirement to be as fast as possible.
-
-
-
-
-
-Distributed Service Discovery
-======================================
-
-[Zookeeper](http://zookeeper.apache.org/)
-
-Zookeeper is great for distributed service discovery and configuration/cluster coordination.
-
-It comes embedded in many environments already and powers a lot of famous technologies such as storm and hadoop.
-
-
-Clustering / Distributed Computing
-=============================================
-
-[Akka](http://akka.io/)
-
-
-Akka powers [Spark](http://spark.apache.org) underneath and is also a great parallel framework written in scala.
-
-It has a great programming paradigm and has transparent parallel computation via the actor model.
-
-This allows for at scale training, but very simple serializable models at prediction time.
-
-
-
-
-Distributed Data Structures
-=====================================
+### distributed data structures
 
 [Hazelcast](http://hazelcast.org/)
 
@@ -77,8 +32,7 @@ common object serialization requirements. Hazelcast is primarily being used for 
 
 This may seem redundant with zookeeper, but zookeeper does not encourage/should not be used for distributed serialization stores.
 
-Optimization Algorithms
-==========================================
+### optimization algorithms
 
 [Mallet](http://mallet.cs.umass.edu/optimization.php) is used for the optimization algorithms.
 
