@@ -92,7 +92,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String dataSet;
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
 	protected int numExamples = -1;
-	@Option(name="-a",usage="use adagrad; default true")
+	@Option(name="-adg",usage="use adagrad; default true")
 	protected boolean useAdaGrad = true;
 	protected ActorNetworkRunner runner;
 	protected DataSetIterator iter;
