@@ -1,12 +1,8 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.actor.WorkerState;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
@@ -22,7 +18,6 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IList;
-import com.hazelcast.core.IMap;
 
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
@@ -42,7 +37,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	private volatile IAtomicReference<Object> master;
 	private volatile IList<Job> jobs;
 	private volatile IList<String> ids;
-
+	private volatile IList<String> workers;
 	private volatile  IList<String> topics;
 	private volatile IAtomicReference<Object> isPretrain;
 	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
@@ -63,8 +58,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		}
 		else {
+			log.info("Connecting to hazelcast on " + connectionString);
 			ClientConfig client = new ClientConfig();
-			client.getNetworkConfig().setAddresses(Arrays.asList(connectionString));
+			client.getNetworkConfig().addAddress(connectionString);
 			h = HazelcastClient.newHazelcastClient(client);
 
 		}
@@ -73,6 +69,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		jobs = h.getList(JOBS);
 		ids = h.getList(CURRENT_WORKERS);
+		workers = h.getList(WORKERS);
 		topics = h.getList(TOPICS);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
@@ -142,7 +139,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 			return false;
 		}
 
-
+		ids.add(j.getWorkerId());
 
 		jobs.add(j);
 		r.set(j);
@@ -236,6 +233,27 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public List<String> jobIds() {
 		return ids;
+	}
+
+	@Override
+	public void addWorker(String worker) {
+		if(!workers.contains(worker))
+			workers.add(worker);
+	}
+
+	@Override
+	public void removeWorker(String worker) {
+		workers.remove(worker);
+	}
+
+	@Override
+	public List<String> workers() {
+		return workers;
+	}
+
+	@Override
+	public int numWorkers() {
+		return workers.size();
 	}
 
 

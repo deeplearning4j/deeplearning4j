@@ -14,6 +14,11 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	
 	
 	List<String> jobIds();
+
+	void addWorker(String worker);
+	void removeWorker(String worker);
+	List<String> workers();
+	int numWorkers();
 	
 	public Job jobFor(String id);
 	

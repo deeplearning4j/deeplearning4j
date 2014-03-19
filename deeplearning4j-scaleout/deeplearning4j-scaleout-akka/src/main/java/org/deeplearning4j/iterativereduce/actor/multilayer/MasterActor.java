@@ -192,7 +192,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				//after worker is instantiated broadcast the master network to the worker
 				mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
 						masterResults), getSelf());	
-				//every minute check the batch and if after one minute there are no more updates
 
 	}
 

@@ -78,6 +78,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.BROADCAST, getSelf()), getSelf());
 
 
+		tracker.addWorker(id);
 		//subscribe to broadcasts from master (location agnostic)
 		mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
 

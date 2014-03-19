@@ -82,12 +82,14 @@ public class BatchActor extends UntypedActor {
 				 * 
 				 * 
 				 */
-				int numWorkers = stateTracker.jobIds().size();
+				int numWorkers = stateTracker.numWorkers();
 				int miniBatchSize = conf.getSplit();
 		
+				
 
 				//fetch specified batch
 				int batch = numWorkers * miniBatchSize;
+				log.info("Batch size for worker is " + batch);
 				
 				DataSet next = iter.next(batch);
 				
