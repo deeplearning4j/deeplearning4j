@@ -22,6 +22,8 @@ All input to the deep-learning nets -- whether it's words, images or other data 
 
 Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which can iterate over data sets and vectorize them; i.e. translate them to a machine-friendly numerical form.
 
+(Optimal batch size from Datasetiterator is n x m, where n is the minibatch size and m is the number of workers on your distriputed network.)
+
 Extending a [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) lets you do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on MNIST, there are 60,000 images, and we'll handle them here in batches of 10, with this command:
 
 
@@ -92,4 +94,4 @@ and assume that w1's vector is [1 2 3], w2's vector is [4 5 6] and w3's is [7 8 
 
 Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window. In this case, the window vector would be [1 2 3 4 5 6 7 8 9].
 
-Word2vec is useful for named-entity recognition, semantic role labeling, summarization, lemmatization, parts-of-speech tagging, question and answer, and relationship extraction. If BoW is macro, Word2vec is micro. It's primarily concerned with questions about elements of the text rather than the text in its entirety.
+The neural net known as Word2vec is useful for named-entity recognition, semantic role labeling, summarization, lemmatization, parts-of-speech tagging, question and answer, and relationship extraction. If BoW is macro, Word2vec is micro. It's primarily concerned with questions about elements of the text rather than the text in its entirety.
