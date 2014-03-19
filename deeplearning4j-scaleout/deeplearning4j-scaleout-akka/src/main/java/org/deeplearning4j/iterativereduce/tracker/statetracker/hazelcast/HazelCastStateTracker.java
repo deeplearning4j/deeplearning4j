@@ -237,6 +237,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void addWorker(String worker) {
+		log.info("Adding worker " + worker);
 		if(!workers.contains(worker))
 			workers.add(worker);
 	}
