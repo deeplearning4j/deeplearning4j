@@ -105,6 +105,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	@Override
 	public void postStop() throws Exception {
 		super.postStop();
+		tracker.removeWorker(id);
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
 	}
