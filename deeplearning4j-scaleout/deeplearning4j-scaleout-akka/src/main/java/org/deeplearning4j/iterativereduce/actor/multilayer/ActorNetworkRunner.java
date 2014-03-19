@@ -286,7 +286,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		try {
 			StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker(contactAddress.host().get() + ":" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"worker");
 			
-			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,(HazelCastStateTracker) stateTracker));
+			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,stateTracker));
 			system.actorOf(p, "worker");
 
 			Cluster cluster = Cluster.get(system);
