@@ -1,16 +1,13 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
-import org.deeplearning4j.iterativereduce.actor.core.AlreadyWorking;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
-import org.deeplearning4j.iterativereduce.actor.core.GiveMeMyJob;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.NoJobFound;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
@@ -90,7 +87,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-	public static Props propsFor(ActorRef actor,Conf conf,HazelCastStateTracker tracker) {
+	public static Props propsFor(ActorRef actor,Conf conf,StateTracker<UpdateableImpl> tracker) {
 		return Props.create(WorkerActor.class,actor,conf,tracker);
 	}
 
