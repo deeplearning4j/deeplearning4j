@@ -38,5 +38,10 @@
   		<groupId>junit</groupId>
   		<artifactId>junit</artifactId>
   	</dependency>
+  	<dependency>
+  		<groupId>org.cleartk</groupId>
+  		<artifactId>cleartk-snowball</artifactId>
+  		<version>0.9.3</version>
+  	</dependency>
   </dependencies>
 </project>
