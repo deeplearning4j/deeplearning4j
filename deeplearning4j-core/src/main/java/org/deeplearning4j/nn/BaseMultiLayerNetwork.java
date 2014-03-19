@@ -215,6 +215,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 	}
+	
+	
+	/**
+	 * Synchronizes the rng, this is mean for use with scale out methods
+	 */
+	public void synchonrizeRng() {
+		RandomGenerator rgen = new SynchronizedRandomGenerator(rng);
+		for(int i = 0; i < nLayers; i++) {
+			layers[i].setRng(rgen);
+			sigmoidLayers[i].setRng(rgen);
+		}
+		
+		
+	}
+	
 
 	
 	/**
