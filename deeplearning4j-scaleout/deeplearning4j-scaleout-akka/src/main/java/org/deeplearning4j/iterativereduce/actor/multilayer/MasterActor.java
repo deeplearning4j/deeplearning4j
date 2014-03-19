@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
-import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
@@ -282,12 +281,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 
-
-		else if(message instanceof ClearWorker) {
-			log.info("Removing worker with id " + ((ClearWorker) message).getId());
-			ClearWorker clear = (ClearWorker) message;
-			
-		}
 
 		else if(message instanceof String) {
 			
