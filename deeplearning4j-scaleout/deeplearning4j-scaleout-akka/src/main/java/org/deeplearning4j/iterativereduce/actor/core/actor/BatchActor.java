@@ -85,7 +85,7 @@ public class BatchActor extends UntypedActor {
 				int numWorkers = stateTracker.numWorkers();
 				int miniBatchSize = conf.getSplit();
 		
-				
+				log.info("Number of workers " + numWorkers + " and batch size is " + miniBatchSize);
 
 				//fetch specified batch
 				int batch = numWorkers * miniBatchSize;

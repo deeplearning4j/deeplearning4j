@@ -2,7 +2,6 @@ package org.deeplearning4j.iterativereduce.actor.core.actor;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
