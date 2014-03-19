@@ -64,7 +64,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		heartbeat();
 
-
+		tracker.addWorker(id);
 
 	}
 
