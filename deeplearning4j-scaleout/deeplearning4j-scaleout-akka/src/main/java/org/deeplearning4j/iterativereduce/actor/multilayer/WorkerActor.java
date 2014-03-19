@@ -117,7 +117,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			public void run() {
 				log.info("Sending heartbeat to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						register()), getSelf());	
+						register()), getSelf());
+				tracker.addWorker(id);
 
 			}
 
