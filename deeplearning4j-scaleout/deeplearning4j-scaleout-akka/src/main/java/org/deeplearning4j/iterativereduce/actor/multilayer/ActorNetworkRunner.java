@@ -17,6 +17,8 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
@@ -135,14 +137,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 * @param c the neural network configuration
 	 * @return the actor for this backend
 	 */
-	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter) {
+	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
 		final ActorSystem system = ActorSystem.create(systemName);
 	
 		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
 
-		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter),"batch");
+		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,stateTracker,c),"batch");
 
 		log.info("Started batch actor");
 
@@ -201,15 +203,17 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				throw new IllegalStateException("Unable to initialize no dataset to train");
 
 			log.info("Starting master");
-			masterAddress  = startBackend(null,"master",conf,iter);
-
-
 			try {
+				masterAddress  = startBackend(null,"master",conf,iter,new HazelCastStateTracker());
 				Thread.sleep(60000);
-			} catch (InterruptedException e) {
+
+			} catch (Exception e1) {
 				Thread.currentThread().interrupt();
+				throw new RuntimeException(e1);
 			}
 
+
+		
 		
 			log.info("Starting model saver");
 			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));

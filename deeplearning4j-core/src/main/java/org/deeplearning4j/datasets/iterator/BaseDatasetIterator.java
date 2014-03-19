@@ -76,6 +76,12 @@ public class BaseDatasetIterator implements DataSetIterator {
 	public int numExamples() {
 		return numExamples;
 	}
+
+	@Override
+	public DataSet next(int num) {
+		fetcher.fetch(num);
+		return fetcher.next();
+	}
 	
 	
 

@@ -40,7 +40,7 @@ public class ZooKeeperStateTrackerTest  {
 	public StateTracker createTracker() {
 		try {
 
-			return new HazelCastStateTracker("localhost:2182");
+			return new HazelCastStateTracker("localhost:2182","master");
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

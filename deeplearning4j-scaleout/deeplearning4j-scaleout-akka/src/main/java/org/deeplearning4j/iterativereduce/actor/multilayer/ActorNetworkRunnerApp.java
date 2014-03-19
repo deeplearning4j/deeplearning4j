@@ -92,6 +92,8 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String dataSet;
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
 	protected int numExamples = -1;
+	@Option(name="-a",usage="use adagrad; default true")
+	protected boolean useAdaGrad = true;
 	protected ActorNetworkRunner runner;
 	protected DataSetIterator iter;
 
@@ -148,7 +150,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			conf.setFinetuneEpochs(finetuneEpochs);
 			conf.setSeed(rngSeed);
 			conf.setPretrainLearningRate(pretrainLearningRate);
-
+			conf.setUseAdaGrad(useAdaGrad);
 			conf.setCorruptionLevel(corruptionLevel);
 			conf.setSplit(split);
 			conf.setK(k);

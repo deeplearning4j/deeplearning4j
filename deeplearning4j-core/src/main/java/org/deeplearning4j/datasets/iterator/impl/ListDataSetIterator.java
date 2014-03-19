@@ -98,5 +98,20 @@ public class ListDataSetIterator implements DataSetIterator {
 		return list.size();
 	}
 
+	@Override
+	public DataSet next(int num) {
+		int end = curr + num;
+
+		List<DataSet> r = new ArrayList<DataSet>();
+		if(end >= list.size())
+			end = list.size();
+		for(; curr < end; curr++) {
+			r.add(list.get(curr));
+		}
+		
+		DataSet d = DataSet.merge(r);
+		return d;
+	}
+
 
 }
