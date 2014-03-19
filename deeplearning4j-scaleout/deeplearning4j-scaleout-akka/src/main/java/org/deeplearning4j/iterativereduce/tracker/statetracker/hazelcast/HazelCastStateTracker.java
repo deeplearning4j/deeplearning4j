@@ -50,26 +50,26 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static int DEFAULT_HAZELCAST_PORT = 2510;
 	public final static String CURRENT_JOBS = "JOBS";
 	private HazelcastInstance h;
+	private String type;
 	public HazelCastStateTracker() throws Exception {
-		this("localhost:2181");
+		this("localhost:2181","master");
 
 	}
 
-	public HazelCastStateTracker(String connectionString) throws Exception {
-		String[] s = connectionString.split(":");
-		if(!s[0].equals("localhost") && !s[0].equals("127.0.0.1") && !s[0].equals("0.0.0.0")) {
-			ClientConfig clientConfig = new ClientConfig();
-			clientConfig.getNetworkConfig().setAddresses(Arrays.asList(s[0] + ":" + DEFAULT_HAZELCAST_PORT));
-			h = HazelcastClient.newHazelcastClient(clientConfig);
-
-		}
-		else {
-			config =  hazelcast();			
+	public HazelCastStateTracker(String connectionString,String type) throws Exception {
+		if(type.equals("master")) {
+			config = hazelcast();
 			h = Hazelcast.newHazelcastInstance(config);
 
 		}
+		else {
+			ClientConfig client = new ClientConfig();
+			client.getNetworkConfig().setAddresses(Arrays.asList(connectionString));
+			h = HazelcastClient.newHazelcastClient(client);
 
+		}
 
+		this.type = type;
 
 		jobs = h.getList(JOBS);
 		ids = h.getList(CURRENT_WORKERS);

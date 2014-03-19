@@ -218,6 +218,15 @@ public class Conf implements Serializable,Cloneable {
 	public int getSplit() {
 		return split;
 	}
+	
+	/**
+	 * The optimal split is usually going to be something akin to 
+	 * the number of workers * the mini batch size.
+	 * 
+	 * Say if you have a system with 8 cores with 1 core per worker
+	 * and a batch size of 10, you will want 80 as the batch size.
+	 * @param split
+	 */
 	public void setSplit(int split) {
 		this.split = split;
 	}

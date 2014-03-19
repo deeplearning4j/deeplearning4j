@@ -75,6 +75,11 @@ public class TestDataSetIterator implements DataSetIterator {
 	public synchronized int getNumDataSets() {
 		return numDataSets;
 	}
+
+	@Override
+	public DataSet next(int num) {
+		return wrapped.next(num);
+	}
 	
 	
 	
