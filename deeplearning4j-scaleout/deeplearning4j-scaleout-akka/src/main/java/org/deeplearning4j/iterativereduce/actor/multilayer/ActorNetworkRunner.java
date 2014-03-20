@@ -141,7 +141,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 * @return the actor for this backend
 	 */
 	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
-		final ActorSystem system = ActorSystem.create(systemName);
 
 		ActorRefUtils.addShutDownForSystem(system);
 
@@ -225,9 +224,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
 
 
-			//MAKE SURE THIS ACTOR SYSTEM JOINS THE CLUSTER;
-			//There is a one to one join to system requirement for the cluster
-			Cluster.get(system).join(masterAddress);
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
 			conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
@@ -292,11 +288,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	public  void startWorker(Conf conf) {
 		
 		Address contactAddress = AddressFromURIString.parse(conf.getMasterUrl());
-		// Override the configuration of the port
-		Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [\"" + contactAddress.toString() + "\"]")).
-				withFallback(ConfigFactory.load());
-		final ActorSystem system = ActorSystem.create(systemName,conf2);
-		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
 		log.info("Attempting to join node " + contactAddress);
