@@ -18,15 +18,12 @@ import org.junit.Test;
 
 public class ZooKeeperStateTrackerTest  {
 
-	private TestingServer server;
 	protected StateTracker tracker;
 
 	@Before
 	public void init() {
 		try {
-			if(server != null)
-				server = new TestingServer(2182);
-			if(tracker != null)
+		
 				tracker = createTracker();
 
 		} catch (Exception e) {
@@ -50,9 +47,7 @@ public class ZooKeeperStateTrackerTest  {
 
 	@After
 	public void after() throws IOException {
-		if(server != null)
-			server.stop();
-
+		
 		if(tracker != null)
 			tracker.shutdown();
 	}
@@ -64,11 +59,17 @@ public class ZooKeeperStateTrackerTest  {
 
 
 
+	@Test
+	public void testWorker() {
+		StateTracker tracker = createTracker();
+		tracker.addWorker("id");
+		assertEquals(1,tracker.numWorkers());
+		tracker.shutdown();
+	}
 	
 
 	@Test
 	public void ensureJobRetrieval() throws Exception {
-		server = new TestingServer(2182);
 
 		StateTracker tracker = createTracker();
 
@@ -86,7 +87,6 @@ public class ZooKeeperStateTrackerTest  {
 		assertEquals(true,jobs.isEmpty());
 		
 		tracker.shutdown();
-		server.stop();
 
 	}
 	
