@@ -17,6 +17,7 @@ import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.NoJobFound;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
@@ -47,8 +48,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 * @param conf the neural net config to use
 	 * @param batchActor the batch actor that handles data set dispersion
 	 */
-	public MasterActor(Conf conf,ActorRef batchActor) {
-		super(conf,batchActor);
+	public MasterActor(Conf conf,ActorRef batchActor,HazelCastStateTracker stateTracker) {
+		super(conf,batchActor,stateTracker);
 		setup(conf);
 		forceNextPhase =  context().system().scheduler()
 				.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
@@ -56,7 +57,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					@Override
 					public void run() {
 						try {
-							List<Job> currentJobs = stateTracker.currentJobs();
+							List<Job> currentJobs = MasterActor.this.stateTracker.currentJobs();
 							log.info("Status check on next iteration");
 
 							if(updates.size() >= partition)
@@ -79,14 +80,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	}
 
 
-	/**
-	 * Creates the master and the workers with this given conf
-	 * @param conf the neural net config to use
-	 * @param batchActor the batch actor that handles data set dispersion
-	 */
-	public static Props propsFor(Conf conf,ActorRef batchActor) {
-		return Props.create(MasterActor.class,conf,batchActor);
-	}
+
 
 
 
@@ -97,16 +91,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	 * will manage dataset dispersion
 	 * @param network the neural network to use
 	 */
-	public MasterActor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network) {
-		super(conf,batchActor,new Object[]{network});
+	public MasterActor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network,HazelCastStateTracker stateTracker) {
+		super(conf,batchActor,stateTracker);
 		this.network = network;
 		setup(conf);
 
 	}
 
-	public static Props propsFor(Conf conf,ActorRef batchActor,BaseMultiLayerNetwork network) {
-		return Props.create(MasterActor.class,conf,batchActor,network);
-	}
 
 
 	@Override

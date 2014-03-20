@@ -1,5 +1,7 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
+import java.util.List;
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -31,9 +33,8 @@ public class BatchActor extends UntypedActor {
 	private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	private static Logger log = LoggerFactory.getLogger(BatchActor.class);
 	public final static String FINETUNE = "finetune";
-	private StateTracker<UpdateableImpl> stateTracker;
-	private Conf conf;
-	
+	private transient StateTracker<UpdateableImpl> stateTracker;
+	private transient Conf conf;
 	
 	public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
 		this.iter = iter;
@@ -41,6 +42,7 @@ public class BatchActor extends UntypedActor {
 		this.conf = conf;
 		//subscribe to shutdown messages
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
+		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 
 	}
 
@@ -66,6 +68,7 @@ public class BatchActor extends UntypedActor {
 			}
 		}
 
+		
 		else if(message instanceof MoreWorkMessage) {
 			MoreWorkMessage m = (MoreWorkMessage) message;
 			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
@@ -76,13 +79,16 @@ public class BatchActor extends UntypedActor {
 
 			if(iter.hasNext()) {
 				log.info("Propagating new work to master");
-		
+				List<String> workers2 = stateTracker.workers();
+				for(String s : workers2)
+					log.info("Worker " + s);
+				
 				/*
 				 * Ideal number is target mini batch size per worker.
 				 * 
 				 * 
 				 */
-				int numWorkers = stateTracker.numWorkers();
+				int numWorkers = stateTracker.workers().size();
 				int miniBatchSize = conf.getSplit();
 		
 				if(numWorkers == 0)

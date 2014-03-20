@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
@@ -13,11 +14,13 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListConfig;
-import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IList;
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
 
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
@@ -27,35 +30,55 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	private static final long serialVersionUID = -7374372180080957334L;
 	public final static String JOBS = "org.deeplearning4j.jobs";
 	public final static String WORKERS = "org.deeplearning4j.workers";
-	public final static String CURRENT_WORKERS = "WORKERS";
 	public final static String AVAILABLE_WORKERS = "AVAILABLE_WORKERS";
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
 	public final static String LOCKS = "LOCKS";
 	public final static String IS_PRETRAIN = "ispretrain";
 	public final static String RESULT_LOC = "RESULT_LOC";
-	private volatile IAtomicReference<Object> master;
-	private volatile IList<Job> jobs;
-	private volatile IList<String> ids;
-	private volatile IList<String> workers;
-	private volatile  IList<String> topics;
+	private volatile transient IAtomicReference<Object> master;
+	private volatile transient IList<Job> jobs;
+	private volatile transient IList<String> workers;
+	private volatile  transient IList<String> topics;
 	private volatile IAtomicReference<Object> isPretrain;
 	private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
-	private Config config;
+	private transient Config config;
 	public final static int DEFAULT_HAZELCAST_PORT = 2510;
 	public final static String CURRENT_JOBS = "JOBS";
-	private HazelcastInstance h;
+	private transient HazelcastInstance h;
 	private String type;
 	public HazelCastStateTracker() throws Exception {
-		this("localhost:2181","master");
+		this("master","master");
 
 	}
 
 	public HazelCastStateTracker(String connectionString,String type) throws Exception {
-		if(type.equals("master")) {
+		if(type.equals("master") && !PortTaken.portTaken(DEFAULT_HAZELCAST_PORT)) {
 			config = hazelcast();
+		
+			
 			h = Hazelcast.newHazelcastInstance(config);
+			h.getCluster().addMembershipListener(new MembershipListener() {
 
+				@Override
+				public void memberAdded(MembershipEvent membershipEvent) {
+					log.info("Member added " + membershipEvent.toString());
+				}
+
+				@Override
+				public void memberRemoved(MembershipEvent membershipEvent) {
+					log.info("Member removed " + membershipEvent.toString());
+
+				}
+
+				@Override
+				public void memberAttributeChanged(
+						MemberAttributeEvent memberAttributeEvent) {
+					log.info("Member changed " + memberAttributeEvent.toString());
+
+				}
+
+			});
 		}
 		else {
 			log.info("Connecting to hazelcast on " + connectionString);
@@ -68,12 +91,20 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		this.type = type;
 
 		jobs = h.getList(JOBS);
-		ids = h.getList(CURRENT_WORKERS);
 		workers = h.getList(WORKERS);
+		if(!type.equals("master")) {
+			while(workers.isEmpty()) {
+				log.warn("Waiting for data sync...");
+				Thread.sleep(1000);
+			}
+		}
+		
+		log.info("Workers is " + workers.size());
 		topics = h.getList(TOPICS);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
 		isPretrain.set(true);
+
 
 
 	}
@@ -81,21 +112,20 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	private Config hazelcast() {
 		Config conf = new Config();
 		conf.getNetworkConfig().setPort(DEFAULT_HAZELCAST_PORT);
-		conf.getNetworkConfig().setPortAutoIncrement(true);
-
+		conf.getNetworkConfig().setPortAutoIncrement(false);
+	
 
 
 		conf.setProperty("hazelcast.initial.min.cluster.size","1");
 		conf.setProperty("hazelcast.shutdownhook.enabled","false");
 
 		JoinConfig join = conf.getNetworkConfig().getJoin();
-		join.getTcpIpConfig().setEnabled(true);
+		join.getMulticastConfig().setEnabled(true);
 		join.getAwsConfig().setEnabled(false);
-		join.getMulticastConfig().setEnabled(false);
+		join.getMulticastConfig().setEnabled(true);
 
 
-		join.getTcpIpConfig().setConnectionTimeoutSeconds(2000);
-		join.getTcpIpConfig().addMember("127.0.0.1:5172");
+		//join.getTcpIpConfig().setConnectionTimeoutSeconds(2000);
 
 
 		ListConfig jobConfig = new ListConfig();
@@ -103,11 +133,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		conf.addListConfig(jobConfig);
 
-
-		MapConfig workersConfig = new MapConfig();
-		workersConfig.setName(CURRENT_WORKERS);
-
-		conf.addMapConfig(workersConfig);
 
 
 		ListConfig topicsConfig = new ListConfig();
@@ -139,7 +164,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 			return false;
 		}
 
-		ids.add(j.getWorkerId());
 
 		jobs.add(j);
 		r.set(j);
@@ -226,20 +250,26 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public void availableForWork(String id) {
-		if(!ids.contains(id))
-			ids.add(id);
+		if(!workers.contains(id))
+			workers.add(id);
 	}
 
 	@Override
 	public List<String> jobIds() {
-		return ids;
+		List<String> ret = new ArrayList<>();
+		for(Job j : this.jobs)
+			ret.add(j.getWorkerId());
+		return ret;
 	}
 
 	@Override
 	public void addWorker(String worker) {
 		log.info("Adding worker " + worker);
-		if(!workers.contains(worker))
+		if(!workers.contains(worker)) {
 			workers.add(worker);
+			log.info("Number of workers is now " + workers.size());
+
+		}
 	}
 
 	@Override
@@ -254,7 +284,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public int numWorkers() {
-		return workers.size();
+		int num = workers.size();
+		return num;
+	}
+
+	public synchronized HazelcastInstance getH() {
+		return h;
+	}
+
+	public synchronized void setH(HazelcastInstance h) {
+		this.h = h;
 	}
 
 
