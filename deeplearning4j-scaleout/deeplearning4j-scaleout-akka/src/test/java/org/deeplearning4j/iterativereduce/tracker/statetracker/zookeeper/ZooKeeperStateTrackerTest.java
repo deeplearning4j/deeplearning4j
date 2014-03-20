@@ -16,82 +16,42 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.hazelcast.core.Hazelcast;
+
 public class ZooKeeperStateTrackerTest  {
 
 	protected StateTracker tracker;
 
 	@Before
 	public void init() {
-		try {
 		
-				tracker = createTracker();
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 
 	}
-
-
-
-	public StateTracker createTracker() {
-		try {
-
-			return new HazelCastStateTracker("localhost:2182","master");
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
-	@After
-	public void after() throws IOException {
-		
-		if(tracker != null)
-			tracker.shutdown();
-	}
-
-
-
 
 
 
 
 
 	@Test
-	public void testWorker() {
-		StateTracker tracker = createTracker();
-		tracker.addWorker("id");
-		assertEquals(1,tracker.numWorkers());
-		tracker.shutdown();
-	}
-	
+	public void testClientServer() throws Exception {
+		HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master");
 
-	@Test
-	public void ensureJobRetrieval() throws Exception {
-
-		StateTracker tracker = createTracker();
-
-		String id = UUID.randomUUID().toString();
-		Job j = new Job(false, id, id, false);
-		tracker.addJobToCurrent(j);
-
-		List<Job> jobs = tracker.currentJobs();
-		assertEquals(1,jobs.size());
-
-		tracker.clearJob(j);
-
-		jobs = tracker.currentJobs();
-
-		assertEquals(true,jobs.isEmpty());
+		master.addWorker("id");
+		master.moveToFinetune();
 		
-		tracker.shutdown();
+		
+	
+		
+		HazelCastStateTracker worker = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"worker");
 
+		
+		assertEquals(master.isPretrain(),worker.isPretrain());
+		assertEquals(master.numWorkers(),worker.numWorkers());
+		
+		
 	}
-	
-	
-	
+
+
 
 
 }

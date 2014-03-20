@@ -33,6 +33,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.Address;
+import akka.actor.AddressFromURIString;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.cluster.Cluster;
@@ -66,6 +67,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private DataSetIterator iter;
 	protected ActorRef masterActor;
 	private transient ScheduledExecutorService exec;
+	private transient StateTracker<UpdateableImpl> stateTracker;
+
 
 	/**
 	 * Master constructor
@@ -139,7 +142,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 */
 	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
 		final ActorSystem system = ActorSystem.create(systemName);
-	
+
 		ActorRefUtils.addShutDownForSystem(system);
 
 		system.actorOf(Props.create(ClusterListener.class));
@@ -148,16 +151,16 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 		log.info("Started batch actor");
 
-		Props masterProps = startingNetwork != null ? MasterActor.propsFor(c,batchActor,startingNetwork) : MasterActor.propsFor(c,batchActor);
+		Props masterProps = startingNetwork != null ? Props.create(MasterActor.class,c,batchActor,startingNetwork,stateTracker) : Props.create(MasterActor.class,c,batchActor,stateTracker);
 
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
 		final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 
-		
+
 		c.setMasterUrl(realJoinAddress.toString());
-		
+
 		if(exec == null)
 			exec = Executors.newScheduledThreadPool(2);
 
@@ -184,7 +187,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		return realJoinAddress;
 	}
 
-	
+
 
 
 	@Override
@@ -203,8 +206,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				throw new IllegalStateException("Unable to initialize no dataset to train");
 
 			log.info("Starting master");
+
 			try {
-				masterAddress  = startBackend(null,"master",conf,iter,new HazelCastStateTracker());
+				stateTracker = new HazelCastStateTracker();
+
+				masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
 				Thread.sleep(60000);
 
 			} catch (Exception e1) {
@@ -213,8 +219,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			}
 
 
-		
-		
+
+
 			log.info("Starting model saver");
 			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
 
@@ -225,36 +231,55 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
 			conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
-		
+
 			ActorRefUtils.registerConfWithZooKeeper(conf, system);
-			
-			
+
+
 			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
 
 				@Override
 				public void run() {
 					log.info("Current cluster members " + Cluster.get(system).readView().members());
 				}
-				
+
 			},system.dispatcher());
 			log.info("Setup master with epochs " + epochs);
 		}
 
 		else {
 
+			Address a = AddressFromURIString.parse(conf.getMasterUrl());
+			
 			Conf c = conf.copy();
 			Cluster cluster = Cluster.get(system);
-			cluster.join(masterAddress);
+			cluster.join(a);
 
-			startWorker(masterAddress,c);
+			try {
+				String host = a.host().get();
+				
+				if(host == null)
+					throw new IllegalArgumentException("No host set for worker");
+				
+				int port = HazelCastStateTracker.DEFAULT_HAZELCAST_PORT;
+				
+				String connectionString = host + ":" + port;
+				
+				stateTracker = new HazelCastStateTracker(connectionString,"worker");
+
+			} catch (Exception e1) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException(e1);
+			}
 			
+			startWorker(c);
+
 			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
 
 				@Override
 				public void run() {
 					log.info("Current cluster members " + Cluster.get(system).readView().members());
 				}
-				
+
 			},system.dispatcher());
 			log.info("Setup worker nodes");
 		}
@@ -264,7 +289,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-	public  void startWorker(final Address contactAddress,Conf conf) {
+	public  void startWorker(Conf conf) {
+		
+		Address contactAddress = AddressFromURIString.parse(conf.getMasterUrl());
 		// Override the configuration of the port
 		Config conf2 = ConfigFactory.parseString(String.format("akka.cluster.seed-nodes = [\"" + contactAddress.toString() + "\"]")).
 				withFallback(ConfigFactory.load());
@@ -286,8 +313,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		try {
 			String host = contactAddress.host().get();
 			log.info("Connecting hazelcast to host " + host);
-			StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker(host + ":" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"worker");
+			int workers = stateTracker.numWorkers();
+			if(workers <= 1)
+				throw new IllegalStateException("Did not properly connect to cluster");
 			
+			
+			log.info("Joining cluster of size " + workers);
+
+
 			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,stateTracker));
 			system.actorOf(p, "worker");
 
@@ -295,18 +328,18 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			cluster.join(contactAddress);
 
 			log.info("Worker joining cluster");
-			
-			
+
+
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 
-		
+
 
 
 	}
 
-	
+
 	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
@@ -318,7 +351,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			Thread.currentThread().interrupt();
 		}
 
-		
+
 		log.info("Started pipeline");
 		//start the pipeline
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
@@ -358,6 +391,21 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	public Address getMasterAddress() {
 		return masterAddress;
+	}
+
+	public synchronized StateTracker<UpdateableImpl> getStateTracker() {
+		return stateTracker;
+	}
+
+	public synchronized void setStateTracker(
+			StateTracker<UpdateableImpl> stateTracker) {
+		this.stateTracker = stateTracker;
+	}
+
+	public void shutdown() {
+		if(stateTracker != null)
+			stateTracker.shutdown();
+		system.shutdown();
 	}
 
 

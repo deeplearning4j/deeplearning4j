@@ -75,7 +75,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * @param params extra params (implementation dependent)
 	 * 
 	 */
-	public MasterActor(Conf conf,ActorRef batchActor,Object[] params) {
+	public MasterActor(Conf conf,ActorRef batchActor,HazelCastStateTracker stateTracker) {
 		this.conf = conf;
 		this.batchActor = batchActor;
 		//subscribe to broadcasts from workers (location agnostic)
@@ -83,7 +83,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 		try {
-			this.stateTracker = new HazelCastStateTracker();
+			this.stateTracker = stateTracker;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -155,7 +155,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 
 
-	
+
 
 	/**
 	 * Delegates the list of datasets to the workers.
@@ -173,7 +173,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		int split = this.getConf().getSplit();
 		final List<List<DataSet>> splitList = Lists.partition(datasets,split);
 		partition = splitList.size();
-		
+
 
 		log.info("Found partition of size " + partition);
 
@@ -187,11 +187,11 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 					delegateJob(work);
 					return null;
 				}
-				
+
 			},context().dispatcher());
-			
+
 			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
-			
+
 			log.info("Sending off work for batch " + i);
 
 
@@ -202,27 +202,28 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 	private void delegateJob(List<DataSet> work) throws Exception {
 		//block till there's an available worker
-		List<String> ids = stateTracker.jobIds();
-	
+		List<String> ids = new ArrayList<String>(stateTracker.workers());
+		log.info("Possible workers " + ids);
+
 		Job j2 = null;
 
-		
+
 		for(String s : ids) {
 			if(stateTracker.jobFor(s) == null) {
 
 				//wrap in a job for additional metadata
 				j2 = new Job(s,(Serializable) work,pretrain);
-				
+
 				//replicate the network
 				mediator.tell(new DistributedPubSubMediator.Publish(s,
 						j2), getSelf());
 				log.info("Delegated work to worker " + s);
-				
+
 				break;
 
 			}
 		}
-		
+
 	}
 
 
