@@ -158,7 +158,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 				while(!redist) {
-					List<String> ids = tracker.jobIds();
+					List<String> ids = tracker.workers();
 
 					for(String s : ids) {
 						if(tracker.jobFor(s) == null) {
