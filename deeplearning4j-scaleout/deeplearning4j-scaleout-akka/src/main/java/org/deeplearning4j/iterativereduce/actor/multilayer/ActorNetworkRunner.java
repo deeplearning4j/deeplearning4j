@@ -69,7 +69,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	protected ActorRef masterActor;
 	private transient ScheduledExecutorService exec;
 	private transient StateTracker<UpdateableImpl> stateTracker;
-
+	private Conf conf;
 
 	/**
 	 * Master constructor
@@ -281,7 +281,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			log.info("Setup worker nodes");
 		}
 
-
+		this.conf = conf;
 
 	}
 
@@ -353,10 +353,26 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-
+	/**
+	 * Kicks off the distributed training.
+	 * It will grab the optimal batch size off of 
+	 * the beginning of the dataset iterator which
+	 * is based on the desired mini batch size (conf.getSplit())
+	 * 
+	 * and the number of initial workers in the state tracker after setup.
+	 * 
+	 * For example, if you have a mini batch size of 10 and 8 workers
+	 * 
+	 * the initial @link{DataSetIterator#next(int batches)} would be 
+	 * 
+	 * 80, this would be 10 per worker.
+	 */
 	public void train() {
+		int numWorkers = stateTracker.numWorkers();
+		int batch = conf.getSplit();
+		int miniBatches = numWorkers * batch;
 		if(iter.hasNext())
-			train(iter.next());
+			train(iter.next(miniBatches));
 
 		else
 			log.warn("No data found");

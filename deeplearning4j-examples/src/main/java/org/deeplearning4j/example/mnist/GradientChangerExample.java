@@ -34,7 +34,7 @@ public class GradientChangerExample {
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = null;
 		if(args.length < 2) {
-			iter = new RawMnistDataSetIterator(80,60000);
+			iter = new RawMnistDataSetIterator(800,60000);
 		}
 		else {
 			int start = Integer.parseInt(args[1]);
@@ -61,7 +61,7 @@ public class GradientChangerExample {
 		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
-		c.setSplit(10);
+		c.setSplit(100);
 		
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
