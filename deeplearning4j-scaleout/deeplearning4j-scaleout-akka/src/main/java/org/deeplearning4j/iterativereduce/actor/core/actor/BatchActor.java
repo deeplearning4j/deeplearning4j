@@ -102,9 +102,9 @@ public class BatchActor extends UntypedActor {
 				
 				DataSet next = iter.next(batch);
 				
-				
+				List<DataSet> list = next.asList();
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						next), mediator);
+						list), mediator);
 			}
 			else if(!iter.hasNext()) {
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,

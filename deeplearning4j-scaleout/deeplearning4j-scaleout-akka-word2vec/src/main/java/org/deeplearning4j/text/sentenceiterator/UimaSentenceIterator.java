@@ -1,4 +1,4 @@
-package com.blix.deeplearning.text.sentenceiterator;
+package org.deeplearning4j.text.sentenceiterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;

@@ -8,9 +8,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
@@ -207,22 +204,29 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		Job j2 = null;
 
+		boolean sent = false;
+		
+		while(!sent) {
+			for(String s : ids) {
+				if(stateTracker.jobFor(s) == null) {
 
-		for(String s : ids) {
-			if(stateTracker.jobFor(s) == null) {
+					//wrap in a job for additional metadata
+					j2 = new Job(s,(Serializable) work,pretrain);
 
-				//wrap in a job for additional metadata
-				j2 = new Job(s,(Serializable) work,pretrain);
+					//replicate the network
+					mediator.tell(new DistributedPubSubMediator.Publish(s,
+							j2), getSelf());
+					log.info("Delegated work to worker " + s + " with size " + work.size());
+					sent = true;
+					break;
 
-				//replicate the network
-				mediator.tell(new DistributedPubSubMediator.Publish(s,
-						j2), getSelf());
-				log.info("Delegated work to worker " + s);
-
-				break;
-
+				}
 			}
+			
+			ids = stateTracker.workers();
 		}
+
+		
 
 	}
 
