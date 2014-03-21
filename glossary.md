@@ -38,3 +38,5 @@ After applying Gaussian noise, a kind of statistical white noise, to the data, t
 ###<a name="serialization">Serialization</a> 
 Serialization is how you translate data structures or object state into storable formats. DL4J's nets are serialized.
 
+###<a name="skipgram">Skipgram</a> 
+The prerequisite to a definition of skipgrams is one of ngrams. [An n-gram is a contiguous sequence of n items from a given sequence of text or speech.](https://en.wikipedia.org/wiki/N-gram) A unigram represents one "item," a bigram two, a trigram three and so forth. Skipgrams are ngrams in which the items are not necessarily contiguous. This can be illustrated best with [a few examples.](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) Skipping is a form of noise, in the sense of [noising and denoising](http://deeplearning4j.org/stackeddenoisingautoencoder.html), which allows neural nets to better generalize their extraction of features.
