@@ -95,3 +95,21 @@ and assume that w1's vector is [1 2 3], w2's vector is [4 5 6] and w3's is [7 8 
 Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window. In this case, the window vector would be [1 2 3 4 5 6 7 8 9].
 
 The neural net known as Word2vec is useful for named-entity recognition, semantic role labeling, summarization, lemmatization, parts-of-speech tagging, question and answer, and relationship extraction. If BoW is macro, Word2vec is micro. It's primarily concerned with questions about elements of the text rather than the text in its entirety.
+
+
+In our case, we use [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html) to input word contexts in to a neural network for training. Each context has an associated label.
+
+
+An example is as follows:
+
+        
+        String text = "some text";
+        Word2Vec vec = ...;
+        List<Window> windows = Windows.windows(text);
+        for(Window window : windows) {
+          //eample for the given window based on the vocab in word2vec
+          double[] example = WindowConverter.asExample(window,vec);
+
+        }
+
+
