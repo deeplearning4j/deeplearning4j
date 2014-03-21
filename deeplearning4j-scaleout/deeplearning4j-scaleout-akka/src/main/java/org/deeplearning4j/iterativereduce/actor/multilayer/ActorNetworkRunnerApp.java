@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -182,7 +183,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 */
 	public void train() {
 		
-		Pair<DoubleMatrix,DoubleMatrix> batch = null;
+		DataSet batch = null;
 		if(iter.hasNext()) {
 			batch = iter.next();
 			runner.train(batch);

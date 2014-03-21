@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
@@ -331,7 +332,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-	public void train(List<Pair<DoubleMatrix,DoubleMatrix>> list) {
+	public void train(List<DataSet> list) {
 		log.info("Publishing to results for training");
 		//wait for cluster to be up
 		try {
@@ -361,15 +362,16 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			log.warn("No data found");
 	}
 
-	public void train(Pair<DoubleMatrix,DoubleMatrix> input) {
-		train(new ArrayList<>(Arrays.asList(input)));
+	public void train(DataSet input) {
+		List<DataSet> list = input.asList();
+		train(list);
 
 	}
 
 
 
 	public void train(DoubleMatrix input,DoubleMatrix labels) {
-		train(new Pair<DoubleMatrix,DoubleMatrix>(input,labels));
+		train(new DataSet(input,labels));
 	}
 
 
