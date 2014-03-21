@@ -6,6 +6,15 @@ layout: default
 
 If you just want to get started without fanfare, you can go [here](../gettingstarted.html).
 
+### purpose
+
+Deeplearning4j is the first commercial-grade deep-learning library for Java. It is meant to be used in business environments, rather than serve as a research tool for extensive data exploration. 
+Deeplearning4j is most helpful in solving distinct problems (like identifying cat faces). 
+
+Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. It's made for data input and neural net training at scale, and its output should be highly compact and accurate predictive models.
+
+### introduction
+
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. Deep learning is a name for a certain type of stacked neural network composed of several node layers. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
 Deep-learning networks are distinguished from the more commonplace single hidden layer neural networks by their depth; that is, the number of node layers through which data is passed in a multistep process of pattern recognition. Three or more intermediate layers between input and output is deep learning. Anything less is simply machine learning. 
