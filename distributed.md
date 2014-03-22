@@ -28,3 +28,5 @@ You can also include this in your code:
         System.setProperty("akka.remote.netty.tcp.hostname","yourhostname");
 
 You'll need to address the hosts file issue before initializing your ActorNetworkRunner. The worker then picks this up from zookeeper, just as above. [Akka actors](http://doc.akka.io/docs/akka/snapshot/general/actors.html) on the worker will automatically join the cluster thanks to akka's gossip protocol.
+
+Next, we'll show you how to train a restricted Boltzmann machine to reconstruct the images of handwritten digits in the so-called [MNIST database](../rbm-mnist.html), an industry standard.
