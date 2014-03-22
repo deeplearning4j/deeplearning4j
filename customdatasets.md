@@ -20,24 +20,24 @@ All input to the deep-learning nets -- whether it's words, images or other data 
 
 ### vectorization
 
-Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which can iterate over data sets and vectorize them; i.e. translate them to a machine-friendly numerical form.
+Vectorization is done with the [DataSetIterator](../doc/org/deeplearning4j/datasets/iterator/DataSetIterator.html), which can iterate over data sets and vectorize them; i.e. translate them to a machine-friendly numerical form. It knows how to iterate through a data set and load it in to a [DataSet](../doc/org/deeplearning4j/datasets/DataSet.html).
 
 (Optimal batch size from Datasetiterator is n x m, where n is the minibatch size and m is the number of workers on your distriputed network.)
 
 Extending a [BaseDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/BaseDataSetIterator.html) lets you do batching and data set inputs. The constructor below takes two parameters: the data set to be iterated over, and the batch size of each iteration. For example, on MNIST, there are 60,000 images, and we'll handle them here in batches of 10, with this command:
 
 
-                     new MnistDataSetIterator(10,60000)
+         new MnistDataSetIterator(10,60000)
 
-The constructor above inherits from the BaseDataSetIterator, which itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher is called by the iterator to vectorize the input data. 
+The constructor above inherits from the BaseDataSetIterator, which itself relies on a [DataSetFetcher](../doc/org/deeplearning4j/datasets/iterator/DataSetFetcher.html). The DataSetFetcher is called by the iterator to vectorize the input data. A DataSetFetcher knows how to load data from images or text. It has an API similar to the data set iterator.
 
 Here's how you use it:
 
-                     DataSetFetcher fetcher = ...;
-                     //fetch n examples
-                     fetcher.fetch(numExamples);
+         DataSetFetcher fetcher = ...;
+         //fetch n examples
+         fetcher.fetch(numExamples);
 
-                     DataSet myData = fetcher.next();
+         DataSet myData = fetcher.next();
 
 This returns the dataset for consumption by the neural network. The fetch call tells the fetcher to get the next n examples from your input source.
 
@@ -49,32 +49,32 @@ With images, you typically transform load the image. This can be done with an [I
 
 Note that the ImageVectorizer takes in a label number. You typically want a set of images in a folder named after their label. If you're doing digits with MNIST, you're label files might look like this:
                          
-                      parentdir/
-                           1/
-                            img1.png
-                            img2.png
-                           2/
-                            img3.png
-                            img4.png
+        parentdir/
+             1/
+              img1.png
+              img2.png
+             2/
+              img3.png
+              img4.png
 
 Given an image data set where the labels are child directories, you could do something like:
 
-                       File rootDir = new File("path/to/your/dir");
-                       //needs to be a list for maintaining order of labels
-                       List<String> labels = new ArrayList<String>();
+         File rootDir = new File("path/to/your/dir");
+         //needs to be a list for maintaining order of labels
+         List<String> labels = new ArrayList<String>();
 
-                       for(File f : rootDir.listFiles()) {
-                          if(f.isDirectory())
-                       	labels.add(f.getName());
-                       }
+         for(File f : rootDir.listFiles()) {
+            if(f.isDirectory())
+         	labels.add(f.getName());
+         }
 
 When you instantiate the ImageVectorizer, you could do something like this:
 
-                         
+           
 
-                       File yourImage = new File("path/to/your/file");
-                       Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
-                       DataSet d = v.vectorize();
+         File yourImage = new File("path/to/your/file");
+         Vectorizer v = new ImageVectorizer(,labels.size(),labels.indexOf(yourImage.getParentFile().getName()));
+         DataSet d = v.vectorize();
 
 ### text
 
@@ -88,11 +88,11 @@ Words are then grouped in windows of varying length. [Barack Obama], for example
 
 Let's take a word window of size three:
 
-                        w1 w2 w3
+        w1 w2 w3
 
 and assume that w1's vector is [1 2 3], w2's vector is [4 5 6] and w3's is [7 8 9].
 
-Each word vector is taken from word2vec and combined in to a singular row vector which becomes a representation of the window. In this case, the window vector would be [1 2 3 4 5 6 7 8 9].
+Each word vector is taken from Word2vec and combined in to a singular row vector which becomes a representation of the window. In this case, the window vector would be [1 2 3 4 5 6 7 8 9].
 
 The neural net known as Word2vec is useful for named-entity recognition, semantic role labeling, summarization, lemmatization, parts-of-speech tagging, question and answer, and relationship extraction. If BoW is macro, Word2vec is micro. It's primarily concerned with questions about elements of the text rather than the text in its entirety.
 
@@ -111,5 +111,3 @@ An example is as follows:
           double[] example = WindowConverter.asExample(window,vec);
 
         }
-
-
