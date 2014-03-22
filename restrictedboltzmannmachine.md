@@ -9,6 +9,8 @@ To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltz
 
 A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph). 
 
+![Alt text](../img/bipartite_graph.png)
+
 [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, they're the first neural network we'll tackle.
 
 ### parameters
