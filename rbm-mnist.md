@@ -17,7 +17,7 @@ MNIST is a good place to begin exploring image recognition. Here’s an easy way
 
 To begin with, you’ll take an image from your data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
 
-The [MnistDataSetIterator](../docs/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
+The [MnistDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
 
 A DataSetIterator can be used like this:
 
