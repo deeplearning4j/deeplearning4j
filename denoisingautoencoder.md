@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# denoising autoencoder
+# denoising autoencoders
 
 An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simple equals the input -- thereby becoming useless. 
 
@@ -17,9 +17,7 @@ The amount of noise to apply to the input takes the form of a percentage. Typica
 
 Setting up a single-thread denoising autoencoder is easy. 
 
-To create the machine, you simply instantiate an object of the class [DenoisingAutoEncoder]({{ site.baseurl }}/doc/com/ccc/deeplearning/da/DenoisingAutoEncoder.html).
-
-
+To create the machine, you simply instantiate an object of the class [DenoisingAutoEncoder](../doc/org/deeplearning4j/da/DenoisingAutoEncoder.html).
 
     	DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(1).numHidden(1).build();
 
@@ -42,4 +40,4 @@ You can test your input with this snippet:
 
 If you see percentages rather than zeros, that's a good indicator your autoencoder is learning the structure of the data.
 
-
+Next, we'll show you how to implement a [stacked denoising autoencoder](../stackeddenoisingautoencoder.html), which is simply many DAs strung together.
