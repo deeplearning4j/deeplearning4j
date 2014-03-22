@@ -69,3 +69,7 @@ Note that the eval class combines [confusion matrices](../glossary.html#confusio
 The f1 score will be a percentage. It's basically the probability that your guess are correct correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
+
+Click [here](../continuousdeepbeliefnetwork.html) to learn how to set up continuous deep-belief networks with DL4J.
+
+Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly.
