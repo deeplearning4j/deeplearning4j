@@ -35,17 +35,13 @@ To create it, you simply instantiate an object of the [RBM class](../doc/org/dee
 
 The RBM uses the builder pattern to set up config; for example, this builder will handle the following parameters:
 
-
            Number of visible (input) units: 784
 
            Number of hidden (output) units: 400 
 
-
            withRandom(specify an RNG)
 
-
            useRegularization(use L2?)
-
 
            Momentum: Use momentum or not?
 
