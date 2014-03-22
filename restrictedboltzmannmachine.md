@@ -21,19 +21,19 @@ See [the parameters common to all single-layer networks](../singlelayernetwork.h
 
 ### k 
 
-The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted boltzmann machine. A typical value is 1.
+The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
 ## initiating an RBM
 
-Here's how you set up a single-thread restricted Boltzmann machine. 
+Here's how you set up a single-thread restricted Boltzmann machine: 
 
-To create the machine, you simply instantiate an object of the [RBM class](../doc/org/deeplearning4j/rbm/RBM.html).
+To create it, you simply instantiate an object of the [RBM class](../doc/org/deeplearning4j/rbm/RBM.html).
 
 
 		   RBM rbm = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand)
 				.useRegularization(false).withMomentum(0).build();
 
-The RBM uses the builder pattern to setup config; for example, this will handle the following:
+The RBM uses the builder pattern to set up config; for example, this builder will handle the following parameters:
 
 
            Number of visible (input) units: 784
@@ -84,4 +84,6 @@ The last snippet will construct a new training set and show the reconstructed in
 
 Once built, you can test your trained network by feeding it unstructured data and checking the output.
 
-You can intrepret the output numbers as percentages. Every time the number in the reconstruct is not zero, that's a good indication the network learned the input. We'll have a better example later in the tutorials.
+You can intrepret the output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the network learned the input. We'll have a better example later in the tutorials.
+
+Next, we'll show you how to implement a [Deep-Belief Network](../deepbeliefnetwork.html), which is simply many RBMs strung together.
