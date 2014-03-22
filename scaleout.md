@@ -3,9 +3,9 @@ title:
 layout: default
 ---
 
-# scaleout iterative reduce on multithreaded training
+# scaleout: iterative reduce on multithreaded training
 
-Training a neural network is time consuming without some kind of parallelism. The scaleout module in deeplearning4j-scalout uses akka for both clustering for distributed computing as well as multithreaded computing.
+Training a neural network is very time consuming without some kind of parallelism. The scaleout module in deeplearning4j-scaleout uses akka for both clustering for distributed computing as well as multithreaded computing.
 
 Here's a snippet for training a network:
 
