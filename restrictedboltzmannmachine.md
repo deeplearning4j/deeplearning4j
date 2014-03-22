@@ -59,24 +59,24 @@ Next, create a training set for the machine. For the sake of visual brevity, a t
 				{0,0,1,1,1,0}
 			};
 
-		DoubleMatrix d = new DoubleMatrix(data);
+		    DoubleMatrix d = new DoubleMatrix(data);
 
 Now that you've instantiated the machine and created the training set, it's time to train the network. This will run contrastive divergence until convergence, with a learning rate of 0.01, a k of 1 and with the input specified above. 
 
 The last snippet will construct a new training set and show the reconstructed input. Note that RBMs only take binary input, not a continuum of integers.
 
 
-		rbm.trainTillConvergence(0.01,1,d);
+		  rbm.trainTillConvergence(0.01,1,d);
 		
-        double[][] testData = new double[][]
-			{
+          double[][] testData = new double[][]
+			  {
 			    {1, 1, 0, 0, 0, 0},
 				{0, 0, 0, 1, 1, 0}
-			};
+			  };
 
-		DoubleMatrix v = new DoubleMatrix(testData);	
+		  DoubleMatrix v = new DoubleMatrix(testData);	
 
-        System.out.println(r.reconstruct(v).toString());
+          System.out.println(r.reconstruct(v).toString());
 
 Once built, you can test your trained network by feeding it unstructured data and checking the output.
 
