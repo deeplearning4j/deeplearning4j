@@ -70,6 +70,6 @@ The f1 score will be a percentage. It's basically the probability that your gues
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
 
-Click [here](../continuousdeepbeliefnetwork.html) to learn how to set up continuous deep-belief networks with DL4J.
+Click [here](../continuousdeepbeliefnetwork.html) to learn how to set up continuous deep-belief networks. (CDBNs accept a continuum of integers rather than binary data.)
 
 Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly.
