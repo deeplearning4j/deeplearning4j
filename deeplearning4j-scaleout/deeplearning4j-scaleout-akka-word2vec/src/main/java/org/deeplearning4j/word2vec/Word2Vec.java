@@ -837,6 +837,13 @@ public class Word2Vec implements Persistable {
 	public synchronized TokenizerFactory getTokenizerFactory() {
 		return tokenizerFactory;
 	}
+	
+	
+	
+
+	public synchronized void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
+		this.tokenizerFactory = tokenizerFactory;
+	}
 
 	/**
 	 * Note that calling a setter on this
