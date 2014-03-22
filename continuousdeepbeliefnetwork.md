@@ -15,11 +15,10 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 ### initiating a continuous deep-belief network
 
-Here's how you set up a single-thread continuous deep belief network: 
+Here's how you set up a single-thread continuous deep-belief network: 
 
 To create it, you instantiate an object of the class [CDBN](../doc/org/deeplearning4j/dbn/CDBN.html).
-
-    
+   
 		    //training data and labels
 		    DoubleMatrix x = new DoubleMatrix(new double[][] {
 
@@ -83,7 +82,7 @@ This will print out the f1 score of the prediction.
 
 Note that the eval class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
 
-The f1 score will be a percentage. It's basically the probability that your guess are correct correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
+The f1 score will be a percentage. It's basically the probability that your guess is correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
 
