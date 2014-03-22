@@ -33,7 +33,6 @@ To create it, you instantiate an object of the class [DBN](../doc/org/deeplearni
 			double fineTuneLr = 0.001;
 			int fineTuneEpochs = 1000;
 
-
 	        DBN dbn = new DBN.Builder().hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
 			.useRegularization(false).withMomentum(0)
 			.numberOfOutPuts(nOuts).withRng(rng).build();
@@ -70,5 +69,3 @@ Note that the eval class combines [confusion matrices](../glossary.html#confusio
 The f1 score will be a percentage. It's basically the probability that your guess are correct correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
-
-
