@@ -15,15 +15,13 @@ A trained RBM will learn the structure of the data fed into it; it does so throu
 
 [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, they're the first neural network we'll tackle.
 
-### parameters
+### parameters & k
 
 See [the parameters common to all single-layer networks](../singlelayernetwork.html).
 
-### k 
-
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1.
 
-## initiating an RBM
+### initiating an RBM
 
 Here's how you set up a single-thread restricted Boltzmann machine: 
 
