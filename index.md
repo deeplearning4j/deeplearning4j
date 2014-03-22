@@ -13,6 +13,8 @@ Deeplearning4j is most helpful in solving distinct problems (like identifying ca
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. It's made for data input and neural net training at scale, and its output should be highly compact and accurate predictive models. 
 
+By following the links at the bottom of each page, you will learn to set up, and train with sample data, several types of deep-learning networks. These include single- and multithread networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
+
 ### introduction
 
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. They are sensors: a form of machine perception. Deep learning is a name for a certain type of stacked neural network composed of several node layers. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
@@ -27,6 +29,5 @@ In the process, these networks come to recognize correlations between certain re
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data, a deep-learning network will decide, for example, the input data is 90 percent likely to represent a person. 
 
-The documentation on this site will show you how to set up, and train with sample data, several types of deep-learning networks. These include single- and multithread networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
-
+Next, we'll show you how to implement a [Restricted Boltzmann machines](../restrictedboltzmannmachine.html).
 
