@@ -14,23 +14,23 @@ import org.slf4j.LoggerFactory;
 
 public class MatrixUtil {
 	private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
-	
-	
-	
+
+
+
 	public static void complainAboutMissMatchedMatrices(DoubleMatrix d1,DoubleMatrix d2) {
 		if(d1 == null || d2 == null)
 			throw new IllegalArgumentException("No null matrices allowed");
 		if(d1.rows != d2.rows)
 			throw new IllegalArgumentException("Matrices must have same rows");
-		
+
 	}
-	
-	
+
+
 	public static DataSet xorData(int n) {
-		
+
 		DoubleMatrix x = DoubleMatrix.rand(n,2);
 		x = x.gti(0.5);
-		
+
 		DoubleMatrix y = DoubleMatrix.zeros(n,2);
 		for(int i = 0; i < x.rows; i++) {
 			if(x.get(i,0) == x.get(i,1))
@@ -38,24 +38,24 @@ public class MatrixUtil {
 			else 
 				y.put(i,1,1);
 		}
-		
+
 		return new DataSet(x,y);
-	
+
 	}
-	
+
 	public static DataSet xorData(int n, int columns) {
-		
+
 		DoubleMatrix x = DoubleMatrix.rand(n,columns);
 		x = x.gti(0.5);
-		
+
 		DoubleMatrix x2 = DoubleMatrix.rand(n,columns);
 		x2 = x2.gti(0.5);
-		
+
 		DoubleMatrix eq = x.eq(x2).eq(DoubleMatrix.zeros(n,columns));
-	
-		
+
+
 		int median = columns / 2;
-		
+
 		DoubleMatrix outcomes = new DoubleMatrix(n,2);
 		for(int i = 0; i < outcomes.rows; i++) {
 			DoubleMatrix left = eq.get(i,new org.jblas.ranges.IntervalRange(0,median));
@@ -65,12 +65,12 @@ public class MatrixUtil {
 			else
 				outcomes.put(i,1,1);
 		}
-		
-		
+
+
 		return new DataSet(eq,outcomes);
-	
+
 	}
-	
+
 	public static double magnitude(DoubleMatrix vec) { 
 		double sum_mag = 0; 
 		for(int i = 0; i < vec.length;i++) 
@@ -79,50 +79,50 @@ public class MatrixUtil {
 		return Math.sqrt(sum_mag); 
 	} 
 
-	
+
 	public static DoubleMatrix unroll(DoubleMatrix d) {
 		DoubleMatrix ret = new DoubleMatrix(1,d.length);
 		for(int i = 0; i < d.length; i++)
 			ret.put(i,d.get(i));
 		return ret;
 	}
-	
-	
+
+
 	public static DoubleMatrix outcomes(DoubleMatrix d) {
 		DoubleMatrix ret = new DoubleMatrix(d.rows,1);
 		for(int i = 0; i < d.rows; i++)
 			ret.put(i,SimpleBlas.iamax(d.getRow(i)));
 		return ret;
 	}
-	
+
 	public static double cosineSim(DoubleMatrix d1,DoubleMatrix d2) {
 		d1 = MatrixUtil.unitVec(d1);
 		d2 = MatrixUtil.unitVec(d2);
 		double ret = d1.dot(d2);
 		return ret;
 	}
-	
-	
+
+
 	public static DoubleMatrix normalize(DoubleMatrix input) {
 		double min = input.min();
 		double max = input.max();
 		return input.subi(min).divi(max - min);
 	}
-	
-	
+
+
 	public static double cosine(DoubleMatrix matrix) {
 		//1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
 		return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
 	}
 
-	
+
 	public static DoubleMatrix unitVec(DoubleMatrix toScale) {
 		double length = toScale.norm2();
 		if(length > 0)
 			return SimpleBlas.scal(1.0 / length, toScale);
 		return toScale;
 	}
-	
+
 	public static DoubleMatrix uniform(RandomGenerator rng,int rows,int columns) {
 
 		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1);
@@ -132,19 +132,19 @@ public class MatrixUtil {
 				U.put(i,j,uDist.sample());
 		return U;
 	}
-	
+
 	public static boolean isValidOutcome(DoubleMatrix out) {
 		boolean found = false;
 		for(int col = 0; col < out.length; col++) {
-		     if(out.get(col) > 0) {
-		    	 found = true;
-		    	 break;
-		     }
+			if(out.get(col) > 0) {
+				found = true;
+				break;
+			}
 		}
 		return found;
 	}
 
-	
+
 	public static double min(DoubleMatrix matrix) {
 		double ret = matrix.get(0);
 		for(int i = 0; i < matrix.length; i++) {
@@ -153,7 +153,7 @@ public class MatrixUtil {
 		}
 		return ret;
 	}
-	
+
 	public static double max(DoubleMatrix matrix) {
 		double ret = matrix.get(0);
 		for(int i = 0; i < matrix.length; i++) {
@@ -162,22 +162,22 @@ public class MatrixUtil {
 		}
 		return ret;
 	}
-	
+
 	public static void ensureValidOutcomeMatrix(DoubleMatrix out) {
 		boolean found = false;
 		for(int col = 0; col < out.length; col++) {
-		     if(out.get(col) > 0) {
-		    	 found = true;
-		    	 break;
-		     }
+			if(out.get(col) > 0) {
+				found = true;
+				break;
+			}
 		}
 		if(!found) {
 			log.warn("Found invalid matrix assuming; nothing which means adding a 1 to the first spot");
 			out.put(0,1.0);
 		}
-		
+
 	}
-	
+
 	public static void assertIntMatrix(DoubleMatrix matrix) {
 		for(int i = 0; i < matrix.length; i++) {
 			int cast = (int) matrix.get(i);
@@ -270,9 +270,9 @@ public class MatrixUtil {
 
 	public static DoubleMatrix softmax(DoubleMatrix input) {
 		DoubleMatrix max = input.rowMaxs();
-        MatrixFunctions.expi(input.subiColumnVector(max));
-        DoubleMatrix sum = input.rowSums();
-        return input.diviColumnVector(sum);
+		DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+		diff.diviColumnVector(diff.rowSums());
+		return diff;
 	}
 	public static DoubleMatrix mean(DoubleMatrix input,int axis) {
 		DoubleMatrix ret = new DoubleMatrix(input.rows,1);
@@ -462,8 +462,8 @@ public class MatrixUtil {
 		toNormalize.subiRowVector(columnMeans);
 		toNormalize.diviRowVector(columnStd(toNormalize));
 	}
-	
-	
+
+
 	public static DoubleMatrix normalizeByColumnSums(DoubleMatrix m) {
 		DoubleMatrix columnSums = m.columnSums();
 		for(int i = 0; i < m.columns; i++) {
@@ -472,11 +472,11 @@ public class MatrixUtil {
 		}
 		return m;
 	}
-	
-	
+
+
 	public static DoubleMatrix columnStdDeviation(DoubleMatrix m) {
 		DoubleMatrix ret = new DoubleMatrix(1,m.columns);
-		
+
 		for(int i = 0; i < ret.length; i++) {
 			StandardDeviation dev = new StandardDeviation();
 			double std = dev.evaluate(m.getColumn(i).toArray());
@@ -484,10 +484,10 @@ public class MatrixUtil {
 				log.warn("WTF");
 			ret.put(i,std);
 		}
-		
+
 		return ret;
 	}
-	
+
 	/**
 	 * Divides the given matrix's columns
 	 * by each column's respective standard deviations
@@ -500,9 +500,9 @@ public class MatrixUtil {
 			m.putColumn(i,m.getColumn(i).div(std.get(i)));
 		}
 		return m;
-		
+
 	}
-	
+
 	/**
 	 * Subtracts by column mean.
 	 * This ensures a mean of zero.
@@ -520,7 +520,7 @@ public class MatrixUtil {
 		}
 		return m;
 	}
-	
+
 	public static DoubleMatrix normalizeByRowSums(DoubleMatrix m) {
 		DoubleMatrix rowSums = m.rowSums();
 		for(int i = 0; i < m.rows; i++) {

@@ -154,8 +154,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		double corruptionLevel = (double) params[0];
 		double lr = (double) params[1];
 
-		DoubleMatrix tildeX = getCorruptedInput(input, corruptionLevel);
-		DoubleMatrix y = getHiddenValues(tildeX);
+		DoubleMatrix corruptedX = getCorruptedInput(input, corruptionLevel);
+		DoubleMatrix y = getHiddenValues(corruptedX);
 		DoubleMatrix z = getReconstructedInput(y);
 
 		DoubleMatrix L_h2 =  input.sub(z) ;
@@ -165,28 +165,30 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_vbias = L_h2;
 		DoubleMatrix L_hbias = L_h1;
 
-		DoubleMatrix L_W = tildeX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
+		DoubleMatrix wGradient = corruptedX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
 		
 		if(useAdaGrad)
-		   L_W.muli(wAdaGrad.getLearningRates(L_W));
+		   wGradient.muli(wAdaGrad.getLearningRates(wGradient));
 		else 
-			L_W.muli(lr);
+			wGradient.muli(lr);
 
 
 		if(useRegularization) 
-			L_W.subi(W.muli(l2));
+			wGradient.subi(W.muli(l2));
 		
 
 		if(momentum != 0)
-			L_W.muli(1 - momentum);
-		L_W.divi(input.rows);
+			wGradient.muli(1 - momentum);
+	
+		
+		wGradient.divi(input.rows);
 
 
 
 		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
 		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
 
-		NeuralNetworkGradient gradient = new NeuralNetworkGradient(L_W,L_vbias_mean,L_hbias_mean);
+		NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,L_vbias_mean,L_hbias_mean);
 		this.triggerGradientEvents(gradient);
 		
 		return gradient;

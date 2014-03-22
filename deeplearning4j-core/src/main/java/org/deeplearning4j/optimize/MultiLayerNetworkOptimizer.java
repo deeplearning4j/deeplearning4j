@@ -1,10 +1,9 @@
 package org.deeplearning4j.optimize;
 
-import static org.deeplearning4j.util.MatrixUtil.softmax;
-
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,12 +133,13 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public void getValueGradient(double[] buffer) {
-		DoubleMatrix p_y_given_x = softmax(network.getLogLayer().getInput().mmul(network.getLogLayer().getW()).addRowVector(network.getLogLayer().getB()));
-		DoubleMatrix dy = network.getLogLayer().getLabels().sub(p_y_given_x);
-
+		LogisticRegressionGradient gradient = network.getLogLayer().getGradient(lr);
+		
+		DoubleMatrix weightGradient = gradient.getwGradient();
+		DoubleMatrix biasGradient = gradient.getbGradient();
+		
 		int idx = 0;
-		DoubleMatrix weightGradient = network.getLogLayer().getInput().transpose().mmul(dy).mul(lr);
-		DoubleMatrix biasGradient =  dy.columnMeans().mul(lr);
+		
 		for(int i = 0; i < weightGradient.length; i++)
 			buffer[idx++] = weightGradient.get(i);
 		for(int i = 0; i < biasGradient.length; i++)
