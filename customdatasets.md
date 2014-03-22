@@ -99,15 +99,16 @@ The neural net known as Word2vec is useful for named-entity recognition, semanti
 
 In our case, we use [Word2Vec](../doc/org/deeplearning4j/word2vec/Word2Vec.html) to input word contexts in to a neural network for training. Each context has an associated label.
 
-
 An example is as follows:
-
         
-        String text = "some text";
-        Word2Vec vec = ...;
-        List<Window> windows = Windows.windows(text);
-        for(Window window : windows) {
-          //eample for the given window based on the vocab in word2vec
-          double[] example = WindowConverter.asExample(window,vec);
+                String text = "some text";
+                Word2Vec vec = ...;
+                List<Window> windows = Windows.windows(text);
+                for(Window window : windows) 
+                {
+                  //eample for the given window based on the vocab in word2vec
+                  double[] example = WindowConverter.asExample(window,vec);
 
-        }
+                }
+
+Working with your own datasets will present complications, but it will also show you the real power of deep learning. Deep learning works with sets of images and symbols, the latter including text, numbers and genetic code. Next, we'll explore how deep learning can be useful in [textual analysis](../textanalysis.html). 
