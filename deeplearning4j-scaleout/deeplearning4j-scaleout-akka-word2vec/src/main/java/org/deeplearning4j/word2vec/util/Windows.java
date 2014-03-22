@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
+import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
+
 public class Windows {
 	/**
 	 * Constructs a list of window of size windowSize.
@@ -18,6 +21,22 @@ public class Windows {
 			list.add(tokenizer.nextToken());
 		return windows(list,5);
 	}
+	
+	/**
+	 * Constructs a list of window of size windowSize.
+	 * Note that padding for each window is created as well.
+	 * @param words the words to tokenize and construct windows from
+	 * @param tokenizerFactory tokenizer factory to use
+	 * @return the list of windows for the tokenized string
+	 */
+	public static List<Window> windows(String words,TokenizerFactory tokenizerFactory) {
+		Tokenizer tokenizer = tokenizerFactory.create(words);
+		List<String> list = new ArrayList<String>();
+		while(tokenizer.hasMoreTokens())
+			list.add(tokenizer.nextToken());
+		return windows(list,5);
+	}
+
 
 	/**
 	 * Creates a sliding window from text
