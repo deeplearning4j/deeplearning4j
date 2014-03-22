@@ -23,7 +23,7 @@ The amount of noise to apply to the input will take the form of a percentage. Ty
 
 Here's how you set up a single-thread stacked denoising autoencoder: 
 
-To create it, you simply instantiate an object of the [class](../doc/org/deeplearning4j/sda/StackedDenoisingAutoEncoder.html).
+To create it, you simply instantiate an object of the class [StackedDenoisingAutoEncoder](../doc/org/deeplearning4j/sda/StackedDenoisingAutoEncoder.html).
 
 		    double pretrain_lr = 0.001;
 			double corruption_level = 0.3;
