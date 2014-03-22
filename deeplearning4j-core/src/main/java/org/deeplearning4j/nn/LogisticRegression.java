@@ -229,9 +229,9 @@ public class LogisticRegression implements Serializable {
 			dy.divi(input.rows);
 		DoubleMatrix wGradient = input.transpose().mmul(dy);
 		if(useAdaGrad)
-			wGradient.muli(this.adaGrad.getLearningRates(wGradient));
+			wGradient.muli(adaGrad.getLearningRates(wGradient));
 		else
-			wGradient.mul(lr);
+			wGradient.muli(lr);
 
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);

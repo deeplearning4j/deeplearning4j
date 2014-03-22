@@ -714,7 +714,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 
 			//update W
-			layers[l].getW().addi(add);
+			layers[l].getW().subi(add);
 			sigmoidLayers[l].setW(layers[l].getW());
 
 
@@ -722,12 +722,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
 			deltaColumnSums.divi(input.rows);
 
-			getLayers()[l].gethBias().addi(deltaColumnSums.mul(lr));
+			getLayers()[l].gethBias().subi(deltaColumnSums.mul(lr));
 			getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
 		}
 
 
-		getLogLayer().getW().addi(deltas.get(nLayers).getFirst());
+		getLogLayer().getW().subi(deltas.get(nLayers).getFirst());
 		return true;
 
 	}
