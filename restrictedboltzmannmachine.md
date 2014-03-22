@@ -75,6 +75,8 @@ The last snippet will construct a new training set and show the reconstructed in
 
 Once built, you can test your trained network by feeding it unstructured data and checking the output.
 
-You can intrepret the output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the network learned the input. We'll have a better example later in the tutorials.
+You can intrepret the output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the network learned the input. We'll have a better example later in the tutorials. 
 
-Next, we'll show you how to implement a [Deep-Belief Network](../deepbeliefnetwork.html), which is simply many RBMs strung together.
+To explore continuous restricted Boltzmann machines, a variation on RBMs that accepts a continuum of integers rather than binary data, click [here](../continuousrestrictedboltzmannmachine.html).
+
+Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many RBMs strung together.
