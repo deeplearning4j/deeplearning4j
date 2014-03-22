@@ -11,6 +11,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
+import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
@@ -46,7 +47,7 @@ public class GradientChangerExample {
 		}
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		DBN dbn = null;
+		CDBN dbn = null;
 		List<MultiLayerGradientListener> listeners = new ArrayList<>();
 
 		WeightPlotListener listener = new WeightPlotListener();
@@ -55,7 +56,7 @@ public class GradientChangerExample {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(1000);
-		c.setFinetuneLearningRate(0.01);
+		c.setFinetuneLearningRate(0.001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(784);
 		c.setUseAdaGrad(true);
@@ -63,9 +64,9 @@ public class GradientChangerExample {
 		c.setnOut(10);
 		c.setSplit(100);
 		
-		c.setMultiLayerClazz(DBN.class);
+		c.setMultiLayerClazz(CDBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.01,1000});
+		c.setDeepLearningParams(new Object[]{1,0.001,1000});
 		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 		
