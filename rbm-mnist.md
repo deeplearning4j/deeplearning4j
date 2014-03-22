@@ -71,3 +71,5 @@ Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST d
 			d2.frame.dispose();
 
 		}
+
+Next, we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../mnist.html).
