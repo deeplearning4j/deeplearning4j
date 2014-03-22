@@ -3,13 +3,13 @@ title:
 layout: default
 ---
 
-# continuous deep-belief network
+# continuous deep-belief networks
 
-A more extensive definition of [deep-belief networks is here](http://www.scholarpedia.org/article/Deep_belief_networks). A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of integers rather than binary data.
+A more extensive definition of [deep-belief networks](../deepbeliefnetwork.html) is [here](http://www.scholarpedia.org/article/Deep_belief_networks). A continuous deep-belief network is simply an extension of a deep-belief network which accepts a continuum of integers, rather than binary data.
 
 ### parameters & k
 
-See also [the parameters common to all multilayer networks](../multinetwork.html).
+See [the parameters common to all multilayer networks](../multinetwork.html).
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence runs, it is a sample of the Markov chain. In composing a CDBN, a typical value is one.
 
