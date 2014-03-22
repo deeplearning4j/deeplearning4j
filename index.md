@@ -8,7 +8,7 @@ Go [here](../gettingstarted.html) to get started without fanfare. Our Github rep
 
 ### purpose
 
-Deeplearning4j is the first commercial-grade deep-learning library for Java. It is meant to be used in business environments, rather than serve as a research tool for extensive data exploration. 
+Deeplearning4j is the first commercial-grade deep-learning library for Java. It is meant to be used in business environments, rather than as a research tool for extensive data exploration. 
 Deeplearning4j is most helpful in solving distinct problems (like identifying cat faces). 
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. It's made for data input and neural net training at scale, and its output should be highly compact and accurate predictive models. 

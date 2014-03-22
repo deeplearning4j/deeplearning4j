@@ -3,40 +3,33 @@ title:
 layout: default
 ---
 
-
 # scaleout iterative reduce on multithreaded training
 
 Training a neural network is time consuming without some kind of parallelism. The scaleout module in deeplearning4j-scalout uses akka for both clustering for distributed computing as well as multithreaded computing.
 
 Here's a snippet for training a network:
 
-
-
-
-        DataSetIterator iter = ...;
-		//run the network runner as master (worker is used for anything that is just a supporting role for more computing power)
-		ActorNetworkRunner runner = new ActorNetworkRunner("master", iter);
-		//you only need to create the conf for master.
-		Conf conf = new Conf();
-		conf.setFinetuneEpochs(1000);
-		conf.setPretrainLearningRate(0.01);
-		conf.setLayerSizes(new int[]{1000 ,500,250});
-		conf.setMomentum(0);
-		//pick the multi layer network to train: note that this is the MULTI layer
-		conf.setMultiLayerClazz(CDBN.class);
-		conf.setnOut(d1.getSecond().columns);
-		conf.setFunction(new HardTanh());
-		conf.setFinetuneLearningRate(0.01);
-		conf.setnIn(d1.getFirst().columns);
-		conf.setMomentum(0.9);
-		conf.setUseRegularization(false);
-		//always call setup
-		runner.setup(conf);
-		//train the network using the passed in data set iterator.
-		runner.train();
-
-
-
+	        DataSetIterator iter = ...;
+			//run the network runner as master (worker is used for anything that is just a supporting role for more computing power)
+			ActorNetworkRunner runner = new ActorNetworkRunner("master", iter);
+			//you only need to create the conf for master.
+			Conf conf = new Conf();
+			conf.setFinetuneEpochs(1000);
+			conf.setPretrainLearningRate(0.01);
+			conf.setLayerSizes(new int[]{1000 ,500,250});
+			conf.setMomentum(0);
+			//pick the multi layer network to train: note that this is the MULTI layer
+			conf.setMultiLayerClazz(CDBN.class);
+			conf.setnOut(d1.getSecond().columns);
+			conf.setFunction(new HardTanh());
+			conf.setFinetuneLearningRate(0.01);
+			conf.setnIn(d1.getFirst().columns);
+			conf.setMomentum(0.9);
+			conf.setUseRegularization(false);
+			//always call setup
+			runner.setup(conf);
+			//train the network using the passed in data set iterator.
+			runner.train();
 
 ### ZooKeeper
 
@@ -52,12 +45,16 @@ After training, all models are saved in the same directory where the user starte
 
 ### Roles
 
-*Master*: Used for multithreading and for seeding a cluster.
+*Master*: Used for multithreading and seeding a cluster.
 
 *Worker*: Used for connecting to a master network runner for lending cpu power.
-
 
 ### Conf
 
 The configuration class has a lot of knobs. It handles both the single-layer network and the multilayer networks. Call multiLayerClazz or setNeuralNetworkClazz, respectively. 
 
+### Costs
+
+Setting up a cluster on [EC2](https://aws.amazon.com/ec2/) costs anywhere from a few cents to a few dollars an hour. While this may be prohibitive for some, the intense computational needs of deep learning make parallelism necessary for any serious work. 
+
+Next, we'll show you how to [run a worker node](../distributed.html).
