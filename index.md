@@ -25,7 +25,7 @@ Deep-learning networks perform feature creation/extraction without human interve
 
 In the process, these networks come to recognize correlations between certain relevant features and optimal results. A trained deep-learning network can then be applied to unstructured data. This is beyond the scope of traditional machine learning. 
 
-Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data, a deep-learning network decide the input data is 90 percent likely to represent a person. 
+Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data, a deep-learning network will decide, for example, the input data is 90 percent likely to represent a person. 
 
 The documentation on this site will show you how to set up, and train with sample data, several types of deep-learning networks. These include single- and multithread networks, [Restricted Boltzmann machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html) and [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html). 
 
