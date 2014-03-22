@@ -215,8 +215,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 	}
-	
-	
+
+
 	/**
 	 * Synchronizes the rng, this is mean for use with scale out methods
 	 */
@@ -226,12 +226,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			layers[i].setRng(rgen);
 			sigmoidLayers[i].setRng(rgen);
 		}
-		
-		
-	}
-	
 
-	
+
+	}
+
+
+
 	/**
 	 * Resets adagrad with the given learning rate.
 	 * This is used for switching from the pretrain to finetune phase.
@@ -241,7 +241,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(int i = 0; i < nLayers; i++)	 {
 			layers[i].resetAdaGrad(lr);
 		}
-		
+
 		logLayer.resetAdaGrad(lr);
 	}
 
@@ -455,15 +455,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
-	
+
 	public void initialize(DataSet data) {
 		setInput(data.getFirst());
 		feedForward(data.getFirst());
 		this.labels = data.getSecond();
 		logLayer.setLabels(labels);
 	}
-	
-	
+
+
 	/**
 	 * Gets the multi layer gradient for this network.
 	 * This includes calculating the gradients for each layer
@@ -476,11 +476,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		for(NeuralNetwork network : layers) {
 			gradient.add(network.getGradient(params));
 		}
-		
+
 		double lr = 0.01;
 		if(params.length >= 2)
-		   lr = (double) params[1];
-		
+			lr = (double) params[1];
+
 		this.feedForward(input);
 		LogisticRegressionGradient g2 = logLayer.getGradient(lr);
 
@@ -568,7 +568,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			weights.add(getLayers()[j].getW());
 		weights.add(getLogLayer().getW());
 
-		DoubleMatrix labels = predict(getInput());
+		DoubleMatrix labels = this.labels;
 
 
 		//errors 
@@ -650,6 +650,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			while(backPropStep(lastEntropy,revert,lr,count)) {
 				count++;
 				lastEntropy = this.negativeLogLikelihood();
+				logLayer.trainTillConvergence(count, epochs);
 			}
 		}
 	}
@@ -670,6 +671,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		//feedforward to compute activations
 		//initial error
 		double error = this.negativeLogLikelihood();
+		log.info("Current back prop error " + error);
 		if(lastEntropy == null) {
 			lastEntropy = error;
 		}
@@ -697,7 +699,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		for(int l = 0; l < nLayers; l++) {
-			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows).mul(lr);
+			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows);
+			//get the gradient
+			if(isUseAdaGrad())
+				add.muli(layers[l].getAdaGrad().getLearningRates(add));
+
+			else
+				add.muli(lr);
+
 			add.divi(input.rows);
 			//l2
 			if(useRegularization) {
@@ -705,7 +714,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 
 			//update W
-			layers[l].setW(layers[l].getW().add(add.mul(lr)));
+			layers[l].getW().addi(add);
 			sigmoidLayers[l].setW(layers[l].getW());
 
 
@@ -738,8 +747,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
-	
-	
+
+
 
 	/**
 	 * Label the probabilities of the input
@@ -954,22 +963,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @return the negative log likelihood of the model
 	 */
 	public  double negativeLogLikelihood() {
-		double ret  = 0.0;
-		for(int i = 0; i < nLayers; i++) {
-			double sum = (MatrixFunctions.pow(layers[i].getW(),2).sum()/ 2.0);
-			if(useRegularization)
-				ret += sum  * l2;
-			else
-				ret += sum;
-		}
-		double sum = (MatrixFunctions.pow(logLayer.getW(),2).sum()/ 2.0);
-		if(useRegularization)
-			ret +=  sum * l2;
-
-		else 
-			ret += sum;
-
-		return ret;
+		return logLayer.negativeLogLikelihood();
 	}
 
 	/**

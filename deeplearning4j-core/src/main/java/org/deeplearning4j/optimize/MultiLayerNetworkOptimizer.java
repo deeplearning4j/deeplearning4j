@@ -43,7 +43,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		network.getLogLayer().setInput(layerInput);
 		network.getLogLayer().setLabels(labels);
 		
-		network.resetAdaGrad(lr);
+		//network.resetAdaGrad(lr);
 		
 		if(layerInput.rows != labels.rows) {
 			throw new IllegalStateException("Labels not equal to input");
