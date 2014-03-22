@@ -225,8 +225,8 @@ public class LogisticRegression implements Serializable {
 		//difference of outputs
 		DoubleMatrix dy = labels.sub(p_y_given_x);
 		//weight decay
-		if(useRegularization)
-			dy.divi(input.rows);
+		dy.divi(input.rows);
+	
 		DoubleMatrix wGradient = input.transpose().mmul(dy);
 		if(useAdaGrad)
 			wGradient.muli(adaGrad.getLearningRates(wGradient));

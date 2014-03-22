@@ -155,8 +155,7 @@ public class RBM extends BaseNeuralNetwork {
 		if(momentum != 0)
 			wGradient.muli( 1 - momentum);
 
-		if(useRegularization)
-			wGradient.divi(input.rows);
+		wGradient.divi(input.rows);
 
 		DoubleMatrix hBiasGradient = null;
 
