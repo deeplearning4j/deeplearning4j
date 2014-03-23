@@ -21,7 +21,7 @@ Here's a graph of words associated with "China" using Word2vec:
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
 
-# training
+## training
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table for composition of windows of training text for various tasks in natural-language processing.
 
@@ -55,45 +55,41 @@ From there, you can use Word2vec as a lookup table in the following way:
 
         double[] wordVector = vec.getWordVector("myword");
 
-If the word isn't in the vocabulary, Word2vec returns just zeros.
+If the word isn't in the vocabulary, Word2vec returns zeros and nothing more.
+
+### windows
+
+Word2Vec works with other neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
+
+      List<Window> windows = Windows.windows("some text");
+
+This will select moving windows of five tokens from the text (each member of a window is a token).
+
+You also may want to use your own custom tokenizer like this:
 
 
-###Windows
+      TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
-Word2Vec works with other neural networks by facilitating the moving window model for training on word occurrences.
+      List<Window> windows = Windows.windows("text",tokenizerFactory);
 
-It does this via the moving window model. To get windows for text, there are two ways to do this:
+This will create a tokenizer for the text, and moving windows based on the tokenizer.
 
-
-                    List<Window> windows = Windows.windows("some text");
-
-This will pull out moving windows of 5 out of the text. Each member of a window is a token.
-
-Another thing you may want to do is use your own custom tokenizer. You can use your own tokenizer by doing the following:
-
-
-                  TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
-                  List<Window> windows = Windows.windows("text",tokenizerFactory);
+      List<Window> windows = Windows.windows("text",tokenizerFactory);
 
 This will create a tokenizer for the text and create moving windows based on that.
 
+Notably, you can also specify the window size like so:
 
-Notably, you can also specify the window size here:
-    
-                  TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
+      TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
-                  List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
-     
 
-One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
+      List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
 
-The general idea behind this is that you train moving windows with word2vec and classify individual windows (with a focus word)
+Training word sequence models is done through optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
 
-with certain labels. This could be in part of speech tagging, semantic role labeling, named entity recognition, among other tasks.
+The general idea is that you train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
 
-Viterbi basically calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from
-one state to another). Below is an example snippet for setup:
+Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
 
         List<String> labels = ...;
         Index labelIndex = new Index();
@@ -102,49 +98,45 @@ one state to another). Below is an example snippet for setup:
 		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
 		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
 
+This will intialize the baseline features and transitions for viterbi to optimize.
 
-This will intialize the baseline features and transitions for viterbi to optimize on.
+Let's say that you have a file containing lines with the given transition probabilities:
 
+        //read in the lines of a file
+        List<String> lines = FileUtils.readLines(file);
+		for(String line : lines) {
+			if(line.isEmpty()) 
+				continue;
+			List<Window> windows = Windows.windows(line);
 
-Say you have the lines of a file with the given transition probabilities given a file:
-
-            //read in the lienes of a file
-            List<String> lines = FileUtils.readLines(file);
-			for(String line : lines) {
-				if(line.isEmpty()) 
-					continue;
-				List<Window> windows = Windows.windows(line);
-
-				for(int i = 1; i < windows.size(); i++) {
-					String firstLabel = windows.get(i - 1).getLabel();
-					String secondLabel = windows.get(i).getLabel();
-					int first = labelIndex.indexOf(firstLabel);
-					int second = labelIndex.indexOf(secondLabel);
+			for(int i = 1; i < windows.size(); i++) {
+				String firstLabel = windows.get(i - 1).getLabel();
+				String secondLabel = windows.get(i).getLabel();
+				int first = labelIndex.indexOf(firstLabel);
+				int second = labelIndex.indexOf(secondLabel);
 
 
-					transitions.incrementCount(first,second,1.0);
-				}
-
+				transitions.incrementCount(first,second,1.0);
 			}
 
+		}
 
-From there, each line will be something like:
 
-          <ORGANIZATION> IBM </ORGANIZATION> invented a question answering robot called <ROBOT>Watson</ROBOT>.
+
+
+  From there, each line will be handled something like this:
+
+          <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
 
 Given a set of text, Windows.windows automatically infers labels from bracketed capitalized text.
 
-
-If you do:
+If you do this:
 
              String label = window.getLabel();
 
-on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution
+on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
 
-over the set of labels in a training corpus.
-
-This will save a viteribi implementation for later use:
-
+The following code saves your viteribi implementation for later use:
        
         DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
 		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
@@ -152,4 +144,3 @@ This will save a viteribi implementation for later use:
 		viterbi.write(bos);
 		bos.flush();
 		bos.close();
-
