@@ -10,3 +10,5 @@ The best things in life are free. Deeplearning4j is an open-source project spear
 Everyone's heard of big data. By releasing these tools, we hope to usher business into an era of smart data, which is why we chose to implement them in Java. By using these tools, data scientists can begin to see the power of the deep-learning algorithms already employed by Google, Facebook, Microsoft, Baidu and Netflix, all of which have dedicated deep-learning teams.
 
 These algorithms are capable of unsupervised learning that removes the brunt of menial feature extraction from data scientists, allowing them to concentrate on more interesting work. 
+
+There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that DL4J can serve as a DIY tool. If you require support or customization beyond these tutorials, please contact us at [BLIX](http://blix.io/contact.html).
