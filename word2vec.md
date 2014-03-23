@@ -21,7 +21,7 @@ Here's a graph of words associated with "China" using Word2vec:
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
 
-# training
+## training
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table for composition of windows of training text for various tasks in natural-language processing.
 
@@ -58,28 +58,24 @@ From there, you can use Word2vec as a lookup table in the following way:
 If the word isn't in the vocabulary, Word2vec returns just zeros.
 
 
-###Windows
+### windows
 
-Word2Vec works with other neural networks by facilitating the moving window model for training on word occurrences.
+Word2Vec works with other neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
 
-It does this via the moving window model. To get windows for text, there are two ways to do this:
+      List<Window> windows = Windows.windows("some text");
 
+This will select moving windows of five tokens from the text (each member of a window is a token).
 
-                    List<Window> windows = Windows.windows("some text");
-
-This will pull out moving windows of 5 out of the text. Each member of a window is a token.
-
-Another thing you may want to do is use your own custom tokenizer. You can use your own tokenizer by doing the following:
+You also may want to use your own custom tokenizer like this:
 
 
-                  TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
+      TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
-                  List<Window> windows = Windows.windows("text",tokenizerFactory);
+      List<Window> windows = Windows.windows("text",tokenizerFactory);
 
-This will create a tokenizer for the text and create moving windows based on that.
+This will create a tokenizer for the text and moving windows based on the tokenizer.
 
-
-One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi).
+Training word sequence models is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi).
 
 The general idea behind this is that you train moving windows with word2vec and classify individual windows (with a focus word)
 
