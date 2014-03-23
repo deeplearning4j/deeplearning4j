@@ -3,6 +3,7 @@ title:
 layout: default
 ---
 
+*previous* - [deep-belief networks](../deepbeliefnetwork.html)
 # scaleout: iterative reduce on multithreaded training
 
 Training a neural network is very time consuming without some kind of parallelism. The scaleout module in deeplearning4j-scaleout uses akka for both clustering for distributed computing as well as multithreaded computing.
