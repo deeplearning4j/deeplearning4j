@@ -1,6 +1,0 @@
-NO SURVEY QUESTIONS AVAILABLE
-Overview
-Some 73% of online adults now use a social networking site of some kind.  Facebook is the dominant social networking platform in the number of users, but a striking number of users are now diversifying onto other platforms. Some 42% of online adults now use multiple social networking sites. In addition, Instagram users are nearly as likely as Facebook users to check in to the site on a daily basis. These are among the key findings on social networking site usage and adoption from a new survey from the Pew Research Center’s Internet Project.
-About the Survey
-The results in this report are based on data from telephone interviews conducted by Princeton Survey Research Associates International from August 7 to September 16, 2013, among a sample of 1,801 adults, age 18 and older.  Telephone interviews were conducted in English and Spanish by landline (901) and cell phone (900, including 482 without a landline phone). For results based on the total sample, one can say with 95% confidence that the error attributable to sampling is plus or minus 2.6 percentage points.  For results based on Internet users (n=1,445), the margin of sampling error is plus or minus 2.9 percentage points.
-Using Our Research
