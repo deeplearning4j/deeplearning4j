@@ -3,9 +3,8 @@ title:
 layout: default
 ---
 
+*previous* - [single-layer neural networks](../singlelayernetwork.html)
 # creating deep-learning networks
-
-By now, you should have read about single-layer neural networks -- if you haven't read about them, you can [here](../singlelayernetwork.html).
 
 A multilayer network is a stacked representation of a [single-layer neural network](../singlelayernetwork.html). The input layer is tacked onto the first-layer neural network and a [feed-forward network](../glossary.html#feedforward). Each subsequent layer after the input layer uses the output of the previous layer as its input.
 
