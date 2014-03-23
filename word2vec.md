@@ -79,6 +79,13 @@ Another thing you may want to do is use your own custom tokenizer. You can use y
 This will create a tokenizer for the text and create moving windows based on that.
 
 
+Notably, you can also specify the window size here:
+    
+                  TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
+
+                  List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
+     
+
 One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi).
 
 The general idea behind this is that you train moving windows with word2vec and classify individual windows (with a focus word)
