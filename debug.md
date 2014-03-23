@@ -21,4 +21,4 @@ For a more in-depth exploration of the topic, see [Visually Debugging Restricted
 
 
 
-Another typical situation is to wonder what happens over time with neural net training. One trick with the filters is to use filters to ensure each neuron later on in training learns multiple features. At later parts of training neurons will activivate on different parts of features.
+Another typical situation is to wonder what happens over time with neural net training. One trick with the filters is to use filters to ensure each neuron later on in training learns multiple features. At later parts of training neurons will activate on different parts of features.
