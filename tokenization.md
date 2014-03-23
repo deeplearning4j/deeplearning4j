@@ -5,11 +5,9 @@ layout: default
 
 # tokenization
 
-Tokenization is the process of breaking text down into individual words. Word windows of a certain length are also composed of tokens. Word2Vec can output windows of text that comprise training examples for input in to neural nets as seen here.
+Tokenization is the process of breaking text down into individual words. Word windows are also composed of tokens. [Word2Vec](../word2vec.html) can output text windows that comprise training examples for input into neural nets, as seen here.
 
-Below is an example of how to do tokenization with tools contained in dl4j.
-
-
+Here's an example of tokenization done with DL4J tools:
                  
          //tokenization with lemmatization,part of speech taggin,sentence segmentation
          TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
@@ -23,8 +21,8 @@ Below is an example of how to do tokenization with tools contained in dl4j.
           //get the whole list of tokens
           List<String> tokens = tokenizer.getTokens();
 
-The above snippet creates a tokenizer capable of doing stemming.
+The above snippet creates a tokenizer capable of stemming.
 
-In Word2Vec It is reccomended this as a way of doing vocabulary. This will prevent odd things in your vocabulary such as plurals and other things that are semantically being the same being counted as 2 different words.
+In Word2Vec, this is recommended a way of creating a vocabulary. This will avert various quirks in your vocabulary, such as plurals and singulars being counted as two different words.
 
 
