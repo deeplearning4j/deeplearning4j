@@ -15,6 +15,9 @@ Service discovery happens when deeplearning4j stores the configuration upon star
 
 The worker then picks this up from zookeeper, and akka actors on the worker will automatically join the cluster through akka's gossip protocol.
 
+
+
+
 ### setting host of akka cluster
 
 First, ensure that the host for [akka](http://akka.io/) is set properly. If you set the host to 0.0.0.0 or localhost when trying to cluster, external workers will not be able to resolve the IP.
