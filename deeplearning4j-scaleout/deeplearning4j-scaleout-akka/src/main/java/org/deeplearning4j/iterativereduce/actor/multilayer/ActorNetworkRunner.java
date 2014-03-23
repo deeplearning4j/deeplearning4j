@@ -426,6 +426,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		return modelSaver;
 	}
 
+	/**
+	 * Sets a custom model saver. This will allow custom directories
+	 * among other things when saving snapshots.
+	 * @param modelSaver the model saver to use
+	 */
 	public  void setModelSaver(ModelSaver modelSaver) {
 		this.modelSaver = modelSaver;
 	}
