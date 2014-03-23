@@ -82,19 +82,18 @@ Notably, you can also specify the window size like so:
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
-
       List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
 
-Training word sequence models is done through optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
+Training word sequence models is done through optimization with the [Viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
 
 The general idea is that you train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
 
 Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
 
-        List<String> labels = ...;
-        Index labelIndex = new Index();
-		for(int i = 0; i < labels.length; i++)
-			labelIndex.add(labels[i]);
+    List<String> labels = ...;
+    Index labelIndex = new Index();
+		  for(int i = 0; i < labels.length; i++)
+			  labelIndex.add(labels[i]);
 		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
 		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
 
@@ -121,10 +120,7 @@ Let's say that you have a file containing lines with the given transition probab
 
 		}
 
-
-
-
-  From there, each line will be handled something like this:
+From there, each line will be handled something like this:
 
           <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
 
@@ -136,7 +132,7 @@ If you do this:
 
 on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
 
-The following code saves your viteribi implementation for later use:
+The following code saves your Viterbi implementation for later use:
        
         DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
 		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
