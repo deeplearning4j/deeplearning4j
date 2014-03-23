@@ -11,6 +11,10 @@ MNIST derives from NIST, and stands for “Mixed National Institute of Standards
 
 Each image in the MNIST database is a 28x28 pixel cell, and each cell is contained within a bounding box, the four lines of pixels that frame it. The image is centered according to the center of mass of its pixels. 
 
+Here's an example of how neural nets can cluster random samplings of Mnist images:
+
+![Alt text](../img/mnist_large.jpg)
+
 MNIST is a good place to begin exploring image recognition. Here’s an easy way to load the data and get started. 
 
 ### tutorial
