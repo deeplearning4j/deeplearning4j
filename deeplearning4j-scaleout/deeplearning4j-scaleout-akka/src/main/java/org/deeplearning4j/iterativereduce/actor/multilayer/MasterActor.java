@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -76,6 +77,33 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 				}, context().dispatcher());
 
+		this.clearStateWorkers =  context().system().scheduler()
+				.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
+
+					@Override
+					public void run() {
+						try {
+							long now = System.currentTimeMillis();
+							Map<String,Long> heartbeats = MasterActor.this.stateTracker.getHeartBeats();
+							for(String key : heartbeats.keySet()) {
+								long lastChecked = heartbeats.get(key);
+								long diff = now - lastChecked;
+								long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
+								if(seconds >= 30) {
+									log.info("Removing stale worker " + key);
+									MasterActor.this.stateTracker.removeWorker(key);
+								}
+							}
+
+
+
+						}catch(Exception e) {
+							throw new RuntimeException(e);
+						}
+
+					}
+
+				}, context().dispatcher());
 
 	}
 
@@ -189,10 +217,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	
 
-	@Override
-	public void postStop() throws Exception {
-		super.postStop();
-	}
+
 
 
 	protected void nextIteration() throws Exception {
@@ -274,7 +299,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 		else if(message instanceof String) {
-			
 			getSender().tell(Ack.getInstance(),getSelf());
 
 		}

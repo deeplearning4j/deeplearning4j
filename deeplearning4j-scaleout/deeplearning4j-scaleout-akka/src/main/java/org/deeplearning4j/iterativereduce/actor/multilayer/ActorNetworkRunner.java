@@ -62,6 +62,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private transient ScheduledExecutorService exec;
 	private transient StateTracker<UpdateableImpl> stateTracker;
 	private Conf conf;
+	private boolean finetune = false;
 
 	/**
 	 * Master constructor
@@ -180,8 +181,17 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-
-
+	/**
+	 * Automatically switch to finetune step
+	 */
+	public void finetune() {
+		this.finetune = true;
+		if(this.startingNetwork == null) {
+			throw new IllegalStateException("No network to finetune!");
+		}
+	}
+	
+	
 	@Override
 	public void setup(final Conf conf) {
 
@@ -201,7 +211,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 			try {
 				stateTracker = new HazelCastStateTracker();
-
+				if(finetune)
+					stateTracker.moveToFinetune();
+				
 				masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
 				Thread.sleep(60000);
 

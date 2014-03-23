@@ -36,11 +36,10 @@ public class TestMnistRender {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			dbn.setInput(next.getFirst());
-			dbn.layers[0].setInput(next.getFirst());
+			dbn.feedForward(next.getFirst());
 			NeuralNetPlotter plotter = new NeuralNetPlotter();
 			plotter.plotNetworkGradient(dbn.layers[0], dbn.layers[0].getGradient(Conf.getDefaultRbmParams()));
-		
+
 			log.info("Current stats " + eval.stats());
 		}
 

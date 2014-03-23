@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
@@ -14,6 +15,7 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.ListConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
@@ -21,7 +23,12 @@ import com.hazelcast.core.IList;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-
+/**
+ * Tracks state of workers and jobs 
+ * via hazelcast distributed data structures
+ * @author Adam Gibson
+ *
+ */
 public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	/**
@@ -34,6 +41,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
 	public final static String LOCKS = "LOCKS";
+	public final static String HEART_BEAT = "heartbeat";
 	public final static String IS_PRETRAIN = "ispretrain";
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile transient IAtomicReference<Object> master;
@@ -47,6 +55,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String CURRENT_JOBS = "JOBS";
 	private transient HazelcastInstance h;
 	private String type;
+	private Map<String,Long> heartbeat;
 	public HazelCastStateTracker() throws Exception {
 		this("master","master");
 
@@ -92,7 +101,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		jobs = h.getList(JOBS);
 		workers = h.getList(WORKERS);
-		if(!type.equals("master")) {
+		if(!this.type.equals("master")) {
 			while(workers.isEmpty()) {
 				log.warn("Waiting for data sync...");
 				Thread.sleep(1000);
@@ -101,6 +110,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		
 		log.info("Workers is " + workers.size());
 		topics = h.getList(TOPICS);
+		heartbeat = h.getMap(HEART_BEAT);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
 		isPretrain.set(true);
@@ -148,6 +158,10 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		conf.addListConfig(availableWorkersConfig);
 
 
+		MapConfig heartbeatConfig = new MapConfig();
+		heartbeatConfig.setName(HEART_BEAT);
+		conf.addMapConfig(heartbeatConfig);
+		
 
 		return conf;
 
@@ -265,6 +279,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void addWorker(String worker) {
 		log.info("Adding worker " + worker);
+		heartbeat.put(worker, System.currentTimeMillis());
 		if(!workers.contains(worker)) {
 			workers.add(worker);
 			log.info("Number of workers is now " + workers.size());
@@ -294,6 +309,11 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	public synchronized void setH(HazelcastInstance h) {
 		this.h = h;
+	}
+
+	@Override
+	public Map<String, Long> getHeartBeats() {
+		return heartbeat;
 	}
 
 
