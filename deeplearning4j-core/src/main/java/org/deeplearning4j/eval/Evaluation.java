@@ -17,9 +17,10 @@ import org.jblas.SimpleBlas;
 public class Evaluation {
 
 	private double truePositives;
-	private Counter<Integer> falsePositives = new Counter<Integer>();
+	private Counter<Integer> falsePositives = new Counter<>();
+	private Counter<Integer> trueNegative = new Counter<>();
 	private double falseNegatives;
-	private ConfusionMatrix<Integer> confusion = new ConfusionMatrix<Integer>();
+	private ConfusionMatrix<Integer> confusion = new ConfusionMatrix<>();
 
 	/**
 	 * Collects statistics on the real outcomes vs the 
@@ -42,12 +43,20 @@ public class Evaluation {
 
 			addToConfusion(currMax,guessMax);
 
-			if(currMax == guessMax)
+			if(currMax == guessMax) {
 				incrementTruePositives();
+				for(Integer clazz : confusion.getClasses()) {
+					if(clazz != guessMax)
+						trueNegative.incrementCount(clazz, 1.0);
+				}
+			}
 			else {
 				incrementFalseNegatives();
 				incrementFalsePositives(guessMax);
 			}
+			
+			
+			
 		}
 	}
 
@@ -111,6 +120,11 @@ public class Evaluation {
 		return confusion.getCount(actual, predicted);
 	}
 
+	/**
+	 * Total precision based on guesses so far
+	 * @return the total precision based on guesses so far
+	 * 
+	 */
 	public double precision() {
 		double prec = 0.0;
 		for(Integer i : confusion.getClasses()) {
@@ -120,6 +134,56 @@ public class Evaluation {
 	}
 
 
+	/**
+	 * True negatives: correctly rejected
+	 * @return the total true negatives so far
+	 */
+	public double trueNegatives() {
+		return trueNegative.totalCount();
+	}
+	
+	/**
+	 * False positive: wrong guess
+	 * @return the count of the false positives
+	 */
+	public double falsePositive() {
+		return falsePositives.totalCount();
+	}
+	
+	/**
+	 * Total negatives true negatives + falseNegatives
+	 * @return the overall negative count
+	 */
+	public double negative() {
+		return trueNegatives() + falseNegatives;
+		
+	}
+	
+	/**
+	 * Returns all of the positive guesses:
+	 * true positive + false negative
+	 * @return
+	 */
+	public double positive() {
+		return truePositives + falseNegatives;
+	}
+	
+	/**
+	 * Accuracy: 
+	 * TP + TN / (P + N)
+	 * @return the accuracy of the guesses so far
+	 */
+	public double accuracy() {
+		return this.truePositives + trueNegatives() / (positive() + negative());
+	}
+	
+	/**
+	 * TP: true positive
+	 * FP: False Positive
+	 * FN: False Negative
+	 * F1 score: 2 * TP / (2TP + FP + FN)
+	 * @return the f1 score or harmonic mean based on current guesses
+	 */
 	public double f1() {
 		double precision = precision();
 		double recall = recall();

@@ -14,6 +14,7 @@ public class StopWords {
 
 	private static List<String> stopWords;
 
+	@SuppressWarnings("unchecked")
 	public static List<String> getStopWords() {
 
 		try {

@@ -1,15 +1,24 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.0.3.1</version>
-  </parent>
-  <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
-  <build>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.deeplearning4j</groupId>
+		<artifactId>deeplearning4j-scaleout</artifactId>
+		<version>0.0.3.1</version>
+	</parent>
+	<artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+	<build>
 		<plugins>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<descriptors>
 						<descriptor>src/assemble/bin.xml</descriptor>
@@ -18,30 +27,30 @@
 			</plugin>
 		</plugins>
 	</build>
-  <dependencies>
-  	<dependency>
-  		<groupId>org.deeplearning4j</groupId>
-  		<artifactId>deeplearning4j-scaleout-akka</artifactId>
-  		<version>${project.version}</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.deeplearning4j</groupId>
-  		<artifactId>deeplearning4j-core</artifactId>
-  		<version>${project.version}</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>nz.ac.waikato.cms.weka</groupId>
-  		<artifactId>weka-dev</artifactId>
-  		<version>3.7.10</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>junit</groupId>
-  		<artifactId>junit</artifactId>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.cleartk</groupId>
-  		<artifactId>cleartk-snowball</artifactId>
-  		<version>0.9.3</version>
-  	</dependency>
-  </dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-scaleout-akka</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>deeplearning4j-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>nz.ac.waikato.cms.weka</groupId>
+			<artifactId>weka-dev</artifactId>
+			<version>3.7.10</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.cleartk</groupId>
+			<artifactId>cleartk-snowball</artifactId>
+			<version>0.9.3</version>
+		</dependency>
+	</dependencies>
 </project>

@@ -35,6 +35,7 @@ public class BatchActor extends UntypedActor {
 	public final static String FINETUNE = "finetune";
 	private transient StateTracker<UpdateableImpl> stateTracker;
 	private transient Conf conf;
+	private int numDataSets = 0;
 	
 	public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
 		this.iter = iter;
@@ -79,6 +80,8 @@ public class BatchActor extends UntypedActor {
 
 			if(iter.hasNext()) {
 				log.info("Propagating new work to master");
+				numDataSets++;
+				log.info("Iterating over next dataset " + numDataSets);
 				List<String> workers2 = stateTracker.workers();
 				for(String s : workers2)
 					log.info("Worker " + s);

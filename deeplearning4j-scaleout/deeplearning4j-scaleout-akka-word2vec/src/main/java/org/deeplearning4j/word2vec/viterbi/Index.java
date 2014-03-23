@@ -5,13 +5,21 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.deeplearning4j.nn.Persistable;
-import org.deeplearning4j.util.SerializationUtils;
 
+/**
+ * An index is a set of objects augmented with a list and a reverse lookup table
+ * for fast lookups.
+ * Indices are used for vocabulary in many of the natural language processing
+ * training tools with {@link Word2Vec}
+ * @author Adam Gibson
+ *
+ */
 @SuppressWarnings({"rawtypes","unchecked"})
 public class Index implements Serializable,Persistable {
 

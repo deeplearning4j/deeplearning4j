@@ -7,7 +7,7 @@ import java.util.StringTokenizer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.word2vec.ner.InputHomogenization;
+import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.jblas.DoubleMatrix;
 
 
