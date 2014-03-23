@@ -5,7 +5,11 @@ layout: default
 
 # textual analysis and deep learning
 
-Laborious, manual feature extraction is the main disadvantage of applying machine learning to textual analysis. Data scientists need to spend a great deal of time telling the algorithm what to pay attention to. 
+While images are inherently ambiguous, words belong to a set of semi-structured data known as language, which contains information about itself. 
+
+One way to view language is as a form of data compression, in which knowledge of the world is consolidated into a symbolic set. Like a lossy file or a serialized dataset, words are a compact rendering of something larger. You could argue, therefore, that words are a more promising field for deep learning than images, because you can get to the essence of them. 
+
+That said, textual analysis has presented many challenges for machine learning. Laborious, manual feature extraction is the main disadvantage of applying three-layer neural nets to textual analysis. In those cases, data scientists need to spend a great deal of time telling the algorithm what to pay attention to. 
 
 A part-of-speech tag on a single word might be one feature they select, the fact that the word occurred might be another, and the number of times it appeared in a given text would be a third, each rule carefully and deliberately generated. That process leads to a high ratio of features per word, many of which can be redundant. 
 
