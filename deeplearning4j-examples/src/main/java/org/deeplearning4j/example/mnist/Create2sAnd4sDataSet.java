@@ -22,26 +22,12 @@ public class Create2sAnd4sDataSet {
 	public static void main(String[] args) throws Exception {
 		DataSetIterator iter = new RawMnistDataSetIterator(60000,60000);
 		DataSet next = iter.next();
-		DataSet filtered = next.filterBy(new int[]{2,4});
-		//sets to only 2 labels
-		filtered.setNewNumberOfLabels(2);
-
-
-		for(int i = 0; i < filtered.numExamples(); i++) {
-			if(filtered.get(i).outcome() == 2) {
-				filtered.setOutcome(i, 0);
-
-			}
-			else {
-				filtered.setOutcome(i, 1);
-			}
-		}
-
-		log.info("Number of new examples in data set is " + filtered.numExamples() + " with labels of " + filtered.numOutcomes());
+		next.filterAndStrip(new int[]{2,4});
+		log.info("Number of new examples in data set is " + next.numExamples() + " with labels of " + next.numOutcomes());
 		
 		
 		BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(new File("twoandfours.bin")));
-		filtered.write(fos);
+		next.write(fos);
 		fos.flush();
 		fos.close();
 		
