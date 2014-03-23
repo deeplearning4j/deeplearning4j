@@ -99,4 +99,31 @@ An example is as follows:
 
                 }
 
+### Vectorization
+
+Vectorization is the process of creating datasets from raw inputs. That is, text files and images, sound.
+
+Dl4J has vectorizers for different purposes.
+
+
+
+
+                      Vectorizer v = ...;
+                      DataSet data = v.vectorize();
+
+
+Vectorizers are in the [Vectorizer](..doc/org/deeplearning4j/word2vec/vectorizer/)
+package. Many will be added over time, but cover the basic media including text and images.
+
+
+
+
+
+
+
+
 Working with your own datasets will present complications, but it will also show you the real power of deep learning. Deep learning works with sets of images and symbols, the latter including text, numbers and genetic code. Next, we'll explore how deep learning can be useful in [textual analysis](../textanalysis.html). 
+
+
+
+

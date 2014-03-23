@@ -33,7 +33,7 @@ layout: default
 
          cd java-deeplearning
 
-         Use [maven](http://maven.apache.org/)
+         Use  maven: http://maven.apache.org/
 
          mvn clean install -DskipTests
 
@@ -43,7 +43,7 @@ layout: default
       <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
-			<version>0.0.1</version>
+			<version>0.0.3.1</version>
 		</dependency>
 
 
@@ -53,7 +53,7 @@ layout: default
        <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
-			<version>0.0.1</version>
+			<version>0.0.3.1</version>
 		</dependency>
 
 
