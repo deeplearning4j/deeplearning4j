@@ -108,11 +108,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		setSecond(ret.getSecond());
 	}
 
-	
+
 	public void normalize() {
 		MatrixUtil.normalizeMatrix(getFirst());
 	}
-	
+
 
 	private static int totalExamples(Collection<DataSet> coll) {
 		int count = 0;
@@ -138,7 +138,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return SimpleBlas.iamax(getSecond());
 	}
 
-	
+
 	/**
 	 * Clears the outcome matrix setting a new number of labels
 	 * @param labels the number of labels/columns in the outcome matrix
@@ -149,7 +149,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		DoubleMatrix newOutcomes = new DoubleMatrix(examples,labels);
 		setSecond(newOutcomes);
 	}
-	
+
 	/**
 	 * Sets the outcome of a particular example
 	 * @param example the example to set
@@ -160,11 +160,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 			throw new IllegalArgumentException("No example at " + example);
 		if(label > numOutcomes() || label < 0)
 			throw new IllegalArgumentException("Illegal label");
-		
+
 		DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numOutcomes());
 		getSecond().putRow(example,outcome);
 	}
-	
+
 	/**
 	 * Gets a copy of example i
 	 * @param i the example to get
@@ -173,7 +173,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	public DataSet get(int i) {
 		if(i > numExamples() || i < 0)
 			throw new IllegalArgumentException("invalid example number");
-		
+
 		return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
 	}
 
@@ -195,11 +195,15 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return ret;
 	}
 
-
+	/**
+	 * Strips the data set of all but the passed in labels
+	 * @param labels strips the data set of all but the passed in labels
+	 * @return the dataset with only the specified labels
+	 */
 	public DataSet filterBy(int[] labels) {
 		List<DataSet> list = asList();
-		List<DataSet> newList = new ArrayList<DataSet>();
-		List<Integer> labelList = new ArrayList<Integer>();
+		List<DataSet> newList = new ArrayList<>();
+		List<Integer> labelList = new ArrayList<>();
 		for(int i : labels)
 			labelList.add(i);
 		for(DataSet d : list) {
@@ -209,6 +213,49 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		}
 
 		return DataSet.merge(newList);
+	}
+
+
+	/**
+	 * Strips the dataset down to the specified labels
+	 * and remaps them
+	 * @param labels the labels to strip down to
+	 */
+	public void filterAndStrip(int[] labels) {
+		DataSet filtered = filterBy(labels);
+		List<Integer> newLabels = new ArrayList<>();
+		
+		//map new labels to index according to passed in labels
+		Map<Integer,Integer> labelMap = new HashMap<>();
+
+		for(int i = 0; i < labels.length; i++) 
+			labelMap.put(labels[i],i);
+
+		//map examples
+		for(int i = 0; i < filtered.numExamples(); i++)  {
+			int o2 = filtered.get(i).outcome();
+			int outcome = labelMap.get(o2);
+			newLabels.add(outcome);
+
+		}
+		
+
+		DoubleMatrix newLabelMatrix = new DoubleMatrix(filtered.numExamples(),labels.length);
+	
+		if(newLabelMatrix.rows != newLabels.size())
+			throw new IllegalStateException("Inconsistent label sizes");
+		
+		for(int i = 0; i < newLabelMatrix.rows; i++) {
+			Integer i2 = newLabels.get(i);
+			if(i2 == null)
+				throw new IllegalStateException("Label not found on row " + i);
+			DoubleMatrix newRow = MatrixUtil.toOutcomeVector(i2, labels.length);
+			newLabelMatrix.putRow(i,newRow);
+		
+		}
+		
+		setFirst(filtered.getFirst());
+		setSecond(newLabelMatrix);
 	}
 
 
