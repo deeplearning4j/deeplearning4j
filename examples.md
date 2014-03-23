@@ -25,7 +25,7 @@ With the proper data transforms, a deep network is capable of understanding audi
 
 Advances in [reality capture and reality computing](http://pando.com/2014/02/16/convergence-what-happens-when-virtual-realities-take-over/) are making virtual and real worlds converge. One application of deep learning to this newly available data is to recognize and label objects in 3D environments, and in real life. 
 
-From there, it's a short step to simulated semantics, in which machines learn the nature and constraints of objects in the world, through their virtual representations, and then bring that understanding to the language they generate and understand. We believe that is one of many futures in store for neural nets.
+From there, it's a short step to simulated semantics, in which machines learn the nature and constraints of objects in the world, through their virtual representations, and then bring that understanding to the language they generate and ingest. We believe that is one of many futures in store for neural nets. 
 
 To jointly distribute deep learning over images and symbols, a complex of deep learning nets is foreseeable, in which one "manager" net relies on a large number of "expert" nets, each one specialized in one type of pattern recognition: cat faces, table legs, street signs, etc.
 
