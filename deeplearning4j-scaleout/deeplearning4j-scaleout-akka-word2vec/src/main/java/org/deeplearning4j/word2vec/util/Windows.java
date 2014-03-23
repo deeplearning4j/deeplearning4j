@@ -24,7 +24,7 @@ public class Windows {
 		List<String> list = new ArrayList<String>();
 		while(tokenizer.hasMoreTokens())
 			list.add(tokenizer.nextToken());
-		return windows(list,5);
+		return windows(list,windowSize);
 	}
 	
 	/**
@@ -40,7 +40,7 @@ public class Windows {
 		List<String> list = new ArrayList<String>();
 		while(tokenizer.hasMoreTokens())
 			list.add(tokenizer.nextToken());
-		return windows(list,5);
+		return windows(list,windowSize);
 	}
 	
 	
