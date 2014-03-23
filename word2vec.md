@@ -140,3 +140,5 @@ The following code saves your Viterbi implementation for later use:
 		viterbi.write(bos);
 		bos.flush();
 		bos.close();
+
+That's pretty much it. If you need help, [drop us a line](http://blix.io/contact.html). 
