@@ -3,6 +3,7 @@ title:
 layout: default
 ---
 
+*previous* - [deep-belief network](../deepbeliefnetwork.html)
 # continuous deep-belief networks
 
 A more extensive definition of [deep-belief networks](../deepbeliefnetwork.html) is [here](http://www.scholarpedia.org/article/Deep_belief_networks). A continuous deep-belief network is simply an extension of a deep-belief network which accepts a continuum of integers, rather than binary data.

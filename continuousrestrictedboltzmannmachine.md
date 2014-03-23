@@ -3,6 +3,7 @@ title:
 layout: default
 ---
 
+*previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
 # continuous restricted boltzmann
 
 A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word count vectors that are normalized to probabilities.
