@@ -1,9 +1,0 @@
-4
-Every person on Facebook — all 1.2 billion of you — sees a unique homepage every time they visit the social network. But storing, fetching, and analyzing the hundreds of petabytes of data to generate those pages in real time is no easy task.
-That’s why Facebook’s database engineering team wants your help — and wants to help you, too.
-Facebook just open-sourced RocksDB, an embeddable, persistent key-value store for flash and RAM storage that it built on top of Google’s open source LevelDB. The social media giant says it modified LevelDB so it scales to run on servers with lots of CPU cores, uses fast storage efficiently, and is flexible enough to allow for innovation, among other goals.
-“RocksDB satisfies a lot of universal use cases that we hope a lot of people can benefit from and improve upon,” a Facebook representative told VentureBeat.
-RocksDB may work well for applications that need low-latency database accesses, like spam-detection apps or message queues. Facebook claims that RocksDB can perform as much as 10 times faster than LevelDB for pure random write uploads and bulk uploads, as well as 30 percent faster for random read workloads.
-Facebook
-RocksDB’s additions to LevelDB
-RocksDB uses a “pluggable” architecture to ensure developers can replace one part of the database without tearing down the overall system architecture. But naturally, RocksDB doesn’t satisfy every use case: it’s not distributed, there’s no failover, and it’s not highly available — so if your machine dies, you lose your data.

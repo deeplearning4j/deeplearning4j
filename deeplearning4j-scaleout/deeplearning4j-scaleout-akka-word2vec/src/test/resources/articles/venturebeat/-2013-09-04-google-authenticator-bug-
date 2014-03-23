@@ -1,6 +1,0 @@
-2
-Google pulled its Authenticator, the app that releases codes to be used for two-factor authentication, from the Apple App Store today after its latest update deleted existing user data.
-The latest update to Google Authenticator for iOS, which was made available this morning, wound up deleting any accounts you already had in the app. This means that if you updated this app today, you’ll likely need to re-set up any accounts that used the app to get these two-factor codes. That’s a big pain if you use it for a lot of different services.
-Two-factor authentication is the process of adding a special code to your username and password login to make it just a little bit harder for hackers to get into your accounts. The code can be sent by text message, an app like Google Authenticator, or a dongle and is refreshed at different intervals throughout the day. If you don’t have access to your codes, however, you often don’t have access to your accounts.
-We have reached out to Google for comment and will update this post upon hearing back.
-At the moment, we don’t know what bug caused the deletion issue, but Google is aware of it and has pulled the app from the App Store. If you have Google Authenticator, but didn’t update the app this morning, it should be working as per usual.
