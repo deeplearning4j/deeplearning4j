@@ -86,7 +86,7 @@ Notably, you can also specify the window size here:
                   List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
      
 
-One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi).
+One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
 
 The general idea behind this is that you train moving windows with word2vec and classify individual windows (with a focus word)
 
