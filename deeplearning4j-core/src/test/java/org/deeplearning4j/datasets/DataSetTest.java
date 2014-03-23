@@ -14,7 +14,7 @@ public class DataSetTest {
 		d.filterAndStrip(new int[]{2,4});
 		assertEquals(2,d.numOutcomes());
 		assertEquals(filtered.numExamples(),d.numExamples());
-	
+		assertEquals(filtered.getFirst(),d.getFirst());
 		
 	
 	}
