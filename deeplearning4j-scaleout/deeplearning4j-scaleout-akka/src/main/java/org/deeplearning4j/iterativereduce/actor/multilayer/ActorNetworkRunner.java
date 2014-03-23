@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
+import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
@@ -59,6 +60,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private Address masterAddress;
 	private DataSetIterator iter;
 	protected ActorRef masterActor;
+	protected ModelSaver modelSaver;
 	private transient ScheduledExecutorService exec;
 	private transient StateTracker<UpdateableImpl> stateTracker;
 	private Conf conf;
@@ -190,8 +192,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			throw new IllegalStateException("No network to finetune!");
 		}
 	}
-	
-	
+
+
 	@Override
 	public void setup(final Conf conf) {
 
@@ -213,7 +215,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				stateTracker = new HazelCastStateTracker();
 				if(finetune)
 					stateTracker.moveToFinetune();
-				
+
 				masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
 				Thread.sleep(60000);
 
@@ -226,8 +228,12 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 			log.info("Starting model saver");
-			system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
+			if(modelSaver == null)
+				system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
+			else 
+				system.actorOf(Props.create(ModelSavingActor.class,modelSaver));
 
+			
 
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
@@ -250,28 +256,28 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		else {
 
 			Address a = AddressFromURIString.parse(conf.getMasterUrl());
-			
+
 			Conf c = conf.copy();
 			Cluster cluster = Cluster.get(system);
 			cluster.join(a);
 
 			try {
 				String host = a.host().get();
-				
+
 				if(host == null)
 					throw new IllegalArgumentException("No host set for worker");
-				
+
 				int port = HazelCastStateTracker.DEFAULT_HAZELCAST_PORT;
-				
+
 				String connectionString = host + ":" + port;
-				
+
 				stateTracker = new HazelCastStateTracker(connectionString,"worker");
 
 			} catch (Exception e1) {
 				Thread.currentThread().interrupt();
 				throw new RuntimeException(e1);
 			}
-			
+
 			startWorker(c);
 
 			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
@@ -291,7 +297,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
 	public  void startWorker(Conf conf) {
-		
+
 		Address contactAddress = AddressFromURIString.parse(conf.getMasterUrl());
 
 		system.actorOf(Props.create(ClusterListener.class));
@@ -312,8 +318,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			int workers = stateTracker.numWorkers();
 			if(workers <= 1)
 				throw new IllegalStateException("Did not properly connect to cluster");
-			
-			
+
+
 			log.info("Joining cluster of size " + workers);
 
 
@@ -414,6 +420,14 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		if(stateTracker != null)
 			stateTracker.shutdown();
 		system.shutdown();
+	}
+
+	public  ModelSaver getModelSaver() {
+		return modelSaver;
+	}
+
+	public  void setModelSaver(ModelSaver modelSaver) {
+		this.modelSaver = modelSaver;
 	}
 
 
