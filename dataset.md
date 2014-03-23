@@ -24,3 +24,16 @@ Datasets are saveable as well. This can prevent you from having to recompute a d
 
               //load
               DataSet d = DataSet.load(new File("path"));
+
+
+
+Operations on data
+====================================
+
+There are many kinds of transforms you can do on data which can lead to better accuracy of results.
+
+2 of these include [Binarization](../glossary.html#binarization) and [Normalization](../glossary.html#normalization).
+
+Binarization of data allows for marking the occurrence of an event while normalization allows for expressing the probability
+
+of something happening. Both are more meaningful mathematically than just an arbitary number.
