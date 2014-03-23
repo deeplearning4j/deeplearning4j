@@ -21,21 +21,15 @@ Here's a graph of words associated with "China" using Word2vec:
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
 
+# training
 
-#Training
+Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table for composition of windows of training text for various tasks in natural-language processing.
 
+Assuming a list of sentences, it's used for lemmatization like this:
 
-Word2Vec training involves training on raw text. Word2Vec then words the context, or usage, of each word encoded as word vectors.
-
-Post training it is then used as lookup table for composition of windows of training text for various tasks in nautral language processing.
-
-
-Example usage with lemmatization is as follows assuming a list of sentences:
+         List<String> mySentences = ...;
           
-
-          List<String> mySentences = ...;
-          
-          //source for sentences for word2vec to train on
+         //source for sentences for word2vec to train on
          SentenceIterator iter = new CollectionSentenceIterator(mySentences);
           
          //tokenization with lemmatization,part of speech taggin,sentence segmentation
@@ -45,30 +39,20 @@ Example usage with lemmatization is as follows assuming a list of sentences:
          Word2Vec vec = new Word2Vec(tokenizerFactory,iter,1);
          vec.train();
 
+From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll' want to save word2vec like this:
 
-From there, word2vec will do automatic multi threaded training based on your sentence data. After this, you will want to save word2vec as follows.
-
-
-       			SerializationUtils.saveObject(vec, new File("mypath"));
-
+       	 SerializationUtils.saveObject(vec, new File("mypath"));
 
 This will save word2vec to mypath.
 
-
-
-To load it in to memory again do:
+You can reload it into memory like this:
         
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
-
-
-From there, you can use word2vec as a lookup table in the following way:
-
+From there, you can use Word2vec as a lookup table in the following way:
               
-              DoubleMatrix wordVector = vec.getWordVectorMatrix("myword");
+        DoubleMatrix wordVector = vec.getWordVectorMatrix("myword");
 
-              double[] wordVector = vec.getWordVector("myword");
+        double[] wordVector = vec.getWordVector("myword");
 
-
-If the word isn't in the vocab, all zeros are returned.
-
+If the word isn't in the vocabulary, Word2vec returns just zeros.
