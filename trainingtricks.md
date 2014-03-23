@@ -26,6 +26,6 @@ Many of these tips have already been discussed in the academic literature. Our p
 
   It is also interesting to note that Hinton’s network made 30 passes in pretraining to achieve its 99 percent accuracy. This is only feasible with a speedy, massively parallel network that lowers the cost of iteration.
 
-4. Mini batch size should not be much more than 10 or 100. You want more than one example per batch, but you also want to make sure that training on avg gets done faster. 10 is the reccomended number here. This goes both for parallel training as well as single threaded.
-In parallel training when the batch size is too large, this will cause any batches of data that maybe outliers in pretraining or 
-finetuning to take longer to train. On average, smaller batche sizes will even out these mini batches which may have more error attached to them.
+4. Minibatch size should not be much more than 10 to 100. You'll want more than one example per batch, but you also want to ensure that training, on average, gets done faster. Ten is the recommended number here. This goes both for parallel training, as well as single threaded processing.
+
+  In parallel training, when the batch size is too large, any data batches that contain outliers will take longer to train in pretraining or finetuning. On average, smaller batch sizes even out these minibatches, which may have more error attached to them.
