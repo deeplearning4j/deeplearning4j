@@ -85,3 +85,64 @@ The general idea behind this is that you train moving windows with word2vec and 
 
 with certain labels. This could be in part of speech tagging, semantic role labeling, named entity recognition, among other tasks.
 
+Viterbi basically calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from
+one state to another). Below is an example snippet for setup:
+
+        List<String> labels = ...;
+        Index labelIndex = new Index();
+		for(int i = 0; i < labels.length; i++)
+			labelIndex.add(labels[i]);
+		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
+		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
+
+
+This will intialize the baseline features and transitions for viterbi to optimize on.
+
+
+Say you have the lines of a file with the given transition probabilities given a file:
+
+            //read in the lienes of a file
+            List<String> lines = FileUtils.readLines(file);
+			for(String line : lines) {
+				if(line.isEmpty()) 
+					continue;
+				List<Window> windows = Windows.windows(line);
+
+				for(int i = 1; i < windows.size(); i++) {
+					String firstLabel = windows.get(i - 1).getLabel();
+					String secondLabel = windows.get(i).getLabel();
+					int first = labelIndex.indexOf(firstLabel);
+					int second = labelIndex.indexOf(secondLabel);
+
+
+					transitions.incrementCount(first,second,1.0);
+				}
+
+			}
+
+
+From there, each line will be something like:
+
+          <ORGANIZATION> IBM </ORGANIZATION> invented a question answering robot called <ROBOT>Watson</ROBOT>.
+
+Given a set of text, Windows.windows automatically infers labels from bracketed capitalized text.
+
+
+If you do:
+
+             String label = window.getLabel();
+
+on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution
+
+over the set of labels in a training corpus.
+
+This will save a viteribi implementation for later use:
+
+       
+        DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
+		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
+		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(output));
+		viterbi.write(bos);
+		bos.flush();
+		bos.close();
+
