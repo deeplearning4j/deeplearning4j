@@ -33,7 +33,7 @@ Momentum is an extra factor in determining how fast an optimization algorithm co
 
 L2 is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
 
-If you're curious about the internal mechanisms of the DL4J implementation, please see [BaseNeuralNetwork](../doc/org/deeplearning/nn/BaseNeuralNetwork.html).
+If you're curious about the internal mechanisms of the DL4J implementation, please see [BaseNeuralNetwork](../doc/org/deeplearning4j/nn/BaseNeuralNetwork.html).
 
 Here are the different kinds of single-layer networks:
 
