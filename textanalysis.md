@@ -14,3 +14,5 @@ One of the chief advantages of deep learning is that feature creation is largely
 A text fed into a neural network passes through several stages of analysis. The first is sentence segementation, in which the software finds the sentence boundaries within the text. The second is tokenization, in which the software finds individual words. In the third stage, parts-of-speech tags are attached to those words, and in the fourth, they are grouped according to their stems or concepts, in a process known as lemmatization. That is, words such as be, been and is will be grouped since they represent the same verb idea. 
 
 The neural net called [Word2vec](../word2vec.html) goes as far as lemmatization. Lemmas simply extend features based on stems, which is a process deep learning does in other ways automatically.
+
+Let's turn to [Word2vec](../word2vec.html) now. 
