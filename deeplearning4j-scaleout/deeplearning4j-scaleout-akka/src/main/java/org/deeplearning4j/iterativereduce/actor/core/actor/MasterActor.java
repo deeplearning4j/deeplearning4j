@@ -63,7 +63,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	//number of batches over time
 	protected int partition = 1;
 	protected boolean isDone = false;
-	protected Cancellable forceNextPhase;
+	protected Cancellable forceNextPhase,clearStateWorkers;
 
 	/**
 	 * Creates the master and the workers with this given conf
@@ -138,6 +138,10 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 		super.postStop();
 		log.info("Post stop on master");
 		cluster.unsubscribe(getSelf());
+		if(clearStateWorkers != null)
+			clearStateWorkers.cancel();
+		if(forceNextPhase != null)
+			forceNextPhase.cancel();
 	}
 
 

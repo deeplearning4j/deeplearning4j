@@ -38,7 +38,7 @@ public class Classify2sAnd4s {
 
 		Conf c = new Conf();
 		c.initFromData(twosAndFours);
-		c.setFinetuneEpochs(1000);
+		c.setFinetuneEpochs(2000);
 		c.setFinetuneLearningRate(0.001);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setUseAdaGrad(true);
@@ -47,7 +47,7 @@ public class Classify2sAnd4s {
 
 		c.setMultiLayerClazz(CDBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.001,1000});
+		c.setDeepLearningParams(new Object[]{1,0.001,2000});
 		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 
