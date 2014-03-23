@@ -37,6 +37,6 @@ If you're curious about the internal mechanisms of the DL4J implementation, plea
 
 Here are the different kinds of single-layer networks:
 
-*[Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
-*[Continuous Restricted Boltzmann Machine](../continuousrestrictedboltzmannmachine.html)
-*[Denoising AutoEncoder](../denoisingautoencoder.html)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Continuous Restricted Boltzmann Machine](../continuousrestrictedboltzmannmachine.html)
+* [Denoising AutoEncoder](../denoisingautoencoder.html)
