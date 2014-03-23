@@ -5,6 +5,8 @@ layout: default
 
 # restricted Boltzmann machine
 
+*Previous* - [A neural nets overview](http://deeplearning4j.org/index.html)
+
 To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make [stochastic](http://www.merriam-webster.com/dictionary/stochastic) decisions about whether to be on or off." 
 
 A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a symmetrical [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph): 
