@@ -51,6 +51,6 @@ If you're curious about the internals of the dl4j implementation, please see [Ba
 
 Below are the different kinds of multilayer networks:
 
-* [Stacked Denoising AutoEncoders]({{ site.baseurl }}/stackeddenoisingautoencoder.html)
-* [Deep Belief Networks]({{ site.baseurl }}/deepbeliefnetwork.html)
-* [Continuous Deep Belief Networks]({{ site.baseurl }}/continuousdeepbeliefnetwork.html)
+* [Stacked Denoising AutoEncoders](../stackeddenoisingautoencoder.html)
+* [Deep Belief Networks](../deepbeliefnetwork.html)
+* [Continuous Deep Belief Networks](../continuousdeepbeliefnetwork.html)
