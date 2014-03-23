@@ -12,12 +12,22 @@ import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
 
-
+/**
+ * Uses a uima {@link AnalysisEngine} to 
+ * tokenize text.
+ * 
+ * 
+ * @author agibsonccc
+ *
+ */
 public class UimaTokenizerFactory implements TokenizerFactory {
 
 	private AnalysisEngine tokenizer;
 	
-	
+	public UimaTokenizerFactory() throws ResourceInitializationException {
+		this(defaultAnalysisEngine());
+	}
+
 	
 	public UimaTokenizerFactory(AnalysisEngine tokenizer) {
 		super();

@@ -32,7 +32,7 @@ public class RBMTest  {
 		DoubleMatrix d = new DoubleMatrix(data);
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder().withSparsity(0.01).renderWeights(200)
+		RBM r = new RBM.Builder().withSparsity(0.01)
 		.numberOfVisible(6).numHidden(4).withRandom(g).build();
 		r.getW().muli(1000);
 

@@ -138,7 +138,42 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		return SimpleBlas.iamax(getSecond());
 	}
 
+	
+	/**
+	 * Clears the outcome matrix setting a new number of labels
+	 * @param labels the number of labels/columns in the outcome matrix
+	 * Note that this clears the labels for each example
+	 */
+	public void setNewNumberOfLabels(int labels) {
+		int examples = numExamples();
+		DoubleMatrix newOutcomes = new DoubleMatrix(examples,labels);
+		setSecond(newOutcomes);
+	}
+	
+	/**
+	 * Sets the outcome of a particular example
+	 * @param example the example to set
+	 * @param label the label of the outcome
+	 */
+	public void setOutcome(int example,int label) {
+		if(example > numExamples())
+			throw new IllegalArgumentException("No example at " + example);
+		if(label > numOutcomes() || label < 0)
+			throw new IllegalArgumentException("Illegal label");
+		
+		DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numOutcomes());
+		getSecond().putRow(example,outcome);
+	}
+	
+	/**
+	 * Gets a copy of example i
+	 * @param i the example to get
+	 * @return the example at i (one example)
+	 */
 	public DataSet get(int i) {
+		if(i > numExamples() || i < 0)
+			throw new IllegalArgumentException("invalid example number");
+		
 		return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
 	}
 

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -52,8 +53,16 @@ public class Conf implements Serializable,Cloneable {
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 
 
-
-
+	/**
+	 * Sets in and outs based on data
+	 * @param data the data to use
+	 */
+	public void initFromData(DataSet data) {
+		setnIn(data.numInputs());
+		setnOut(data.numOutcomes());
+	}
+	
+	
 	public  Map<Integer, List<NeuralNetworkGradientListener>> getGradientListeners() {
 		return gradientListeners;
 	}

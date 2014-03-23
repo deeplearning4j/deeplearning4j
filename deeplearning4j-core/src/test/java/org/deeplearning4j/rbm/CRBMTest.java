@@ -24,7 +24,7 @@ public class CRBMTest {
 
 		RandomGenerator g = new MersenneTwister(123);
 
-		CRBM r = new CRBM.Builder().renderWeights(200)
+		CRBM r = new CRBM.Builder()
 		.numberOfVisible(input.getRow(0).columns).withSparsity(0.01)
 		.numHidden(4).withRandom(g).build();
 		r.getW().muli(1000);

@@ -2,8 +2,6 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -11,7 +9,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
@@ -29,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import scala.concurrent.duration.Duration;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
@@ -43,9 +39,6 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
-
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 /**
  * Controller for coordinating model training for a neural network based
  * on parameters across a cluster for akka.
@@ -58,7 +51,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private static final long serialVersionUID = -4385335922485305364L;
 	private transient ActorSystem system;
 	private Integer epochs;
-	private UpdateableImpl result;
 	private ActorRef mediator;
 	private BaseMultiLayerNetwork startingNetwork;
 	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
@@ -391,11 +383,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	}
 
 
-
-
-	public UpdateableImpl getResult() {
-		return result;
-	}
 
 
 	public Address getMasterAddress() {

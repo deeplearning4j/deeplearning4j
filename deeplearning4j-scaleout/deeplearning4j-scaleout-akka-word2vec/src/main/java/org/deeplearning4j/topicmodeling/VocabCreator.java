@@ -15,7 +15,7 @@ import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.word2vec.ner.InputHomogenization;
+import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.LineSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;

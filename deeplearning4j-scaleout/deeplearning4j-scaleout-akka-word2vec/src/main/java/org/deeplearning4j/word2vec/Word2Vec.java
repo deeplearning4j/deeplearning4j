@@ -172,7 +172,6 @@ public class Word2Vec implements Persistable {
 		this.sentenceIter = new CollectionSentenceIterator(sentences);
 
 		this.buildVocab();
-
 		oob = new double[layerSize];
 		Arrays.fill(oob,0.0);
 		readStopWords();
@@ -312,13 +311,12 @@ public class Word2Vec implements Persistable {
 		final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
 
 
-		ActorRef sentenceActor  = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 ).props(Props.create(new SentenceActor.SentenceActorCreator(this)).withDispatcher("akka.actor.worker-dispatcher")));
+		trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 ).props(Props.create(new SentenceActor.SentenceActorCreator(this)).withDispatcher("akka.actor.worker-dispatcher")));
 
 
 		if(syn0.rows != this.vocab.size())
 			throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
-		int numSentences = 0;
 
 		while(getSentenceIter().hasNext()) {
 			final String sentence = sentenceIter.nextSentence();
@@ -862,7 +860,6 @@ public class Word2Vec implements Persistable {
 			ObjectOutputStream dos = new ObjectOutputStream(os);
 
 			dos.writeObject(this);
-
 
 		} catch (IOException e) {
 			throw new RuntimeException(e);

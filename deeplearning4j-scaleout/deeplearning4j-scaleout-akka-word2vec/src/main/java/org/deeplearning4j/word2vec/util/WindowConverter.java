@@ -3,7 +3,7 @@ package org.deeplearning4j.word2vec.util;
 import java.util.List;
 
 import org.deeplearning4j.word2vec.Word2Vec;
-import org.deeplearning4j.word2vec.ner.InputHomogenization;
+import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.jblas.DoubleMatrix;
 
 
