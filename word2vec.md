@@ -56,3 +56,32 @@ From there, you can use Word2vec as a lookup table in the following way:
         double[] wordVector = vec.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns just zeros.
+
+
+###Windows
+
+Word2Vec works with other neural networks by facilitating the moving window model for training on word occurrences.
+
+It does this via the moving window model. To get windows for text, there are two ways to do this:
+
+
+                    List<Window> windows = Windows.windows("some text");
+
+This will pull out moving windows of 5 out of the text. Each member of a window is a token.
+
+Another thing you may want to do is use your own custom tokenizer. You can use your own tokenizer by doing the following:
+
+
+                  TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
+
+                  List<Window> windows = Windows.windows("text",tokenizerFactory);
+
+This will create a tokenizer for the text and create moving windows based on that.
+
+
+One other thing that may not be clear is how to train word sequence models. This is done by optimization with the [viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi).
+
+The general idea behind this is that you train moving windows with word2vec and classify individual windows (with a focus word)
+
+with certain labels. This could be in part of speech tagging, semantic role labeling, named entity recognition, among other tasks.
+
