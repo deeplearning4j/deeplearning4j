@@ -37,6 +37,7 @@ public class BatchActor extends UntypedActor {
 	private transient Conf conf;
 	private int numDataSets = 0;
 	
+	
 	public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
 		this.iter = iter;
 		this.stateTracker = stateTracker;

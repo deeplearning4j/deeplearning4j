@@ -44,7 +44,7 @@ public class DefaultModelSaver implements ModelSaver {
 
 
 	@Override
-	public void save(Serializable ser) {
+	public void save(Serializable ser)  {
 		if(!rewrite) {
 			String path = file.getAbsolutePath();
 			if(file.exists()) {

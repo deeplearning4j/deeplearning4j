@@ -109,6 +109,24 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	}
 
 
+	/**
+	 * Adds a feature for each example on to the current feature vector
+	 * @param toAdd the feature vector to add
+	 */
+	public void addFeatureVector(DoubleMatrix toAdd) {
+		setFirst(DoubleMatrix.concatHorizontally(getFirst(), toAdd));
+	}
+	
+	
+	/**
+	 * The feature to add, and the example/row number
+	 * @param feature the feature vector to add
+	 * @param example the number of the example to append to
+	 */
+	public void addFeatureVector(DoubleMatrix feature, int example) {
+		getFirst().putRow(example,DoubleMatrix.concatHorizontally(getFirst().getRow(example), feature));
+	}
+	
 	public void normalize() {
 		MatrixUtil.normalizeMatrix(getFirst());
 	}

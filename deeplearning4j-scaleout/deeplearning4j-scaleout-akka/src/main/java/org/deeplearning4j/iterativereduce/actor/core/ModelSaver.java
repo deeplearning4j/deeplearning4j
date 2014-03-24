@@ -11,6 +11,6 @@ public interface ModelSaver extends Serializable {
 	 * Saves a serializable object
 	 * @param ser the object to save
 	 */
-	void save(Serializable ser);
+	void save(Serializable ser) throws Exception;
 	
 }

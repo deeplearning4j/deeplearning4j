@@ -163,9 +163,18 @@ public class Conf implements Serializable,Cloneable {
 	public void setFunction(ActivationFunction function) {
 		this.function = function;
 	}
+	/**
+	 * Returns the hidden layer sizes
+	 * @return the hidden layer sizes set for this configuration
+	 */
 	public int[] getLayerSizes() {
 		return layerSizes;
 	}
+	
+	/**
+	 * Sets the hidden layer sizes
+	 * @param layerSizes the layer sizes to use
+	 */
 	public void setLayerSizes(int[] layerSizes) {
 		this.layerSizes = layerSizes;
 	}
