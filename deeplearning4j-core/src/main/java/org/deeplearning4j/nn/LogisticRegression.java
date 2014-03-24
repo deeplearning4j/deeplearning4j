@@ -10,8 +10,8 @@ import java.io.Serializable;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
+import org.deeplearning4j.optimize.VectorizedNonZeroStoppingConjugateGradient;
 import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.util.NonZeroStoppingConjugateGradient;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -112,7 +112,7 @@ public class LogisticRegression implements Serializable {
 	 */
 	public  void trainTillConvergence(double learningRate, int numEpochs) {
 		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
-		NonZeroStoppingConjugateGradient g = new NonZeroStoppingConjugateGradient(opt);
+		VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
 		g.optimize(numEpochs);
 
 	}

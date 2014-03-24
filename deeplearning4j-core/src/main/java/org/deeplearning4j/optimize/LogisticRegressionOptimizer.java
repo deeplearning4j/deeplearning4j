@@ -2,7 +2,6 @@ package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.nn.LogisticRegression;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
-import org.deeplearning4j.util.OptimizableByGradientValueMatrix;
 import org.jblas.DoubleMatrix;
 
 import cc.mallet.optimize.Optimizable;

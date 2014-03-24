@@ -124,9 +124,9 @@ public class DBNTest {
 	@Test
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(20);
+		fetcher.fetch(1000);
 		DataSet d = fetcher.next();
-		assertEquals(20,d.numExamples());
+		assertEquals(1000,d.numExamples());
 
 		DBN dbn = new DBN.Builder().hiddenLayerSizes(new int[]{500,250,100}).withActivation(new HardTanh())
 				.numberOfInputs(784).numberOfOutPuts(10).useRegularization(false).build();

@@ -1,4 +1,4 @@
-package org.deeplearning4j.util;
+package org.deeplearning4j.optimize;
 
 import org.jblas.DoubleMatrix;
 

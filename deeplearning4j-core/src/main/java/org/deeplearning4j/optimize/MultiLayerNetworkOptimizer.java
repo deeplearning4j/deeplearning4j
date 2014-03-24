@@ -19,7 +19,7 @@ import cc.mallet.optimize.Optimizable;
  * @author Adam Gibson
  *
  */
-public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,Serializable {
+public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,Serializable,OptimizableByGradientValueMatrix {
 
 	private static final long serialVersionUID = -3012638773299331828L;
 
@@ -152,6 +152,31 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	@Override
 	public double getValue() {
 		return network.negativeLogLikelihood();
+	}
+
+
+
+	@Override
+	public DoubleMatrix getParameters() {
+		double[] d = new double[getNumParameters()];
+		this.getParameters(d);
+		return new DoubleMatrix(d);
+	}
+
+
+
+	@Override
+	public void setParameters(DoubleMatrix params) {
+		this.setParameters(params.toArray());
+	}
+
+
+
+	@Override
+	public DoubleMatrix getValueGradient() {
+		double[] buffer = new double[getNumParameters()];
+		getValueGradient(buffer);
+		return new DoubleMatrix(buffer);
 	}
 
 
