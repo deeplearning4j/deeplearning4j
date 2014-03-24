@@ -3,6 +3,7 @@ title:
 layout: default
 ---
 
+*previous* - [a neural nets overview](../index.html)
 # restricted Boltzmann machine
 
 To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make [stochastic](http://www.merriam-webster.com/dictionary/stochastic) decisions about whether to be on or off." 

@@ -2,6 +2,7 @@
 layout: default
 ---
 
+*previous* - [datasets and machine learning](../data-sets-ml.html)
 # custom data sets 
 
 All input to the deep-learning nets -- whether it's words, images or other data -- must be transformed into numbers known as vectors, in a process called vectorization. A vector is simply a one-column matrix with an extendible number of rows.

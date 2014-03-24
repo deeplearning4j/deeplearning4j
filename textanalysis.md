@@ -3,6 +3,7 @@ title:
 layout: default
 ---
 
+*previous* - [custom datasets](../customdatasets.html)
 # textual analysis and deep learning
 
 While images are inherently ambiguous, words belong to a set of semi-structured data known as language, which contains information about itself. 
