@@ -26,7 +26,7 @@ public class Finetune2sAnd4s {
 		if(!f.exists())
 			Create2sAnd4sDataSet.main(null);
 		DataSet twosAndFours = DataSet.load(f);
-		DataSetIterator iter = new ListDataSetIterator(twosAndFours.asList(),10);
+		DataSetIterator iter = new ListDataSetIterator(twosAndFours.asList(),100);
 
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
@@ -38,7 +38,9 @@ public class Finetune2sAnd4s {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			dbn.finetune(next.getSecond(), 0.01, 1000);
+			dbn.setInput(next.getFirst());
+			dbn.feedForward(next.getFirst());
+			dbn.finetune(next.getSecond(), 0.01, 10000);
 		}
 
 		

@@ -1,14 +1,13 @@
 package org.deeplearning4j.optimize;
 
-import java.io.Serializable;
-
 import org.deeplearning4j.nn.LogisticRegression;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
-
+import org.deeplearning4j.util.OptimizableByGradientValueMatrix;
+import org.jblas.DoubleMatrix;
 
 import cc.mallet.optimize.Optimizable;
 
-public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,Serializable {
+public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
 
 	/**
 	 * 
@@ -79,6 +78,34 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 	@Override
 	public double getValue() {
 		return -logReg.negativeLogLikelihood();
+	}
+
+	@Override
+	public DoubleMatrix getParameters() {
+		DoubleMatrix params = new DoubleMatrix(getNumParameters());
+		for(int i = 0; i < params.length; i++) {
+			params.put(i,getParameter(i));
+		}
+		return null;
+	}
+
+	@Override
+	public void setParameters(DoubleMatrix params) {
+		this.setParameters(params.toArray());
+	}
+
+	@Override
+	public DoubleMatrix getValueGradient() {
+		LogisticRegressionGradient grad = logReg.getGradient(lr);
+		DoubleMatrix ret = new DoubleMatrix(getNumParameters());
+		for(int i = 0; i < ret.length; i++) {
+			if(i < logReg.getW().length)
+				ret.put(i,grad.getwGradient().get(i));
+			else
+				ret.put(i,grad.getbGradient().get(i - logReg.getW().length));
+			
+		}
+		return ret;
 	}
 
 
