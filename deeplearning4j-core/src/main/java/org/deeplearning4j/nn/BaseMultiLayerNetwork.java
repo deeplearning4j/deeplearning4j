@@ -650,7 +650,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			while(backPropStep(lastEntropy,revert,lr,count)) {
 				count++;
 				lastEntropy = this.negativeLogLikelihood();
-				logLayer.traintillconvergence(count, epochs);
+				logLayer.trainTillConvergence(count, epochs);
 			}
 		}
 	}

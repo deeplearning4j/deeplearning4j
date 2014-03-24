@@ -1,6 +1,7 @@
 package org.deeplearning4j.topicmodeling;
 
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
@@ -39,6 +40,10 @@ public class CountVectorizer {
 		this.wordsToCount = new Index();
 	}
 	
+	
+	public DoubleMatrix toNormalizedVector() {
+		return MatrixUtil.normalizeByRowSums(toVector());
+	}
 	
 	public DoubleMatrix toVector() {
 		DoubleMatrix d = new DoubleMatrix(1,wordsToCount.size());
