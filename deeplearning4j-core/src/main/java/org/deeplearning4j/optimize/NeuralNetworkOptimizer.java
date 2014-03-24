@@ -7,6 +7,7 @@ import java.util.List;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.DeepLearningGradientAscent;
+import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ import cc.mallet.optimize.Optimizer;
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,Serializable,NeuralNetEpochListener {
+public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix,Serializable,NeuralNetEpochListener {
 
 
 
@@ -41,11 +42,11 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient Optimizer opt;
+	protected transient OptimizerMatrix opt;
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
-			opt = new org.deeplearning4j.util.NonZeroStoppingConjugateGradient(this,this);
+			opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
 		//opt.setTolerance(tolerance);
 		int epochs = (int) extraParams[2];
 		opt.optimize(epochs);
@@ -157,7 +158,25 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		}
 	}
 
+	
+	
 
+	@Override
+	public DoubleMatrix getParameters() {
+		double[] params = new double[getNumParameters()];
+		this.getParameters(params);
+		return new DoubleMatrix(params);
+	}
+	@Override
+	public void setParameters(DoubleMatrix params) {
+		setParameters(params.toArray());
+	}
+	@Override
+	public DoubleMatrix getValueGradient() {
+		double[] d = new double[this.getNumParameters()];
+		getValueGradient(d);
+		return new DoubleMatrix(d);
+	}
 	@Override
 	public abstract void getValueGradient(double[] buffer);
 

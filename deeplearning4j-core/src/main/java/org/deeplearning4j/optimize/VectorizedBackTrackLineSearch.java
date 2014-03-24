@@ -1,4 +1,4 @@
-package org.deeplearning4j.util;
+package org.deeplearning4j.optimize;
 
 /* Copyright (C) 2002 Univ. of Massachusetts Amherst, Computer Science Dept.
 This file is part of "MALLET" (MAchine Learning for LanguagE Toolkit).
@@ -10,20 +10,21 @@ information, see the file `LICENSE' included with this distribution. */
 
 /** 
 @author Aron Culotta <a href="mailto:culotta@cs.umass.edu">culotta@cs.umass.edu</a>
-*/
+ */
 
 /**
 	 Numerical Recipes in C: p.385. lnsrch. A simple backtracking line
 	 search. No attempt at accurately finding the true minimum is
 	 made. The goal is only to ensure that BackTrackLineSearch will
 	 return a position of higher value.
-*/
+ */
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.jblas.SimpleBlas;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cc.mallet.optimize.InvalidOptimizableException;
 
@@ -31,10 +32,10 @@ import cc.mallet.optimize.InvalidOptimizableException;
 
 public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 {
-	private static Logger logger = Logger.getLogger(VectorizedBackTrackLineSearch.class.getName());
-	
+	private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearch.class.getName());
+
 	OptimizableByGradientValueMatrix function;
-	
+
 	public VectorizedBackTrackLineSearch (OptimizableByGradientValueMatrix optimizable) {
 		this.function = optimizable;
 	}
@@ -76,31 +77,30 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		double slope, newSlope, temp, test, alamin, alam, alam2, tmplam;
 		double rhs1, rhs2, a, b, disc, oldAlam;
 		double f, fold, f2;
-		g = new DoubleMatrix(function.getNumParameters()); // gradient
-		x = new DoubleMatrix(function.getNumParameters()); // parameters
-		oldParameters = new DoubleMatrix(function.getNumParameters());
-		x = function.getParameters ();
-		System.arraycopy (x, 0, oldParameters, 0, x.length);
-		g = function.getValueGradient();
+		g = function.getValueGradient(); // gradient
+		x = function.getParameters(); // parameters
+		oldParameters = x.dup();
+
+
 		alam2 = tmplam = 0.0; 
 		f2 = fold = function.getValue();
-		if (logger.isLoggable(Level.FINE)) {
-			logger.fine ("ENTERING BACKTRACK\n");
-			logger.fine("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
+		if (logger.isDebugEnabled()) {
+			logger.debug ("ENTERING BACKTRACK\n");
+			logger.debug("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
 					+	line.norm1() + "  direction.infNorm:"+ Math.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
 		}
 		assert (!MatrixUtil.isNaN(g));
-		double sum = line.norm1();
+		double sum = line.norm2();
 		if(sum > stpmax) {
-			logger.warning("attempted step too big. scaling: sum="+sum+
-					", stpmax="+stpmax);
+			logger.warn("attempted step too big. scaling: sum= " + sum +
+					", stpmax= "+ stpmax);
 			line.muli(stpmax / sum);
 		}
 		//dot product
-		newSlope = slope = g.mmul(line).sum();
-		logger.fine("slope="+slope);
+		newSlope = slope = SimpleBlas.dot(g, line);
+		logger.debug("slope = " + slope);
 
-		if (slope<0) 
+		if (slope < 0) 
 			throw new InvalidOptimizableException ("Slope = " + slope + " is negative");
 		if (slope == 0)
 			throw new InvalidOptimizableException ("Slope = " + slope + " is zero");
@@ -109,37 +109,40 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		// converge when (delta x) / x < REL_TOLX for all coordinates.
 		//  the largest step size that triggers this threshold is
 		//  precomputed and saved in alamin
-		test = 0.0;
-		for(int i=0; i<oldParameters.length; i++) {
-			temp = Math.abs(line.get(i)) /
-			Math.max(Math.abs(oldParameters.get(i)), 1.0);
-			if(temp > test) test = temp;
-		}
+		DoubleMatrix maxOldParams = new DoubleMatrix(oldParameters.length);
+		for(int i = 0;i < oldParameters.length; i++)
+			maxOldParams.put(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
+		
+		DoubleMatrix testMatrix = MatrixFunctions.abs(line).div(maxOldParams);
+		
+		test = testMatrix.max();
+		
 
-		alamin = relTolx/test;
+		alamin = relTolx / test;
+		
 		alam  = 1.0;
 		oldAlam = 0.0;
 		int iteration = 0;
 		// look for step size in direction given by "line"
-		for(iteration=0; iteration < maxIterations; iteration++) {
+		for(iteration = 0; iteration < maxIterations; iteration++) {
 			// x = oldParameters + alam*line
 			// initially, alam = 1.0, i.e. take full Newton step
-			logger.fine("BackTrack loop iteration "+iteration+": alam="+
+			logger.debug("BackTrack loop iteration " + iteration +" : alam="+
 					alam+" oldAlam="+oldAlam);
-			logger.fine ("before step, x.1norm: " + x.norm1() +
+			logger.debug ("before step, x.1norm: " + x.norm1() +
 					"\nalam: " + alam + "\noldAlam: " + oldAlam);
 			assert(alam != oldAlam) : "alam == oldAlam";
 			x.addi(line.mul(alam - oldAlam));  // step
-			
-			logger.fine ("after step, x.1norm: " + x.norm1());
+
+			logger.debug ("after step, x.1norm: " + x.norm1());
 
 			// check for convergence 
 			//convergence on delta x
 			if ((alam < alamin) || smallAbsDiff (oldParameters, x)) {
-//				if ((alam < alamin)) {
+				//				if ((alam < alamin)) {
 				function.setParameters(oldParameters);
 				f = function.getValue();
-				logger.warning("EXITING BACKTRACK: Jump too small (alamin="+alamin+"). Exiting and using xold. Value="+f);
+				logger.warn("EXITING BACKTRACK: Jump too small (alamin="+alamin+"). Exiting and using xold. Value="+f);
 				return 0.0;
 			}
 
@@ -147,12 +150,12 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			oldAlam = alam;
 			f = function.getValue();
 
-			logger.fine("value="+f);
+			logger.debug("value = " + f);
 
 			// sufficient function increase (Wolf condition)
-			if(f >= fold+ALF*alam*slope) { 
+			if(f >= fold + ALF * alam * slope) { 
 
-				logger.fine("EXITING BACKTRACK: value="+f);
+				logger.debug("EXITING BACKTRACK: value="+f);
 
 				if (f<fold) 
 					throw new IllegalStateException
@@ -163,12 +166,12 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			// if value is infinite, i.e. we've
 			// jumped to unstable territory, then scale down jump
 			else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
-				logger.warning ("Value is infinite after jump " + oldAlam + ". f="+f+", f2="+f2+". Scaling back step size...");
+				logger.warn ("Value is infinite after jump " + oldAlam + ". f="+f+", f2="+f2+". Scaling back step size...");
 				tmplam = .2 * alam;					
 				if(alam < alamin) { //convergence on delta x
 					function.setParameters(oldParameters);
 					f = function.getValue();
-					logger.warning("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+f);
+					logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+f);
 					return 0.0;
 				}
 			}
@@ -198,7 +201,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			}
 			alam2 = alam;
 			f2 = f;
-			logger.fine("tmplam:"+tmplam);
+			logger.info("tmplam:"+tmplam);
 			alam = Math.max(tmplam, .1*alam);  // lambda >= .1*Lambda_1						
 		}
 		if(iteration >= maxIterations) 
@@ -209,8 +212,10 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 	// returns true iff we've converged based on absolute x difference 
 	private boolean smallAbsDiff (DoubleMatrix x, DoubleMatrix xold)
 	{
+		
 		for (int i = 0; i < x.length; i++) {
-			if (Math.abs (x.get(i) - x.get(i)) > absTolx) {
+			double comp = Math.abs (x.get(i) - xold.get(i));
+			if ( comp > absTolx) {
 				return false;
 			}
 		}

@@ -9,16 +9,17 @@
  @author Andrew McCallum <a href="mailto:mccallum@cs.umass.edu">mccallum@cs.umass.edu</a>
  */
 
-package org.deeplearning4j.util;
+package org.deeplearning4j.optimize;
 
 
-import org.deeplearning4j.optimize.NeuralNetEpochListener;
+import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.BackTrackLineSearch;
 
 
 /**
@@ -37,7 +38,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
 	boolean converged = false;
 	OptimizableByGradientValueMatrix optimizable;
-	LineOptimizerMatrix lineMaximizer;
+	VectorizedBackTrackLineSearch lineMaximizer;
 
 	double initialStepSize = 1;
 	double tolerance = 0.00001;
@@ -54,8 +55,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		this.initialStepSize = initialStepSize;
 		this.optimizable = function;
 		this.lineMaximizer = new VectorizedBackTrackLineSearch(function);
-		BackTrackLineSearch l = (BackTrackLineSearch) this.lineMaximizer;
-		l.setAbsTolx(tolerance);
+		lineMaximizer.setAbsTolx(tolerance);
 		// Alternative:
 		//this.lineMaximizer = new GradientBracketLineOptimizer (function);
 
@@ -86,7 +86,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 	
 
 	public void setLineMaximizer(LineOptimizerMatrix lineMaximizer) {
-		this.lineMaximizer = lineMaximizer;
+		this.lineMaximizer = (VectorizedBackTrackLineSearch) lineMaximizer;
 	}
 
 	public void setInitialStepSize(double initialStepSize) {
@@ -118,13 +118,12 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		myName = Thread.currentThread().getName();
 		if (converged)
 			return true;
-		int n = optimizable.getNumParameters();
 		long last = System.currentTimeMillis();
 		if (xi == null) {
 			fp = optimizable.getValue();
 			xi = optimizable.getValueGradient();
 			g = xi.dup();
-			h = h.dup();
+			h = xi.dup();
 			iterations = 0;
 		}
 
@@ -170,7 +169,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
 			
 			g = xi.dup();
-			h = xi.dup().add(h.mul(h));
+			h = xi.dup().add(h.mul(gam));
 			
 			
 			assert (!MatrixUtil.isNaN(h));
@@ -184,7 +183,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			// direction suggested by CG was downhill. Consequently, here I am
 			// setting the search direction to the gradient if the slope is
 			// negative or 0.
-			if (xi.mul(h).sum() > 0) {
+			if (SimpleBlas.dot(xi, h) > 0) {
 				xi = h.dup();
 			} else {
 				logger.warn("Reverting back to GA");
