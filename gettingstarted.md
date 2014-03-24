@@ -2,10 +2,7 @@
 layout: default
 ---
 
-#Getting Started
-
-
-##Setup
+#getting started
 
 1. DeepLearning4J requires Java 7 or above.
 
@@ -14,7 +11,6 @@ layout: default
         Fedora/RHEL
 
         yum -y install blas
-
 
         Ubuntu
         apt-get install blas
@@ -27,7 +23,6 @@ layout: default
 
 
 3. Install these from source (Maven central versions coming soon).
-
 
          git clone https://github.com/agibsonccc/java-deeplearning
 
@@ -56,5 +51,6 @@ layout: default
 			<version>0.0.3.1</version>
 		</dependency>
 
+From here, you can check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
 
-    
+If you're exploring deep learning, we recommend following our [MNIST tutorial](../rbm-mnist.html). If you have a clear idea of how deep learning works and what you want it to do, you can go straight to our section on [custom data sets](../customdatasets.html).
