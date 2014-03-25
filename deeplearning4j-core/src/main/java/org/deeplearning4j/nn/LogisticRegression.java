@@ -144,27 +144,22 @@ public class LogisticRegression implements Serializable {
 	 */
 	public  double negativeLogLikelihood() {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
-		DoubleMatrix sigAct = softmax(input.mmul(W).addRowVector(b));
+		DoubleMatrix z = predict(input);
 		//weight decay
-		if(useRegularization) {
+		if(this.useRegularization) {
 			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
-			return - labels.mul(log(sigAct)).add(
-					oneMinus(labels).mul(
-							log(oneMinus(sigAct))
-							))
-							.columnSums().mean() + reg;
+
+			return - labels.mul(log(z)).add(
+					oneMinus(labels).mul(log(oneMinus(z)))).
+					columnSums().mean() + reg;
 		}
 
-		else {
-			return - labels.mul(log(sigAct)).add(
-					oneMinus(labels).mul(
-							log(oneMinus(sigAct))
-							))
-							.columnSums().mean();
+		return - labels.mul(log(z)).add(
+				oneMinus(labels).mul(log(oneMinus(z)))).
+				columnSums().mean();
 
-
-		}
-
+		
+		
 	}
 
 	/**

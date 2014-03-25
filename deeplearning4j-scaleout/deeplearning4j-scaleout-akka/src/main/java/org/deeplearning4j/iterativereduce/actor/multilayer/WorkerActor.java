@@ -283,6 +283,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		return compute();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public  UpdateableImpl compute() {
 		log.info("Training network");

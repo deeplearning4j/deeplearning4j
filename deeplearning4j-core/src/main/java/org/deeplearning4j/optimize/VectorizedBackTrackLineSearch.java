@@ -19,6 +19,7 @@ information, see the file `LICENSE' included with this distribution. */
 	 return a position of higher value.
  */
 
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -74,7 +75,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 	public double optimize (DoubleMatrix line, double initialStep)
 	{
 		DoubleMatrix g, x, oldParameters;
-		double slope, newSlope, temp, test, alamin, alam, alam2, tmplam;
+		double slope, test, alamin, alam, alam2, tmplam;
 		double rhs1, rhs2, a, b, disc, oldAlam;
 		double f, fold, f2;
 		g = function.getValueGradient(); // gradient
@@ -87,7 +88,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		if (logger.isDebugEnabled()) {
 			logger.debug ("ENTERING BACKTRACK\n");
 			logger.debug("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
-					+	line.norm1() + "  direction.infNorm:"+ Math.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
+					+	line.norm1() + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
 		}
 		assert (!MatrixUtil.isNaN(g));
 		double sum = line.norm2();
@@ -97,7 +98,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			line.muli(stpmax / sum);
 		}
 		//dot product
-		newSlope = slope = SimpleBlas.dot(g, line);
+		slope = SimpleBlas.dot(g, line);
 		logger.debug("slope = " + slope);
 
 		if (slope < 0) 
@@ -179,11 +180,11 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 				if(alam == 1.0) // first time through
 					tmplam = -slope / (2.0 * ( f - fold - slope ));
 				else {
-					rhs1 = f-fold-alam*slope;
-					rhs2 = f2-fold-alam2*slope;
+					rhs1 = f - fold- alam * slope;
+					rhs2 = f2 - fold - alam2 * slope;
 					assert((alam - alam2) != 0): "FAILURE: dividing by alam-alam2. alam="+alam;
-					a = (rhs1/(alam*alam)-rhs2/( alam2* alam2 ))/(alam-alam2);
-					b = (-alam2*rhs1/(alam*alam)+ alam * rhs2/( alam2 *  alam2))/(alam - alam2);
+					a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 / ( FastMath.pow(alam2, 2) )) / (alam-alam2);
+					b = ( -alam2* rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
 					if(a == 0.0) 
 						tmplam = -slope / (2.0 * b);
 					else {
@@ -192,18 +193,22 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 							tmplam = .5 * alam;
 						}
 						else if (b <= 0.0)
-							tmplam = (-b+Math.sqrt(disc))/(3.0 * a );
-						else tmplam = -slope/(b + Math.sqrt(disc));
+							tmplam = (-b + FastMath.sqrt(disc))/(3.0 * a );
+						else 
+							tmplam = -slope / (b + FastMath.sqrt(disc));
 					}
-					if (tmplam > .5*alam)
-						tmplam = .5*alam;    // lambda <= .5 lambda_1
+					if (tmplam > .5 * alam)
+						tmplam = .5 * alam;    // lambda <= .5 lambda_1
 				}
 			}
+			
 			alam2 = alam;
 			f2 = f;
-			logger.info("tmplam:"+tmplam);
+			logger.debug("tmplam:" + tmplam);
 			alam = Math.max(tmplam, .1*alam);  // lambda >= .1*Lambda_1						
+		
 		}
+		
 		if(iteration >= maxIterations) 
 			throw new IllegalStateException ("Too many iterations.");
 		return 0.0;

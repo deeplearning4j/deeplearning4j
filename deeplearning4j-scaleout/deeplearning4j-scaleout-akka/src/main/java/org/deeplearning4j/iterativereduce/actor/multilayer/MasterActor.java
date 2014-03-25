@@ -92,7 +92,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 								if(seconds >= 30) {
 									log.info("Removing stale worker " + key);
 									MasterActor.this.stateTracker.removeWorker(key);
+									partition--;
 								}
+								
 							}
 
 
@@ -277,7 +279,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			else 
 				masterResults = this.getMasterResults();
 
-			if(pretrain && stateTracker.currentJobs().isEmpty()) {
+			if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
 				log.info("Switching to finetune mode");
 				pretrain = false;
 				stateTracker.moveToFinetune();
