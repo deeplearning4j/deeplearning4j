@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,7 @@ public class TestMnist {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		DBN dbn = new DBN.Builder().buildEmpty();
-		InputStream is = new FileInputStream(new File(args[0]));
-		dbn.load(is);
-
+		DBN dbn = SerializationUtils.readObject(new File(args[0]));
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new RawMnistDataSetIterator(10,60000);
 

@@ -11,23 +11,22 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestMnistRender {
 
-	
-	
+
+
 	private static Logger log = LoggerFactory.getLogger(TestMnistRender.class);
-	
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		DBN dbn = new DBN.Builder().buildEmpty();
-		InputStream is = new FileInputStream(new File(args[0]));
-		dbn.load(is);
+		DBN dbn =SerializationUtils.readObject(new File(args[0]));
 
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,60000);
@@ -38,7 +37,7 @@ public class TestMnistRender {
 			DataSet next = iter.next();
 			dbn.feedForward(next.getFirst());
 			NeuralNetPlotter plotter = new NeuralNetPlotter();
-			plotter.plotNetworkGradient(dbn.layers[0], dbn.layers[0].getGradient(Conf.getDefaultRbmParams()));
+			plotter.plotNetworkGradient(dbn.getLayers()[0], dbn.getLayers()[0].getGradient(Conf.getDefaultRbmParams()));
 
 			log.info("Current stats " + eval.stats());
 		}
