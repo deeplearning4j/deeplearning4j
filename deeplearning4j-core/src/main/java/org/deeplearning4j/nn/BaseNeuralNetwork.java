@@ -668,6 +668,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	@Override
+	public DoubleMatrix hBiasMean() {
+		DoubleMatrix hbiasMean = getInput().mmul(getW()).addRowVector(gethBias());
+		return hbiasMean;
+	}
+	@Override
 	public void epochDone(int epoch) {
 		int plotEpochs = getRenderEpochs();
 		if(plotEpochs <= 0)
