@@ -56,6 +56,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	void setGradientListeners(List<NeuralNetworkGradientListener> gradientListeners);
 	
 	
+	DoubleMatrix hBiasMean();
+	
 	public AdaGrad getAdaGrad();
 	public void setAdaGrad(AdaGrad adaGrad);
 	

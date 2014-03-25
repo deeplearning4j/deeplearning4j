@@ -10,6 +10,12 @@ information, see the file `LICENSE' included with this distribution. */
 
 /** 
 @author Aron Culotta <a href="mailto:culotta@cs.umass.edu">culotta@cs.umass.edu</a>
+@author Adam Gibson
+
+              Adapted from mallet with original authors above.
+              Modified to be a vectorized version that uses jblas matrices
+              for computation rather than the mallet ops.
+
  */
 
 /**

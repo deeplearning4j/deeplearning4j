@@ -38,7 +38,7 @@ public class Classify2sAnd4s {
 
 		Conf c = new Conf();
 		c.initFromData(twosAndFours);
-		c.setFinetuneEpochs(2000);
+		c.setFinetuneEpochs(10000);
 		c.setFinetuneLearningRate(0.1);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setUseAdaGrad(true);
@@ -47,7 +47,7 @@ public class Classify2sAnd4s {
 
 		c.setMultiLayerClazz(CDBN.class);
 		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,0.1,2000});
+		c.setDeepLearningParams(new Object[]{1,0.1,10000});
 		//c.setRenderWeightEpochs(1000);
 		c.setMultiLayerGradientListeners(listeners);
 
@@ -57,7 +57,6 @@ public class Classify2sAnd4s {
 		}
 
 		ActorNetworkRunner runner = dbn == null ? new ActorNetworkRunner("master",iter) : new ActorNetworkRunner("master",iter,dbn);
-		runner.finetune();
 		
 		runner.setup(c);
 		runner.train();

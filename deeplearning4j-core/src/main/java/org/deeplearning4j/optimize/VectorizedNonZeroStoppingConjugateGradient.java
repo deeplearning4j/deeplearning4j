@@ -130,6 +130,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		long curr = 0;
 		for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 			curr = System.currentTimeMillis();
+
 			if(listener != null)
 				listener.epochDone(iterationCount);
 			logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
@@ -192,7 +193,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
 			iterations++;
 			if (iterations > maxIterations) {
-				logger.info("Too many iterations in ConjugateGradient.java");
+				logger.info("Passed max umber of iterations");
 				converged = true;
 				return true;
 			}

@@ -50,7 +50,7 @@ public class RawDBNMnistExample {
 		if(args.length < 2) {
 			dbn = new DBN.Builder()
 			.hiddenLayerSizes(new int[]{500,400,250})
-			.numberOfInputs(784).numberOfOutPuts(10)
+			.numberOfInputs(784).numberOfOutPuts(10).useAdGrad(true)
 			.useRegularization(false).withMultiLayerGradientListeners(listeners)
 			.build();
 			

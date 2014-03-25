@@ -39,7 +39,6 @@ public class Finetune2sAnd4s {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFirst());
-			dbn.feedForward(next.getFirst());
 			dbn.finetune(next.getSecond(), 0.01, 10000);
 		}
 

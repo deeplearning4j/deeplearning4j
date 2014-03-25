@@ -127,14 +127,14 @@ public class DBNTest {
 
 
 	@Test
-	@Ignore
 	public void testMnist() throws IOException {
 		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(1000);
+		fetcher.fetch(20);
 		DataSet d = fetcher.next();
-		assertEquals(1000,d.numExamples());
+		assertEquals(20,d.numExamples());
 
-		DBN dbn = new DBN.Builder().hiddenLayerSizes(new int[]{500,250,100}).withActivation(new HardTanh())
+		DBN dbn = new DBN.Builder()
+		.hiddenLayerSizes(new int[]{500,250,100}).withActivation(new HardTanh())
 				.numberOfInputs(784).numberOfOutPuts(10).useRegularization(false).build();
 		dbn.pretrain(d.getFirst(), 1, 0.0001, 30000);
 		dbn.finetune(d.getSecond(), 0.0001, 10000);
