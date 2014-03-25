@@ -31,7 +31,6 @@ import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,7 +347,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			}
 			else {
 				if(this.input != null)
-					layerInput = sigmoidLayers[i - 1].sample_h_given_v();
+					layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
 				// construct sigmoid_layer
 				sigmoidLayers[i] = new HiddenLayer.Builder()
 				.nIn(inputSize).nOut(this.hiddenLayerSizes[i]).withActivation(activation)
@@ -522,11 +521,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return input;
 	}
 
-	public  HiddenLayer[] getSigmoidLayers() {
+	public  synchronized HiddenLayer[] getSigmoidLayers() {
 		return sigmoidLayers;
 	}
 
-	public  NeuralNetwork[] getLayers() {
+	public  synchronized NeuralNetwork[] getLayers() {
 		return layers;
 	}
 
@@ -702,7 +701,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows);
 			//get the gradient
 			if(isUseAdaGrad())
-				add.muli(layers[l].getAdaGrad().getLearningRates(add));
+				add.muli(this.getLayers()[l].getAdaGrad().getLearningRates(add));
 
 			else
 				add.muli(lr);
@@ -712,12 +711,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			
 			//l2
 			if(useRegularization) {
-				add.muli(layers[l].getW().mul(l2));
+				add.muli(this.getLayers()[l].getW().mul(l2));
 			}
 
 			//update W
-			layers[l].getW().addi(add);
-			sigmoidLayers[l].setW(layers[l].getW());
+			this.getLayers()[l].getW().addi(add);
+			this.getSigmoidLayers()[l].setW(layers[l].getW());
 
 
 			//update hidden bias
@@ -763,6 +762,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
+		feedForward(x);
 		if(columnSums != null) {
 			for(int i = 0; i < x.columns; i++) {
 				DoubleMatrix col = x.getColumn(i);
@@ -792,11 +792,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			this.initializeLayers(x);
 		}
 
-		DoubleMatrix input = x;
-		for(int i = 0; i < nLayers; i++) 
-			input = sigmoidLayers[i].activate(input);
 
-		return logLayer.predict(input);
+
+		return logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
 	}
 
 
@@ -910,7 +908,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * network. This is used in loading from input streams, factory methods, etc
 	 * @param network the network to get parameters from
 	 */
-	protected void update(BaseMultiLayerNetwork network) {
+	protected synchronized void update(BaseMultiLayerNetwork network) {
 
 
 
@@ -954,7 +952,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
 			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
 			for(int i = 0; i < sigmoidLayers.length; i++)
-				this.sigmoidLayers[i] = network.sigmoidLayers[i].clone();
+				this.getSigmoidLayers()[i] = network.getSigmoidLayers()[i].clone();
 
 		}
 

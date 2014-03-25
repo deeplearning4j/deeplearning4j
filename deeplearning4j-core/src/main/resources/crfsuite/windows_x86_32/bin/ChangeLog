@@ -1,0 +1,103 @@
+2011-08-11  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.12
+	- [CORE] Optimized the implementation for faster training; approximately 1.4-1.5 x speed up.
+	- [CORE] Faster routine for computing exp(x) using SSE2.
+	- [CORE] Restructured the source code to separate routines for CRF graphical models and training algorithms; this is an initial attempt for implementing CRFs with different feature types (e.g., 2nd-order CRF, 1st-order transition features conditioned on observations) and different training algorithms.
+	- [CORE] Implemented new training algorithms: Averaged Perceptron, Passive Aggressive, and Adaptive Regularization of Weights (AROW).
+	- [CORE] Removed automatic generation of BOS/EOS features; one can use these features by inserting attributes to the first/last items (e.g., "__BOS__" at the first item and "__EOS__" at the last item).
+	- [CORE] Fixed some memory-leak problems.
+	- [CORE] Reduced memory usage in training.
+	- [CORE] Fixed a crash problem when the model file does not exist in tagging.
+	- [FRONTEND:LEARN] Training and test sets are maintained by group numbers; specify the group number for hold-out evaluation with "-e" option.
+	- [FRONTEND:LEARN] Training algorithm is now specified by "-a" option instead of "-p algorithm=".
+	- [FRONTEND:LEARN] Renamed some training parameters; for example, an L2 regularization coefficient is specified by "c2" instead of "regularization.sigma" (c2 = 0.5 / sigma * sigma; c1 = 1.0 / sigma).
+	- [FRONTEND:LEARN] Show the list of parameters, default values, and descriptions with "-H" option.
+	- [FRONTEND:LEARN] Removed the support of comment lines for simplicity; one may forget to escape '#' characters in a data set. CRFsuite now does not handle '#' as a special character.
+	- [FRONTEND:TAGGER] Output probabilities of predicted sequences with "-p" option.
+	- [FRONTEND:TAGGER] Output marginal probabilities of predicted items with "-i" option.
+	- [API] Numerous changes in API for the enhancements.
+	- [API] Renamed the library name "libcrf" to "libcrfsuite".
+	- [API] Renamed the prefix "crf_" to "crfsuite_" in structure and function names.
+	- [API] Implemented a high-level and easy-to-use API for C++/SWIG (crfsuite.hpp and crfsuite_api.hpp).
+	- [API] Implemented the Python SWIG module and sample programs; writing a tagger is very easy with this module.
+	- [SAMPLE] Rewritten samples.
+	- [SAMPLE] A sample program (template.py) for using feature templates that are compatible with CRF++.
+	- [SAMPLE] New samples in example directory: Named Entity Recognition (ner.py) using the CoNLL2003 data set, and part-of-speech tagging (pos.py).
+	- [OTHER] Updated the MSVC solution file to MSVC 2010.
+
+	
+2010-07-16  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.11
+	- Renamed crf.h into crfsuite.h to avoid possible conflects in include directories
+	- Install crfsuite.h to the include directory (suggested by Ingo Glöckner)
+
+	
+2010-01-29  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.10
+	- A patch submitted by Hiroshi Manabe (at Kodensha Co., Ltd.) to fix memory leak problems in the tagger.
+	- Added a new option -r (--reference) for the tagger to output reference labels in parallel with predicted labels.
+
+	
+2009-09-24  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.9
+	- Fixed a build problem with liblbfgs 1.8
+
+	
+2009-03-17  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.8
+	- Improved the portability of model files across different machine architectures with different byte order; this fixes a crash problem in tagging on some machine architectures.
+
+	
+2009-03-10  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.7
+	- Updated RumAVL library to 4.0.0; this fixes a crash problem occurring in feature generation on some machine architectures.
+
+	
+2009-03-07  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.6
+	- A new training algorithm, Stochastic Gradient Descent (SGD).
+	- Updated the L-BFGS routine to liblbfgs 1.7.
+	- Reduced memory usage in training.
+	- Supported escape sequences in training/test data.
+	- Restructured the source code.
+	- Added a parameter to configure the number of trials for line search.
+
+	
+2008-11-19  Naoaki Okazaki  <okazaki at chokkan org>
+	* CRFsuite 0.5
+	- Updated the L-BFGS routine to liblbfgs 1.6.
+	- New parameters lbfgs.stop, lbfgs.delta, lbfgs.linesearch were added.
+	- Fixed a bug in which the frontend tools could not parse "item:value" format correctly.
+	- Fixed a bug in computing the accuracy.
+	- Fixed a bug when the tagger receives an item with no feature.
+
+
+2008-03-05  Naoaki Okazaki  <okazaki at chokkan org>
+
+	* CRFsuite 0.4 (the first public release):
+	- Website and documentation for CRFsuite.
+	- Tutorial on the CoNLL 2000 chunking shared task.
+	- Performance comparison on the CoNLL 2000 chunking shared task.
+	- Bug fix in L2 regularization.
+	- A number of small improvements for the public release.
+
+
+2007-12-12  Naoaki Okazaki  <okazaki at chokkan org>
+
+	* CRFsuite 0.3 (internal release):
+	- Implemented scaling method for forward/backward algorithm.
+	- Removed the code for computing the forward/backward algorithm in logarithm domain.
+	
+
+2007-11-30  Naoaki Okazaki  <okazaki at chokkan org>
+
+	* CRFsuite 0.2 (internal release):
+	- Orthant-Wise Limited-memory Quasi-Newton (OW-LQN) method for L1 regularization.
+	- Configurable L-BFGS parameters (number of limited memories, epsilon).
+	
+	
+2007-10-29  Naoaki Okazaki  <okazaki at chokkan org>
+
+	* CRFsuite 0.1 (internal release):
+	- Initial release.
+

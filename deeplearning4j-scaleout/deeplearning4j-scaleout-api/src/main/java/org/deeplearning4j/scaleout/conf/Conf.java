@@ -49,6 +49,7 @@ public class Conf implements Serializable,Cloneable {
 	private DoubleMatrix columnMeans;
 	private DoubleMatrix columnStds;
 	private boolean useAdaGrad = false;
+	private boolean useBackProp = true;
 	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 
@@ -290,6 +291,16 @@ public class Conf implements Serializable,Cloneable {
 	public Conf copy() {
 		return SerializationUtils.clone(this);
 	}
+
+	public  boolean isUseBackProp() {
+		return useBackProp;
+	}
+
+
+	public  void setUseBackProp(boolean useBackProp) {
+		this.useBackProp = useBackProp;
+	}
+
 
 	/**
 	 * Corruption level of 0.3 and learning rate of 0.01
