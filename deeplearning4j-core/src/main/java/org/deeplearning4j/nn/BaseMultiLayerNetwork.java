@@ -122,7 +122,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Typically, this is some mix of:
 	 *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
 	 */
-	public NeuralNetwork[] layers;
+	private NeuralNetwork[] layers;
 
 	/*
 	 * The delta from the previous iteration to this iteration for
@@ -536,7 +536,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
 		if(this.input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
-		DoubleMatrix currInput = input;
+		
+		else
+			this.input = input;
+		DoubleMatrix currInput = this.input;
 
 		List<DoubleMatrix> activations = new ArrayList<>();
 		activations.add(currInput);
@@ -762,7 +765,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * [0.5, 0.5] or some other probability distribution summing to one
 	 */
 	public DoubleMatrix predict(DoubleMatrix x) {
-		feedForward(x);
+		List<DoubleMatrix> activations = feedForward(x);
 		if(columnSums != null) {
 			for(int i = 0; i < x.columns; i++) {
 				DoubleMatrix col = x.getColumn(i);
@@ -792,9 +795,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			this.initializeLayers(x);
 		}
 
-
-
-		return logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
+		//second to last activation is input
+		DoubleMatrix sample = getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible();
+		DoubleMatrix predicted = logLayer.predict(sample);
+		return predicted;
 	}
 
 
@@ -913,9 +917,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		if(network.layers != null && network.layers.length > 0) {
-			this.layers = new NeuralNetwork[network.layers.length];
+			this.layers = new NeuralNetwork[nLayers];
 			for(int i = 0; i < layers.length; i++) 
-				this.layers[i] = network.layers[i].clone();
+				this.getLayers()[i] = network.getLayers()[i].clone();
 
 		}
 

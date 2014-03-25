@@ -80,14 +80,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 				layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
 			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
-					layers[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
-					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + layers[i].getReConstructionCrossEntropy());
+					getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
+					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
 					getLayers()[i].epochDone(epoch);
 
 				}
 			}
 			else
-				layers[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
+				getLayers()[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
 
 
 		}	
