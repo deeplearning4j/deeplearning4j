@@ -42,9 +42,6 @@ public class TestMnistRender {
 			log.info("Current stats " + eval.stats());
 		}
 
-		log.info("Prediciton f scores and accuracy");
-		log.info(eval.stats());
-
 	}
 
 }

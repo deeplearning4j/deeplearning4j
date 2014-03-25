@@ -151,7 +151,7 @@ public class NeuralNetPlotter {
 			if(network.getInput() == null)
 				throw new IllegalStateException("Unable to plot; missing input");;
 
-				DoubleMatrix hbiasMean = network.getInput().mmul(network.getW()).addRowVector(network.gethBias());
+				DoubleMatrix hbiasMean = network.hBiasMean();
 
 
 				String filePath = writeMatrix(hbiasMean);
