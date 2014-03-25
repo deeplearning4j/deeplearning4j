@@ -71,7 +71,6 @@ public class DBNTest {
 	}
 
 	@Test
-	@Ignore
 	public void testCDBN() {
 		DoubleMatrix x = new DoubleMatrix( new double[][] 
 				{{0.4, 0.5, 0.5, 0.,  0.,  0.},
@@ -102,7 +101,7 @@ public class DBNTest {
 		double fineTuneLr = 0.001;
 		int fineTuneEpochs = 1000;
 
-		CDBN dbn = new CDBN.Builder()
+		CDBN dbn = new CDBN.Builder().useAdGrad(true)
 		.numberOfInputs(nIns).numberOfOutPuts(nOuts)
 		.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
 		.withRng(rng)
