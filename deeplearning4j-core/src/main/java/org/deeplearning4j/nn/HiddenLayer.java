@@ -244,7 +244,7 @@ public class HiddenLayer implements Serializable {
 	 * @return the activation for this layer given 
 	 * the previous input
 	 */
-	public DoubleMatrix sample_h_given_v() {
+	public DoubleMatrix sampleHiddenGivenVisible() {
 		DoubleMatrix output = activate();
 		//reset the seed to ensure consistent generation of data
 		DoubleMatrix ret = MatrixUtil.binomial(output, 1, rng);

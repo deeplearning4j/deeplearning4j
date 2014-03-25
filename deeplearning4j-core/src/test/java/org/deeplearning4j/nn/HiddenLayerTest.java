@@ -26,7 +26,7 @@ public class HiddenLayerTest {
         ,{0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0}});
 		
 		HiddenLayer layer = new HiddenLayer(20, 2, null, null, null, input);
-		log.info(layer.sample_h_given_v().toString());
+		log.info(layer.sampleHiddenGivenVisible().toString());
 		log.info(layer.activate().toString());
 		
 		

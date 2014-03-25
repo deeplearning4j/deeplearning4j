@@ -82,6 +82,9 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		 * as a solid line for the optimizer, we get the following:
 		 * 
 		 */
+		
+		
+		
 		for(int i = 0; i < buffer.length; i++)
 			buffer[i] = getParameter(i);
 	}
@@ -164,7 +167,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	@Override
 	public DoubleMatrix getParameters() {
 		double[] params = new double[getNumParameters()];
-		this.getParameters(params);
+		getParameters(params);
 		return new DoubleMatrix(params);
 	}
 	@Override
