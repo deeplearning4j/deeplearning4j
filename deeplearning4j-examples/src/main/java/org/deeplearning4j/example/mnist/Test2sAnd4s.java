@@ -8,6 +8,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.CDBN;
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.gradient.multilayer.WeightPlotListener;
@@ -35,7 +36,7 @@ public class Test2sAnd4s {
 
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		CDBN dbn = null;
+		DBN dbn = null;
 
 		if(args.length >= 1) {
 			dbn = SerializationUtils.readObject(new File(args[0]));

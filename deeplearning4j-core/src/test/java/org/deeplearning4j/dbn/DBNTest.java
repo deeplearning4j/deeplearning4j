@@ -28,9 +28,9 @@ public class DBNTest {
 	@Test
 	public void testDBN() {
 
-		int n = 3900;
+		int n = 400;
 		DataSet d = MatrixUtil.xorData(n);
-		
+
 		DoubleMatrix x = d.getFirst();
 		DoubleMatrix y = d.getSecond();
 
@@ -45,7 +45,7 @@ public class DBNTest {
 		DBN dbn = new DBN.Builder().useAdGrad(true)
 				.hiddenLayerSizes(hiddenLayerSizes)
 				.numberOfInputs(d.numInputs())
-				.useRegularization(false)
+				.useRegularization(false).withActivation(new HardTanh())
 				.numberOfOutPuts(d.numOutcomes()).build();
 
 		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
