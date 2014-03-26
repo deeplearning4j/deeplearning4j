@@ -29,3 +29,5 @@ Many of these tips have already been discussed in the academic literature. Our p
 4. Minibatch size should not be much more than 10 to 100. You'll want more than one example per batch, but you also want to ensure that training, on average, gets done faster. Ten is the recommended number here. This goes both for parallel training, as well as single threaded processing.
 
   In parallel training, when the batch size is too large, any data batches that contain outliers will take longer to train in pretraining or finetuning. On average, smaller batch sizes even out these minibatches, which may have more error attached to them.
+
+5. Large datasets require that you pretrain your neural net several times. Only with multiple pretrainings will the algorithm learn to correctly weight features in the context of the dataset. That said, you can run the data in parallel or through a cluster to speed up the pretraining. 
