@@ -64,14 +64,13 @@ public class ActorNetworkRunnerTest {
 		//conf.setRenderWeightEpochs(100);
 		conf.setUseRegularization(false);
 		conf.setDeepLearningParams(new Object[]{1,0.0001,1000});
+		runner.setStateTrackerPort(1100);
 		runner.setup(conf);
 		
 		
-		Thread.sleep(15000);
-		
-		System.setProperty("hazelcast.super.client","true");
-		
+	
 		ActorNetworkRunner worker = new ActorNetworkRunner(runner.getMasterAddress().toString(),"worker");
+		worker.setStateTrackerPort(1100);
 		worker.setup(conf);
 		
 		

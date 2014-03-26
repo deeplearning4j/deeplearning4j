@@ -20,34 +20,30 @@ import com.hazelcast.core.Hazelcast;
 
 public class HazelCastStateTrackerTest  {
 
-	protected StateTracker tracker;
-
-	@Before
-	public void init() {
-		
-
-	}
 
 
 
 
+	
+	
 
 	@Test
 	public void testClientServer() throws Exception {
-		HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master");
+		HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master",HazelCastStateTracker.DEFAULT_HAZELCAST_PORT);
 
+		master.runPreTrainIterations(10);
 		master.addWorker("id");
 		master.moveToFinetune();
 		
 		
 	
 		
-		HazelCastStateTracker worker = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"worker");
+		HazelCastStateTracker worker = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"worker",HazelCastStateTracker.DEFAULT_HAZELCAST_PORT);
 
-		
 		assertEquals(master.isPretrain(),worker.isPretrain());
 		assertEquals(master.numWorkers(),worker.numWorkers());
-		
+		assertEquals(10,worker.runPreTrainIterations());
+
 		
 	}
 
