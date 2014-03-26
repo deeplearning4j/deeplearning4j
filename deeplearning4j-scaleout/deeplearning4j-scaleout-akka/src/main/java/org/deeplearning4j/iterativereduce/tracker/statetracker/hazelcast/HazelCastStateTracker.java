@@ -60,18 +60,30 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String CURRENT_JOBS = "JOBS";
 	private transient HazelcastInstance h;
 	private String type;
-	
+	private int hazelCastPort = -1;
+
 	private Map<String,Long> heartbeat;
 	public HazelCastStateTracker() throws Exception {
-		this("master","master");
+		this(DEFAULT_HAZELCAST_PORT);
 
 	}
 
-	public HazelCastStateTracker(String connectionString,String type) throws Exception {
-		if(type.equals("master") && !PortTaken.portTaken(DEFAULT_HAZELCAST_PORT)) {
+	/**
+	 * Initializes the state tracker binding to the given port
+	 * @param stateTrackerPort the port to bind to
+	 * @throws Exception
+	 */
+	public HazelCastStateTracker(int stateTrackerPort) throws Exception {
+		this("master","master",stateTrackerPort);
+
+	}
+	
+	public HazelCastStateTracker(String connectionString,String type,int stateTrackerPort) throws Exception {
+		if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
+			this.hazelCastPort = stateTrackerPort;
 			config = hazelcast();
-		
-			
+
+
 			h = Hazelcast.newHazelcastInstance(config);
 			h.getCluster().addMembershipListener(new MembershipListener() {
 
@@ -107,32 +119,41 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 		jobs = h.getList(JOBS);
 		workers = h.getList(WORKERS);
+		
+		//we can make the assumption workers isn't empty because 
+		//the master node by default comes with a set of workers
 		if(!this.type.equals("master")) {
 			while(workers.isEmpty()) {
 				log.warn("Waiting for data sync...");
 				Thread.sleep(1000);
 			}
+			
+			log.info("Workers is " + workers.size());
+
 		}
-		
-		log.info("Workers is " + workers.size());
+
 		topics = h.getList(TOPICS);
 		heartbeat = h.getMap(HEART_BEAT);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
 		numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
-		numTimesPretrain.set(1);
-		isPretrain.set(true);
 		numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
-		numTimesPretrainRan.set(0);
+
+		//set defaults only when master, otherwise, overrides previous values
+		if(type.equals("master")) {
+			numTimesPretrainRan.set(0);
+			numTimesPretrain.set(1);
+			isPretrain.set(true);
+		}
 
 
 	}
 
 	private Config hazelcast() {
 		Config conf = new Config();
-		conf.getNetworkConfig().setPort(DEFAULT_HAZELCAST_PORT);
+		conf.getNetworkConfig().setPort(hazelCastPort);
 		conf.getNetworkConfig().setPortAutoIncrement(false);
-	
+
 
 
 		conf.setProperty("hazelcast.initial.min.cluster.size","1");
@@ -144,7 +165,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		join.getMulticastConfig().setEnabled(true);
 
 
-		//join.getTcpIpConfig().setConnectionTimeoutSeconds(2000);
 
 
 		ListConfig jobConfig = new ListConfig();
@@ -170,7 +190,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		MapConfig heartbeatConfig = new MapConfig();
 		heartbeatConfig.setName(HEART_BEAT);
 		conf.addMapConfig(heartbeatConfig);
-		
+
 
 		return conf;
 

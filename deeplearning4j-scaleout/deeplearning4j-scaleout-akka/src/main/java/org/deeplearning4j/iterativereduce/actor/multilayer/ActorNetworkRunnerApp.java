@@ -1,17 +1,12 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
-import org.jblas.DoubleMatrix;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -29,7 +24,10 @@ import org.slf4j.LoggerFactory;
  *       -a algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)
  *       -i number of inputs (columns in the input matrix)
  *       -o number of outputs for the network
- *       -data dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)
+ *       
+ *       -data fully qualified class name of the dataset iterator to use
+ *       -mb mini batch size: default is 10
+ *          
  *       
  *       Optional:
  *        -fte number of fine tune epochs to train on (default: 100)
@@ -38,6 +36,8 @@ import org.slf4j.LoggerFactory;
  *        -ftl the starter fine tune learning rate (default: 0.1)
  *        -ptl  the starter fine tune learning rate (default: 0.1)
  *        -sp   number of inputs to split by default: 10
+ *        -adg use adagrad or not: default value: true
+ *        
  *        -e   number of examples to train on: if unspecified will just train on everything found
  *        DBN/CDBN:
  *        -k the k for rbms (default: 1)
@@ -89,15 +89,18 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected String address;
 	@Option(name="-sp",usage="number of inputs to split by default: 10")
 	protected int split = 10;
-	@Option(name="-data",usage="dataset to train on: options: mnist,text (text files with <label>text</label>, image (images where the parent directory is the label)")
+	@Option(name="-data",usage="class to instantate")
 	protected String dataSet;
 	@Option(name="-e",usage="number of examples to train on: if unspecified will just train on everything found")
 	protected int numExamples = -1;
 	@Option(name="-adg",usage="use adagrad; default true")
 	protected boolean useAdaGrad = true;
+	@Option(name = "-stp",usage="state tracker port")
+	protected int stateTrackerPort = -1;
+	
 	protected ActorNetworkRunner runner;
 	protected DataSetIterator iter;
-
+	
 
 	public ActorNetworkRunnerApp(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
@@ -162,6 +165,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			
 			//run the master
 			runner = new ActorNetworkRunner("master",iter);
+			runner.setStateTrackerPort(stateTrackerPort);
 			runner.setup(conf);
 			
 
@@ -205,17 +209,12 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		if(type.equals("worker"))
 		   return;
 		try {
-			if(dataSet.equals("mnist")) {
-				iter = new MnistDataSetIterator(split,numExamples);
-			}
-
-			else if(dataSet.equals("iris")) {
-				iter = new IrisDataSetIterator(split,numExamples);
-			}
-			else if(dataSet.equals("lfw")) {
-				iter = new LFWDataSetIterator(split,numExamples);
-			}
-
+			if(this.numExamples >= 0 && this.split != 0) 
+			     this.iter = (DataSetIterator) Class.forName(dataSet).getConstructor(Integer.class,Integer.class).newInstance(split,numExamples);
+			else
+				this.iter = (DataSetIterator) Class.forName(dataSet).newInstance();
+			
+			
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

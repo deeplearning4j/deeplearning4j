@@ -65,6 +65,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	private transient StateTracker<UpdateableImpl> stateTracker;
 	private Conf conf;
 	private boolean finetune = false;
+	private int stateTrackerPort = -1;
 
 	/**
 	 * Master constructor
@@ -212,7 +213,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			log.info("Starting master");
 
 			try {
-				stateTracker = new HazelCastStateTracker();
+				if(stateTrackerPort > 0)
+					stateTracker = new HazelCastStateTracker(stateTrackerPort);
+				else
+					stateTracker = new HazelCastStateTracker();
+
 				if(finetune)
 					stateTracker.moveToFinetune();
 
@@ -237,7 +242,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 			else 
 				system.actorOf(Props.create(ModelSavingActor.class,modelSaver));
 
-			
+
 
 			//store it in zookeeper for service discovery
 			conf.setMasterUrl(getMasterAddress().toString());
@@ -271,11 +276,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				if(host == null)
 					throw new IllegalArgumentException("No host set for worker");
 
-				int port = HazelCastStateTracker.DEFAULT_HAZELCAST_PORT;
+				int port = this.stateTrackerPort;
 
 				String connectionString = host + ":" + port;
 
-				stateTracker = new HazelCastStateTracker(connectionString,"worker");
+				stateTracker = new HazelCastStateTracker(connectionString,"worker",port);
 
 			} catch (Exception e1) {
 				Thread.currentThread().interrupt();
@@ -411,19 +416,25 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		return masterAddress;
 	}
 
-	public synchronized StateTracker<UpdateableImpl> getStateTracker() {
+	public  StateTracker<UpdateableImpl> getStateTracker() {
 		return stateTracker;
 	}
 
-	public synchronized void setStateTracker(
+	public  void setStateTracker(
 			StateTracker<UpdateableImpl> stateTracker) {
 		this.stateTracker = stateTracker;
 	}
 
+	/**
+	 * 
+	 * Shut down this network actor
+	 */
 	public void shutdown() {
+		//order matters here, the state tracker should be shutdown after the actor system
+		system.shutdown();
+
 		if(stateTracker != null)
 			stateTracker.shutdown();
-		system.shutdown();
 	}
 
 	public  ModelSaver getModelSaver() {
@@ -437,6 +448,22 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 */
 	public  void setModelSaver(ModelSaver modelSaver) {
 		this.modelSaver = modelSaver;
+	}
+
+	/**
+	 * Gets the state tracker port.
+	 * A lot of state trackers will be servers
+	 * that need to be bound on a port.
+	 * This will allow overrides per implementation of the state tracker
+	 * @return the state tracker port that the state tracker 
+	 * server will bind to
+	 */
+	public  int getStateTrackerPort() {
+		return stateTrackerPort;
+	}
+
+	public  void setStateTrackerPort(int stateTrackerPort) {
+		this.stateTrackerPort = stateTrackerPort;
 	}
 
 

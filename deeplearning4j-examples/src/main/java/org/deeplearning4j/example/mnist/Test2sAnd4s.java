@@ -45,7 +45,7 @@ public class Test2sAnd4s {
 		}
 
 	
-		/*
+		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			log.info("Evaluating " + Arrays.toString(next.getFirst().toArray()));
@@ -57,7 +57,7 @@ public class Test2sAnd4s {
 		}
 		
 		
-		iter.reset();*/
+		iter.reset();
 		
 		Evaluation eval = new Evaluation();
 
