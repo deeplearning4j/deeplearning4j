@@ -1,15 +1,28 @@
 package org.deeplearning4j.aws.ec2;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.deeplearning4j.aws.s3.BaseS3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeReservedInstancesResult;
+import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceStateChange;
 import com.amazonaws.services.ec2.model.LaunchSpecification;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesRequest;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesResult;
+import com.amazonaws.services.ec2.model.Reservation;
+import com.amazonaws.services.ec2.model.ReservedInstances;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
+import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.SpotInstanceRequest;
+import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.TerminateInstancesResult;
+import com.amazonaws.services.ec2.model.InstanceState;
 /**
  * Creates Ec2Boxes
  * @author Adam Gibson
@@ -21,7 +34,22 @@ public class Ec2BoxCreator extends BaseS3 {
 	private String amiId;
 	private int numBoxes;
 	private String size;
+	private List<String> boxesCreated;
+	private static Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 	
+	//centos
+	public final static String DEFAULT_AMI = "ami-8997afe0";
+	/**
+	 * 
+	 * @param amiId amazon image id
+	 * @param numBoxes number of boxes
+	 * @param size the size of the instances
+	 */
+	public Ec2BoxCreator(int numBoxes,String size) {
+		this(DEFAULT_AMI,numBoxes,size);
+	}
+
+
 	/**
 	 * 
 	 * @param amiId amazon image id
@@ -34,7 +62,6 @@ public class Ec2BoxCreator extends BaseS3 {
 		this.numBoxes = numBoxes;
 		this.size = size;
 	}
-
 
 	public void createSpot() {
 		// Initializes a Spot Instance Request
@@ -62,8 +89,8 @@ public class Ec2BoxCreator extends BaseS3 {
 
 		// Call the RequestSpotInstance API.
 		RequestSpotInstancesResult requestResult = getEc2().requestSpotInstances(requestRequest);
-		
-		
+
+
 		List<SpotInstanceRequest> requestResponses = requestResult.getSpotInstanceRequests();
 
 		// Setup an arraylist to collect all of the request ids we want to
@@ -73,21 +100,113 @@ public class Ec2BoxCreator extends BaseS3 {
 		// Add all of the request ids to the hashset, so we can determine when they hit the
 		// active state.
 		for (SpotInstanceRequest requestResponse : requestResponses) {
-		    System.out.println("Created Spot Request: "+requestResponse.getSpotInstanceRequestId());
-		    spotInstanceRequestIds.add(requestResponse.getSpotInstanceRequestId());
+			System.out.println("Created Spot Request: "+requestResponse.getSpotInstanceRequestId());
+			spotInstanceRequestIds.add(requestResponse.getSpotInstanceRequestId());
 		}
-		
+
 	}
-	
+
 	public void create() {
 		RunInstancesRequest runInstancesRequest = 
-				new RunInstancesRequest();
-
-		runInstancesRequest.withImageId(amiId)
-		.withInstanceType(size)
-		.withMinCount(1)
-		.withMaxCount(numBoxes);
-		getEc2().runInstances(runInstancesRequest);
+				new RunInstancesRequest().withImageId(amiId)
+				.withInstanceType(size)
+				.withMinCount(1)
+				.withMaxCount(numBoxes);
+		List<Instance> boxes  = getEc2().runInstances(runInstancesRequest)
+				.getReservation().getInstances();
+		if(boxesCreated == null) {
+			boxesCreated = new ArrayList<>();
+			for(Instance i : boxes)
+				boxesCreated.add(i.getInstanceId());
+			
+			
+			
+			log.info("Boxes created " + boxesCreated);
+		}
+		else {
+			blowupBoxes();
+			boxesCreated.clear();
+			for(Instance i : boxes)
+				boxesCreated.add(i.getInstanceId());
+			
+		}
 	}
+
+	
+	
+
+	public List<InstanceStateChange> blowupBoxes() {
+		TerminateInstancesRequest request = new TerminateInstancesRequest()
+		.withInstanceIds(boxesCreated);
+		
+		if(boxesCreated != null) {
+			TerminateInstancesResult result = getEc2().terminateInstances(request);
+			List<InstanceStateChange> change = result.getTerminatingInstances();
+			log.info("Boxes destroyed " + boxesCreated);
+			return change;
+		}
+		
+		return Collections.emptyList();
+	}
+	
+	
+	public void blockTillAllRunning() {
+		while(!allRunning()) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			log.info("Not all created...");
+		}
+	}
+	
+	public boolean allRunning() {
+		if(boxesCreated == null)
+			return false;
+		else {
+			DescribeInstancesResult result = getEc2().describeInstances();
+			List<Reservation> reservations = result.getReservations();
+			for(Reservation r : reservations) {
+				List<Instance> instances = r.getInstances();
+				for(Instance instance : instances) {
+					InstanceState state = instance.getState();
+					if(state.getCode() == 48)
+						continue;
+					if(state.getCode() != 16)
+						return false;
+				}
+			}
+		
+			return true;
+		}
+		
+		
+	}
+
+	public List<String> getHosts() {
+		DescribeInstancesResult result = getEc2().describeInstances();
+		List<String> hosts = new ArrayList<>();
+		List<Reservation> reservations = result.getReservations();
+		for(Reservation r : reservations) {
+			List<Instance> instances = r.getInstances();
+			for(Instance instance : instances) {
+				InstanceState state = instance.getState();
+				if(state.getCode() == 48)
+					continue;
+				hosts.add(instance.getPublicDnsName());
+			
+			}
+		}
+		
+		return hosts;
+	}
+
+	public  List<String> getBoxesCreated() {
+		return boxesCreated;
+	}
+
+
+
 
 }
