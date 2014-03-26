@@ -36,8 +36,8 @@ public class BatchActor extends UntypedActor {
 	private transient StateTracker<UpdateableImpl> stateTracker;
 	private transient Conf conf;
 	private int numDataSets = 0;
-	
-	
+
+
 	public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
 		this.iter = iter;
 		this.stateTracker = stateTracker;
@@ -58,7 +58,7 @@ public class BatchActor extends UntypedActor {
 		}
 		else if(message instanceof ResetMessage) {
 			iter.reset();
-			
+
 			if(iter.hasNext()) {
 				log.info("Propagating new work to master");
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
@@ -70,7 +70,7 @@ public class BatchActor extends UntypedActor {
 			}
 		}
 
-		
+
 		else if(message instanceof MoreWorkMessage) {
 			MoreWorkMessage m = (MoreWorkMessage) message;
 			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
@@ -86,7 +86,7 @@ public class BatchActor extends UntypedActor {
 				List<String> workers2 = stateTracker.workers();
 				for(String s : workers2)
 					log.info("Worker " + s);
-				
+
 				/*
 				 * Ideal number is target mini batch size per worker.
 				 * 
@@ -94,25 +94,33 @@ public class BatchActor extends UntypedActor {
 				 */
 				int numWorkers = stateTracker.workers().size();
 				int miniBatchSize = conf.getSplit();
-		
+
 				if(numWorkers == 0)
 					numWorkers = Runtime.getRuntime().availableProcessors();
-				
+
 				log.info("Number of workers " + numWorkers + " and batch size is " + miniBatchSize);
 
 				//fetch specified batch
 				int batch = numWorkers * miniBatchSize;
 				log.info("Batch size for worker is " + batch);
-				
+
 				DataSet next = iter.next(batch);
-				
+
 				List<DataSet> list = next.asList();
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						list), mediator);
 			}
 			else if(!iter.hasNext()) {
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						DoneMessage.getInstance()), mediator);
+				int iterations = stateTracker.runPreTrainIterations();
+				if (iterations < conf.getNumPasses()) {
+					stateTracker.incrementNumTimesPreTrainRan();
+					iter.reset();
+					log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
+				}
+
+				else
+					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+							DoneMessage.getInstance()), mediator);
 			}
 
 

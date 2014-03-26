@@ -36,8 +36,10 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	 */
 	private static final long serialVersionUID = -7374372180080957334L;
 	public final static String JOBS = "org.deeplearning4j.jobs";
+	public final static String NUM_TIMES_PRETRAIN_RAN = "pretrainran";
 	public final static String WORKERS = "org.deeplearning4j.workers";
 	public final static String AVAILABLE_WORKERS = "AVAILABLE_WORKERS";
+	public final static String NUM_TIMES_RUN_PRETRAIN = "PRETRAIN";
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
 	public final static String LOCKS = "LOCKS";
@@ -46,6 +48,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String RESULT_LOC = "RESULT_LOC";
 	private volatile transient IAtomicReference<Object> master;
 	private volatile transient IList<Job> jobs;
+	private volatile transient IAtomicReference<Integer> numTimesPretrain;
+	private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
+
 	private volatile transient IList<String> workers;
 	private volatile  transient IList<String> topics;
 	private volatile IAtomicReference<Object> isPretrain;
@@ -55,6 +60,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String CURRENT_JOBS = "JOBS";
 	private transient HazelcastInstance h;
 	private String type;
+	
 	private Map<String,Long> heartbeat;
 	public HazelCastStateTracker() throws Exception {
 		this("master","master");
@@ -113,8 +119,11 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		heartbeat = h.getMap(HEART_BEAT);
 		master = h.getAtomicReference(RESULT);
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
+		numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
+		numTimesPretrain.set(1);
 		isPretrain.set(true);
-
+		numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
+		numTimesPretrainRan.set(0);
 
 
 	}
@@ -248,7 +257,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public boolean isPretrain() {
-		return (boolean) isPretrain.get();
+		return (boolean) isPretrain.get() && numTimesPretrainRan.get() < runPreTrainIterations();
 	}
 
 	@Override
@@ -314,6 +323,26 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public Map<String, Long> getHeartBeats() {
 		return heartbeat;
+	}
+
+	@Override
+	public void runPreTrainIterations(int numTimes) {
+		numTimesPretrain.set(numTimes);
+	}
+
+	@Override
+	public int runPreTrainIterations() {
+		return numTimesPretrain.get();
+	}
+
+	@Override
+	public int numTimesPreTrainRun() {
+		return numTimesPretrainRan.get();
+	}
+
+	@Override
+	public void incrementNumTimesPreTrainRan() {
+		numTimesPretrainRan.set(numTimesPreTrainRun() + 1);		
 	}
 
 

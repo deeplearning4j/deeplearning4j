@@ -38,17 +38,14 @@ public class Test2sAnd4s {
 
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		DBN dbn = null;
+		CDBN dbn = null;
 
 		if(args.length >= 1) {
 			dbn = SerializationUtils.readObject(new File(args[0]));
 		}
 
-		dbn.getLayers()[0].getW().muli(1000);
-		dbn.getLayers()[1].getW().muli(1000);
-		dbn.getLayers()[2].getW().muli(1000);
-
-		
+	
+		/*
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			log.info("Evaluating " + Arrays.toString(next.getFirst().toArray()));
@@ -60,7 +57,7 @@ public class Test2sAnd4s {
 		}
 		
 		
-		iter.reset();
+		iter.reset();*/
 		
 		Evaluation eval = new Evaluation();
 

@@ -20,6 +20,31 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+	
+	
+	/**
+	 * Increments the number of times pre train has run.
+	 */
+	void incrementNumTimesPreTrainRan();
+	
+	/**
+	 * Number of times pretrain has run so far
+	 * @return the number of times pretrain has run
+	 */
+	int numTimesPreTrainRun();
+	
+	/**
+	 * Number of times to run pretrain
+	 * @param numTimes the number of times to run pretrain
+	 */
+	void runPreTrainIterations(int numTimes);
+	
+	/**
+	 * Number of times to run pretrain
+	 * @return the number of times tp run pretrain
+	 */
+	int runPreTrainIterations();
+	
 	/**
 	 * Whether the training is currently
 	 * in pretrain mode
