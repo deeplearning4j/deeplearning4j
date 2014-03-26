@@ -536,7 +536,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
 		if(this.input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
-		
+
 		else
 			this.input = input;
 		DoubleMatrix currInput = this.input;
@@ -557,7 +557,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
 		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
 		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
-		ActivationFunction derivative = sigmoidLayers[0].getActivationFunction();
+		ActivationFunction derivative = this.getSigmoidLayers()[0].getActivationFunction();
 		//- y - h
 		DoubleMatrix delta = null;
 		List<DoubleMatrix> activations = feedForward(getInput());
@@ -710,8 +710,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				add.muli(lr);
 
 			add.divi(input.rows);
-		
-			
+
+
 			//l2
 			if(useRegularization) {
 				add.muli(this.getLayers()[l].getW().mul(l2));
@@ -732,7 +732,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		getLogLayer().getW().addi(deltas.get(nLayers).getFirst());
-		
+
 		return true;
 
 	}
@@ -796,8 +796,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		//second to last activation is input
-		DoubleMatrix sample = getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible();
-		DoubleMatrix predicted = logLayer.predict(sample);
+		DoubleMatrix predicted = activations.get(activations.size() - 1); 
 		return predicted;
 	}
 
