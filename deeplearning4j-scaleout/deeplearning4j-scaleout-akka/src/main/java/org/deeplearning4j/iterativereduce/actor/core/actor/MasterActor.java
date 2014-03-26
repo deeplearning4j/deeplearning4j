@@ -85,6 +85,9 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 			throw new RuntimeException(e);
 		}
 
+		stateTracker.runPreTrainIterations(conf.getNumPasses());
+		
+		
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.FINISH, getSelf()), getSelf());
 
