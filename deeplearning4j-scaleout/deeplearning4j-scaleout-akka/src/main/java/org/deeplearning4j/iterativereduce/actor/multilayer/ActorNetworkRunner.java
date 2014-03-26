@@ -276,7 +276,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				if(host == null)
 					throw new IllegalArgumentException("No host set for worker");
 
-				int port = this.stateTrackerPort;
+				int port = this.stateTrackerPort < 1 ? HazelCastStateTracker.DEFAULT_HAZELCAST_PORT : this.stateTrackerPort;
 
 				String connectionString = host + ":" + port;
 
@@ -430,7 +430,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 	 * Shut down this network actor
 	 */
 	public void shutdown() {
-		//order matters here, the state tracker should be shutdown after the actor system
+		//order matters here, the state tracker should
 		system.shutdown();
 
 		if(stateTracker != null)
