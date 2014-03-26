@@ -28,8 +28,10 @@ import org.slf4j.LoggerFactory;
  *       -i number of inputs (columns in the input matrix)
  *       -o number of outputs for the network
  *       
- *       -data fully qualified class name of the dataset iterator to use
- *       -mb mini batch size: default is 10
+ *       DataSets:
+ *         Note only one of these may be specified
+ *         -data fully qualified class name of the dataset iterator to use
+ *         -datasetpath path to a serialized dataset
  *          
  *       
  *       Optional:
