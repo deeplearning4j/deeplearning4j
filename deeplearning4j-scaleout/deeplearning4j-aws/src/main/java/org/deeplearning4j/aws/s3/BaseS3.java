@@ -58,7 +58,8 @@ public abstract class BaseS3 {
 		findCreds();
 		if(accessKey != null && secretKey != null)
 			creds = new BasicAWSCredentials(accessKey,secretKey);
-		
+		if(creds == null)
+			throw new IllegalStateException("Unable to find ec2 credentials");
 	}
 	
 	public BaseS3(File file) throws Exception {
@@ -92,6 +93,7 @@ public abstract class BaseS3 {
 	}
 	
 	public AmazonEC2 getEc2() {
+		
 		return new AmazonEC2Client(creds);
 	}
 	

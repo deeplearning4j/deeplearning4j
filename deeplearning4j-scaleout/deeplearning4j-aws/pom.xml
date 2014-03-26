@@ -23,5 +23,10 @@
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.51</version>
+		</dependency>
 	</dependencies>
 </project>
