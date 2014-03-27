@@ -21,8 +21,9 @@ public class Ec2CommandRunner {
 		List<String> hosts = boxCreator.getHosts();
 		Thread.sleep(15000);
 		try {
-			LibUploader uploader = new LibUploader(hosts.get(0), "ec2-user");
+			HostProvisioner uploader = new HostProvisioner(hosts.get(0), "ec2-user");
 			uploader.addKeyFile("/home/agibsonccc/.ssh/id_rsa");
+			uploader.uploadForDeployment("/home/agibsonccc/git/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-akka/target/lib","");
 			uploader.uploadAndRun("/home/agibsonccc/test.sh", "");
 		}catch(Exception e) {
 			log.error("Error ",e);
