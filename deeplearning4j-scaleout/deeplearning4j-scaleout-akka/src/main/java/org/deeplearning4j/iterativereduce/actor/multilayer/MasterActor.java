@@ -293,6 +293,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			else if(stateTracker.currentJobs().isEmpty()) {
 				isDone = true;
+				stateTracker.finish();
 				log.info("Done training!");
 			}
 
