@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>deeplearning4j-distribution</artifactId>
 	<packaging>pom</packaging>
+	
 	<dependencies>
 
 		<dependency>
@@ -27,6 +28,7 @@
 		</dependency>
 	</dependencies>
 	<build>
+	<finalName>deeplearning4j-dist</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
