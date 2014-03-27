@@ -87,7 +87,7 @@ public class HostProvisioner implements UserInfo {
 		runRemoteCommand(remoteCommand);
 	}
 
-	private void runRemoteCommand(String remoteCommand) throws Exception {
+	public void runRemoteCommand(String remoteCommand) throws Exception {
 		Session session = getSession();
 		session.connect();
 		ChannelExec channel = (ChannelExec) session.openChannel("exec");
@@ -130,7 +130,8 @@ public class HostProvisioner implements UserInfo {
 	}
 
 	/**
-	 * Creates the directory for the file
+	 * Creates the directory for the file if necessary 
+	 * and uploads the file
 	 * @param from the directory to upload from
 	 * @param to the destination directory on the remote server
 	 * @throws Exception

@@ -46,7 +46,7 @@ public class Test2sAnd4s {
 
 	
 		
-		while(iter.hasNext()) {
+		/*while(iter.hasNext()) {
 			DataSet next = iter.next();
 			log.info("Evaluating " + Arrays.toString(next.getFirst().toArray()));
 			dbn.feedForward(next.getFirst());
@@ -58,7 +58,7 @@ public class Test2sAnd4s {
 		
 		
 		iter.reset();
-		
+		*/
 		Evaluation eval = new Evaluation();
 
 		while(iter.hasNext()) {
