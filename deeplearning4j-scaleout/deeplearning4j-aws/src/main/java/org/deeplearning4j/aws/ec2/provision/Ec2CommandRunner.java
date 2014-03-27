@@ -14,12 +14,20 @@ public class Ec2CommandRunner {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		Ec2BoxCreator boxCreator = new Ec2BoxCreator(1, "m1.medium");
+	public static void main(String[] args) throws Exception {
+		Ec2BoxCreator boxCreator = new Ec2BoxCreator("ami-bba18dd2",1, "m1.medium","sg-61963904","blix");
 		boxCreator.create();
 		boxCreator.blockTillAllRunning();
 		List<String> hosts = boxCreator.getHosts();
-		log.info("Hosts " + hosts);
+		Thread.sleep(15000);
+		try {
+			LibUploader uploader = new LibUploader(hosts.get(0), "ec2-user");
+			uploader.addKeyFile("/home/agibsonccc/.ssh/id_rsa");
+			uploader.uploadAndRun("/home/agibsonccc/test.sh", "");
+		}catch(Exception e) {
+			log.error("Error ",e);
+		}
+		
 		boxCreator.blowupBoxes();
 		
 	}
