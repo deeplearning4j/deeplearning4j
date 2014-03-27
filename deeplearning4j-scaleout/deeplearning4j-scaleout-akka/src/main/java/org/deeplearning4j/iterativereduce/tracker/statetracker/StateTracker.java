@@ -20,7 +20,16 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+	/**
+	 * Sets done to true
+	 */
+	void finish();
 	
+	/**
+	 * Whether the cluster is done training
+	 * @return whether the cluster is done training
+	 */
+	boolean isDone();
 	
 	/**
 	 * Increments the number of times pre train has run.
