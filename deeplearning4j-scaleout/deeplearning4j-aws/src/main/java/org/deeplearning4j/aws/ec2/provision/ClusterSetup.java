@@ -63,7 +63,7 @@ public class ClusterSetup {
 		boxCreator.blockTillAllRunning();
 		List<String> hosts = boxCreator.getHosts();
 		provisionMaster(hosts.get(0));
-		provisionWorkers(hosts.subList(1, hosts.size()));
+		//provisionWorkers(hosts.subList(1, hosts.size()));
 
 
 	}
@@ -74,13 +74,15 @@ public class ClusterSetup {
 	private void provisionMaster(String host) {
 		try {
 			HostProvisioner uploader = new HostProvisioner(host, "ec2-user");
-			uploader.uploadForDeployment(libDirPath, "lib");
 			uploader.addKeyFile(pathToPrivateKey);
+
+			uploader.uploadForDeployment(libDirPath, "lib");
 			if(dataSetPath != null)
 				uploader.uploadForDeployment(dataSetPath, "");
 			String sshPath = "/home/ec2-user/.ssh/";
+			uploader.uploadForDeployment(pathToPrivateKey, sshPath + new File(pathToPrivateKey).getName());
 			uploader.runRemoteCommand("chmod 0400 " + sshPath + "*");
-			uploader.uploadForDeployment(pathToPrivateKey, sshPath);
+
 			uploader.uploadAndRun(masterSetupScriptPath, "");
 		}catch(Exception e) {
 			log.error("Error ",e);
@@ -91,8 +93,9 @@ public class ClusterSetup {
 		for(String workerHost : workers) {
 			try {
 				HostProvisioner uploader = new HostProvisioner(workerHost, "ec2-user");
-				uploader.uploadForDeployment(libDirPath, "lib");
 				uploader.addKeyFile(pathToPrivateKey);
+
+				uploader.uploadForDeployment(libDirPath, "lib");
 				uploader.uploadAndRun(workerSetupScriptPath, "");
 			}catch(Exception e) {
 				log.error("Error ",e);
