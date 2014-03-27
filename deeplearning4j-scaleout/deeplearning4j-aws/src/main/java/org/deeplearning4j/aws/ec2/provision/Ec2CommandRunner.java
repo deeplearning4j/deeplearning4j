@@ -1,5 +1,6 @@
 package org.deeplearning4j.aws.ec2.provision;
 
+import java.io.File;
 import java.util.List;
 
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
@@ -22,8 +23,11 @@ public class Ec2CommandRunner {
 		Thread.sleep(15000);
 		try {
 			HostProvisioner uploader = new HostProvisioner(hosts.get(0), "ec2-user");
-			uploader.addKeyFile("/home/agibsonccc/.ssh/id_rsa");
-			uploader.uploadForDeployment("/home/agibsonccc/git/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-akka/target/lib","");
+			String pathToPrivateKey = "/home/agibsonccc/.ssh/id_rsa";
+			uploader.addKeyFile(pathToPrivateKey);
+			String sshPath = "/home/ec2-user/.ssh/";
+			uploader.uploadForDeployment(pathToPrivateKey, sshPath + new File(pathToPrivateKey).getName());
+			uploader.runRemoteCommand("chmod 0400 " + sshPath + "*");
 			uploader.uploadAndRun("/home/agibsonccc/test.sh", "");
 		}catch(Exception e) {
 			log.error("Error ",e);

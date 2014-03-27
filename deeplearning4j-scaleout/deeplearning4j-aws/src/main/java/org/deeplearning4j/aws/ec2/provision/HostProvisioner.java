@@ -81,7 +81,7 @@ public class HostProvisioner implements UserInfo {
 	public void uploadAndRun(String script,String rootDir) throws Exception {
 		String remoteName = rootDir.isEmpty() ? new File(script).getName() : rootDir + "/" + script;
 		upload(new File(script),remoteName);
-		
+
 		String remoteCommand = remoteName.charAt(0) != '/' ? "./" + remoteName : remoteName;
 		remoteCommand = "chmod +x " + remoteCommand + " && " + remoteCommand;
 		runRemoteCommand(remoteCommand);
@@ -119,9 +119,9 @@ public class HostProvisioner implements UserInfo {
 		channel.disconnect();
 		session.disconnect();
 
-	
+
 	}
-	
+
 
 	private Session getSession() throws Exception {
 		Session session = jsch.getSession(user, host, port);
@@ -137,9 +137,11 @@ public class HostProvisioner implements UserInfo {
 	 * @throws Exception
 	 */
 	public void uploadForDeployment(String from,String to) throws Exception {
-		if(!to.isEmpty())
+		File fromFile = new File(from);
+		if(!to.isEmpty() && fromFile.isDirectory())
 			mkDir(to);
-		upload(from,to);
+		else
+			upload(from,to);
 
 
 	}
@@ -156,27 +158,47 @@ public class HostProvisioner implements UserInfo {
 		channel.connect();
 
 		ChannelSftp c = (ChannelSftp) channel;
-		c.mkdir(dir);
+		if(!fileExists(dir,c))
+			c.mkdir(dir);
 		c.exit();
 		session.disconnect();
 	}
 
-	//uploads the file
-	private void upload(String rootDir,String uploadRootDir) throws Exception {
+	private boolean fileExists(String dir,ChannelSftp channel) {
+		try {
+			channel.stat(dir);
+			return true;
+		}catch(Exception e) {
+			return false;
+		}
+	}
+
+
+	//uploads the file or listed files in a directory
+	private void upload(String fileOrDir,String uploadRootDir) throws Exception {
 		if(uploadRootDir.isEmpty())
 			uploadRootDir = ".";
-		if(rootDir.endsWith(".tar") || rootDir.endsWith(".tar.gz")) {
-			upload(new File(rootDir),uploadRootDir);
+		File origin = new File(fileOrDir);
+
+		if(fileOrDir.endsWith(".tar") || fileOrDir.endsWith(".tar.gz")) {
+			upload(new File(fileOrDir),uploadRootDir);
 			untar(uploadRootDir);
 		}
-		else
-			upload(Arrays.asList(new File(rootDir).listFiles()),uploadRootDir);
+		else if(origin.isFile()) {
+			upload(new File(fileOrDir),uploadRootDir);
+		}
+		else {
+			File[] childFiles = origin.listFiles();
+			if(childFiles != null)
+				upload(Arrays.asList(childFiles),uploadRootDir);
+
+		}
 	}
 
 	private void untar(String targetRemoteFile) throws Exception {
-	  this.runRemoteCommand("tar xvf " + targetRemoteFile);
+		this.runRemoteCommand("tar xvf " + targetRemoteFile);
 	}
-	
+
 	private void upload(Collection<File> files,String rootDir) throws Exception {
 		Session session = getSession();
 		session.connect();
@@ -189,6 +211,7 @@ public class HostProvisioner implements UserInfo {
 				log.warn("Skipping " + f.getName());
 				continue;
 			}
+
 			log.info("Uploading " + f.getName());
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));
 			c.put(bis, rootDir + "/" + f.getName());
@@ -220,6 +243,11 @@ public class HostProvisioner implements UserInfo {
 		ChannelSftp c = (ChannelSftp) channel;
 
 		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));
+		if(this.fileExists(remoteFile, c)) 
+			if(f.isDirectory())
+				c.rmdir(remoteFile);
+			else
+				c.rm(remoteFile);
 		c.put(bis,remoteFile);
 		bis.close();
 		c.exit();
