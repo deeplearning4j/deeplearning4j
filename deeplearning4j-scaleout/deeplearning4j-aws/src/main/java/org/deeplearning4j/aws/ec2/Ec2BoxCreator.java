@@ -35,6 +35,8 @@ public class Ec2BoxCreator extends BaseS3 {
 	private int numBoxes;
 	private String size;
 	private List<String> boxesCreated;
+	private String securityGroupId;
+	private String keyPair;
 	private static Logger log = LoggerFactory.getLogger(Ec2BoxCreator.class);
 	
 	//centos
@@ -45,8 +47,8 @@ public class Ec2BoxCreator extends BaseS3 {
 	 * @param numBoxes number of boxes
 	 * @param size the size of the instances
 	 */
-	public Ec2BoxCreator(int numBoxes,String size) {
-		this(DEFAULT_AMI,numBoxes,size);
+	public Ec2BoxCreator(int numBoxes,String size,String securityGroupId,String keyPair) {
+		this(DEFAULT_AMI,numBoxes,size,securityGroupId,keyPair);
 	}
 
 
@@ -55,12 +57,15 @@ public class Ec2BoxCreator extends BaseS3 {
 	 * @param amiId amazon image id
 	 * @param numBoxes number of boxes
 	 * @param size the size of the instances
+	 * @param securityGroupId
 	 */
-	public Ec2BoxCreator(String amiId, int numBoxes,String size) {
+	public Ec2BoxCreator(String amiId, int numBoxes,String size,String securityGroupId,String keyPair) {
 		super();
 		this.amiId = amiId;
 		this.numBoxes = numBoxes;
 		this.size = size;
+		this.keyPair = keyPair;
+		this.securityGroupId = securityGroupId;
 	}
 
 	public void createSpot() {
@@ -109,8 +114,8 @@ public class Ec2BoxCreator extends BaseS3 {
 	public void create() {
 		RunInstancesRequest runInstancesRequest = 
 				new RunInstancesRequest().withImageId(amiId)
-				.withInstanceType(size)
-				.withMinCount(1)
+				.withInstanceType(size).withKeyName(keyPair)
+				.withMinCount(1).withSecurityGroupIds(securityGroupId)
 				.withMaxCount(numBoxes);
 		List<Instance> boxes  = getEc2().runInstances(runInstancesRequest)
 				.getReservation().getInstances();
