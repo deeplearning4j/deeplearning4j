@@ -42,6 +42,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	public final static String NUM_TIMES_RUN_PRETRAIN = "PRETRAIN";
 	public final static String TOPICS = "topics";
 	public final static String RESULT = "RESULT";
+	public final static String DONE = "done";
 	public final static String LOCKS = "LOCKS";
 	public final static String HEART_BEAT = "heartbeat";
 	public final static String IS_PRETRAIN = "ispretrain";
@@ -50,6 +51,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	private volatile transient IList<Job> jobs;
 	private volatile transient IAtomicReference<Integer> numTimesPretrain;
 	private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
+	private volatile transient IAtomicReference<Boolean> done;
 
 	private volatile transient IList<String> workers;
 	private volatile  transient IList<String> topics;
@@ -138,12 +140,13 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 		isPretrain = h.getAtomicReference(IS_PRETRAIN);
 		numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
 		numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
-
+		done = h.getAtomicReference(DONE);
 		//set defaults only when master, otherwise, overrides previous values
 		if(type.equals("master")) {
 			numTimesPretrainRan.set(0);
 			numTimesPretrain.set(1);
 			isPretrain.set(true);
+			done.set(false);
 		}
 
 
@@ -363,6 +366,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 	@Override
 	public void incrementNumTimesPreTrainRan() {
 		numTimesPretrainRan.set(numTimesPreTrainRun() + 1);		
+	}
+
+	@Override
+	public boolean isDone() {
+		return done.get();
+	}
+
+	@Override
+	public void finish() {
+		done.set(true);
 	}
 
 
