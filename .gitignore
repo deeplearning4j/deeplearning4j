@@ -12,7 +12,7 @@ README.md~
 *.bin
 *.out
 *~
-
+.settings/*
 model-saver-*
 mnist-pretrain-dbn.bin-*
 deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/ec2/provision/Ec2CommandRunner.java.settings/
