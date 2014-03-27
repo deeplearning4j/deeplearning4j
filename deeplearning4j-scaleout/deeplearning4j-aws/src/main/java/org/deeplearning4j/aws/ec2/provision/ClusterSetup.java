@@ -1,5 +1,6 @@
 package org.deeplearning4j.aws.ec2.provision;
 
+import java.io.File;
 import java.util.List;
 
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
@@ -37,6 +38,9 @@ public class ClusterSetup {
 	private String libDirPath;
 	@Option(name = "-datapath", usage = "path to serialized dataset")
 	private String dataSetPath;
+	@Option(name = "-uploddeps",usage = "whether to uploade deps: default true")
+	private boolean uploadDeps = true;
+	
 	private static Logger log = LoggerFactory.getLogger(ClusterSetup.class);
 
 
@@ -74,7 +78,9 @@ public class ClusterSetup {
 			uploader.addKeyFile(pathToPrivateKey);
 			if(dataSetPath != null)
 				uploader.uploadForDeployment(dataSetPath, "");
-			
+			String sshPath = "/home/ec2-user/.ssh/";
+			uploader.runRemoteCommand("chmod 0400 " + sshPath + "*");
+			uploader.uploadForDeployment(pathToPrivateKey, sshPath);
 			uploader.uploadAndRun(masterSetupScriptPath, "");
 		}catch(Exception e) {
 			log.error("Error ",e);
