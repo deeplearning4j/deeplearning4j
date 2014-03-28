@@ -136,17 +136,17 @@ public class DBNTest {
 	public void testIris() {
 		RandomGenerator rng = new MersenneTwister(123);
 
-		double preTrainLr = 0.1;
+		double preTrainLr = 0.01;
 		int preTrainEpochs = 10000;
-		int k = 1;
+		int k = 15;
 		int nIns = 4,nOuts = 3;
-		int[] hiddenLayerSizes = new int[] {3};
-		double fineTuneLr = 0.1;
+		int[] hiddenLayerSizes = new int[] {4,3,3};
+		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 10000;
 
 		CDBN dbn = new CDBN.Builder().useAdGrad(true)
-				.numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Sigmoid())
-				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
+				.numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Tanh())
+				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
 				.withRng(rng)
 				.build();
 
@@ -172,23 +172,28 @@ public class DBNTest {
 
 		log.info("Training on " + miniBatches.size() + " minibatches");
 
-		dbn.pretrain(next.getFirst(),k, preTrainLr, preTrainEpochs);
-		dbn.finetune(next.getSecond(),fineTuneLr, fineTuneEpochs);
+		
+		for(int i = 0;i < miniBatches.size(); i++) {
+			DataSet curr = miniBatches.get(i);
+			dbn.pretrain(curr.getFirst(),k, preTrainLr, preTrainEpochs);
 
-
-
-
-		sampling = new SamplingDataSetIterator(next, 10, 3000);
-		miniBatches.clear();
-
-
-
-		while(sampling.hasNext()) {
-			next = sampling.next();
-			miniBatches.add(next.copy());
 		}
-
+		
+		
 		Evaluation eval = new Evaluation();
+
+		
+		for(int i = 0; i < miniBatches.size(); i++) {
+			DataSet curr = miniBatches.get(i);
+			dbn.setInput(curr.getFirst());
+			dbn.finetune(curr.getSecond(),fineTuneLr, fineTuneEpochs);
+
+		}
+		
+		
+
+
+
 
 		for(int i = 0; i < miniBatches.size(); i++) {
 			DataSet test = miniBatches.get(i);
