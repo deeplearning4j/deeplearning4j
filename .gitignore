@@ -13,6 +13,7 @@ README.md~
 *.out
 *~
 
+*.prefs
 *.settings/*
 model-saver-*
 mnist-pretrain-dbn.bin-*
