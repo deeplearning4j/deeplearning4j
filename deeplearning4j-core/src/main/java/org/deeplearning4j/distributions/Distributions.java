@@ -51,7 +51,7 @@ public class Distributions {
 	 * and a max of fanIn
 	 */
 	public static RealDistribution uniform(RandomGenerator rng) {
-		double fanIn = 0.01;
+		double fanIn = 0.1;
 		return new UniformRealDistribution(rng,-fanIn,fanIn);
 	}
 

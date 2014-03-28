@@ -378,6 +378,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				Thread.currentThread().interrupt();
 			}
 		}
+		
+		
+		log.info("Shutting down system");
+		system.shutdown();
 	}
 
 

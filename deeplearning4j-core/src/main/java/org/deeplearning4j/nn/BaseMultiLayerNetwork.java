@@ -317,7 +317,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		if(!initCalled)
 			init();
 		else
-			this.feedForward(input);
+			feedForward(input);
 	}
 
 	public void init() {
@@ -549,7 +549,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			currInput = getSigmoidLayers()[i].activate(currInput);
 			activations.add(currInput);
 		}
-
+		
+		logLayer.setInput(currInput);
 		activations.add(getLogLayer().predict(currInput));
 		return activations;
 	}
@@ -641,19 +642,40 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		//sgd style; only train a certain number of epochs
 		if(forceNumEpochs) {
 			for(int i = 0; i < epochs; i++) {
-				backPropStep(lastEntropy,revert,lr,i);
+				backPropStep(revert,lr,i);
 				lastEntropy = negativeLogLikelihood();
 			}
 		}
 
 		else {
 			//train till back prop converges
+			logLayer.trainTillConvergence(lr, epochs);
+
+			boolean train = true;
 			int count = 0;
-			while(backPropStep(lastEntropy,revert,lr,count)) {
+			int numOver = 0;
+			int tolerance = 3;
+			while(train) {
 				count++;
-				lastEntropy = this.negativeLogLikelihood();
+				backPropStep(revert,lr,count);
 				logLayer.trainTillConvergence(count, epochs);
+
+				Double entropy = this.negativeLogLikelihood();
+				if(lastEntropy == null || entropy < lastEntropy)
+					lastEntropy = entropy;
+				else if(entropy > lastEntropy) {
+					update(revert);
+					numOver++;
+					if(numOver >= tolerance)
+						train = false;
+				}
+				else if(entropy == lastEntropy)
+					train = false;
+
+
 			}
+
+
 		}
 	}
 
@@ -669,30 +691,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @param epoch the epoch to use
 	 * @return whether the training should converge or not
 	 */
-	protected boolean backPropStep(Double lastEntropy,BaseMultiLayerNetwork revert,double lr,int epoch) {
+	protected void backPropStep(BaseMultiLayerNetwork revert,double lr,int epoch) {
 		//feedforward to compute activations
 		//initial error
-		double error = this.negativeLogLikelihood();
-		log.info("Current back prop error " + error);
-		if(lastEntropy == null) {
-			lastEntropy = error;
-		}
 
-		else if(error == lastEntropy) {
-			log.info("Converged; no more stepping appears to do anything");
-			return false;
-		}
-
-		else if(error > lastEntropy || Double.isNaN(error) || Double.isInfinite(error)) {
-			log.info("Error greater than previous; found global minima; converging");
-			update(revert);
-			return false;
-		}
-		else if(error < lastEntropy ) {
-			lastEntropy = error;
-			revert = clone();
-			log.info("Found better error on epoch " + epoch + " " + lastEntropy);
-		}
 
 		//precompute deltas
 		List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
@@ -733,7 +735,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		getLogLayer().getW().addi(deltas.get(nLayers).getFirst());
 
-		return true;
 
 	}
 
