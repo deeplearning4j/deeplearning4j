@@ -1,15 +1,24 @@
 package org.deeplearning4j.dbn;
 import static org.junit.Assert.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.activation.HardTanh;
+import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.activation.Tanh;
+import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.transformation.MultiplyScalar;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -35,14 +44,14 @@ public class DBNTest {
 		DoubleMatrix y = d.getSecond();
 
 
-		double preTrainLr = 0.001;
+		double preTrainLr = 0.1;
 		int preTrainEpochs = 10000;
 		int k = 1;
 		int[] hiddenLayerSizes = new int[] {2,2,2};
-		double fineTuneLr = 0.001;
+		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 10000;
 
-		DBN dbn = new DBN.Builder().useAdGrad(true)
+		CDBN dbn = new CDBN.Builder().useAdGrad(true)
 				.hiddenLayerSizes(hiddenLayerSizes)
 				.numberOfInputs(d.numInputs())
 				.useRegularization(false).withActivation(new HardTanh())
@@ -102,14 +111,12 @@ public class DBNTest {
 		int fineTuneEpochs = 1000;
 
 		CDBN dbn = new CDBN.Builder().useAdGrad(true)
-		.numberOfInputs(nIns).numberOfOutPuts(nOuts)
-		.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
-		.withRng(rng)
-		.build();
-		for(int i = 0; i < 1000; i++)
-			dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
-		for(int i = 0; i < 1000; i++)
-			dbn.finetune(y,fineTuneLr, fineTuneEpochs);
+				.numberOfInputs(nIns).numberOfOutPuts(nOuts)
+				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
+				.withRng(rng)
+				.build();
+		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
+		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
 
 		DoubleMatrix testX = new DoubleMatrix(new double[][]
@@ -125,6 +132,85 @@ public class DBNTest {
 	}
 
 
+	@Test
+	public void testIris() {
+		RandomGenerator rng = new MersenneTwister(123);
+
+		double preTrainLr = 0.1;
+		int preTrainEpochs = 10000;
+		int k = 1;
+		int nIns = 4,nOuts = 3;
+		int[] hiddenLayerSizes = new int[] {3};
+		double fineTuneLr = 0.1;
+		int fineTuneEpochs = 10000;
+
+		CDBN dbn = new CDBN.Builder().useAdGrad(true)
+				.numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Sigmoid())
+				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
+				.withRng(rng)
+				.build();
+
+		
+		
+		DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+		DataSet next = iter.next(150);
+		next.shuffle();
+		
+		List<DataSet> finetuneBatches = next.dataSetBatches(10);
+		
+		
+		
+		DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3000);
+		
+		List<DataSet> miniBatches = new ArrayList<DataSet>();
+		
+		while(sampling.hasNext()) {
+			next = sampling.next();
+			miniBatches.add(next.copy());
+		}
+		
+		log.info("Training on " + miniBatches.size() + " minibatches");
+		
+		for(int i = 0; i < miniBatches.size(); i++) {
+			dbn.pretrain(miniBatches.get(i).getFirst(),k, preTrainLr, preTrainEpochs);
+
+		}
+
+		for(int i = 0; i < finetuneBatches.size(); i++) {
+			dbn.setInput(finetuneBatches.get(i).getFirst());
+			dbn.finetune(finetuneBatches.get(i).getSecond(),fineTuneLr, fineTuneEpochs);
+
+		}
+		
+		
+		sampling = new SamplingDataSetIterator(next, 10, 3000);
+		miniBatches.clear();
+		
+		
+		
+		while(sampling.hasNext()) {
+			next = sampling.next();
+			miniBatches.add(next.copy());
+		}
+		
+		Evaluation eval = new Evaluation();
+		
+		for(int i = 0; i < miniBatches.size(); i++) {
+			DataSet test = miniBatches.get(i);
+			DoubleMatrix predicted = dbn.predict(test.getFirst());
+			DoubleMatrix real = test.getSecond();
+
+
+			eval.eval(real, predicted);
+
+		}
+		
+		log.info("Evaled " + eval.stats());
+	
+
+	}
+
 
 	@Test
 	public void testMnist() throws IOException {
@@ -135,7 +221,7 @@ public class DBNTest {
 
 		DBN dbn = new DBN.Builder()
 		.hiddenLayerSizes(new int[]{500,250,100}).withActivation(new HardTanh())
-				.numberOfInputs(784).numberOfOutPuts(10).useRegularization(false).build();
+		.numberOfInputs(784).numberOfOutPuts(10).useRegularization(false).build();
 		dbn.pretrain(d.getFirst(), 1, 0.0001, 30000);
 		dbn.finetune(d.getSecond(), 0.0001, 10000);
 
