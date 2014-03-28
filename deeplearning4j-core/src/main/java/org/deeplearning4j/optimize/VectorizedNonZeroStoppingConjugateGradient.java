@@ -41,8 +41,8 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 	VectorizedBackTrackLineSearch lineMaximizer;
 
 	double initialStepSize = 1;
-	double tolerance = 1e-6;
-	double gradientTolerance = 1e-6;
+	double tolerance = 1e-5;
+	double gradientTolerance = 1e-5;
 	int maxIterations = 10000;
 	private String myName = "";
 	private NeuralNetEpochListener listener;

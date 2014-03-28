@@ -55,7 +55,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 	//   a) abs(delta x/x) < REL_TOLX for all coordinates
 	//   b) abs(delta x) < ABS_TOLX for all coordinates
 	//   c) sufficient function increase (uses ALF)
-	private double relTolx = 1e-7;
+	private double relTolx = 1e-10;
 	private double absTolx = 1e-4; // tolerance on absolute value difference
 	final double ALF = 1e-4;
 
@@ -149,7 +149,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 				//				if ((alam < alamin)) {
 				function.setParameters(oldParameters);
 				f = function.getValue();
-				logger.warn("EXITING BACKTRACK: Jump too small (alamin="+alamin+"). Exiting and using xold. Value="+f);
+				logger.warn("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
 				return 0.0;
 			}
 

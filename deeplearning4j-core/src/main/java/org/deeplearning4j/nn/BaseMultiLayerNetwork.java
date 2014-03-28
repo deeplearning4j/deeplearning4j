@@ -657,13 +657,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			while(train) {
 				count++;
 				backPropStep(revert,lr,count);
-				DoubleMatrix newSample = getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible(); 
-				logLayer.trainTillConvergence(newSample,logLayer.getLabels(),lr, epochs);
 
 				Double entropy = this.negativeLogLikelihood();
-				if(lastEntropy == null || entropy < lastEntropy)
+				if(lastEntropy == null || entropy < lastEntropy) {
 					lastEntropy = entropy;
-				else if(entropy > lastEntropy) {
+					log.info("New negative log likelihood " + lastEntropy);
+				}
+				else if(entropy >= lastEntropy) {
 					update(revert);
 					numOver++;
 					if(numOver >= tolerance)
@@ -797,7 +797,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		//second to last activation is input
-		DoubleMatrix predicted = activations.get(activations.size() - 1); 
+		DoubleMatrix predicted = logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
+		
 		return predicted;
 	}
 
