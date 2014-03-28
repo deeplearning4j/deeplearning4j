@@ -8,10 +8,6 @@ import cc.mallet.optimize.Optimizable;
 
 public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5229426347154854746L;
 	private LogisticRegression logReg;
 	private double lr;
 	
@@ -85,7 +81,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 		for(int i = 0; i < params.length; i++) {
 			params.put(i,getParameter(i));
 		}
-		return null;
+		return params;
 	}
 
 	@Override
