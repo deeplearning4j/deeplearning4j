@@ -26,6 +26,14 @@ public class MatrixUtil {
 	}
 
 
+	public static void scaleByMax(DoubleMatrix toScale) {
+		DoubleMatrix scale = toScale.rowMaxs();
+		for(int i = 0; i < toScale.rows; i++) {
+			double scaleBy = scale.get(i,0);
+			toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
+		}
+	}
+	
 	public static DataSet xorData(int n) {
 
 		DoubleMatrix x = DoubleMatrix.rand(n,2);
@@ -224,12 +232,12 @@ public class MatrixUtil {
 	}
 
 
-	public static DoubleMatrix roundToTheNearest(DoubleMatrix d,double num) {
+	public static DoubleMatrix roundToTheNearest(DoubleMatrix d,int num) {
 		DoubleMatrix ret = d.mul(num);
 		for(int i = 0; i < d.rows; i++)
 			for(int j = 0; j < d.columns; j++) {
-				double newNum = Math.round(d.get(i,j) * num);
-				newNum /= num;
+				double d2 = d.get(i,j);
+				double newNum = MathUtils.roundDouble(d2, num);
 				ret.put(i,j,newNum);
 			}
 		return ret;
