@@ -40,17 +40,26 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		network.getLogLayer().setLabels(labels);
 		List<DoubleMatrix> activations = network.feedForward(network.getInput());
 	
-		if(network.isShouldBackProp())
-			network.backProp(lr, epochs);
+		DoubleMatrix train = sampleHiddenGivenVisible();
+		
+		if(!network.isForceNumEpochs()) {
+			network.getLogLayer().trainTillConvergence(train,labels,lr,epochs);
 
-		if(!network.isForceNumEpochs()) 
-			network.getLogLayer().trainTillConvergence(lr,epochs);
+			if(network.isShouldBackProp())
+				network.backProp(lr, epochs);
+
+		}
 		
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
 				network.getLogLayer().train(activations.get(activations.size() - 2), labels,lr);
 			}
+			
+
+			if(network.isShouldBackProp())
+				network.backProp(lr, epochs);
+
 		}
 	
 
@@ -59,7 +68,9 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 
-
+	private DoubleMatrix sampleHiddenGivenVisible() {
+		return network.getSigmoidLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible();
+	}
 
 
 
