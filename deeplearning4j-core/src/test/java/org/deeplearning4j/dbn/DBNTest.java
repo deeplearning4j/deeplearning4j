@@ -150,52 +150,46 @@ public class DBNTest {
 				.withRng(rng)
 				.build();
 
-		
-		
+
+
 		DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 		DataSet next = iter.next(150);
 		next.shuffle();
-		
+
 		List<DataSet> finetuneBatches = next.dataSetBatches(10);
-		
-		
-		
+
+
+
 		DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3000);
-		
+
 		List<DataSet> miniBatches = new ArrayList<DataSet>();
-		
+
 		while(sampling.hasNext()) {
 			next = sampling.next();
 			miniBatches.add(next.copy());
 		}
-		
+
 		log.info("Training on " + miniBatches.size() + " minibatches");
-		
-		for(int i = 0; i < miniBatches.size(); i++) {
-			dbn.pretrain(miniBatches.get(i).getFirst(),k, preTrainLr, preTrainEpochs);
 
-		}
+		dbn.pretrain(next.getFirst(),k, preTrainLr, preTrainEpochs);
+		dbn.finetune(next.getSecond(),fineTuneLr, fineTuneEpochs);
 
-		for(int i = 0; i < finetuneBatches.size(); i++) {
-			dbn.setInput(finetuneBatches.get(i).getFirst());
-			dbn.finetune(finetuneBatches.get(i).getSecond(),fineTuneLr, fineTuneEpochs);
 
-		}
-		
-		
+
+
 		sampling = new SamplingDataSetIterator(next, 10, 3000);
 		miniBatches.clear();
-		
-		
-		
+
+
+
 		while(sampling.hasNext()) {
 			next = sampling.next();
 			miniBatches.add(next.copy());
 		}
-		
+
 		Evaluation eval = new Evaluation();
-		
+
 		for(int i = 0; i < miniBatches.size(); i++) {
 			DataSet test = miniBatches.get(i);
 			DoubleMatrix predicted = dbn.predict(test.getFirst());
@@ -205,9 +199,9 @@ public class DBNTest {
 			eval.eval(real, predicted);
 
 		}
-		
+
 		log.info("Evaled " + eval.stats());
-	
+
 
 	}
 

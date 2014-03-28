@@ -635,7 +635,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	public void backProp(double lr,int epochs) {
 
-		Double lastEntropy = null;
+		Double lastEntropy = this.negativeLogLikelihood();
 		//store a copy of the network for when binary cross entropy gets
 		//worse after an iteration
 		BaseMultiLayerNetwork revert = clone();
@@ -648,8 +648,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		else {
-			//train till back prop converges
-			logLayer.trainTillConvergence(lr, epochs);
+			
 
 			boolean train = true;
 			int count = 0;
@@ -658,7 +657,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			while(train) {
 				count++;
 				backPropStep(revert,lr,count);
-				logLayer.trainTillConvergence(count, epochs);
+				DoubleMatrix newSample = getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible(); 
+				logLayer.trainTillConvergence(newSample,logLayer.getLabels(),lr, epochs);
 
 				Double entropy = this.negativeLogLikelihood();
 				if(lastEntropy == null || entropy < lastEntropy)
