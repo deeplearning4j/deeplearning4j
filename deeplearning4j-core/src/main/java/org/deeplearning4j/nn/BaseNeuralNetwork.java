@@ -865,6 +865,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 					try {
 						ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
 						ret.sparsity = this.sparsity;
+						ret.normalizeByInputRows = this.normalizeByInputRows;
 						ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
 						ret.l2 = this.l2;
 						ret.momentum = this.momentum;
