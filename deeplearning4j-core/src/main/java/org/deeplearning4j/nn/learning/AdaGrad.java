@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.learning;
 
 import java.io.Serializable;
 
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -58,7 +57,7 @@ public class AdaGrad implements Serializable {
 
 
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
-		this.gradient = gradient;
+		this.gradient = gradient.dup();
 		DoubleMatrix gradientsSquared = MatrixFunctions.pow(gradient, 2);
 		if(first) {
 			this.historicalGradient = gradientsSquared;
@@ -66,12 +65,11 @@ public class AdaGrad implements Serializable {
 		}
 
 		else 
-			this.historicalGradient = historicalGradient.add(gradientsSquared);
+			this.historicalGradient.addi(gradientsSquared);
 
 		DoubleMatrix gAdd = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
-		this.adjustedGradient = gradient.div(gAdd);
+		this.adjustedGradient = this.gradient.div(gAdd);
 		this.adjustedGradient.muli(masterStepSize).negi();
-		
 		return adjustedGradient;
 	}
 

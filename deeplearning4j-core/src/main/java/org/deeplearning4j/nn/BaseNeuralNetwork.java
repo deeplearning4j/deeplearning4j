@@ -79,10 +79,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public boolean useAdaGrad = false;
 	//used to track if adagrad needs to be changed
 	public boolean firstTimeThrough = false;
-
+	//normalize by input rows or not
+	public boolean normalizeByInputRows = false;
+	
 	public List<NeuralNetworkGradientListener> gradientListeners;
 
-	public AdaGrad wAdaGrad;
+	public AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
 	public BaseNeuralNetwork() {}
 	/**
@@ -132,8 +134,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
 
 		this.vBias = vbias;
+		if(this.vBias != null)
+			this.vBiasAdaGrad = new AdaGrad(this.vBias.rows,this.vBias.columns);
+		
+		
 		this.hBias = hbias;
-
+		if(this.hBias != null)
+			this.hBiasAdaGrad = new AdaGrad(this.hBias.rows,this.hBias.columns);
+		
+		
 		initWeights();	
 
 
@@ -195,6 +204,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			 */
 			//this.hBias.subi(4);
 		}
+		
+		this.hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
+		
 
 		if(this.vBias == null) {
 			if(this.input != null) {
@@ -207,6 +219,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 				this.vBias = DoubleMatrix.zeros(nVisible);
 		}
 
+		this.vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
 
 
 	}
@@ -327,6 +340,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	public NeuralNetwork clone() {
 		try {
 			NeuralNetwork ret = getClass().newInstance();
+			ret.setHbiasAdaGrad(hBiasAdaGrad);
+			ret.setVBiasAdaGrad(vBiasAdaGrad);
 			ret.sethBias(hBias.dup());
 			ret.setvBias(vBias.dup());
 			ret.setnHidden(getnHidden());
@@ -370,6 +385,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 */
 	public void update(BaseNeuralNetwork n) {
 		this.W = n.W;
+		this.normalizeByInputRows = n.normalizeByInputRows;
 		this.hBias = n.hBias;
 		this.vBias = n.vBias;
 		this.l2 = n.l2;
@@ -380,7 +396,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.rng = n.rng;
 		this.sparsity = n.sparsity;
 		this.wAdaGrad = n.wAdaGrad;
-
+		this.hBiasAdaGrad = n.hBiasAdaGrad;
+		this.vBiasAdaGrad = n.vBiasAdaGrad;
 	}
 
 	/**
@@ -476,6 +493,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	}
 
 
+	@Override
+	public boolean normalizeByInputRows() {
+		return normalizeByInputRows;
+	}
 	/* (non-Javadoc)
 	 * @see org.deeplearning4j.nn.NeuralNetwork#getnVisible()
 	 */
@@ -608,6 +629,26 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.l2 = l2;
 	}
 
+	
+	
+	
+	
+	@Override
+	public AdaGrad gethBiasAdaGrad() {
+		return hBiasAdaGrad;
+	}
+	@Override
+	public void setHbiasAdaGrad(AdaGrad adaGrad) {
+		this.hBiasAdaGrad = adaGrad;
+	}
+	@Override
+	public AdaGrad getVBiasAdaGrad() {
+		return this.vBiasAdaGrad;
+	}
+	@Override
+	public void setVBiasAdaGrad(AdaGrad adaGrad) {
+		this.vBiasAdaGrad = adaGrad;
+	}
 	/**
 	 * Write this to an object output stream
 	 * @param os the output stream to write to
@@ -703,7 +744,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private boolean useRegularization = true;
 		private RealDistribution dist;
 		private boolean useAdaGrad = false;
-
+		private boolean normalizeByInputRows = false;
+		
+		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
+			this.normalizeByInputRows = normalizeByInputRows;
+			return this;
+		}
+		
 		public Builder<E> useAdaGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad;
 			return this;

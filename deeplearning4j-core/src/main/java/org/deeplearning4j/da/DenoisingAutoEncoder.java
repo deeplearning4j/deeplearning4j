@@ -56,7 +56,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
-	
+
 
 
 	// Encode
@@ -137,10 +137,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	@Override
 	public void train(DoubleMatrix input,double lr,Object[] params) {
 		double corruptionLevel = (double) params[0];
-		
+
 		this.input = input;
 		NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
-		
+
 		vBias.addi(gradient.getvBiasGradient());
 		W.addi(gradient.getwGradient());
 		hBias.addi(gradient.gethBiasGradient());	}
@@ -166,22 +166,22 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 		DoubleMatrix L_hbias = L_h1;
 
 		DoubleMatrix wGradient = corruptedX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
-		
+
 		if(useAdaGrad)
-		   wGradient.muli(wAdaGrad.getLearningRates(wGradient));
+			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
 		else 
 			wGradient.muli(lr);
 
 
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
-		
+
 
 		if(momentum != 0)
 			wGradient.muli(1 - momentum);
-	
-		
-		wGradient.divi(input.rows);
+
+		if(normalizeByInputRows)
+			wGradient.divi(input.rows);
 
 
 
@@ -190,7 +190,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,L_vbias_mean,L_hbias_mean);
 		this.triggerGradientEvents(gradient);
-		
+
 		return gradient;
 	}
 

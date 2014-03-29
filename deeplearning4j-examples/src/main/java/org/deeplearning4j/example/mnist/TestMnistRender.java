@@ -26,7 +26,7 @@ public class TestMnistRender {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		DBN dbn =SerializationUtils.readObject(new File(args[0]));
+		DBN dbn = SerializationUtils.readObject(new File(args[0]));
 
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,60000);

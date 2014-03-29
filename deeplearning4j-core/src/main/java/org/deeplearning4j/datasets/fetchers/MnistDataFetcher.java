@@ -37,7 +37,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 			new MnistFetcher().downloadAndUntar();
 		man = new MnistManager(rootMnist+ MnistFetcher.trainingFilesFilename_unzipped,rootMnist + MnistFetcher.trainingFileLabelsFilename_unzipped);
 		numOutcomes = 10;
-		this.binarize = false;
+		this.binarize = binarize;
 		totalExamples = NUM_EXAMPLES;
 		//1 based cursor
 		cursor = 1;

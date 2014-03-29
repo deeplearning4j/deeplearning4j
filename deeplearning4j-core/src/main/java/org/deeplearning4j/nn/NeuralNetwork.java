@@ -13,6 +13,8 @@ import org.jblas.DoubleMatrix;
 
 public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener {
 
+	public boolean normalizeByInputRows();
+	
 	public  int getnVisible();
 
 	public  void setnVisible(int nVisible);
@@ -60,6 +62,15 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	public AdaGrad getAdaGrad();
 	public void setAdaGrad(AdaGrad adaGrad);
+	
+	
+	public AdaGrad gethBiasAdaGrad();
+	public void setHbiasAdaGrad(AdaGrad adaGrad);
+	
+	
+	public AdaGrad getVBiasAdaGrad();
+	public void setVBiasAdaGrad(AdaGrad adaGrad);
+	
 	
 	public NeuralNetworkGradient getGradient(Object[] params);
 	
