@@ -79,10 +79,15 @@ public class RBMTest  {
 		.numHidden(500)
 		.withRandom(g)
 		.build();
+		
+		/*for(int i = 0; i < 1000; i++)
+			r.train(d.getFirst(), 0.01, new Object[]{1,0.01,3000});
+		*/
 		/*	for(int i = 0; i < 100; i++)
 			r.trainTillConvergence(0.1,1,d.getFirst());
 		 */
-		r.trainTillConvergence(d.getFirst() ,0.1,new Object[]{1,0.01,3000});
+		
+		r.trainTillConvergence(d.getFirst() ,0.01,new Object[]{1,0.01,3000});
 
 		DoubleMatrix reconstruct = r.reconstruct(d.getFirst());
 		for(int j = 0; j < d.numExamples(); j++) {

@@ -91,6 +91,12 @@ public class RBM extends BaseNeuralNetwork {
 	public NeuralNetworkGradient getGradient(Object[] params) {
 		int k = (int) params[0];
 		double learningRate = (double) params[1];
+		if(wAdaGrad != null)
+			this.wAdaGrad.setMasterStepSize(learningRate);
+		if(hBiasAdaGrad != null )
+			this.hBiasAdaGrad.setMasterStepSize(learningRate);
+		if(vBiasAdaGrad != null)
+			vBiasAdaGrad.setMasterStepSize(learningRate);
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
