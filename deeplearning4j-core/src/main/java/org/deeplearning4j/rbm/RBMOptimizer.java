@@ -5,7 +5,16 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
 
-
+/**
+ * Optimizes an RBM.
+ * Handles dissemination of a parameter vector 
+ * via the weights, hidden bias, and visible bias
+ * 
+ * @author Adam Gibson
+ * 
+ * @see{RBM}
+ *
+ */
 public class RBMOptimizer extends NeuralNetworkOptimizer {
 
 	

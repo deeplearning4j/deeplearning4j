@@ -5,7 +5,6 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
@@ -18,18 +17,18 @@ public class RBMMnistExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder()
-		.numberOfVisible(784)
-		.numHidden(400)
+		.numberOfVisible(784).useAdaGrad(true)
+		.numHidden(500).normalizeByInputRows(true)
 		.build();
 
 
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,20);
+		DataSetIterator iter = new MnistDataSetIterator(10,50);
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), 0.1, new Object[]{1,0.01,1000});
+			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,1000});
 			
 
 		}

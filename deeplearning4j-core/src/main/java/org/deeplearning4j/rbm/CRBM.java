@@ -29,15 +29,14 @@ public class CRBM extends RBM {
 
 	
 
+	//never instantiate without the builder
+	@SuppressWarnings("unused")
+	private CRBM(){}
 
-	public CRBM() {
-		super();
-	}
-
-	public CRBM(DoubleMatrix input, int n_visible, int n_hidden,
+	private CRBM(DoubleMatrix input, int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng, double fanIn, RealDistribution dist) {
-		super(input, n_visible, n_hidden, W, hbias, vbias, rng, fanIn, dist);
+		super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
 	}
 
 	
