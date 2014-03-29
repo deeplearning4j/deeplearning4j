@@ -53,40 +53,40 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 *  
 	 *   
 	 **/
-	public int nHidden;
+	protected int nHidden;
 	/* Weight matrix */
-	public DoubleMatrix W;
+	protected DoubleMatrix W;
 	/* hidden bias */
-	public DoubleMatrix hBias;
+	protected DoubleMatrix hBias;
 	/* visible bias */
-	public DoubleMatrix vBias;
+	protected DoubleMatrix vBias;
 	/* RNG for sampling. */
-	public RandomGenerator rng;
+	protected RandomGenerator rng;
 	/* input to the network */
-	public DoubleMatrix input;
+	protected DoubleMatrix input;
 	/* sparsity target */
-	public double sparsity = 0.01;
+	protected double sparsity = 0;
 	/* momentum for learning */
-	public double momentum = 0.1;
+	protected double momentum = 0;
 	/* Probability distribution for weights */
-	public transient RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+	protected transient RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 	/* L2 Regularization constant */
-	public double l2 = 0.1;
-	public transient NeuralNetworkOptimizer optimizer;
-	public int renderWeightsEveryNumEpochs = -1;
-	public double fanIn = -1;
-	public boolean useRegularization = true;
-	public boolean useAdaGrad = false;
+	protected double l2 = 0.1;
+	protected transient NeuralNetworkOptimizer optimizer;
+	protected int renderWeightsEveryNumEpochs = -1;
+	protected double fanIn = -1;
+	protected boolean useRegularization = false;
+	protected boolean useAdaGrad = false;
 	//used to track if adagrad needs to be changed
-	public boolean firstTimeThrough = false;
+	protected boolean firstTimeThrough = false;
 	//normalize by input rows or not
-	public boolean normalizeByInputRows = false;
+	protected boolean normalizeByInputRows = false;
 	
-	public List<NeuralNetworkGradientListener> gradientListeners;
+	protected List<NeuralNetworkGradientListener> gradientListeners;
 
-	public AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
+	protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
-	public BaseNeuralNetwork() {}
+	protected BaseNeuralNetwork() {}
 	/**
 	 * 
 	 * @param nVisible the number of outbound nodes
@@ -347,6 +347,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setnHidden(getnHidden());
 			ret.setnVisible(getnVisible());
 			ret.setW(W.dup());
+			ret.setL2(l2);
+			ret.setMomentum(momentum);
+			ret.setRenderEpochs(getRenderEpochs());
+			ret.setSparsity(sparsity);
 			ret.setRng(getRng());
 			ret.setDist(getDist());
 			ret.setAdaGrad(wAdaGrad);
@@ -741,7 +745,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private double momentum = 0.1;
 		private int renderWeightsEveryNumEpochs = -1;
 		private double fanIn = 0.1;
-		private boolean useRegularization = true;
+		private boolean useRegularization = false;
 		private RealDistribution dist;
 		private boolean useAdaGrad = false;
 		private boolean normalizeByInputRows = false;
@@ -859,6 +863,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			Constructor<?>[] c = clazz.getDeclaredConstructors();
 			for(int i = 0; i < c.length; i++) {
 				Constructor<?> curr = c[i];
+				curr.setAccessible(true);
 				Class<?>[] classes = curr.getParameterTypes();
 				//input matrix found
 				if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
