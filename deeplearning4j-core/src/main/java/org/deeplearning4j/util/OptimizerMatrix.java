@@ -1,6 +1,5 @@
 package org.deeplearning4j.util;
 
-import cc.mallet.optimize.Optimizable;
 
 public interface OptimizerMatrix {
 

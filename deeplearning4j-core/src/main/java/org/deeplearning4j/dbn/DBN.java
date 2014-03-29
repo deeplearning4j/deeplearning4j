@@ -138,7 +138,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
 		RBM ret = new RBM.Builder()
 		.useRegularization(isUseRegularization())
-		.useAdaGrad(isUseAdaGrad())
+		.useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows())
 		.withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist())
 		.numberOfVisible(nVisible).numHidden(nHidden).withWeights(W)
 		.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())

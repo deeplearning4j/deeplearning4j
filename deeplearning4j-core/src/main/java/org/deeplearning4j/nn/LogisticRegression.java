@@ -38,8 +38,12 @@ public class LogisticRegression implements Serializable {
 	private boolean useRegularization = true;
 	private boolean useAdaGrad = false;
 	private AdaGrad adaGrad;
-	private boolean firstTimeThrough;
+	private boolean firstTimeThrough = false;
+	private boolean normalizeByInputRows = false;
+
 	private LogisticRegression() {}
+
+
 
 	public LogisticRegression(DoubleMatrix input,DoubleMatrix labels, int nIn, int nOut) {
 		this.input = input;
@@ -158,8 +162,8 @@ public class LogisticRegression implements Serializable {
 				oneMinus(labels).mul(log(oneMinus(z)))).
 				columnSums().mean();
 
-		
-		
+
+
 	}
 
 	/**
@@ -202,6 +206,7 @@ public class LogisticRegression implements Serializable {
 		reg.nIn = this.nIn;
 		reg.nOut = this.nOut;
 		reg.useRegularization = this.useRegularization;
+		reg.normalizeByInputRows = this.normalizeByInputRows;
 		if(this.input != null)
 			reg.input = this.input.dup();
 		return reg;
@@ -220,8 +225,9 @@ public class LogisticRegression implements Serializable {
 		//difference of outputs
 		DoubleMatrix dy = labels.sub(p_y_given_x);
 		//weight decay
-		dy.divi(input.rows);
-	
+		if(normalizeByInputRows)
+			dy.divi(input.rows);
+
 		DoubleMatrix wGradient = input.transpose().mmul(dy);
 		if(useAdaGrad)
 			wGradient.muli(adaGrad.getLearningRates(wGradient));
@@ -317,6 +323,18 @@ public class LogisticRegression implements Serializable {
 
 
 
+	public synchronized boolean isNormalizeByInputRows() {
+		return normalizeByInputRows;
+	}
+
+
+
+	public synchronized void setNormalizeByInputRows(boolean normalizeByInputRows) {
+		this.normalizeByInputRows = normalizeByInputRows;
+	}
+
+
+
 	public static class Builder {
 		private DoubleMatrix W;
 		private LogisticRegression ret;
@@ -327,7 +345,13 @@ public class LogisticRegression implements Serializable {
 		private DoubleMatrix input;
 		private boolean useRegualarization;
 		private boolean useAdaGrad = false;
-
+		private boolean normalizeByInputRows = false;
+		
+		public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+			this.normalizeByInputRows = normalizeByInputRows;
+			return this;
+		}
+		
 		public Builder useAdaGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad; 
 			return this;
@@ -370,6 +394,8 @@ public class LogisticRegression implements Serializable {
 				ret.W = W;
 			if(b != null)
 				ret.b = b;
+			
+			ret.normalizeByInputRows = normalizeByInputRows;
 			ret.useRegularization = useRegualarization;
 			ret.l2 = l2;
 			ret.useAdaGrad = useAdaGrad;

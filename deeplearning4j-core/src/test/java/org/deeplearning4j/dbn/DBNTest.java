@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -15,6 +16,7 @@ import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.HardTanh;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.activation.Tanh;
@@ -90,7 +92,6 @@ public class DBNTest {
 				{0.,  0.,  0.5, 0.5, 0.5, 0.}});
 
 
-		x = MatrixUtil.normalizeByRowSums(x);
 
 		DoubleMatrix  y = new DoubleMatrix(new double[][]
 				{{1, 0},
@@ -102,19 +103,21 @@ public class DBNTest {
 
 		RandomGenerator rng = new MersenneTwister(123);
 
-		double preTrainLr = 0.0001;
+		double preTrainLr = 0.01;
 		int preTrainEpochs = 10000;
 		int k = 1;
 		int nIns = 6,nOuts = 2;
-		int[] hiddenLayerSizes = new int[] {5,4,3};
-		double fineTuneLr = 0.001;
+		int[] hiddenLayerSizes = new int[] {3};
+		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 1000;
 
-		CDBN dbn = new CDBN.Builder().useAdGrad(true)
+		CDBN dbn = new CDBN.Builder().useAdGrad(true).withActivation(new Tanh())
 				.numberOfInputs(nIns).numberOfOutPuts(nOuts)
 				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
 				.withRng(rng)
 				.build();
+		
+		
 		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
 		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
@@ -124,9 +127,9 @@ public class DBNTest {
 				{0., 0., 0., 0.5, 0.5, 0.},
 				{0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
 
-
+		DoubleMatrix predict =  dbn.predict(x);
 		Evaluation eval = new Evaluation();
-		eval.eval(y, dbn.predict(x));
+		eval.eval(y,predict);
 		log.info(eval.stats());
 
 	}
@@ -138,9 +141,9 @@ public class DBNTest {
 
 		double preTrainLr = 0.01;
 		int preTrainEpochs = 10000;
-		int k = 15;
+		int k = 1;
 		int nIns = 4,nOuts = 3;
-		int[] hiddenLayerSizes = new int[] {4,3,3};
+		int[] hiddenLayerSizes = new int[] {4,3,2};
 		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 10000;
 
@@ -172,25 +175,25 @@ public class DBNTest {
 
 		log.info("Training on " + miniBatches.size() + " minibatches");
 
-		
-		for(int i = 0;i < miniBatches.size(); i++) {
+
+		for(int i = 0; i < miniBatches.size(); i++) {
 			DataSet curr = miniBatches.get(i);
 			dbn.pretrain(curr.getFirst(),k, preTrainLr, preTrainEpochs);
 
 		}
-		
-		
+
+
 		Evaluation eval = new Evaluation();
 
-		
+
 		for(int i = 0; i < miniBatches.size(); i++) {
 			DataSet curr = miniBatches.get(i);
 			dbn.setInput(curr.getFirst());
 			dbn.finetune(curr.getSecond(),fineTuneLr, fineTuneEpochs);
 
 		}
-		
-		
+
+
 
 
 
@@ -213,17 +216,32 @@ public class DBNTest {
 
 	@Test
 	public void testMnist() throws IOException {
-		MnistDataFetcher fetcher = new MnistDataFetcher();
-		fetcher.fetch(20);
+		MnistDataFetcher fetcher = new MnistDataFetcher(true);
+		fetcher.fetch(100);
 		DataSet d = fetcher.next();
-		assertEquals(20,d.numExamples());
-
+		d.filterAndStrip(new int[]{0,1});
+		log.info("Training on " + d.numExamples());
+		StopWatch watch = new StopWatch();
+		
+		log.info("Data set " + d);
+		
 		DBN dbn = new DBN.Builder()
-		.hiddenLayerSizes(new int[]{500,250,100}).withActivation(new HardTanh())
-		.numberOfInputs(784).numberOfOutPuts(10).useRegularization(false).build();
-		dbn.pretrain(d.getFirst(), 1, 0.0001, 30000);
-		dbn.finetune(d.getSecond(), 0.0001, 10000);
-
+		.withActivation(Activations.tanh())
+		.hiddenLayerSizes(new int[]{500,250,100})
+		.withMomentum(0)
+		.numberOfInputs(784).useAdGrad(true)
+		.numberOfOutPuts(2)
+		.useRegularization(false)
+		.build();
+		
+		watch.start();
+		
+		dbn.pretrain(d.getFirst(), 1, 0.1, 300);
+		dbn.finetune(d.getSecond(), 0.1, 100);
+		
+		watch.stop();
+		
+		log.info("Took " + watch.getTime());
 		Evaluation eval = new Evaluation();
 		DoubleMatrix predict = dbn.predict(d.getFirst());
 		eval.eval(d.getSecond(), predict);
