@@ -27,8 +27,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		this.network = network;
 		this.lr = lr;
 		this.extraParams = trainingParams;
-		if(network.useAdaGrad)
-			network.resetAdaGrad(lr);
+		
 	}
 
 

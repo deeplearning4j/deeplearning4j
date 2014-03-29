@@ -9,7 +9,7 @@ import org.jblas.MatrixFunctions;
  * 
  * Vectorized Learning Rate used per Connection Weight
  * 
- * Adapted from: https://github.com/jpatanooga/Metronome/blob/master/src/main/java/tv/floe/metronome/deeplearning/neuralnetwork/core/learning/AdagradLearningRate.java
+ * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
  * 
  * @author Adam Gibson
  *
@@ -28,18 +28,13 @@ public class AdaGrad implements Serializable {
 	public DoubleMatrix gradient;
 	public int rows;
 	public int cols;
-	private boolean first = true;
-
-	public double autoCorrect = 0.95;
+	
 
 	public AdaGrad( int rows, int cols, double gamma) {
 		this.rows = rows;
 		this.cols = cols;
 		this.adjustedGradient = new DoubleMatrix(rows, cols);
-
 		this.historicalGradient = new DoubleMatrix(rows, cols);
-
-
 		this.masterStepSize = gamma;
 
 
@@ -55,22 +50,31 @@ public class AdaGrad implements Serializable {
 
 
 
-
+	/**
+	 * Gets feature specific learning rates
+	 * Adagrad keeps a history of gradients being passed in.
+	 * Note that each gradient passed in becomes adapted over time, hence
+	 * the name adagrad
+	 * @param gradient the gradient to get learning rates for
+	 * @return the feature specific learning rates
+	 */
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
-		this.gradient = gradient.dup();
-		DoubleMatrix gradientsSquared = MatrixFunctions.pow(gradient, 2);
-		if(first) {
-			this.historicalGradient = gradientsSquared;
-			first = false;
-		}
+		this.gradient = MatrixFunctions.abs(gradient.dup());
+		//lr annealing
+		double currentLearningRate = this.masterStepSize;
 
-		else 
-			this.historicalGradient.addi(gradientsSquared);
 
-		DoubleMatrix gAdd = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
-		this.adjustedGradient = this.gradient.div(gAdd);
-		this.adjustedGradient.muli(masterStepSize);
-		return adjustedGradient.neg();
+
+		//double currentLearningRate = this.masterStepSize;
+		DoubleMatrix gradientSquared = MatrixFunctions.pow(this.gradient,2);
+		//historicalGradient += graidentSquared
+		this.historicalGradient.addi(gradientSquared);
+		//numerical stability
+		DoubleMatrix sqrtHistoricalGradient = MatrixFunctions.sqrt(historicalGradient).add(fudgeFactor);
+
+		//adjustedGradient = gradient / (fudgeFactor + sqrt(historicalGradient))
+		this.adjustedGradient = this.gradient.div(sqrtHistoricalGradient).mul(currentLearningRate);
+		return adjustedGradient;
 	}
 
 	public  double getMasterStepSize() {
@@ -81,7 +85,7 @@ public class AdaGrad implements Serializable {
 		this.masterStepSize = masterStepSize;
 	}
 
-	
-	
+
+
 
 }
