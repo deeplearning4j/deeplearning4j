@@ -2,14 +2,11 @@ package org.deeplearning4j.rbm;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -52,11 +49,11 @@ public class RBMTest  {
 		log.info("Reconstruction " + r.reconstruct(v).toString());
 
 		NeuralNetwork r2 = r.clone();
-		assertEquals(r2.getnVisible(),r.nVisible);
-		assertEquals(r2.getnHidden(),r.nHidden);
-		assertEquals(r2.getW(),r.W);
-		assertEquals(r2.gethBias(),r.hBias);
-		assertEquals(r2.getvBias(),r.vBias);
+		assertEquals(r2.getnVisible(),r.getnVisible());
+		assertEquals(r2.getnHidden(),r.getnHidden());
+		assertEquals(r2.getW(),r.getW());
+		assertEquals(r2.gethBias(),r.gethBias());
+		assertEquals(r2.getvBias(),r.getvBias());
 		r2.trainTillConvergence(d, 0.01,new Object[]{1,0.01,1000});
 		log.info("Cross entropy " + r.getReConstructionCrossEntropy());
 

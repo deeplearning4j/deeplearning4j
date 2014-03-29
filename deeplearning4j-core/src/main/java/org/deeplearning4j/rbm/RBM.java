@@ -38,12 +38,14 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	private static final long serialVersionUID = 6189188205731511957L;
 	protected NeuralNetworkOptimizer optimizer;
-	public RBM() {}
+	
+
+	protected RBM() {}
 
 
 
 
-	public RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
+	protected RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
 			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
 		super(input, n_visible, n_hidden, W, hbias, vbias, rng,fanIn,dist);
 	}
@@ -91,12 +93,6 @@ public class RBM extends BaseNeuralNetwork {
 	public NeuralNetworkGradient getGradient(Object[] params) {
 		int k = (int) params[0];
 		double learningRate = (double) params[1];
-		if(wAdaGrad != null)
-			this.wAdaGrad.setMasterStepSize(learningRate);
-		if(hBiasAdaGrad != null )
-			this.hBiasAdaGrad.setMasterStepSize(learningRate);
-		if(vBiasAdaGrad != null)
-			vBiasAdaGrad.setMasterStepSize(learningRate);
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
@@ -134,12 +130,12 @@ public class RBM extends BaseNeuralNetwork {
 
 		for(int i = 0; i < k; i++) {
 
-			
+
 			if(i == 0) 
 				matrices = gibbhVh(chainStart);
 			else
 				matrices = gibbhVh(nhSamples);
-			
+
 			//get the cost updates for sampling in the chain after k iterations
 			nvMeans = matrices.getFirst().getFirst();
 			nvSamples = matrices.getFirst().getSecond();
@@ -151,8 +147,8 @@ public class RBM extends BaseNeuralNetwork {
 		 * Update gradient parameters
 		 */
 		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
-						nvSamples.transpose().mmul(nhMeans)
-		);
+				nvSamples.transpose().mmul(nhMeans)
+				);
 
 		if(useAdaGrad)
 			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
@@ -162,6 +158,7 @@ public class RBM extends BaseNeuralNetwork {
 		//weight decay via l2 regularization
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
+
 		if(momentum != 0)
 			wGradient.muli( 1 - momentum);
 
@@ -175,38 +172,20 @@ public class RBM extends BaseNeuralNetwork {
 
 			//all hidden units must stay around this number
 			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0);
-			if(useAdaGrad) {
-				DoubleMatrix hBiasLearningRates = this.hBiasAdaGrad.getLearningRates(hBiasGradient);
-				hBiasGradient.muli(hBiasLearningRates);
-			}
-			else
-				hBiasGradient.muli(learningRate);
+			hBiasGradient.muli(learningRate);
 
 		}
 		else {
 			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
 			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
-			if(useAdaGrad) {
-				DoubleMatrix hBiasLearningRates = hBiasAdaGrad.getLearningRates(hBiasGradient);
-				hBiasGradient.muli(hBiasLearningRates);
-			}
-			else
-				hBiasGradient.muli(learningRate);
+			hBiasGradient.muli(learningRate);
 
 
 		}
 
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
-
-		if(useAdaGrad) {
-			DoubleMatrix vBiasLearningRates = vBiasAdaGrad.getLearningRates(vBiasGradient);
-			vBiasGradient.muli(vBiasLearningRates);
-
-		}
-
-		else
-			vBiasGradient.muli(learningRate);
+		vBiasGradient.muli(learningRate);
 
 
 		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);

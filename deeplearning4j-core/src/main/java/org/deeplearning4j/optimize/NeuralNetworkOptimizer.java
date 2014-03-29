@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
@@ -22,8 +22,13 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 
 
-
-	public NeuralNetworkOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
+	/**
+	 * 
+	 * @param network
+	 * @param lr
+	 * @param trainingParams
+	 */
+	public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams) {
 		this.network = network;
 		this.lr = lr;
 		this.extraParams = trainingParams;
@@ -32,7 +37,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 
 	private static final long serialVersionUID = 4455143696487934647L;
-	protected BaseNeuralNetwork network;
+	protected NeuralNetwork network;
 	protected double lr;
 	protected Object[] extraParams;
 	protected double tolerance = 0.00001;
@@ -68,7 +73,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public int getNumParameters() {
-		return network.W.length + network.hBias.length + network.vBias.length;
+		return network.getW().length + network.gethBias().length + network.getvBias().length;
 	}
 
 
@@ -90,18 +95,18 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	@Override
 	public double getParameter(int index) {
 		//beyond weight matrix
-		if(index >= network.W.length) {
+		if(index >= network.getW().length) {
 			int i = getAdjustedIndex(index);
 			//beyond visible bias
-			if(index >= network.vBias.length + network.W.length) {
-				return network.hBias.get(i);
+			if(index >= network.getvBias().length + network.getW().length) {
+				return network.gethBias().get(i);
 			}
 			else
-				return network.vBias.get(i);
+				return network.getvBias().get(i);
 
 		}
 		else 
-			return network.W.get(index);
+			return network.getW().get(index);
 
 
 
@@ -124,28 +129,28 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	@Override
 	public void setParameter(int index, double value) {
 		//beyond weight matrix
-		if(index >= network.W.length) {
+		if(index >= network.getW().length) {
 			//beyond visible bias
-			if(index >= network.vBias.length + network.W.length)  {
+			if(index >= network.getvBias().length + network.getW().length)  {
 				int i = getAdjustedIndex(index);
-				network.hBias.put(i, value);
+				network.gethBias().put(i, value);
 			}
 			else {
 				int i = getAdjustedIndex(index);
-				network.vBias.put(i,value);
+				network.getvBias().put(i,value);
 
 			}
 
 		}
 		else {
-			network.W.put(index,value);
+			network.getW().put(index,value);
 		}
 	}
 
 
 	private int getAdjustedIndex(int index) {
-		int wLength = network.W.length;
-		int vBiasLength = network.vBias.length;
+		int wLength = network.getW().length;
+		int vBiasLength = network.getvBias().length;
 		if(index < wLength)
 			return index;
 		else if(index >= wLength + vBiasLength) {
