@@ -175,11 +175,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		DoubleMatrix wGradient = corruptedX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
 
-		if(useAdaGrad)
-			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
-		else 
-			wGradient.muli(lr);
-
+		
 
 		if(useRegularization) 
 			wGradient.subi(W.muli(l2));
@@ -190,6 +186,13 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		if(normalizeByInputRows)
 			wGradient.divi(input.rows);
+
+		
+		if(useAdaGrad)
+			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
+		else 
+			wGradient.muli(lr);
+
 
 
 
