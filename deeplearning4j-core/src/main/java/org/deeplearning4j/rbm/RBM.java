@@ -155,21 +155,48 @@ public class RBM extends BaseNeuralNetwork {
 		if(momentum != 0)
 			wGradient.muli( 1 - momentum);
 
-		wGradient.divi(input.rows);
+
+		if(normalizeByInputRows)
+			wGradient.divi(input.rows);
 
 		DoubleMatrix hBiasGradient = null;
 
 		if(this.sparsity != 0) {
+
 			//all hidden units must stay around this number
-			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0).mul(learningRate);
+			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0);
+			if(useAdaGrad) {
+				DoubleMatrix hBiasLearningRates = this.hBiasAdaGrad.getLearningRates(hBiasGradient);
+				hBiasGradient.muli(hBiasLearningRates);
+			}
+			else
+				hBiasGradient.muli(learningRate);
+
 		}
 		else {
 			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0).mul(learningRate);
+			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
+			if(useAdaGrad) {
+				DoubleMatrix hBiasLearningRates = this.hBiasAdaGrad.getLearningRates(hBiasGradient);
+				hBiasGradient.muli(hBiasLearningRates);
+			}
+			else
+				hBiasGradient.muli(learningRate);
+
+
 		}
 
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
-		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0).mul(learningRate);
+		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
+
+		if(useAdaGrad) {
+			DoubleMatrix vBiasLearningRates = this.vBiasAdaGrad.getLearningRates(vBiasGradient);
+			vBiasGradient.muli(vBiasLearningRates);
+
+		}
+
+		else
+			vBiasGradient.muli(learningRate);
 
 
 		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);

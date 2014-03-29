@@ -6,14 +6,12 @@ import java.util.List;
 
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.util.DeepLearningGradientAscent;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cc.mallet.optimize.Optimizable;
-import cc.mallet.optimize.Optimizer;
 
 /**
  * Performs basic beam search based on the network's loss function
@@ -48,7 +46,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		if(opt == null)
 			opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
 		//opt.setTolerance(tolerance);
-		int epochs = (int) extraParams[2];
+		int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
 		opt.optimize(epochs);
 
 

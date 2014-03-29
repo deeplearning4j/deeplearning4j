@@ -135,6 +135,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	protected List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 
+	/*
+	 * Normalize by input rows with gradients or not
+	 */
+	protected boolean normalizeByInputRows = false;
 
 	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
@@ -244,7 +248,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		logLayer.resetAdaGrad(lr);
 	}
 
-
+	/**
+	 * Returns the sum of the reconstruction entropies 
+	 * divided by the number of layers
+	 * @return the average reconstruction entropy across layers
+	 */
 	public double getReconstructionCrossEntropy() {
 		double sum = 0;
 		for(int i = 0; i < nLayers; i++) {
@@ -361,8 +369,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		// layer for output using LogisticRegression
-		this.logLayer = new LogisticRegression.Builder().useAdaGrad(useAdaGrad)
-				.useRegularization(useRegularization).numberOfInputs(this.hiddenLayerSizes[this.nLayers-1])
+		this.logLayer = new LogisticRegression.Builder()
+		.useAdaGrad(useAdaGrad)
+		.normalizeByInputRows(normalizeByInputRows)
+				.useRegularization(useRegularization)
+				.numberOfInputs(hiddenLayerSizes[nLayers-1])
 				.numberOfOutputs(nOuts).withL2(l2).build();
 		dimensionCheck();
 		applyTransforms();
@@ -549,7 +560,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			currInput = getSigmoidLayers()[i].activate(currInput);
 			activations.add(currInput);
 		}
-		
+
 		logLayer.setInput(currInput);
 		activations.add(getLogLayer().predict(currInput));
 		return activations;
@@ -648,19 +659,26 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		else {
-			
+
 
 			boolean train = true;
 			int count = 0;
 			int numOver = 0;
 			int tolerance = 3;
+			double changeTolerance = 1e-5;
 			while(train) {
 				count++;
 				backPropStep(revert,lr,count);
 
 				Double entropy = this.negativeLogLikelihood();
 				if(lastEntropy == null || entropy < lastEntropy) {
-					lastEntropy = entropy;
+					double diff = Math.abs(entropy - lastEntropy);
+					if(diff < changeTolerance) {
+						log.info("Not enough of a change on back prop...breaking");
+						break;
+					}
+					else
+						lastEntropy = entropy;
 					log.info("New negative log likelihood " + lastEntropy);
 				}
 				else if(entropy >= lastEntropy) {
@@ -797,8 +815,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		//second to last activation is input
-		DoubleMatrix predicted = logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
-		
+		//DoubleMatrix predicted = logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
+		DoubleMatrix predicted = activations.get(activations.size() - 1);
 		return predicted;
 	}
 
@@ -923,7 +941,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				this.getLayers()[i] = network.getLayers()[i].clone();
 
 		}
-
+		
+		this.normalizeByInputRows = network.normalizeByInputRows;
 		this.useAdaGrad = network.useAdaGrad;
 		this.hiddenLayerSizes = network.hiddenLayerSizes;
 		if(network.logLayer != null)
@@ -1252,6 +1271,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+	public  boolean isNormalizeByInputRows() {
+		return normalizeByInputRows;
+	}
+
+	public  void setNormalizeByInputRows(boolean normalizeByInputRows) {
+		this.normalizeByInputRows = normalizeByInputRows;
+	}
+
+
+
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
@@ -1278,8 +1307,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private boolean useAdaGrad = false;
 		private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+		private boolean normalizeByInputRows = false;
 
-
+		
+		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
+			this.normalizeByInputRows = normalizeByInputRows;
+			return this;
+		}
+		
 
 		public Builder<E> withMultiLayerGradientListeners(List<MultiLayerGradientListener> multiLayerGradientListeners) {
 			this.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
@@ -1479,6 +1514,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		public E build() {
 			try {
 				ret = (E) clazz.newInstance();
+				ret.setNormalizeByInputRows(normalizeByInputRows);
 				ret.setInput(this.input);
 				ret.setnOuts(this.nOuts);
 				ret.setnIns(this.nIns);

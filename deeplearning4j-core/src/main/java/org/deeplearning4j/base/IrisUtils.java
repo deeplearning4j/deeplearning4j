@@ -17,7 +17,7 @@ import org.springframework.core.io.ClassPathResource;
 
 public class IrisUtils {
 
-	
+
 	public static List<DataSet> loadIris(int from,int to) throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
 		@SuppressWarnings("unchecked")
@@ -41,18 +41,19 @@ public class IrisUtils {
 		}
 
 		MatrixUtil.scaleByMax(ret);
+		//ret = MatrixUtil.normalizeByRowSums(ret);
 		//ret = MatrixUtil.roundToTheNearest(ret, 1);
-		
-		for(int i = 0; i < ret.rows; i++) {
+
+		for(int i = 0; i < ret.rows; i++) 
 			list.add(new DataSet(ret.getRow(i),new DoubleMatrix(outcomes[i]).transpose()));
-		}
 		
-		
+
+
 		return list;
 	}
 
 
-	
+
 	public static DataSet loadIris() throws IOException {
 		ClassPathResource resource = new ClassPathResource("/iris.dat");
 		@SuppressWarnings("unchecked")
