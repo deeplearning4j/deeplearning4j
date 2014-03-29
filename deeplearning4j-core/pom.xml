@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.0.3.1</version>
+		<version>0.0.3.1-SNAPSHOT</version>
 	</parent>
 	<properties>
 		<logback.version>1.0.6</logback.version>
@@ -47,7 +47,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.3.1</version>
+			<version>3.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
