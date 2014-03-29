@@ -127,17 +127,19 @@ public class RBM extends BaseNeuralNetwork {
 		 * K steps of gibbs sampling. THis is the positive phase of contrastive divergence.
 		 * 
 		 * There are 4 matrices being computed for each gibbs sampling.
-		 * The samples from both the positive and negative phases and their expected values or averages.
+		 * The samples from both the positive and negative phases and their expected values 
+		 * or averages.
 		 * 
 		 */
 
 		for(int i = 0; i < k; i++) {
 
-
+			
 			if(i == 0) 
 				matrices = gibbhVh(chainStart);
 			else
 				matrices = gibbhVh(nhSamples);
+			
 			//get the cost updates for sampling in the chain after k iterations
 			nvMeans = matrices.getFirst().getFirst();
 			nvSamples = matrices.getFirst().getSecond();
@@ -148,7 +150,9 @@ public class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(nvSamples.transpose().mmul(nhMeans));
+		DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+						nvSamples.transpose().mmul(nhMeans)
+		);
 
 		if(useAdaGrad)
 			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
@@ -183,7 +187,7 @@ public class RBM extends BaseNeuralNetwork {
 			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
 			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
 			if(useAdaGrad) {
-				DoubleMatrix hBiasLearningRates = this.hBiasAdaGrad.getLearningRates(hBiasGradient);
+				DoubleMatrix hBiasLearningRates = hBiasAdaGrad.getLearningRates(hBiasGradient);
 				hBiasGradient.muli(hBiasLearningRates);
 			}
 			else
@@ -196,7 +200,7 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
 
 		if(useAdaGrad) {
-			DoubleMatrix vBiasLearningRates = this.vBiasAdaGrad.getLearningRates(vBiasGradient);
+			DoubleMatrix vBiasLearningRates = vBiasAdaGrad.getLearningRates(vBiasGradient);
 			vBiasGradient.muli(vBiasLearningRates);
 
 		}
@@ -247,7 +251,12 @@ public class RBM extends BaseNeuralNetwork {
 		return new Pair<>(v1Mean,v1Sample);
 	}
 
-
+	/**
+	 * Calculates the activation of the visible :
+	 * sigmoid(v * W + hbias)
+	 * @param v the visible layer
+	 * @return the approximated activations of the visible layer
+	 */
 	public DoubleMatrix propUp(DoubleMatrix v) {
 		DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
 		return sigmoid(preSig);
@@ -255,7 +264,8 @@ public class RBM extends BaseNeuralNetwork {
 	}
 
 	/**
-	 * Propagates hidden down to visible
+	 * Calculates the activation of the hidden:
+	 * sigmoid(h * W + vbias)
 	 * @param h the hidden layer
 	 * @return the approximated output of the hidden layer
 	 */

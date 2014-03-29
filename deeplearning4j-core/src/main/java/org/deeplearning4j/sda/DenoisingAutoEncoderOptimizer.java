@@ -5,7 +5,12 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
 
-
+/**
+ * Optimizes a denoising auto encoder.
+ * Handles DA specific parameters such as corruption level
+ * @author Adam Gibson
+ *
+ */
 public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 
 	
@@ -17,7 +22,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 	}
 
 	@Override
-	public synchronized void getValueGradient(double[] buffer) {
+	public  void getValueGradient(double[] buffer) {
 		double corruptionLevel = (double) extraParams[0];
 		NeuralNetworkGradient gradient = network.getGradient(new Object[]{corruptionLevel,lr});
 		DoubleMatrix L_W = gradient.getwGradient();
