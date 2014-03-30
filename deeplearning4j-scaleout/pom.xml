@@ -4,10 +4,9 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>[</version>
+		<version>0.0.3.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout</artifactId>
-  <version>0.0.3.1</version>
 	<packaging>pom</packaging>
 	<name>DeepLearning4j-scaleout-parent</name>
 	<modules>
