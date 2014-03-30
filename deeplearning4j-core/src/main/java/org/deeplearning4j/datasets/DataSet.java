@@ -108,7 +108,15 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 		setSecond(ret.getSecond());
 	}
 
+	
+	public void roundInputToTheNearest(int numDecimalPlaces) {
+		setFirst(MatrixUtil.roundToTheNearest(getFirst(), numDecimalPlaces));
+	}
 
+	public void scale() {
+		MatrixUtil.scaleByMax(getFirst());
+	}
+	
 	/**
 	 * Adds a feature for each example on to the current feature vector
 	 * @param toAdd the feature vector to add
