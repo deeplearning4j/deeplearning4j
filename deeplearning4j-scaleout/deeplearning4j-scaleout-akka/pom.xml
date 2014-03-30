@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.0.3.2-SNAPSHOT</version>
+		<version>0.0.3.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-akka</artifactId>
 	<name>deeplearning4j-scaleout-akka</name>
@@ -25,6 +25,22 @@
 	</dependencyManagement>
 	<build>
 		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<descriptors>
+						<descriptor>src/assemble/bin.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
