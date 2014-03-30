@@ -78,7 +78,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	private double fanIn = -1;
 	//whether to render weights or not; anything <=0 will not render the weights
 	private int renderWeightsEveryNEpochs = -1;
-	private boolean useRegularization = true;
+	private boolean useRegularization = false;
 	//sometimes we may need to transform weights; this allows a 
 	//weight transform upon layer setup
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
@@ -1295,7 +1295,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private double fanIn = -1;
 		private int renderWeithsEveryNEpochs = -1;
 		private double l2 = 0.01;
-		private boolean useRegularization = true;
+		private boolean useRegularization = false;
 		private double momentum;
 		private RealDistribution dist;
 		protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
