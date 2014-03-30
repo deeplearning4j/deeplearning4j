@@ -23,25 +23,24 @@ public class MnistExample {
 	 */
 	public static void main(String[] args) throws IOException {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,3000);
+		DataSetIterator iter = new MnistDataSetIterator(10,500);
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
 		DBN dbn = new DBN.Builder().useAdGrad(true).useRegularization(false)
-		.hiddenLayerSizes(new int[]{500,400,250})
+		.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
 		.numberOfInputs(784).numberOfOutPuts(10)
 		.build();
 		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			dbn.pretrain(next.getFirst(), 1, 0.01, 1000);
-			//dbn.finetune(next.getSecond(), 0.01, 1000);
+			dbn.pretrain(next.getFirst(), 1, 0.01, 10000);
 		}
 		
 		iter.reset();
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFirst());
-			dbn.finetune(next.getSecond(), 0.01, 1000);
+			dbn.finetune(next.getSecond(), 0.01, 10000);
 		}
 		
 		
