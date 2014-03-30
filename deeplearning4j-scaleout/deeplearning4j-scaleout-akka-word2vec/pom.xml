@@ -3,10 +3,21 @@
   <parent>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-scaleout</artifactId>
-    <version>0.0.3.1</version>
+    <version>0.0.3.1-SNAPSHOT</version>
   </parent>
   <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
-  
+  <build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptors>
+						<descriptor>src/assemble/bin.xml</descriptor>
+					</descriptors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
   <dependencies>
   	<dependency>
   		<groupId>org.deeplearning4j</groupId>
