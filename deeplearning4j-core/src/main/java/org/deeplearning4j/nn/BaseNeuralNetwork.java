@@ -339,7 +339,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	@Override
 	public NeuralNetwork clone() {
 		try {
-			NeuralNetwork ret = getClass().newInstance();
+			Constructor<?> c = getClass().getDeclaredConstructors()[0];
+			c.setAccessible(true);
+			NeuralNetwork ret = (NeuralNetwork) c.newInstance();
 			ret.setHbiasAdaGrad(hBiasAdaGrad);
 			ret.setVBiasAdaGrad(vBiasAdaGrad);
 			ret.sethBias(hBias.dup());
