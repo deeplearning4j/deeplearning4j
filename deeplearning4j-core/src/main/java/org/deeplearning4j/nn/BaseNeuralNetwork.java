@@ -67,7 +67,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	/* sparsity target */
 	protected double sparsity = 0;
 	/* momentum for learning */
-	protected double momentum = 0;
+	protected double momentum = 0.5;
 	/* Probability distribution for weights */
 	protected transient RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 	/* L2 Regularization constant */
@@ -744,7 +744,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private DoubleMatrix input;
 		private double sparsity = 0.01;
 		private double l2 = 0.01;
-		private double momentum = 0.1;
+		private double momentum = 0.5;
 		private int renderWeightsEveryNumEpochs = -1;
 		private double fanIn = 0.1;
 		private boolean useRegularization = false;
