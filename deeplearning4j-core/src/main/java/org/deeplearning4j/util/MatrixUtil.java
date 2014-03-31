@@ -36,78 +36,78 @@ public class MatrixUtil {
 			toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
 		}
 	}
-	
-	
-	public static double variance(DoubleMatrix input) {
+
+
+	public static DoubleMatrix variance(DoubleMatrix input) {
 		DoubleMatrix means = input.columnMeans();
-		DoubleMatrix diff = MatrixFunctions.abs(input.subRowVector(means));
-		
-		double variance = diff.sum() / diff.rows;
+		DoubleMatrix diff = MatrixFunctions.pow(input.subRowVector(means),2);
+		//avg of the squared differences from the mean
+		DoubleMatrix variance = diff.columnMeans().div(input.rows);
 		return variance;
 
 	}
-	
-	
-	  /**
-     * Takes an image (grey-levels) and a kernel and a position,
-     * applies the convolution at that position and returns the
-     * new pixel value.
-     *
-     * @param input The 2D double array representing the image.
-     * @param x The x coordinate for the position of the convolution.
-     * @param y The y coordinate for the position of the convolution.
-     * @param k The 2D array representing the kernel.
-     * @param kernelWidth The width of the kernel.
-     * @param kernelHeight The height of the kernel.
-     * @return The new pixel value after the convolution.
-     */
-    public static double singlePixelConvolution(DoubleMatrix input,
-            int x, int y,
-            DoubleMatrix k,
-            int kernelWidth,
-            int kernelHeight) {
-        double output = 0;
-        
-        for (int i = 0; i < kernelWidth; ++i) {
-            for (int j = 0; j < kernelHeight; ++j) {
-                output += (input.get(x + i,y + j) * k.get(i,j));
-            }
-        }
-        return output;
-    }
 
-  
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     *
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolution2D(DoubleMatrix input,
-            int width, int height,
-           DoubleMatrix kernel,
-            int kernelWidth,
-            int kernelHeight) {
-        int smallWidth = width - kernelWidth + 1;
-        int smallHeight = height - kernelHeight + 1;
-        DoubleMatrix output = DoubleMatrix.zeros(smallWidth,smallHeight);
-    
-        for (int i = 0; i < smallWidth; ++i) {
-            for (int j = 0; j < smallHeight; ++j) {
-                output.put(i,j,singlePixelConvolution(input, i, j, kernel,
-                        kernelWidth, kernelHeight));
-            }
-        }
-        return output;
-    }
-	
-	
+
+	/**
+	 * Takes an image (grey-levels) and a kernel and a position,
+	 * applies the convolution at that position and returns the
+	 * new pixel value.
+	 *
+	 * @param input The 2D double array representing the image.
+	 * @param x The x coordinate for the position of the convolution.
+	 * @param y The y coordinate for the position of the convolution.
+	 * @param k The 2D array representing the kernel.
+	 * @param kernelWidth The width of the kernel.
+	 * @param kernelHeight The height of the kernel.
+	 * @return The new pixel value after the convolution.
+	 */
+	public static double singlePixelConvolution(DoubleMatrix input,
+			int x, int y,
+			DoubleMatrix k,
+			int kernelWidth,
+			int kernelHeight) {
+		double output = 0;
+
+		for (int i = 0; i < kernelWidth; ++i) {
+			for (int j = 0; j < kernelHeight; ++j) {
+				output += (input.get(x + i,y + j) * k.get(i,j));
+			}
+		}
+		return output;
+	}
+
+
+	/**
+	 * Takes a 2D array of grey-levels and a kernel and applies the convolution
+	 * over the area of the image specified by width and height.
+	 *
+	 * @param input the 2D double array representing the image
+	 * @param width the width of the image
+	 * @param height the height of the image
+	 * @param kernel the 2D array representing the kernel
+	 * @param kernelWidth the width of the kernel
+	 * @param kernelHeight the height of the kernel
+	 * @return the 2D array representing the new image
+	 */
+	public static DoubleMatrix convolution2D(DoubleMatrix input,
+			int width, int height,
+			DoubleMatrix kernel,
+			int kernelWidth,
+			int kernelHeight) {
+		int smallWidth = width - kernelWidth + 1;
+		int smallHeight = height - kernelHeight + 1;
+		DoubleMatrix output = DoubleMatrix.zeros(smallWidth,smallHeight);
+
+		for (int i = 0; i < smallWidth; ++i) {
+			for (int j = 0; j < smallHeight; ++j) {
+				output.put(i,j,singlePixelConvolution(input, i, j, kernel,
+						kernelWidth, kernelHeight));
+			}
+		}
+		return output;
+	}
+
+
 	public static DataSet xorData(int n) {
 
 		DoubleMatrix x = DoubleMatrix.rand(n,2);
@@ -223,7 +223,7 @@ public class MatrixUtil {
 		return U;
 	}
 
-	
+
 	/**
 	 * A uniform sample ranging from 0 to sigma.
 	 * @param rng the rng to use
@@ -234,17 +234,64 @@ public class MatrixUtil {
 	 * with numbers between 0 and 1
 	 */
 	public static DoubleMatrix normal(RandomGenerator rng,DoubleMatrix mean,double sigma) {
-		double variance = Math.sqrt(sigma);
 		DoubleMatrix U = new DoubleMatrix(mean.rows,mean.columns);
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++)  {
-				RealDistribution reals = new NormalDistribution(mean.get(i,j),variance);
+				RealDistribution reals = new NormalDistribution(mean.get(i,j),sigma);
 				U.put(i,j,reals.sample());
 
 			}
 		return U;
 	}
 
+
+
+	/**
+	 * A uniform sample ranging from 0 to sigma.
+	 * @param rng the rng to use
+	 * @param mean, the matrix mean from which to generate values from
+	 * @param variance the variance matrix where each column is the variance
+	 * for the respective columns of the matrix
+	 * @return a uniform sample of the given shape and size
+	 * 
+	 * with numbers between 0 and 1
+	 */
+	public static DoubleMatrix normal(RandomGenerator rng,DoubleMatrix mean,DoubleMatrix variance) {
+		DoubleMatrix std = MatrixFunctions.sqrt(variance);
+		for(int i = 0;i < variance.length; i++)
+			if(variance.get(i) <= 0)
+				variance.put(i,1e-4);
+		
+		DoubleMatrix U = new DoubleMatrix(mean.rows,mean.columns);
+		for(int i = 0; i < U.rows; i++)
+			for(int j = 0; j < U.columns; j++)  {
+				RealDistribution reals = new NormalDistribution(mean.get(i,j),std.get(j));
+				U.put(i,j,reals.sample());
+
+			}
+		return U;
+	}
+
+
+	/**
+	 * Sample from a normal distribution given a mean of zero and a matrix of standard deviations.
+	 * @param rng the rng to use
+	 * @param standard deviations, the matrix standard deviations to use
+	 * for the respective columns of the matrix
+	 * @return a uniform sample of the given shape and size
+	 */
+	public static DoubleMatrix normal(RandomGenerator rng,DoubleMatrix standardDeviations) {
+		
+		DoubleMatrix U = new DoubleMatrix(standardDeviations.rows,standardDeviations.columns);
+		for(int i = 0; i < U.rows; i++)
+			for(int j = 0; j < U.columns; j++)  {
+				RealDistribution reals = new NormalDistribution(0,standardDeviations.get(i,j));
+				U.put(i,j,reals.sample());
+
+			}
+		return U;
+	}
+	
 	public static boolean isValidOutcome(DoubleMatrix out) {
 		boolean found = false;
 		for(int col = 0; col < out.length; col++) {
@@ -497,13 +544,13 @@ public class MatrixUtil {
 		return a.mmul(b);
 	}
 
-	
+
 	public static DoubleMatrix scalarMinus(double scalar,DoubleMatrix ep) {
 		DoubleMatrix d = new DoubleMatrix(ep.rows,ep.columns);
 		d.addi(scalar);
 		return d.sub(ep);
 	}
-	
+
 	public static DoubleMatrix oneMinus(DoubleMatrix ep) {
 		return DoubleMatrix.ones(ep.rows, ep.columns).sub(ep);
 	}
@@ -554,7 +601,7 @@ public class MatrixUtil {
 		}
 		return ret;
 	}
-	
+
 	/**
 	 * Returns the mean squared error of the 2 matrices.
 	 * Note that the matrices must be the same length
