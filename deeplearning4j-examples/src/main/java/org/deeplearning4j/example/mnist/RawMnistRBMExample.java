@@ -20,9 +20,9 @@ public class RawMnistRBMExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		RectifiedLinearRBM r = new RectifiedLinearRBM.Builder()
-		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.1)
-		.numHidden(600).normalizeByInputRows(true)
+		GaussianBinaryRBM r = new GaussianBinaryRBM.Builder()
+		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.5)
+		.numHidden(2000).normalizeByInputRows(true)
 		.build();
 
 
@@ -31,7 +31,6 @@ public class RawMnistRBMExample {
 		//for(int i = 0; i < 30; i++)  {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			next.scale();
 			//next.normalizeZeroMeanZeroUnitVariance();
 			//train with k = 1 0.01 learning rate and 1000 epochs
 			r.trainTillConvergence(next.getFirst(),1e-4, new Object[]{1,1e-4,10000});
