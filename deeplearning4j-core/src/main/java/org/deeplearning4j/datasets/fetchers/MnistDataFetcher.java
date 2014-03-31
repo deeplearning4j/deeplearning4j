@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 
 /**
@@ -94,8 +96,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 					
 					
 				}
-				else
-					in = MatrixUtil.normalizeByRowSums(in);
+				
 
 
 				DoubleMatrix out = createOutputVector(man.readLabel());
@@ -126,6 +127,18 @@ public class MnistDataFetcher extends BaseDataFetcher {
 	@Override
 	public void reset() {
 		cursor = 1;
+	}
+
+	@Override
+	public DataSet next() {
+		DataSet next = super.next();
+		if(!binarize) {
+			DoubleMatrix input = next.getFirst();
+			input.divi(255);
+			next.setFirst(input);
+		}
+		
+		return next;
 	}
 
 

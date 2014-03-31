@@ -28,7 +28,10 @@ public class AdaGrad implements Serializable {
 	public DoubleMatrix gradient;
 	public int rows;
 	public int cols;
-	
+	private int numIterations = 0;
+	private double lrDecay = 0.95;
+	private boolean decayLr;
+	private double minLearningRate = 1e-4;
 
 	public AdaGrad( int rows, int cols, double gamma) {
 		this.rows = rows;
@@ -36,7 +39,7 @@ public class AdaGrad implements Serializable {
 		this.adjustedGradient = new DoubleMatrix(rows, cols);
 		this.historicalGradient = new DoubleMatrix(rows, cols);
 		this.masterStepSize = gamma;
-
+		this.decayLr = false;
 
 
 	}
@@ -62,6 +65,13 @@ public class AdaGrad implements Serializable {
 		this.gradient = gradient.dup();
 		//lr annealing
 		double currentLearningRate = this.masterStepSize;
+		if(decayLr && numIterations > 0) {
+			this.masterStepSize *= lrDecay;
+			if(masterStepSize < minLearningRate)
+				masterStepSize = minLearningRate;
+		}
+
+		numIterations++;
 		this.adjustedGradient = MatrixFunctions.sqrt(MatrixFunctions.pow(this.gradient,2)).mul(currentLearningRate);
 		return adjustedGradient;
 	}
@@ -72,6 +82,14 @@ public class AdaGrad implements Serializable {
 
 	public  void setMasterStepSize(double masterStepSize) {
 		this.masterStepSize = masterStepSize;
+	}
+
+	public synchronized boolean isDecayLr() {
+		return decayLr;
+	}
+
+	public synchronized void setDecayLr(boolean decayLr) {
+		this.decayLr = decayLr;
 	}
 
 

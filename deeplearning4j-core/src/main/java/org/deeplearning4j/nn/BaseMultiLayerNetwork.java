@@ -30,6 +30,7 @@ import org.deeplearning4j.rbm.CRBM;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -348,19 +349,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			if(i == 0) {
 				// construct sigmoid_layer
-				sigmoidLayers[i] = new HiddenLayer.Builder()
-				.nIn(inputSize).nOut(this.hiddenLayerSizes[i]).withActivation(activation)
-				.withRng(rng).withRng(rng).withInput(layerInput).dist(dist)
-				.build();
+				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
 			}
 			else {
 				if(this.input != null)
 					layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
 				// construct sigmoid_layer
-				sigmoidLayers[i] = new HiddenLayer.Builder()
-				.nIn(inputSize).nOut(this.hiddenLayerSizes[i]).withActivation(activation)
-				.withRng(rng).withRng(rng).withInput(layerInput).dist(dist)
-				.build();
+				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
+				
 
 			}
 
@@ -372,9 +368,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.logLayer = new LogisticRegression.Builder()
 		.useAdaGrad(useAdaGrad)
 		.normalizeByInputRows(normalizeByInputRows)
-				.useRegularization(useRegularization)
-				.numberOfInputs(hiddenLayerSizes[nLayers-1])
-				.numberOfOutputs(nOuts).withL2(l2).build();
+		.useRegularization(useRegularization)
+		.numberOfInputs(hiddenLayerSizes[nLayers-1])
+		.numberOfOutputs(nOuts).withL2(l2).build();
 		dimensionCheck();
 		applyTransforms();
 		initCalled = true;
@@ -724,28 +720,34 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows);
 			//get the gradient
 			if(isUseAdaGrad())
-				add.muli(this.getLayers()[l].getAdaGrad().getLearningRates(add));
+				add.muli(getLayers()[l].getAdaGrad().getLearningRates(add));
 
 			else
 				add.muli(lr);
-
-			add.divi(input.rows);
+			
+			if(normalizeByInputRows)
+				add.divi(input.rows);
 
 
 			//l2
-			if(useRegularization) {
-				add.muli(this.getLayers()[l].getW().mul(l2));
-			}
+			if(useRegularization) 
+				add.muli(getLayers()[l].getW().mul(l2));
+			
 
 			//update W
-			this.getLayers()[l].getW().addi(add);
-			this.getSigmoidLayers()[l].setW(layers[l].getW());
+			getLayers()[l].getW().addi(add);
+			getSigmoidLayers()[l].setW(layers[l].getW());
 
 
 			//update hidden bias
 			DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
-			deltaColumnSums.divi(input.rows);
+			if(normalizeByInputRows)
+				deltaColumnSums.divi(input.rows);
 
+			if(sparsity != 0) 
+				deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
+			
+			
 			getLayers()[l].gethBias().addi(deltaColumnSums.mul(lr));
 			getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
 		}
@@ -815,7 +817,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		}
 
 		//second to last activation is input
-		//DoubleMatrix predicted = logLayer.predict(getSigmoidLayers()[nLayers - 1].sampleHiddenGivenVisible());
 		DoubleMatrix predicted = activations.get(activations.size() - 1);
 		return predicted;
 	}
@@ -941,7 +942,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				this.getLayers()[i] = network.getLayers()[i].clone();
 
 		}
-		
+
 		this.normalizeByInputRows = network.normalizeByInputRows;
 		this.useAdaGrad = network.useAdaGrad;
 		this.hiddenLayerSizes = network.hiddenLayerSizes;
@@ -1056,7 +1057,31 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
 
+	
+	/**
+	 * Creates a hidden layer with the given parameters.
+	 * The default implementation is a binomial sampling 
+	 * hidden layer, but this can be overriden 
+	 * for other kinds of hidden units
+	 * @param nIn the number of inputs
+	 * @param nOut the number of outputs
+	 * @param activation the activation function for the layer
+	 * @param rng the rng to use for sampling
+	 * @param layerInput the layer starting input
+	 * @param dist the probability distribution to use
+	 * for generating weights
+	 * @return a hidden layer with the given paremters
+	 */
+	public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
+		 return new HiddenLayer.Builder()
+		.nIn(nIn).nOut(nOut).withActivation(activation)
+		.withRng(rng).withInput(layerInput).dist(dist)
+		.build();
 
+	}
+	
+
+	
 	/**
 	 * Merges this network with the other one.
 	 * This is a weight averaging with the update of:
@@ -1309,12 +1334,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 		private boolean normalizeByInputRows = false;
 
-		
+
 		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
 			this.normalizeByInputRows = normalizeByInputRows;
 			return this;
 		}
-		
+
 
 		public Builder<E> withMultiLayerGradientListeners(List<MultiLayerGradientListener> multiLayerGradientListeners) {
 			this.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
@@ -1326,7 +1351,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			return this;
 		}
 
-		public Builder<E> useAdGrad(boolean useAdaGrad) {
+		public Builder<E> useAdaGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad;
 			return this;
 		}

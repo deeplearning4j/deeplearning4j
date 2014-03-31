@@ -58,4 +58,14 @@ public class LFWDataFetcher extends BaseDataFetcher {
 
 
 
+
+	@Override
+	public DataSet next() {
+		DataSet next = super.next();
+		next.scale();
+		return next;
+	}
+
+
+
 }

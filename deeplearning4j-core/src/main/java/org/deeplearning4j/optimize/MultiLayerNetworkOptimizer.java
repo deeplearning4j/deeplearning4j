@@ -1,7 +1,6 @@
 package org.deeplearning4j.optimize;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
@@ -38,7 +37,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		network.getLogLayer().setLabels(labels);
-		List<DoubleMatrix> activations = network.feedForward(network.getInput());
 	
 		DoubleMatrix train = sampleHiddenGivenVisible();
 		
@@ -53,7 +51,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
-				network.getLogLayer().train(activations.get(activations.size() - 2), labels,lr);
+				network.getLogLayer().train(train, labels,lr);
 			}
 			
 

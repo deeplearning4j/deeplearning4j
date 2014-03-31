@@ -26,7 +26,7 @@ public class MnistExample {
 		DataSetIterator iter = new MnistDataSetIterator(10,500);
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		DBN dbn = new DBN.Builder().useAdGrad(true).useRegularization(false)
+		DBN dbn = new DBN.Builder().useAdaGrad(true).useRegularization(false)
 		.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
 		.numberOfInputs(784).numberOfOutPuts(10)
 		.build();
