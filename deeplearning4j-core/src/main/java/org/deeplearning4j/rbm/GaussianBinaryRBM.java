@@ -1,5 +1,7 @@
 package org.deeplearning4j.rbm;
 
+import static org.deeplearning4j.util.MatrixUtil.sigmoid;
+
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -7,7 +9,11 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
-
+/**
+ * Visible units with gaussian noise and hidden binary activations
+ * @author Adam Gibson
+ *
+ */
 public class GaussianBinaryRBM extends RBM {
 
 	/**
@@ -29,9 +35,28 @@ public class GaussianBinaryRBM extends RBM {
 			this.wAdaGrad.setDecayLr(true);
 		}
 		
+		for(int i = 0;i < this.getvBias().length; i++) {
+			this.getvBias().put(i,this.getvBias().get(i) - i);
+		}
+		
 	}
 
-	
+	/**
+	 * Activation of visible units:
+	 * Linear units with gaussian noise:
+	 * max(0,x + N(0,sigmoid(x)))
+	 * @param v the visible layer
+	 * @return the approximated activations of the visible layer
+	 */
+	public DoubleMatrix propUp(DoubleMatrix v) {
+		DoubleMatrix preSig = sigmoid(v.mmul(W).addiRowVector(hBias));
+		double variance = MatrixUtil.variance(preSig);
+
+		DoubleMatrix gaussian = MatrixUtil.normal(getRng(), preSig, variance).mul(variance);
+		preSig.addi(gaussian);
+		return preSig;
+
+	}
 	
 	
 	@Override

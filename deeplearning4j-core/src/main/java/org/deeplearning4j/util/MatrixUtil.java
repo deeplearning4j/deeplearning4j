@@ -38,6 +38,15 @@ public class MatrixUtil {
 	}
 	
 	
+	public static double variance(DoubleMatrix input) {
+		DoubleMatrix means = input.columnMeans();
+		DoubleMatrix diff = MatrixFunctions.abs(input.subRowVector(means));
+		
+		double variance = diff.sum() / diff.rows;
+		return variance;
+
+	}
+	
 	
 	  /**
      * Takes an image (grey-levels) and a kernel and a position,
@@ -216,7 +225,7 @@ public class MatrixUtil {
 
 	
 	/**
-	 * A uniform sample ranging from 0 to 1.
+	 * A uniform sample ranging from 0 to sigma.
 	 * @param rng the rng to use
 	 * @param mean, the matrix mean from which to generate values from
 	 * @param sigma the standard deviation to use to generate the gaussian noise

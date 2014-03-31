@@ -3,9 +3,11 @@ package org.deeplearning4j.rbm;
 
 import static org.jblas.MatrixFunctions.*;
 
-import static org.deeplearning4j.util.MatrixUtil.binomial;
-import static org.deeplearning4j.util.MatrixUtil.mean;
+import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
+import static org.deeplearning4j.util.MatrixUtil.mean;
+import static org.deeplearning4j.util.MatrixUtil.scalarMinus;
+import static org.deeplearning4j.util.MatrixUtil.binomial;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -175,7 +177,7 @@ public class RBM extends BaseNeuralNetwork {
 		if(sparsity != 0) {
 
 			//all hidden units must stay around this number
-			hBiasGradient = mean(MatrixUtil.scalarMinus(sparsity,probHidden.getSecond()),0);
+			hBiasGradient = mean(scalarMinus(sparsity,probHidden.getSecond()),0);
 			hBiasGradient.muli(learningRate);
 
 		}
