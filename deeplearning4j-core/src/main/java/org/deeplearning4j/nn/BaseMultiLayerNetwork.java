@@ -1334,7 +1334,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 		private boolean normalizeByInputRows = false;
 
-
+		/**
+		 * Turn this off for full dataset training
+		 * @param normalizeByInputRows whether to normalize the changes
+		 * by the number of input rows
+		 * @return builder pattern
+		 */
 		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
 			this.normalizeByInputRows = normalizeByInputRows;
 			return this;

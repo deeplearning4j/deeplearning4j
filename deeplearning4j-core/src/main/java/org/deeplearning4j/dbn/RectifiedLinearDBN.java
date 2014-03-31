@@ -66,7 +66,7 @@ public class RectifiedLinearDBN extends DBN {
 	 * @return a hidden layer with the given paremters
 	 */
 	public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
-		return new RectifiedLinearHiddenLayer.Builder()
+		return new HiddenLayer.Builder()
 		.nIn(nIn).nOut(nOut).withActivation(activation)
 		.withRng(rng).withInput(layerInput).dist(dist)
 		.build();
