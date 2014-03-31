@@ -15,7 +15,15 @@ import org.jblas.DoubleMatrix;
 
 
 /**
- * Continuous Restricted Boltzmann Machine
+ * Continuous Restricted Boltzmann Machine.
+ * Scale input to between 0 and 1. 
+ * 
+ * Consider each input unit as a probability of taking the value 1
+ * with a different form of sampling.
+ * 
+ * See: http://papers.nips.cc/paper/3048-greedy-layer-wise-training-of-deep-networks.pdf
+ * 
+ * 
  * @author Adam Gibson
  *
  */
@@ -30,35 +38,37 @@ public class CRBM extends RBM {
 	
 
 	//never instantiate without the builder
-	@SuppressWarnings("unused")
 	private CRBM(){}
 
 	private CRBM(DoubleMatrix input, int nVisible, int nHidden,
 			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
 			RandomGenerator rng, double fanIn, RealDistribution dist) {
 		super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
+		if(useAdaGrad) {
+			this.wAdaGrad.setMasterStepSize(0.0001);
+		}
 	}
 
 	
-
+	
+	
 	@Override
-	public DoubleMatrix propDown(DoubleMatrix h) {
-		return h.mmul(W.transpose()).addRowVector(vBias);
-	}
-
-	@Override
-	public Pair<DoubleMatrix, DoubleMatrix> sampleVGivenH(DoubleMatrix h) {
-		DoubleMatrix aH = propDown(h);
-		DoubleMatrix en = exp(aH.neg());
-		DoubleMatrix ep = exp(aH);
+	public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
+		DoubleMatrix activationHidden = propDown(h);
+		DoubleMatrix negativeEnergy = exp(activationHidden.neg());
+		DoubleMatrix positiveEnergy = exp(activationHidden);
 
 
-		DoubleMatrix v1Mean = oneDiv(oneMinus(en).sub(oneDiv(aH)));
+		DoubleMatrix v1Mean = oneDiv(oneMinus(negativeEnergy).sub(oneDiv(activationHidden)));
+		/*
+		 * Scaled sampling of a probability distribution indicating the examples from 0 to 1:
+		 * log( 1 - gaussian noise * 1 - ep ) / ah
+		 */
 		DoubleMatrix v1Sample = log(
 				oneMinus(
 				uniform(rng,v1Mean.rows,v1Mean.columns)
-				.mul(oneMinus(ep)))
-				).div(aH);
+				.mul(oneMinus(positiveEnergy)))
+				).div(activationHidden);
 
 
 		return new Pair<DoubleMatrix,DoubleMatrix>(v1Mean,v1Sample);

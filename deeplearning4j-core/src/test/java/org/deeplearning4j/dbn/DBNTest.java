@@ -53,7 +53,7 @@ public class DBNTest {
 		double fineTuneLr = 0.1;
 		int fineTuneEpochs = 10000;
 
-		CDBN dbn = new CDBN.Builder().useAdGrad(true)
+		CDBN dbn = new CDBN.Builder().useAdaGrad(true)
 				.hiddenLayerSizes(hiddenLayerSizes)
 				.numberOfInputs(d.numInputs())
 				.useRegularization(false).withActivation(new HardTanh())
@@ -111,7 +111,7 @@ public class DBNTest {
 		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 1000;
 
-		CDBN dbn = new CDBN.Builder().useAdGrad(true).withActivation(new Tanh())
+		CDBN dbn = new CDBN.Builder().useAdaGrad(true).withActivation(new Tanh())
 				.numberOfInputs(nIns).numberOfOutPuts(nOuts)
 				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
 				.withRng(rng)
@@ -147,7 +147,7 @@ public class DBNTest {
 		double fineTuneLr = 0.01;
 		int fineTuneEpochs = 10000;
 
-		CDBN dbn = new CDBN.Builder().useAdGrad(true)
+		CDBN dbn = new CDBN.Builder().useAdaGrad(true)
 				.numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Tanh())
 				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
 				.withRng(rng)
@@ -229,7 +229,7 @@ public class DBNTest {
 		.withActivation(Activations.tanh())
 		.hiddenLayerSizes(new int[]{500,250,100})
 		.withMomentum(0)
-		.numberOfInputs(784).useAdGrad(true)
+		.numberOfInputs(784).useAdaGrad(true)
 		.numberOfOutPuts(2)
 		.useRegularization(false)
 		.build();

@@ -37,7 +37,9 @@ public class LFWLoader {
 	public void getIfNotExists() throws Exception {
 		if(!lfwDir.exists()) {
 			lfwDir.mkdir();
+			log.info("Grabbing LFW...");
 			FileUtils.copyURLToFile(new URL(LFW_URL), lfwTarFile);
+			
 			//untar to /tmp/lfw
 			untarFile(baseDir,lfwTarFile);
 			
@@ -151,12 +153,7 @@ public class LFWLoader {
 		BufferedReader stdError = new BufferedReader(new 
 				InputStreamReader(p.getErrorStream()));
 		log.info("Here is the standard error of the command (if any):\n");
-		String s;
-		while ((s = stdError.readLine()) != null) {
-			log.info(s);
-		}
-		stdError.close();
-
+		
 
 	}
 

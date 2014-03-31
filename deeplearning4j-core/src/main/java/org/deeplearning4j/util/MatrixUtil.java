@@ -1,10 +1,13 @@
 package org.deeplearning4j.util;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.distributions.Distributions;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
@@ -33,6 +36,68 @@ public class MatrixUtil {
 			toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
 		}
 	}
+	
+	
+	
+	  /**
+     * Takes an image (grey-levels) and a kernel and a position,
+     * applies the convolution at that position and returns the
+     * new pixel value.
+     *
+     * @param input The 2D double array representing the image.
+     * @param x The x coordinate for the position of the convolution.
+     * @param y The y coordinate for the position of the convolution.
+     * @param k The 2D array representing the kernel.
+     * @param kernelWidth The width of the kernel.
+     * @param kernelHeight The height of the kernel.
+     * @return The new pixel value after the convolution.
+     */
+    public static double singlePixelConvolution(DoubleMatrix input,
+            int x, int y,
+            DoubleMatrix k,
+            int kernelWidth,
+            int kernelHeight) {
+        double output = 0;
+        
+        for (int i = 0; i < kernelWidth; ++i) {
+            for (int j = 0; j < kernelHeight; ++j) {
+                output += (input.get(x + i,y + j) * k.get(i,j));
+            }
+        }
+        return output;
+    }
+
+  
+    /**
+     * Takes a 2D array of grey-levels and a kernel and applies the convolution
+     * over the area of the image specified by width and height.
+     *
+     * @param input the 2D double array representing the image
+     * @param width the width of the image
+     * @param height the height of the image
+     * @param kernel the 2D array representing the kernel
+     * @param kernelWidth the width of the kernel
+     * @param kernelHeight the height of the kernel
+     * @return the 2D array representing the new image
+     */
+    public static DoubleMatrix convolution2D(DoubleMatrix input,
+            int width, int height,
+           DoubleMatrix kernel,
+            int kernelWidth,
+            int kernelHeight) {
+        int smallWidth = width - kernelWidth + 1;
+        int smallHeight = height - kernelHeight + 1;
+        DoubleMatrix output = DoubleMatrix.zeros(smallWidth,smallHeight);
+    
+        for (int i = 0; i < smallWidth; ++i) {
+            for (int j = 0; j < smallHeight; ++j) {
+                output.put(i,j,singlePixelConvolution(input, i, j, kernel,
+                        kernelWidth, kernelHeight));
+            }
+        }
+        return output;
+    }
+	
 	
 	public static DataSet xorData(int n) {
 
@@ -131,6 +196,14 @@ public class MatrixUtil {
 		return toScale;
 	}
 
+	/**
+	 * A uniform sample ranging from 0 to 1.
+	 * @param rng the rng to use
+	 * @param rows the number of rows of the matrix
+	 * @param columns the number of columns of the matrix
+	 * @return a uniform sample of the given shape and size
+	 * with numbers between 0 and 1
+	 */
 	public static DoubleMatrix uniform(RandomGenerator rng,int rows,int columns) {
 
 		UniformRealDistribution uDist = new UniformRealDistribution(rng,0,1);
@@ -138,6 +211,28 @@ public class MatrixUtil {
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++) 
 				U.put(i,j,uDist.sample());
+		return U;
+	}
+
+	
+	/**
+	 * A uniform sample ranging from 0 to 1.
+	 * @param rng the rng to use
+	 * @param mean, the matrix mean from which to generate values from
+	 * @param sigma the standard deviation to use to generate the gaussian noise
+	 * @return a uniform sample of the given shape and size
+	 * 
+	 * with numbers between 0 and 1
+	 */
+	public static DoubleMatrix normal(RandomGenerator rng,DoubleMatrix mean,double sigma) {
+		double variance = Math.sqrt(sigma);
+		DoubleMatrix U = new DoubleMatrix(mean.rows,mean.columns);
+		for(int i = 0; i < U.rows; i++)
+			for(int j = 0; j < U.columns; j++)  {
+				RealDistribution reals = new NormalDistribution(mean.get(i,j),variance);
+				U.put(i,j,reals.sample());
+
+			}
 		return U;
 	}
 
@@ -393,6 +488,13 @@ public class MatrixUtil {
 		return a.mmul(b);
 	}
 
+	
+	public static DoubleMatrix scalarMinus(double scalar,DoubleMatrix ep) {
+		DoubleMatrix d = new DoubleMatrix(ep.rows,ep.columns);
+		d.addi(scalar);
+		return d.sub(ep);
+	}
+	
 	public static DoubleMatrix oneMinus(DoubleMatrix ep) {
 		return DoubleMatrix.ones(ep.rows, ep.columns).sub(ep);
 	}
@@ -417,14 +519,33 @@ public class MatrixUtil {
 	 */
 	public static DoubleMatrix columnStd(DoubleMatrix m) {
 		DoubleMatrix ret = new DoubleMatrix(1,m.columns);
+		StandardDeviation std = new StandardDeviation();
+
 		for(int i = 0; i < m.columns; i++) {
-			StandardDeviation std = new StandardDeviation();
 			double result = std.evaluate(m.getColumn(i).data);
 			ret.put(i,result);
 		}
 		return ret;
 	}
 
+	/**
+	 * Calculates the column wise standard deviations
+	 * of the matrix
+	 * @param m the matrix to use
+	 * @return the standard deviations of each column in the matrix
+	 * as a row matrix
+	 */
+	public static DoubleMatrix rowStd(DoubleMatrix m) {
+		StandardDeviation std = new StandardDeviation();
+
+		DoubleMatrix ret = new DoubleMatrix(1,m.columns);
+		for(int i = 0; i < m.rows; i++) {
+			double result = std.evaluate(m.getRow(i).data);
+			ret.put(i,result);
+		}
+		return ret;
+	}
+	
 	/**
 	 * Returns the mean squared error of the 2 matrices.
 	 * Note that the matrices must be the same length
@@ -468,7 +589,9 @@ public class MatrixUtil {
 	public static void normalizeMatrix(DoubleMatrix toNormalize) {
 		DoubleMatrix columnMeans = toNormalize.columnMeans();
 		toNormalize.subiRowVector(columnMeans);
-		toNormalize.diviRowVector(columnStd(toNormalize));
+		DoubleMatrix std = columnStd(toNormalize);
+		std.addi(1e-6);
+		toNormalize.diviRowVector(std);
 	}
 
 
@@ -488,8 +611,6 @@ public class MatrixUtil {
 		for(int i = 0; i < ret.length; i++) {
 			StandardDeviation dev = new StandardDeviation();
 			double std = dev.evaluate(m.getColumn(i).toArray());
-			if(Double.isNaN(std))
-				log.warn("WTF");
 			ret.put(i,std);
 		}
 
