@@ -8,13 +8,12 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
  * RBM with rectified linear hidden units and linear units with gaussian noise.
  * This is meant for use with continuous data, note that training needs to be slower
- * in order to accomadate for the variance in data vs the normal binary-binary rbm.
+ * in order to accommodate for the variance in data vs the normal binary-binary rbm.
  * http://machinelearning.wustl.edu/mlpapers/paper_files/icml2010_NairH10.pdf
  * 
  * @author Adam Gibson
@@ -47,9 +46,9 @@ public class RectifiedLinearRBM extends RBM {
 	 */
 	public DoubleMatrix propUp(DoubleMatrix v) {
 		DoubleMatrix preSig = sigmoid(v.mmul(W).addiRowVector(hBias));
-		double variance = MatrixUtil.variance(preSig);
+		//variance for each column
 
-		DoubleMatrix gaussian = MatrixUtil.normal(getRng(), preSig, variance).mul(variance);
+		DoubleMatrix gaussian = MatrixUtil.normal(getRng(), preSig);
 		preSig.addi(gaussian);
 		return preSig;
 
@@ -64,9 +63,8 @@ public class RectifiedLinearRBM extends RBM {
 	 */
 	public DoubleMatrix propDown(DoubleMatrix h) {
 		DoubleMatrix preSig = sigmoid(h.mmul(W.transpose()).addRowVector(vBias));
-		double variance = MatrixUtil.variance(preSig);
 
-		DoubleMatrix gaussian = MatrixUtil.normal(getRng(), preSig, variance).mul(variance);
+		DoubleMatrix gaussian = MatrixUtil.normal(getRng(), preSig);
 		preSig.addi(gaussian);
 		for(int i = 0;i < preSig.length; i++)
 			preSig.put(i,Math.max(0,preSig.get(i)));
@@ -84,14 +82,14 @@ public class RectifiedLinearRBM extends RBM {
 
 
 		DoubleMatrix v1Mean = propDown(h);
-		double variance = MatrixFunctions.pow(input.sub(v1Mean),2).mean();
-		
+		//prevent zeros
+		v1Mean.addi(1e-4);
 		/**
 		 * Dynamically set the variance = to the squared 
 		 * differences from the mean relative to the data.
 		 * 
 		 */
-		DoubleMatrix gaussianNoise = normal(getRng(), v1Mean,variance).mul(variance);
+		DoubleMatrix gaussianNoise = normal(getRng(), v1Mean);
 
 		DoubleMatrix v1Sample = v1Mean.add(gaussianNoise);
 
@@ -112,8 +110,6 @@ public class RectifiedLinearRBM extends RBM {
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
-		//variance wrt reconstruction
-		double variance =  MatrixFunctions.pow(v.sub(v.mean()),2).mean();
 	
 		/**
 		 * Dynamically set the variance = to the squared 
@@ -122,7 +118,7 @@ public class RectifiedLinearRBM extends RBM {
 		 */
 
 
-		DoubleMatrix gaussianNoise = normal(getRng(), sigmoid(h1Mean),variance).mul(variance);
+		DoubleMatrix gaussianNoise = normal(getRng(), sigmoid(h1Mean));
 		//max(zero,x + noise)
 		DoubleMatrix h1Sample = h1Mean.add(gaussianNoise);
 		for(int i = 0;i < h1Sample.length; i++)
