@@ -1,6 +1,8 @@
 package org.deeplearning4j.rbm;
 
 
+import static org.jblas.MatrixFunctions.*;
+
 import static org.deeplearning4j.util.MatrixUtil.binomial;
 import static org.deeplearning4j.util.MatrixUtil.mean;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
@@ -11,7 +13,9 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
 
 
 
@@ -38,7 +42,7 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	private static final long serialVersionUID = 6189188205731511957L;
 	protected NeuralNetworkOptimizer optimizer;
-	
+
 
 	protected RBM() {}
 
@@ -120,7 +124,7 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix nhSamples = null;
 
 		/*
-		 * K steps of gibbs sampling. THis is the positive phase of contrastive divergence.
+		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
 		 * 
 		 * There are 4 matrices being computed for each gibbs sampling.
 		 * The samples from both the positive and negative phases and their expected values 
@@ -168,10 +172,10 @@ public class RBM extends BaseNeuralNetwork {
 
 		DoubleMatrix hBiasGradient = null;
 
-		if(this.sparsity != 0) {
+		if(sparsity != 0) {
 
 			//all hidden units must stay around this number
-			hBiasGradient = mean(probHidden.getSecond().add( -sparsity),0);
+			hBiasGradient = mean(MatrixUtil.scalarMinus(sparsity,probHidden.getSecond()),0);
 			hBiasGradient.muli(learningRate);
 
 		}
@@ -191,6 +195,20 @@ public class RBM extends BaseNeuralNetwork {
 		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 	}
 
+
+	/**
+	 * Free energy for an RBM
+	 * Lower energy models have higher probability
+	 * of activations
+	 * @param visibleSample the sample to test on
+	 * @return the free engery for this sample
+	 */
+	public double freeEnergy(DoubleMatrix visibleSample) {
+		DoubleMatrix wxB = visibleSample.mmul(W).addRowVector(hBias);
+		double vBiasTerm = SimpleBlas.dot(visibleSample, vBias);
+		double hBiasTerm = log(exp(wxB).add(1)).sum();
+		return -hBiasTerm - vBiasTerm;
+	}
 
 
 	/**
@@ -212,7 +230,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * and the new hidden input and expected values
 	 */
 	public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
-		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = sampleVGivenH(h);
+		Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = sampleVisibleGivenHidden(h);
 		DoubleMatrix vSample = v1MeanAndSample.getSecond();
 		Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
 		return new Pair<>(v1MeanAndSample,h1MeanAndSample);
@@ -224,7 +242,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * @param h
 	 * @return
 	 */
-	public Pair<DoubleMatrix,DoubleMatrix> sampleVGivenH(DoubleMatrix h) {
+	public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
 		DoubleMatrix v1Mean = propDown(h);
 		DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
 		return new Pair<>(v1Mean,v1Sample);

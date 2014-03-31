@@ -186,7 +186,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
 				.useRegularization(conf.isUseRegularization())
-				.withSparsity(conf.getSparsity()).useAdGrad(conf.isUseAdaGrad())
+				.withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad())
 				.withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
 				.withGradientListeners(conf.getGradientListeners())
 				.build() : this.network;

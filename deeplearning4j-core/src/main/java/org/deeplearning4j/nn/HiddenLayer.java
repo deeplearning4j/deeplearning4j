@@ -19,17 +19,17 @@ import org.jblas.DoubleMatrix;
  */
 public class HiddenLayer implements Serializable {
 
-	private static final long serialVersionUID = 915783367350830495L;
-	private int nIn;
-	private int nOut;
-	private DoubleMatrix W;
-	private DoubleMatrix b;
-	private RandomGenerator rng;
-	private DoubleMatrix input;
-	private ActivationFunction activationFunction = new Sigmoid();
-	private RealDistribution dist;
+	protected static final long serialVersionUID = 915783367350830495L;
+	protected int nIn;
+	protected int nOut;
+	protected DoubleMatrix W;
+	protected DoubleMatrix b;
+	protected RandomGenerator rng;
+	protected DoubleMatrix input;
+	protected ActivationFunction activationFunction = new Sigmoid();
+	protected RealDistribution dist;
 
-	private HiddenLayer() {}
+	protected HiddenLayer() {}
 
 	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
 		this(nIn,nOut,W,b,rng,input,activationFunction,null);
@@ -255,14 +255,14 @@ public class HiddenLayer implements Serializable {
 
 
 	public static class Builder {
-		private int nIn;
-		private int nOut;
-		private DoubleMatrix W;
-		private DoubleMatrix b;
-		private RandomGenerator rng;
-		private DoubleMatrix input;
-		private ActivationFunction activationFunction = new Sigmoid();
-		private RealDistribution dist;
+		protected int nIn;
+		protected int nOut;
+		protected DoubleMatrix W;
+		protected DoubleMatrix b;
+		protected RandomGenerator rng;
+		protected DoubleMatrix input;
+		protected ActivationFunction activationFunction = new Sigmoid();
+		protected RealDistribution dist;
 		
 		public Builder dist(RealDistribution dist) {
 			this.dist = dist;

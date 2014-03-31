@@ -10,10 +10,11 @@ public class Distributions {
 	 * Returns a normal distribution 
 	 * with a mean of 0 and a standard deviation of 1
 	 * @param rng the rng to use
+	 * @param std the standard deviation to use
 	 * @return a normal distribution with a mean of 0 and a standard deviation of 1
 	 */
-	public static RealDistribution normal(RandomGenerator rng) {
-		return  new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+	public static RealDistribution normal(RandomGenerator rng,double std) {
+		return  new NormalDistribution(rng,0,std,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
 	}
 	
 	/**

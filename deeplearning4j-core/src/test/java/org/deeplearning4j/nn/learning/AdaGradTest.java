@@ -20,7 +20,7 @@ public class AdaGradTest {
 		
 		AdaGrad grad = new AdaGrad(rows,cols,0.1);
 		DoubleMatrix W = DoubleMatrix.zeros(rows,cols);
-		RealDistribution dist = Distributions.normal(new MersenneTwister(123));
+		RealDistribution dist = Distributions.normal(new MersenneTwister(123),1);
 		for(int i = 0; i < W.rows; i++) 
 			W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
 		
