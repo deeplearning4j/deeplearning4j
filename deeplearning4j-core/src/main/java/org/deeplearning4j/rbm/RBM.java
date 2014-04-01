@@ -51,9 +51,9 @@ public class RBM extends BaseNeuralNetwork {
 
 
 
-	protected RBM(DoubleMatrix input, int n_visible, int n_hidden, DoubleMatrix W,
-			DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
-		super(input, n_visible, n_hidden, W, hbias, vbias, rng,fanIn,dist);
+	protected RBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
+			DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+		super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
 	}
 
 	/**

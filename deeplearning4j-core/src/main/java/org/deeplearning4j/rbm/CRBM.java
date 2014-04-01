@@ -18,6 +18,8 @@ import org.jblas.DoubleMatrix;
  * Continuous Restricted Boltzmann Machine.
  * Scale input to between 0 and 1. 
  * 
+ * Note that data should be normalized to a 0 mean and unit variance.
+ * 
  * Consider each input unit as a probability of taking the value 1
  * with a different form of sampling.
  * 
@@ -49,6 +51,21 @@ public class CRBM extends RBM {
 		}
 	}
 
+	/**
+	 * Calculates the activation of the hidden:
+	 * h * W + vbias
+	 * Note here that the visible unit returned here from the samples
+	 * assumes zero mean and unit variance.
+	 * 
+	 * @param h the hidden layer
+	 * @return the approximated output of the hidden layer
+	 */
+	public DoubleMatrix propDown(DoubleMatrix h) {
+		DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
+		return preSig;
+
+	}
+	
 	
 	
 	

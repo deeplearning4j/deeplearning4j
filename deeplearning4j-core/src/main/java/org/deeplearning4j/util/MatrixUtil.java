@@ -29,6 +29,17 @@ public class MatrixUtil {
 	}
 
 
+	/**
+	 * Cuts all numbers below a certain cut off
+	 * @param minNumber the min number to check
+	 * @param matrix the matrix to max by
+	 */
+	public static void max(double minNumber,DoubleMatrix matrix) {
+		for(int i = 0; i < matrix.length; i++)
+			matrix.put(i,Math.max(0,matrix.get(i)));
+
+	}
+	
 	public static void scaleByMax(DoubleMatrix toScale) {
 		DoubleMatrix scale = toScale.rowMaxs();
 		for(int i = 0; i < toScale.rows; i++) {
@@ -237,7 +248,7 @@ public class MatrixUtil {
 		DoubleMatrix U = new DoubleMatrix(mean.rows,mean.columns);
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++)  {
-				RealDistribution reals = new NormalDistribution(mean.get(i,j),sigma);
+				RealDistribution reals = new NormalDistribution(mean.get(i,j),Math.sqrt(sigma));
 				U.put(i,j,reals.sample());
 
 			}

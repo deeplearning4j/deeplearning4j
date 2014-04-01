@@ -28,7 +28,7 @@ public class RBMMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,1000});
+			r.trainTillConvergence(next.getFirst(), 0.01, new Object[]{1,0.01,5000});
 			
 
 		}

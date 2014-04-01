@@ -19,7 +19,7 @@ public class DenoisingAutoEncoderMnistExample {
 	public static void main(String[] args) throws Exception {
 		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
 		.numberOfVisible(784).numHidden(600).normalizeByInputRows(true)
-		.useAdaGrad(true).useRegularization(false)
+		.useAdaGrad(false).useRegularization(false)
 		.withMomentum(0).build();
 
 
@@ -29,7 +29,7 @@ public class DenoisingAutoEncoderMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			autoEncoder.trainTillConvergence(next.getFirst(), 0.1, new Object[]{0.3,0.1,1000});
+			autoEncoder.trainTillConvergence(next.getFirst(), 1e-4, new Object[]{0.3,1e-4,1000});
 
 
 		}
