@@ -14,4 +14,12 @@ public class Activations {
 	public static ActivationFunction hardTanh() {
 		return new HardTanh();
 	}
+	
+	public static ActivationFunction rectifiedLinear() {
+		return new RectifiedLinearActivation();
+	}
+	
+	public static ActivationFunction softmax() {
+		return new SoftMax();
+	}
 }

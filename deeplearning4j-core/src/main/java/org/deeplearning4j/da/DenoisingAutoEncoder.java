@@ -128,7 +128,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 	@Override
 	public double lossFunction(Object[] params) {
-		return negativeLoglikelihood();
+		return negativeLogLikelihood();
 	}
 
 

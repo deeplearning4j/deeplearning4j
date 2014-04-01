@@ -356,7 +356,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 					layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
 				// construct sigmoid_layer
 				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
-				
+
 
 			}
 
@@ -541,7 +541,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @return the list of activations for each layer
 	 */
 	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
-		if(this.input == null)
+		if(input == null)
 			throw new IllegalStateException("Unable to perform feed forward; no input found");
 
 		else
@@ -588,12 +588,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				DoubleMatrix z = activations.get(i);
 
 
-				//- y - h
-				delta = labels.sub(z).neg();
-
 				//(- y - h) .* f'(z^l) where l is the output layer
-				DoubleMatrix initialDelta = delta.mul(derivative.applyDerivative(z));
-				deltas[i] = initialDelta;
+
+				delta = labels.sub(z).neg().muli(derivative.applyDerivative(z));
+				deltas[i] = delta;
 
 			}
 			else {
@@ -601,21 +599,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				delta = deltas[i + 1];
 				DoubleMatrix w = weights.get(i).transpose();
 				DoubleMatrix z = activations.get(i);
-				DoubleMatrix a = activations.get(i);
 				//W^t * error^l + 1
-
+				DoubleMatrix zDerivative = derivative.applyDerivative(z);
 				DoubleMatrix error = delta.mmul(w);
-				deltas[i] = error;
-
-				error = error.mul(derivative.applyDerivative(z));
-
-				deltas[i] = error;
+				error.muli(zDerivative);
+				deltas[i] = error.dup();
 
 				//calculate gradient for layer
 				DoubleMatrix lastLayerDelta = deltas[i + 1].transpose();
-				DoubleMatrix newGradient = lastLayerDelta.mmul(a);
+				DoubleMatrix newGradient = lastLayerDelta.mmul(z);
 
-				gradients[i] = newGradient.div(getInput().rows);
+				if(normalizeByInputRows)
+					newGradient.divi(getInput().rows);
+
+				gradients[i] = newGradient;
 			}
 
 		}
@@ -665,6 +662,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			while(train) {
 				count++;
 				backPropStep(revert,lr,count);
+				getLogLayer().trainTillConvergence(lr, epochs);
 
 				Double entropy = this.negativeLogLikelihood();
 				if(lastEntropy == null || entropy < lastEntropy) {
@@ -676,10 +674,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 					else
 						lastEntropy = entropy;
 					log.info("New negative log likelihood " + lastEntropy);
+					getLogLayer().trainTillConvergence(lr, epochs);
+
 				}
 				else if(entropy >= lastEntropy) {
 					update(revert);
 					numOver++;
+					log.info("Last change no good...reverting");
 					if(numOver >= tolerance)
 						train = false;
 				}
@@ -717,14 +718,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 		for(int l = 0; l < nLayers; l++) {
-			DoubleMatrix add = deltas.get(l).getFirst().div(input.rows);
+			DoubleMatrix add = deltas.get(l).getFirst();
 			//get the gradient
 			if(isUseAdaGrad())
 				add.muli(getLayers()[l].getAdaGrad().getLearningRates(add));
 
 			else
 				add.muli(lr);
-			
+
 			if(normalizeByInputRows)
 				add.divi(input.rows);
 
@@ -732,7 +733,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			//l2
 			if(useRegularization) 
 				add.muli(getLayers()[l].getW().mul(l2));
-			
+
 
 			//update W
 			getLayers()[l].getW().addi(add);
@@ -746,15 +747,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 			if(sparsity != 0) 
 				deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
-			
-			
+
+
 			getLayers()[l].gethBias().addi(deltaColumnSums.mul(lr));
 			getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
 		}
 
 
 		getLogLayer().getW().addi(deltas.get(nLayers).getFirst());
-
 
 	}
 
@@ -1057,7 +1057,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	public abstract NeuralNetwork[] createNetworkLayers(int numLayers);
 
-	
+
 	/**
 	 * Creates a hidden layer with the given parameters.
 	 * The default implementation is a binomial sampling 
@@ -1073,15 +1073,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * @return a hidden layer with the given paremters
 	 */
 	public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
-		 return new HiddenLayer.Builder()
+		return new HiddenLayer.Builder()
 		.nIn(nIn).nOut(nOut).withActivation(activation)
 		.withRng(rng).withInput(layerInput).dist(dist)
 		.build();
 
 	}
-	
 
-	
+
+
 	/**
 	 * Merges this network with the other one.
 	 * This is a weight averaging with the update of:
