@@ -39,7 +39,7 @@ public class MatrixUtil {
 			matrix.put(i,Math.max(0,matrix.get(i)));
 
 	}
-	
+
 	public static void scaleByMax(DoubleMatrix toScale) {
 		DoubleMatrix scale = toScale.rowMaxs();
 		for(int i = 0; i < toScale.rows; i++) {
@@ -272,7 +272,7 @@ public class MatrixUtil {
 		for(int i = 0;i < variance.length; i++)
 			if(variance.get(i) <= 0)
 				variance.put(i,1e-4);
-		
+
 		DoubleMatrix U = new DoubleMatrix(mean.rows,mean.columns);
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++)  {
@@ -292,7 +292,7 @@ public class MatrixUtil {
 	 * @return a uniform sample of the given shape and size
 	 */
 	public static DoubleMatrix normal(RandomGenerator rng,DoubleMatrix standardDeviations) {
-		
+
 		DoubleMatrix U = new DoubleMatrix(standardDeviations.rows,standardDeviations.columns);
 		for(int i = 0; i < U.rows; i++)
 			for(int j = 0; j < U.columns; j++)  {
@@ -302,7 +302,7 @@ public class MatrixUtil {
 			}
 		return U;
 	}
-	
+
 	public static boolean isValidOutcome(DoubleMatrix out) {
 		boolean found = false;
 		for(int col = 0; col < out.length; col++) {
@@ -438,6 +438,16 @@ public class MatrixUtil {
 		return a.addi(b);
 	}
 
+	/**
+	 * Soft max function
+	 * row_maxes is a row vector (max for each row)
+	 * row_maxes = rowmaxes(input)
+	 * diff = exp(input - max) / diff.rowSums()
+	 * 
+	 * @param input the input for the softmax
+	 * @return the softmax output (a probability matrix) scaling each row to between
+	 * 0 and 1
+	 */
 	public static DoubleMatrix softmax(DoubleMatrix input) {
 		DoubleMatrix max = input.rowMaxs();
 		DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
@@ -629,10 +639,21 @@ public class MatrixUtil {
 		return r.getMeanSquareError();
 	}
 
+	/**
+	 * A log impl that prevents numerical underflow
+	 * Any number that's infinity or NaN is replaced by 
+	 * 1e-6.
+	 * @param vals the vals to convert to log
+	 * @return the log of the numbers or 1e-6 for anomalies
+	 */
 	public static DoubleMatrix log(DoubleMatrix vals) {
 		DoubleMatrix ret = new DoubleMatrix(vals.rows,vals.columns);
 		for(int i = 0; i < vals.length; i++) {
-			ret.put(i,vals.get(i) == 0 ? 0 : Math.log(vals.get(i)));
+			double logVal = Math.log(vals.get(i));
+			if(!Double.isNaN(logVal) && !Double.isInfinite(logVal))
+				ret.put(i,logVal);
+			else
+				ret.put(i,1e-6);
 		}
 		return ret;
 	}

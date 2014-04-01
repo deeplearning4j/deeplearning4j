@@ -41,8 +41,25 @@ public class GaussianRectifiedLinearRBM extends RBM {
 			this.wAdaGrad.setMasterStepSize(1e-2);
 			this.wAdaGrad.setDecayLr(true);
 		}
-		
+
 		sigma = DoubleMatrix.ones(nVisible);
+	}
+
+
+
+	/**
+	 * Trains till global minimum is found.
+	 * @param learningRate
+	 * @param k
+	 * @param input
+	 */
+	@Override
+	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
+		if(input != null)
+			this.input = input;
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate});
+		optimizer.setTolerance(1e-6);
+		optimizer.train(input);
 	}
 
 
@@ -58,12 +75,13 @@ public class GaussianRectifiedLinearRBM extends RBM {
 	 * @return the approximated activations of the visible layer
 	 */
 	public DoubleMatrix propUp(DoubleMatrix v) {
+		//rectified linear
 		DoubleMatrix preSig = v.divRowVector(sigma).mmul(W).addiRowVector(hBias);
 		return preSig;
 
 	}
-	
-	
+
+
 	/**
 	 * Rectified linear units for output
 	 * @param v the visible values
@@ -72,19 +90,18 @@ public class GaussianRectifiedLinearRBM extends RBM {
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
 		DoubleMatrix sigH1Mean = sigmoid(h1Mean);
-		DoubleMatrix h1Sample = h1Mean.add(
-				MatrixUtil.normal(getRng(), sigH1Mean, 1).
-				mul(
-				sqrt(sigH1Mean)));
+		/*
+		 * Rectified linear part
+		 */
+		DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
+		MatrixUtil.max(0.0, h1Sample);
 		
-		
-		//cut any value below 0
-		MatrixUtil.max(0,h1Sample);
+
 	
 		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
 
 	}
-	
+
 	/**
 	 * Calculates the activation of the hidden:
 	 * h * W + vbias

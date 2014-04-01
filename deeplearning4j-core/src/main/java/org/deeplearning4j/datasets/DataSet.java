@@ -142,8 +142,9 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	
 	public void normalizeZeroMeanZeroUnitVariance() {
 		DoubleMatrix columnMeans = getFirst().columnMeans();
-		setFirst(getFirst().subiRowVector(columnMeans));
 		DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(getFirst());
+
+		setFirst(getFirst().subiRowVector(columnMeans));
 		columnStds.addi(1e-6);
 		setFirst(getFirst().diviRowVector(columnStds));
 	}

@@ -44,12 +44,12 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient OptimizerMatrix opt;
+	protected transient VectorizedNonZeroStoppingConjugateGradient opt;
 
 	public void train(DoubleMatrix x) {
 		if(opt == null)
 			opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
-		//opt.setTolerance(tolerance);
+		opt.setTolerance(tolerance);
 		int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
 		opt.optimize(epochs);
 
@@ -188,9 +188,16 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return -network.getReConstructionCrossEntropy();
+		return -network.negativeLogLikelihood();
+	}
+	public  double getTolerance() {
+		return tolerance;
+	}
+	public  void setTolerance(double tolerance) {
+		this.tolerance = tolerance;
 	}
 
+	
 
 
 }

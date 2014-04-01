@@ -20,20 +20,19 @@ public class RawMnistRBMExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
-		.numberOfVisible(784).useAdaGrad(false)
+		.numberOfVisible(784).useAdaGrad(true)
 		.numHidden(600).normalizeByInputRows(true)
 		.build();
 
 
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new RawMnistDataSetIterator(10,20);
-		//for(int i = 0; i < 30; i++)  {
+
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			//next.normalizeZeroMeanZeroUnitVariance();
-			//next.normalizeZeroMeanZeroUnitVariance();
+			next.normalizeZeroMeanZeroUnitVariance();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(),1e-3, new Object[]{1,1e-3,1000});
+			r.trainTillConvergence(next.getFirst(),1e-5, new Object[]{1,1e-5,1000});
 
 		}
 
@@ -41,7 +40,7 @@ public class RawMnistRBMExample {
 
 		iter.reset();
 
-	
+
 
 
 

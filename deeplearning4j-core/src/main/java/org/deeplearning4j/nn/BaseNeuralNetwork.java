@@ -24,6 +24,8 @@ import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -38,6 +40,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	private static final long serialVersionUID = -7074102204433996574L;
+	private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
 	/* Number of visible inputs */
 	public int nVisible;
 	/**
@@ -429,7 +432,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	 * @return the negative log likelihood of the auto encoder
 	 * given the corruption level
 	 */
-	public double negativeLoglikelihood() {
+	@Override
+	public double negativeLogLikelihood() {
 		DoubleMatrix z = this.reconstruct(input);
 		if(this.useRegularization) {
 			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
@@ -439,9 +443,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 					columnSums().mean() + reg;
 		}
 
-		return - input.mul(log(z)).add(
+		
+		
+		double likelihood =  - input.mul(log(z)).add(
 				oneMinus(input).mul(log(oneMinus(z)))).
 				columnSums().mean();
+		
+		return likelihood;
 	}
 
 

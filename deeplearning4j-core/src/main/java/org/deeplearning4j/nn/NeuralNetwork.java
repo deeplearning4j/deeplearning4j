@@ -46,6 +46,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	public double squaredLoss();
 	
+	public double negativeLogLikelihood();
 	
 	public double getSparsity();
 	public  void setSparsity(double sparsity);
