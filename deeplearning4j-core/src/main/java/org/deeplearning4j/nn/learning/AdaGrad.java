@@ -73,6 +73,8 @@ public class AdaGrad implements Serializable {
 
 		numIterations++;
 		this.adjustedGradient = MatrixFunctions.sqrt(MatrixFunctions.pow(this.gradient,2)).mul(currentLearningRate);
+		//ensure no zeros
+		this.adjustedGradient.addi(1e-6);
 		return adjustedGradient;
 	}
 
