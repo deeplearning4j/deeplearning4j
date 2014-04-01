@@ -8,9 +8,8 @@ import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.CRBM;
-import org.deeplearning4j.rbm.GaussianBinaryRBM;
+import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.rbm.RectifiedLinearRBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 
@@ -20,9 +19,9 @@ public class RawMnistRBMExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		GaussianBinaryRBM r = new GaussianBinaryRBM.Builder()
-		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.5)
-		.numHidden(2000).normalizeByInputRows(true)
+		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
+		.numberOfVisible(784).useAdaGrad(false)
+		.numHidden(600).normalizeByInputRows(true)
 		.build();
 
 
@@ -32,8 +31,9 @@ public class RawMnistRBMExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			//next.normalizeZeroMeanZeroUnitVariance();
+			//next.normalizeZeroMeanZeroUnitVariance();
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(),1e-4, new Object[]{1,1e-4,10000});
+			r.trainTillConvergence(next.getFirst(),1e-3, new Object[]{1,1e-3,1000});
 
 		}
 

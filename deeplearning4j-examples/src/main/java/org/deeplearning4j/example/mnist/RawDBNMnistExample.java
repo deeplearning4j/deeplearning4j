@@ -14,7 +14,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.dbn.GaussianBinaryDBN;
+import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.activation.Activations;
@@ -35,7 +35,7 @@ public class RawDBNMnistExample {
 		DataSetIterator iter = new RawMnistDataSetIterator(10,40);
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		GaussianBinaryDBN dbn = new GaussianBinaryDBN.Builder().useAdaGrad(true)
+		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
 				.useRegularization(false)
 				.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
 				.numberOfInputs(784).numberOfOutPuts(10)
