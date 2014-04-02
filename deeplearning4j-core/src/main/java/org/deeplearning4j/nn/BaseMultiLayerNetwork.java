@@ -100,6 +100,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	//divide by the std deviation
 	private DoubleMatrix columnStds;
 	private boolean initCalled = false;
+	private boolean useHiddenActivationsForwardProp = true;
 	/*
 	 * Use adagrad or not
 	 */
@@ -352,8 +353,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
 			}
 			else {
-				if(this.input != null)
-					layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
+				if(input != null) {
+					if(this.useHiddenActivationsForwardProp)
+						layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
+					else
+						layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+
+				}
+				
 				// construct sigmoid_layer
 				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
 
@@ -550,10 +557,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		List<DoubleMatrix> activations = new ArrayList<>();
 		activations.add(currInput);
-
+		//https://github.com/agibsonccc/medal/blob/master/models/dbn.m#L129
 		for(int i = 0; i < nLayers; i++) {
 			getLayers()[i].setInput(currInput);
-			currInput = getSigmoidLayers()[i].activate(currInput);
+			getSigmoidLayers()[i].setInput(input);
+			if(useHiddenActivationsForwardProp)
+				currInput = getSigmoidLayers()[i].activate(currInput);
+			else
+				currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
 			activations.add(currInput);
 		}
 
@@ -1306,6 +1317,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+	public boolean isUseHiddenActivationsForwardProp() {
+		return useHiddenActivationsForwardProp;
+	}
+
+	public void setUseHiddenActivationsForwardProp(
+			boolean useHiddenActivationsForwardProp) {
+		this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
+	}
+
+
+
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
@@ -1333,6 +1355,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 		private boolean normalizeByInputRows = false;
+		private boolean useHiddenActivationsForwardProp = true;
+
+
+		/**
+		 * Whether to use hidden layer activations or neural network sampling 
+		 * on feed forward pass
+		 * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
+		 * @return builder pattern
+		 */
+		public Builder<E> useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
+			this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
+			return this;
+		}
 
 		/**
 		 * Turn this off for full dataset training
@@ -1554,6 +1589,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setRng(this.rng);
 				ret.setShouldBackProp(this.backProp);
 				ret.setSigmoidLayers(new HiddenLayer[ret.getnLayers()]);
+				ret.setUseHiddenActivationsForwardProp(useHiddenActivationsForwardProp);
 				ret.setToDecode(decode);
 				ret.setInput(this.input);
 				ret.setMomentum(momentum);

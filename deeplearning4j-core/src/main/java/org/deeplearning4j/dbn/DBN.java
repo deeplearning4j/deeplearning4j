@@ -108,9 +108,14 @@ public class DBN extends BaseMultiLayerNetwork {
 
 		for(int i = 0; i < getnLayers(); i++) {
 			if(i == 0)
-				layerInput = this.getInput();
-			else 
-				layerInput = getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+				layerInput = getInput();
+			else {
+				if(isUseHiddenActivationsForwardProp())
+					layerInput = getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+				else
+					layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+
+			}
 			log.info("Training on layer " + (i + 1));
 			if(isForceNumEpochs()) {
 				for(int epoch = 0; epoch < epochs; epoch++) {
@@ -144,7 +149,7 @@ public class DBN extends BaseMultiLayerNetwork {
 		.withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
 		.withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
 		.fanIn(getFanIn()).build();
-		
+
 		ret.setGradientListeners(gradientListeners.get(index));
 		return ret;
 	}

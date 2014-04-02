@@ -38,7 +38,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
 			RandomGenerator rng, double fanIn, RealDistribution dist) {
 		super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
 		if(useAdaGrad) {
-			this.wAdaGrad.setMasterStepSize(1e-2);
+			this.wAdaGrad.setMasterStepSize(1e-3);
 			this.wAdaGrad.setDecayLr(true);
 		}
 
@@ -87,6 +87,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
 	 * @param v the visible values
 	 * @return a binomial distribution containing the expected values and the samples
 	 */
+	@Override
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
 		DoubleMatrix sigH1Mean = sigmoid(h1Mean);
