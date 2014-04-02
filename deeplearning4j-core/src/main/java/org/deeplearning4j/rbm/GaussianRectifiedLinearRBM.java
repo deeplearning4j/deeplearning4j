@@ -38,11 +38,12 @@ public class GaussianRectifiedLinearRBM extends RBM {
 			RandomGenerator rng, double fanIn, RealDistribution dist) {
 		super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
 		if(useAdaGrad) {
-			this.wAdaGrad.setMasterStepSize(1e-3);
+			this.wAdaGrad.setMasterStepSize(1e-4);
 			this.wAdaGrad.setDecayLr(true);
 		}
 
 		sigma = DoubleMatrix.ones(nVisible);
+		applySparsity = false;
 	}
 
 

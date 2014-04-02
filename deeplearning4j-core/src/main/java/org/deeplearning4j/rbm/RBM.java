@@ -97,8 +97,20 @@ public class RBM extends BaseNeuralNetwork {
 
 	@Override
 	public NeuralNetworkGradient getGradient(Object[] params) {
+
+
+
 		int k = (int) params[0];
 		double learningRate = (double) params[1];
+
+
+		if(wAdaGrad != null)
+			wAdaGrad.setMasterStepSize(learningRate);
+		if(hBiasAdaGrad != null )
+			hBiasAdaGrad.setMasterStepSize(learningRate);
+		if(vBiasAdaGrad != null)
+			vBiasAdaGrad.setMasterStepSize(learningRate);
+
 		/*
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
@@ -156,45 +168,28 @@ public class RBM extends BaseNeuralNetwork {
 				nvSamples.transpose().mmul(nhMeans)
 				);
 
-		if(useAdaGrad)
-			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
-		else 
-			wGradient.muli(learningRate);
 
-		//weight decay via l2 regularization
-		if(useRegularization) 
-			wGradient.subi(W.muli(l2));
-
-		if(momentum != 0)
-			wGradient.muli( 1 - momentum);
-
-
-		if(normalizeByInputRows)
-			wGradient.divi(input.rows);
 
 		DoubleMatrix hBiasGradient = null;
 
-		if(sparsity != 0) {
-
+		if(sparsity != 0) 
 			//all hidden units must stay around this number
 			hBiasGradient = mean(scalarMinus(sparsity,probHidden.getSecond()),0);
-			hBiasGradient.muli(learningRate);
-
-		}
-		else {
+		else 
 			//update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
 			hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
-			hBiasGradient.muli(learningRate);
 
 
-		}
+
 
 		//update rule: the expected values of the input - the negative samples adjusted by the learning rate
 		DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
-		vBiasGradient.muli(learningRate);
+		NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
+		updateGradientAccordingToParams(ret, learningRate);
+		triggerGradientEvents(ret);
 
-		return new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
+		return ret;
 	}
 
 
