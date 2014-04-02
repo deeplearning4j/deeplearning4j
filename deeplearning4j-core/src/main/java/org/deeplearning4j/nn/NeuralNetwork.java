@@ -99,6 +99,9 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v);
 	
 	
+	public void setDropOut(double dropOut);
+	public double dropOut();
+	
 	/**
 	 * Sample visible mean and sample
 	 * given hidden

@@ -87,6 +87,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	//use only when binary hidden layers are active
 	protected boolean applySparsity = true;
 	protected List<NeuralNetworkGradientListener> gradientListeners;
+	protected double dropOut = 0;
+	protected DoubleMatrix doMask;
 
 	protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
@@ -294,7 +296,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
-
+	/**
+	 * Applies sparsity to the passed in hbias gradient 
+	 * @param hBiasGradient the hbias gradient to apply to
+	 * @param learningRate the learning rate used
+	 */
 	protected void applySparsity(DoubleMatrix hBiasGradient,double learningRate) {
 
 		if(useAdaGrad) {
@@ -377,6 +383,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
+	@Override
+	public void setDropOut(double dropOut) {
+		this.dropOut = dropOut;
+	}
+	@Override
+	public double dropOut() {
+		return dropOut;
+	}
 	@Override
 	public AdaGrad getAdaGrad() {
 		return this.wAdaGrad;
@@ -778,6 +792,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		return lossFunction(null);
 	}
 
+
+
+	protected void applyDropOutIfNecessary(DoubleMatrix input) {
+		if(dropOut > 0) 
+			this.doMask = DoubleMatrix.rand(input.rows, this.nHidden).gt(dropOut);
+
+		else
+			this.doMask = DoubleMatrix.ones(input.rows,this.nHidden);
+	}
+
 	/**
 	 * Train one iteration of the network
 	 * @param input the input to train on
@@ -839,7 +863,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private RealDistribution dist;
 		private boolean useAdaGrad = false;
 		private boolean normalizeByInputRows = false;
-
+		private double dropOut = 0;
+		
+		public Builder<E> withDropOut(double dropOut) {
+			this.dropOut = dropOut;
+			return this;
+		}
 		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
 			this.normalizeByInputRows = normalizeByInputRows;
 			return this;
@@ -966,6 +995,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret.momentum = this.momentum;
 						ret.useRegularization = this.useRegularization;
 						ret.useAdaGrad = this.useAdaGrad;
+						ret.dropOut = this.dropOut;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);

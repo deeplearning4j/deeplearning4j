@@ -135,7 +135,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
+		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().withDropOut(dropOut)
 		.withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist())
 		.withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
 		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
