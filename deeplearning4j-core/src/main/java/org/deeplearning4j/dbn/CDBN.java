@@ -39,14 +39,14 @@ public class CDBN extends DBN {
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		NeuralNetwork ret = null;
 		if(index == 0)
-			ret = new CRBM.Builder().useRegularization(isUseRegularization())
+			ret = new CRBM.Builder().useRegularization(isUseRegularization()).withDropOut(dropOut)
 					.withDistribution(getDist()).useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 		else
 			ret = new RBM.Builder().useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
-		.useRegularization(isUseRegularization()).withDistribution(getDist())
+		.useRegularization(isUseRegularization()).withDistribution(getDist()).withDropOut(dropOut)
 		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
