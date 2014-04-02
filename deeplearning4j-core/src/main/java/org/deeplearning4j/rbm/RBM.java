@@ -218,6 +218,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * @param v the visible values
 	 * @return a binomial distribution containing the expected values and the samples
 	 */
+	@Override
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
 		DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
@@ -244,6 +245,7 @@ public class RBM extends BaseNeuralNetwork {
 	 * @param h
 	 * @return
 	 */
+	@Override
 	public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
 		DoubleMatrix v1Mean = propDown(h);
 		DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);

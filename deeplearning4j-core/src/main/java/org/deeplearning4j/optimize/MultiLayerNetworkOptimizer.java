@@ -37,9 +37,9 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		network.getLogLayer().setLabels(labels);
-	
+
 		DoubleMatrix train = sampleHiddenGivenVisible();
-		
+
 		if(!network.isForceNumEpochs()) {
 			network.getLogLayer().trainTillConvergence(train,labels,lr,epochs);
 
@@ -47,19 +47,19 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 				network.backProp(lr, epochs);
 
 		}
-		
+
 		else {
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
 				network.getLogLayer().train(train, labels,lr);
 			}
-			
+
 
 			if(network.isShouldBackProp())
 				network.backProp(lr, epochs);
 
 		}
-	
+
 
 
 	}
@@ -67,7 +67,10 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 	private DoubleMatrix sampleHiddenGivenVisible() {
-		return network.getSigmoidLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible();
+		if(network.isUseHiddenActivationsForwardProp())
+			return network.getSigmoidLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible();
+		else
+			return network.getLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible(network.getLayers()[network.getnLayers() - 1].getInput()).getSecond();
 	}
 
 
@@ -85,7 +88,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 		int idx = 0;
 		for(int i = 0; i < network.getLogLayer().getW().length; i++) {
 			buffer[idx++] = network.getLogLayer().getW().get(i);
-			
+
 		}
 		for(int i = 0; i < network.getLogLayer().getB().length; i++) {
 			buffer[idx++] = network.getLogLayer().getB().get(i);
@@ -134,12 +137,12 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	@Override
 	public void getValueGradient(double[] buffer) {
 		LogisticRegressionGradient gradient = network.getLogLayer().getGradient(lr);
-		
+
 		DoubleMatrix weightGradient = gradient.getwGradient();
 		DoubleMatrix biasGradient = gradient.getbGradient();
-		
+
 		int idx = 0;
-		
+
 		for(int i = 0; i < weightGradient.length; i++)
 			buffer[idx++] = weightGradient.get(i);
 		for(int i = 0; i < biasGradient.length; i++)
