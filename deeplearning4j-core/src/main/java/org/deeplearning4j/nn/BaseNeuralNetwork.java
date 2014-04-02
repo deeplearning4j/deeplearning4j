@@ -84,7 +84,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	protected boolean firstTimeThrough = false;
 	//normalize by input rows or not
 	protected boolean normalizeByInputRows = false;
-	
+	//use only when binary hidden layers are active
+	protected boolean applySparsity = true;
 	protected List<NeuralNetworkGradientListener> gradientListeners;
 
 	protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
@@ -139,13 +140,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.vBias = vbias;
 		if(this.vBias != null)
 			this.vBiasAdaGrad = new AdaGrad(this.vBias.rows,this.vBias.columns);
-		
-		
+
+
 		this.hBias = hbias;
 		if(this.hBias != null)
 			this.hBiasAdaGrad = new AdaGrad(this.hBias.rows,this.hBias.columns);
-		
-		
+
+
 		initWeights();	
 
 
@@ -207,9 +208,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			 */
 			//this.hBias.subi(4);
 		}
-		
+
 		this.hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
-		
+
 
 		if(this.vBias == null) {
 			if(this.input != null) {
@@ -292,6 +293,73 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 	}
+
+
+	protected void applySparsity(DoubleMatrix hBiasGradient,double learningRate) {
+
+		if(useAdaGrad) {
+			DoubleMatrix change = this.hBiasAdaGrad.getLearningRates(hBias).neg().mul(sparsity).mul(hBiasGradient.mul(sparsity));
+			hBiasGradient.addi(change);
+		}
+		else {
+			DoubleMatrix change = hBiasGradient.mul(sparsity).mul(-learningRate * sparsity);
+			hBiasGradient.addi(change);
+
+		}
+	}
+
+
+	/**
+	 * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+	 * @param gradient the gradient to modify
+	 * @param learningRate the learning rate for the current iteratiaon
+	 */
+	protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
+		DoubleMatrix wGradient = gradient.getwGradient();
+		DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
+		DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
+
+		if(useAdaGrad)
+			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
+		else 
+			wGradient.muli(learningRate);
+
+		//weight decay via l2 regularization
+		if(useRegularization) 
+			wGradient.subi(W.muli(l2));
+
+		if(momentum != 0) {
+			DoubleMatrix change = wGradient.mul(momentum).add(wGradient.mul(1 - momentum));
+			wGradient.addi(change);
+
+		}
+
+		if(useAdaGrad)
+			hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(momentum));
+		else
+			hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(momentum));
+
+
+
+
+		if(useAdaGrad)
+			vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(momentum));
+		else
+			vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(momentum));
+
+		//only do this with binary hidden layers
+		if(applySparsity)
+			applySparsity(hBiasGradient,learningRate);
+
+		if(normalizeByInputRows) {
+			wGradient.divi(input.rows);
+			vBiasGradient.divi(input.rows);
+			hBiasGradient.divi(input.rows);
+		}
+
+
+	}
+
 
 	/**
 	 * Triggers network gradient listeners. This should be called in 
@@ -438,17 +506,24 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		if(this.useRegularization) {
 			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
 
-			return - input.mul(log(z)).add(
+			double ret = - input.mul(log(z)).add(
 					oneMinus(input).mul(log(oneMinus(z)))).
 					columnSums().mean() + reg;
+			if(this.normalizeByInputRows)
+				ret /= input.rows;
+			return ret;
 		}
 
-		
-		
+
+
 		double likelihood =  - input.mul(log(z)).add(
 				oneMinus(input).mul(log(oneMinus(z)))).
 				columnSums().mean();
-		
+
+		if(this.normalizeByInputRows)
+			likelihood /= input.rows;
+
+
 		return likelihood;
 	}
 
@@ -497,11 +572,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		double l = inner.length;
 		if(useRegularization) {
 			double normalized = l + l2RegularizedCoefficient();
-			return - inner.rowSums().mean() / normalized;
+			double ret = - inner.rowSums().mean() / normalized;
+			if(this.normalizeByInputRows)
+				ret /= input.rows;
+			return ret;
+
 		}
 
 		double ret =  - inner.rowSums().mean();
-
+		if(this.normalizeByInputRows)
+			ret /= input.rows;
 
 		return ret;
 	}
@@ -643,10 +723,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.l2 = l2;
 	}
 
-	
-	
-	
-	
+
+
+
+
 	@Override
 	public AdaGrad gethBiasAdaGrad() {
 		return hBiasAdaGrad;
@@ -759,12 +839,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private RealDistribution dist;
 		private boolean useAdaGrad = false;
 		private boolean normalizeByInputRows = false;
-		
+
 		public Builder<E> normalizeByInputRows(boolean normalizeByInputRows) {
 			this.normalizeByInputRows = normalizeByInputRows;
 			return this;
 		}
-		
+
 		public Builder<E> useAdaGrad(boolean useAdaGrad) {
 			this.useAdaGrad = useAdaGrad;
 			return this;
