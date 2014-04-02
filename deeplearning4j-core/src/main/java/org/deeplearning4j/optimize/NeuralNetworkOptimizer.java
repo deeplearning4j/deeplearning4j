@@ -188,7 +188,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
-		return -network.negativeLogLikelihood();
+		return -network.getReConstructionCrossEntropy();
 	}
 	public  double getTolerance() {
 		return tolerance;

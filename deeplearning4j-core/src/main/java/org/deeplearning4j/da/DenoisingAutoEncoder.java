@@ -175,8 +175,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 			this.hBiasAdaGrad.setMasterStepSize(lr);
 		if(vBiasAdaGrad != null)
 			vBiasAdaGrad.setMasterStepSize(lr);
-		
-		
+
+
 		DoubleMatrix corruptedX = getCorruptedInput(input, corruptionLevel);
 		DoubleMatrix y = getHiddenValues(corruptedX);
 		DoubleMatrix z = getReconstructedInput(y);
@@ -190,32 +190,12 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		DoubleMatrix wGradient = corruptedX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
 
-		
+		DoubleMatrix hBiasGradient = L_hbias.columnMeans();
+		DoubleMatrix vBiasGradient = L_vbias.columnMeans();
 
-		if(useRegularization) 
-			wGradient.subi(W.muli(l2));
-
-
-		if(momentum != 0)
-			wGradient.muli(1 - momentum);
-
-		if(normalizeByInputRows)
-			wGradient.divi(input.rows);
-
-		
-		if(useAdaGrad)
-			wGradient.muli(wAdaGrad.getLearningRates(wGradient));
-		else 
-			wGradient.muli(lr);
-
-
-
-
-		DoubleMatrix L_hbias_mean = L_hbias.columnMeans();
-		DoubleMatrix L_vbias_mean = L_vbias.columnMeans();
-
-		NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,L_vbias_mean,L_hbias_mean);
-		this.triggerGradientEvents(gradient);
+		NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
+		triggerGradientEvents(gradient);
+		updateGradientAccordingToParams(gradient, lr);
 
 		return gradient;
 	}
