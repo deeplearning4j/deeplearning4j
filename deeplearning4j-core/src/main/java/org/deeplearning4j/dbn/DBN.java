@@ -33,9 +33,9 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
-	public DBN(int n_ins, int[] hidden_layer_sizes, int nOuts, int nLayers,
+	public DBN(int nIns, int[] hiddenLayerSizes, int nOuts, int nLayers,
 			RandomGenerator rng) {
-		super(n_ins, hidden_layer_sizes, nOuts, nLayers, rng);
+		super(nIns, hiddenLayerSizes, nOuts, nLayers, rng);
 	}
 
 

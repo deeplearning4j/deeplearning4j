@@ -76,7 +76,9 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 	// Encode
 	public DoubleMatrix getHiddenValues(DoubleMatrix x) {
-		return sigmoid(x.mmul(W).addRowVector(hBias));
+		DoubleMatrix ret =  sigmoid(x.mmul(W).addRowVector(hBias));
+		applyDropOutIfNecessary(ret);
+		return ret;
 	}
 
 	// Decode
@@ -158,7 +160,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		vBias.addi(gradient.getvBiasGradient());
 		W.addi(gradient.getwGradient());
-		hBias.addi(gradient.gethBiasGradient());	}
+		hBias.addi(gradient.gethBiasGradient());	
+	}
 
 
 
