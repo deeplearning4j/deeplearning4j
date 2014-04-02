@@ -97,9 +97,10 @@ public class GaussianRectifiedLinearRBM extends RBM {
 		 */
 		DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
 		MatrixUtil.max(0.0, h1Sample);
-		
+		//apply dropout
+		applyDropOutIfNecessary(h1Sample);
 
-	
+
 		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
 
 	}

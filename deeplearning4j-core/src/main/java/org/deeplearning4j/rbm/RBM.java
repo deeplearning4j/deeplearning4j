@@ -217,6 +217,8 @@ public class RBM extends BaseNeuralNetwork {
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 		DoubleMatrix h1Mean = propUp(v);
 		DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
+		//apply dropout
+		applyDropOutIfNecessary(h1Sample);
 		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
 
 	}
