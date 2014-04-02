@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
@@ -89,7 +90,22 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 
 	public double fanIn();
 	public void setFanIn(double fanIn);
+	/**
+	 * Sample hidden mean and sample
+	 * given visible
+	 * @param v the  the visible input
+	 * @return a pair with mean, sample
+	 */
+	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v);
 	
+	
+	/**
+	 * Sample visible mean and sample
+	 * given hidden
+	 * @param h the  the hidden input
+	 * @return a pair with mean, sample
+	 */
+	public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h);
 	
 	void resetAdaGrad(double lr);
 	
@@ -113,6 +129,9 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 * to average by
 	 */
 	void merge(NeuralNetwork network,int batchSize);
+	
+	
+	
 
 
 }

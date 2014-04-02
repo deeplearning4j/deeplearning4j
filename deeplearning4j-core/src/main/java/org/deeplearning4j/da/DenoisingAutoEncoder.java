@@ -8,6 +8,7 @@ import java.io.Serializable;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
@@ -55,6 +56,20 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
+	@Override
+	public Pair<DoubleMatrix, DoubleMatrix> sampleHiddenGivenVisible(
+			DoubleMatrix v) {
+		DoubleMatrix ret = getHiddenValues(v);
+		return new Pair<>(ret,ret);
+	}
+
+
+	@Override
+	public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(
+			DoubleMatrix h) {
+		DoubleMatrix ret = this.getReconstructedInput(h);
+		return new Pair<>(ret,ret);
+	}
 
 
 
@@ -204,6 +219,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 		return gradient;
 	}
+
+
 
 
 

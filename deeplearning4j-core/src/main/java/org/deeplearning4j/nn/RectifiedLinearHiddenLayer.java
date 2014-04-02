@@ -1,14 +1,13 @@
 package org.deeplearning4j.nn;
 
-import static org.jblas.MatrixFunctions.exp;
-import static org.jblas.MatrixFunctions.log;
+import static org.deeplearning4j.util.MatrixUtil.sigmoid;
+import static org.jblas.MatrixFunctions.sqrt;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 /**
  * Rectified linear hidden units vs binomial sampled ones
@@ -38,75 +37,12 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
 
 
 	public RectifiedLinearHiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction,RealDistribution dist) {
-		this.nIn = nIn;
-		this.nOut = nOut;
-		this.input = input;
-		if(activationFunction != null)
-			this.activationFunction = activationFunction;
-
-		if(rng == null) {
-			this.rng = new MersenneTwister(1234);
-		}
-		else 
-			this.rng = rng;
-
-		if(dist == null)
-			this.dist = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-		else
-			this.dist = dist;
-
-		if(W == null) {
-
-			this.W = DoubleMatrix.zeros(nIn,nOut);
-
-			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
-		}
-
-		else 
-			this.W = W;
-
-
-		if(b == null) 
-			this.b = DoubleMatrix.zeros(nOut);
-		else 
-			this.b = b;
+		super(nIn,nOut,W,b,rng,input,activationFunction,dist);
 	}
 
 
 	public RectifiedLinearHiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,RealDistribution dist) {
-		this.nIn = nIn;
-		this.nOut = nOut;
-		this.input = input;
-
-
-		if(rng == null) 
-			this.rng = new MersenneTwister(1234);
-
-		else 
-			this.rng = rng;
-
-		if(dist == null)
-			this.dist = new NormalDistribution(this.rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-		else
-			this.dist = dist;
-
-		if(W == null) {
-
-			this.W = DoubleMatrix.zeros(nIn,nOut);
-
-			for(int i = 0; i < this.W.rows; i++) 
-				this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
-		}
-
-		else 
-			this.W = W;
-
-
-		if(b == null) 
-			this.b = DoubleMatrix.zeros(nOut);
-		else 
-			this.b = b;
+		super(nIn,nOut,W,b,rng,input,dist);
 	}
 
 
@@ -181,7 +117,16 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
 	public DoubleMatrix sampleHGivenV(DoubleMatrix input) {
 		this.input = input;
 		DoubleMatrix output = activate();
-		return output;
+
+
+		DoubleMatrix sigH1Mean = sigmoid(output);
+		/*
+		 * Rectified linear part
+		 */
+		DoubleMatrix h1Sample = output.addi(MatrixUtil.normal(getRng(), output,1).mul(sqrt(sigH1Mean)));
+		MatrixUtil.max(0.0, h1Sample);
+
+		return h1Sample;
 	}
 
 	/**
@@ -191,8 +136,7 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
 	 */
 	@Override
 	public DoubleMatrix sampleHiddenGivenVisible() {
-		DoubleMatrix output = activate();
-		return output;
+		return sampleHGivenV(input);
 
 	}
 }
