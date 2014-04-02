@@ -138,6 +138,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	protected List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 
 	/*
+	 * Drop out: randomly zero examples
+	 */
+	protected double dropOut = 0;
+	
+	/*
 	 * Normalize by input rows with gradients or not
 	 */
 	protected boolean normalizeByInputRows = false;
@@ -384,6 +389,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+
+	
+	
+	
+	public double getDropOut() {
+		return dropOut;
+	}
+
+	public void setDropOut(double dropOut) {
+		this.dropOut = dropOut;
+	}
 
 	public  Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
 		return hiddenBiasTransforms;
@@ -984,7 +1000,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.toDecode = network.toDecode;
 		this.visibleBiasTransforms = network.visibleBiasTransforms;
 		this.hiddenBiasTransforms = network.hiddenBiasTransforms;
-
+		this.dropOut = network.dropOut;
+		
 		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
 			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
 			for(int i = 0; i < sigmoidLayers.length; i++)
@@ -1356,7 +1373,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
 		private boolean normalizeByInputRows = false;
 		private boolean useHiddenActivationsForwardProp = true;
-
+		private double dropOut = 0;
+		
+		/**
+		 * Whether to use drop out on the neural networks or not:
+		 * random zero out of examples
+		 * @param dropOut the dropout to use
+		 * @return builder pattern
+		 */
+		public Builder<E> withDropOut(double dropOut) {
+			this.dropOut = dropOut;
+			return this;
+		}
 
 		/**
 		 * Whether to use hidden layer activations or neural network sampling 
@@ -1601,6 +1629,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setForceNumEpochs(shouldForceEpochs);
 				ret.setUseRegularization(useRegularization);
 				ret.setUseAdaGrad(useAdaGrad);
+				ret.setDropOut(dropOut);
+				
 				if(activation != null)
 					ret.setActivation(activation);
 				if(dist != null)
