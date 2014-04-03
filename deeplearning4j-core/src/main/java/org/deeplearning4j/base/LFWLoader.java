@@ -30,7 +30,7 @@ public class LFWLoader {
 	private static Logger log = LoggerFactory.getLogger(LFWLoader.class);
 	private int numNames;
 	private int numPixelColumns;
-	private ImageLoader loader = new ImageLoader();
+	private ImageLoader loader = new ImageLoader(28,28);
 	private List<String> images = new ArrayList<String>();
 	private List<String> outcomes = new ArrayList<String>();
 	
@@ -64,7 +64,7 @@ public class LFWLoader {
 	
 	
 	
-	public Pair<DoubleMatrix,DoubleMatrix> convertListPairs(List<Pair<DoubleMatrix,DoubleMatrix>> images) {
+	public DataSet convertListPairs(List<DataSet> images) {
 		DoubleMatrix inputs = new DoubleMatrix(images.size(),numPixelColumns);
 		DoubleMatrix outputs = new DoubleMatrix(images.size(),numNames);
 		
@@ -72,7 +72,7 @@ public class LFWLoader {
 			inputs.putRow(i,images.get(i).getFirst());
 			outputs.putRow(i,images.get(i).getSecond());
 		}
-		return new Pair<DoubleMatrix,DoubleMatrix>(inputs,outputs);
+		return new DataSet(inputs,outputs);
 	}
 	
 	
@@ -93,8 +93,8 @@ public class LFWLoader {
 	 * @return 
 	 * @throws Exception
 	 */
-	public List<Pair<DoubleMatrix,DoubleMatrix>> getFirst(int num) throws Exception {
-		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>(num);
+	public List<DataSet> getFirst(int num) throws Exception {
+		List<DataSet> ret = new ArrayList<>(num);
 		File[] files = lfwDir.listFiles();
 		int label = 0;
 		for(File file : files) {
@@ -107,19 +107,19 @@ public class LFWLoader {
 		return ret;
 	}
 	
-	public Pair<DoubleMatrix,DoubleMatrix> getAllImagesAsMatrix() throws Exception {
-		List<Pair<DoubleMatrix,DoubleMatrix>> images = getImagesAsList();
+	public DataSet getAllImagesAsMatrix() throws Exception {
+		List<DataSet> images = getImagesAsList();
 		return convertListPairs(images);
 	}
 	
 
-	public Pair<DoubleMatrix,DoubleMatrix> getAllImagesAsMatrix(int numRows) throws Exception {
-		List<Pair<DoubleMatrix,DoubleMatrix>> images = getImagesAsList().subList(0, numRows);
+	public DataSet getAllImagesAsMatrix(int numRows) throws Exception {
+		List<DataSet> images = getImagesAsList().subList(0, numRows);
 		return convertListPairs(images);
 	}
 	
-	public List<Pair<DoubleMatrix,DoubleMatrix>> getImagesAsList() throws Exception {
-		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<Pair<DoubleMatrix,DoubleMatrix>>();
+	public List<DataSet> getImagesAsList() throws Exception {
+		List<DataSet> list = new ArrayList<DataSet>();
 		File[] dirs = lfwDir.listFiles();
 		for(int i = 0; i < dirs.length; i++) {
 			list.addAll(getImages(i,dirs[i]));
@@ -127,19 +127,19 @@ public class LFWLoader {
 		return list;
 	}
 	
-	public List<Pair<DoubleMatrix,DoubleMatrix>> getImages(int label,File file) throws Exception {
+	public List<DataSet> getImages(int label,File file) throws Exception {
 		File[] images = file.listFiles();
-		List<Pair<DoubleMatrix,DoubleMatrix>> ret = new ArrayList<>();
+		List<DataSet> ret = new ArrayList<>();
 		for(File f : images)
 			ret.add(fromImageFile(label,f));
 		return ret;
 	}
 	
 	
-	public Pair<DoubleMatrix,DoubleMatrix> fromImageFile(int label,File image) throws Exception {
+	public DataSet fromImageFile(int label,File image) throws Exception {
 		DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numNames);
 		DoubleMatrix image2 = MatrixUtil.toMatrix(loader.flattenedImageFromFile(image));
-		return new Pair<>(image2,outcome);
+		return new DataSet(image2,outcome);
 	}
 	
 	
