@@ -100,6 +100,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 	}
 
 
+	public void multiplyBy(int num) {
+		getFirst().muli(num);
+	}
+	
+	public void divideBy(int num) {
+		getFirst().divi(num);
+	}
+	
 	public void shuffle() {
 		List<DataSet> list = asList();
 		Collections.shuffle(list);

@@ -52,24 +52,34 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		this.lossFunction = lossFunction;
 	}
 
+	private void createOptimizationAlgorithm() {
+		if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+			opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
+			((VectorizedNonZeroStoppingConjugateGradient) opt).setTolerance(tolerance);
+		}
+		else {
+			opt = new VectorizedDeepLearningGradientAscent(this,this);
+			((VectorizedDeepLearningGradientAscent) opt).setTolerance(tolerance);
+		}
+	}
+
 
 	public void train(DoubleMatrix x) {
 		if(opt == null) {
-			if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
-				opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
-				((VectorizedNonZeroStoppingConjugateGradient) opt).setTolerance(tolerance);
-			}
-			else {
-				opt = new VectorizedDeepLearningGradientAscent(this,this);
-				((VectorizedDeepLearningGradientAscent) opt).setTolerance(tolerance);
-			}
+			createOptimizationAlgorithm();
 		}
 
 		int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
-		opt.optimize(epochs);
+		boolean converged = opt.optimize(epochs);
+		while(!converged) {
+			converged = opt.optimize(epochs);
+			log.info("Not quite converged...retraining");
+		}
+
 
 
 	}
+
 	@Override
 	public void epochDone(int epoch) {
 		int plotEpochs = network.getRenderEpochs();
@@ -207,7 +217,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 			return -network.getReConstructionCrossEntropy();
 		else if(this.lossFunction == LossFunction.SQUARED_LOSS)
 			return - network.squaredLoss();
-		
+
 		else if(this.lossFunction == LossFunction.NEGATIVELOGLIKELIHOOD)
 			return - network.negativeLogLikelihood();
 		return -network.getReConstructionCrossEntropy();
