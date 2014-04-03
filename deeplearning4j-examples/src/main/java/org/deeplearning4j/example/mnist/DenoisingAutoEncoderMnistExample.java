@@ -21,7 +21,8 @@ public class DenoisingAutoEncoderMnistExample {
 	public static void main(String[] args) throws Exception {
 		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
 		.numberOfVisible(784).numHidden(500).normalizeByInputRows(true).withLossFunction(LossFunction.NEGATIVELOGLIKELIHOOD)
-		.useAdaGrad(true).useRegularization(true).withSparsity(0).withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+		.useAdaGrad(true).useRegularization(true).withSparsity(0).withL2(0.01)
+		.withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
 		.withMomentum(0.5).build();
 
 
