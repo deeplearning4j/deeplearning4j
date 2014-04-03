@@ -604,7 +604,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 		List<DoubleMatrix> activations = new ArrayList<>();
 		activations.add(currInput);
-		//https://github.com/agibsonccc/medal/blob/master/models/dbn.m#L129
 		for(int i = 0; i < nLayers; i++) {
 			getLayers()[i].setInput(currInput);
 			getSigmoidLayers()[i].setInput(input);

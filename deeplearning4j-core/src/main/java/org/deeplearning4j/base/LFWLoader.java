@@ -2,15 +2,17 @@ package org.deeplearning4j.base;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ImageLoader;
@@ -19,7 +21,11 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Loads LFW faces data set. You can customize the size of the images as well
+ * @author Adam Gibson
+ *
+ */
 public class LFWLoader {
 
 	private File baseDir = new File(System.getProperty("java.io.tmpdir"));
@@ -33,13 +39,31 @@ public class LFWLoader {
 	private ImageLoader loader = new ImageLoader(28,28);
 	private List<String> images = new ArrayList<String>();
 	private List<String> outcomes = new ArrayList<String>();
-
+	
+	
+	
+	public LFWLoader() {
+		this(28,28);
+	}
+	
+	
+	public LFWLoader(int imageWidth,int imageHeight) {
+		loader = new ImageLoader(imageWidth,imageHeight);
+	}
+	
 	public void getIfNotExists() throws Exception {
 		if(!lfwDir.exists()) {
 			lfwDir.mkdir();
 			log.info("Grabbing LFW...");
-			FileUtils.copyURLToFile(new URL(LFW_URL), lfwTarFile);
-
+		
+			URL website = new URL(LFW_URL);
+			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+			FileOutputStream fos = new FileOutputStream(lfwTarFile);
+			fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+			fos.flush();
+			fos.close();
+			rbc.close();
+			log.info("Downloaded lfw");
 			//untar to /tmp/lfw
 			untarFile(baseDir,lfwTarFile);
 
@@ -130,7 +154,7 @@ public class LFWLoader {
 	}
 
 	public List<DataSet> getImagesAsList() throws Exception {
-		List<DataSet> list = new ArrayList<DataSet>();
+		List<DataSet> list = new ArrayList<>();
 		File[] dirs = lfwDir.listFiles();
 		for(int i = 0; i < dirs.length; i++) {
 			list.addAll(getImages(i,dirs[i]));
