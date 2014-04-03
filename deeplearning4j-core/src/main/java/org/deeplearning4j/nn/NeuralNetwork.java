@@ -11,9 +11,41 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetEpochListener;
 import org.jblas.DoubleMatrix;
-
+/**
+ * Single layer neural network, this is typically one that has 
+ * the objective function of reconstruction the input: also called feature detectors
+ * @author Adam Gibson
+ *
+ */
 public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener {
 
+	
+	
+	/**
+	 * Optimization algorithm to use
+	 * @author Adam Gibson
+	 *
+	 */
+	public static enum OptimizationAlgorithm {
+		GRADIENT_DESCENT,CONJUGATE_GRADIENT
+	}
+	/**
+	 * Which loss function to use
+	 * @author Adam Gibson
+	 *
+	 */
+	public static enum LossFunction {
+		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD
+	}
+	
+	
+	
+	public LossFunction getLossFunction();
+	public void setLossFunction(LossFunction lossFunction);
+	
+	public OptimizationAlgorithm getOptimizationAlgorithm();
+	public void setOptimizationAlgorithm(OptimizationAlgorithm optimziationAlgorithm);
+	
 	public boolean normalizeByInputRows();
 	
 	public  int getnVisible();

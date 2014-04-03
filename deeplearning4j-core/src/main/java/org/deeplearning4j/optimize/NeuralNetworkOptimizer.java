@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
@@ -22,18 +24,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 
 
-	/**
-	 * 
-	 * @param network
-	 * @param lr
-	 * @param trainingParams
-	 */
-	public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams) {
-		this.network = network;
-		this.lr = lr;
-		this.extraParams = trainingParams;
-		
-	}
+
 
 
 	private static final long serialVersionUID = 4455143696487934647L;
@@ -44,12 +35,36 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 	protected static Logger log = LoggerFactory.getLogger(NeuralNetworkOptimizer.class);
 	protected List<Double> errors = new ArrayList<Double>();
 	protected double minLearningRate = 0.001;
-	protected transient VectorizedNonZeroStoppingConjugateGradient opt;
+	protected transient OptimizerMatrix opt;
+	protected OptimizationAlgorithm optimizationAlgorithm;
+	protected LossFunction lossFunction;
+	/**
+	 * 
+	 * @param network
+	 * @param lr
+	 * @param trainingParams
+	 */
+	public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
+		this.network = network;
+		this.lr = lr;
+		this.extraParams = trainingParams;
+		this.optimizationAlgorithm = optimizationAlgorithm;
+		this.lossFunction = lossFunction;
+	}
+
 
 	public void train(DoubleMatrix x) {
-		if(opt == null)
-			opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
-		opt.setTolerance(tolerance);
+		if(opt == null) {
+			if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+				opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
+				((VectorizedNonZeroStoppingConjugateGradient) opt).setTolerance(tolerance);
+			}
+			else {
+				opt = new VectorizedDeepLearningGradientAscent(this,this);
+				((VectorizedDeepLearningGradientAscent) opt).setTolerance(tolerance);
+			}
+		}
+
 		int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
 		opt.optimize(epochs);
 
@@ -84,9 +99,9 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		 * as a solid line for the optimizer, we get the following:
 		 * 
 		 */
-		
-		
-		
+
+
+
 		for(int i = 0; i < buffer.length; i++)
 			buffer[i] = getParameter(i);
 	}
@@ -163,8 +178,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		}
 	}
 
-	
-	
+
+
 
 	@Override
 	public DoubleMatrix getParameters() {
@@ -188,7 +203,15 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 	@Override
 	public double getValue() {
+		if(this.lossFunction == LossFunction.RECONSTRUCTION_CROSSENTROPY)
+			return -network.getReConstructionCrossEntropy();
+		else if(this.lossFunction == LossFunction.SQUARED_LOSS)
+			return - network.squaredLoss();
+		
+		else if(this.lossFunction == LossFunction.NEGATIVELOGLIKELIHOOD)
+			return - network.negativeLogLikelihood();
 		return -network.getReConstructionCrossEntropy();
+
 	}
 	public  double getTolerance() {
 		return tolerance;
@@ -197,7 +220,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		this.tolerance = tolerance;
 	}
 
-	
+
 
 
 }

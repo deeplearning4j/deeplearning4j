@@ -96,7 +96,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public void trainTillConvergence(DoubleMatrix x, double lr,double corruptionLevel) {
 		if(x != null)
 			this.input = x;
-		optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel});
+		optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel}, optimizationAlgo, lossFunction);
 		optimizer.train(x);
 	}
 
@@ -136,7 +136,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new DenoisingAutoEncoderOptimizer(this,lr, params);
+		optimizer = new DenoisingAutoEncoderOptimizer(this,lr, params, optimizationAlgo, lossFunction);
 		optimizer.train(input);
 	}
 

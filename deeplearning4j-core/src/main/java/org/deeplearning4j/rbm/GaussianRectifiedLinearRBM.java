@@ -58,7 +58,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate});
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
 		optimizer.setTolerance(1e-6);
 		optimizer.train(input);
 	}
