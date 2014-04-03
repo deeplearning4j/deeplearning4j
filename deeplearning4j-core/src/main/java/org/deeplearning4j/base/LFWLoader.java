@@ -33,25 +33,36 @@ public class LFWLoader {
 	private ImageLoader loader = new ImageLoader(28,28);
 	private List<String> images = new ArrayList<String>();
 	private List<String> outcomes = new ArrayList<String>();
-	
+
 	public void getIfNotExists() throws Exception {
 		if(!lfwDir.exists()) {
 			lfwDir.mkdir();
 			log.info("Grabbing LFW...");
 			FileUtils.copyURLToFile(new URL(LFW_URL), lfwTarFile);
-			
+
 			//untar to /tmp/lfw
 			untarFile(baseDir,lfwTarFile);
-			
+
 		}
-		
-		File firstImage = lfwDir.listFiles()[0].listFiles()[0];
+
+
+		File firstImage = null;
+		try {
+			firstImage = lfwDir.listFiles()[0].listFiles()[0];
+
+		}catch(Exception e) {
+			FileUtils.deleteDirectory(lfwDir);
+			getIfNotExists();
+			log.warn("Error opening first image; probably corrupt download...trying again");
+		}
+
+
 		//number of input neurons
 		numPixelColumns = ArrayUtil.flatten(loader.fromFile(firstImage)).length;
-		
+
 		//each subdir is a person
 		numNames = lfwDir.getAbsoluteFile().listFiles().length;
-		
+
 		@SuppressWarnings("unchecked")
 		Collection<File> allImages = FileUtils.listFiles(lfwDir, org.apache.commons.io.filefilter.FileFileFilter.FILE, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY);
 		for(File f : allImages) {
@@ -59,24 +70,24 @@ public class LFWLoader {
 		}
 		for(File dir : lfwDir.getAbsoluteFile().listFiles())
 			outcomes.add(dir.getAbsolutePath());
-		
+
 	}
-	
-	
-	
+
+
+
 	public DataSet convertListPairs(List<DataSet> images) {
 		DoubleMatrix inputs = new DoubleMatrix(images.size(),numPixelColumns);
 		DoubleMatrix outputs = new DoubleMatrix(images.size(),numNames);
-		
+
 		for(int i = 0; i < images.size(); i++) {
 			inputs.putRow(i,images.get(i).getFirst());
 			outputs.putRow(i,images.get(i).getSecond());
 		}
 		return new DataSet(inputs,outputs);
 	}
-	
-	
-	
+
+
+
 	public DataSet getDataFor(int i) {
 		File image = new File(images.get(i));
 		int outcome = outcomes.indexOf(image.getParentFile().getAbsolutePath());
@@ -86,7 +97,7 @@ public class LFWLoader {
 			throw new IllegalStateException("Unable to get data for image " + i + " for path " + images.get(i));
 		}
 	}
-	
+
 	/**
 	 * Get the first num found images
 	 * @param num the number of images to get
@@ -103,21 +114,21 @@ public class LFWLoader {
 			if(ret.size() >= num)
 				break;
 		}
-		
+
 		return ret;
 	}
-	
+
 	public DataSet getAllImagesAsMatrix() throws Exception {
 		List<DataSet> images = getImagesAsList();
 		return convertListPairs(images);
 	}
-	
+
 
 	public DataSet getAllImagesAsMatrix(int numRows) throws Exception {
 		List<DataSet> images = getImagesAsList().subList(0, numRows);
 		return convertListPairs(images);
 	}
-	
+
 	public List<DataSet> getImagesAsList() throws Exception {
 		List<DataSet> list = new ArrayList<DataSet>();
 		File[] dirs = lfwDir.listFiles();
@@ -126,7 +137,7 @@ public class LFWLoader {
 		}
 		return list;
 	}
-	
+
 	public List<DataSet> getImages(int label,File file) throws Exception {
 		File[] images = file.listFiles();
 		List<DataSet> ret = new ArrayList<>();
@@ -134,15 +145,15 @@ public class LFWLoader {
 			ret.add(fromImageFile(label,f));
 		return ret;
 	}
-	
-	
+
+
 	public DataSet fromImageFile(int label,File image) throws Exception {
 		DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numNames);
 		DoubleMatrix image2 = MatrixUtil.toMatrix(loader.flattenedImageFromFile(image));
 		return new DataSet(image2,outcome);
 	}
-	
-	
+
+
 
 	public  void untarFile(File baseDir, File tarFile) throws IOException {
 
@@ -153,7 +164,7 @@ public class LFWLoader {
 		BufferedReader stdError = new BufferedReader(new 
 				InputStreamReader(p.getErrorStream()));
 		log.info("Here is the standard error of the command (if any):\n");
-		
+
 
 	}
 
@@ -186,7 +197,7 @@ public class LFWLoader {
 	public int getNumPixelColumns() {
 		return numPixelColumns;
 	}
-	
-	
+
+
 
 }

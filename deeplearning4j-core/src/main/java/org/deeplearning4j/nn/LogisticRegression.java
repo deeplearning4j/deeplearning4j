@@ -7,9 +7,11 @@ import static org.deeplearning4j.util.MatrixUtil.softmax;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.LogisticRegressionOptimizer;
+import org.deeplearning4j.optimize.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.VectorizedNonZeroStoppingConjugateGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -40,7 +42,9 @@ public class LogisticRegression implements Serializable {
 	private AdaGrad adaGrad;
 	private boolean firstTimeThrough = false;
 	private boolean normalizeByInputRows = false;
-
+	private OptimizationAlgorithm optimizationAlgorithm;
+	
+	
 	private LogisticRegression() {}
 
 
@@ -116,9 +120,21 @@ public class LogisticRegression implements Serializable {
 	 */
 	public  void trainTillConvergence(double learningRate, int numEpochs) {
 		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
-		VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
-		g.optimize(numEpochs);
+		if(this.optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+			VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
+			g.setTolerance(1e-5);
+			g.optimize(numEpochs);
 
+		}
+		
+		else {
+			VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
+			g.setTolerance(1e-5);
+			g.optimize(numEpochs);
+
+		}
+		
+		
 	}
 
 
@@ -335,6 +351,30 @@ public class LogisticRegression implements Serializable {
 
 
 
+	public boolean isUseAdaGrad() {
+		return useAdaGrad;
+	}
+
+
+
+	public void setUseAdaGrad(boolean useAdaGrad) {
+		this.useAdaGrad = useAdaGrad;
+	}
+
+
+
+	public OptimizationAlgorithm getOptimizationAlgorithm() {
+		return optimizationAlgorithm;
+	}
+
+
+
+	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
+		this.optimizationAlgorithm = optimizationAlgorithm;
+	}
+
+
+
 	public static class Builder {
 		private DoubleMatrix W;
 		private LogisticRegression ret;
@@ -346,6 +386,13 @@ public class LogisticRegression implements Serializable {
 		private boolean useRegualarization;
 		private boolean useAdaGrad = false;
 		private boolean normalizeByInputRows = false;
+		private OptimizationAlgorithm optimizationAlgorithm;
+
+		
+		public Builder optimizeBy(OptimizationAlgorithm optimizationAlgorithm) {
+			this.optimizationAlgorithm = optimizationAlgorithm;
+			return this;
+		}
 		
 		public Builder normalizeByInputRows(boolean normalizeByInputRows) {
 			this.normalizeByInputRows = normalizeByInputRows;
@@ -394,7 +441,7 @@ public class LogisticRegression implements Serializable {
 				ret.W = W;
 			if(b != null)
 				ret.b = b;
-			
+			ret.optimizationAlgorithm = optimizationAlgorithm;
 			ret.normalizeByInputRows = normalizeByInputRows;
 			ret.useRegularization = useRegualarization;
 			ret.l2 = l2;
