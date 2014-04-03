@@ -18,26 +18,26 @@ public class DenoisingAutoEncoderMnistExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-		.numberOfVisible(784).numHidden(600).normalizeByInputRows(true)
-		.useAdaGrad(false).useRegularization(false)
-		.withMomentum(0).build();
+		.numberOfVisible(784).numHidden(500).normalizeByInputRows(true)
+		.useAdaGrad(true).useRegularization(false).withSparsity(0)
+		.withMomentum(0.5).build();
 
 
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new RawMnistDataSetIterator(10,30);
-		//for(int i = 0;i < 10; i++) {
-		while(iter.hasNext()) {
-			DataSet next = iter.next();
-			//train with k = 1 0.01 learning rate and 1000 epochs
-			autoEncoder.trainTillConvergence(next.getFirst(), 1e-4, new Object[]{0.3,1e-4,1000});
+		for(int i = 0;i < 20; i++) {
+			while(iter.hasNext()) {
+				DataSet next = iter.next();
+				//train with k = 1 0.01 learning rate and 1000 epochs
+				autoEncoder.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
 
+
+			}
+
+
+			iter.reset();
 
 		}
-
-
-		iter.reset();
-
-		//}
 
 		FilterRenderer render = new FilterRenderer();
 		render.renderFilters(autoEncoder.getW(), "example-render.jpg", 28, 28);

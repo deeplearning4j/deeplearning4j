@@ -30,7 +30,7 @@ public class LFWDataFetcher extends BaseDataFetcher {
 			numOutcomes = loader.getNumNames();
 			totalExamples = NUM_IMAGES;
 		} catch (Exception e) {
-			throw new IllegalStateException("Unable to fetch images");
+			throw new IllegalStateException("Unable to fetch images",e);
 		}
 	}
 

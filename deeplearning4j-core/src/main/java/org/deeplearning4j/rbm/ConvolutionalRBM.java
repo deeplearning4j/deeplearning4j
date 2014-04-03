@@ -41,6 +41,9 @@ public class ConvolutionalRBM extends RBM {
 	}
 
 	
+	
+	
+	
 	public DoubleMatrix pooledExpectation(DoubleMatrix visible,double bias) {
 		DoubleMatrix filterMatrix = new DoubleMatrix(numFilters);
 		for(int k = 0; k < numFilters; k++) {
