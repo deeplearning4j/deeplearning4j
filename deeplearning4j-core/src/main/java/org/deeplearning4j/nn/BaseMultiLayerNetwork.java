@@ -590,16 +590,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return layers;
 	}
 
+	
 	/**
 	 * Compute activations from input to output of the output layer
 	 * @return the list of activations for each layer
 	 */
-	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
-		if(input == null)
-			throw new IllegalStateException("Unable to perform feed forward; no input found");
-
-		else
-			this.input = input;
+	public  List<DoubleMatrix> feedForward() {
 		DoubleMatrix currInput = this.input;
 
 		List<DoubleMatrix> activations = new ArrayList<>();
@@ -617,6 +613,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		logLayer.setInput(currInput);
 		activations.add(getLogLayer().predict(currInput));
 		return activations;
+	}
+	
+	/**
+	 * Compute activations from input to output of the output layer
+	 * @return the list of activations for each layer
+	 */
+	public  List<DoubleMatrix> feedForward(DoubleMatrix input) {
+		if(input == null)
+			throw new IllegalStateException("Unable to perform feed forward; no input found");
+
+		else
+			this.input = input;
+		return feedForward();
 	}
 
 	private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
