@@ -7,6 +7,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -18,8 +20,8 @@ public class DenoisingAutoEncoderMnistExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-		.numberOfVisible(784).numHidden(500).normalizeByInputRows(true)
-		.useAdaGrad(true).useRegularization(false).withSparsity(0)
+		.numberOfVisible(784).numHidden(500).normalizeByInputRows(true).withLossFunction(LossFunction.NEGATIVELOGLIKELIHOOD)
+		.useAdaGrad(true).useRegularization(true).withSparsity(0).withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
 		.withMomentum(0.5).build();
 
 

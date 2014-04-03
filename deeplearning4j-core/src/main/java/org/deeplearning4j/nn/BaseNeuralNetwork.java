@@ -89,8 +89,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 	protected List<NeuralNetworkGradientListener> gradientListeners;
 	protected double dropOut = 0;
 	protected DoubleMatrix doMask;
+	protected OptimizationAlgorithm optimizationAlgo;
+	protected LossFunction lossFunction;
+
+
+
 
 	protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
+
 
 	protected BaseNeuralNetwork() {}
 	/**
@@ -441,6 +447,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 			ret.setRng(getRng());
 			ret.setDist(getDist());
 			ret.setAdaGrad(wAdaGrad);
+			ret.setLossFunction(lossFunction);
+			ret.setOptimizationAlgorithm(optimizationAlgo);
 			return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -449,6 +457,25 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 	}
 
+
+
+	@Override
+	public LossFunction getLossFunction() {
+		return lossFunction;
+	}
+	@Override
+	public void setLossFunction(LossFunction lossFunction) {
+		this.lossFunction = lossFunction;
+	}
+	@Override
+	public OptimizationAlgorithm getOptimizationAlgorithm() {
+		return optimizationAlgo;
+	}
+	@Override
+	public void setOptimizationAlgorithm(
+			OptimizationAlgorithm optimizationAlgorithm) {
+		this.optimizationAlgo = optimizationAlgorithm;
+	}
 	@Override
 	public RealDistribution getDist() {
 		return dist;
@@ -489,6 +516,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		this.wAdaGrad = n.wAdaGrad;
 		this.hBiasAdaGrad = n.hBiasAdaGrad;
 		this.vBiasAdaGrad = n.vBiasAdaGrad;
+		this.optimizationAlgo = n.optimizationAlgo;
+		this.lossFunction = n.lossFunction;
 	}
 
 	/**
@@ -864,6 +893,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		private boolean useAdaGrad = false;
 		private boolean normalizeByInputRows = false;
 		private double dropOut = 0;
+		private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
+		private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+	
+		
+		
+		public Builder<E> withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
+			this.optimizationAlgo = optimizationAlgo;
+			return this;
+		}
+		
+		public Builder<E> withLossFunction(LossFunction lossFunction) {
+			this.lossFunction = lossFunction;
+			return this;
+		}
+		
 		
 		public Builder<E> withDropOut(double dropOut) {
 			this.dropOut = dropOut;
@@ -996,6 +1040,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 						ret.useRegularization = this.useRegularization;
 						ret.useAdaGrad = this.useAdaGrad;
 						ret.dropOut = this.dropOut;
+						ret.optimizationAlgo = this.optimizationAlgo;
+						ret.lossFunction = this.lossFunction;
 						return ret;
 					}catch(Exception e) {
 						throw new RuntimeException(e);

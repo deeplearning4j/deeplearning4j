@@ -65,7 +65,7 @@ public class RBM extends BaseNeuralNetwork {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate});
+		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
 		optimizer.train(input);
 	}
 
@@ -300,7 +300,7 @@ public class RBM extends BaseNeuralNetwork {
 			Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, lr, params);
+		optimizer = new RBMOptimizer(this, lr, params, optimizationAlgo, lossFunction);
 		optimizer.train(input);
 	}
 

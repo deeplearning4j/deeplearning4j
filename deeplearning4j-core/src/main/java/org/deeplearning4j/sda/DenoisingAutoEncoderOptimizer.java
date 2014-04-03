@@ -1,6 +1,8 @@
 package org.deeplearning4j.sda;
 
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.jblas.DoubleMatrix;
@@ -16,8 +18,8 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
 	
 	private static final long serialVersionUID = 1815627091142129009L;
 
-	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams) {
-		super(network,lr,trainingParams);
+	public DenoisingAutoEncoderOptimizer(BaseNeuralNetwork network,double lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
+		super(network,lr,trainingParams,optimizationAlgorithm,lossFunction);
 	
 	}
 

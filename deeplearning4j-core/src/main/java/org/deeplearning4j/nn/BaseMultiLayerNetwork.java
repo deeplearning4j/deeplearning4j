@@ -20,6 +20,8 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
+import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
@@ -147,6 +149,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 */
 	protected boolean normalizeByInputRows = false;
 
+	/**
+	 * Which optimization algorithm to use: SGD or CG
+	 */
+	protected OptimizationAlgorithm optimizationAlgorithm;
+	/**
+	 * Which loss function to use:
+	 * Squared loss, Reconstruction entropy, negative log likelihood
+	 */
+	protected LossFunction lossFunction;
+	
+	
 	/* Reflection/factory constructor */
 	public BaseMultiLayerNetwork() {}
 
@@ -240,7 +253,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
+	
+	
 
+
+	public OptimizationAlgorithm getOptimizationAlgorithm() {
+		return optimizationAlgorithm;
+	}
+
+	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
+		this.optimizationAlgorithm = optimizationAlgorithm;
+	}
+
+	public LossFunction getLossFunction() {
+		return lossFunction;
+	}
+
+	public void setLossFunction(LossFunction lossFunction) {
+		this.lossFunction = lossFunction;
+	}
 
 	/**
 	 * Resets adagrad with the given learning rate.
@@ -1001,6 +1032,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.visibleBiasTransforms = network.visibleBiasTransforms;
 		this.hiddenBiasTransforms = network.hiddenBiasTransforms;
 		this.dropOut = network.dropOut;
+		this.optimizationAlgorithm = network.optimizationAlgorithm;
+		this.lossFunction = network.lossFunction;
 		
 		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
 			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
@@ -1374,6 +1407,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private boolean normalizeByInputRows = false;
 		private boolean useHiddenActivationsForwardProp = true;
 		private double dropOut = 0;
+		private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
+		private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+		
+		
+		/**
+		 * Which optimization algorithm to use with neural nets and Logistic regression
+		 * @param optimizationAlgo which optimization algorithm to use with 
+		 * neural nets and logistic regression
+		 * @return builder pattern
+		 */
+		public Builder<E> withOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgo) {
+			this.optimizationAlgo = optimizationAlgo;
+			return this;
+		}
+		
+		/**
+		 * Loss function to use with neural networks
+		 * @param lossFunction loss function to use with neural networks
+		 * @return builder pattern
+		 */
+		public Builder<E> withLossFunction(LossFunction lossFunction) {
+			this.lossFunction = lossFunction;
+			return this;
+		}
 		
 		/**
 		 * Whether to use drop out on the neural networks or not:
@@ -1630,6 +1687,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setUseRegularization(useRegularization);
 				ret.setUseAdaGrad(useAdaGrad);
 				ret.setDropOut(dropOut);
+				ret.setOptimizationAlgorithm(optimizationAlgo);
+				ret.setLossFunction(lossFunction);
 				
 				if(activation != null)
 					ret.setActivation(activation);

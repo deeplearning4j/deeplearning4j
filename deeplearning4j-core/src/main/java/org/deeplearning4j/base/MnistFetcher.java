@@ -42,7 +42,7 @@ public class MnistFetcher {
 		}
 
 
-
+		log.info("Downloading mnist...");
 		// get training records
 		File tarFile = new File(baseDir, trainingFilesFilename);
 
