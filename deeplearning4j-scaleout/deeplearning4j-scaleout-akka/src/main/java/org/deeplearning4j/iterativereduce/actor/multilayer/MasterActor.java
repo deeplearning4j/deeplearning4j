@@ -65,7 +65,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 							List<Job> currentJobs = MasterActor.this.stateTracker.currentJobs();
 							log.info("Status check on next iteration");
 
-							if(updates.size() >= partition)
+							if(updates.size() >= partition || currentJobs.isEmpty())
 								nextIteration();
 
 
