@@ -12,6 +12,9 @@ README.md~
 *.bin
 *.out
 *~
+.pydevproject
+
+.idea/
 *.iml
 *.png
 *.prefs
