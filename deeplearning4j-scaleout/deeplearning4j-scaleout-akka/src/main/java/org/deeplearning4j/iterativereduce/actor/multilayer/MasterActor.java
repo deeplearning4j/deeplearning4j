@@ -52,6 +52,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public MasterActor(Conf conf,ActorRef batchActor,HazelCastStateTracker stateTracker) {
 		super(conf,batchActor,stateTracker);
 		setup(conf);
+		/*
+		 * Ensures there's no one off errors by forcing the next phase as well as ensures
+		 * that if the system is done it shuts down
+		 */
 		forceNextPhase =  context().system().scheduler()
 				.schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
 
@@ -94,7 +98,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 									MasterActor.this.stateTracker.removeWorker(key);
 									partition--;
 								}
-								
+
 							}
 
 
@@ -185,16 +189,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		BaseMultiLayerNetwork network = this.network == null ? new BaseMultiLayerNetwork.Builder<>()
 				.numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
 				.hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
-				.useRegularization(conf.isUseRegularization())
-				.withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad())
+				.useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
+				.withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
 				.withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
 				.withGradientListeners(conf.getGradientListeners())
 				.build() : this.network;
-				
+
 				//ensure rng is synchronized whether its loaded from an external source or not
 				network.synchonrizeRng();
-				
-				
+
+
 				if(conf.getColumnMeans() != null)
 					network.setColumnMeans(conf.getColumnMeans());
 				if(conf.getColumnStds() != null)
@@ -217,28 +221,80 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
+
+
+
+
+	/**
+	 * Check on the next iteration
+	 * @throws Exception
+	 */
+	protected void nextIteration() throws Exception {
+		
+		if(!updates.isEmpty()) {
+			UpdateableImpl masterResults = this.compute(updates, updates);
+
+
+			epochsComplete++;
+			//tell the batch actor to send out another dataset
+			if(!isDone())
+				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+			updates.clear();
+			log.info("Broadcasting weights");
+			//replicate the network
+			mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
+					masterResults), getSelf());
+			this.stateTracker.setCurrent(masterResults);
+
+		}
+	
+		checkDone();
 	
 
+	}
+
+	/**
+	 * Checks if done
+	 * @throws Exception
+	 */
+	protected void checkDone() throws Exception {
+		UpdateableImpl masterResults = null;
+		if(!updates.isEmpty()) {
+			masterResults = compute(updates, updates);
+
+			stateTracker.setCurrent(masterResults);
 
 
+			epochsComplete++;
+			updates.clear();
 
-	protected void nextIteration() throws Exception {
-		UpdateableImpl masterResults = this.compute(updates, updates);
+		}
+
+		else 
+			masterResults = getMasterResults();
+
+		if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
+			log.info("Switching to finetune mode");
+			pretrain = false;
+			stateTracker.moveToFinetune();
+			SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 
 
-		epochsComplete++;
-		//tell the batch actor to send out another dataset
-		if(!isDone())
+			batchActor.tell(ResetMessage.getInstance(), getSelf());
 			batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
-		updates.clear();
-		log.info("Broadcasting weights");
-		//replicate the network
-		mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-				masterResults), getSelf());
-		this.stateTracker.setCurrent(masterResults);
+
+		}
+
+		else if(stateTracker.currentJobs().isEmpty()) {
+			isDone = true;
+			stateTracker.finish();
+			log.info("Done training!");
+		}
+
 
 
 	}
+
 
 	@SuppressWarnings({ "unchecked" })
 	@Override
@@ -254,50 +310,17 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 
-		
+
 		else if(message instanceof NoJobFound) {
 			partition--;
 			if(updates.size() >= partition) 
 				nextIteration();
 
 		}
-		
+
 		else if(message instanceof DoneMessage) {
 			log.info("Received done message");
-			UpdateableImpl masterResults = null;
-			if(!updates.isEmpty()) {
-				masterResults = this.compute(updates, updates);
-
-				stateTracker.setCurrent(masterResults);
-
-
-				epochsComplete++;
-				updates.clear();
-
-			}
-
-			else 
-				masterResults = this.getMasterResults();
-
-			if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
-				log.info("Switching to finetune mode");
-				pretrain = false;
-				stateTracker.moveToFinetune();
-				SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
-
-
-				batchActor.tell(ResetMessage.getInstance(), getSelf());
-				batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
-
-			}
-
-			else if(stateTracker.currentJobs().isEmpty()) {
-				isDone = true;
-				stateTracker.finish();
-				log.info("Done training!");
-			}
-
-
+			checkDone();
 		}
 
 
@@ -311,7 +334,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			UpdateableImpl up = (UpdateableImpl) message;
 			updates.add(up);
 			log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
-			
+
 			//note that partition is always the current number of workers that was dispatched to
 			//this means that the number of workers will never outpace the number of datasets
 			if(updates.size() >= partition) 

@@ -77,6 +77,9 @@ public class ActorNetworkRunnerTest {
 		assertEquals(true,runner.getStateTracker().numWorkers() == worker.getStateTracker().numWorkers());
 		
 		
+		runner.train();
+		
+		
 		runner.shutdown();
 		worker.shutdown();
 

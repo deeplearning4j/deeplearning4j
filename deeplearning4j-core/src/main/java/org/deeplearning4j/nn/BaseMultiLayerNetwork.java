@@ -1,9 +1,7 @@
 package org.deeplearning4j.nn;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -33,6 +31,7 @@ import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +142,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Drop out: randomly zero examples
 	 */
 	protected double dropOut = 0;
-	
+
 	/*
 	 * Normalize by input rows with gradients or not
 	 */
@@ -158,17 +157,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	 * Squared loss, Reconstruction entropy, negative log likelihood
 	 */
 	protected LossFunction lossFunction;
-	
-	
-	/* Reflection/factory constructor */
-	public BaseMultiLayerNetwork() {}
 
-	public BaseMultiLayerNetwork(int n_ins, int[] hidden_layer_sizes, int n_outs, int n_layers, RandomGenerator rng) {
-		this(n_ins,hidden_layer_sizes,n_outs,n_layers,rng,null,null);
+
+	/* Reflection/factory constructor */
+	protected BaseMultiLayerNetwork() {}
+
+	protected BaseMultiLayerNetwork(int nIns, int[] hiddenLayerSizes, int nOuts, int nLayers, RandomGenerator rng) {
+		this(nIns,hiddenLayerSizes,nOuts,nLayers,rng,null,null);
 	}
 
 
-	public BaseMultiLayerNetwork(int nIn, int[] hiddenLayerSizes, int nOuts
+	protected BaseMultiLayerNetwork(int nIn, int[] hiddenLayerSizes, int nOuts
 			, int nLayers, RandomGenerator rng,DoubleMatrix input,DoubleMatrix labels) {
 		this.nIns = nIn;
 		this.hiddenLayerSizes = hiddenLayerSizes;
@@ -253,25 +252,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 	}
 
-	
-	
 
 
-	public OptimizationAlgorithm getOptimizationAlgorithm() {
-		return optimizationAlgorithm;
-	}
-
-	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
-		this.optimizationAlgorithm = optimizationAlgorithm;
-	}
-
-	public LossFunction getLossFunction() {
-		return lossFunction;
-	}
-
-	public void setLossFunction(LossFunction lossFunction) {
-		this.lossFunction = lossFunction;
-	}
 
 	/**
 	 * Resets adagrad with the given learning rate.
@@ -396,7 +378,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 						layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
 
 				}
-				
+
 				// construct sigmoid_layer
 				sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
 
@@ -421,101 +403,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
-	
-	
-	
-	public double getDropOut() {
-		return dropOut;
-	}
 
-	public void setDropOut(double dropOut) {
-		this.dropOut = dropOut;
-	}
-
-	public  Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
-		return hiddenBiasTransforms;
-	}
-
-	public  Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
-		return visibleBiasTransforms;
-	}
-
-	public  int getnIns() {
-		return nIns;
-	}
-
-	public  void setnIns(int nIns) {
-		this.nIns = nIns;
-	}
-
-	public  int getnOuts() {
-		return nOuts;
-	}
-
-	public  void setnOuts(int nOuts) {
-		this.nOuts = nOuts;
-	}
-
-	public  int getnLayers() {
-		return nLayers;
-	}
-
-	public  void setnLayers(int nLayers) {
-		this.nLayers = nLayers;
-	}
-
-	public  double getMomentum() {
-		return momentum;
-	}
-
-	public  void setMomentum(double momentum) {
-		this.momentum = momentum;
-	}
-
-	public  double getL2() {
-		return l2;
-	}
-
-	public  void setL2(double l2) {
-		this.l2 = l2;
-	}
-
-	public  boolean isUseRegularization() {
-		return useRegularization;
-	}
-
-	public  void setUseRegularization(boolean useRegularization) {
-		this.useRegularization = useRegularization;
-	}
-
-	public  void setSigmoidLayers(HiddenLayer[] sigmoidLayers) {
-		this.sigmoidLayers = sigmoidLayers;
-	}
-
-	public  void setLogLayer(LogisticRegression logLayer) {
-		this.logLayer = logLayer;
-	}
-
-	public  void setShouldBackProp(boolean shouldBackProp) {
-		this.shouldBackProp = shouldBackProp;
-	}
-
-	public  void setLayers(NeuralNetwork[] layers) {
-		this.layers = layers;
-	}
 
 	protected void initializeNetwork(NeuralNetwork network) {
 		network.setFanIn(fanIn);
 		network.setRenderEpochs(this.renderWeightsEveryNEpochs);
 	}
 
-
+	/**
+	 * Finetunes with the current cached labels
+	 * @param lr the learning rate to use
+	 * @param epochs the max number of epochs to finetune with
+	 */
 	public void finetune(double lr, int epochs) {
 		finetune(this.labels,lr,epochs);
 
 	}
 
-
+	/**
+	 * Sets the input and labels from this dataset
+	 * @param data the dataset to initialize with
+	 */
 	public void initialize(DataSet data) {
 		setInput(data.getFirst());
 		feedForward(data.getFirst());
@@ -558,39 +466,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-	public  DoubleMatrix getLabels() {
-		return labels;
-	}
 
-	public  LogisticRegression getLogLayer() {
-		return logLayer;
-	}
-
-	/**
-	 * Note that if input isn't null
-	 * and the layers are null, this is a way
-	 * of initializing the neural network
-	 * @param input
-	 */
-	public  void setInput(DoubleMatrix input) {
-		this.input = input;
-		if(input != null && this.layers == null)
-			this.initializeLayers(input);
-	}
-
-	public  DoubleMatrix getInput() {
-		return input;
-	}
-
-	public  synchronized HiddenLayer[] getSigmoidLayers() {
-		return sigmoidLayers;
-	}
-
-	public  synchronized NeuralNetwork[] getLayers() {
-		return layers;
-	}
-
-	
 	/**
 	 * Compute activations from input to output of the output layer
 	 * @return the list of activations for each layer
@@ -614,7 +490,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		activations.add(getLogLayer().predict(currInput));
 		return activations;
 	}
-	
+
 	/**
 	 * Compute activations from input to output of the output layer
 	 * @return the list of activations for each layer
@@ -628,6 +504,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return feedForward();
 	}
 
+	/* delta computation for back prop */
 	private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
 		DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
 		DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
@@ -939,39 +816,30 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		return input;
 	}
 
+	/**
+	 * Reconstruct from the final layer
+	 * @param x the input to reconstruct
+	 * @return the reconstructed input
+	 */
 	public DoubleMatrix reconstruct(DoubleMatrix x) {
 		return reconstruct(x,sigmoidLayers.length);
 	}
 
 
-	/**
-	 * Serializes this to the output stream.
-	 * @param os the output stream to write to
-	 */
+
+	@Override
 	public void write(OutputStream os) {
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(os);
-			oos.writeObject(this);
-
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
+		SerializationUtils.writeObject(this, os);
 	}
 
 	/**
 	 * Load (using {@link ObjectInputStream}
 	 * @param is the input stream to load from (usually a file)
 	 */
+	@Override
 	public void load(InputStream is) {
-		try {
-			ObjectInputStream ois = new ObjectInputStream(is);
-			BaseMultiLayerNetwork loaded = (BaseMultiLayerNetwork) ois.readObject();
-			update(loaded);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
+		BaseMultiLayerNetwork loaded = SerializationUtils.readObject(is);
+		update(loaded);
 	}
 
 	/**
@@ -1042,7 +910,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.dropOut = network.dropOut;
 		this.optimizationAlgorithm = network.optimizationAlgorithm;
 		this.lossFunction = network.lossFunction;
-		
+
 		if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
 			this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
 			for(int i = 0; i < sigmoidLayers.length; i++)
@@ -1097,9 +965,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 	}
 
 
-	public boolean isShouldBackProp() {
-		return shouldBackProp;
-	}
+
 
 	/**
 	 * Creates a layer depending on the index.
@@ -1205,6 +1071,63 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		this.logLayer = new LogisticRegression(hiddenLayerSizes[nLayers - 1],network.input.columns);
 
 	}
+
+
+
+	public  DoubleMatrix getLabels() {
+		return labels;
+	}
+
+	public  LogisticRegression getLogLayer() {
+		return logLayer;
+	}
+
+	/**
+	 * Note that if input isn't null
+	 * and the layers are null, this is a way
+	 * of initializing the neural network
+	 * @param input
+	 */
+	public  void setInput(DoubleMatrix input) {
+		this.input = input;
+		if(input != null && this.layers == null)
+			this.initializeLayers(input);
+	}
+
+	public boolean isShouldBackProp() {
+		return shouldBackProp;
+	}
+
+
+	public OptimizationAlgorithm getOptimizationAlgorithm() {
+		return optimizationAlgorithm;
+	}
+
+	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
+		this.optimizationAlgorithm = optimizationAlgorithm;
+	}
+
+	public LossFunction getLossFunction() {
+		return lossFunction;
+	}
+
+	public void setLossFunction(LossFunction lossFunction) {
+		this.lossFunction = lossFunction;
+	}
+
+	
+	public  DoubleMatrix getInput() {
+		return input;
+	}
+
+	public  synchronized HiddenLayer[] getSigmoidLayers() {
+		return sigmoidLayers;
+	}
+
+	public  synchronized NeuralNetwork[] getLayers() {
+		return layers;
+	}
+
 
 
 	public boolean isForceNumEpochs() {
@@ -1386,6 +1309,87 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+
+	public double getDropOut() {
+		return dropOut;
+	}
+
+	public void setDropOut(double dropOut) {
+		this.dropOut = dropOut;
+	}
+
+	public  Map<Integer, MatrixTransform> getHiddenBiasTransforms() {
+		return hiddenBiasTransforms;
+	}
+
+	public  Map<Integer, MatrixTransform> getVisibleBiasTransforms() {
+		return visibleBiasTransforms;
+	}
+
+	public  int getnIns() {
+		return nIns;
+	}
+
+	public  void setnIns(int nIns) {
+		this.nIns = nIns;
+	}
+
+	public  int getnOuts() {
+		return nOuts;
+	}
+
+	public  void setnOuts(int nOuts) {
+		this.nOuts = nOuts;
+	}
+
+	public  int getnLayers() {
+		return nLayers;
+	}
+
+	public  void setnLayers(int nLayers) {
+		this.nLayers = nLayers;
+	}
+
+	public  double getMomentum() {
+		return momentum;
+	}
+
+	public  void setMomentum(double momentum) {
+		this.momentum = momentum;
+	}
+
+	public  double getL2() {
+		return l2;
+	}
+
+	public  void setL2(double l2) {
+		this.l2 = l2;
+	}
+
+	public  boolean isUseRegularization() {
+		return useRegularization;
+	}
+
+	public  void setUseRegularization(boolean useRegularization) {
+		this.useRegularization = useRegularization;
+	}
+
+	public  void setSigmoidLayers(HiddenLayer[] sigmoidLayers) {
+		this.sigmoidLayers = sigmoidLayers;
+	}
+
+	public  void setLogLayer(LogisticRegression logLayer) {
+		this.logLayer = logLayer;
+	}
+
+	public  void setShouldBackProp(boolean shouldBackProp) {
+		this.shouldBackProp = shouldBackProp;
+	}
+
+	public  void setLayers(NeuralNetwork[] layers) {
+		this.layers = layers;
+	}
+
 	public static class Builder<E extends BaseMultiLayerNetwork> {
 		protected Class<? extends BaseMultiLayerNetwork> clazz;
 		private E ret;
@@ -1417,8 +1421,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		private double dropOut = 0;
 		private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
 		private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-		
-		
+
+
 		/**
 		 * Which optimization algorithm to use with neural nets and Logistic regression
 		 * @param optimizationAlgo which optimization algorithm to use with 
@@ -1429,7 +1433,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			this.optimizationAlgo = optimizationAlgo;
 			return this;
 		}
-		
+
 		/**
 		 * Loss function to use with neural networks
 		 * @param lossFunction loss function to use with neural networks
@@ -1439,7 +1443,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 			this.lossFunction = lossFunction;
 			return this;
 		}
-		
+
 		/**
 		 * Whether to use drop out on the neural networks or not:
 		 * random zero out of examples
@@ -1697,7 +1701,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 				ret.setDropOut(dropOut);
 				ret.setOptimizationAlgorithm(optimizationAlgo);
 				ret.setLossFunction(lossFunction);
-				
+
 				if(activation != null)
 					ret.setActivation(activation);
 				if(dist != null)
