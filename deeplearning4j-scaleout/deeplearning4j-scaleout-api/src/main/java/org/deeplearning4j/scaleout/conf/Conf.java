@@ -12,12 +12,18 @@ import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
+import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 
-
+/**
+ * Conf used for distributed deep learning
+ * @author Adam Gibson
+ *
+ */
 public class Conf implements Serializable,Cloneable {
 
 
@@ -50,8 +56,23 @@ public class Conf implements Serializable,Cloneable {
 	private DoubleMatrix columnStds;
 	private boolean useAdaGrad = false;
 	private boolean useBackProp = true;
+	private double dropOut;
+	private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
+	private OptimizationAlgorithm optimizationAlgorithm = OptimizationAlgorithm.CONJUGATE_GRADIENT;
 	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+
+	
+	
+
+	public double getDropOut() {
+		return dropOut;
+	}
+
+
+	public void setDropOut(double dropOut) {
+		this.dropOut = dropOut;
+	}
 
 
 	/**
@@ -317,6 +338,26 @@ public class Conf implements Serializable,Cloneable {
 	 */
 	public static Object[] getDefaultRbmParams() {
 		return new Object[]{1,0.01,1000};
+	}
+
+
+	public LossFunction getLossFunction() {
+		return lossFunction;
+	}
+
+
+	public void setLossFunction(LossFunction lossFunction) {
+		this.lossFunction = lossFunction;
+	}
+
+
+	public OptimizationAlgorithm getOptimizationAlgorithm() {
+		return optimizationAlgorithm;
+	}
+
+
+	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
+		this.optimizationAlgorithm = optimizationAlgorithm;
 	}
 
 }
