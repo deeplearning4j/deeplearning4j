@@ -1,9 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.0.3.1</version>
+		<version>0.0.3.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-hadoop</artifactId>
 	<name>DeepLearning 4j for Hadoop</name>
@@ -14,7 +15,7 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>io.netty</groupId>
+				<groupId>org.jboss.netty</groupId>
 				<artifactId>netty</artifactId>
 				<version>${netty.version}</version>
 			</dependency>
