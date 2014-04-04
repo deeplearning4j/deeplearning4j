@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: commons-daemon:commons-daemon:1.0.13">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/commons-daemon/commons-daemon/1.0.13/commons-daemon-1.0.13.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/commons-daemon/commons-daemon/1.0.13/commons-daemon-1.0.13-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/commons-daemon/commons-daemon/1.0.13/commons-daemon-1.0.13-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

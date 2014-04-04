@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.opennlp:opennlp-tools:1.5.2-incubating">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/opennlp/opennlp-tools/1.5.2-incubating/opennlp-tools-1.5.2-incubating.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/opennlp/opennlp-tools/1.5.2-incubating/opennlp-tools-1.5.2-incubating-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/opennlp/opennlp-tools/1.5.2-incubating/opennlp-tools-1.5.2-incubating-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.zeroturnaround:zt-exec:1.5">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/zeroturnaround/zt-exec/1.5/zt-exec-1.5.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/zeroturnaround/zt-exec/1.5/zt-exec-1.5-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/zeroturnaround/zt-exec/1.5/zt-exec-1.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
