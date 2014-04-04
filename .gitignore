@@ -13,7 +13,7 @@ README.md~
 *.out
 *~
 .pydevproject
-
+release.properties
 .idea/
 *.iml
 *.png
