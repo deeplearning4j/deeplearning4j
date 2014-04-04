@@ -12,7 +12,7 @@ README.md~
 *.bin
 *.out
 *~
-
+*.png
 *.prefs
 *.settings/*
 model-saver-*
