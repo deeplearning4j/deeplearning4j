@@ -12,6 +12,7 @@ README.md~
 *.bin
 *.out
 *~
+*.iml
 *.png
 *.prefs
 *.settings/*
