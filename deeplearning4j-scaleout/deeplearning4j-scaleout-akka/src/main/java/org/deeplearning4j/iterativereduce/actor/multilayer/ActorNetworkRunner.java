@@ -367,8 +367,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 		//start the pipeline
 		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 				list), mediator);
-		
-		
+
+
 		log.info("Published results");
 		while(!stateTracker.isDone()) {
 			log.info("State tracker not done...blocking");
@@ -378,10 +378,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 				Thread.currentThread().interrupt();
 			}
 		}
-		
-		
-		log.info("Shutting down system");
-		system.shutdown();
+
+		shutdown();
 	}
 
 
