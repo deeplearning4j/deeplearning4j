@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AjcSettings">
+    <option name="ajcPath" value="$MAVEN_REPOSITORY$/org/aspectj/aspectjtools/1.7.4/aspectjtools-1.7.4.jar" />
+    <option name="cmdLineParams" value="-showWeaveInfo" />
+    <option name="explicitAspectPath" value="true" />
+    <option name="delegateToJavac" value="true" />
+  </component>
+  <component name="CompilerConfiguration">
+    <option name="DEFAULT_COMPILER" value="ajc" />
+    <resourceExtensions />
+    <wildcardResourcePatterns>
+      <entry name="!?*.java" />
+      <entry name="!?*.form" />
+      <entry name="!?*.class" />
+      <entry name="!?*.groovy" />
+      <entry name="!?*.scala" />
+      <entry name="!?*.flex" />
+      <entry name="!?*.kt" />
+      <entry name="!?*.clj" />
+    </wildcardResourcePatterns>
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+      <profile default="false" name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="deeplearning4j-aws (1)" />
+        <module name="deeplearning4j-aws (2)" />
+        <module name="deeplearning4j-core (1)" />
+        <module name="deeplearning4j-core (2)" />
+        <module name="deeplearning4j-examples (1)" />
+        <module name="deeplearning4j-examples (2)" />
+        <module name="deeplearning4j-hadoop (1)" />
+        <module name="deeplearning4j-hadoop (2)" />
+        <module name="deeplearning4j-instrumentation (1)" />
+        <module name="deeplearning4j-instrumentation (2)" />
+        <module name="deeplearning4j-scaleout-akka (1)" />
+        <module name="deeplearning4j-scaleout-akka (2)" />
+        <module name="deeplearning4j-scaleout-akka-word2vec (1)" />
+        <module name="deeplearning4j-scaleout-akka-word2vec (2)" />
+        <module name="deeplearning4j-scaleout-api (1)" />
+        <module name="deeplearning4j-scaleout-api (2)" />
+        <module name="deeplearning4j-scaleout-core (1)" />
+        <module name="deeplearning4j-scaleout-core (2)" />
+        <module name="deeplearning4j-scaleout-zookeeper (1)" />
+        <module name="deeplearning4j-scaleout-zookeeper (2)" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="deeplearning4j-aws (1)" target="1.7" />
+      <module name="deeplearning4j-aws (2)" target="1.7" />
+      <module name="deeplearning4j-core (1)" target="1.7" />
+      <module name="deeplearning4j-core (2)" target="1.7" />
+      <module name="deeplearning4j-examples (1)" target="1.7" />
+      <module name="deeplearning4j-examples (2)" target="1.7" />
+      <module name="deeplearning4j-hadoop (1)" target="1.7" />
+      <module name="deeplearning4j-hadoop (2)" target="1.7" />
+      <module name="deeplearning4j-instrumentation (1)" target="1.7" />
+      <module name="deeplearning4j-instrumentation (2)" target="1.7" />
+      <module name="deeplearning4j-scaleout-akka (1)" target="1.7" />
+      <module name="deeplearning4j-scaleout-akka (2)" target="1.7" />
+      <module name="deeplearning4j-scaleout-akka-word2vec (1)" target="1.7" />
+      <module name="deeplearning4j-scaleout-akka-word2vec (2)" target="1.7" />
+      <module name="deeplearning4j-scaleout-api (1)" target="1.7" />
+      <module name="deeplearning4j-scaleout-api (2)" target="1.7" />
+      <module name="deeplearning4j-scaleout-core (1)" target="1.7" />
+      <module name="deeplearning4j-scaleout-core (2)" target="1.7" />
+      <module name="deeplearning4j-scaleout-zookeeper (1)" target="1.7" />
+      <module name="deeplearning4j-scaleout-zookeeper (2)" target="1.7" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
+
