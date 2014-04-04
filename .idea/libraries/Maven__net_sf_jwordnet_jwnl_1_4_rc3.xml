@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: net.sf.jwordnet:jwnl:1.4_rc3">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/jwordnet/jwnl/1.4_rc3/jwnl-1.4_rc3.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/jwordnet/jwnl/1.4_rc3/jwnl-1.4_rc3-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sf/jwordnet/jwnl/1.4_rc3/jwnl-1.4_rc3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.fusesource:sigar:native:1.6.4">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/fusesource/sigar/1.6.4/sigar-1.6.4-native.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/fusesource/sigar/1.6.4/sigar-1.6.4-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/fusesource/sigar/1.6.4/sigar-1.6.4-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
