@@ -4,8 +4,11 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.0.3.1-SNAPSHOT</version>
+		<version>0.0.3.1</version>
 	</parent>
+	<properties>
+	<netty.version>3.9.0.Final</netty.version>
+	</properties>
 	<artifactId>deeplearning4j-scaleout</artifactId>
 	<packaging>pom</packaging>
 	<name>DeepLearning4j-scaleout-parent</name>
@@ -17,4 +20,11 @@
 		<module>deeplearning4j-scaleout-zookeeper</module>
 		<module>deeplearning4j-aws</module>
 	</modules>
+	<dependencies>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
+	</dependencies>
 </project>
