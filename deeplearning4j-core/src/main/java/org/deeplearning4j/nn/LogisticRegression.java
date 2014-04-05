@@ -223,6 +223,7 @@ public class LogisticRegression implements Serializable {
 		reg.nOut = this.nOut;
 		reg.useRegularization = this.useRegularization;
 		reg.normalizeByInputRows = this.normalizeByInputRows;
+        reg.setOptimizationAlgorithm(this.getOptimizationAlgorithm());
 		if(this.input != null)
 			reg.input = this.input.dup();
 		return reg;

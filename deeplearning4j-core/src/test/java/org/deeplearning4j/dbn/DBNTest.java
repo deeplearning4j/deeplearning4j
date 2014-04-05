@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.math3.analysis.function.Gaussian;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -16,6 +17,7 @@ import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.HardTanh;
 import org.deeplearning4j.nn.activation.Sigmoid;
@@ -33,220 +35,177 @@ import org.slf4j.LoggerFactory;
 
 public class DBNTest {
 
-	private static Logger log = LoggerFactory.getLogger(DBNTest.class);
+    private static Logger log = LoggerFactory.getLogger(DBNTest.class);
 
 
-	@Test
-	public void testDBN() {
 
-		int n = 400;
-		DataSet d = MatrixUtil.xorData(n);
 
-		DoubleMatrix x = d.getFirst();
-		DoubleMatrix y = d.getSecond();
+    @Test
+    public void testCDBN() {
+        DoubleMatrix x = new DoubleMatrix( new double[][]
+                {{0.4, 0.5, 0.5, 0.,  0.,  0.},
+                        {0.5, 0.3,  0.5, 0.,  0.,  0.},
+                        {0.4, 0.5, 0.5, 0.,  0.,  0.},
+                        {0.,  0.,  0.5, 0.3, 0.5, 0.},
+                        {0.,  0.,  0.5, 0.4, 0.5, 0.},
+                        {0.,  0.,  0.5, 0.5, 0.5, 0.}});
 
 
-		double preTrainLr = 0.1;
-		int preTrainEpochs = 10000;
-		int k = 1;
-		int[] hiddenLayerSizes = new int[] {2,2,2};
-		double fineTuneLr = 0.1;
-		int fineTuneEpochs = 10000;
 
-		CDBN dbn = new CDBN.Builder().useAdaGrad(true)
-				.hiddenLayerSizes(hiddenLayerSizes)
-				.numberOfInputs(d.numInputs())
-				.useRegularization(false).withActivation(new HardTanh())
-				.numberOfOutPuts(d.numOutcomes()).build();
+        DoubleMatrix  y = new DoubleMatrix(new double[][]
+                {{1, 0},
+                        {1, 0},
+                        {1, 0},
+                        {0, 1},
+                        {0, 1},
+                        {0, 1}});
 
-		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
-		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
+        RandomGenerator rng = new MersenneTwister(123);
 
+        double preTrainLr = 0.01;
+        int preTrainEpochs = 10000;
+        int k = 1;
+        int nIns = 6,nOuts = 2;
+        int[] hiddenLayerSizes = new int[] {3};
+        double fineTuneLr = 0.01;
+        int fineTuneEpochs = 1000;
 
+        CDBN dbn = new CDBN.Builder().useAdaGrad(true).withActivation(new Tanh())
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts)
+                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
+                .withRng(rng)
+                .build();
 
 
+        dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
+        dbn.finetune(y,fineTuneLr, fineTuneEpochs);
 
 
+        DoubleMatrix testX = new DoubleMatrix(new double[][]
+                {{0.5, 0.5, 0., 0., 0., 0.},
+                        {0., 0., 0., 0.5, 0.5, 0.},
+                        {0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
 
-		DoubleMatrix predict = dbn.predict(x);
-		//log.info(predict.toString());
+        DoubleMatrix predict =  dbn.predict(x);
+        Evaluation eval = new Evaluation();
+        eval.eval(y,predict);
+        log.info(eval.stats());
 
-		Evaluation eval = new Evaluation();
-		eval.eval(y, predict);
-		log.info(eval.stats());
+    }
 
 
+    @Test
+    public void testIris() {
+        RandomGenerator rng = new MersenneTwister(123);
 
+        double preTrainLr = 0.01;
+        int preTrainEpochs = 10000;
+        int k = 1;
+        int nIns = 4,nOuts = 3;
+        int[] hiddenLayerSizes = new int[] {4,3,2};
+        double fineTuneLr = 0.01;
+        int fineTuneEpochs = 10000;
 
+        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Tanh())
+                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
+                .withRng(rng)
+                .build();
 
-	}
 
-	@Test
-	public void testCDBN() {
-		DoubleMatrix x = new DoubleMatrix( new double[][] 
-				{{0.4, 0.5, 0.5, 0.,  0.,  0.},
-				{0.5, 0.3,  0.5, 0.,  0.,  0.},
-				{0.4, 0.5, 0.5, 0.,  0.,  0.},
-				{0.,  0.,  0.5, 0.3, 0.5, 0.},
-				{0.,  0.,  0.5, 0.4, 0.5, 0.},
-				{0.,  0.,  0.5, 0.5, 0.5, 0.}});
 
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
+        DataSet next = iter.next(150);
+        next.shuffle();
 
-		DoubleMatrix  y = new DoubleMatrix(new double[][]
-				{{1, 0},
-				{1, 0},
-				{1, 0},
-				{0, 1},
-				{0, 1},
-				{0, 1}});
+        List<DataSet> finetuneBatches = next.dataSetBatches(10);
 
-		RandomGenerator rng = new MersenneTwister(123);
 
-		double preTrainLr = 0.01;
-		int preTrainEpochs = 10000;
-		int k = 1;
-		int nIns = 6,nOuts = 2;
-		int[] hiddenLayerSizes = new int[] {3};
-		double fineTuneLr = 0.01;
-		int fineTuneEpochs = 1000;
 
-		CDBN dbn = new CDBN.Builder().useAdaGrad(true).withActivation(new Tanh())
-				.numberOfInputs(nIns).numberOfOutPuts(nOuts)
-				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
-				.withRng(rng)
-				.build();
-		
-		
-		dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
-		dbn.finetune(y,fineTuneLr, fineTuneEpochs);
+        DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3000);
 
+        List<DataSet> miniBatches = new ArrayList<DataSet>();
 
-		DoubleMatrix testX = new DoubleMatrix(new double[][]
-				{{0.5, 0.5, 0., 0., 0., 0.},
-				{0., 0., 0., 0.5, 0.5, 0.},
-				{0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
+        while(sampling.hasNext()) {
+            next = sampling.next();
+            miniBatches.add(next.copy());
+        }
 
-		DoubleMatrix predict =  dbn.predict(x);
-		Evaluation eval = new Evaluation();
-		eval.eval(y,predict);
-		log.info(eval.stats());
+        log.info("Training on " + miniBatches.size() + " minibatches");
 
-	}
 
+        for(int i = 0; i < miniBatches.size(); i++) {
+            DataSet curr = miniBatches.get(i);
+            dbn.pretrain(curr.getFirst(),k, preTrainLr, preTrainEpochs);
 
-	@Test
-	public void testIris() {
-		RandomGenerator rng = new MersenneTwister(123);
+        }
 
-		double preTrainLr = 0.01;
-		int preTrainEpochs = 10000;
-		int k = 1;
-		int nIns = 4,nOuts = 3;
-		int[] hiddenLayerSizes = new int[] {4,3,2};
-		double fineTuneLr = 0.01;
-		int fineTuneEpochs = 10000;
 
-		CDBN dbn = new CDBN.Builder().useAdaGrad(true)
-				.numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Tanh())
-				.hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
-				.withRng(rng)
-				.build();
+        Evaluation eval = new Evaluation();
 
 
+        for(int i = 0; i < miniBatches.size(); i++) {
+            DataSet curr = miniBatches.get(i);
+            dbn.setInput(curr.getFirst());
+            dbn.finetune(curr.getSecond(),fineTuneLr, fineTuneEpochs);
 
-		DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        }
 
-		DataSet next = iter.next(150);
-		next.shuffle();
 
-		List<DataSet> finetuneBatches = next.dataSetBatches(10);
 
 
 
-		DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3000);
 
-		List<DataSet> miniBatches = new ArrayList<DataSet>();
+        for(int i = 0; i < miniBatches.size(); i++) {
+            DataSet test = miniBatches.get(i);
+            DoubleMatrix predicted = dbn.predict(test.getFirst());
+            DoubleMatrix real = test.getSecond();
 
-		while(sampling.hasNext()) {
-			next = sampling.next();
-			miniBatches.add(next.copy());
-		}
 
-		log.info("Training on " + miniBatches.size() + " minibatches");
+            eval.eval(real, predicted);
 
+        }
 
-		for(int i = 0; i < miniBatches.size(); i++) {
-			DataSet curr = miniBatches.get(i);
-			dbn.pretrain(curr.getFirst(),k, preTrainLr, preTrainEpochs);
+        log.info("Evaled " + eval.stats());
 
-		}
 
+    }
 
-		Evaluation eval = new Evaluation();
 
+    @Test
+    public void testMnist() throws IOException {
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        fetcher.fetch(100);
+        DataSet d = fetcher.next();
+        d.filterAndStrip(new int[]{0,1});
+        log.info("Training on " + d.numExamples());
+        StopWatch watch = new StopWatch();
 
-		for(int i = 0; i < miniBatches.size(); i++) {
-			DataSet curr = miniBatches.get(i);
-			dbn.setInput(curr.getFirst());
-			dbn.finetune(curr.getSecond(),fineTuneLr, fineTuneEpochs);
+        log.info("Data set " + d);
 
-		}
+        DBN dbn = new DBN.Builder()
+                .withActivation(Activations.sigmoid())
+                .hiddenLayerSizes(new int[]{500,250,100})
+                .withMomentum(0.5).normalizeByInputRows(true).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
+                .numberOfInputs(784).useAdaGrad(true).withSparsity(0.01)
+                .numberOfOutPuts(2).useHiddenActivationsForwardProp(true)
+                .useRegularization(false)
+                .build();
 
+        watch.start();
 
+        dbn.pretrain(d.getFirst(), 1, 1e-2, 300);
+        dbn.finetune(d.getSecond(), 1e-2, 100);
 
+        watch.stop();
 
-
-
-		for(int i = 0; i < miniBatches.size(); i++) {
-			DataSet test = miniBatches.get(i);
-			DoubleMatrix predicted = dbn.predict(test.getFirst());
-			DoubleMatrix real = test.getSecond();
-
-
-			eval.eval(real, predicted);
-
-		}
-
-		log.info("Evaled " + eval.stats());
-
-
-	}
-
-
-	@Test
-	public void testMnist() throws IOException {
-		MnistDataFetcher fetcher = new MnistDataFetcher(true);
-		fetcher.fetch(100);
-		DataSet d = fetcher.next();
-		d.filterAndStrip(new int[]{0,1});
-		log.info("Training on " + d.numExamples());
-		StopWatch watch = new StopWatch();
-		
-		log.info("Data set " + d);
-		
-		DBN dbn = new DBN.Builder()
-		.withActivation(Activations.tanh())
-		.hiddenLayerSizes(new int[]{500,250,100})
-		.withMomentum(0)
-		.numberOfInputs(784).useAdaGrad(true)
-		.numberOfOutPuts(2)
-		.useRegularization(false)
-		.build();
-		
-		watch.start();
-		
-		dbn.pretrain(d.getFirst(), 1, 0.1, 300);
-		dbn.finetune(d.getSecond(), 0.1, 100);
-		
-		watch.stop();
-		
-		log.info("Took " + watch.getTime());
-		Evaluation eval = new Evaluation();
-		DoubleMatrix predict = dbn.predict(d.getFirst());
-		eval.eval(d.getSecond(), predict);
-		log.info(eval.stats());
-	}
+        log.info("Took " + watch.getTime());
+        Evaluation eval = new Evaluation();
+        DoubleMatrix predict = dbn.predict(d.getFirst());
+        eval.eval(d.getSecond(), predict);
+        log.info(eval.stats());
+    }
 
 
 
