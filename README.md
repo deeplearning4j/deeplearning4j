@@ -32,6 +32,20 @@ Feature set summary
   - Ability to do moving window operations via a Window encoding - optimized by Viterbi
 
 
+Neural Net Knobs supported
+=====================================
+         L2 Regualarization
+         Dropout
+         Adagrad
+         Momentum
+         Optimization Algorithms for training (Conjugate Gradient,Stochastic Gradient Descent)
+         Different kinds of activation functions (Tanh,Sigmoid,HardTanh,Softmax)
+         Normalization by input rows or not
+         Sparsity (force activations of sparse/rare inputs)
+         Weight transforms (useful for deep autoencoders)
+         Different kinds of loss functions - Squared Loss, Reconstruction Cross entropy, Negative Log likelihood
+         Probability Distribution manipulation for initial weight generation
+
 
 
 Coming up
