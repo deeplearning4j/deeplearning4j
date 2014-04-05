@@ -28,7 +28,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 	private static final long serialVersionUID = -3218754671561789818L;
 	private transient MnistManager man;
 	public final static int NUM_EXAMPLES = 60000;
-	private String tempRoot = System.getProperty("java.io.tmpdir");
+	private String tempRoot = System.getProperty("user.home");
 	private String rootMnist = tempRoot + File.separator + "MNIST" + File.separator;
 	private boolean binarize = true;
 
