@@ -23,16 +23,16 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 
 
-	public StackedDenoisingAutoEncoder() {}
+	private StackedDenoisingAutoEncoder() {}
 
-	public StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
+	private StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
 			int nLayers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
 		super(n_ins, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
 
 	}
 
 
-	public StackedDenoisingAutoEncoder(int nIns, int[] hiddenLayerSizes, int nOuts,
+	private StackedDenoisingAutoEncoder(int nIns, int[] hiddenLayerSizes, int nOuts,
 			int n_layers, RandomGenerator rng) {
 		super(nIns, hiddenLayerSizes, nOuts, n_layers, rng);
 	}
@@ -136,9 +136,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 			int nHidden, DoubleMatrix W, DoubleMatrix hbias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
 		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().withDropOut(dropOut)
-		.withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist())
+		.withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
 		.withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
-		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
+		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist()).withLossFunction(getLossFunction())
 		.withSparsity(this.getSparsity()).renderWeights(getRenderWeightsEveryNEpochs()).fanIn(getFanIn())
 		.build();
 		if(gradientListeners.get(index) != null)
