@@ -248,8 +248,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		}
 	
-		checkDone();
-	
+
 
 	}
 
