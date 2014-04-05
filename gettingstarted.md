@@ -22,7 +22,7 @@ layout: default
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
 
-3. Install these from source (Maven central versions coming soon).
+3. Install either from source or maven central, below are the source instructions, add the below dependency coordinates in to your pom otherwise.
 
          git clone https://github.com/agibsonccc/java-deeplearning
 

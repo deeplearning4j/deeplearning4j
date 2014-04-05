@@ -32,6 +32,10 @@ Here's a snippet for training a network:
 			//train the network using the passed in data set iterator.
 			runner.train();
 
+Note that runner.train() is not a blocking call.
+
+
+
 ### ZooKeeper
 
 This relies on having a zookeeper instance setup -- otherwise the system will stall.
