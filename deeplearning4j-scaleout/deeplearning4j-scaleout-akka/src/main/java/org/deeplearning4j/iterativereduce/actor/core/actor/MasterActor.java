@@ -183,18 +183,8 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
 		for(int i = 0; i < splitList.size(); i++)  {
 			final List<DataSet> wrap = splitList.get(i);
-			scala.concurrent.Future<Void> f = Futures.future(new Callable<Void>() {
-
-				@Override
-				public Void call() throws Exception {
-					final List<DataSet> work = new ArrayList<>(wrap);
-					delegateJob(work);
-					return null;
-				}
-
-			},context().dispatcher());
-
-			ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
+            final List<DataSet> work = new ArrayList<>(wrap);
+            delegateJob(work);
 
 			log.info("Sending off work for batch " + i);
 

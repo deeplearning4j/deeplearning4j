@@ -32,7 +32,7 @@ public class PosUimaTokenizer  implements Tokenizer {
 		try {
 			CAS cas = this.engine.newCAS();
 			cas.setDocumentText(tokens);
-			synchronized(engine) {
+			synchronized(this.engine) {
 				this.engine.process(cas);
 				for(Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
 					for(Token t : JCasUtil.selectCovered(Token.class,s)) {
