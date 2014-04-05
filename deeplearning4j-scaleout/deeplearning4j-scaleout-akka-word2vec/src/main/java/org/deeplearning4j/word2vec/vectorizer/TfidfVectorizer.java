@@ -59,13 +59,6 @@ public class TfidfVectorizer implements TextVectorizer {
     }
 
 
-    private Counter<String> tfIdfWeights(int top) {
-        Counter<String> ret = new Counter<String>();
-        for(String word  : allWords())
-            ret.setMinCount(word,tfidfWord(word));
-        ret.keepTopNKeys(top);
-        return ret;
-    }
 
 
     private Counter<String> tfIdfWeights() {
@@ -114,6 +107,8 @@ public class TfidfVectorizer implements TextVectorizer {
         }
 
         tfIdfWeights = tfIdfWeights();
+        if(numTop > 0)
+            tfIdfWeights.keepTopNKeys(numTop);
     }
 
 
@@ -145,12 +140,12 @@ public class TfidfVectorizer implements TextVectorizer {
     }
 
     private DoubleMatrix tfidfForInput(InputStream is) {
-            try {
-                String text = new String(IOUtils.toByteArray(is));
-                return tfidfForInput(text);
-            }catch(Exception e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            String text = new String(IOUtils.toByteArray(is));
+            return tfidfForInput(text);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
 
 
     }
