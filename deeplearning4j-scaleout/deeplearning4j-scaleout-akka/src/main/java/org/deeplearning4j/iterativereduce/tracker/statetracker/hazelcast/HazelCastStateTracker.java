@@ -370,12 +370,27 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public boolean isDone() {
-		return done.get();
+		//reason being that isDone() may get called and throw errors
+        //this ensures a safe method call happens and just silently
+        //returns true in case hazelcast is shutdown
+        try {
+            return done.get();
+        }catch(Exception e) {
+            log.warn("Hazelcast already shutdown...returning true on isDone()");
+            return true;
+        }
 	}
 
 	@Override
 	public void finish() {
-		done.set(true);
+        //reason being that isDone() may get called and throw errors
+        //this ensures a safe method call happens and just silently
+        //returns true in case hazelcast is shutdown
+        try {
+            done.set(true);
+        }catch(Exception e) {
+            log.warn("Hazelcast already shutdown...done() being set is pointless");
+        }
 	}
 
 

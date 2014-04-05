@@ -49,432 +49,449 @@ import akka.routing.RoundRobinPool;
 public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable {
 
 
-	private static final long serialVersionUID = -4385335922485305364L;
-	private transient ActorSystem system;
-	private Integer epochs;
-	private ActorRef mediator;
-	private BaseMultiLayerNetwork startingNetwork;
-	private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
-	private static String systemName = "ClusterSystem";
-	private String type = "master";
-	private Address masterAddress;
-	private DataSetIterator iter;
-	protected ActorRef masterActor;
-	protected ModelSaver modelSaver;
-	private transient ScheduledExecutorService exec;
-	private transient StateTracker<UpdateableImpl> stateTracker;
-	private Conf conf;
-	private boolean finetune = false;
-	private int stateTrackerPort = -1;
+    private static final long serialVersionUID = -4385335922485305364L;
+    private transient ActorSystem system;
+    private Integer epochs;
+    private ActorRef mediator;
+    private BaseMultiLayerNetwork startingNetwork;
+    private static Logger log = LoggerFactory.getLogger(ActorNetworkRunner.class);
+    private static String systemName = "ClusterSystem";
+    private String type = "master";
+    private Address masterAddress;
+    private DataSetIterator iter;
+    protected ActorRef masterActor;
+    protected ModelSaver modelSaver;
+    private transient ScheduledExecutorService exec;
+    private transient StateTracker<UpdateableImpl> stateTracker;
+    private Conf conf;
+    private boolean finetune = false;
+    private int stateTrackerPort = -1;
 
-	/**
-	 * Master constructor
-	 * @param type the type (worker)
-	 * @param iter the dataset to use
-	 * @param startingNetwork a starting neural network
-	 */
-	public ActorNetworkRunner(String type,DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
-		this.type = type;
-		this.iter = iter;
-		this.startingNetwork = startingNetwork;
-	}
+    /**
+     * Master constructor
+     * @param type the type (worker)
+     * @param iter the dataset to use
+     * @param startingNetwork a starting neural network
+     */
+    public ActorNetworkRunner(String type,DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
+        this.type = type;
+        this.iter = iter;
+        this.startingNetwork = startingNetwork;
+    }
 
-	/**
-	 * Master constructor
-	 * @param type the type (worker)
-	 * @param iter the dataset to use
-	 * @param startingNetwork a starting neural network
-	 */
-	public ActorNetworkRunner(String type,DataSetIterator iter) {
-		this(type,iter,null);
-	}
-
-
-	/**
-	 * Master constructor
-	 * @param type the type (worker)
-	 * @param iter the dataset to use
-	 */
-	public ActorNetworkRunner(DataSetIterator iter) {
-		this("master",iter,null);
-	}
+    /**
+     * Master constructor
+     * @param type the type (worker)
+     * @param iter the dataset to use
+     */
+    public ActorNetworkRunner(String type,DataSetIterator iter) {
+        this(type,iter,null);
+    }
 
 
-	/**
-	 * Master constructor
-	 * @param iter the dataset to use
-	 */
-	public ActorNetworkRunner(DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
-		this("master",iter,startingNetwork);
-	}
+    /**
+     * Master constructor
+     * @param iter the dataset to use
+     */
+    public ActorNetworkRunner(DataSetIterator iter) {
+        this("master",iter,null);
+    }
 
-	/**
-	 * The worker constructor
-	 * @param type the type to use
-	 * @param address the address of the master
-	 */
-	public ActorNetworkRunner(String type,String address) {
-		this.type = type;
-		URI u = URI.create(address);
-		masterAddress = Address.apply(u.getScheme(), u.getUserInfo(), u.getHost(), u.getPort());
-	}
+
+    /**
+     * Master constructor
+     * @param iter the dataset to use
+     */
+    public ActorNetworkRunner(DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
+        this("master",iter,startingNetwork);
+    }
+
+    /**
+     * The worker constructor
+     * @param type the type to use
+     * @param address the address of the master
+     */
+    public ActorNetworkRunner(String type,String address) {
+        this.type = type;
+        URI u = URI.create(address);
+        masterAddress = Address.apply(u.getScheme(), u.getUserInfo(), u.getHost(), u.getPort());
+    }
 
 
 
 
-	public ActorNetworkRunner() {
-		super();
-	}
+    public ActorNetworkRunner() {
+        super();
+    }
 
 
 
 
-	/**
-	 * Start a backend with the given role
-	 * @param joinAddress the join address
-	 * @param role the role to start with
-	 * @param c the neural network configuration
-	 * @return the actor for this backend
-	 */
-	public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
+    /**
+     * Start a backend with the given role
+     * @param joinAddress the join address
+     * @param role the role to start with
+     * @param c the neural network configuration
+     * @return the actor for this backend
+     */
+    public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
 
-		ActorRefUtils.addShutDownForSystem(system);
+        ActorRefUtils.addShutDownForSystem(system);
 
-		system.actorOf(Props.create(ClusterListener.class));
+        system.actorOf(Props.create(ClusterListener.class));
 
-		ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,stateTracker,c),"batch");
+        ActorRef batchActor = system.actorOf(Props.create(BatchActor.class,iter,stateTracker,c),"batch");
 
-		log.info("Started batch actor");
+        log.info("Started batch actor");
 
-		Props masterProps = startingNetwork != null ? Props.create(MasterActor.class,c,batchActor,startingNetwork,stateTracker) : Props.create(MasterActor.class,c,batchActor,stateTracker);
+        Props masterProps = startingNetwork != null ? Props.create(MasterActor.class,c,batchActor,startingNetwork,stateTracker) : Props.create(MasterActor.class,c,batchActor,stateTracker);
 
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
 		 */
-		final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
+        final Address realJoinAddress = (joinAddress == null) ? Cluster.get(system).selfAddress() : joinAddress;
 
 
-		c.setMasterUrl(realJoinAddress.toString());
+        c.setMasterUrl(realJoinAddress.toString());
 
-		if(exec == null)
-			exec = Executors.newScheduledThreadPool(2);
+        if(exec == null)
+            exec = Executors.newScheduledThreadPool(2);
 
 
-		Cluster cluster = Cluster.get(system);
-		cluster.join(realJoinAddress);
+        Cluster cluster = Cluster.get(system);
+        cluster.join(realJoinAddress);
 
-		exec.schedule(new Runnable() {
+        exec.schedule(new Runnable() {
 
-			@Override
-			public void run() {
-				Cluster cluster = Cluster.get(system);
-				cluster.publishCurrentClusterState();
-			}
+            @Override
+            public void run() {
+                Cluster cluster = Cluster.get(system);
+                cluster.publishCurrentClusterState();
+            }
 
-		}, 10, TimeUnit.SECONDS);
+        }, 10, TimeUnit.SECONDS);
 
-		masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
+        masterActor = system.actorOf(ClusterSingletonManager.defaultProps(masterProps, "master", PoisonPill.getInstance(), "master"));
 
-		log.info("Started master with address " + realJoinAddress.toString());
-		c.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
-		log.info("Set master abs path " + c.getMasterAbsPath());
+        log.info("Started master with address " + realJoinAddress.toString());
+        c.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
+        log.info("Set master abs path " + c.getMasterAbsPath());
 
-		return realJoinAddress;
-	}
+        return realJoinAddress;
+    }
 
 
-	/**
-	 * Automatically switch to finetune step
-	 */
-	public void finetune() {
-		this.finetune = true;
-		if(this.startingNetwork == null) {
-			throw new IllegalStateException("No network to finetune!");
-		}
-	}
+    /**
+     * Automatically switch to finetune step
+     */
+    public void finetune() {
+        this.finetune = true;
+        if(this.startingNetwork == null) {
+            throw new IllegalStateException("No network to finetune!");
+        }
+    }
 
 
-	@Override
-	public void setup(final Conf conf) {
+    @Override
+    public void setup(final Conf conf) {
 
 
 
-		system = ActorSystem.create(systemName);
-		ActorRefUtils.addShutDownForSystem(system);
-		mediator = DistributedPubSubExtension.get(system).mediator();
+        system = ActorSystem.create(systemName);
+        ActorRefUtils.addShutDownForSystem(system);
+        mediator = DistributedPubSubExtension.get(system).mediator();
 
-		epochs = conf.getPretrainEpochs();
-		if(type.equals("master")) {
+        epochs = conf.getPretrainEpochs();
+        if(type.equals("master")) {
 
-			if(iter == null)
-				throw new IllegalStateException("Unable to initialize no dataset to train");
+            if(iter == null)
+                throw new IllegalStateException("Unable to initialize no dataset to train");
 
-			log.info("Starting master");
+            log.info("Starting master");
 
-			try {
-				if(stateTrackerPort > 0)
-					stateTracker = new HazelCastStateTracker(stateTrackerPort);
-				else
-					stateTracker = new HazelCastStateTracker();
+            try {
+                if(stateTrackerPort > 0)
+                    stateTracker = new HazelCastStateTracker(stateTrackerPort);
+                else
+                    stateTracker = new HazelCastStateTracker();
 
-				if(finetune)
-					stateTracker.moveToFinetune();
+                if(finetune)
+                    stateTracker.moveToFinetune();
 
-				masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
-				Thread.sleep(60000);
+                masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
+                Thread.sleep(60000);
 
-			} catch (Exception e1) {
-				Thread.currentThread().interrupt();
-				throw new RuntimeException(e1);
-			}
+            } catch (Exception e1) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e1);
+            }
 
-			//ensure network takes on configuration
-			if(startingNetwork != null) {
-				startingNetwork.setShouldBackProp(conf.isUseBackProp());
-				startingNetwork.setUseAdaGrad(conf.isUseAdaGrad());
-				startingNetwork.setUseRegularization(conf.isUseRegularization());
-			}
+            //ensure network takes on configuration
+            if(startingNetwork != null) {
+                startingNetwork.setShouldBackProp(conf.isUseBackProp());
+                startingNetwork.setUseAdaGrad(conf.isUseAdaGrad());
+                startingNetwork.setUseRegularization(conf.isUseRegularization());
+            }
 
-			log.info("Starting model saver");
-			if(modelSaver == null)
-				system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
-			else 
-				system.actorOf(Props.create(ModelSavingActor.class,modelSaver));
+            log.info("Starting model saver");
+            if(modelSaver == null)
+                system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
+            else
+                system.actorOf(Props.create(ModelSavingActor.class,modelSaver));
 
 
 
-			//store it in zookeeper for service discovery
-			conf.setMasterUrl(getMasterAddress().toString());
-			conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
+            //store it in zookeeper for service discovery
+            conf.setMasterUrl(getMasterAddress().toString());
+            conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
 
-			ActorRefUtils.registerConfWithZooKeeper(conf, system);
+            ActorRefUtils.registerConfWithZooKeeper(conf, system);
 
 
-			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
+            system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES),
+                    Duration.create(1, TimeUnit.MINUTES),
+                    new Runnable() {
 
-				@Override
-				public void run() {
-					log.info("Current cluster members " + Cluster.get(system).readView().members());
-				}
+                        @Override
+                        public void run() {
+                            if(!system.isTerminated()) {
+                               try {
+                                   log.info("Current cluster members " +
+                                           Cluster.get(system).readView().members());
+                               }catch(Exception e) {
+                                    log.warn("Tried reading cluster members during shutdown");
+                                }
+                            }
 
-			},system.dispatcher());
-			log.info("Setup master with epochs " + epochs);
-		}
+                        }
 
-		else {
+                    },system.dispatcher());
+            log.info("Setup master with epochs " + epochs);
+        }
 
-			Address a = AddressFromURIString.parse(conf.getMasterUrl());
+        else {
 
-			Conf c = conf.copy();
-			Cluster cluster = Cluster.get(system);
-			cluster.join(a);
+            Address a = AddressFromURIString.parse(conf.getMasterUrl());
 
-			try {
-				String host = a.host().get();
+            Conf c = conf.copy();
+            Cluster cluster = Cluster.get(system);
+            cluster.join(a);
 
-				if(host == null)
-					throw new IllegalArgumentException("No host set for worker");
+            try {
+                String host = a.host().get();
 
-				int port = this.stateTrackerPort < 1 ? HazelCastStateTracker.DEFAULT_HAZELCAST_PORT : this.stateTrackerPort;
+                if(host == null)
+                    throw new IllegalArgumentException("No host set for worker");
 
-				String connectionString = host + ":" + port;
+                int port = this.stateTrackerPort < 1 ? HazelCastStateTracker.DEFAULT_HAZELCAST_PORT : this.stateTrackerPort;
 
-				stateTracker = new HazelCastStateTracker(connectionString,"worker",port);
+                String connectionString = host + ":" + port;
 
-			} catch (Exception e1) {
-				Thread.currentThread().interrupt();
-				throw new RuntimeException(e1);
-			}
+                stateTracker = new HazelCastStateTracker(connectionString,"worker",port);
 
-			startWorker(c);
+            } catch (Exception e1) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e1);
+            }
 
-			system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
+            startWorker(c);
 
-				@Override
-				public void run() {
-					log.info("Current cluster members " + Cluster.get(system).readView().members());
-				}
+            system.scheduler().schedule(Duration.create(1, TimeUnit.MINUTES), Duration.create(1, TimeUnit.MINUTES), new Runnable() {
 
-			},system.dispatcher());
-			log.info("Setup worker nodes");
-		}
+                @Override
+                public void run() {
+                    log.info("Current cluster members " + Cluster.get(system).readView().members());
+                }
 
-		this.conf = conf;
+            },system.dispatcher());
+            log.info("Setup worker nodes");
+        }
 
-	}
+        this.conf = conf;
 
+    }
 
-	public  void startWorker(Conf conf) {
 
-		Address contactAddress = AddressFromURIString.parse(conf.getMasterUrl());
+    public  void startWorker(Conf conf) {
 
-		system.actorOf(Props.create(ClusterListener.class));
-		log.info("Attempting to join node " + contactAddress);
-		log.info("Starting workers");
-		Set<ActorSelection> initialContacts = new HashSet<ActorSelection>();
-		initialContacts.add(system.actorSelection(contactAddress + "/user/"));
+        Address contactAddress = AddressFromURIString.parse(conf.getMasterUrl());
 
-		RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
+        system.actorOf(Props.create(ClusterListener.class));
+        log.info("Attempting to join node " + contactAddress);
+        log.info("Starting workers");
+        Set<ActorSelection> initialContacts = new HashSet<ActorSelection>();
+        initialContacts.add(system.actorSelection(contactAddress + "/user/"));
 
-		ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
-				"clusterClient");
+        RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
 
+        ActorRef clusterClient = system.actorOf(ClusterClient.defaultProps(initialContacts),
+                "clusterClient");
 
-		try {
-			String host = contactAddress.host().get();
-			log.info("Connecting hazelcast to host " + host);
-			int workers = stateTracker.numWorkers();
-			if(workers <= 1)
-				throw new IllegalStateException("Did not properly connect to cluster");
 
+        try {
+            String host = contactAddress.host().get();
+            log.info("Connecting hazelcast to host " + host);
+            int workers = stateTracker.numWorkers();
+            if(workers <= 1)
+                throw new IllegalStateException("Did not properly connect to cluster");
 
-			log.info("Joining cluster of size " + workers);
 
+            log.info("Joining cluster of size " + workers);
 
-			Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,stateTracker));
-			system.actorOf(p, "worker");
 
-			Cluster cluster = Cluster.get(system);
-			cluster.join(contactAddress);
+            Props p = pool.props(WorkerActor.propsFor(clusterClient,conf,stateTracker));
+            system.actorOf(p, "worker");
 
-			log.info("Worker joining cluster");
+            Cluster cluster = Cluster.get(system);
+            cluster.join(contactAddress);
 
+            log.info("Worker joining cluster");
 
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
 
 
-	}
 
+    }
 
-	public void train(List<DataSet> list) {
-		log.info("Publishing to results for training");
-		//wait for cluster to be up
-		try {
-			log.info("Waiting for cluster to go up...");
-			Thread.sleep(30000);
-			log.info("Done waiting");
-		} catch (InterruptedException e1) {
-			Thread.currentThread().interrupt();
-		}
 
+    public void train(List<DataSet> list) {
+        log.info("Publishing to results for training");
+        //wait for cluster to be up
+        try {
+            log.info("Waiting for cluster to go up...");
+            Thread.sleep(30000);
+            log.info("Done waiting");
+        } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+        }
 
-		log.info("Started pipeline");
-		//start the pipeline
-		mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-				list), mediator);
 
+        log.info("Started pipeline");
+        //start the pipeline
+        mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                list), mediator);
 
-		log.info("Published results");
-		while(!stateTracker.isDone()) {
-			log.info("State tracker not done...blocking");
-			try {
-				Thread.sleep(15000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
 
-		shutdown();
-	}
+        log.info("Published results");
+        while(!stateTracker.isDone()) {
+            log.info("State tracker not done...blocking");
+            try {
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
+        shutdown();
+    }
 
-	/**
-	 * Kicks off the distributed training.
-	 * It will grab the optimal batch size off of 
-	 * the beginning of the dataset iterator which
-	 * is based on the desired mini batch size (conf.getSplit())
-	 * 
-	 * and the number of initial workers in the state tracker after setup.
-	 * 
-	 * For example, if you have a mini batch size of 10 and 8 workers
-	 * 
-	 * the initial @link{DataSetIterator#next(int batches)} would be 
-	 * 
-	 * 80, this would be 10 per worker.
-	 */
-	public void train() {
-		int numWorkers = stateTracker.numWorkers();
-		int batch = conf.getSplit();
-		int miniBatches = numWorkers * batch;
-		if(iter.hasNext())
-			train(iter.next(miniBatches));
 
-		else
-			log.warn("No data found");
-	}
+    /**
+     * Kicks off the distributed training.
+     * It will grab the optimal batch size off of
+     * the beginning of the dataset iterator which
+     * is based on the desired mini batch size (conf.getSplit())
+     *
+     * and the number of initial workers in the state tracker after setup.
+     *
+     * For example, if you have a mini batch size of 10 and 8 workers
+     *
+     * the initial @link{DataSetIterator#next(int batches)} would be
+     *
+     * 80, this would be 10 per worker.
+     */
+    public void train() {
+        int numWorkers = stateTracker.numWorkers();
+        int batch = conf.getSplit();
+        int miniBatches = numWorkers * batch;
+        if(iter.hasNext())
+            train(iter.next(miniBatches));
 
-	public void train(DataSet input) {
-		List<DataSet> list = input.asList();
-		train(list);
+        else
+            log.warn("No data found");
+    }
 
-	}
+    public void train(DataSet input) {
+        List<DataSet> list = input.asList();
+        train(list);
 
+    }
 
 
-	public void train(DoubleMatrix input,DoubleMatrix labels) {
-		train(new DataSet(input,labels));
-	}
 
+    public void train(DoubleMatrix input,DoubleMatrix labels) {
+        train(new DataSet(input,labels));
+    }
 
 
 
-	public Address getMasterAddress() {
-		return masterAddress;
-	}
 
-	public  StateTracker<UpdateableImpl> getStateTracker() {
-		return stateTracker;
-	}
+    public Address getMasterAddress() {
+        return masterAddress;
+    }
 
-	public  void setStateTracker(
-			StateTracker<UpdateableImpl> stateTracker) {
-		this.stateTracker = stateTracker;
-	}
+    public  StateTracker<UpdateableImpl> getStateTracker() {
+        return stateTracker;
+    }
 
-	/**
-	 * 
-	 * Shut down this network actor
-	 */
-	public void shutdown() {
-		//order matters here, the state tracker should
-		system.shutdown();
+    public  void setStateTracker(
+            StateTracker<UpdateableImpl> stateTracker) {
+        this.stateTracker = stateTracker;
+    }
 
-		if(stateTracker != null)
-			stateTracker.shutdown();
-	}
+    /**
+     *
+     * Shut down this network actor
+     */
+    public void shutdown() {
+        //order matters here, the state tracker should
+        try {
+            system.shutdown();
 
-	public  ModelSaver getModelSaver() {
-		return modelSaver;
-	}
+        }catch(Exception e ) {
 
-	/**
-	 * Sets a custom model saver. This will allow custom directories
-	 * among other things when saving snapshots.
-	 * @param modelSaver the model saver to use
-	 */
-	public  void setModelSaver(ModelSaver modelSaver) {
-		this.modelSaver = modelSaver;
-	}
+        }
+        try {
+            if(stateTracker != null)
+                stateTracker.shutdown();
+        }catch(Exception e ) {
 
-	/**
-	 * Gets the state tracker port.
-	 * A lot of state trackers will be servers
-	 * that need to be bound on a port.
-	 * This will allow overrides per implementation of the state tracker
-	 * @return the state tracker port that the state tracker 
-	 * server will bind to
-	 */
-	public  int getStateTrackerPort() {
-		return stateTrackerPort;
-	}
+        }
 
-	public  void setStateTrackerPort(int stateTrackerPort) {
-		this.stateTrackerPort = stateTrackerPort;
-	}
+    }
+
+    public  ModelSaver getModelSaver() {
+        return modelSaver;
+    }
+
+    /**
+     * Sets a custom model saver. This will allow custom directories
+     * among other things when saving snapshots.
+     * @param modelSaver the model saver to use
+     */
+    public  void setModelSaver(ModelSaver modelSaver) {
+        this.modelSaver = modelSaver;
+    }
+
+    /**
+     * Gets the state tracker port.
+     * A lot of state trackers will be servers
+     * that need to be bound on a port.
+     * This will allow overrides per implementation of the state tracker
+     * @return the state tracker port that the state tracker
+     * server will bind to
+     */
+    public  int getStateTrackerPort() {
+        return stateTrackerPort;
+    }
+
+    public  void setStateTrackerPort(int stateTrackerPort) {
+        this.stateTrackerPort = stateTrackerPort;
+    }
 
 
 
