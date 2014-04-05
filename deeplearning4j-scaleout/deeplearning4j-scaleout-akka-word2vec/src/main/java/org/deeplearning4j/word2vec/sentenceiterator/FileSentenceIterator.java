@@ -27,7 +27,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 	/**
 	 * Takes a single file or directory
 	 * @param preProcessor the sentence pre processor
-	 * @param file the file or folder to iteratoe over
+	 * @param file the file or folder to iterate over
 	 */
 	public FileSentenceIterator(SentencePreProcessor preProcessor,File file) {
 		super(preProcessor);
