@@ -8,19 +8,19 @@ Sentence Iterator
 =================================
 
 
-A [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is used in [Word2vec](../word2vec.html) as well as Bag Of Words approaches to text processing.
+A [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is used in [Word2vec](../word2vec.html) as well as Bag Of Words approaches to text processing.
 
 
 
-The [sentence iterator](../org/deeplearning4j/word2vec/SentenceIterator.html) covers the concept of a document in text processing. A [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) handles feeding in bits of text to a neural network in the form of a vector.
+The [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html) covers the concept of a document in text processing. A [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) handles feeding in bits of text to a neural network in the form of a vector.
 
 Typically in natural language processing, a document or sentence is used to encapsulate a context which which an algorithm should learn.
 
-A few examplels include wanting to do tweets vs full blown articles. The intention of the [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is to handle figuring out how to divide up text in to processable bits. Note that the way the [sentence iterator](../org/deeplearning4j/word2vec/SentenceIterator.html) works it is input agnostic. So bits of text (a document) can come from a file system, the twitter API, 
+A few examplels include wanting to do tweets vs full blown articles. The intention of the [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is to handle figuring out how to divide up text in to processable bits. Note that the way the [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html) works it is input agnostic. So bits of text (a document) can come from a file system, the twitter API, 
 or hadoop.
 
 
-Relative to how input is processed the output of a [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) will then go in to a [tokenizer](../org/deeplearning4j/word2vec/tokenizer/Tokenizer.html) for processing of individual tokens (typically words, but these could also be ngrams or other such units). The [tokenizer](../org/deeplearning4j/word2vec/tokenizer/Tokenizer.html) is created on a per sentence basis by a [tokenizer factory](../org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html). The [tokenizer factory](../org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html) is 
+Relative to how input is processed the output of a [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) will then go in to a [tokenizer](../org/deeplearning4j/word2vec/tokenizer/Tokenizer.html) for processing of individual tokens (typically words, but these could also be ngrams or other such units). The [tokenizer](../doc/org/deeplearning4j/word2vec/tokenizer/Tokenizer.html) is created on a per sentence basis by a [tokenizer factory](../doc/org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html). The [tokenizer factory](../doc/org/deeplearning4j/word2vec/tokenizer/TokenizerFactory.html) is 
 what is passed in to a text processing vectorizer. 
 
 
@@ -48,9 +48,9 @@ You can iterator over files as follows:
 This will then handle parsing the files line by line and return individual sentences on each one.
 
 
-For anything complex, I would highly reccomend an actual machine learning level pipeline, this is represented by the [UimaSentenceIterator](..org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html).
+For anything complex, I would highly reccomend an actual machine learning level pipeline, this is represented by the [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html).
 
-The UimaSentenceIterator](..org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) has built in capabilities for tokenization, part of speech tagging, lemmatization, among other things. The [UimaSentenceIterator](..org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) iterates over a set of files and is capable of doing sentence segmentation for purposes of arbitrary documents. You can customize its behavior based on the AnalysisEngine passed in to it.
+The UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) has built in capabilities for tokenization, part of speech tagging, lemmatization, among other things. The [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) iterates over a set of files and is capable of doing sentence segmentation for purposes of arbitrary documents. You can customize its behavior based on the AnalysisEngine passed in to it.
 
 The AnalysisEngine is the [UIMA](http://uima.apache.org/) concept of a text processing pipeline. DeepLearning4j comes with some standard analysis engines for all of these common tasks
 
@@ -74,5 +74,5 @@ For those of you who are familiar with uima, this uses uimafit extensively for c
 
 
 
-You can also create your own custom sentence iterators by extending [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/BaseSentenceIterator.html)
+You can also create your own custom sentence iterators by extending [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/BaseSentenceIterator.html)
 
