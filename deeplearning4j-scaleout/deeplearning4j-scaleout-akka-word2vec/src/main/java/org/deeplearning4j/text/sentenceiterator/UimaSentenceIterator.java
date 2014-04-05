@@ -26,11 +26,11 @@ import org.uimafit.util.JCasUtil;
  */
 public class UimaSentenceIterator extends BaseSentenceIterator {
 
-	private CAS cas;
-	private CollectionReader reader;
-	private AnalysisEngine engine;
-	private Iterator<String> sentences;
-	private String path;
+	protected CAS cas;
+    protected CollectionReader reader;
+    protected AnalysisEngine engine;
+    protected Iterator<String> sentences;
+    protected String path;
 
 	
 	public UimaSentenceIterator(SentencePreProcessor preProcessor,String path, AnalysisEngine engine) {
