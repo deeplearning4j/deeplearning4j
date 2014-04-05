@@ -33,19 +33,19 @@ public class IrisExample {
 
         int   numExamples = train.numExamples();
         log.info("Training on " + numExamples);
-        DataSetIterator sampling = new SamplingDataSetIterator(train,10,1000);
+        DataSetIterator sampling = new SamplingDataSetIterator(train,10,300000);
 
 
         GaussianRectifiedLinearDBN cdbn1 = new GaussianRectifiedLinearDBN.Builder()
-                .hiddenLayerSizes(new int[]{3, 1, 2}).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .normalizeByInputRows(true).numberOfInputs(4).numberOfOutPuts(3).withLossFunction(NeuralNetwork.LossFunction.SQUARED_LOSS)
-                .useAdaGrad(true).useHiddenActivationsForwardProp(true).withMomentum(0.5)
-                .useRegularization(true).withActivation(Activations.tanh())
+                .hiddenLayerSizes(new int[]{3, 2, 3}).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .normalizeByInputRows(true).numberOfInputs(4).numberOfOutPuts(3).withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .useAdaGrad(false).useHiddenActivationsForwardProp(true).withMomentum(0.5)
+                .useRegularization(false).withActivation(Activations.tanh())
                 .build();
 
         while(sampling.hasNext()) {
             DataSet sample = sampling.next();
-            cdbn1.pretrain(sample.getFirst(), 1, 1e-4, 10000);
+            cdbn1.pretrain(sample.getFirst(), 1, 1e-3, 1000);
 
         }
 
@@ -54,7 +54,7 @@ public class IrisExample {
         while(sampling.hasNext()) {
             DataSet sample = sampling.next();
             cdbn1.feedForward(sample.getFirst());
-            cdbn1.finetune(sample.getSecond(), 1e-4, 10000);
+            cdbn1.finetune(sample.getSecond(), 1e-3, 1000);
 
         }
 
