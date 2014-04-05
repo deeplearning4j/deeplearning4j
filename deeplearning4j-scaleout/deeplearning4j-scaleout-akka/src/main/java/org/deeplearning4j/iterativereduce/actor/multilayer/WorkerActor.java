@@ -45,8 +45,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	protected Cancellable heartbeat;
 	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
-	public final static String SYSTEM_NAME = "Workers";
-	protected int numTimesReceivedNullJob = 0;
 
 
 	public WorkerActor(Conf conf,StateTracker<UpdateableImpl> tracker) {
@@ -102,7 +100,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		//reply
 		if(j != null)
 			mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-					j), getSelf());	
+					j), getSelf());
 
 		else
 			log.warn("Not confirming work when none to be found");
@@ -133,7 +131,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			DistributedPubSubMediator.SubscribeAck ack = (DistributedPubSubMediator.SubscribeAck) message;
 			//reply
 			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
-					message), getSelf());	
+					message), getSelf());
 
 			log.info("Subscribed to " + ack.toString());
 		}
@@ -241,8 +239,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 			newOutput.putRow(i,list.get(i).getSecond());
 		}
 
-		setCombinedInput(newInput);
-		setOutcomes(newOutput);
 
 		Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
 
@@ -256,7 +252,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 					log.info("Updating parent actor...");
 					//update parameters in master param server
 					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-							work), getSelf());	
+							work), getSelf());
 
 				}
 
@@ -310,8 +306,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 			else
 				d = (DataSet) j.getWork();
-			combinedInput = d.getFirst();
-			outcomes = d.getSecond();
 		}
 
 
@@ -331,7 +325,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 		else {
 			network.setInput(d.getFirst());
-			log.info("Worker " + id + " finetuning");
+			log.info("Worker " + id + " finetune");
+            network.feedForward(d.getFirst());
 			network.finetune(d.getSecond(), learningRate, fineTuneEpochs);
 		}
 
@@ -389,16 +384,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 	public  void setNetwork(BaseMultiLayerNetwork network) {
 		this.network = network;
-	}
-
-
-	public  DoubleMatrix getCombinedInput() {
-		return combinedInput;
-	}
-
-
-	public  void setCombinedInput(DoubleMatrix combinedInput) {
-		this.combinedInput = combinedInput;
 	}
 
 

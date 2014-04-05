@@ -147,11 +147,27 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	void epochDone(int epoch);
 	
 	public double l2RegularizedCoefficient();
-	
+
+    /**
+     * Error on reconstruction
+     * @return the error on reconstruction
+     */
 	public double getReConstructionCrossEntropy();
-	
+
+    /**
+     * Run one iteration
+     * @param input the input to train on
+     * @param lr the learning rate to use
+     * @param params the extra params for the neural network(k, corruption level, max epochs,...)
+     */
 	public void train(DoubleMatrix input,double lr,Object[] params);
-	
+
+    /**
+     * Trains via an optimization algorithm such as SGD or Conjugate Gradient
+     * @param input the input to train on
+     * @param lr the learning rate to use
+     * @param params the params (k,corruption level, max epochs,...)
+     */
 	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
 	/**
 	 * Performs a network merge in the form of

@@ -653,7 +653,7 @@ public class MathUtils  {
 	 * @param n the length of both vectors
 	 * @return the determination coefficient or r^2 
 	 */
-	public static final double determinationCoefficient(double[] y1, double[] y2, int n) {
+	public static  double determinationCoefficient(double[] y1, double[] y2, int n) {
 		return Math.pow(correlation(y1,y2),2);
 	}
 
@@ -1074,7 +1074,7 @@ public class MathUtils  {
 	 * @param binary the binary string to convert
 	 * @return an equivalent base 10 number
 	 */
-	public final static int toDecimal(String binary) {
+	public  static int toDecimal(String binary) {
 		long num = Long.parseLong(binary);
 		long rem;
 		/* Use the remainder method to ensure validity */
@@ -1098,7 +1098,7 @@ public class MathUtils  {
 	 * @return a z value such that the value is the interleaved lsd to msd for each 
 	 * double in the vector
 	 */
-	public final static int distanceFinderZValue(double[] vector) {
+	public  static int distanceFinderZValue(double[] vector) {
 		StringBuffer binaryBuffer =new StringBuffer();
 		List<String> binaryReps = new ArrayList<String>(vector.length);
 		for(int i=0;i<vector.length;i++) {

@@ -70,11 +70,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 		}
 
 		int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
-		boolean converged = opt.optimize(epochs);
-		while(!converged) {
-			converged = opt.optimize(epochs);
-			log.info("Not quite converged...retraining");
-		}
+		opt.optimize(epochs);
+
 
 
 

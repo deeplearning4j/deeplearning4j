@@ -102,7 +102,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 	/**
 	 * Master constructor
-	 * @param type the type (worker)
 	 * @param iter the dataset to use
 	 */
 	public ActorNetworkRunner(DataSetIterator iter,BaseMultiLayerNetwork startingNetwork) {
