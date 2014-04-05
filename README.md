@@ -25,8 +25,8 @@ Feature set summary
 
 6. Text processing via Word2Vec as well as a TFIDF vectorizer
           
-          - Special tokenizers/stemmers and a SentenceIterator interface to make handling text input agnostic
-          - Ability to do moving window operations via a Window encoding - optimized by Viterbi
+  - Special tokenizers/stemmers and a SentenceIterator interface to make handling text input agnostic
+  - Ability to do moving window operations via a Window encoding - optimized by Viterbi
 
 7. Different data preprocessing tools such as an Image loader that allows for binarization, scaling of pixels, normalization via zero unit 
    mean and standard deviation
@@ -40,11 +40,12 @@ Recursive Neural nets, Convolutional Neural nets Possibly Recursive Neural Tenso
 
 Matrix provider agnostic: 
 
-       A matrix abstraction layer that sits on top of various matrix providers that will allow for 
-
-       distributed gpu deep learning via either AMD, NVIDIA, or native with BLAS, as well as bindings for colt for plain old java
-
-Abstraction layers for different tasks such as face detection, named entity recognition, sentiment analysis
+A matrix abstraction layer that sits on top of various matrix providers that will allow for 
+distributed gpu deep learning via either AMD, NVIDIA, or native with BLAS, 
+as well as bindings for colt for plain old java
+Abstraction layers for different tasks such as 
+face detection, named entity recognition, 
+sentiment analysis.
 
 
 
