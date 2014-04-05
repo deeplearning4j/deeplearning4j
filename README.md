@@ -15,21 +15,22 @@ Feature set summary
 
 1. Distributed Deep Learning via akka clustering and distributed coordination of jobs via hazelcast with confs stored in zookeeper
 
-2. DBNs for both continuous and binary data
+2. Different data preprocessing tools such as an Image loader that allows for binarization, scaling of pixels, normalization via zero unit 
+   mean and standard deviation
 
-3. Native matrices via jblas
+3. DBNs for both continuous and binary data
 
-4. Automatic cluster provisioning for EC2
+4. Native matrices via jblas
 
-5. Baseline ability to read from a variety of input providers including S3, local file systems
+5. Automatic cluster provisioning for EC2
 
-6. Text processing via Word2Vec as well as a TFIDF vectorizer
+6. Baseline ability to read from a variety of input providers including S3, local file systems
+
+7. Text processing via Word2Vec as well as a TFIDF vectorizer
           
   - Special tokenizers/stemmers and a SentenceIterator interface to make handling text input agnostic
   - Ability to do moving window operations via a Window encoding - optimized by Viterbi
 
-7. Different data preprocessing tools such as an Image loader that allows for binarization, scaling of pixels, normalization via zero unit 
-   mean and standard deviation
 
 
 
