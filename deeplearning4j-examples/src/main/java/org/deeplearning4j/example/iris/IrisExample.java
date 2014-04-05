@@ -38,9 +38,9 @@ public class IrisExample {
 
         GaussianRectifiedLinearDBN cdbn1 = new GaussianRectifiedLinearDBN.Builder()
                 .hiddenLayerSizes(new int[]{4,3,3}).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .normalizeByInputRows(true).numberOfInputs(4).numberOfOutPuts(3).withL2(0.01)
+                .normalizeByInputRows(true).numberOfInputs(4).numberOfOutPuts(3)
                 .useAdaGrad(true).useHiddenActivationsForwardProp(true).withDropOut(0.2)
-                .useRegularization(true).withActivation(Activations.tanh())
+                .useRegularization(false).withActivation(Activations.sigmoid())
                 .build();
 
         while(sampling.hasNext()) {
