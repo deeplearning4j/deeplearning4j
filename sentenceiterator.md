@@ -16,7 +16,7 @@ The [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html
 
 Typically in natural language processing, a document or sentence is used to encapsulate a context which which an algorithm should learn.
 
-A few examplels include wanting to do tweets vs full blown articles. The intention of the [sentence iterator](../org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is to handle figuring out how to divide up text in to processable bits. Note that the way the [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html) works it is input agnostic. So bits of text (a document) can come from a file system, the twitter API, 
+A few examplels include wanting to do tweets vs full blown articles. The intention of the [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is to handle figuring out how to divide up text in to processable bits. Note that the way the [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html) works it is input agnostic. So bits of text (a document) can come from a file system, the twitter API, 
 or hadoop.
 
 
