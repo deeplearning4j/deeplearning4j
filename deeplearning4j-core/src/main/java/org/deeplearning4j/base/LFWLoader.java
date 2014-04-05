@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LFWLoader {
 
-	private File baseDir = new File(System.getProperty("java.io.tmpdir"));
+	private File baseDir = new File(System.getProperty("user.home"));
 	public final static String LFW = "lfw";
 	private File lfwDir = new File(baseDir,LFW);
 	public final static String LFW_URL = "http://vis-www.cs.umass.edu/lfw/lfw.tgz";
