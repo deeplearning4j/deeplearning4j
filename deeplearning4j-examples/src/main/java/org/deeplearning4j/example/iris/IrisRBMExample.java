@@ -3,12 +3,7 @@ package org.deeplearning4j.example.iris;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.example.mnist.IrisExample;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

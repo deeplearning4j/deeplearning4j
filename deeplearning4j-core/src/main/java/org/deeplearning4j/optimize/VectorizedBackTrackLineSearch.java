@@ -107,8 +107,9 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		slope = SimpleBlas.dot(g, line);
 		logger.debug("slope = " + slope);
 
-		if (slope < 0) 
-			throw new InvalidOptimizableException ("Slope = " + slope + " is negative");
+		if (slope < 0) {
+            throw new InvalidOptimizableException("Slope = " + slope + " is negative");
+        }
 		if (slope == 0)
 			throw new InvalidOptimizableException ("Slope = " + slope + " is zero");
 
