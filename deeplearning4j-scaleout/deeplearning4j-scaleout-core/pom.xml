@@ -4,11 +4,11 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.0.3.1</version>
+		<version>0.0.3.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-core</artifactId>
 	<name>deeplearning4j-scaleout-core</name>
-	<url>http://maven.apache.org</url>
+	<url>http://deeplearning4j.org/</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
