@@ -20,10 +20,10 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 	 * Used as a pair for when
 	 * the number of sentences is not known
 	 */
-	private Iterator<File> fileIterator;
-	private Queue<String> cache;
-	private LineIterator currLineIterator;
-	private File file;
+	protected Iterator<File> fileIterator;
+    protected Queue<String> cache;
+    protected LineIterator currLineIterator;
+    protected File file;
 	/**
 	 * Takes a single file or directory
 	 * @param preProcessor the sentence pre processor
