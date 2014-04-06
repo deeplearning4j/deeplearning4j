@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ImageLoader;
 import org.deeplearning4j.util.MatrixUtil;
@@ -181,16 +182,12 @@ public class LFWLoader {
 
 	public  void untarFile(File baseDir, File tarFile) throws IOException {
 
+
 		log.info("Untaring File: " + tarFile.toString());
 
-		Process p = Runtime.getRuntime().exec(String.format("tar -C %s -xvf %s", 
-				baseDir.getAbsolutePath(), tarFile.getAbsolutePath()));
-		BufferedReader stdError = new BufferedReader(new 
-				InputStreamReader(p.getErrorStream()));
-		log.info("Here is the standard error of the command (if any):\n");
+        ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
 
-
-	}
+    }
 
 	public static void gunzipFile(File baseDir, File gzFile) throws IOException {
 

@@ -19,7 +19,12 @@ public class ArchiveUtils {
 
     private static Logger log = LoggerFactory.getLogger(ArchiveUtils.class);
 
-
+    /**
+     * Extracts files to the specified destination
+     * @param file the file to extract to
+     * @param dest the desintation directory
+     * @throws IOException
+     */
     public static void unzipFileTo(String file,String dest) throws IOException {
         File target = new File(file);
         if(!target.exists())
