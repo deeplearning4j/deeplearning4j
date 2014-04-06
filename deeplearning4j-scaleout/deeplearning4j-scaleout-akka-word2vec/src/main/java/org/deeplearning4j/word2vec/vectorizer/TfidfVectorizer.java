@@ -47,6 +47,8 @@ public class TfidfVectorizer implements TextVectorizer {
      */
     public TfidfVectorizer(LabelAwareSentenceIterator sentenceIterator,TokenizerFactory tokenizerFactory,List<String> labels,int numTop) {
         this.sentenceIterator = sentenceIterator;
+        if(!this.sentenceIterator.hasNext())
+            this.sentenceIterator.reset();
         this.tokenizerFactory = tokenizerFactory;
         this.labels = labels;
         this.numTop = numTop;

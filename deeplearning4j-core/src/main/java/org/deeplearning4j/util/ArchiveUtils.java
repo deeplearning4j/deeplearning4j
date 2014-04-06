@@ -2,7 +2,6 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -68,18 +67,7 @@ public class ArchiveUtils {
 
         }
 
-        else if(file.endsWith((".bz2"))) {
-            BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(fin);
-            int count;
 
-            FileOutputStream fos = new FileOutputStream(dest + entry.getName());
-            BufferedOutputStream destStream = new BufferedOutputStream(fos,
-                    BUFFER);
-            int n = 0;
-            while (-1 != (n = bzIn.read(data))) {
-                out.write(data, 0, n);
-            }
-        }
         else if(file.endsWith(".tar.gz")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
@@ -98,7 +86,7 @@ public class ArchiveUtils {
 
                 if (entry.isDirectory()) {
 
-                    File f = new File(dest + entry.getName());
+                    File f = new File(dest +File.separator +  entry.getName());
                     f.mkdirs();
                 }
                 /**
@@ -108,12 +96,14 @@ public class ArchiveUtils {
                 else {
                     int count;
 
-                    FileOutputStream fos = new FileOutputStream(dest + entry.getName());
+                    FileOutputStream fos = new FileOutputStream(dest + File.separator +  entry.getName());
                     BufferedOutputStream destStream = new BufferedOutputStream(fos,
                             BUFFER);
                     while ((count = tarIn.read(data, 0, BUFFER)) != -1) {
                         destStream.write(data, 0, count);
                     }
+
+                    destStream.flush();;
 
                     IOUtils.closeQuietly(destStream);
                 }
