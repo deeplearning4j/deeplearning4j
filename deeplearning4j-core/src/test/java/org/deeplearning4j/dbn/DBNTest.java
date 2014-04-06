@@ -37,6 +37,38 @@ public class DBNTest {
 
     private static Logger log = LoggerFactory.getLogger(DBNTest.class);
 
+    @Test
+    public void testDbnStructure() {
+        RandomGenerator rng = new MersenneTwister(123);
+
+        double preTrainLr = 0.01;
+        int preTrainEpochs = 10000;
+        int k = 1;
+        int nIns = 4,nOuts = 3;
+        int[] hiddenLayerSizes = new int[] {4,3,2};
+        double fineTuneLr = 0.01;
+        int fineTuneEpochs = 10000;
+
+        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
+                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
+                .withRng(rng)
+                .build();
+
+
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        DataSet next = iter.next(150);
+        next.shuffle();
+
+        dbn.feedForward(next.getFirst());
+
+        for(int i = 0; i < dbn.getnLayers(); i++) {
+            assertEquals(dbn.getLayers()[i].gethBias(),dbn.getSigmoidLayers()[i].getB());
+        }
+
+    }
 
 
 
@@ -107,7 +139,7 @@ public class DBNTest {
         int fineTuneEpochs = 10000;
 
         GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(new Tanh())
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
                 .hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
                 .withRng(rng)
                 .build();

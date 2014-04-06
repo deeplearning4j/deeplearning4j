@@ -3,11 +3,13 @@ package org.deeplearning4j.util;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -21,7 +23,7 @@ public class ArchiveUtils {
     /**
      * Extracts files to the specified destination
      * @param file the file to extract to
-     * @param dest the desintation directory
+     * @param dest the desination directory
      * @throws IOException
      */
     public static void unzipFileTo(String file,String dest) throws IOException {
@@ -68,6 +70,7 @@ public class ArchiveUtils {
         }
 
 
+
         else if(file.endsWith(".tar.gz")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
@@ -109,11 +112,25 @@ public class ArchiveUtils {
                 }
             }
 
+
+
             /** Close the input stream **/
 
             tarIn.close();
         }
 
+        else if(file.endsWith(".gz")) {
+            GZIPInputStream is2 = new GZIPInputStream(fin);
+            File extracted = new File(target.getParent(),target.getName().replace(".gz",""));
+            if(extracted.exists())
+                extracted.delete();
+            extracted.createNewFile();
+            OutputStream fos = FileUtils.openOutputStream(extracted);
+            IOUtils.copyLarge(is2,fos);
+            is2.close();
+            fos.flush();
+            fos.close();
+        }
 
 
     }

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,12 +32,12 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
     private static Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
     private DataSet load;
 
+
     public ReutersNewsGroupsLoader(boolean tfidf) throws Exception {
         getIfNotExists();
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(reutersRootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
 
         if(tfidf)
             this.textVectorizer = new TfidfVectorizer(iter,tokenizerFactory,labels);
@@ -62,7 +63,7 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
         rootTarFile.createNewFile();
 
         FileUtils.copyURLToFile(new URL(NEWSGROUP_URL), rootTarFile);
-        ArchiveUtils.unzipFileTo(rootTarFile.getAbsolutePath(),reutersRootDir.getAbsolutePath());
+        ArchiveUtils.unzipFileTo(rootTarFile.getAbsolutePath(), reutersRootDir.getAbsolutePath());
         rootTarFile.delete();
         FileUtils.copyDirectory(new File(reutersRootDir,"20news-18828"),reutersRootDir);
         FileUtils.deleteDirectory(new File(reutersRootDir,"20news-18828"));
@@ -81,6 +82,12 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
      */
     @Override
     public void fetch(int numExamples) {
+        List<DataSet> newData = new ArrayList<>();
+        for(int grabbed = 0; grabbed < numExamples && cursor < load.numExamples(); cursor++,grabbed++) {
+            newData.add(load.get(cursor));
+        }
+
+        this.curr = DataSet.merge(newData);
 
     }
 }
