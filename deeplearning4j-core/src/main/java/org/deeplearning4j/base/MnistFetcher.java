@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,8 @@ public class MnistFetcher {
 		}
 		// mac gives unique tmp each run and we want to store this persist
 		// this data across restarts
-		File tmpDir = new File("/tmp");
-		if(!tmpDir.isDirectory()) {
-			tmpDir = new File(System.getProperty("java.io.tmpdir"));
-		}
+		File tmpDir = new File(System.getProperty("user.home"));
+
 		File baseDir = new File(tmpDir, LOCAL_DIR_NAME);
 		if(!(baseDir.isDirectory() || baseDir.mkdir())) {
 			throw new IOException("Could not mkdir " + baseDir);
@@ -50,20 +49,7 @@ public class MnistFetcher {
 			FileUtils.copyURLToFile(new URL(trainingFilesURL), tarFile);      
 		}
 
-		gunzipFile(baseDir, tarFile);
-
-		// get training records labels - trainingFileLabelsURL
-		File tarLabelsFile = new File(baseDir, trainingFileLabelsFilename);
-
-		if(!tarLabelsFile.isFile()) {
-			FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), tarLabelsFile);      
-		}
-
-		gunzipFile(baseDir, tarLabelsFile);
-
-
-
-
+	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
 
 		fileDir = baseDir;
 		return fileDir;
