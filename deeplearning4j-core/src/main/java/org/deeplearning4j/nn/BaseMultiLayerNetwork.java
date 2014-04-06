@@ -505,7 +505,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
         DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
         DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
-        ActivationFunction derivative = this.getSigmoidLayers()[0].getActivationFunction();
+        ActivationFunction derivative = getSigmoidLayers()[0].getActivationFunction();
         //- y - h
         DoubleMatrix delta = null;
         List<DoubleMatrix> activations = feedForward(getInput());

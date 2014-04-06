@@ -51,7 +51,21 @@ public class MnistFetcher {
 
 	    ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(),baseDir.getAbsolutePath());
 
-		fileDir = baseDir;
+
+
+
+        // get training records
+        File labels = new File(baseDir, trainingFileLabelsFilename);
+
+        if(!labels.isFile()) {
+            FileUtils.copyURLToFile(new URL(trainingFileLabelsURL), labels);
+        }
+
+        ArchiveUtils.unzipFileTo(labels.getAbsolutePath(),baseDir.getAbsolutePath());
+
+
+
+        fileDir = baseDir;
 		return fileDir;
 	}
 

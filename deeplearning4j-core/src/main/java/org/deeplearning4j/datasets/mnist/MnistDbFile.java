@@ -27,7 +27,7 @@ public abstract class MnistDbFile extends RandomAccessFile {
      * @throws FileNotFoundException
      * @see RandomAccessFile
      */
-    public MnistDbFile(String name, String mode) throws IOException, FileNotFoundException {
+    public MnistDbFile(String name, String mode) throws IOException {
         super(name, mode);
         if (getMagicNumber() != readInt()) {
             throw new RuntimeException("This MNIST DB file " + name + " should start with the number " + getMagicNumber() + ".");
