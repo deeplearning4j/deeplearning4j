@@ -24,6 +24,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
     protected Queue<String> cache;
     protected LineIterator currLineIterator;
     protected File file;
+    protected File currentFile;
 	/**
 	 * Takes a single file or directory
 	 * @param preProcessor the sentence pre processor
@@ -92,6 +93,7 @@ public class FileSentenceIterator extends BaseSentenceIterator {
 		if(fileIterator.hasNext()) {
 			try {
 				File next = fileIterator.next();
+                currentFile = next;
 				if(next.getAbsolutePath().endsWith(".gz")) {
 					if(currLineIterator != null)
 						currLineIterator.close();

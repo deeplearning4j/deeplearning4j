@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SetUtils;
@@ -33,6 +34,7 @@ public class TfidfVectorizer implements TextVectorizer {
     private List<String> labels;
     private Counter<String> tfIdfWeights;
     private int numTop = -1;
+    private List<String> stopWords;
     private Counter<String> tf = new Counter<>();
     private Counter<String> idf = new Counter<>();
     private int numDocs = 0;
@@ -48,9 +50,23 @@ public class TfidfVectorizer implements TextVectorizer {
         this.tokenizerFactory = tokenizerFactory;
         this.labels = labels;
         this.numTop = numTop;
+        stopWords = StopWords.getStopWords();
+
         process();
         initIndexFromTfIdf();
 
+
+    }
+
+
+    /**
+     * Creates this tfidf vectorizer with no vocab limit
+     * @param sentenceIterator the document iterator
+     * @param tokenizerFactory the tokenizer for individual tokens
+     * @param labels the possible labels
+     */
+    public TfidfVectorizer(LabelAwareSentenceIterator sentenceIterator,TokenizerFactory tokenizerFactory,List<String> labels) {
+        this(sentenceIterator,tokenizerFactory,labels,-1);
 
     }
 
@@ -96,6 +112,8 @@ public class TfidfVectorizer implements TextVectorizer {
             Counter<String> documentOccurrences = new Counter<>();
             numDocs++;
             for(String token : tokenizer.getTokens()) {
+                if(stopWords.contains(token))
+                    continue;
                 runningTotal.incrementCount(token,1.0);
                 //idf
                 if(!documentOccurrences.containsKey(token))
@@ -132,7 +150,7 @@ public class TfidfVectorizer implements TextVectorizer {
         for(int i = 0;i  < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(idx >= 0)
-                ret.put(i,tfidfWord(tokens.get(i)));
+                ret.put(idx,tfidfWord(tokens.get(i)));
         }
 
         return ret;

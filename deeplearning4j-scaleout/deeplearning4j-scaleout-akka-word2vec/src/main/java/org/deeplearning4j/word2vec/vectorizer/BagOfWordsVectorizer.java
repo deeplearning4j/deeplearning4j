@@ -38,20 +38,31 @@ public class BagOfWordsVectorizer implements TextVectorizer {
      * This handles segmenting the document in to
      * whole segments
      * @param tokenizerFactory the tokenizer to use
-     * @param vocab
      * @param labels the possible labels for each document
      * @param vocabSize the max size of vocab
      */
-    public BagOfWordsVectorizer(LabelAwareSentenceIterator sentenceIterator, TokenizerFactory tokenizerFactory, Index vocab, List<String> labels, int vocabSize) {
+    public BagOfWordsVectorizer(LabelAwareSentenceIterator sentenceIterator, TokenizerFactory tokenizerFactory,  List<String> labels, int vocabSize) {
         this.sentenceIter = sentenceIterator;
         this.tokenizerFactory = tokenizerFactory;
-        this.vocab = vocab;
+        this.vocab = new Index();
         this.labels = labels;
         this.vocabSize = vocabSize;
         wordCounts = new Counter<>();
         stopWords = StopWords.getStopWords();
     }
 
+
+    /**
+     * Converts a document in to a bag of words
+     * @param sentenceIterator the sentence iterator to use
+     * This handles segmenting the document in to
+     * whole segments
+     * @param tokenizerFactory the tokenizer to use
+     * @param labels the possible labels for each document
+     */
+    public BagOfWordsVectorizer(LabelAwareSentenceIterator sentenceIterator, TokenizerFactory tokenizerFactory,  List<String> labels) {
+       this(sentenceIterator,tokenizerFactory,labels,-1);
+    }
 
 
     /**
@@ -86,8 +97,9 @@ public class BagOfWordsVectorizer implements TextVectorizer {
         List<String> tokens = tokenizer.getTokens();
         DoubleMatrix input = new DoubleMatrix(1,vocab.size());
         for(int i = 0; i < tokens.size(); i++) {
+            int idx = vocab.indexOf(tokens.get(i));
             if(vocab.indexOf(tokens.get(i)) >= 0)
-                input.put(i,wordCounts.getCount(tokens.get(i)));
+                input.put(idx,wordCounts.getCount(tokens.get(i)));
         }
 
         DoubleMatrix labelMatrix = MatrixUtil.toOutcomeVector(labels.indexOf(label),labels.size());
@@ -99,7 +111,11 @@ public class BagOfWordsVectorizer implements TextVectorizer {
             Tokenizer tokenizer = tokenizerFactory.create(sentenceIter.nextSentence());
             List<String> tokens = tokenizer.getTokens();
             for(String token  : tokens)
-                wordCounts.incrementCount(token,1.0);
+                if(!stopWords.contains(token)) {
+                    wordCounts.incrementCount(token,1.0);
+                   if(vocab.indexOf(token) < 0)
+                       vocab.add(token);
+                }
         }
     }
 

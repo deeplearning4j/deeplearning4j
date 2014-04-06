@@ -28,6 +28,6 @@ public class LabelAwareFileSentenceIterator extends FileSentenceIterator impleme
 
     @Override
     public String currentLabel() {
-        return file.getParentFile().getName();
+        return currentFile.getParentFile().getName();
     }
 }
