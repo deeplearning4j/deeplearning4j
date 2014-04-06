@@ -101,7 +101,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
 		applyDropOutIfNecessary(h1Sample);
 
 
-		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
+		return new Pair<>(h1Mean,h1Sample);
 
 	}
 
