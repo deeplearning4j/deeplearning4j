@@ -45,9 +45,9 @@ public class IrisExample {
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
                 .numberOfInputs(nIns).numberOfOutPuts(nOuts)
                 .withActivation(Activations.sigmoid())
-                .withMomentum(0.5).withDist(Distributions.uniform(rng,5))
+                .withMomentum(0.5)
                 .hiddenLayerSizes(hiddenLayerSizes)
-                .useRegularization(false)
+                .useRegularization(true)
                 .useHiddenActivationsForwardProp(true)
                 .withRng(rng)
                 .build();
