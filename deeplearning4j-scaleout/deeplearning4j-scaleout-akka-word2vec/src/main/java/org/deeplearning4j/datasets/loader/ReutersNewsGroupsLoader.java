@@ -1,7 +1,10 @@
 package org.deeplearning4j.datasets.loader;
 
+import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
@@ -10,9 +13,9 @@ import org.deeplearning4j.word2vec.vectorizer.TextVectorizer;
 import org.deeplearning4j.word2vec.vectorizer.TfidfVectorizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,13 +29,10 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
     public final static String NEWSGROUP_URL = "http://qwone.com/~jason/20Newsgroups/20news-18828.tar.gz";
     private File reutersRootDir;
     private static Logger log = LoggerFactory.getLogger(ReutersNewsGroupsLoader.class);
-
+    private DataSet load;
 
     public ReutersNewsGroupsLoader(boolean tfidf) throws Exception {
-        String home = System.getProperty("user.home");
         getIfNotExists();
-        String rootDir = home + File.separator + "reuters";
-        reutersRootDir = new File(rootDir);
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(reutersRootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
@@ -44,9 +44,30 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
         else
             this.textVectorizer = new BagOfWordsVectorizer(iter,tokenizerFactory,labels);
 
+        load = this.textVectorizer.vectorize();
     }
 
-    private void getIfNotExists() {
+    private void getIfNotExists() throws Exception {
+        String home = System.getProperty("user.home");
+        String rootDir = home + File.separator + "reuters";
+        reutersRootDir = new File(rootDir);
+        if(!reutersRootDir.exists())
+            reutersRootDir.mkdir();
+
+
+
+        File rootTarFile = new File(reutersRootDir,"20news-18828.tar.gz");
+        if(rootTarFile.exists())
+            rootTarFile.delete();
+        rootTarFile.createNewFile();
+
+        FileUtils.copyURLToFile(new URL(NEWSGROUP_URL), rootTarFile);
+        ArchiveUtils.unzipFileTo(rootTarFile.getAbsolutePath(),reutersRootDir.getAbsolutePath());
+        rootTarFile.delete();
+        FileUtils.copyDirectory(new File(reutersRootDir,"20news-18828"),reutersRootDir);
+        FileUtils.deleteDirectory(new File(reutersRootDir,"20news-18828"));
+        if(reutersRootDir.listFiles() == null)
+            throw new IllegalStateException("No files found!");
 
     }
 
