@@ -27,7 +27,6 @@ public class IrisRBMExample {
 		.useAdaGrad(true)
 		.numHidden(10).normalizeByInputRows(false).useRegularization(false)
 		.build();
-
 		r.trainTillConvergence(next.getFirst(),1e-3, new Object[]{1,1e-3,2000});
 		log.info("\nData " + String.valueOf("\n" + next.getFirst()).replaceAll(";","\n"));
 		log.info("\nReconstruct " + String.valueOf("\n" + r.reconstruct(r.getInput())).replaceAll(";","\n"));

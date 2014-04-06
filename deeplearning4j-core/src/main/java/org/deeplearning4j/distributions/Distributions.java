@@ -8,7 +8,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 public class Distributions {
 	/**
 	 * Returns a normal distribution 
-	 * with a mean of 0 and a standard deviation of 1
+	 * with a mean of 0 and a standard deviation of std
 	 * @param rng the rng to use
 	 * @param std the standard deviation to use
 	 * @return a normal distribution with a mean of 0 and a standard deviation of 1
@@ -47,7 +47,6 @@ public class Distributions {
 	 * Returns a uniform distribution with a
 	 * min of -fanIn and a max of positivefanIn
 	 * @param rng the rng to use
-	 * @param fanIn the fanin to use
 	 * @return a uniform distribution with a min of -fanIn
 	 * and a max of fanIn
 	 */

@@ -41,13 +41,13 @@ public class CDBN extends DBN {
 		if(index == 0)
 			ret = new CRBM.Builder().useRegularization(isUseRegularization()).withDropOut(dropOut)
 					.withDistribution(getDist()).useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
-		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity()).withOptmizationAlgo(getOptimizationAlgorithm())
+		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs()).withLossFunction(getLossFunction())
 		.withRandom(rng).withWeights(W).build();
 		else
 			ret = new RBM.Builder().useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
-		.useRegularization(isUseRegularization()).withDistribution(getDist()).withDropOut(dropOut)
-		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity())
+		.useRegularization(isUseRegularization()).withDistribution(getDist()).withDropOut(dropOut).withOptmizationAlgo(getOptimizationAlgorithm())
+		.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity()).withLossFunction(getLossFunction())
 		.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
 		.withRandom(rng).withWeights(W).build();
 		
