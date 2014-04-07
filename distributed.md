@@ -30,4 +30,4 @@ You can also include this in your code:
 
 You'll need to address the hosts file issue before initializing your ActorNetworkRunner. The worker then picks this up from zookeeper, just as above. [Akka actors](http://doc.akka.io/docs/akka/snapshot/general/actors.html) on the worker will automatically join the cluster thanks to akka's gossip protocol.
 
-Next, we'll show you how to train a restricted Boltzmann machine [to reconstruct and recognize the images of handwritten digits](../rbm-mnist.html) in the so-called MNIST database, an industry standard.
+Next, we'll show you how to train a restricted Boltzmann machine [to reconstruct and recognize the images of handwritten digits](../rbm-mnist-tutorial.html) in the so-called MNIST database, an industry standard.
