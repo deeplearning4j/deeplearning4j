@@ -129,7 +129,21 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
 		return h1Sample;
 	}
 
-	/**
+
+    /**
+     * Trigger an activation with the last specified input
+     * @return the activation of the last specified input
+     */
+    public synchronized DoubleMatrix activate() {
+        DoubleMatrix activation = input.mmul(getW());
+        MatrixUtil.max(0.0,activation);
+        activation.subiRowVector(activation.columnMeans());
+        activation.diviRowVector(MatrixUtil.columnStd(activation));
+        return activation;
+    }
+
+
+    /**
 	 * Sample this hidden layer given the last input.
 	 * @return the activation for this layer given 
 	 * the previous input

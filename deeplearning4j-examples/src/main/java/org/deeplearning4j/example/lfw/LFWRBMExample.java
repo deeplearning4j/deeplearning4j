@@ -34,13 +34,13 @@ public class LFWRBMExample {
 
 		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
 		.numberOfVisible(iter.inputColumns()).useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-		.numHidden(600).normalizeByInputRows(true).withMomentum(0.1).withDropOut(1).withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
+		.numHidden(600).normalizeByInputRows(true).withMomentum(0.5).withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
 		.build();
 
 		for(int i = 0; i < 100; i++) {
 			while(iter.hasNext()) {
 				DataSet next = iter.next();
-				next.divideBy(255);
+				next.scale();
 				next.normalizeZeroMeanZeroUnitVariance();
 				r.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{1,1e-2,50});
 				SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
@@ -65,7 +65,7 @@ public class LFWRBMExample {
 
 				DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
 				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+				DoubleMatrix draw2 = reconstructed2.mul(255);
 
 				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
 				d.title = "REAL";
