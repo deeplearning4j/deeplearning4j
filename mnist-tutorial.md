@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [mnist for restricted Boltzmann machines](../rbm-mnist.html)
+*previous* - [mnist for restricted Boltzmann machines](../rbm-mnist-tutorial.html)
 # mnist for deep-belief networks tutorial
 
 MNIST is a good place to begin exploring image recognition. 
