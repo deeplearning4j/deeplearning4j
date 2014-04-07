@@ -18,7 +18,7 @@ Here's an example of how neural nets can cluster random samplings of Mnist image
 
 MNIST is a good place to begin exploring image recognition. Here’s an easy way to load the data and get started. 
 
-### tutorial
+# tutorial
 
 To begin with, you’ll take an image from your data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
 
@@ -76,4 +76,4 @@ Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST d
 
 			}
 
-Next, we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../mnist.html).
+Next, we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../mnist-tutorial.html).
