@@ -19,7 +19,7 @@ public class MultiThreadedLFW {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new LFWDataSetIterator(80,13233,28,28);
+		DataSetIterator iter = new LFWDataSetIterator(80,13233,56,56);
 		
 		
 		Conf c = new Conf();

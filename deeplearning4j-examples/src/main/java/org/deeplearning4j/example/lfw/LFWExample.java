@@ -27,7 +27,7 @@ public class LFWExample {
 		DataSetIterator iter = new LFWDataSetIterator(10,10);
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true).useRegularization(false)
+		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true).useRegularization(true)
 		.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
 		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
 		.build();
@@ -63,7 +63,7 @@ public class LFWExample {
 			eval.eval(labels, predict);
 		}
 		
-		log.info("Prediciton f scores and accuracy");
+		log.info("Prediction f scores and accuracy");
 		log.info(eval.stats());
 	}
 

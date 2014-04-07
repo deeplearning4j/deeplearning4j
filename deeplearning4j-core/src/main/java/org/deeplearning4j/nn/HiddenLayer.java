@@ -210,11 +210,8 @@ public class HiddenLayer implements Serializable {
 	 * @return the activation of the last specified input
 	 */
 	public synchronized DoubleMatrix activate() {
-		DoubleMatrix activation = input.mmul(getW());
-        MatrixUtil.max(0.0,activation);
-        activation.subiRowVector(activation.columnMeans());
-        activation.diviRowVector(MatrixUtil.columnStd(activation));
-        return activation;
+		DoubleMatrix activation =  getActivationFunction().apply(getInput().mmul(getW()).addRowVector(getB()));
+		return activation;
 	}
 
 	/**
