@@ -4,13 +4,9 @@ layout: default
 ---
 
 
-Sentence Iterator
-=================================
-
+# sentence iterator
 
 A [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) is used in [Word2vec](../word2vec.html) as well as Bag Of Words approaches to text processing.
-
-
 
 The [sentence iterator](../doc/org/deeplearning4j/word2vec/SentenceIterator.html) covers the concept of a document in text processing. A [sentence iterator](../doc/org/deeplearning4j/word2vec/sentenceiterator/SentenceIterator.html) handles feeding in bits of text to a neural network in the form of a vector.
 
