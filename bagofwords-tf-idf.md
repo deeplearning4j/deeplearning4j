@@ -21,4 +21,4 @@ First, tf-idf measures the number of times that words appear in a given document
 
 Those marker words are then fed to the neural net as features in order to determine the topic covered by the document that contains them. 
 
-BoW is different from [Word2vec]((../word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
+BoW is different from [Word2vec](../word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
