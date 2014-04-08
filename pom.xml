@@ -157,6 +157,9 @@
 					<configuration>
 						<source>1.7</source>
 						<target>1.7</target>
+                        <fork>true</fork>
+                        <meminitial>1024m</meminitial>
+                        <maxmem>4096m</maxmem>
 					</configuration>
 				</plugin>
 			</plugins>
