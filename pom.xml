@@ -158,8 +158,8 @@
 						<source>1.7</source>
 						<target>1.7</target>
                         <fork>true</fork>
-                        <meminitial>1024m</meminitial>
-                        <maxmem>4096m</maxmem>
+                        <!--<meminitial>2018m</meminitial>-->
+                        <!--<maxmem>2018m</maxmem>-->
 					</configuration>
 				</plugin>
 			</plugins>
