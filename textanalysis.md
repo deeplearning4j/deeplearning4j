@@ -20,4 +20,4 @@ A text fed into a neural network passes through several stages of analysis. The 
 
 The neural net called [Word2vec](../word2vec.html) goes as far as lemmatization. Lemmas simply extend features based on stems, which is a process deep learning does in other ways automatically.
 
-Let's turn to [Word2vec](../word2vec.html) now. 
+Before we turn to Word2vec, however, we'll cover a slightly simpler algorithm, [Bag of Words](../bagofwords-tf-idf.html).
