@@ -49,7 +49,6 @@ public class ZooKeeperConfigurationRegister implements Watcher {
 	/**
 	 * 
 	 * @param configuration the configuration to serialize
-	 * @param zk the zookeeper client to use
 	 * @param id the job id to store metadata for
 	 * @param host host of the zookeeper cluster (note this is also provided to help setup the zk directory structure)
 	 * @param port the port of the zookeeper cluster (note this is also provided to help setup the zk directory structure)

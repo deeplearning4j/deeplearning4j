@@ -69,7 +69,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 	 * Creates the master and the workers with this given conf
 	 * @param conf the neural net config to use
 	 * @param batchActor the batch actor to use for data set distribution
-	 * @param params extra params (implementation dependent)
+	 * @param stateTracker Hazel Cast State Tracker
 	 * 
 	 */
 	public MasterActor(Conf conf,ActorRef batchActor,HazelCastStateTracker stateTracker) {
