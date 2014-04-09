@@ -12,7 +12,5 @@ The dataset consists of four measurements taken from 50 examples of each of thre
 
 The continuous nature of those measurements make the Iris dataset a perfect test for continuous deep-belief networks. Those four features alone can be sufficient to classify the three species accurately, and failure to do so is a very strong signal that your neural net needs work.
 
-Next, we'll survey [datasets and machine learning](../data-sets-ml.html).
-
-
+Now that you've seen Deeplearning4j train a neural network on Iris, you may want to learn how to feed it other [datasets](../data-sets-ml.html).
 

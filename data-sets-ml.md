@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-*previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
+*previous* - [iris flower tutorial](../iris-flower-dataset-tutorial.html)
 # data sets and machine learning
 
 Garbage in, garbage out. 
