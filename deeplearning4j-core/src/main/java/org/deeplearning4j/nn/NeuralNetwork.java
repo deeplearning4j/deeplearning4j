@@ -97,7 +97,9 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public AdaGrad getAdaGrad();
 	public void setAdaGrad(AdaGrad adaGrad);
 	
-	
+
+    public boolean isUseRegularization();
+
 	public AdaGrad gethBiasAdaGrad();
 	public void setHbiasAdaGrad(AdaGrad adaGrad);
 	
@@ -129,7 +131,9 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 * @return a pair with mean, sample
 	 */
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v);
-	
+
+
+    public boolean isUseAdaGrad();
 	
 	public void setDropOut(double dropOut);
 	public double dropOut();

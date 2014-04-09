@@ -16,125 +16,121 @@ import org.jblas.DoubleMatrix;
  * Visible units with 
  * gaussian noise and hidden binary activations.
  * Meant for continuous data
- * 
- * 
+ *
+ *
  * @author Adam Gibson
  *
  */
 public class GaussianRectifiedLinearRBM extends RBM {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5186639601076269003L;
-	private DoubleMatrix sigma;
+    /**
+     *
+     */
+    private static final long serialVersionUID = 5186639601076269003L;
+    private DoubleMatrix sigma;
 
 
-	//never instantiate without the builder
-	private GaussianRectifiedLinearRBM(){}
+    //never instantiate without the builder
+    private GaussianRectifiedLinearRBM(){}
 
-	private GaussianRectifiedLinearRBM(DoubleMatrix input, int nVisible, int nHidden,
-			DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
-			RandomGenerator rng, double fanIn, RealDistribution dist) {
-		super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
-		if(useAdaGrad) {
-			this.wAdaGrad.setMasterStepSize(1e-4);
-			this.wAdaGrad.setDecayLr(true);
-		}
+    private GaussianRectifiedLinearRBM(DoubleMatrix input, int nVisible, int nHidden,
+                                       DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
+                                       RandomGenerator rng, double fanIn, RealDistribution dist) {
+        super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
 
-		sigma = DoubleMatrix.ones(nVisible);
-		applySparsity = false;
-	}
+        sigma = DoubleMatrix.ones(nVisible);
+        applySparsity = false;
+    }
 
 
 
-	/**
-	 * Trains till global minimum is found.
-	 * @param learningRate
-	 * @param k
-	 * @param input
-	 */
-	@Override
-	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
-		if(input != null)
-			this.input = input;
-		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
-		optimizer.setTolerance(1e-6);
-		optimizer.train(input);
-	}
+    /**
+     * Trains till global minimum is found.
+     * @param learningRate
+     * @param k
+     * @param input
+     */
+    @Override
+    public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
+        if(input != null)
+            this.input = input;
+        optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
+        optimizer.setTolerance(1e-6);
+        optimizer.train(input);
+    }
 
 
-	/**
-	 * Calculates the activation of the visible :
-	 * sigmoid(v * W + hbias)
-	 * 
-	 *  Compute the mean activation of the hiddens given visible unit
-        configurations for a set of training examples.
+    /**
+     * Calculates the activation of the visible :
+     * sigmoid(v * W + hbias)
+     *
+     *  Compute the mean activation of the hiddens given visible unit
+     configurations for a set of training examples.
 
-        Parameters
-	 * @param v the visible layer
-	 * @return the approximated activations of the visible layer
-	 */
-	public DoubleMatrix propUp(DoubleMatrix v) {
-		//rectified linear
-		DoubleMatrix preSig = v.divRowVector(sigma).mmul(W).addiRowVector(hBias);
-		return preSig;
+     Parameters
+     * @param v the visible layer
+     * @return the approximated activations of the visible layer
+     */
+    public DoubleMatrix propUp(DoubleMatrix v) {
+        //rectified linear
+        DoubleMatrix preSig = v.divRowVector(sigma).mmul(W).addiRowVector(hBias);
+        return preSig;
 
-	}
+    }
 
 
-	/**
-	 * Rectified linear units for output
-	 * @param v the visible values
-	 * @return a binomial distribution containing the expected values and the samples
-	 */
-	@Override
-	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
-		DoubleMatrix h1Mean = propUp(v);
-		DoubleMatrix sigH1Mean = sigmoid(h1Mean);
+    /**
+     * Rectified linear units for output
+     * @param v the visible values
+     * @return a binomial distribution containing the expected values and the samples
+     */
+    @Override
+    public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+        DoubleMatrix h1Mean = propUp(v);
+        DoubleMatrix sigH1Mean = sigmoid(h1Mean);
 		/*
 		 * Rectified linear part
 		 */
-		DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
-		MatrixUtil.max(0.0, h1Sample);
-		//apply dropout
-		applyDropOutIfNecessary(h1Sample);
+        DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
+        MatrixUtil.max(0.0, h1Sample);
+        //apply dropout
+        applyDropOutIfNecessary(h1Sample);
 
 
-		return new Pair<>(h1Mean,h1Sample);
+        return new Pair<>(h1Mean,h1Sample);
 
-	}
+    }
 
-	/**
-	 * Calculates the activation of the hidden:
-	 * h * W + vbias
-	 *  Compute the mean activation of the visibles given hidden unit
-        configurations for a set of training examples.
+    /**
+     * Calculates the activation of the hidden:
+     * h * W + vbias
+     *  Compute the mean activation of the visibles given hidden unit
+     configurations for a set of training examples.
 
-        Parameters
-	 * @param h the hidden layer
-	 * @return the approximated output of the hidden layer
-	 */
-	public DoubleMatrix propDown(DoubleMatrix h) {
-		DoubleMatrix vMean = h.mmul(W.transpose()).mulRowVector(vBias.add(sigma));
-		return vMean;
+     Parameters
+     * @param h the hidden layer
+     * @return the approximated output of the hidden layer
+     */
+    public DoubleMatrix propDown(DoubleMatrix h) {
+        DoubleMatrix vMean = h.mmul(W.transpose()).mulRowVector(vBias.add(sigma));
+        return vMean;
 
-	}
-	@Override
-	public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-		DoubleMatrix v1Mean = propDown(h);
-		DoubleMatrix v1Sample = MatrixUtil.normal(getRng(), v1Mean, 1).mulRowVector(sigma);
-		return new Pair<>(v1Mean,v1Sample);
+    }
+    @Override
+    public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
+        DoubleMatrix v1Mean = propDown(h);
+        DoubleMatrix v1Sample = MatrixUtil.normal(getRng(), v1Mean, 1).mulRowVector(sigma);
+        return new Pair<>(v1Mean,v1Sample);
 
 
 
-	}
+    }
 
-	public static class Builder extends BaseNeuralNetwork.Builder<GaussianRectifiedLinearRBM> {
-		public Builder() {
-			this.clazz = GaussianRectifiedLinearRBM.class;
-		}
-	}
+    public static class Builder extends BaseNeuralNetwork.Builder<GaussianRectifiedLinearRBM> {
+        public Builder() {
+            this.clazz = GaussianRectifiedLinearRBM.class;
+        }
+    }
 
 
 }

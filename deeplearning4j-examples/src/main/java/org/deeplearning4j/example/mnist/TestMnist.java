@@ -37,7 +37,7 @@ public class TestMnist {
 			log.info("Current stats " + eval.stats());
 		}
 
-		log.info("Prediciton f scores and accuracy");
+		log.info("Prediction f scores and accuracy");
 		log.info(eval.stats());
 
 	}

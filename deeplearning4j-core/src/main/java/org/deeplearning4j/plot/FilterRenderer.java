@@ -351,10 +351,8 @@ public class FilterRenderer {
 
 
 		try {
-			//saveImageToDisk( img, "/tmp/rbm_render_histogram_test.png" );
 			saveImageToDisk( img, filename );
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

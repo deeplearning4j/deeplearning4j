@@ -67,7 +67,6 @@ public class LFWDataFetcher extends BaseDataFetcher {
 	@Override
 	public DataSet next() {
 		DataSet next = super.next();
-		next.divideBy(255);
 		next.normalizeZeroMeanZeroUnitVariance();
 		return next;
 	}
