@@ -133,6 +133,8 @@ public class ArchiveUtils {
         }
 
 
+        target.delete();
+
     }
 
 

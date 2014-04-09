@@ -37,7 +37,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		network.getLogLayer().setLabels(labels);
-
+        log.info("Starting negative log likelihood of model " + this.network.negativeLogLikelihood());
 		DoubleMatrix train = sampleHiddenGivenVisible();
 
 		if(!network.isForceNumEpochs()) {

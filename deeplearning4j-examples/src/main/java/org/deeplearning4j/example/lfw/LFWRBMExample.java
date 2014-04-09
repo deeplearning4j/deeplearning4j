@@ -23,65 +23,65 @@ import org.slf4j.LoggerFactory;
 
 public class LFWRBMExample {
 
-	private static Logger log = LoggerFactory.getLogger(LFWRBMExample.class);
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		DataSetIterator iter = new LFWDataSetIterator(10,150000);
-		int cols = iter.inputColumns();
-		log.info("Learning from " + cols);
+    private static Logger log = LoggerFactory.getLogger(LFWRBMExample.class);
+    /**
+     * @param args
+     */
+    public static void main(String[] args) throws Exception {
+        DataSetIterator iter = new LFWDataSetIterator(10,150000,56,56);
+        int cols = iter.inputColumns();
+        log.info("Learning from " + cols);
 
-		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
-		.numberOfVisible(iter.inputColumns()).useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-		.numHidden(600).normalizeByInputRows(true).withMomentum(0.5).withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
-		.build();
+        GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
+                .numberOfVisible(iter.inputColumns())
+                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .numHidden(600)
+                .normalizeByInputRows(true)
+               .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .build();
 
-		for(int i = 0; i < 100; i++) {
-			while(iter.hasNext()) {
-				DataSet next = iter.next();
-				next.scale();
-				next.normalizeZeroMeanZeroUnitVariance();
-				r.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{1,1e-2,50});
-				SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
-
-
-			}
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            r.trainTillConvergence(next.getFirst(), 1e-3, new Object[]{1,1e-3,1000});
+            SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
 
 
-			SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
-			iter.reset();
+        }
 
-		}
+
+        SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
+        iter.reset();
 
 
 
 
-		//Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
-		while(iter.hasNext()) {
-			DataSet first = iter.next();
-			DoubleMatrix reconstruct = r.reconstruct(first.getFirst());
-			for(int j = 0; j < first.numExamples(); j++) {
-
-				DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-				DoubleMatrix draw2 = reconstructed2.mul(255);
-
-				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
-				d.title = "REAL";
-				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
-				d2.title = "TEST";
-				d2.draw();
-				Thread.sleep(10000);
-				d.frame.dispose();
-				d2.frame.dispose();
-			}
 
 
-		}
+        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
+        while(iter.hasNext()) {
+            DataSet first = iter.next();
+            DoubleMatrix reconstruct = r.reconstruct(first.getFirst());
+            for(int j = 0; j < first.numExamples(); j++) {
+
+                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
+                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+                DoubleMatrix draw2 = reconstructed2.mul(255);
+
+                DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+                d.title = "REAL";
+                d.draw();
+                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
+                d2.title = "TEST";
+                d2.draw();
+                Thread.sleep(10000);
+                d.frame.dispose();
+                d2.frame.dispose();
+            }
 
 
-	}
+        }
+
+
+    }
 
 }
