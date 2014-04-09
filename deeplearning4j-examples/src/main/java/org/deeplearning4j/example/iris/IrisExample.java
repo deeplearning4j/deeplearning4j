@@ -35,7 +35,7 @@ public class IrisExample {
     public static void main(String[] args) {
         RandomGenerator rng = new MersenneTwister(123);
         int nIns = 4,nOuts = 3;
-        int[] hiddenLayerSizes = new int[] {3};
+        int[] hiddenLayerSizes = new int[] {4,3};
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
