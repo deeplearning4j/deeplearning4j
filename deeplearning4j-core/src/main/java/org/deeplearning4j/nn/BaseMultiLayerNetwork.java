@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
+import org.deeplearning4j.util.Dl4jReflection;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
@@ -714,7 +716,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         getLogLayer().getW().subi(logLayerGradient);
-        getLogLayer().getB().subi(biasGradient);
+        if(getLogLayer().getB().length == biasGradient.length)
+            getLogLayer().getB().subi(biasGradient);
+        else
+            getLogLayer().getB().subi(biasGradient.mean());
 
     }
 
@@ -987,8 +992,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     /**
      * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link CDBN}
-     * where the first layer needs to be an {@link CRBM} for continuous inputs.
+     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.CDBN}
+     * where the first layer needs to be an {@link org.deeplearning4j.rbm.CRBM} for continuous inputs.
      *
      * Please be sure to call super.initializeNetwork
      *
@@ -1003,7 +1008,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param vBias the visible bias
      * @param rng the rng to use (THiS IS IMPORTANT; YOU DO NOT WANT TO HAVE A MIS REFERENCED RNG OTHERWISE NUMBERS WILL BE MEANINGLESS)
      * @param index the index of the layer
-     * @return a neural network layer such as {@link RBM}
+     * @return a neural network layer such as {@link org.deeplearning4j.rbm.RBM}
      */
     public abstract NeuralNetwork createLayer(DoubleMatrix input,int nVisible,int nHidden, DoubleMatrix W,DoubleMatrix hbias,DoubleMatrix vBias,RandomGenerator rng,int index);
 
@@ -1684,7 +1689,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         @SuppressWarnings("unchecked")
         public E buildEmpty() {
             try {
-                return (E) clazz.newInstance();
+                E ret = null;
+                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
+                c.setAccessible(true);
+
+                ret = (E) c.newInstance();
+
+                return ret;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -1693,7 +1704,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         @SuppressWarnings("unchecked")
         public E build() {
             try {
-                ret = (E) clazz.newInstance();
+                E ret = null;
+                Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
+                c.setAccessible(true);
+
+                ret = (E) c.newInstance();
                 ret.setNormalizeByInputRows(normalizeByInputRows);
                 ret.setInput(this.input);
                 ret.setnOuts(this.nOuts);
@@ -1733,9 +1748,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 if(hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
 
-                ret.init();
                 return ret;
-            } catch (InstantiationException | IllegalAccessException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
