@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
+import org.deeplearning4j.util.Dl4jReflection;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
@@ -437,7 +438,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     @Override
     public NeuralNetwork clone() {
         try {
-            Constructor<?> c = getClass().getDeclaredConstructors()[0];
+            Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
             ret.setHbiasAdaGrad(hBiasAdaGrad);

@@ -56,7 +56,7 @@ public class LogisticRegression implements Serializable {
 		this.nOut = nOut;
 		W = DoubleMatrix.zeros(nIn,nOut);
 		adaGrad = new AdaGrad(nIn,nOut);
-		b = DoubleMatrix.zeros(nOut);
+		b = DoubleMatrix.zeros(1,nOut);
         biasAdaGrad = new AdaGrad(b.rows,b.columns);
 	}
 
