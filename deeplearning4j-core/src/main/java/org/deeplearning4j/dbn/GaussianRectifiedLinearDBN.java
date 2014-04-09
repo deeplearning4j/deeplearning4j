@@ -40,11 +40,16 @@ public class GaussianRectifiedLinearDBN extends DBN {
 	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
 			int nHidden, DoubleMatrix W, DoubleMatrix hBias,
 			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		NeuralNetwork ret = null;
-		ret = new GaussianRectifiedLinearRBM.Builder().useRegularization(isUseRegularization()).withLossFunction(getLossFunction())
-				.withDistribution(getDist()).useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
-				.withHBias(hBias).numberOfVisible(nVisible).numHidden(nHidden).withSparsity(getSparsity()).withOptmizationAlgo(getOptimizationAlgorithm())
-				.withInput(input).withL2(getL2()).fanIn(getFanIn()).renderWeights(getRenderWeightsEveryNEpochs())
+		NeuralNetwork ret = new GaussianRectifiedLinearRBM.Builder()
+                .useRegularization(isUseRegularization()).withLossFunction(getLossFunction())
+				.withDistribution(getDist())
+                .useAdaGrad(isUseAdaGrad())
+                .normalizeByInputRows(normalizeByInputRows)
+				.withHBias(hBias).numberOfVisible(nVisible)
+                .numHidden(nHidden).withSparsity(getSparsity()).withOptmizationAlgo(getOptimizationAlgorithm())
+				.withInput(input).withL2(getL2())
+                .fanIn(getFanIn())
+                .renderWeights(getRenderWeightsEveryNEpochs())
 				.withRandom(rng).withWeights(W).build();
 
 		if(gradientListeners.get(index) != null)

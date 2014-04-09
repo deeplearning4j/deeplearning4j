@@ -40,11 +40,7 @@ public class IrisUtils {
 			outcomes[i] = rowOutcome;
 		}
 
-		MatrixUtil.scaleByMax(ret);
-		//ret = MatrixUtil.normalizeByRowSums(ret);
-		//ret = MatrixUtil.roundToTheNearest(ret, 1);
-
-		for(int i = 0; i < ret.rows; i++) 
+		for(int i = 0; i < ret.rows; i++)
 			list.add(new DataSet(ret.getRow(i),new DoubleMatrix(outcomes[i]).transpose()));
 		
 

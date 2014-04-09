@@ -138,7 +138,8 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
         DoubleMatrix activation = input.mmul(getW());
         MatrixUtil.max(0.0,activation);
         activation.subiRowVector(activation.columnMeans());
-        activation.diviRowVector(MatrixUtil.columnStd(activation));
+        //fudge factor for handling NaN
+        activation.diviRowVector(MatrixUtil.columnStd(activation).add(1e-6));
         return activation;
     }
 

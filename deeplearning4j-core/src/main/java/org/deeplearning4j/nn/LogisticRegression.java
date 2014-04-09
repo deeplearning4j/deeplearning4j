@@ -39,7 +39,7 @@ public class LogisticRegression implements Serializable {
 	private double l2 = 0.01;
 	private boolean useRegularization = true;
 	private boolean useAdaGrad = false;
-	private AdaGrad adaGrad;
+	private AdaGrad adaGrad,biasAdaGrad;
 	private boolean firstTimeThrough = false;
 	private boolean normalizeByInputRows = false;
 	private OptimizationAlgorithm optimizationAlgorithm;
@@ -57,6 +57,7 @@ public class LogisticRegression implements Serializable {
 		W = DoubleMatrix.zeros(nIn,nOut);
 		adaGrad = new AdaGrad(nIn,nOut);
 		b = DoubleMatrix.zeros(nOut);
+        biasAdaGrad = new AdaGrad(b.rows,b.columns);
 	}
 
 	public LogisticRegression(DoubleMatrix input, int nIn, int nOut) {
@@ -91,7 +92,10 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate to use
 	 */
 	public  void train(DoubleMatrix x,double lr) {
-		MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
+        adaGrad.setMasterStepSize(lr);
+        biasAdaGrad.setMasterStepSize(lr);
+
+        MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
 
 		train(x,labels,lr);
 
@@ -106,6 +110,8 @@ public class LogisticRegression implements Serializable {
 	 */
 	public  void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
 		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
+        adaGrad.setMasterStepSize(learningRate);
+        biasAdaGrad.setMasterStepSize(learningRate);
 
 		this.input = x;
 		this.labels = y;
@@ -120,10 +126,14 @@ public class LogisticRegression implements Serializable {
 	 */
 	public  void trainTillConvergence(double learningRate, int numEpochs) {
 		LogisticRegressionOptimizer opt = new LogisticRegressionOptimizer(this, learningRate);
-		if(this.optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+        adaGrad.setMasterStepSize(learningRate);
+        biasAdaGrad.setMasterStepSize(learningRate);
+
+        if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
 			VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
 			g.setTolerance(1e-5);
-			g.optimize(numEpochs);
+			g.setMaxIterations(numEpochs);
+            g.optimize(numEpochs);
 
 		}
 		
@@ -145,7 +155,7 @@ public class LogisticRegression implements Serializable {
 	 * @param batchSize  the batch size
 	 */
 	public void merge(LogisticRegression l,int batchSize) {
-		if(this.useRegularization) {
+		if(useRegularization) {
 
 			W.addi(l.W.subi(W).div(batchSize));
 			b.addi(l.b.subi(b).div(batchSize));
@@ -166,7 +176,7 @@ public class LogisticRegression implements Serializable {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 		DoubleMatrix z = predict(input);
 		//weight decay
-		if(this.useRegularization) {
+		if(useRegularization) {
 			double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
 
 			return - labels.mul(log(z)).add(
@@ -192,7 +202,11 @@ public class LogisticRegression implements Serializable {
 	 * @param lr the learning rate
 	 */
 	public  void train(DoubleMatrix x,DoubleMatrix y, double lr) {
-		MatrixUtil.complainAboutMissMatchedMatrices(x, y);
+        adaGrad.setMasterStepSize(lr);
+        biasAdaGrad.setMasterStepSize(lr);
+
+
+        MatrixUtil.complainAboutMissMatchedMatrices(x, y);
 
 		this.input = x;
 		this.labels = y;
@@ -223,6 +237,9 @@ public class LogisticRegression implements Serializable {
 		reg.nOut = this.nOut;
 		reg.useRegularization = this.useRegularization;
 		reg.normalizeByInputRows = this.normalizeByInputRows;
+        reg.biasAdaGrad = this.biasAdaGrad;
+        reg.adaGrad = this.adaGrad;
+        reg.useAdaGrad = this.useAdaGrad;
         reg.setOptimizationAlgorithm(this.getOptimizationAlgorithm());
 		if(this.input != null)
 			reg.input = this.input.dup();
@@ -237,7 +254,11 @@ public class LogisticRegression implements Serializable {
 	public  LogisticRegressionGradient getGradient(double lr) {
 		MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
-		//input activation
+        adaGrad.setMasterStepSize(lr);
+        biasAdaGrad.setMasterStepSize(lr);
+
+
+        //input activation
 		DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
 		//difference of outputs
 		DoubleMatrix dy = labels.sub(p_y_given_x);
@@ -250,6 +271,15 @@ public class LogisticRegression implements Serializable {
 			wGradient.muli(adaGrad.getLearningRates(wGradient));
 		else
 			wGradient.muli(lr);
+
+        if(useAdaGrad)
+            dy.muli(biasAdaGrad.getLearningRates(dy));
+        else
+             dy.muli(lr);
+
+        if(normalizeByInputRows)
+            dy.divi(input.rows);
+
 
 		DoubleMatrix bGradient = dy;
 		return new LogisticRegressionGradient(wGradient,bGradient);
@@ -338,9 +368,18 @@ public class LogisticRegression implements Serializable {
 		this.useRegularization = useRegularization;
 	}
 
+    public AdaGrad getBiasAdaGrad() {
+        return biasAdaGrad;
+    }
 
 
-	public synchronized boolean isNormalizeByInputRows() {
+    public AdaGrad getAdaGrad() {
+        return adaGrad;
+    }
+
+
+
+    public synchronized boolean isNormalizeByInputRows() {
 		return normalizeByInputRows;
 	}
 
@@ -358,9 +397,6 @@ public class LogisticRegression implements Serializable {
 
 
 
-	public void setUseAdaGrad(boolean useAdaGrad) {
-		this.useAdaGrad = useAdaGrad;
-	}
 
 
 

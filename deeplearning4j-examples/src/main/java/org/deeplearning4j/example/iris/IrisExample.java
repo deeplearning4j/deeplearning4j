@@ -14,10 +14,14 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.transformation.MatrixTransformations;
+import org.deeplearning4j.util.Info;
+import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,47 +34,57 @@ public class IrisExample {
      */
     public static void main(String[] args) {
         RandomGenerator rng = new MersenneTwister(123);
-
-        double preTrainLr = 0.01;
-        int preTrainEpochs = 10000;
-        int k = 1;
         int nIns = 4,nOuts = 3;
-        int[] hiddenLayerSizes = new int[] {4,3,3};
-        double fineTuneLr = 0.01;
-        int fineTuneEpochs = 10000;
-
-        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
-                .useAdaGrad(true)
-                .normalizeByInputRows(true)
-                .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts)
-                .withActivation(Activations.sigmoid())
-                .withMomentum(0.5)
-                .hiddenLayerSizes(hiddenLayerSizes)
-                .useRegularization(true)
-                .useHiddenActivationsForwardProp(true)
-                .withRng(rng)
-                .build();
-
-
+        int[] hiddenLayerSizes = new int[] {3};
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        DataSet next = iter.next(150);
-        next.shuffle();
+        DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
 
-        dbn.pretrain(next.getFirst(),1,1e-3,10000);
-        log.info(("\n\nActivations  " + dbn.feedForward(next.getFirst())).replaceAll(";","\n"));
+        for(int i = 0; i < 3000; i++) {
+            GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
+                    .useAdaGrad(true)
+                    .normalizeByInputRows(true).withMomentum(0.5)
+                    .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                    .numberOfInputs(nIns).numberOfOutPuts(nOuts)
+                    .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                    .hiddenLayerSizes(hiddenLayerSizes).useRegularization(false).withL2(2e-2)
+                    .useHiddenActivationsForwardProp(true).withActivation(Activations.sigmoid())
+                    .withRng(rng)
+                    .build();
 
-        dbn.finetune(next.getSecond(),1e-3,10000);
 
 
-        Evaluation eval = new Evaluation();
-        DoubleMatrix predict = dbn.predict(next.getFirst());
-        eval.eval(predict,next.getSecond());
+            next.shuffle();
 
-        log.info(eval.stats());
-    }
+            dbn.pretrain(next.getFirst(),1,1e-2,1000000);
+
+
+
+            //log.info(Info.activationsFor(next.getFirst(),dbn));
+            dbn.finetune(next.getSecond(),1e-2,1000000);
+
+
+
+
+
+            Evaluation eval = new Evaluation();
+            DoubleMatrix predict = dbn.predict(next.getFirst());
+            eval.eval(predict,next.getSecond());
+
+            double f1 = eval.f1();
+            if(f1 >= 0.9) {
+                log.info("Saving model with high f1 of " + f1);
+                File save = new File("iris-model-" + f1 + ".bin");
+                log.info("Saving " + save.getAbsolutePath());
+                SerializationUtils.saveObject(dbn,save);
+
+            }
+
+            log.info(eval.stats());
+
+        }
+       }
 
 }

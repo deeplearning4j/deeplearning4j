@@ -15,11 +15,13 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
 import org.deeplearning4j.nn.gradient.MultiLayerGradient;
@@ -433,7 +435,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Gets the multi layer gradient for this network.
      * This includes calculating the gradients for each layer
      * @param params the params to pass (k, corruption level,...)
-     * @param lr the learning rate to use for logistic regression
      * @return the multi layer gradient for the whole network
      */
     public MultiLayerGradient getGradient(Object[] params) {
@@ -506,6 +507,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix[] gradients = new DoubleMatrix[nLayers + 2];
         DoubleMatrix[] deltas = new DoubleMatrix[nLayers + 2];
         ActivationFunction derivative = getSigmoidLayers()[0].getActivationFunction();
+        ActivationFunction softMaxDerivative = Activations.softmax();
         //- y - h
         DoubleMatrix delta = null;
         List<DoubleMatrix> activations = feedForward(getInput());
@@ -518,39 +520,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             weights.add(getLayers()[j].getW());
         weights.add(getLogLayer().getW());
 
-        DoubleMatrix labels = this.labels;
 
 
         //errors
         for(int i = nLayers + 1; i >= 0; i--) {
             //output layer
             if(i >= nLayers + 1) {
-                DoubleMatrix z = activations.get(i);
-
-
                 //-( y - h) .* f'(z^l) where l is the output layer
-                delta = labels.sub(z).neg().muli(derivative.applyDerivative(z));
+                delta = labels.sub(activations.get(i)).neg().mul(softMaxDerivative.applyDerivative(activations.get(i)));
                 deltas[i] = delta;
 
             }
             else {
-                //derivative i + 1; aka gradient for bias
-                delta = deltas[i + 1];
-                DoubleMatrix w = weights.get(i).transpose();
-                DoubleMatrix z = activations.get(i);
                 //W^t * error^l + 1
-                DoubleMatrix zDerivative = derivative.applyDerivative(z);
-                DoubleMatrix error = delta.mmul(w);
-                error.muli(zDerivative);
-                deltas[i] = error.dup();
+                deltas[i] =  deltas[i + 1].mmul(weights.get(i).transpose()).muli(derivative.applyDerivative(activations.get(i)));
 
                 //calculate gradient for layer
-                DoubleMatrix lastLayerDelta = deltas[i + 1].transpose();
-                DoubleMatrix newGradient = lastLayerDelta.mmul(z);
-
-                if(normalizeByInputRows)
-                    newGradient.divi(getInput().rows);
-
+                DoubleMatrix newGradient = deltas[i + 1].transpose().mmul(activations.get(i));
                 gradients[i] = newGradient;
             }
 
@@ -586,7 +572,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(forceNumEpochs) {
             for(int i = 0; i < epochs; i++) {
                 backPropStep(revert,lr,i);
-                lastEntropy = negativeLogLikelihood();
             }
         }
 
@@ -601,9 +586,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             while(train) {
                 count++;
                 backPropStep(revert,lr,count);
+
                 getLogLayer().trainTillConvergence(lr, epochs);
 
-                Double entropy = this.negativeLogLikelihood();
+                Double entropy = negativeLogLikelihood();
                 if(lastEntropy == null || entropy < lastEntropy) {
                     double diff = Math.abs(entropy - lastEntropy);
                     if(diff < changeTolerance) {
@@ -614,17 +600,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                         lastEntropy = entropy;
                     log.info("New negative log likelihood " + lastEntropy);
                     getLogLayer().trainTillConvergence(lr, epochs);
+                    revert = clone();
+                }
 
-                }
                 else if(entropy >= lastEntropy) {
-                    update(revert);
-                    numOver++;
-                    log.info("Last change no good...reverting");
-                    if(numOver >= tolerance)
-                        train = false;
-                }
-                else if(entropy == lastEntropy)
                     train = false;
+                }
 
 
             }
@@ -639,7 +620,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * This involves computing the activations, tracking the last layers weights
      * to revert to in case of convergence, the learning rate being used to train
      * and the current epoch
-     * @param lastEntropy the last error to be had on the previous epoch
      * @param revert the best network so far
      * @param lr the learning rate to use for training
      * @param epoch the epoch to use
@@ -657,43 +637,84 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         for(int l = 0; l < nLayers; l++) {
-            DoubleMatrix add = deltas.get(l).getFirst();
+            DoubleMatrix gradientChange = deltas.get(l).getFirst();
             //get the gradient
             if(isUseAdaGrad())
-                add.muli(getLayers()[l].getAdaGrad().getLearningRates(add));
+                gradientChange.muli(getLayers()[l].getAdaGrad().getLearningRates(gradientChange));
 
             else
-                add.muli(lr);
-
-            if(normalizeByInputRows)
-                add.divi(input.rows);
-
+                gradientChange.muli(lr);
 
             //l2
             if(useRegularization)
-                add.muli(getLayers()[l].getW().mul(l2));
+                gradientChange.muli(getLayers()[l].getW().mul(l2));
 
+            if(momentum != 0)
+                gradientChange.muli(momentum);
+
+            if(this.isNormalizeByInputRows())
+                gradientChange.divi(input.rows);
 
             //update W
-            getLayers()[l].getW().addi(add);
+            getLayers()[l].getW().subi(gradientChange);
             getSigmoidLayers()[l].setW(layers[l].getW());
 
 
             //update hidden bias
             DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
-            if(normalizeByInputRows)
-                deltaColumnSums.divi(input.rows);
 
             if(sparsity != 0)
                 deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
 
+            if(useAdaGrad)
+                deltaColumnSums.muli(layers[l].gethBiasAdaGrad().getLearningRates(deltaColumnSums));
+            else
+                deltaColumnSums.muli(lr);
 
-            getLayers()[l].gethBias().addi(deltaColumnSums.mul(lr));
+            if(momentum != 0)
+                deltaColumnSums.muli(momentum);
+
+            if(isNormalizeByInputRows())
+                deltaColumnSums.divi(input.rows);
+
+
+            getLayers()[l].gethBias().subi(deltaColumnSums);
             getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
         }
 
+        DoubleMatrix logLayerGradient = deltas.get(nLayers).getFirst();
+        DoubleMatrix biasGradient = deltas.get(nLayers).getSecond().columnSums();
 
-        getLogLayer().getW().addi(deltas.get(nLayers).getFirst());
+        if(momentum != 0)
+            logLayerGradient.muli(momentum);
+
+
+        if(useAdaGrad)
+            logLayerGradient.muli(logLayer.getAdaGrad().getLearningRates(logLayerGradient));
+
+
+        else
+            logLayerGradient.muli(lr);
+
+        if(isNormalizeByInputRows())
+            logLayerGradient.divi(input.rows);
+
+
+
+        if(momentum != 0)
+            biasGradient.muli(momentum);
+
+        if(useAdaGrad)
+            biasGradient.muli(logLayer.getBiasAdaGrad().getLearningRates(biasGradient));
+        else
+            biasGradient.muli(lr);
+
+        if(isNormalizeByInputRows())
+            biasGradient.divi(input.rows);
+
+
+        getLogLayer().getW().subi(logLayerGradient);
+        getLogLayer().getB().subi(biasGradient);
 
     }
 
@@ -705,6 +726,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param epochs the number of times to iterate
      */
     public void finetune(DoubleMatrix labels,double lr, int epochs) {
+        this.setUseHiddenActivationsForwardProp(true);
         if(labels != null)
             this.labels = labels;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
