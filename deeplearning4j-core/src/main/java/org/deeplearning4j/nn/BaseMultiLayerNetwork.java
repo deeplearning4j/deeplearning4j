@@ -582,8 +582,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
             boolean train = true;
             int count = 0;
-            int numOver = 0;
-            int tolerance = 3;
             double changeTolerance = 1e-5;
             int backPropIterations = 0;
             while(train) {
@@ -594,7 +592,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 }
                 count++;
                 backPropStep(revert,lr,count);
-
+                /* Trains logistic regression post weight updates */
                 getLogLayer().trainTillConvergence(lr, epochs);
 
                 Double entropy = negativeLogLikelihood();
@@ -607,7 +605,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                     else
                         lastEntropy = entropy;
                     log.info("New negative log likelihood " + lastEntropy);
-                    getLogLayer().trainTillConvergence(lr, epochs);
                     revert = clone();
                 }
 
