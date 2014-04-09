@@ -95,4 +95,4 @@ Next, we want to train a deep-belief network to reconstruct the MNIST data set. 
 		
 			System.out.println(eval.stats());
 
-Now that you've seen Deeplearning4j train a neural network on MNIST images, you may want to learn how to feed it other [datasets](../data-sets-ml.html).
+Now that you've seen Deeplearning4j train a neural network on MNIST images, you may want to learn how to deal with continuous data with the [Iris flower dataset](../iris-flower-dataset-tutorial.html).
