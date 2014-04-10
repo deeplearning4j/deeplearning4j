@@ -39,6 +39,7 @@ public class MultiThreadedLFW {
 		c.setNumPasses(3);
 		c.setMultiLayerClazz(GaussianRectifiedLinearDBN.class);
 		c.setUseRegularization(false);
+        c.setNormalizeZeroMeanAndUnitVariance(true);
 		c.setDeepLearningParams(new Object[]{1,0.01,1000});
         StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker();
 
