@@ -336,17 +336,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             init();
         else
             feedForward(input);
+
     }
 
     public void init() {
         DoubleMatrix layerInput = input;
+        if(!(rng instanceof SynchronizedRandomGenerator))
+            rng = new SynchronizedRandomGenerator(rng);
         int inputSize;
         if(nLayers < 1)
             throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
 
         if(this.dist == null)
             dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
-        synchonrizeRng();
 
         this.layers = new NeuralNetwork[nLayers];
 
@@ -380,6 +382,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         }
 
+
+
         // layer for output using LogisticRegression
         this.logLayer = new LogisticRegression.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
@@ -388,6 +392,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 .numberOfInputs(hiddenLayerSizes[nLayers-1])
                 .numberOfOutputs(nOuts).withL2(l2).build();
 
+        synchonrizeRng();
 
         dimensionCheck();
         applyTransforms();
@@ -606,7 +611,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 }
 
-               backPropIterations++;
+                backPropIterations++;
             }
 
 
