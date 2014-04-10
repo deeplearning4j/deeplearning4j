@@ -24,7 +24,7 @@ public class LFWExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new LFWDataSetIterator(10,10);
+		DataSetIterator iter = new LFWDataSetIterator(10,10000,56,56);
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
 		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true).useRegularization(true)
@@ -34,14 +34,14 @@ public class LFWExample {
 		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			dbn.pretrain(next.getFirst(), 1, 0.001, 10000);
+			dbn.pretrain(next.getFirst(), 1, 1e-3, 10000);
 		}
 		
 		iter.reset();
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFirst());
-			dbn.finetune(next.getSecond(), 0.001, 10000);
+			dbn.finetune(next.getSecond(), 1e-3, 10000);
 		}
 		
 		

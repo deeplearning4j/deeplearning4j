@@ -1,5 +1,8 @@
 package org.deeplearning4j.dbn;
 import static org.junit.Assert.*;
+
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +18,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -127,6 +131,49 @@ public class DBNTest {
 
 
     @Test
+    public void testLFW() throws Exception {
+        //batches of 10, 60000 examples total
+        DataSetIterator iter = new LFWDataSetIterator(10,10,14,14);
+
+        //784 input (number of columns in mnist, 10 labels (0-9), no regularization
+        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
+                .hiddenLayerSizes(new int[]{250, 150, 100}).normalizeByInputRows(true).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
+                .build();
+
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            next.normalizeZeroMeanZeroUnitVariance();;
+            dbn.pretrain(next.getFirst(), 1, 1e-5, 10000);
+        }
+
+        iter.reset();
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            next.normalizeZeroMeanZeroUnitVariance();;
+            dbn.setInput(next.getFirst());
+            dbn.finetune(next.getSecond(), 1e-4, 10000);
+        }
+
+
+
+        iter.reset();
+
+        Evaluation eval = new Evaluation();
+
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            DoubleMatrix predict = dbn.predict(next.getFirst());
+            DoubleMatrix labels = next.getSecond();
+            eval.eval(labels, predict);
+        }
+
+        log.info("Prediction f scores and accuracy");
+        log.info(eval.stats());
+    }
+
+
+    @Test
     public void testIris() {
         RandomGenerator rng = new MersenneTwister(123);
 
@@ -134,13 +181,13 @@ public class DBNTest {
         int preTrainEpochs = 10000;
         int k = 1;
         int nIns = 4,nOuts = 3;
-        int[] hiddenLayerSizes = new int[] {4,3,2};
+        int[] hiddenLayerSizes = new int[] {4,3,3};
         double fineTuneLr = 0.01;
         int fineTuneEpochs = 10000;
 
         GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
-                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.hardTanh())
+                .hiddenLayerSizes(hiddenLayerSizes)
                 .withRng(rng)
                 .build();
 
@@ -149,13 +196,14 @@ public class DBNTest {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next(150);
+        next.normalizeZeroMeanZeroUnitVariance();
         next.shuffle();
 
         List<DataSet> finetuneBatches = next.dataSetBatches(10);
 
 
 
-        DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3000);
+        DataSetIterator sampling = new SamplingDataSetIterator(next, 150, 3);
 
         List<DataSet> miniBatches = new ArrayList<DataSet>();
 
@@ -166,12 +214,14 @@ public class DBNTest {
 
         log.info("Training on " + miniBatches.size() + " minibatches");
 
-
         for(int i = 0; i < miniBatches.size(); i++) {
             DataSet curr = miniBatches.get(i);
-            dbn.pretrain(curr.getFirst(),k, preTrainLr, preTrainEpochs);
+            dbn.pretrain(curr.getFirst(), k, preTrainLr, preTrainEpochs);
 
         }
+
+
+
 
 
         Evaluation eval = new Evaluation();

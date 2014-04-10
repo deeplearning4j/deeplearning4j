@@ -109,8 +109,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 			});
 		}
+
+       else if(type.equals("master") && PortTaken.portTaken(stateTrackerPort))
+            throw new IllegalStateException("Specified type was master and the port specified was taken, please specify a different port");
+
 		else {
-			log.info("Connecting to hazelcast on " + connectionString);
+
+
+            log.info("Connecting to hazelcast on " + connectionString);
 			ClientConfig client = new ClientConfig();
 			client.getNetworkConfig().addAddress(connectionString);
 			h = HazelcastClient.newHazelcastClient(client);
@@ -218,8 +224,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	}
 
+    @Override
+    public void setServerPort(int port) {
+        this.hazelCastPort = port;
+    }
 
-	@Override
+    @Override
+    public int getServerPort() {
+        return hazelCastPort;
+    }
+    @Override
 	public List<Job> currentJobs() throws Exception {
 		return new ArrayList<Job>(jobs);
 	}
@@ -262,7 +276,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 	@Override
 	public  void setCurrent(UpdateableImpl e) throws Exception {
-		this.master.set(e);
+		this.master.set(e.clone());
 	}
 
 

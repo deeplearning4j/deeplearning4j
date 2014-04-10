@@ -210,10 +210,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
             log.info("Starting master");
 
             try {
-                if(stateTrackerPort > 0)
-                    stateTracker = new HazelCastStateTracker(stateTrackerPort);
-                else
-                    stateTracker = new HazelCastStateTracker();
+                if(stateTracker == null) {
+                    if(stateTrackerPort > 0)
+                        stateTracker = new HazelCastStateTracker(stateTrackerPort);
+                    else
+                        stateTracker = new HazelCastStateTracker();
+
+                }
 
                 if(finetune)
                     stateTracker.moveToFinetune();

@@ -59,12 +59,12 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 	}
 
 
+    @Override
+    public void setMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+    }
 
-
-
-
-
-	public OptimizableByGradientValueMatrix getOptimizable () { return this.optimizable; }
+    public OptimizableByGradientValueMatrix getOptimizable () { return this.optimizable; }
 	public boolean isConverged () { return converged; }
 
 

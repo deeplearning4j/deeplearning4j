@@ -134,7 +134,7 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
      * Trigger an activation with the last specified input
      * @return the activation of the last specified input
      */
-    public synchronized DoubleMatrix activate() {
+    public  DoubleMatrix activate() {
         DoubleMatrix activation = input.mmul(getW());
         MatrixUtil.max(0.0,activation);
         activation.subiRowVector(activation.columnMeans());
