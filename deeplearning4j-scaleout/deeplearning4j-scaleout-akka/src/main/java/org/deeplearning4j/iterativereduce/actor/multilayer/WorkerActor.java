@@ -45,7 +45,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
 	protected Cancellable heartbeat;
 	protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
-
+    protected boolean isWorking = false;
 
 	public WorkerActor(Conf conf,StateTracker<UpdateableImpl> tracker) {
 		super(conf,tracker);
@@ -117,6 +117,16 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
 						register()), getSelf());
 				tracker.addWorker(id);
+                //heart beat to ensure race conditions dont happen
+                Job j = tracker.jobFor(id);
+                try {
+                    if(j != null)
+                        tracker.clearJob(j);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+
 
 			}
 
@@ -284,7 +294,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 	public  UpdateableImpl compute() {
 		log.info("Training network");
 		BaseMultiLayerNetwork network = this.getNetwork();
-		while(network == null) {
+		isWorking = true;
+        while(network == null) {
 			try {
 				network = tracker.getCurrent().get();
 				this.network = network;
@@ -339,7 +350,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		}
 
 
-
+        isWorking = false;
 		return new UpdateableImpl(network);
 	}
 

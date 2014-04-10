@@ -256,18 +256,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    /**
-     * Resets adagrad with the given learning rate.
-     * This is used for switching from the pretrain to finetune phase.
-     * @param lr the new master learning rate to use
-     */
-    public void resetAdaGrad(double lr) {
-        for(int i = 0; i < nLayers; i++)	 {
-            layers[i].resetAdaGrad(lr);
-        }
 
-        logLayer.resetAdaGrad(lr);
-    }
 
     /**
      * Returns the sum of the reconstruction entropies
@@ -397,6 +386,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 .useRegularization(useRegularization)
                 .numberOfInputs(hiddenLayerSizes[nLayers-1])
                 .numberOfOutputs(nOuts).withL2(l2).build();
+
+
         dimensionCheck();
         applyTransforms();
         initCalled = true;
@@ -610,6 +601,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 else if(entropy >= lastEntropy) {
                     train = false;
+                    update(revert);
+
                 }
 
                backPropIterations++;
@@ -735,6 +728,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public void finetune(DoubleMatrix labels,double lr, int epochs) {
         this.setUseHiddenActivationsForwardProp(true);
+        feedForward();
         if(labels != null)
             this.labels = labels;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
