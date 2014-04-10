@@ -195,8 +195,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 				.withGradientListeners(conf.getGradientListeners())
 				.build() : this.network;
 
-				//ensure rng is synchronized whether its loaded from an external source or not
-				network.synchonrizeRng();
 
 
 				if(conf.getColumnMeans() != null)

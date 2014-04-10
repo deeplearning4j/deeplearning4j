@@ -20,6 +20,17 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+    /**
+     * Setter for the server port
+     * @param port
+     */
+    public void setServerPort(int port);
+
+    /**
+     * Gets the server port the state tracker is listening on (where applicable)
+     * @return
+     */
+    public int getServerPort();
 	/**
 	 * Sets done to true
 	 */
