@@ -346,6 +346,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         if(this.dist == null)
             dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+        synchonrizeRng();
 
         this.layers = new NeuralNetwork[nLayers];
 
@@ -390,7 +391,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         dimensionCheck();
         applyTransforms();
-        synchonrizeRng();
         initCalled = true;
 
     }
