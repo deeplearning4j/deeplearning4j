@@ -390,6 +390,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         dimensionCheck();
         applyTransforms();
+        synchonrizeRng();
         initCalled = true;
 
     }
