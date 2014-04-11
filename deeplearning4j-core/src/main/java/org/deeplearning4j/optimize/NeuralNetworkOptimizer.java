@@ -70,7 +70,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         }
 
         int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
-        ((VectorizedNonZeroStoppingConjugateGradient) opt).setMaxIterations(epochs);
+        opt.setMaxIterations(epochs);
         opt.optimize(epochs);
 
 
