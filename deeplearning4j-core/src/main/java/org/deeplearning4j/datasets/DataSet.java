@@ -59,6 +59,13 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 
     }
 
+    public Counter<Integer> labelDistribution() {
+        Counter<Integer> ret = new Counter<>();
+        for(int i = 0;i < numExamples(); i++)
+            ret.incrementCount(getLabel(get(i)),1.0);
+        return ret;
+    }
+
     public DataSetIterator iterator(int batches) {
         List<DataSet> list = this.dataSetBatches(batches);
         return new ListDataSetIterator(list);

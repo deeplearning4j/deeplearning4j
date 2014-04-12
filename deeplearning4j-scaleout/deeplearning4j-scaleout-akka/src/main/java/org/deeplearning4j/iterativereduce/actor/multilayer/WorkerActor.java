@@ -332,13 +332,17 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         if(tracker.isPretrain()) {
             log.info("Worker " + id + " pretraining");
             if(isNormalizeZeroMeanAndUnitVariance)
-                d.normalizeZeroMeanZeroUnitVariance();;
+                d.normalizeZeroMeanZeroUnitVariance();
+            if(scale)
+                d.scale();
             network.pretrain(d.getFirst(), extraParams);
         }
 
         else {
             if(isNormalizeZeroMeanAndUnitVariance)
                 d.normalizeZeroMeanZeroUnitVariance();;
+            if(scale)
+                d.scale();
             network.setInput(d.getFirst());
             log.info("Worker " + id + " finetune");
             network.feedForward(d.getFirst());

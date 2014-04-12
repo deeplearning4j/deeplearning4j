@@ -62,7 +62,15 @@ public class Conf implements Serializable,Cloneable {
 	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
     private boolean normalizeZeroMeanAndUnitVariance;
+    private boolean scale;
 
+    public boolean isScale() {
+        return scale;
+    }
+
+    public void setScale(boolean scale) {
+        this.scale = scale;
+    }
 
     public boolean isNormalizeZeroMeanAndUnitVariance() {
         return normalizeZeroMeanAndUnitVariance;
