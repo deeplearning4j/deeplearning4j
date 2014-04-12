@@ -400,8 +400,32 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+    /**
+     * Triggers the activation of the last hidden layer ie: not logistic regression
+     * @return the activation of the last hidden layer given the last input to the network
+     */
+    public DoubleMatrix activate() {
+        return getSigmoidLayers()[getSigmoidLayers().length - 1].activate();
+    }
 
+    /**
+     * Triggers the activation for a given layer
+     * @param layer the layer to activate on
+     * @return the activation for a given layer
+     */
+    public DoubleMatrix activate(int layer) {
+        return getSigmoidLayers()[layer].activate();
+    }
 
+    /**
+     * Triggers the activation of the given layer
+     * @param layer the layer to trigger on
+     * @param input the input to the hidden layer
+     * @return the activation of the layer based on the input
+     */
+    public DoubleMatrix activate(int layer, DoubleMatrix input) {
+        return getSigmoidLayers()[layer].activate(input);
+    }
 
     protected void initializeNetwork(NeuralNetwork network) {
         network.setFanIn(fanIn);

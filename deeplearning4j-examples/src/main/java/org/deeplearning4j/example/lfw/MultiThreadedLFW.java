@@ -37,7 +37,8 @@ public class MultiThreadedLFW {
 		c.setSplit(10);
 		c.setNumPasses(3);
 		c.setMultiLayerClazz(GaussianRectifiedLinearDBN.class);
-		c.setUseRegularization(true);
+		c.setUseRegularization(false);
+        c.setScale(true);
         c.setL2(1e-3);
         c.setNormalizeZeroMeanAndUnitVariance(true);
 		c.setDeepLearningParams(new Object[]{1,1e-3,10000});

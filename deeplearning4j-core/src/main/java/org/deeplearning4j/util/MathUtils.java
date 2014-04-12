@@ -665,8 +665,9 @@ public class MathUtils  {
 	 * @param a a double
 	 * @return	the logarithm for base 2
 	 */
-	public static /*@pure@*/ double log2(double a) {
-
+	public static  double log2(double a) {
+        if(a == 0)
+            return 0.0;
 		return Math.log(a) / log2;
 	}
 	/**
@@ -1196,27 +1197,7 @@ public class MathUtils  {
 		return ret;
 	}//end manhattanDistance
 
-	public static void main(String[] args) {
-		//System.out.println("n: " + (1-( MathUtils.combination(48, 1)/MathUtils.combination(52, 5))));
-		OLSMultipleLinearRegression reg = new OLSMultipleLinearRegression();
-		double[] y={1,2,3,4,5,6,7,8,9,10};
-		double[][] x={
-				{1,0},
-				{1,1},
-				{2,1},
-				{2,2},
-				{3,2},
-				{3,3},
-				{4,3},
-				{4,4},
-				{5,4},
-				{5,5}
 
-		};
-		reg.newSampleData(y, x);
-		//System.out.println(Arrays.toString(reg.));
-		System.out.println("Factorial: " + MathUtils.factorial(2));
-	}
 
 	public static double[] sampleDoublesInInterval(double[][] doubles, int l) {
 		double[] sample = new double[l];
@@ -1229,8 +1210,16 @@ public class MathUtils  {
 		return sample;
 	}
 
+    /**
+     * Generates a random integer between the specified numbers
+     * @param begin the begin of the interval
+     * @param end the end of the interval
+     * @return an int between begin and end
+     */
 	public static int randomNumberBetween(double begin,double end) {
-		return	(int)begin + (int)(Math.random() * ((end - begin) + 1));
+		if(begin > end)
+            throw new IllegalArgumentException("Begin must not be less than end");
+        return	(int)begin + (int)(Math.random() * ((end - begin) + 1));
 	}
 
 	public static double randomDoubleBetween(double begin,double end) {
