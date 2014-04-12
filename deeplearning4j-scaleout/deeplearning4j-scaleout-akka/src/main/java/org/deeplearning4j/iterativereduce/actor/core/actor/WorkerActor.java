@@ -56,6 +56,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected ActorRef clusterClient;
 	protected String masterPath;
 	protected StateTracker<E> tracker;
+    protected boolean isNormalizeZeroMeanAndUnitVariance;
+    protected boolean scale;
 	public WorkerActor(Conf conf,StateTracker<E> tracker) {
 		this(conf,null,tracker);
 	}
@@ -153,6 +155,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		fineTuneEpochs = conf.getFinetuneEpochs();
 		corruptionLevel = conf.getCorruptionLevel();
 		extraParams = conf.getDeepLearningParams();
+        scale = conf.isScale();
+        isNormalizeZeroMeanAndUnitVariance = conf.isNormalizeZeroMeanAndUnitVariance();
 		String url = conf.getMasterUrl();
 		this.masterPath = conf.getMasterAbsPath();
 		Address a = AddressFromURIString.apply(url);

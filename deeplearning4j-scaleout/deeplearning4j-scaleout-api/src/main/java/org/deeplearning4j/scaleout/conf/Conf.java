@@ -61,11 +61,26 @@ public class Conf implements Serializable,Cloneable {
 	private OptimizationAlgorithm optimizationAlgorithm = OptimizationAlgorithm.CONJUGATE_GRADIENT;
 	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
+    private boolean normalizeZeroMeanAndUnitVariance;
+    private boolean scale;
 
-	
-	
+    public boolean isScale() {
+        return scale;
+    }
 
-	public double getDropOut() {
+    public void setScale(boolean scale) {
+        this.scale = scale;
+    }
+
+    public boolean isNormalizeZeroMeanAndUnitVariance() {
+        return normalizeZeroMeanAndUnitVariance;
+    }
+
+    public void setNormalizeZeroMeanAndUnitVariance(boolean normalizeZeroMeanAndUnitVariance) {
+        this.normalizeZeroMeanAndUnitVariance = normalizeZeroMeanAndUnitVariance;
+    }
+
+    public double getDropOut() {
 		return dropOut;
 	}
 

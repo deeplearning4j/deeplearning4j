@@ -256,18 +256,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    /**
-     * Resets adagrad with the given learning rate.
-     * This is used for switching from the pretrain to finetune phase.
-     * @param lr the new master learning rate to use
-     */
-    public void resetAdaGrad(double lr) {
-        for(int i = 0; i < nLayers; i++)	 {
-            layers[i].resetAdaGrad(lr);
-        }
 
-        logLayer.resetAdaGrad(lr);
-    }
 
     /**
      * Returns the sum of the reconstruction entropies
@@ -347,10 +336,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             init();
         else
             feedForward(input);
+
     }
 
     public void init() {
         DoubleMatrix layerInput = input;
+        if(!(rng instanceof SynchronizedRandomGenerator))
+            rng = new SynchronizedRandomGenerator(rng);
         int inputSize;
         if(nLayers < 1)
             throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
@@ -390,6 +382,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         }
 
+
+
         // layer for output using LogisticRegression
         this.logLayer = new LogisticRegression.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
@@ -397,14 +391,41 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 .useRegularization(useRegularization)
                 .numberOfInputs(hiddenLayerSizes[nLayers-1])
                 .numberOfOutputs(nOuts).withL2(l2).build();
+
+        synchonrizeRng();
+
         dimensionCheck();
         applyTransforms();
         initCalled = true;
 
     }
 
+    /**
+     * Triggers the activation of the last hidden layer ie: not logistic regression
+     * @return the activation of the last hidden layer given the last input to the network
+     */
+    public DoubleMatrix activate() {
+        return getSigmoidLayers()[getSigmoidLayers().length - 1].activate();
+    }
 
+    /**
+     * Triggers the activation for a given layer
+     * @param layer the layer to activate on
+     * @return the activation for a given layer
+     */
+    public DoubleMatrix activate(int layer) {
+        return getSigmoidLayers()[layer].activate();
+    }
 
+    /**
+     * Triggers the activation of the given layer
+     * @param layer the layer to trigger on
+     * @param input the input to the hidden layer
+     * @return the activation of the layer based on the input
+     */
+    public DoubleMatrix activate(int layer, DoubleMatrix input) {
+        return getSigmoidLayers()[layer].activate(input);
+    }
 
     protected void initializeNetwork(NeuralNetwork network) {
         network.setFanIn(fanIn);
@@ -610,9 +631,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 else if(entropy >= lastEntropy) {
                     train = false;
+                    update(revert);
+
                 }
 
-               backPropIterations++;
+                backPropIterations++;
             }
 
 
@@ -735,6 +758,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public void finetune(DoubleMatrix labels,double lr, int epochs) {
         this.setUseHiddenActivationsForwardProp(true);
+        feedForward();
         if(labels != null)
             this.labels = labels;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
