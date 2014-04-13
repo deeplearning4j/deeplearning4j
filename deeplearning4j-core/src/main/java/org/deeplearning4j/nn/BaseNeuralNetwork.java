@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
@@ -23,6 +24,7 @@ import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
@@ -303,21 +305,28 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int epochs) {
+    public void backProp(double lr,int epochs,Object[] extraParams) {
         double currRecon = getReConstructionCrossEntropy();
         boolean train = true;
         NeuralNetwork revert = clone();
         int numEpochs = 0;
         while(train) {
-           if(numEpochs > epochs)
-               break;
-            DoubleMatrix output = reconstruct(input);
-            DoubleMatrix delta = output.sub(input);
+            if(numEpochs > epochs)
+                break;
 
-            if(isUseAdaGrad())
-                delta.muli(getAdaGrad().getLearningRates(delta));
-            else
-                delta.muli(lr);
+            NeuralNetworkGradient gradient = getGradient(extraParams);
+            Pair<DoubleMatrix,DoubleMatrix> sample = sampleHiddenGivenVisible(input);
+            DoubleMatrix hiddenSample = sample.getSecond().transpose();
+            DoubleMatrix scaledInput = input.divRowVector(input.columnMeans());
+            DoubleMatrix z = reconstruct(input);
+            z.diviRowVector(z.columnMeans());
+            DoubleMatrix outputDiff = z.sub(scaledInput).neg();
+            DoubleMatrix delta = hiddenSample.mmul(outputDiff).transpose();
+            DoubleMatrix hBiasMean = sample.getFirst().columnSums().transpose();
+
+
+
+            delta.muli(lr);
 
             if(momentum != 0)
                 delta.muli(momentum).add(delta.mul(1 - momentum));
@@ -325,9 +334,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(normalizeByInputRows)
                 delta.divi(input.rows);
 
-            DoubleMatrix means = delta.columnMeans().transpose();
+            DoubleMatrix means = delta;
 
-            getW().subiColumnVector(means);
+            getW().subi(means);
+
+
+            hBiasMean.muli(lr);
+
+            if(momentum != 0)
+                hBiasMean.muli(momentum).add(hBiasMean.mul(1 - momentum));
+
+            if(normalizeByInputRows)
+                hBiasMean.divi(input.rows);
+
+            gethBias().subi(hBiasMean);
+
             double newRecon = getReConstructionCrossEntropy();
             if(newRecon >= currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -680,7 +701,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         }
 
-        double ret =  - inner.rowSums().mean();
+        double ret =   inner.rowSums().mean();
         if(this.normalizeByInputRows)
             ret /= input.rows;
 
