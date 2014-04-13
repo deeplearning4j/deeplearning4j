@@ -1,5 +1,7 @@
 package org.deeplearning4j.rbm;
 
+import static org.deeplearning4j.util.MatrixUtil.log;
+import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.jblas.MatrixFunctions.sqrt;
 
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
@@ -8,6 +10,7 @@ import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.stat.StatUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.util.MatrixUtil;
@@ -54,6 +57,9 @@ public class GaussianRectifiedLinearRBM extends RBM {
     public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
         if(input != null)
             this.input = input;
+
+        sigma = MatrixUtil.columnStd(input);
+
         optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
         optimizer.setMaxStep(1000);
         optimizer.setTolerance(1e-6);
@@ -61,6 +67,18 @@ public class GaussianRectifiedLinearRBM extends RBM {
         optimizer.train(input);
     }
 
+    /**
+     * Reconstructs the visible input.
+     * A reconstruction is a propdown of the reconstructed hidden input.
+     *
+     * @param v the visible input
+     * @return the reconstruction of the visible input
+     */
+    @Override
+    public DoubleMatrix reconstruct(DoubleMatrix v) {
+        sigma = MatrixUtil.columnStd(v);
+        return super.reconstruct(v);
+    }
 
     /**
      * Calculates the activation of the visible :

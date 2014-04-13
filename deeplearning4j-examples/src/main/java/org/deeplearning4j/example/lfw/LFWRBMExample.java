@@ -34,22 +34,20 @@ public class LFWRBMExample {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new LFWDataSetIterator(10,150000,28,28);
+        DataSetIterator iter = new LFWDataSetIterator(10,150000,40,40);
         log.info("Loading LFW...");
-        DataSet all = iter.next(100);
-        all.filterAndStrip(new int[]{2,3});
+        DataSet all = iter.next(300);
 
-        iter = new SamplingDataSetIterator(all,10,10);
+        iter = new SamplingDataSetIterator(all,10,100);
         int cols = iter.inputColumns();
         log.info("Learning from " + cols);
 
-        // DataSet next = iter.next();
 
 
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
-                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .numHidden(600)
+                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .numHidden(900).withMomentum(3e-1)
                 .normalizeByInputRows(true)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
@@ -59,8 +57,8 @@ public class LFWRBMExample {
         while(iter.hasNext()) {
             DataSet curr = iter.next();
             log.info("Training on pics " + curr.labelDistribution());
-            r.trainTillConvergence(curr.getFirst(),1e-8,  new Object[]{1,1e-8,10000});
-            if(numIter % 30 == 0) {
+            r.trainTillConvergence(curr.getFirst(),1e-6,  new Object[]{1,1e-6,10000});
+           /* if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
                     render.renderFilters(r.getW(), "currimg.png", (int)Math.sqrt(r.getW().rows) , (int) Math.sqrt( r.getW().rows));
@@ -68,7 +66,7 @@ public class LFWRBMExample {
                     log.error("Unable to plot filter, continuing...",e);
                 }
             }
-
+*/
             numIter++;
 
         }
