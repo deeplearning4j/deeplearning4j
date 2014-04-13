@@ -341,7 +341,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 log.info("Recon went down " + currRecon);
             }
 
-
+            numEpochs++;
         }
 
     }
