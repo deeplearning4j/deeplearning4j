@@ -17,6 +17,9 @@ import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.word2vec.viterbi.Index;
 import org.jblas.DoubleMatrix;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -46,6 +49,7 @@ public class TfidfVectorizer implements TextVectorizer {
     private Counter<String> tf = new Counter<>();
     private Counter<String> idf = new Counter<>();
     private int numDocs = 0;
+    private static Logger log = LoggerFactory.getLogger(TfidfVectorizer.class);
 
     /**
      *
@@ -150,14 +154,19 @@ public class TfidfVectorizer implements TextVectorizer {
 
         }
 
+
+        log.info("Number of documents was " + futures.size());
+
         Iterable<Future<Void>> fIter = (Iterable<Future<Void>>) futures;
         try {
             Future<Iterable<Void>> composed = Futures.sequence( fIter,actorSystem.dispatcher());
-
+            log.info("Awaiting futures results");
             Await.result(composed, Duration.Inf());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        actorSystem.shutdown();
 
         tfIdfWeights = tfIdfWeights();
         if(numTop > 0)

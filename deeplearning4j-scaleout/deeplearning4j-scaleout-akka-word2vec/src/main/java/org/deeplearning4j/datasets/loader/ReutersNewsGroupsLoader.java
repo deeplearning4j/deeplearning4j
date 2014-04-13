@@ -36,7 +36,11 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
     public ReutersNewsGroupsLoader(boolean tfidf) throws Exception {
         getIfNotExists();
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(reutersRootDir);
-        List<String> labels = Arrays.asList("label1", "label2");
+        List<String> labels =new ArrayList<>();
+        for(File f : reutersRootDir.listFiles()) {
+            if(f.isDirectory())
+                labels.add(f.getName());
+        }
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
         if(tfidf)
@@ -54,7 +58,8 @@ public class ReutersNewsGroupsLoader extends BaseDataFetcher {
         reutersRootDir = new File(rootDir);
         if(!reutersRootDir.exists())
             reutersRootDir.mkdir();
-
+        else if(reutersRootDir.exists())
+            return;
 
 
         File rootTarFile = new File(reutersRootDir,"20news-18828.tar.gz");
