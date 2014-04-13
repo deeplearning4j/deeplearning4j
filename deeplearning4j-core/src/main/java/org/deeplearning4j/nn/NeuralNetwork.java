@@ -43,8 +43,9 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * Backprop with the output being the reconstruction
      * @param lr the learning rate to use
      * @param epochs the max number of epochs to run
+     * @param extraParams implementation specific params
      */
-    public void backProp(double lr,int epochs);
+    public void backProp(double lr,int epochs,Object[] extraParams);
 
 	public LossFunction getLossFunction();
 	public void setLossFunction(LossFunction lossFunction);

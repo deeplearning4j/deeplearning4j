@@ -76,7 +76,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
         opt.setMaxIterations(epochs);
         opt.optimize(epochs);
-        network.backProp(lr,epochs);
+        network.backProp(lr,epochs,extraParams);
 
 
 
@@ -216,13 +216,13 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     @Override
     public double getValue() {
         if(this.lossFunction == LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return -network.getReConstructionCrossEntropy();
+            return network.getReConstructionCrossEntropy();
         else if(this.lossFunction == LossFunction.SQUARED_LOSS)
             return - network.squaredLoss();
 
         else if(this.lossFunction == LossFunction.NEGATIVELOGLIKELIHOOD)
-            return - network.negativeLogLikelihood();
-        return -network.getReConstructionCrossEntropy();
+            return -network.negativeLogLikelihood();
+        return network.getReConstructionCrossEntropy();
 
     }
     public  double getTolerance() {
