@@ -533,7 +533,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         ActivationFunction softMaxDerivative = Activations.softmax();
         //- y - h
         DoubleMatrix delta = null;
-        List<DoubleMatrix> activations = feedForward(getInput());
+        List<DoubleMatrix> activations = feedForward();
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -742,6 +742,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         getLogLayer().getW().subi(logLayerGradient);
+
         if(getLogLayer().getB().length == biasGradient.length)
             getLogLayer().getB().subi(biasGradient);
         else

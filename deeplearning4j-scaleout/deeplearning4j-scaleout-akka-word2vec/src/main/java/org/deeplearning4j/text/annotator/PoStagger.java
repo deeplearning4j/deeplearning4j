@@ -52,6 +52,7 @@ import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
+import org.deeplearning4j.word2vec.util.Util;
 import org.uimafit.factory.AnalysisEngineFactory;
 import org.uimafit.factory.ExternalResourceFactory;
 
@@ -66,7 +67,12 @@ import org.uimafit.factory.ExternalResourceFactory;
  * @author Steven Bethard
  */
 public class PoStagger extends CasAnnotator_ImplBase {
-  
+
+    static {
+        //UIMA logging
+        Util.disableLogging();
+    }
+
 	 private POSTaggerME posTagger;
 
 	  private Type sentenceType;
