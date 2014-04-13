@@ -31,6 +31,7 @@ public class MultiThreadedLFW {
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(56 * 56);
 		c.setMomentum(0.5);
+        c.setDropOut(1e-1);
 		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);

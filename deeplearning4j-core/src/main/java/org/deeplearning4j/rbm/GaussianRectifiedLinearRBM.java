@@ -55,7 +55,9 @@ public class GaussianRectifiedLinearRBM extends RBM {
         if(input != null)
             this.input = input;
         optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
+        optimizer.setMaxStep(1000);
         optimizer.setTolerance(1e-6);
+
         optimizer.train(input);
     }
 

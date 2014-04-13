@@ -130,9 +130,6 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		long curr = 0;
 		for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 			curr = System.currentTimeMillis();
-
-			if(listener != null)
-				listener.epochDone(iterationCount);
 			logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
 					+ (curr - last));
 			last = curr;
