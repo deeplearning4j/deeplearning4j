@@ -36,9 +36,8 @@ public class RBMTest  {
 		DoubleMatrix d = new DoubleMatrix(data);
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder().withSparsity(0.01)
-				.numberOfVisible(6).numHidden(4).withRandom(g).build();
-		r.getW().muli(1000);
+		RBM r = new RBM.Builder().useAdaGrad(true)
+				.numberOfVisible(d.columns).numHidden(4).withRandom(g).build();
 
 		r.trainTillConvergence(d,  0.01,new Object[]{1,0.01,1000});
 
@@ -77,12 +76,7 @@ public class RBMTest  {
 		.withRandom(g)
 		.build();
 		
-		/*for(int i = 0; i < 1000; i++)
-			r.train(d.getFirst(), 0.01, new Object[]{1,0.01,3000});
-		*/
-		/*	for(int i = 0; i < 100; i++)
-			r.trainTillConvergence(0.1,1,d.getFirst());
-		 */
+
 		
 		r.trainTillConvergence(d.getFirst() ,0.01,new Object[]{1,0.01,3000});
 

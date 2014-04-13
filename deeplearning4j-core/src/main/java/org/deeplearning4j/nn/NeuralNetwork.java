@@ -37,9 +37,15 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public static enum LossFunction {
 		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD
 	}
-	
-	
-	
+
+
+    /**
+     * Backprop with the output being the reconstruction
+     * @param lr the learning rate to use
+     * @param epochs the max number of epochs to run
+     */
+    public void backProp(double lr,int epochs);
+
 	public LossFunction getLossFunction();
 	public void setLossFunction(LossFunction lossFunction);
 	

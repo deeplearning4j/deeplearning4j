@@ -76,7 +76,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
         opt.setMaxIterations(epochs);
         opt.optimize(epochs);
-
+        network.backProp(lr,epochs);
 
 
 
