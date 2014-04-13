@@ -393,7 +393,12 @@ public class MatrixUtil {
 		}
 	}
 
-
+    /**
+     * Rounds the matrix to the number of specified by decimal places
+     * @param d the matrix to round
+     * @param num the number of decimal places to round to(example: pass 2 for the 10s place)
+     * @return the rounded matrix
+     */
 	public static DoubleMatrix roundToTheNearest(DoubleMatrix d,int num) {
 		DoubleMatrix ret = d.mul(num);
 		for(int i = 0; i < d.rows; i++)

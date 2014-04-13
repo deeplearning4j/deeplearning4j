@@ -4,20 +4,26 @@ import java.io.File;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.fetchers.LFWDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.plot.FilterRenderer;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.CRBM;
 import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,28 +34,47 @@ public class LFWRBMExample {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new LFWDataSetIterator(10,150000,56,56);
+        DataSetIterator iter = new LFWDataSetIterator(10,150000,28,28);
+        log.info("Loading LFW...");
+        DataSet all = iter.next(100);
+        all.filterAndStrip(new int[]{2,3});
+
+        iter = new SamplingDataSetIterator(all,10,10000);
         int cols = iter.inputColumns();
         log.info("Learning from " + cols);
+
+        // DataSet next = iter.next();
+
 
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
                 .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .numHidden(600)
-                .normalizeByInputRows(true)
-               .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .numHidden(600).withMomentum(0.3)
+                .normalizeByInputRows(true).withDropOut(3e-1)
+                .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 
+        NeuralNetPlotter plotter = new NeuralNetPlotter();
+        int numIter = 0;
         while(iter.hasNext()) {
-            DataSet next = iter.next();
-            r.trainTillConvergence(next.getFirst(), 1e-3, new Object[]{1,1e-3,1000});
-            SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
+            DataSet curr = iter.next();
+            log.info("Training on pics " + curr.labelDistribution());
+            r.trainTillConvergence(curr.getFirst(),1e-3,  new Object[]{1,1e-3,10000});
+            if(numIter % 30 == 0) {
+                FilterRenderer render = new FilterRenderer();
+                try {
+                    render.renderFilters(r.getW(), "currimg.png", (int)Math.sqrt(r.getW().rows) , (int) Math.sqrt( r.getW().rows));
+                } catch (Exception e) {
+                    log.error("Unable to plot filter, continuing...",e);
+                }
+            }
 
+            numIter++;
 
         }
-
-
-        SerializationUtils.saveObject(r, new File("/home/agibsonccc/models/faces-rbm.bin"));
+        File f = new File("faces-rbm.bin");
+        log.info("Saving to " + f.getAbsolutePath());
+        SerializationUtils.saveObject(r, f);
         iter.reset();
 
 
@@ -65,6 +90,7 @@ public class LFWRBMExample {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+                reconstructed2 = MatrixUtil.roundToTheNearest(reconstructed2,0);
                 DoubleMatrix draw2 = reconstructed2.mul(255);
 
                 DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
