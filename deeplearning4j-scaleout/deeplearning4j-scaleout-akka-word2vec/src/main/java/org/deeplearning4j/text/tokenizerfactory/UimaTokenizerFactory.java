@@ -43,7 +43,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 	
 	
 	public static AnalysisEngine defaultAnalysisEngine() throws ResourceInitializationException {
-		return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(),TokenizerAnnotator.getDescription(),PoStagger.getDescription("en"),DefaultSnowballStemmer.getDescription("English")));
+		return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(),TokenizerAnnotator.getDescription(),DefaultSnowballStemmer.getDescription("English")));
 	}
 
 	

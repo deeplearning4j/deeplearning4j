@@ -25,6 +25,8 @@ import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -89,7 +91,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected DoubleMatrix doMask;
     protected OptimizationAlgorithm optimizationAlgo;
     protected LossFunction lossFunction;
-
+    private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
 
 
 
@@ -295,6 +297,55 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     }
+
+
+    /**
+     * Backprop with the output being the reconstruction
+     */
+    @Override
+    public void backProp(double lr,int epochs) {
+        double currRecon = getReConstructionCrossEntropy();
+        boolean train = true;
+        NeuralNetwork revert = clone();
+        int numEpochs = 0;
+        while(train) {
+           if(numEpochs > epochs)
+               break;
+            DoubleMatrix output = reconstruct(input);
+            DoubleMatrix delta = output.sub(input);
+
+            if(isUseAdaGrad())
+                delta.muli(getAdaGrad().getLearningRates(delta));
+            else
+                delta.muli(lr);
+
+            if(momentum != 0)
+                delta.muli(momentum).add(delta.mul(1 - momentum));
+
+            if(normalizeByInputRows)
+                delta.divi(input.rows);
+
+            DoubleMatrix means = delta.columnMeans().transpose();
+
+            getW().subiColumnVector(means);
+            double newRecon = getReConstructionCrossEntropy();
+            if(newRecon >= currRecon) {
+                update((BaseNeuralNetwork) revert);
+                log.info("Converged for new recon; breaking...");
+                break;
+            }
+
+            else {
+                currRecon = newRecon;
+                revert = clone();
+                log.info("Recon went down " + currRecon);
+            }
+
+
+        }
+
+    }
+
     @Override
     public boolean isUseAdaGrad() {
         return this.useAdaGrad;

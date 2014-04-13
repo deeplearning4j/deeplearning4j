@@ -7,13 +7,20 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.text.tokenizer.ConcurrentTokenizer;
+import org.deeplearning4j.word2vec.util.Util;
 import org.uimafit.factory.AnalysisEngineFactory;
 import org.uimafit.factory.ExternalResourceFactory;
 
 
-
+/**
+ * Overrides OpenNLP tokenizer to be thread safe
+ */
 public class TokenizerAnnotator extends org.cleartk.opennlp.Tokenizer {
-	
+
+    static {
+        //UIMA logging
+        Util.disableLogging();
+    }
 	
 	public static AnalysisEngineDescription getDescription(String languageCode)
 		      throws ResourceInitializationException {
