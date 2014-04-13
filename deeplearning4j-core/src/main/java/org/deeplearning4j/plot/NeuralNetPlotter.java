@@ -1,9 +1,6 @@
 package org.deeplearning4j.plot;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,7 +25,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Adam Gibson
  *
  */
-public class NeuralNetPlotter {
+public class NeuralNetPlotter implements Serializable {
 
 	private static 	ClassPathResource r = new ClassPathResource("/scripts/plot.py");
 	private static Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);

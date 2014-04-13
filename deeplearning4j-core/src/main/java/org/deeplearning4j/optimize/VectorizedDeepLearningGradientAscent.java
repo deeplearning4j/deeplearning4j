@@ -125,7 +125,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 		for (iterations = 0; iterations < numIterations; iterations++) {
 			logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = "+step+", gradient infty-norm = "+ xi.normmax());
-
+            boolean calledEpochDone = false;
 			// Ensure step not too large
 			double sum = xi.norm2();
 			if (sum > stpmax) {
@@ -147,6 +147,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 				converged = true;
 				if(listener != null) {
 					listener.epochDone(iterations);
+                    calledEpochDone = true;
 				}
 				return true;
 			}
@@ -157,7 +158,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 
 
 
-			if(listener != null) {
+			if(listener != null && !calledEpochDone) {
 				listener.epochDone(iterations);
 			}
 		}
