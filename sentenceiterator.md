@@ -37,7 +37,7 @@ This will handle parsing the files line by line and return individual sentences 
 
 For anything complex, we reccomend an actual machine-learning level pipeline, this is represented by the [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html).
 
-The UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) has built in capabilities for tokenization, part of speech tagging, lemmatization, among other things. The [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) iterates over a set of files and is capable of doing sentence segmentation for purposes of arbitrary documents. You can customize its behavior based on the AnalysisEngine passed into it.
+The [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) has built in capabilities for tokenization, part of speech tagging, lemmatization, among other things. The [UimaSentenceIterator](../doc/org/deeplearning4j/text/sentenceiterator/UimaSentenceIterator.html) iterates over a set of files and is capable of doing sentence segmentation for purposes of arbitrary documents. You can customize its behavior based on the AnalysisEngine passed into it.
 
 The AnalysisEngine is the [UIMA](http://uima.apache.org/) concept of a text processing pipeline. DeepLearning4j comes with some standard analysis engines for all of these common tasks allowing you to customize what text is being passed in and what you want your concept of a sentence to be. The AnalysisEngines are thread safe versions of the [opennlp](http://opennlp.apache.org/) pipelines. Included are also [cleartk](http://cleartk.googlecode.com/) based pipelines for handling common tasks.
 
@@ -45,11 +45,11 @@ For those who use UIMA or are curious, this uses the cleartk type system for tok
 
 Here's how to create a UimaSentenceItrator.
 
-         SentenceIterator iter = UimaSentenceIterator.create("path/to/your/text/documents");
+            SentenceIterator iter = UimaSentenceIterator.create("path/to/your/text/documents");
 
-You can also instanitate directly like so:
+You can also instantiate directly:
 
-		  SentenceIterator iter = new UimaSentenceIterator(path,AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription())));
+			SentenceIterator iter = new UimaSentenceIterator(path,AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription())));
 
 
 For those familiar with Uima, this uses uimafit extensively for creation of analysis engines.
