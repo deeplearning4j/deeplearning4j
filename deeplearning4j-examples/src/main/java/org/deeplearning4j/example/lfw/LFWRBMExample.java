@@ -39,7 +39,7 @@ public class LFWRBMExample {
         DataSet all = iter.next(100);
         all.filterAndStrip(new int[]{2,3});
 
-        iter = new SamplingDataSetIterator(all,10,10000);
+        iter = new SamplingDataSetIterator(all,10,10);
         int cols = iter.inputColumns();
         log.info("Learning from " + cols);
 
@@ -48,9 +48,9 @@ public class LFWRBMExample {
 
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
-                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .numHidden(600).withMomentum(0.3)
-                .normalizeByInputRows(true).withDropOut(3e-1)
+                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .numHidden(600)
+                .normalizeByInputRows(true)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 
@@ -59,7 +59,7 @@ public class LFWRBMExample {
         while(iter.hasNext()) {
             DataSet curr = iter.next();
             log.info("Training on pics " + curr.labelDistribution());
-            r.trainTillConvergence(curr.getFirst(),1e-3,  new Object[]{1,1e-3,10000});
+            r.trainTillConvergence(curr.getFirst(),1e-8,  new Object[]{1,1e-8,10000});
             if(numIter % 30 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
@@ -89,8 +89,8 @@ public class LFWRBMExample {
             for(int j = 0; j < first.numExamples(); j++) {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                reconstructed2 = MatrixUtil.roundToTheNearest(reconstructed2,0);
+                DoubleMatrix reconstructed2 = reconstruct.getRow(j).div(255);
+                MatrixUtil.scaleByMax(reconstructed2);
                 DoubleMatrix draw2 = reconstructed2.mul(255);
 
                 DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
