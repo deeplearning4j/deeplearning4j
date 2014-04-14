@@ -1,10 +1,7 @@
 package org.deeplearning4j.rbm;
 
 
-import static org.deeplearning4j.util.MatrixUtil.log;
-import static org.deeplearning4j.util.MatrixUtil.oneDiv;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.deeplearning4j.util.MatrixUtil.uniform;
+import static org.deeplearning4j.util.MatrixUtil.*;
 import static org.jblas.MatrixFunctions.exp;
 
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -75,7 +72,6 @@ public class CRBM extends RBM {
 		DoubleMatrix negativeEnergy = exp(activationHidden.neg());
 		DoubleMatrix positiveEnergy = exp(activationHidden);
 
-
 		DoubleMatrix v1Mean = oneDiv(oneMinus(negativeEnergy).sub(oneDiv(activationHidden)));
 		/*
 		 * Scaled sampling of a probability distribution indicating the examples from 0 to 1:
@@ -83,12 +79,12 @@ public class CRBM extends RBM {
 		 */
 		DoubleMatrix v1Sample = log(
 				oneMinus(
-				uniform(rng,v1Mean.rows,v1Mean.columns)
+                      uniform(rng,v1Mean.rows,v1Mean.columns)
 				.mul(oneMinus(positiveEnergy)))
 				).div(activationHidden);
 
 
-		return new Pair<DoubleMatrix,DoubleMatrix>(v1Mean,v1Sample);
+		return new Pair<>(v1Mean,v1Sample);
 
 
 

@@ -50,7 +50,7 @@ public class TfidfVectorizer implements TextVectorizer {
     private Counter<String> idf = new Counter<>();
     private int numDocs = 0;
     private static Logger log = LoggerFactory.getLogger(TfidfVectorizer.class);
-
+    private boolean process = true;
     /**
      *
      * @param sentenceIterator the document iterator
@@ -120,8 +120,12 @@ public class TfidfVectorizer implements TextVectorizer {
 
     /* calculate tfidf scores */
     private void process() {
+       if(!process)
+           return;
+
         ActorSystem actorSystem = ActorSystem.create("Tfidf-vectorizer");
-        List<Future<Void>> futures = new CopyOnWriteArrayList<>();
+        List<Future<Void>> futures = new ArrayList<>();
+
         while(sentenceIterator.hasNext()) {
             final Counter<String> runningTotal = Util.parallelCounter();
             final Counter<String> documentOccurrences = Util.parallelCounter();
@@ -151,9 +155,20 @@ public class TfidfVectorizer implements TextVectorizer {
                     return null;
                 }
             }, actorSystem.dispatcher()));
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
         }
 
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         log.info("Number of documents was " + futures.size());
 
@@ -163,7 +178,7 @@ public class TfidfVectorizer implements TextVectorizer {
             log.info("Awaiting futures results");
             Await.result(composed, Duration.Inf());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+           log.warn("Done...");
         }
 
         actorSystem.shutdown();
@@ -171,6 +186,8 @@ public class TfidfVectorizer implements TextVectorizer {
         tfIdfWeights = tfIdfWeights();
         if(numTop > 0)
             tfIdfWeights.keepTopNKeys(numTop);
+
+        process = false;
     }
 
 
