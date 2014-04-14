@@ -45,7 +45,13 @@ public class GaussianRectifiedLinearRBM extends RBM {
         applySparsity = false;
     }
 
+    @Override
+    public void train(DoubleMatrix input,double lr, Object[] params) {
+        this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
 
+        int k = (int) params[0];
+        contrastiveDivergence(lr, k, input);
+    }
 
     /**
      * Trains till global minimum is found.
@@ -57,8 +63,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
     public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
         if(input != null)
             this.input = input;
-
-
+        this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
         optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
         optimizer.setMaxStep(1000);
         optimizer.setTolerance(1e-6);
@@ -104,6 +109,8 @@ public class GaussianRectifiedLinearRBM extends RBM {
      */
     @Override
     public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+
+
         DoubleMatrix h1Mean = propUp(v);
         DoubleMatrix sigH1Mean = sigmoid(h1Mean);
 		/*

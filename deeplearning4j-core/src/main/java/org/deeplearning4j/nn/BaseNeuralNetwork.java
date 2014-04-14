@@ -315,17 +315,26 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 break;
 
             NeuralNetworkGradient gradient = getGradient(extraParams);
+            DoubleMatrix wLearningRates = getAdaGrad().getLearningRates(gradient.getwGradient());
             Pair<DoubleMatrix,DoubleMatrix> sample = sampleHiddenGivenVisible(input);
             DoubleMatrix hiddenSample = sample.getSecond().transpose();
+            /*
+            Scale the input and reconstrution to see the relative difference in absolute space
+             */
             DoubleMatrix scaledInput = input.dup();
             MatrixUtil.normalizeZeroMeanAndUnitVariance(scaledInput);
             DoubleMatrix z = reconstruct(input);
             MatrixUtil.normalizeZeroMeanAndUnitVariance(z);
             DoubleMatrix outputDiff = z.sub(scaledInput);
+            //changes in error relative to neurons
             DoubleMatrix delta = hiddenSample.mmul(outputDiff).transpose();
+            //hidden activations
             DoubleMatrix hBiasMean = sample.getFirst().columnSums().transpose();
 
-            delta.muli(lr);
+            if(isUseAdaGrad())
+                delta.muli(wLearningRates);
+            else
+                delta.muli(lr);
 
             if(momentum != 0)
                 delta.muli(momentum).add(delta.mul(1 - momentum));
@@ -336,8 +345,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
             getW().subi(delta);
 
-
-            hBiasMean.muli(lr);
+            if(isUseAdaGrad())
+                hBiasMean.muli(gethBiasAdaGrad().getLearningRates(gradient.gethBiasGradient()));
+            else
+                hBiasMean.muli(lr);
 
             if(momentum != 0)
                 hBiasMean.muli(momentum).add(hBiasMean.mul(1 - momentum));
@@ -348,11 +359,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             gethBias().subi(hBiasMean);
 
             double newRecon = getReConstructionCrossEntropy();
-            if(newRecon >= currRecon) {
+            if(newRecon > currRecon) {
                 update((BaseNeuralNetwork) revert);
                 log.info("Converged for new recon; breaking...");
                 break;
             }
+
+            else if(newRecon == currRecon)
+                continue;
 
             else {
                 currRecon = newRecon;
