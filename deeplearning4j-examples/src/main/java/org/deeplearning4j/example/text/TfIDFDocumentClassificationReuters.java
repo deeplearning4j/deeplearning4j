@@ -9,9 +9,9 @@ import org.slf4j.Logger;
 /**
  * @author Adam Gibson
  */
-public class TfIDFDocumentClassification {
+public class TfIDFDocumentClassificationReuters {
 
-    private static Logger log = LoggerFactory.getLogger(TfIDFDocumentClassification.class);
+    private static Logger log = LoggerFactory.getLogger(TfIDFDocumentClassificationReuters.class);
 
 
     public static void main(String[] args) throws Exception {

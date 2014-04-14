@@ -375,6 +375,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             }
 
             numEpochs++;
+
+            int plotEpochs = getRenderEpochs();
+            if(plotEpochs > 0) {
+                NeuralNetPlotter plotter = new NeuralNetPlotter();
+                if(numEpochs % plotEpochs == 0) {
+                    plotter.plotNetworkGradient(this,getGradient(extraParams));
+                }
+            }
+
         }
 
     }
@@ -450,6 +459,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         if(useRegularization) {
             if(l2 > 0) {
                 DoubleMatrix penalized = W.mul(l2);
+                if(useAdaGrad)
+                    penalized.muli(wAdaGrad.getLearningRates(wGradient));
+                else
+                     penalized.muli(learningRate);
+
                 wGradient.subi(penalized);
 
             }
@@ -703,15 +717,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 input.mul(log(sigV))
                         .add(oneMinus(input)
                                 .mul(log(oneMinus(sigV))));
-        double l = inner.length;
-        if(useRegularization) {
-            double normalized = l + l2RegularizedCoefficient();
-            double ret = - inner.rowSums().mean() / normalized;
-            if(this.normalizeByInputRows)
-                ret /= input.rows;
-            return ret;
-
-        }
 
         double ret =   inner.rowSums().mean();
         if(this.normalizeByInputRows)
