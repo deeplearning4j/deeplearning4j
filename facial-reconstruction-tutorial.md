@@ -12,7 +12,7 @@ The goal here isn't to classify faces, yet, but to teach the CRBM to reconstruct
 
 We're training the net on the [Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/results.html) (LFW) dataset created by UMass/Amherst. LFW contains 13,233 images of 5,749 different faces, so it's fairly large. The dataset is an important tool in building nets useful for computer vision.
 
-Our network learned faces based on a compressed version of those images. The process took about five minutes to run on a reasonably powerful laptop. The results look like this:
+Our network, which you can see [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example), learned faces based on a compressed version of those images. The process took about five minutes to run on a reasonably powerful laptop. The results look like this:
 
 ![Alt text](../img/LFW_reconstruction.jpg)
 
