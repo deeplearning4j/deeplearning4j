@@ -16,7 +16,10 @@ Our network learned faces based on a compressed version of those images. The pro
 
 ![Alt text](../img/LFW_reconstruction.jpg)
 
-One important factor training on these images is *not* to normalize the data. Typically, we would normalize by taking the maximum pixel number of the image, and dividing everything by that number. We don't do that here, because there is not enough variance in the data. Faces are too similar.
+One important factor training on these images is *not* to normalize the data. Typically, we would normalize by taking the maximum pixel number of the image, and dividing everything by that number. We don't do that here, it was found that normalizing the data hindered learning. Faces are too similar.
+
+With more faces the network would pick up on different patterns with more data. This is primarily for demo purposes to show what the network filters look like
+when actually learning faces (ie: not all white noise on the reconstructions)
 
 Now that the neural nets knows the features that compose faces, the next step will be to classify faces according to distinguishing features. That will be out next page.
 
