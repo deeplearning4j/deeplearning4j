@@ -46,17 +46,29 @@ public class LFWRBMExample {
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
                 .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+<<<<<<< HEAD
                 .numHidden(1000)
+=======
+                .numHidden(1000).renderWeights(100)
+>>>>>>> upstream/master
                 .normalizeByInputRows(true)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 
         NeuralNetPlotter plotter = new NeuralNetPlotter();
         int numIter = 0;
+        /*
+        Note that this is a demo meant to run faster, the faces learned are too fast, and the learning rate should be 1e-6
+        or lower for proper learning to take place. Thi sis purely for demo purposes
+         */
         while(iter.hasNext()) {
             DataSet curr = iter.next();
             log.info("Training on pics " + curr.labelDistribution());
+<<<<<<< HEAD
             r.trainTillConvergence(curr.getFirst(),1e-6,  new Object[]{1,1e-6,10000});
+=======
+            r.trainTillConvergence(curr.getFirst(),1e-4,  new Object[]{1,1e-4,10000});
+>>>>>>> upstream/master
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
