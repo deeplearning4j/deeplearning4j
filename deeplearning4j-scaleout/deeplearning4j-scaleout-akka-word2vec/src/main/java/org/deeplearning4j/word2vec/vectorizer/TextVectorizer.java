@@ -5,12 +5,21 @@ import java.io.File;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
+import org.deeplearning4j.word2vec.viterbi.Index;
 
 /**
  * Vectorizes text
  * @author Adam Gibson
  */
 public interface TextVectorizer extends Vectorizer {
+
+    /**
+     * The vocab sorted in descending order
+     * @return the vocab sorted in descending order
+     */
+    public Index vocab();
+
+
     /**
      * Text coming from an input stream considered as one document
      * @param is the input stream to read from

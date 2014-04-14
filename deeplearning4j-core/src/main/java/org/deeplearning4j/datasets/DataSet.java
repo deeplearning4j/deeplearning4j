@@ -173,6 +173,26 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
+    /**
+     * Same as calling binarize(0)
+     */
+    public void binarize() {
+        binarize(0);
+    }
+
+    /**
+     * Binarizes the dataset such that any number greater than cutoff is 1 otherwise zero
+     * @param cutoff the cutoff point
+     */
+    public void binarize(double cutoff) {
+        for(int i = 0; i < getFirst().length; i++)
+            if(getFirst().get(i) > cutoff)
+                getFirst().put(i,1);
+            else
+                getFirst().put(i,0);
+    }
+
+
     public void normalizeZeroMeanZeroUnitVariance() {
         DoubleMatrix columnMeans = getFirst().columnMeans();
         DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(getFirst());

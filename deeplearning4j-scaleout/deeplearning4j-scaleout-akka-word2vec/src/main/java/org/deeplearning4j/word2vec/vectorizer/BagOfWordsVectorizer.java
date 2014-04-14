@@ -66,6 +66,16 @@ public class BagOfWordsVectorizer implements TextVectorizer {
 
 
     /**
+     * The vocab sorted in descending order
+     *
+     * @return the vocab sorted in descending order
+     */
+    @Override
+    public Index vocab() {
+        return vocab;
+    }
+
+    /**
      * Text coming from an input stream considered as one document
      *
      * @param is    the input stream to read from
