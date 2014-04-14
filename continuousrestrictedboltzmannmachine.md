@@ -6,7 +6,13 @@ layout: default
 *previous* - [restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 # continuous restricted boltzmanns
 
-A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word count vectors that are normalized to probabilities.
+A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
+
+It should be noted that every layer of a deep-learning net needs four elements to work: the input, the coefficients, the bias and the transformation. 
+
+The input is the numeric data, a vector, fed to it from the previous layer. The coefficients are the weights given to various features passing through the node layer. The bias ensures that some nodes in a layer will be activated no matter what. The transformation is an additional algorithm that processes data after it passes through each layer. 
+
+Those additional algorithms and their combinations layer by layer can vary. The most effective CRBM we've found employs a Gaussian transformation on the visible, or input, layer, and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). 
 
 ### parameters 
 
