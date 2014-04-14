@@ -44,7 +44,7 @@ public class TweetOpinionMining {
             }
         });
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),100);
+        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),1000);
         DataSet data = vectorizor.vectorize();
         data.binarize();
         log.info("Vocab " + vectorizor.vocab());
@@ -65,7 +65,7 @@ public class TweetOpinionMining {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-1, 10000);
+            dbn.finetune(next.getSecond(), 1e-2, 10000);
         }
 
 
