@@ -44,14 +44,14 @@ public class TweetOpinionMining {
             }
         });
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),4000);
+        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),100);
         DataSet data = vectorizor.vectorize();
         data.binarize();
         log.info("Vocab " + vectorizor.vocab());
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
         DBN dbn = new DBN.Builder().useAdaGrad(true).useRegularization(false)
-                .hiddenLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 2,iter.inputColumns() / 6}).normalizeByInputRows(true)
+                .hiddenLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4,iter.inputColumns() / 6}).normalizeByInputRows(true)
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
