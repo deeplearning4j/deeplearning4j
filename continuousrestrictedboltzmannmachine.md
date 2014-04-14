@@ -14,6 +14,8 @@ The input is the numeric data, a vector, fed to it from the previous layer. The 
 
 Those additional algorithms and their combinations layer by layer can vary. The most effective CRBM we've found employs a Gaussian transformation on the visible, or input, layer, and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). 
 
+*A brief aside on transformations: We've found that Gaussian transformations do not work well on hidden layers, which are where the reconstructions happen; i.e. the layer that matters. Rectified-linear-unit transformations are capable of representing more features than binary transformations do.*
+
 ### parameters 
 
 See also [the parameters common to all single-layer networks](../singlelayernetwork.html).
