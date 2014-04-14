@@ -37,8 +37,7 @@ public class LFWRBMExample {
         DataSetIterator iter = new LFWDataSetIterator(10,150000,40,40);
         log.info("Loading LFW...");
         DataSet all = iter.next(300);
-        all.normalizeZeroMeanZeroUnitVariance();
-        iter = new SamplingDataSetIterator(all,100,100);
+        iter = new SamplingDataSetIterator(all,10,100);
         int cols = iter.inputColumns();
         log.info("Learning from " + cols);
 

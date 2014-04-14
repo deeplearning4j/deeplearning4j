@@ -4,6 +4,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
@@ -601,6 +602,17 @@ public class MatrixUtil {
         columnStds.addi(1e-6);
         toNormalize.diviRowVector(columnStds);
 
+    }
+
+    public static DoubleMatrix columnVariance(DoubleMatrix input) {
+        DoubleMatrix columnMeans = input.columnMeans();
+        DoubleMatrix ret = new DoubleMatrix(1,columnMeans.columns);
+        for(int i = 0;i < ret.columns; i++) {
+            DoubleMatrix column = input.getColumn(i);
+            double variance = StatUtils.variance(column.toArray(),columnMeans.get(i));
+            ret.put(i,variance);
+        }
+        return ret;
     }
 
 	/**
