@@ -12,16 +12,20 @@ import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class RawMnistRBMExample {
+
+    private static Logger log = LoggerFactory.getLogger(RawMnistRBMExample.class);
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
-		.numberOfVisible(784).useAdaGrad(true)
-		.numHidden(600).normalizeByInputRows(true)
+		CRBM r = new CRBM.Builder()
+		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.3)
+		.numHidden(600).normalizeByInputRows(true).useRegularization(false)
 		.build();
 
 
@@ -30,9 +34,10 @@ public class RawMnistRBMExample {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			next.normalizeZeroMeanZeroUnitVariance();
+            next.scale();
+            log.info("Data " + next);
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFirst(),1e-5, new Object[]{1,1e-5,1000});
+			r.trainTillConvergence(next.getFirst(),1e-3, new Object[]{1,1e-3,1000});
 
 		}
 

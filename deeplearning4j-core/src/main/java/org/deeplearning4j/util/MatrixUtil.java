@@ -288,7 +288,6 @@ public class MatrixUtil {
 	/**
 	 * Sample from a normal distribution given a mean of zero and a matrix of standard deviations.
 	 * @param rng the rng to use
-	 * @param standard deviations, the matrix standard deviations to use
 	 * for the respective columns of the matrix
 	 * @return a uniform sample of the given shape and size
 	 */
@@ -594,6 +593,11 @@ public class MatrixUtil {
 	}
 
 
+    /**
+     * Normalizes the passed in matrix by subtracting the mean
+     * and dividing by the standard deviation
+     * @param toNormalize the matrix to normalize
+     */
     public static void normalizeZeroMeanAndUnitVariance(DoubleMatrix toNormalize) {
         DoubleMatrix columnMeans = toNormalize.columnMeans();
         DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(toNormalize);
