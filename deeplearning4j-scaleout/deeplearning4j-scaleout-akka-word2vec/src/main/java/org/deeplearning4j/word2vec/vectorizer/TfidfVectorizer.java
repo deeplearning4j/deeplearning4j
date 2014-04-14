@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -51,6 +52,7 @@ public class TfidfVectorizer implements TextVectorizer {
     private int numDocs = 0;
     private static Logger log = LoggerFactory.getLogger(TfidfVectorizer.class);
     private boolean process = true;
+
     /**
      *
      * @param sentenceIterator the document iterator
@@ -65,9 +67,6 @@ public class TfidfVectorizer implements TextVectorizer {
         this.labels = labels;
         this.numTop = numTop;
         stopWords = StopWords.getStopWords();
-
-        process();
-        initIndexFromTfIdf();
 
 
     }
@@ -186,6 +185,14 @@ public class TfidfVectorizer implements TextVectorizer {
         tfIdfWeights = tfIdfWeights();
         if(numTop > 0)
             tfIdfWeights.keepTopNKeys(numTop);
+         vocab = new Index();
+        List<String> reversed = new ArrayList<>(tfIdfWeights.getSortedKeys());
+        Collections.reverse(reversed);
+        for(String key : reversed ) {
+            vocab.add(key);
+        }
+
+
 
         process = false;
     }
@@ -229,6 +236,16 @@ public class TfidfVectorizer implements TextVectorizer {
 
     }
 
+
+    /**
+     * The vocab sorted in descending order
+     *
+     * @return the vocab sorted in descending order
+     */
+    @Override
+    public Index vocab() {
+        return vocab;
+    }
 
     @Override
     public DataSet vectorize(InputStream is, String label) {
