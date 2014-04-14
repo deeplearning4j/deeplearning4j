@@ -37,8 +37,8 @@ public class LFWRBMExample {
         DataSetIterator iter = new LFWDataSetIterator(10,150000,40,40);
         log.info("Loading LFW...");
         DataSet all = iter.next(300);
-
-        iter = new SamplingDataSetIterator(all,10,100);
+        all.normalizeZeroMeanZeroUnitVariance();
+        iter = new SamplingDataSetIterator(all,100,100);
         int cols = iter.inputColumns();
         log.info("Learning from " + cols);
 
@@ -47,7 +47,7 @@ public class LFWRBMExample {
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
                 .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .numHidden(900).withMomentum(3e-1)
+                .numHidden(1000)
                 .normalizeByInputRows(true)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
@@ -58,7 +58,7 @@ public class LFWRBMExample {
             DataSet curr = iter.next();
             log.info("Training on pics " + curr.labelDistribution());
             r.trainTillConvergence(curr.getFirst(),1e-6,  new Object[]{1,1e-6,10000});
-           /* if(numIter % 10 == 0) {
+            if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
                     render.renderFilters(r.getW(), "currimg.png", (int)Math.sqrt(r.getW().rows) , (int) Math.sqrt( r.getW().rows));
@@ -66,7 +66,7 @@ public class LFWRBMExample {
                     log.error("Unable to plot filter, continuing...",e);
                 }
             }
-*/
+
             numIter++;
 
         }
