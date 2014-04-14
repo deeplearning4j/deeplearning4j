@@ -38,6 +38,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     protected transient OptimizerMatrix opt;
     protected OptimizationAlgorithm optimizationAlgorithm;
     protected LossFunction lossFunction;
+    protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
+    protected double maxStep = -1;
     /**
      *
      * @param network
@@ -60,6 +62,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         else {
             opt = new VectorizedDeepLearningGradientAscent(this,this);
             ((VectorizedDeepLearningGradientAscent) opt).setTolerance(tolerance);
+            if(maxStep > 0)
+                ((VectorizedDeepLearningGradientAscent) opt).setMaxStepSize(maxStep);
         }
     }
 
@@ -83,10 +87,10 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         int plotEpochs = network.getRenderEpochs();
         if(plotEpochs <= 0)
             return;
-        if(epoch % plotEpochs == 0 || epoch == 0) {
-            NeuralNetPlotter plotter = new NeuralNetPlotter();
+        if(epoch % plotEpochs == 0) {
             plotter.plotNetworkGradient(network,network.getGradient(extraParams));
         }
+
     }
 
     public List<Double> getErrors() {
@@ -228,7 +232,11 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         this.tolerance = tolerance;
     }
 
+    public double getMaxStep() {
+        return maxStep;
+    }
 
-
-
+    public void setMaxStep(double maxStep) {
+        this.maxStep = maxStep;
+    }
 }

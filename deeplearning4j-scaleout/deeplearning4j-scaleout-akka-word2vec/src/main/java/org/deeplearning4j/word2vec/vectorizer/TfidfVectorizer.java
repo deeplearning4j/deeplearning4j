@@ -1,5 +1,7 @@
 package org.deeplearning4j.word2vec.vectorizer;
 
+import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
@@ -12,8 +14,15 @@ import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenc
 import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
+import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.word2vec.viterbi.Index;
 import org.jblas.DoubleMatrix;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +30,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Turns a set of documents in to a tfidf bag of words
@@ -38,6 +49,7 @@ public class TfidfVectorizer implements TextVectorizer {
     private Counter<String> tf = new Counter<>();
     private Counter<String> idf = new Counter<>();
     private int numDocs = 0;
+    private static Logger log = LoggerFactory.getLogger(TfidfVectorizer.class);
 
     /**
      *
@@ -108,23 +120,53 @@ public class TfidfVectorizer implements TextVectorizer {
 
     /* calculate tfidf scores */
     private void process() {
+        ActorSystem actorSystem = ActorSystem.create("Tfidf-vectorizer");
+        List<Future<Void>> futures = new CopyOnWriteArrayList<>();
         while(sentenceIterator.hasNext()) {
-            Tokenizer tokenizer = tokenizerFactory.create(sentenceIterator.nextSentence());
-            Counter<String> runningTotal = new Counter<>();
-            Counter<String> documentOccurrences = new Counter<>();
-            numDocs++;
-            for(String token : tokenizer.getTokens()) {
-                if(stopWords.contains(token))
-                    continue;
-                runningTotal.incrementCount(token,1.0);
-                //idf
-                if(!documentOccurrences.containsKey(token))
-                    documentOccurrences.setMinCount(token,1.0);
-            }
+            final Counter<String> runningTotal = Util.parallelCounter();
+            final Counter<String> documentOccurrences = Util.parallelCounter();
+            futures.add(Futures.future(new Callable<Void>() {
 
-            idf.incrementAll(documentOccurrences);
-            tf.incrementAll(runningTotal);
+                /**
+                 * Computes a result, or throws an exception if unable to do so.
+                 *
+                 * @return computed result
+                 * @throws Exception if unable to compute a result
+                 */
+                @Override
+                public Void call() throws Exception {
+                    Tokenizer tokenizer = tokenizerFactory.create(sentenceIterator.nextSentence());
+                    numDocs++;
+                    for (String token : tokenizer.getTokens()) {
+                        if (stopWords.contains(token))
+                            continue;
+                        runningTotal.incrementCount(token, 1.0);
+                        //idf
+                        if (!documentOccurrences.containsKey(token))
+                            documentOccurrences.setMinCount(token, 1.0);
+                    }
+
+                    idf.incrementAll(documentOccurrences);
+                    tf.incrementAll(runningTotal);
+                    return null;
+                }
+            }, actorSystem.dispatcher()));
+
         }
+
+
+        log.info("Number of documents was " + futures.size());
+
+        Iterable<Future<Void>> fIter = (Iterable<Future<Void>>) futures;
+        try {
+            Future<Iterable<Void>> composed = Futures.sequence( fIter,actorSystem.dispatcher());
+            log.info("Awaiting futures results");
+            Await.result(composed, Duration.Inf());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        actorSystem.shutdown();
 
         tfIdfWeights = tfIdfWeights();
         if(numTop > 0)

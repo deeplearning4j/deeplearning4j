@@ -27,20 +27,20 @@ public class MultiThreadedLFW {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(1e-3);
+		c.setFinetuneLearningRate(1e-6);
 		c.setLayerSizes(new int[]{500,400,250});
 		c.setnIn(56 * 56);
 		c.setMomentum(0.5);
+        c.setDropOut(1e-1);
 		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setNumPasses(3);
 		c.setMultiLayerClazz(GaussianRectifiedLinearDBN.class);
-		c.setUseRegularization(true);
+		c.setUseRegularization(false);
         c.setL2(1e-3);
-        c.setNormalizeZeroMeanAndUnitVariance(true);
-		c.setDeepLearningParams(new Object[]{1,1e-3,10000});
+		c.setDeepLearningParams(new Object[]{1,1e-6,10000});
         StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker();
 
 		if(args.length < 1) {
