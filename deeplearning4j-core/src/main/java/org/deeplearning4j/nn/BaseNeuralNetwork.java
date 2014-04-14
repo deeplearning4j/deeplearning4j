@@ -359,7 +359,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             gethBias().subi(hBiasMean);
 
             double newRecon = getReConstructionCrossEntropy();
-            if(newRecon > currRecon) {
+            //prevent weights from exploding too far in either direction, we want this as close to zero as possible
+            if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
                 log.info("Converged for new recon; breaking...");
                 break;
