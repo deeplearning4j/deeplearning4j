@@ -4,17 +4,17 @@ layout: default
 ---
 
 *previous* - [restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-# continuous restricted boltzmanns
+# continuous restricted Boltzmann machines
 
 A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
 
-It should be noted that every layer of a deep-learning net needs four elements to work: the input, the coefficients, the bias and the transformation. 
+It should be noted that every layer of a deep-learning net consists of four elements: the input, the coefficients, the bias and the transformation. 
 
-The input is the numeric data, a vector, fed to it from the previous layer. The coefficients are the weights given to various features passing through the node layer. The bias ensures that some nodes in a layer will be activated no matter what. The transformation is an additional algorithm that processes data after it passes through each layer. 
+The input is the numeric data, a vector, fed to it from the previous layer (or as the initial data). The coefficients are the weights given to various features passing through each node layer. The bias ensures that some nodes in a layer will be activated no matter what. The transformation is an additional algorithm that processes the data after it passes through each layer. 
 
-Those additional algorithms and their combinations layer by layer can vary. The most effective CRBM we've found employs a Gaussian transformation on the visible, or input, layer, and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). 
+Those additional algorithms and their combinations layer by layer can vary. The most effective CRBM we've found employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). 
 
-*A brief aside on transformations: We've found that Gaussian transformations do not work well on hidden layers, which are where the reconstructions happen; i.e. the layer that matters. Rectified-linear-unit transformations are capable of representing more features than binary transformations do.*
+*A brief aside: Hinton has noted and we can confirm that Gaussian transformations do not work well on hidden layers, which are where the reconstructions happen; i.e. those are the layers that matter. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
 
 ### parameters 
 
