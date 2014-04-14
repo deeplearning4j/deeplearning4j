@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Iterates over an input stream with the textual format:
+ * label delimiter text
+ *
  * @author Adam Gibson
  */
 public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterator {
@@ -21,6 +24,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
     private int currPosition;
     private List<String> labels;
     private List<String> text;
+    private String currentLabel;
     private SentencePreProcessor sentencePreProcessor;
 
     /**
@@ -71,7 +75,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      */
     @Override
     public synchronized String currentLabel() {
-        return labels.get(currPosition);
+        return currentLabel;
     }
 
     /**
@@ -84,7 +88,7 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
     @Override
     public synchronized String nextSentence() {
         String ret = text.get(currPosition);
-
+        currentLabel = labels.get(currPosition);
         if(sentencePreProcessor != null)
             ret = sentencePreProcessor.preProcess(ret);
         currPosition++;
