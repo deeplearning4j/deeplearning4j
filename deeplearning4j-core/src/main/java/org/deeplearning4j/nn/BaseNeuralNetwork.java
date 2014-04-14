@@ -317,14 +317,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             NeuralNetworkGradient gradient = getGradient(extraParams);
             Pair<DoubleMatrix,DoubleMatrix> sample = sampleHiddenGivenVisible(input);
             DoubleMatrix hiddenSample = sample.getSecond().transpose();
-            DoubleMatrix scaledInput = input.divRowVector(input.columnMeans());
+            DoubleMatrix scaledInput = input.dup();
+            MatrixUtil.normalizeZeroMeanAndUnitVariance(scaledInput);
             DoubleMatrix z = reconstruct(input);
-            z.diviRowVector(z.columnMeans());
-            DoubleMatrix outputDiff = z.sub(scaledInput).neg();
+            MatrixUtil.normalizeZeroMeanAndUnitVariance(z);
+            DoubleMatrix outputDiff = z.sub(scaledInput);
             DoubleMatrix delta = hiddenSample.mmul(outputDiff).transpose();
             DoubleMatrix hBiasMean = sample.getFirst().columnSums().transpose();
-
-
 
             delta.muli(lr);
 
@@ -334,9 +333,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(normalizeByInputRows)
                 delta.divi(input.rows);
 
-            DoubleMatrix means = delta;
 
-            getW().subi(means);
+            getW().subi(delta);
 
 
             hBiasMean.muli(lr);

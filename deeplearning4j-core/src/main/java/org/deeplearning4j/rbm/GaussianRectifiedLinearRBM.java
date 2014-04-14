@@ -58,7 +58,6 @@ public class GaussianRectifiedLinearRBM extends RBM {
         if(input != null)
             this.input = input;
 
-        sigma = MatrixUtil.columnStd(input);
 
         optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
         optimizer.setMaxStep(1000);
@@ -76,8 +75,7 @@ public class GaussianRectifiedLinearRBM extends RBM {
      */
     @Override
     public DoubleMatrix reconstruct(DoubleMatrix v) {
-        sigma = MatrixUtil.columnStd(v);
-        return super.reconstruct(v);
+           return super.reconstruct(v);
     }
 
     /**

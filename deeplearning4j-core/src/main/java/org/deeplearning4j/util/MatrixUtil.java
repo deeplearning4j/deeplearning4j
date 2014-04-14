@@ -592,6 +592,17 @@ public class MatrixUtil {
 		return DoubleMatrix.ones(ep.rows, ep.columns).div(ep);
 	}
 
+
+    public static void normalizeZeroMeanAndUnitVariance(DoubleMatrix toNormalize) {
+        DoubleMatrix columnMeans = toNormalize.columnMeans();
+        DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(toNormalize);
+
+        toNormalize.subiRowVector(columnMeans);
+        columnStds.addi(1e-6);
+        toNormalize.diviRowVector(columnStds);
+
+    }
+
 	/**
 	 * Calculates the column wise standard deviations
 	 * of the matrix
@@ -607,6 +618,9 @@ public class MatrixUtil {
 			double result = std.evaluate(m.getColumn(i).data);
 			ret.put(i,result);
 		}
+
+        ret.divi(m.rows);
+
 		return ret;
 	}
 
