@@ -56,8 +56,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     private int[] hiddenLayerSizes;
     //the number of outputs/labels for logistic regression
     private int nOuts;
-    //number of layers
-//    private int nLayers;
     //the hidden layers
     private HiddenLayer[] sigmoidLayers;
     //logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
@@ -182,21 +180,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         this.sigmoidLayers = new HiddenLayer[nLayers];
 
-
-
-
         if(rng == null)
             this.rng = new SynchronizedRandomGenerator(new MersenneTwister(123));
-
-
         else
             this.rng = rng;
 
-
         if(input != null)
             initializeLayers(input);
-
-
     }
 
     /**
