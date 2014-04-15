@@ -1,22 +1,11 @@
 package org.deeplearning4j.nn;
 
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
@@ -36,6 +25,16 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 
