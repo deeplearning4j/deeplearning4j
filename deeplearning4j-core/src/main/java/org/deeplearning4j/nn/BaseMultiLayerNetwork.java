@@ -275,12 +275,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //the logistic softmax of the output layer
         //of the encoder
         createNetworkLayers(network.getnLayers() + 1);
-        this.layers = new NeuralNetwork[network.getnLayers()];
+//        this.layers = new NeuralNetwork[network.getnLayers()];
+        this.setnLayers(network.getnLayers());
         this.sigmoidLayers = new HiddenLayer[network.getnLayers()];
         hiddenLayerSizes = new int[network.getnLayers()];
         this.nIns = network.nOuts;
         this.nOuts = network.nIns;
-        this.setnLayers(network.getnLayers());
+
         this.dist = network.dist;
 
 
@@ -907,14 +908,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param network the network to get parameters from
      */
     protected synchronized void update(BaseMultiLayerNetwork network) {
-
-
-
-        if(network.layers != null && network.layers.length > 0) {
-            this.layers = new NeuralNetwork[getnLayers()];
+        if(network.layers != null && network.getnLayers() > 0) {
+            this.setnLayers(network.getnLayers());
             for(int i = 0; i < layers.length; i++)
-                this.getLayers()[i] = network.getLayers()[i].clone();
-
+                if((this.getnLayers()) > i && (network.getnLayers() > i))
+                    this.getLayers()[i] = network.getLayers()[i].clone();
         }
 
         this.normalizeByInputRows = network.normalizeByInputRows;
@@ -923,7 +921,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(network.logLayer != null)
             this.logLayer = network.logLayer.clone();
         this.nIns = network.nIns;
-        this.setnLayers(network.getnLayers());
+//        this.setnLayers(network.getnLayers());
         this.nOuts = network.nOuts;
         this.rng = network.rng;
         this.dist = network.dist;
