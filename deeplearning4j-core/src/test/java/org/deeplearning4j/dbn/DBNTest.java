@@ -1,40 +1,27 @@
 package org.deeplearning4j.dbn;
-import static org.junit.Assert.*;
-
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.analysis.function.Gaussian;
-import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.activation.HardTanh;
-import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.nn.activation.Tanh;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.transformation.MultiplyScalar;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class DBNTest {
@@ -65,7 +52,7 @@ public class DBNTest {
 
         DataSet next = iter.next(150);
         next.shuffle();
-
+        dbn.init();
         dbn.feedForward(next.getFirst());
 
         for(int i = 0; i < dbn.getnLayers(); i++) {
