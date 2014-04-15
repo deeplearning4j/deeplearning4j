@@ -23,7 +23,7 @@ public class ArchiveUtils {
     /**
      * Extracts files to the specified destination
      * @param file the file to extract to
-     * @param dest the desination directory
+     * @param dest the destination directory
      * @throws IOException
      */
     public static void unzipFileTo(String file,String dest) throws IOException {
@@ -71,7 +71,7 @@ public class ArchiveUtils {
 
 
 
-        else if(file.endsWith(".tar.gz")) {
+        else if(file.endsWith(".tar.gz") || file.endsWith(".tgz")) {
 
             BufferedInputStream in = new BufferedInputStream(fin);
             GzipCompressorInputStream gzIn = new GzipCompressorInputStream(in);

@@ -22,4 +22,17 @@ public class TfIDFDocumentClassificationReuters {
           }
     }
 
+    /**
+     * Created by agibsonccc on 4/14/14.
+     */
+    public static class MultiThreadedTweetOpinionMining {
+
+        private static Logger log = LoggerFactory.getLogger(MultiThreadedTweetOpinionMining.class);
+
+        public static void main(String[] args) {
+
+        }
+
+
+    }
 }

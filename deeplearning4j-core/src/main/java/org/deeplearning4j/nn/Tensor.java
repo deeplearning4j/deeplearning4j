@@ -1,7 +1,10 @@
-package org.deeplearning4j.rntn;
+package org.deeplearning4j.nn;
+
 
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 import java.io.Serializable;
 
@@ -16,7 +19,7 @@ public class Tensor implements Serializable {
     private int rows,cols;
 
 
-    public Tensor(int rows, int columns,int slices) {
+    public Tensor(int rows, int columns, int slices) {
         this.rows = rows;
         this.cols = columns;
         this.slices = new DoubleMatrix[slices];
@@ -66,6 +69,46 @@ public class Tensor implements Serializable {
     }
 
 
+    public Tensor get(int[] rowIndices,int[] columnIndices) {
+        DoubleMatrix first = slices[0].get(rowIndices,columnIndices);
+        Tensor ret = new Tensor(first.rows,first.columns,slices());
+        ret.slices[0]  = first;
+        for(int i = 1; i < slices(); i++) {
+            ret.slices[1] = slices[i].get(rowIndices,columnIndices);
+        }
+
+        return ret;
+    }
+
+    public Tensor columnsSums() {
+        DoubleMatrix first = slices[0].columnSums();
+        Tensor t = new Tensor(first.rows,first.columns,slices.length);
+        t.slices[0] = first;
+        for(int i =1 ; i < slices.length; i++) {
+            t.slices[i] = slices[i].columnSums();
+        }
+        return t;
+    }
+
+
+    public Tensor transpose() {
+        Tensor ret = new Tensor(columns(),rows,slices());
+        for(int i = 0;i  < slices(); i++) {
+            ret.slices[i] = slices[i].transpose();
+        }
+        return ret;
+    }
+
+    public Tensor rowSums() {
+        DoubleMatrix first = slices[0].rowSums();
+        Tensor t = new Tensor(first.rows,first.columns,slices.length);
+        t.slices[0] = first;
+        for(int i =1 ; i < slices.length; i++) {
+            t.slices[i] = slices[i].rowSums();
+        }
+        return t;
+    }
+
     /**
      * Returns a column vector where each entry is the nth bilinear
      * product of the nth slices of the two tensors.
@@ -91,6 +134,25 @@ public class Tensor implements Serializable {
         return out;
     }
 
+
+    /**
+     * Returns a zero tensor
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static Tensor zeros(int rows, int cols,int slices) {
+        Tensor t = new Tensor(rows,cols,slices);
+        for(int i = 0; i < slices; i++)
+            t.slices[i] = DoubleMatrix.zeros(rows,cols);;
+
+
+        return t;
+
+    }
+
+
     /**
      * Returns a random tensor sampling from the given distribution
      * @param rows the number of rows
@@ -99,7 +161,7 @@ public class Tensor implements Serializable {
      * @param dist the distribution to sample from
      * @return the tensor with the specified slices and the random matrices
      */
-    public Tensor rand(int rows, int cols,int slices,RealDistribution dist) {
+    public static Tensor rand(int rows, int cols,int slices,RealDistribution dist) {
         Tensor t = new Tensor(rows,cols,slices);
         for(int i = 0; i < slices; i++) {
             DoubleMatrix d = new DoubleMatrix(rows,cols);
@@ -110,6 +172,19 @@ public class Tensor implements Serializable {
 
         return t;
 
+    }
+
+    /**
+     * Element wise addition of each slice of the passed in tensor
+     * @param tensor the tensor to multiply by
+     * @return the element wise multiplication of the passed in tensor
+     * with this tensor
+     */
+    public Tensor sub(Tensor tensor) {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = slices[i].sub(tensor.slices[i]);
+        return t;
     }
 
     /**
@@ -149,6 +224,22 @@ public class Tensor implements Serializable {
     public void assign(double val) {
         for(int i = 0; i < slices.length; i++)
             slices[i] = DoubleMatrix.zeros(rows,columns()).add(val);
+    }
+
+
+
+    public Tensor tanh() {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = MatrixFunctions.tanh(slices[i]);
+        return t;
+    }
+
+    public Tensor sigmoid() {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = MatrixUtil.sigmoid(slices[i]);
+        return t;
     }
 
 
