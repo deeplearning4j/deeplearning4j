@@ -106,11 +106,14 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
             for(int j = 0; j < Math.ceil(nCols / stride[1]); j++) {
                 int cols = (j - 1) * stride[1] + 1;
                 int colsMax = j * stride[1];
-                double blockVal = input.get(new int[] {
+                DoubleMatrix blockVal = input.get(new int[] {
                         rowsMin,rowsMax
                 },new int[] {
                         cols,colsMax
-                }).columnsSums().sum();
+                }).columnsSums().toMatrix();
+
+
+
 
 
 
