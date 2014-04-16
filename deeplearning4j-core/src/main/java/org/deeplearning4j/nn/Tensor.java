@@ -100,6 +100,30 @@ public class Tensor implements Serializable {
 
         return ret;
     }
+
+    /**
+     * Returns this tensor as a matrix such that
+     * all values in all slices are concacneated in to one matrix.
+     * This matrix will be a t.rows() * t.slices() x t.columns() matrix
+     * @return
+     */
+    public DoubleMatrix toMatrix() {
+        DoubleMatrix ret = new DoubleMatrix(rows() * slices(),columns());
+        int currSlice = 0;
+        int row = 0;
+        for(int i = 0; i < ret.rows; i++) {
+            DoubleMatrix slice = getSlice(currSlice);
+            DoubleMatrix rowM = slice.getRow(row);
+            ret.putRow(i,rowM);
+            row++;
+            if(row >= rows()) {
+                row = 0;
+                currSlice++;
+            }
+        }
+        return ret;
+    }
+
     /**
      * The column sums of each matrix in this tensor
      * @return a tensor populated by the column sums of each matrix in the tensor
