@@ -81,6 +81,10 @@ public class Tensor implements Serializable {
         return sum;
     }
 
+    /**
+     * Clones this tensor
+     * @return a copy of this tensor
+     */
     public Tensor dup() {
         return new Tensor(this);
     }
@@ -96,7 +100,10 @@ public class Tensor implements Serializable {
 
         return ret;
     }
-
+    /**
+     * The column sums of each matrix in this tensor
+     * @return a tensor populated by the column sums of each matrix in the tensor
+     */
     public Tensor columnsSums() {
         DoubleMatrix first = slices[0].columnSums();
         Tensor t = new Tensor(first.rows,first.columns,slices.length);
@@ -179,6 +186,12 @@ public class Tensor implements Serializable {
     }
 
 
+    /**
+     * Transposes the tensor in a number of ways relative to the passed in vals:
+     * Very similar to matlabs permute over 3d matrices
+     * @param nums the nums (only 1,2,3)  to transform with
+     * @return a tensor that is permuted with the elements of this tensor
+     */
     public Tensor permute(int[] nums) {
         if (Arrays.equals(nums, new int[]{1, 2, 3})) {
             return dup();
@@ -263,12 +276,15 @@ public class Tensor implements Serializable {
         }
 
 
-        return null;
+        throw new IllegalArgumentException("Illegal argument: Passed in array must be a unique array containing only" +
+                "the numbers 1,2 or 3");
     }
 
 
-
-
+    /**
+     * This tensor with all the matrices transposed
+     * @return a copy of this tensor with the matrices transposed
+     */
     public Tensor transpose() {
         Tensor ret = new Tensor(columns(),rows,slices());
         for(int i = 0;i  < slices(); i++) {
@@ -277,6 +293,11 @@ public class Tensor implements Serializable {
         return ret;
     }
 
+    /**
+     * A tensor populated by the row sums of each matrix in this tensor
+     * @return a new tensor populated by the row sums of each matrix
+     * in this tensor
+     */
     public Tensor rowSums() {
         DoubleMatrix first = slices[0].rowSums();
         Tensor t = new Tensor(first.rows,first.columns,slices.length);
@@ -388,9 +409,9 @@ public class Tensor implements Serializable {
     }
 
     /**
-     * Element wise addition of each slice of the passed in tensor
-     * @param tensor the tensor to multiply by
-     * @return the element wise multiplication of the passed in tensor
+     * Element wise subtraction of each slice of the passed in tensor
+     * @param tensor the tensor to subtract by
+     * @return the element wise subtraction of the passed in tensor
      * with this tensor
      */
     public Tensor sub(Tensor tensor) {
@@ -426,6 +447,45 @@ public class Tensor implements Serializable {
         return t;
     }
 
+
+    /**
+     * This tensor subtracted by val
+     * @param val the tensor to subtract from
+     * @return this tensor with values - val
+     */
+    public Tensor sub(double val) {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = slices[i].sub(val);
+        return t;
+    }
+
+    /**
+     *Adds a value to each element in the tensor
+     * @param val the value to add
+     * @return a tensor with the elements of this tensor added by val
+     */
+    public Tensor add(double val) {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = slices[i].add(val);
+        return t;
+    }
+
+    /**
+     * This tensor's elements multiplied by val
+     * @param val the tensor to multiply by
+     * @return the element wise multiplication of the passed in tensor
+     * with this tensor
+     */
+    public Tensor mul(double val) {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = slices[i].mul(val);
+        return t;
+    }
+
+
     public Tensor scale(double value) {
         Tensor t = new Tensor(rows,columns(),slices());
         for(int i = 0;i < slices(); i++)
@@ -434,20 +494,30 @@ public class Tensor implements Serializable {
     }
 
 
+    /**
+     * Assigns all values of this tensor to the passed in value
+     * @param val the value to assign
+     */
     public void assign(double val) {
         for(int i = 0; i < slices.length; i++)
             slices[i] = DoubleMatrix.zeros(rows,columns()).add(val);
     }
 
 
-
+    /**
+     * A copy of this tensor with tanh applied
+     * @return a copy of this tensor with tanh applied
+     */
     public Tensor tanh() {
         Tensor t = new Tensor(rows,columns(),slices());
         for(int i = 0;i < slices(); i++)
             t.slices[i] = MatrixFunctions.tanh(slices[i]);
         return t;
     }
-
+    /**
+     * A copy of this tensor with sigmoid applied
+     * @return a copy of this tensor with sigmoid applied
+     */
     public Tensor sigmoid() {
         Tensor t = new Tensor(rows,columns(),slices());
         for(int i = 0;i < slices(); i++)
@@ -455,7 +525,21 @@ public class Tensor implements Serializable {
         return t;
     }
 
+    /**
+     * A copy of this tensor with exp applied
+     * @return a copy of this tensor with exp applied
+     */
+    public Tensor exp() {
+        Tensor t = new Tensor(rows,columns(),slices());
+        for(int i = 0;i < slices(); i++)
+            t.slices[i] = MatrixFunctions.exp(slices[i]);
+        return t;
+    }
 
+    /**
+     * Rows * cols * numSlices - the total number of elements in this tensor
+     * @return rows * cols * slices
+     */
     public int numElements() {
         return rows * cols * slices.length;
     }
