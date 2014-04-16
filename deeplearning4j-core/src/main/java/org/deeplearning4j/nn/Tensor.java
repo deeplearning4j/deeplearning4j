@@ -358,6 +358,31 @@ public class Tensor implements Serializable {
         return out;
     }
 
+    /**
+     * Slices up an individual matrix into a tensor
+     * @param matrix the matrix to slice
+     * @param numSlices the number of slices for the tensor
+     * @return the new tensor with the specified number of slices
+     * based on the origin matrix
+     */
+    public static Tensor create(DoubleMatrix matrix,int numSlices) {
+        int rows = matrix.rows / numSlices;
+        Tensor ret = new Tensor(rows,matrix.columns,numSlices);
+        int currRow = 0, currSlice = 0;
+        for(int i = 0; i < matrix.rows; i ++) {
+            DoubleMatrix put = matrix.getRow(i);
+            ret.slices[currSlice].putRow(currRow,put);
+            currRow++;
+            if(currRow >= rows) {
+                currRow = 0;
+                currSlice++;
+            }
+        }
+
+
+        return ret;
+
+    }
 
     /**
      * Returns a zero tensor
@@ -375,6 +400,10 @@ public class Tensor implements Serializable {
         return t;
 
     }
+
+
+
+
     /**
      * Returns a random tensor sampling from the normal distribution
      * @param rows the number of rows
@@ -430,6 +459,11 @@ public class Tensor implements Serializable {
 
         return t;
 
+    }
+
+
+    public Tensor repmat(int rows, int cols) {
+        return Tensor.create(toMatrix().repmat(rows,cols),rows * slices());
     }
 
     /**
