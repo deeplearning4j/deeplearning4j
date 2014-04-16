@@ -25,11 +25,25 @@ public class TensorTests {
     }
 
     @Test
+    public void repmatTest() {
+        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
+        Tensor rep = t.repmat(2,3);
+        assertEquals(rep.toMatrix(),t.toMatrix().repmat(2,3));
+    }
+
+    @Test
     public void testAsMatrix() {
         Tensor t = Tensor.rand(2,3,3,4.0,6.0);
         DoubleMatrix matrix = t.toMatrix();
         assertEquals(true,matrix.rows == 6);
         assertEquals(true, matrix.columns == 3);
+    }
+
+    @Test
+    public void testCreate() {
+        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
+        DoubleMatrix matrix = t.toMatrix();
+        assertEquals(t,Tensor.create(matrix,3));
     }
 
     @Test
