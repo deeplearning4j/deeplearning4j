@@ -2,11 +2,16 @@ package org.deeplearning4j.nn;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.Geometry;
 import org.jblas.MatrixFunctions;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Tensor represents a set of matrices of all the same dimensions.
@@ -27,6 +32,14 @@ public class Tensor implements Serializable {
         for(int i = 0; i < slices; i++) {
             this.slices[i] = DoubleMatrix.zeros(rows,columns);
         }
+    }
+
+
+    public Tensor(Tensor t) {
+        this.slices = new DoubleMatrix[t.slices()];
+        this.rows = t.rows();
+        this.cols = t.columns();
+        System.arraycopy(t.slices,0,this.slices,0,t.slices());
     }
 
     public Tensor(DoubleMatrix[] slices) {
@@ -55,7 +68,7 @@ public class Tensor implements Serializable {
     }
 
     public void setSlice(int index,DoubleMatrix slice) {
-       if(slice.rows != rows || slice.columns != cols)
+        if(slice.rows != rows || slice.columns != cols)
             throw new IllegalArgumentException("Illegal matrix passed in, must be of same dimenions as specified slices");
 
         slices[index] = slice;
@@ -66,6 +79,10 @@ public class Tensor implements Serializable {
         for(int i = 0;i < slices(); i++)
             sum += slices[i].sum();
         return sum;
+    }
+
+    public Tensor dup() {
+        return new Tensor(this);
     }
 
 
@@ -91,6 +108,167 @@ public class Tensor implements Serializable {
     }
 
 
+    @Override
+    public String toString() {
+        return "Tensor{" +
+                "slices=" + Arrays.toString(slices) +
+                ", rows=" + rows +
+                ", cols=" + cols +
+                ", slices=" + slices.length +
+                '}';
+    }
+
+
+    public void set(int slice,int i,int j,double val) {
+        slices[slice].put(i,j,val);
+    }
+
+    public double get(int i,int j,int slice) {
+        return slices[slice].get(i,j);
+    }
+
+    /**
+     * Gets the specified row from each slice
+     * @param row the row to get from each slice
+     * @return a slices() x column matrix of each slices row $row
+     */
+    public DoubleMatrix getRows(int row) {
+        DoubleMatrix rows = new DoubleMatrix(slices(),columns());
+        for(int i = 0; i < slices(); i++) {
+            rows.putRow(i,slices[i].getRow(row));
+        }
+        return rows;
+    }
+
+
+    /**
+     * Gets the specified row from each slice
+     * @param column the row to get from each slice
+     * @return a slices() x column matrix of each slices row $row
+     */
+    public DoubleMatrix getColumns(int column) {
+        DoubleMatrix rows = new DoubleMatrix(slices(),columns());
+        for(int i = 0; i < slices(); i++) {
+            rows.putRow(i,slices[i].getColumn(column));
+        }
+        return rows;
+    }
+
+
+
+    /**
+     * Gets the specified row from each slice
+     * @param row the row to get from each slice
+     * @param slice the slice to get
+     * @return a slices() x column matrix of each slices row $row
+     */
+    public DoubleMatrix getRow(int row,int slice) {
+        DoubleMatrix rows = slices[slice].getRow(row);
+        return rows;
+    }
+
+    /**
+     * Gets the specified row from each slice
+     * @param column the row to get from each slice
+     * @param slice the slice to get
+     * @return a slices() x column matrix of each slices row $row
+     */
+    public DoubleMatrix getColumn(int column,int slice) {
+        DoubleMatrix c = slices[slice].getColumn(column);
+        return c;
+    }
+
+
+    public Tensor permute(int[] nums) {
+        if (Arrays.equals(nums, new int[]{1, 2, 3})) {
+            return dup();
+        } else if (Arrays.equals(nums, new int[]{2, 1, 3}))
+            return transpose();
+            //number of rows becomes the number of slices
+            //number of slices becomes number of rows, columns stay the same
+        else if (Arrays.equals(nums, new int[]{3, 2, 1})) {
+            Tensor ret = new Tensor(slices(), columns(), rows());
+            for(int i = 0; i < ret.slices(); i++) {
+                ret.slices[i] = getRows(i);
+            }
+            return ret;
+        }
+
+        else if(Arrays.equals(nums,new int[]{2,3,1})) {
+            Tensor t = new Tensor(slices(),columns(),rows());
+            int currI = 0,currJ = 0;
+
+            for(int i = 0; i < t.slices(); i++) {
+                DoubleMatrix slice = new DoubleMatrix(t.rows(),t.columns());
+                for(int row = 0; row < slice.rows; row++) {
+                    for(int l = 0; l < slices(); l++) {
+                        double val = get(currI,currJ,l);
+                        slice.put(row,l,val);
+
+                    }
+                    currJ++;
+
+
+                }
+
+                t.slices[i] = slice;
+                if(currJ == columns()) {
+                    currJ = 0;
+                    currI++;
+                }
+            }
+            return t;
+        }
+
+        else if(Arrays.equals(nums,new int[]{1,3,2})) {
+            Tensor ret = new Tensor(rows(),slices(),columns());
+            int column = 0;
+            for(int i = 0; i < slices(); i++) {
+                DoubleMatrix slice = new DoubleMatrix(ret.rows(),ret.columns());
+                for(int j = 0; j < slice.columns; j++) {
+                    DoubleMatrix c = getColumn(column,j);
+                    slice.putColumn(j,c);
+                }
+
+                ret.slices[i] = slice;
+            }
+            return ret;
+        }
+
+        else if(Arrays.equals(nums,new int[]{3,1,2})) {
+            Tensor t = new Tensor(slices(),rows(),columns());
+            int column = 0;
+
+            for(int i = 0; i < t.slices(); i++) {
+                DoubleMatrix slice = new DoubleMatrix(t.rows(),t.columns());
+                for(int row = 0; row < slice.rows; row++) {
+                    for(int l = 0; l < slices(); l++) {
+                        DoubleMatrix val = getColumn(column,l);
+                        val = val.reshape(1,val.length);
+                        slice.putRow(row,val);
+
+                    }
+
+
+                }
+
+                t.slices[i] = slice;
+                column++;
+
+                if(column == t.columns())
+                    column = 0;
+
+            }
+            return t;
+        }
+
+
+        return null;
+    }
+
+
+
+
     public Tensor transpose() {
         Tensor ret = new Tensor(columns(),rows,slices());
         for(int i = 0;i  < slices(); i++) {
@@ -106,6 +284,7 @@ public class Tensor implements Serializable {
         for(int i =1 ; i < slices.length; i++) {
             t.slices[i] = slices[i].rowSums();
         }
+
         return t;
     }
 
@@ -151,8 +330,42 @@ public class Tensor implements Serializable {
         return t;
 
     }
+    /**
+     * Returns a random tensor sampling from the normal distribution
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static Tensor rand(int rows, int cols,int slices,double min,double max) {
+        Tensor t = new Tensor(rows,cols,slices);
+        for(int i = 0; i < slices; i++) {
+            DoubleMatrix d = new DoubleMatrix(rows,cols);
+            for(int j = 0; j < d.length; j++) {
+                double val =  MathUtils.randomDoubleBetween(min,max);
+                if(val == 0)
+                    val += Math.random();
+                d.put(j,val);
 
+            }
+            t.slices[i] = d;
+        }
 
+        return t;
+
+    }
+
+    /**
+     * Returns a random tensor sampling from the normal distribution
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static Tensor rand(int rows, int cols,int slices) {
+        return rand(rows,cols,slices, Distributions.uniform(new MersenneTwister(123), 0, 1));
+
+    }
     /**
      * Returns a random tensor sampling from the given distribution
      * @param rows the number of rows
@@ -166,7 +379,7 @@ public class Tensor implements Serializable {
         for(int i = 0; i < slices; i++) {
             DoubleMatrix d = new DoubleMatrix(rows,cols);
             for(int j = 0; j < d.length; j++)
-                d.put(i,dist.sample());
+                d.put(j,dist.sample());
             t.slices[i] = d;
         }
 
@@ -249,7 +462,7 @@ public class Tensor implements Serializable {
 
 
     public int columns() {
-       return cols;
+        return cols;
     }
 
     public int rows() {
@@ -260,7 +473,25 @@ public class Tensor implements Serializable {
         return slices.length;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tensor)) return false;
 
+        Tensor tensor = (Tensor) o;
 
+        if (cols != tensor.cols) return false;
+        if (rows != tensor.rows) return false;
+        if (!Arrays.equals(slices, tensor.slices)) return false;
 
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(slices);
+        result = 31 * result + rows;
+        result = 31 * result + cols;
+        return result;
+    }
 }
