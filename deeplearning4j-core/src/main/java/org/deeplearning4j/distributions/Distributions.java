@@ -1,12 +1,29 @@
 package org.deeplearning4j.distributions;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 
 public class Distributions {
-	/**
+
+
+
+
+
+    /**
+     * Returns a exponential distribution
+     * with a mean of 0 and a standard deviation of std
+     * @param rng the rng to use
+     * @param mean the standard mean to use
+     * @return a normal distribution with a mean of 0 and a standard deviation of 1
+     */
+    public static RealDistribution exponential(RandomGenerator rng,double mean) {
+        return  new ExponentialDistribution(rng,1.0,ExponentialDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+    }
+
+    /**
 	 * Returns a normal distribution 
 	 * with a mean of 0 and a standard deviation of std
 	 * @param rng the rng to use
