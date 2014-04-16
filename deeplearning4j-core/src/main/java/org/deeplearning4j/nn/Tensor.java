@@ -74,6 +74,10 @@ public class Tensor implements Serializable {
         slices[index] = slice;
     }
 
+    /**
+     * Returns the sum of all the elements in all slices of the tensor
+     * @return the global sum
+     */
     public double sum() {
         double sum = 0.0;
         for(int i = 0;i < slices(); i++)
@@ -90,12 +94,38 @@ public class Tensor implements Serializable {
     }
 
 
+    /**
+     * Assigns the corresponding slice to the passed in elements for each slice[i] in tensor
+     * @param tensor the tensor to set
+     * @param rowIndices the row indices for each slice
+     * @param columnIndices the column indices for each slice
+     */
+    public void set(Tensor tensor,int[] rowIndices,int[] columnIndices) {
+        for(int i = 0; i < slices(); i++) {
+            slices[i].put(rowIndices,columnIndices,tensor.slices[i]);
+        }
+
+    }
+
+    /**
+     * Sets the passed in matrix to each of the row/column indices in each slice
+     * @param toSet the matrix to set
+     * @param rowIndices the row indices to set
+     * @param columnIndices the column indices to set
+     */
+    public void set(DoubleMatrix toSet,int[] rowIndices,int[] columnIndices) {
+        for(int i = 0; i < slices(); i++) {
+           slices[i].put(rowIndices,columnIndices,toSet);
+        }
+
+    }
+
     public Tensor get(int[] rowIndices,int[] columnIndices) {
         DoubleMatrix first = slices[0].get(rowIndices,columnIndices);
         Tensor ret = new Tensor(first.rows,first.columns,slices());
         ret.slices[0]  = first;
         for(int i = 1; i < slices(); i++) {
-            ret.slices[1] = slices[i].get(rowIndices,columnIndices);
+            ret.slices[i] = slices[i].get(rowIndices,columnIndices);
         }
 
         return ret;
