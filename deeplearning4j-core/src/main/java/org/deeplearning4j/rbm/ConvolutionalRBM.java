@@ -115,7 +115,7 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
                 int colLength = colsMax - cols;
 
                 Tensor set = blockVal.permute(new int[]{2,3,1}).repmat(rowLength,colLength);
-                ret.set(set,new int[]{rowsMin,rowsMax},new int[]{colsMin,colsMax});
+                ret.set(set,new int[]{rowsMin,rowsMax},new int[]{cols,colsMax});
 
 
 
