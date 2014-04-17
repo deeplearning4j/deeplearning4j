@@ -9,6 +9,7 @@ import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.Geometry;
 import org.jblas.MatrixFunctions;
+import org.jblas.SimpleBlas;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -18,77 +19,48 @@ import java.util.Arrays;
  * Based on the Recursive Neural Tensor Network by Socher et. al
  * @author Adam Gibson
  */
-public class Tensor implements Serializable {
+public class Tensor extends DoubleMatrix implements Serializable {
 
-    private DoubleMatrix[] slices;
-    private int rows,cols;
+    private int slices,rows;
 
 
     public Tensor(int rows, int columns, int slices) {
+        super(rows * slices,columns);
+        this.slices = slices;
         this.rows = rows;
-        this.cols = columns;
-        this.slices = new DoubleMatrix[slices];
-
-        for(int i = 0; i < slices; i++) {
-            this.slices[i] = DoubleMatrix.zeros(rows,columns);
-        }
     }
 
-
+    public Tensor(DoubleMatrix t) {
+        super(t.toArray2());
+    }
     public Tensor(Tensor t) {
-        this.slices = new DoubleMatrix[t.slices()];
-        this.rows = t.rows();
-        this.cols = t.columns();
-        System.arraycopy(t.slices,0,this.slices,0,t.slices());
+        super(t.toArray2());
     }
 
-    public Tensor(DoubleMatrix[] slices) {
-        ensureSameSize(slices);
-        this.slices = new DoubleMatrix[slices.length];
-        for(int i = 0; i < slices.length; i++) {
-            this.slices[i] = slices[i].dup();
-        }
 
+    private int[] getColIndicesForSlice() {
+        return new int[]{0,columns};
     }
+    /* Gets a block of the matrix such that the slice represents a subset of the rows in the matrix */
+    private int[] getRowIndicesForSlice(int slice) {
 
-    private void ensureSameSize(DoubleMatrix[] slices) {
-        if(slices == null || slices.length < 1)
-            throw new IllegalArgumentException("Illegal argument, please pass in slices array >= length 1");
-        this.rows = slices[0].rows;
-        this.cols = slices[0].columns;
-        for(int i = 1; i < slices.length; i++) {
-            if(slices[i].rows != rows || slices[i].columns != cols)
-                throw new IllegalArgumentException("All slices must be of the same number of rows and columns");
-        }
+        return new int[]{slice * rows, slice * rows + rows};
     }
 
 
     public DoubleMatrix getSlice(int index) {
-        return slices[index];
+        return get(getRowIndicesForSlice(index),getColIndicesForSlice());
     }
 
     public void setSlice(int index,DoubleMatrix slice) {
-        if(slice.rows != rows || slice.columns != cols)
-            throw new IllegalArgumentException("Illegal matrix passed in, must be of same dimenions as specified slices");
-
-        slices[index] = slice;
-    }
-
-    /**
-     * Returns the sum of all the elements in all slices of the tensor
-     * @return the global sum
-     */
-    public double sum() {
-        double sum = 0.0;
-        for(int i = 0;i < slices(); i++)
-            sum += slices[i].sum();
-        return sum;
+        put(getRowIndicesForSlice(index),getColIndicesForSlice(),slice);
     }
 
     /**
      * Clones this tensor
      * @return a copy of this tensor
      */
+    @Override
     public Tensor dup() {
         return new Tensor(this);
     }
@@ -102,7 +74,7 @@ public class Tensor implements Serializable {
      */
     public void set(Tensor tensor,int[] rowIndices,int[] columnIndices) {
         for(int i = 0; i < slices(); i++) {
-            slices[i].put(rowIndices,columnIndices,tensor.slices[i]);
+            setSlice(i,tensor);
         }
 
     }
@@ -115,17 +87,17 @@ public class Tensor implements Serializable {
      */
     public void set(DoubleMatrix toSet,int[] rowIndices,int[] columnIndices) {
         for(int i = 0; i < slices(); i++) {
-           slices[i].put(rowIndices,columnIndices,toSet);
+            setSlice(i, toSet);
         }
 
     }
 
     public Tensor get(int[] rowIndices,int[] columnIndices) {
-        DoubleMatrix first = slices[0].get(rowIndices,columnIndices);
+        DoubleMatrix first = getSlice(9).get(rowIndices, columnIndices);
         Tensor ret = new Tensor(first.rows,first.columns,slices());
-        ret.slices[0]  = first;
+        ret.setSlice(0,first);
         for(int i = 1; i < slices(); i++) {
-            ret.slices[i] = slices[i].get(rowIndices,columnIndices);
+            ret.setSlice(i, getSlice(i).get(rowIndices, columnIndices));;
         }
 
         return ret;
@@ -138,20 +110,7 @@ public class Tensor implements Serializable {
      * @return
      */
     public DoubleMatrix toMatrix() {
-        DoubleMatrix ret = new DoubleMatrix(rows() * slices(),columns());
-        int currSlice = 0;
-        int row = 0;
-        for(int i = 0; i < ret.rows; i++) {
-            DoubleMatrix slice = getSlice(currSlice);
-            DoubleMatrix rowM = slice.getRow(row);
-            ret.putRow(i,rowM);
-            row++;
-            if(row >= rows()) {
-                row = 0;
-                currSlice++;
-            }
-        }
-        return ret;
+       return dup();
     }
 
     /**
@@ -159,33 +118,25 @@ public class Tensor implements Serializable {
      * @return a tensor populated by the column sums of each matrix in the tensor
      */
     public Tensor columnsSums() {
-        DoubleMatrix first = slices[0].columnSums();
-        Tensor t = new Tensor(first.rows,first.columns,slices.length);
-        t.slices[0] = first;
-        for(int i =1 ; i < slices.length; i++) {
-            t.slices[i] = slices[i].columnSums();
+        //each slice will have a column sum
+        Tensor t = new Tensor(1,columns,slices);
+
+        for(int i = 0; i < slices(); i++) {
+            DoubleMatrix sums = getSlice(i).columnSums();
+            t.putRow(i,sums);
+
         }
         return t;
     }
 
 
-    @Override
-    public String toString() {
-        return "Tensor{" +
-                "slices=" + Arrays.toString(slices) +
-                ", rows=" + rows +
-                ", cols=" + cols +
-                ", slices=" + slices.length +
-                '}';
-    }
-
 
     public void set(int slice,int i,int j,double val) {
-        slices[slice].put(i,j,val);
+        put(rows * slice + i,j,val);
     }
 
     public double get(int i,int j,int slice) {
-        return slices[slice].get(i,j);
+        return get(i + slice,j);
     }
 
     /**
@@ -194,11 +145,11 @@ public class Tensor implements Serializable {
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRows(int row) {
-        DoubleMatrix rows = new DoubleMatrix(slices(),columns());
-        for(int i = 0; i < slices(); i++) {
-            rows.putRow(i,slices[i].getRow(row));
-        }
-        return rows;
+        int[] indices = new int[]{slices};
+        for(int i = 0; i < slices(); i++)
+            indices[i] = row * i;
+        DoubleMatrix ret = get(indices,this.getColIndicesForSlice());
+        return ret;
     }
 
 
@@ -210,7 +161,7 @@ public class Tensor implements Serializable {
     public DoubleMatrix getColumns(int column) {
         DoubleMatrix rows = new DoubleMatrix(slices(),columns());
         for(int i = 0; i < slices(); i++) {
-            rows.putRow(i,slices[i].getColumn(column));
+            rows.putRow(i,getSlice(i).getColumn(column));
         }
         return rows;
     }
@@ -218,25 +169,24 @@ public class Tensor implements Serializable {
 
 
     /**
-     * Gets the specified row from each slice
+     * Gets the specified row from the specified slice
      * @param row the row to get from each slice
      * @param slice the slice to get
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRow(int row,int slice) {
-        DoubleMatrix rows = slices[slice].getRow(row);
+        DoubleMatrix rows = get(this.getRowIndicesForSlice(slice),this.getColIndicesForSlice());
         return rows;
     }
 
     /**
-     * Gets the specified row from each slice
+     * Gets the specified column from each slice
      * @param column the row to get from each slice
      * @param slice the slice to get
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getColumn(int column,int slice) {
-        DoubleMatrix c = slices[slice].getColumn(column);
-        return c;
+             return get(getRowIndicesForSlice(slice)).getColumn(column);
     }
 
 
@@ -256,7 +206,7 @@ public class Tensor implements Serializable {
         else if (Arrays.equals(nums, new int[]{3, 2, 1})) {
             Tensor ret = new Tensor(slices(), columns(), rows());
             for(int i = 0; i < ret.slices(); i++) {
-                ret.slices[i] = getRows(i);
+                ret.setSlice(i,getRows(i));
             }
             return ret;
         }
@@ -277,8 +227,7 @@ public class Tensor implements Serializable {
 
 
                 }
-
-                t.slices[i] = slice;
+                t.setSlice(i,slice);
                 if(currJ == columns()) {
                     currJ = 0;
                     currI++;
@@ -296,8 +245,7 @@ public class Tensor implements Serializable {
                     DoubleMatrix c = getColumn(column,j);
                     slice.putColumn(j,c);
                 }
-
-                ret.slices[i] = slice;
+                ret.setSlice(i,slice);
             }
             return ret;
         }
@@ -319,7 +267,7 @@ public class Tensor implements Serializable {
 
                 }
 
-                t.slices[i] = slice;
+                t.setSlice(i,slice);
                 column++;
 
                 if(column == t.columns())
@@ -340,11 +288,7 @@ public class Tensor implements Serializable {
      * @return a copy of this tensor with the matrices transposed
      */
     public Tensor transpose() {
-        Tensor ret = new Tensor(columns(),rows,slices());
-        for(int i = 0;i  < slices(); i++) {
-            ret.slices[i] = slices[i].transpose();
-        }
-        return ret;
+       return new Tensor(super.transpose());
     }
 
     /**
@@ -353,11 +297,9 @@ public class Tensor implements Serializable {
      * in this tensor
      */
     public Tensor rowSums() {
-        DoubleMatrix first = slices[0].rowSums();
-        Tensor t = new Tensor(first.rows,first.columns,slices.length);
-        t.slices[0] = first;
-        for(int i =1 ; i < slices.length; i++) {
-            t.slices[i] = slices[i].rowSums();
+        Tensor t = new Tensor(slices(),columns,slices);
+        for(int i = 0 ; i < slices; i++) {
+            t.setSlice(i,getSlice(i).rowSums());
         }
 
         return t;
@@ -374,14 +316,14 @@ public class Tensor implements Serializable {
         if (in.rows != columns()) {
             throw new AssertionError("Number of rows in the input does not match number of columns in tensor");
         }
-        if (rows != cols) {
+        if (rows != columns) {
             throw new AssertionError("Can only perform this operation on a SimpleTensor with square slices");
         }
 
         DoubleMatrix inT = in.transpose();
-        DoubleMatrix out = new DoubleMatrix(slices.length, 1);
-        for (int slice = 0; slice < slices.length; ++slice) {
-            double result = inT.mul(slices[slice]).mul(in).get(0);
+        DoubleMatrix out = new DoubleMatrix(slices, 1);
+        for (int slice = 0; slice < slices; ++slice) {
+            double result = inT.mul(getSlice(slice)).mul(in).get(0);
             out.put(slice, result);
         }
 
@@ -396,21 +338,7 @@ public class Tensor implements Serializable {
      * based on the origin matrix
      */
     public static Tensor create(DoubleMatrix matrix,int numSlices) {
-        int rows = matrix.rows / numSlices;
-        Tensor ret = new Tensor(rows,matrix.columns,numSlices);
-        int currRow = 0, currSlice = 0;
-        for(int i = 0; i < matrix.rows; i ++) {
-            DoubleMatrix put = matrix.getRow(i);
-            ret.slices[currSlice].putRow(currRow,put);
-            currRow++;
-            if(currRow >= rows) {
-                currRow = 0;
-                currSlice++;
-            }
-        }
-
-
-        return ret;
+           return new Tensor(matrix);
 
     }
 
@@ -422,12 +350,7 @@ public class Tensor implements Serializable {
      * @return the tensor with the specified slices and the random matrices
      */
     public static Tensor zeros(int rows, int cols,int slices) {
-        Tensor t = new Tensor(rows,cols,slices);
-        for(int i = 0; i < slices; i++)
-            t.slices[i] = DoubleMatrix.zeros(rows,cols);;
-
-
-        return t;
+         return new Tensor(DoubleMatrix.zeros(rows * slices,cols));
 
     }
 
@@ -452,7 +375,7 @@ public class Tensor implements Serializable {
                 d.put(j,val);
 
             }
-            t.slices[i] = d;
+            t.setSlice(i,d);
         }
 
         return t;
@@ -484,7 +407,7 @@ public class Tensor implements Serializable {
             DoubleMatrix d = new DoubleMatrix(rows,cols);
             for(int j = 0; j < d.length; j++)
                 d.put(j,dist.sample());
-            t.slices[i] = d;
+            t.setSlice(i,d);
         }
 
         return t;
@@ -503,10 +426,7 @@ public class Tensor implements Serializable {
      * with this tensor
      */
     public Tensor sub(Tensor tensor) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].sub(tensor.slices[i]);
-        return t;
+        return new Tensor(sub(tensor));
     }
 
     /**
@@ -516,10 +436,8 @@ public class Tensor implements Serializable {
      * with this tensor
      */
     public Tensor add(Tensor tensor) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].add(tensor.slices[i]);
-        return t;
+        return new Tensor(add(tensor));
+
     }
 
     /**
@@ -529,10 +447,8 @@ public class Tensor implements Serializable {
      * with this tensor
      */
     public Tensor mul(Tensor tensor) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].mul(tensor.slices[i]);
-        return t;
+        return new Tensor(mul(tensor));
+
     }
 
 
@@ -542,10 +458,7 @@ public class Tensor implements Serializable {
      * @return this tensor with values - val
      */
     public Tensor sub(double val) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].sub(val);
-        return t;
+        return new Tensor(sub(val));
     }
 
     /**
@@ -554,10 +467,7 @@ public class Tensor implements Serializable {
      * @return a tensor with the elements of this tensor added by val
      */
     public Tensor add(double val) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].add(val);
-        return t;
+         return new Tensor(add(val));
     }
 
     /**
@@ -567,18 +477,12 @@ public class Tensor implements Serializable {
      * with this tensor
      */
     public Tensor mul(double val) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].mul(val);
-        return t;
+        return new Tensor(mul(val));
     }
 
 
     public Tensor scale(double value) {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = slices[i].mul(value);
-        return t;
+       return new Tensor(SimpleBlas.scal(value,this));
     }
 
 
@@ -587,8 +491,7 @@ public class Tensor implements Serializable {
      * @param val the value to assign
      */
     public void assign(double val) {
-        for(int i = 0; i < slices.length; i++)
-            slices[i] = DoubleMatrix.zeros(rows,columns()).add(val);
+        put(new int[]{0,rows},new int[]{0,columns},val);
     }
 
 
@@ -597,20 +500,14 @@ public class Tensor implements Serializable {
      * @return a copy of this tensor with tanh applied
      */
     public Tensor tanh() {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = MatrixFunctions.tanh(slices[i]);
-        return t;
+        return new Tensor(MatrixFunctions.tanh(this));
     }
     /**
      * A copy of this tensor with sigmoid applied
      * @return a copy of this tensor with sigmoid applied
      */
     public Tensor sigmoid() {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = MatrixUtil.sigmoid(slices[i]);
-        return t;
+        return new Tensor(MatrixUtil.sigmoid(this));
     }
 
     /**
@@ -618,10 +515,7 @@ public class Tensor implements Serializable {
      * @return a copy of this tensor with exp applied
      */
     public Tensor exp() {
-        Tensor t = new Tensor(rows,columns(),slices());
-        for(int i = 0;i < slices(); i++)
-            t.slices[i] = MatrixFunctions.exp(slices[i]);
-        return t;
+        return new Tensor(MatrixFunctions.exp(this));
     }
 
     /**
@@ -629,12 +523,12 @@ public class Tensor implements Serializable {
      * @return rows * cols * slices
      */
     public int numElements() {
-        return rows * cols * slices.length;
+        return length;
     }
 
 
     public int columns() {
-        return cols;
+        return columns;
     }
 
     public int rows() {
@@ -642,28 +536,7 @@ public class Tensor implements Serializable {
     }
 
     public int slices() {
-        return slices.length;
+        return this.slices;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Tensor)) return false;
-
-        Tensor tensor = (Tensor) o;
-
-        if (cols != tensor.cols) return false;
-        if (rows != tensor.rows) return false;
-        if (!Arrays.equals(slices, tensor.slices)) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Arrays.hashCode(slices);
-        result = 31 * result + rows;
-        result = 31 * result + cols;
-        return result;
-    }
 }
