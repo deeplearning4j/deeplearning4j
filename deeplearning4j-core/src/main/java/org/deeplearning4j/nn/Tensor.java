@@ -39,12 +39,21 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
 
     private int[] getColIndicesForSlice() {
-        return new int[]{0,columns};
+        int[] ret = new int[columns];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = i;
+        return ret;
     }
     /* Gets a block of the matrix such that the slice represents a subset of the rows in the matrix */
     private int[] getRowIndicesForSlice(int slice) {
+        int[] ret = new int[Math.abs(slice * rows - (slice * rows) + rows)];
+        int start = slice * rows;
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = start;
+            start++;
+        }
 
-        return new int[]{slice * rows, slice * rows + rows};
+        return ret;
     }
 
 
@@ -92,8 +101,12 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     }
 
-    public Tensor get(int[] rowIndices,int[] columnIndices) {
-        DoubleMatrix first = getSlice(9).get(rowIndices, columnIndices);
+    public Tensor columnSums() {
+       return new Tensor(columnsSums());
+    }
+
+    public Tensor getIndicesSlices(int[] rowIndices,int[] columnIndices) {
+        DoubleMatrix first = getSlice(0).get(rowIndices, columnIndices);
         Tensor ret = new Tensor(first.rows,first.columns,slices());
         ret.setSlice(0,first);
         for(int i = 1; i < slices(); i++) {
@@ -145,10 +158,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRows(int row) {
-        int[] indices = new int[]{slices};
+        int[] indices = new int[slices()];
         for(int i = 0; i < slices(); i++)
             indices[i] = row * i;
-        DoubleMatrix ret = get(indices,this.getColIndicesForSlice());
+        DoubleMatrix ret = get(indices,getColIndicesForSlice());
         return ret;
     }
 
@@ -186,7 +199,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getColumn(int column,int slice) {
-             return get(getRowIndicesForSlice(slice)).getColumn(column);
+             return getSlice(slice).getColumn(column);
     }
 
 
@@ -365,7 +378,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the tensor with the specified slices and the random matrices
      */
     public static Tensor rand(int rows, int cols,int slices,double min,double max) {
-        Tensor t = new Tensor(rows,cols,slices);
+        Tensor t = new Tensor(rows ,cols,slices);
         for(int i = 0; i < slices; i++) {
             DoubleMatrix d = new DoubleMatrix(rows,cols);
             for(int j = 0; j < d.length; j++) {
@@ -377,6 +390,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
             }
             t.setSlice(i,d);
         }
+
 
         return t;
 
@@ -414,10 +428,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     }
 
-
-    public Tensor repmat(int rows, int cols) {
-        return Tensor.create(toMatrix().repmat(rows,cols),rows * slices());
+    public Tensor repmat(int rows,int cols) {
+        return new Tensor(repmat(rows,cols));
     }
+
 
     /**
      * Element wise subtraction of each slice of the passed in tensor
