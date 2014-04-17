@@ -4,17 +4,14 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.Tensor;
-import org.deeplearning4j.nn.TensorNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.util.Functions;
-import org.jblas.util.Permutations;
+import org.jblas.ranges.RangeUtils;
 
-import static org.jblas.MatrixFunctions.*;
 import static org.jblas.DoubleMatrix.zeros;
 
-public class ConvolutionalRBM extends RBM implements TensorNetwork {
+public class ConvolutionalRBM extends RBM  {
 
     /**
      *
@@ -87,7 +84,7 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
             filterMatrix.putRow(k,next);
         }
 
-       // filterMatrix = pool(filterMatrix);
+        // filterMatrix = pool(filterMatrix);
 
         filterMatrix.addi(1);
         filterMatrix = MatrixUtil.oneDiv(filterMatrix);
@@ -95,6 +92,9 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
         return filterMatrix;
 
     }
+
+
+
 
     public Tensor pooledActivations(Tensor input) {
         int nCols = input.columns();
@@ -111,14 +111,14 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
                 int colLength = colsMax - cols;
 
                 Tensor set = blockVal.permute(new int[]{2,3,1}).repmat(rowLength,colLength);
-                ret.set(set,new int[]{rowsMin,rowsMax},new int[]{cols,colsMax});
+                ret.put(RangeUtils.interval(rowsMin, rowsMax), RangeUtils.interval(cols, colsMax), set);
 
 
 
             }
 
         }
-       return ret;
+        return ret;
     }
 
 
@@ -153,13 +153,5 @@ public class ConvolutionalRBM extends RBM implements TensorNetwork {
         return super.sampleVisibleGivenHidden(h);
     }
 
-    @Override
-    public Tensor getWTensor() {
-        return null;
-    }
 
-    @Override
-    public void setW(Tensor w) {
-
-    }
 }
