@@ -219,7 +219,7 @@ public class RBM extends BaseNeuralNetwork {
 		DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
 		//apply dropout
 		applyDropOutIfNecessary(h1Sample);
-		return new Pair<DoubleMatrix,DoubleMatrix>(h1Mean,h1Sample);
+		return new Pair<>(h1Mean,h1Sample);
 
 	}
 

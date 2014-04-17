@@ -66,6 +66,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
 
+
     /**
      * Sums the elements along the third dimension such that
      * each element's i,j is the sum of the element at
@@ -169,7 +170,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return
      */
     public DoubleMatrix toMatrix() {
-        return dup();
+        return this;
     }
 
     /**
