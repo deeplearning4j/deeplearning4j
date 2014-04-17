@@ -57,6 +57,47 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return ret;
     }
 
+    public Tensor sliceColumnSums() {
+        Tensor ret = new Tensor(1,columns(),slices);
+        for(int i = 0; i < slices(); i++) {
+            ret.setSlice(i,getSlice(i).columnSums());
+        }
+        return ret;
+    }
+
+
+    /**
+     * Sums the elements along the third dimension such that
+     * each element's i,j is the sum of the element at
+     * all the i,j's in the slice
+     * @return the slice wise element sums
+     */
+    public DoubleMatrix sliceElementSums() {
+        DoubleMatrix ret = new DoubleMatrix(rows(),columns());
+        int currI = 0,currJ = 0;
+        for(int i = 0; i < ret.length; i++) {
+            double sum = 0;
+            for(int slice = 0; i < slices; i++)
+                sum += get(currI,currJ,slice);
+            ret.put(i,sum);
+        }
+        for(int slice = 0; slice < slices(); slice++) {
+
+        }
+        return ret;
+    }
+
+
+    public DoubleMatrix sliceRowSums() {
+        Tensor ret = new Tensor(rows(),columns(),slices);
+        for(int i = 0; i < slices(); i++) {
+            DoubleMatrix rowSums = getSlice(i).rowSums();
+            ret.setSlice(i,rowSums);
+        }
+        return ret;
+    }
+
+
 
     public DoubleMatrix getSlice(int index) {
         return get(getRowIndicesForSlice(index),getColIndicesForSlice());
