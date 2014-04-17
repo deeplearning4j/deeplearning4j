@@ -22,26 +22,18 @@ public class ConvolutionalRBM extends RBM  {
      */
     private static final long serialVersionUID = 6868729665328916878L;
     private int numFilters;
-    private int poolRows;
-    private int poolColumns;
     //top down signal from hidden feature maps to visibles
     private Tensor visI;
     //bottom up signal from visibles to hiddens
     private Tensor hidI;
-    //visible unit expectation
-    private DoubleMatrix visExpectation;
-    //hidden unit expectation
-    private DoubleMatrix hiddenExpectation;
-    //initial hidden expectation for gradients
-    private DoubleMatrix initialHiddenExpectation;
-    private DoubleMatrix fmSize;
-    private Tensor eHid,eVis;
     private Tensor W;
     private DoubleMatrix poolingLayer;
     private int[] stride;
 
 
-    protected ConvolutionalRBM() {}
+    protected ConvolutionalRBM() {
+        init();
+    }
 
 
 
@@ -49,27 +41,10 @@ public class ConvolutionalRBM extends RBM  {
     protected ConvolutionalRBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
                                DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
+        init();
     }
 
 
-    public DoubleMatrix visibleExpectation(DoubleMatrix visible,double bias) {
-        DoubleMatrix filterMatrix = new DoubleMatrix(numFilters);
-        for(int k = 0; k < numFilters; k++) {
-            DoubleMatrix next = MatrixUtil.convolution2D(visible,
-                    visible.columns,
-                    visible.rows, this.getW().getRow(k), this.getW().rows, this.getW().columns).add(this.getvBias().add(bias)).transpose();
-            filterMatrix.putRow(k,next);
-        }
-
-        //   filterMatrix = pool(filterMatrix);
-
-        filterMatrix.addi(1);
-        filterMatrix = MatrixUtil.oneDiv(filterMatrix);
-
-        //replace with actual function later, sigmoid is only one possible option
-        return MatrixUtil.sigmoid(filterMatrix);
-
-    }
 
 
     private void init() {
@@ -79,24 +54,6 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-
-    public DoubleMatrix pooledExpectation(DoubleMatrix visible,double bias) {
-        DoubleMatrix filterMatrix = new DoubleMatrix(numFilters);
-        for(int k = 0; k < numFilters; k++) {
-            DoubleMatrix next = MatrixUtil.convolution2D(visible,
-                    visible.columns,
-                    visible.rows, this.getW().getRow(k), this.getW().rows, this.getW().columns).add(this.gethBias().add(bias)).transpose();
-            filterMatrix.putRow(k,next);
-        }
-
-        // filterMatrix = pooledExpectation(filterMatrix);
-
-        filterMatrix.addi(1);
-        filterMatrix = MatrixUtil.oneDiv(filterMatrix);
-
-        return filterMatrix;
-
-    }
 
     /**
      * Calculates the activation of the visible :
@@ -110,9 +67,10 @@ public class ConvolutionalRBM extends RBM  {
         for(int i = 0; i < numFilters; i++) {
             hidI.setSlice(i,convolution2D(v,MatrixUtil.reverse(W.getSlice(i)).add(hBias.get(i))));
         }
-        DoubleMatrix expHidI = exp(hidI);
 
-        DoubleMatrix eHid = exp(hidI).div(pooledExpectation(expHidI, hBias.get(0)));
+        Tensor expHidI = hidI.exp();
+
+        DoubleMatrix eHid = expHidI.div(pool(expHidI));
         return eHid;
     }
 
@@ -137,14 +95,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-    public Tensor poolGivenVisible(Tensor input) {
-        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
-        for(int i = 0;i  < numFilters; i++) {
-            I.setSlice(i,convolution2D(input,MatrixUtil.reverse(W.getSlice(i))));
-        }
 
-        return I;
-    }
 
 
     public Tensor pool(Tensor input) {
@@ -173,16 +124,6 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-    /**
-     * Binomial sampling of the hidden values given visible
-     *
-     * @param v the visible values
-     * @return a binomial distribution containing the expected values and the samples
-     */
-    @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
-        return super.sampleHiddenGivenVisible(v);
-    }
 
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
@@ -202,7 +143,7 @@ public class ConvolutionalRBM extends RBM  {
 		 * This is the update rules for weights and biases
 		 */
         Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
-
+        Pair<Tensor,Tensor> probHiddenTensor = new Pair<>((Tensor) probHidden.getFirst(),(Tensor) probHidden.getSecond());
 		/*
 		 * Start the gibbs sampling.
 		 */
@@ -250,26 +191,27 @@ public class ConvolutionalRBM extends RBM  {
 		/*
 		 * Update gradient parameters
 		 */
-        DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
-                nvSamples.transpose().mmul(nhMeans)
-        );
+
+        Tensor eHiddenInitial = (Tensor) probHidden.getSecond();
+        Tensor hiddenMeans = (Tensor) nhMeans;
+        Tensor wGradient = new Tensor(W.rows(),W.columns(),W.slices());
+        for(int i = 0; i < numFilters; i++) {
+            wGradient.setSlice(i,convolution2D(input,eHiddenInitial.getSlice(i)).sub(convolution2D(nvSamples,MatrixUtil.reverse(hiddenMeans.getSlice(i)))));
+        }
+
 
 
 
         DoubleMatrix hBiasGradient = null;
 
-        if(sparsity != 0)
-            //all hidden units must stay around this number
-            hBiasGradient = mean(scalarMinus(sparsity,probHidden.getSecond()),0);
-        else
-            //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-            hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
+        //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
+        hBiasGradient = DoubleMatrix.scalar(probHidden.getSecond().sub(nhMeans).columnSums().sum());
 
 
 
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
+        DoubleMatrix  vBiasGradient = DoubleMatrix.scalar((input.sub(nvSamples)).columnSums().sum());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
         updateGradientAccordingToParams(ret, learningRate);
