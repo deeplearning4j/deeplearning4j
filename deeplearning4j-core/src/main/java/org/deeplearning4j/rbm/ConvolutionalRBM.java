@@ -1,19 +1,19 @@
 package org.deeplearning4j.rbm;
 
 import static org.deeplearning4j.util.MatrixUtil.*;
-import static org.deeplearning4j.util.MatrixUtil.mean;
-import static org.jblas.MatrixFunctions.exp;
+
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
 
-import static org.jblas.DoubleMatrix.zeros;
+
 
 public class ConvolutionalRBM extends RBM  {
 
@@ -21,13 +21,12 @@ public class ConvolutionalRBM extends RBM  {
      *
      */
     private static final long serialVersionUID = 6868729665328916878L;
-    private int numFilters;
+    private int numFilters = 4;
     //top down signal from hidden feature maps to visibles
     private Tensor visI;
     //bottom up signal from visibles to hiddens
     private Tensor hidI;
     private Tensor W;
-    private DoubleMatrix poolingLayer;
     private int[] stride;
 
 
@@ -221,20 +220,42 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
+    public class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
 
-    /**
-     * Guess the visible values given the hidden
-     *
-     * @param h
-     * @return
-     */
-    @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-        for(int i = 0;i < numFilters; i++) {
+        protected int numFilters;
+        protected int[] stride;
+
+
+
+
+        public Builder() {
+            this.clazz = ConvolutionalRBM.class;
 
         }
 
-        return super.sampleVisibleGivenHidden(h);
+
+        public Builder withStride(int[] stride) {
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder withNumFilters(int numFilters) {
+            this.numFilters = numFilters;
+            return this;
+        }
+
+
+
+        public ConvolutionalRBM build() {
+            ConvolutionalRBM ret = (ConvolutionalRBM) super.build();
+            ret.numFilters = numFilters;
+            ret.stride = stride;
+            return ret;
+
+        }
+
+
+
     }
 
 
