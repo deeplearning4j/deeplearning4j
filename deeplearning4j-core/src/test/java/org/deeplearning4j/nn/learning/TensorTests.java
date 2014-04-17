@@ -40,6 +40,25 @@ public class TensorTests {
         assertEquals(true, matrix.columns == 3);
     }
 
+      @Test
+    public void testTensorRowSums() {
+        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
+        Tensor rowSums = t.sliceRowSums();
+        assertEquals(t.slices(),rowSums.slices());
+        assertEquals(true ,Math.abs(t.sum() - rowSums.sum()) < 1e-1);
+        assertEquals(rowSums.rows(),t.rows());
+    }
+
+    @Test
+    public void testTensorColumnSums() {
+        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
+        Tensor columnSums = t.sliceColumnSums();
+        assertEquals(t.slices(),columnSums.slices());
+        assertEquals(true ,Math.abs(t.sum() - columnSums.sum()) <= 1e-1);
+        assertEquals(columnSums.columns(),t.columns());
+    }
+
+
     @Test
     public void testCreate() {
         Tensor t = Tensor.rand(2,3,3,4.0,6.0);
