@@ -18,18 +18,19 @@ public class TensorTests {
     private static Logger log = LoggerFactory.getLogger(TensorTests.class);
 
     @Test
+    public void testSetGetSlice() {
+        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
+        assertEquals(18,t.length);
+    }
+
+    @Test
     public void getSetTest() {
         Tensor t = new Tensor(1,1,1);
         t.set(0,0,0,2.0);
         assertEquals(true,2.0 == t.get(0,0,0));
     }
 
-    @Test
-    public void repmatTest() {
-        Tensor t = Tensor.rand(2,3,3,4.0,6.0);
-        Tensor rep = t.repmat(2,3);
-        assertEquals(rep.toMatrix(),t.toMatrix().repmat(2,3));
-    }
+
 
     @Test
     public void testAsMatrix() {
