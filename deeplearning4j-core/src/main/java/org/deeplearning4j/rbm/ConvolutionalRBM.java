@@ -1,8 +1,7 @@
 package org.deeplearning4j.rbm;
 
-import static org.deeplearning4j.util.MatrixUtil.convolution2D;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-
+import static org.deeplearning4j.util.MatrixUtil.*;
+import static org.deeplearning4j.util.MatrixUtil.mean;
 import static org.jblas.MatrixFunctions.exp;
 
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -90,7 +89,7 @@ public class ConvolutionalRBM extends RBM  {
             filterMatrix.putRow(k,next);
         }
 
-       // filterMatrix = pooledExpectation(filterMatrix);
+        // filterMatrix = pooledExpectation(filterMatrix);
 
         filterMatrix.addi(1);
         filterMatrix = MatrixUtil.oneDiv(filterMatrix);
@@ -113,7 +112,7 @@ public class ConvolutionalRBM extends RBM  {
         }
         DoubleMatrix expHidI = exp(hidI);
 
-        DoubleMatrix eHid = exp(hidI).div(pooledExpectation(expHidI,hBias.get(0)));
+        DoubleMatrix eHid = exp(hidI).div(pooledExpectation(expHidI, hBias.get(0)));
         return eHid;
     }
 
@@ -126,16 +125,19 @@ public class ConvolutionalRBM extends RBM  {
      */
     @Override
     public DoubleMatrix propDown(DoubleMatrix h) {
+        Tensor h1 = (Tensor) h;
         for(int i = 0; i < numFilters; i++) {
-            visI.setSlice(i,convolution2D(h,MatrixUtil.reverse(W.getSlice(i)).add(vBias.get(i))));
+            visI.setSlice(i,
+                    convolution2D(h1.getSlice(i),W.getSlice(i)));
         }
 
-        DoubleMatrix I = visI.rowSums().addRowVector(vBias);
+        DoubleMatrix I = visI.sliceElementSums().addRowVector(vBias);
 
         return sigmoid(I);
     }
 
-    public Tensor poolGivenHidden(Tensor input) {
+
+    public Tensor poolGivenVisible(Tensor input) {
         Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
         for(int i = 0;i  < numFilters; i++) {
             I.setSlice(i,convolution2D(input,MatrixUtil.reverse(W.getSlice(i))));
@@ -144,17 +146,8 @@ public class ConvolutionalRBM extends RBM  {
         return I;
     }
 
-    public Tensor poolGivenVisible(Tensor input) {
-        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
-        for(int i = 0;i  < numFilters; i++) {
-                I.setSlice(i,convolution2D(input,MatrixUtil.reverse(W.getSlice(i))));
-        }
 
-        return I;
-    }
-
-
-    public Tensor pooledActivations(Tensor input) {
+    public Tensor pool(Tensor input) {
         int nCols = input.columns();
         int rows = input.rows();
         Tensor ret = Tensor.zeros(rows,nCols,input.slices());
@@ -193,8 +186,99 @@ public class ConvolutionalRBM extends RBM  {
 
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
-        return super.getGradient(params);
+        int k = (int) params[0];
+        double learningRate = (double) params[1];
+
+
+        if(wAdaGrad != null)
+            wAdaGrad.setMasterStepSize(learningRate);
+        if(hBiasAdaGrad != null )
+            hBiasAdaGrad.setMasterStepSize(learningRate);
+        if(vBiasAdaGrad != null)
+            vBiasAdaGrad.setMasterStepSize(learningRate);
+
+		/*
+		 * Cost and updates dictionary.
+		 * This is the update rules for weights and biases
+		 */
+        Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
+
+		/*
+		 * Start the gibbs sampling.
+		 */
+        DoubleMatrix chainStart = probHidden.getSecond();
+
+		/*
+		 * Note that at a later date, we can explore alternative methods of
+		 * storing the chain transitions for different kinds of sampling
+		 * and exploring the search space.
+		 */
+        Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
+        //negative visible means or expected values
+        DoubleMatrix nvMeans = null;
+        //negative value samples
+        DoubleMatrix nvSamples = null;
+        //negative hidden means or expected values
+        DoubleMatrix nhMeans = null;
+        //negative hidden samples
+        DoubleMatrix nhSamples = null;
+
+		/*
+		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
+		 *
+		 * There are 4 matrices being computed for each gibbs sampling.
+		 * The samples from both the positive and negative phases and their expected values
+		 * or averages.
+		 *
+		 */
+
+        for(int i = 0; i < k; i++) {
+
+
+            if(i == 0)
+                matrices = gibbhVh(chainStart);
+            else
+                matrices = gibbhVh(nhSamples);
+
+            //get the cost updates for sampling in the chain after k iterations
+            nvMeans = matrices.getFirst().getFirst();
+            nvSamples = matrices.getFirst().getSecond();
+            nhMeans = matrices.getSecond().getFirst();
+            nhSamples = matrices.getSecond().getSecond();
+        }
+
+		/*
+		 * Update gradient parameters
+		 */
+        DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+                nvSamples.transpose().mmul(nhMeans)
+        );
+
+
+
+        DoubleMatrix hBiasGradient = null;
+
+        if(sparsity != 0)
+            //all hidden units must stay around this number
+            hBiasGradient = mean(scalarMinus(sparsity,probHidden.getSecond()),0);
+        else
+            //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
+            hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
+
+
+
+
+        //update rule: the expected values of the input - the negative samples adjusted by the learning rate
+        DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
+        NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
+
+        updateGradientAccordingToParams(ret, learningRate);
+        triggerGradientEvents(ret);
+
+        return ret;
     }
+
+
 
     /**
      * Guess the visible values given the hidden
