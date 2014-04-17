@@ -1,5 +1,10 @@
 package org.deeplearning4j.rbm;
 
+import static org.deeplearning4j.util.MatrixUtil.convolution2D;
+import static org.deeplearning4j.util.MatrixUtil.sigmoid;
+
+import static org.jblas.MatrixFunctions.exp;
+
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -31,6 +36,7 @@ public class ConvolutionalRBM extends RBM  {
     //initial hidden expectation for gradients
     private DoubleMatrix initialHiddenExpectation;
     private DoubleMatrix fmSize;
+    private Tensor eHid,eVis;
     private Tensor W;
     private DoubleMatrix poolingLayer;
     private int[] stride;
@@ -84,7 +90,7 @@ public class ConvolutionalRBM extends RBM  {
             filterMatrix.putRow(k,next);
         }
 
-        // filterMatrix = pool(filterMatrix);
+       // filterMatrix = pooledExpectation(filterMatrix);
 
         filterMatrix.addi(1);
         filterMatrix = MatrixUtil.oneDiv(filterMatrix);
@@ -93,7 +99,59 @@ public class ConvolutionalRBM extends RBM  {
 
     }
 
+    /**
+     * Calculates the activation of the visible :
+     * sigmoid(v * W + hbias)
+     *
+     * @param v the visible layer
+     * @return the approximated activations of the visible layer
+     */
+    @Override
+    public DoubleMatrix propUp(DoubleMatrix v) {
+        for(int i = 0; i < numFilters; i++) {
+            hidI.setSlice(i,convolution2D(v,MatrixUtil.reverse(W.getSlice(i)).add(hBias.get(i))));
+        }
+        DoubleMatrix expHidI = exp(hidI);
 
+        DoubleMatrix eHid = exp(hidI).div(pooledExpectation(expHidI,hBias.get(0)));
+        return eHid;
+    }
+
+    /**
+     * Calculates the activation of the hidden:
+     * sigmoid(h * W + vbias)
+     *
+     * @param h the hidden layer
+     * @return the approximated output of the hidden layer
+     */
+    @Override
+    public DoubleMatrix propDown(DoubleMatrix h) {
+        for(int i = 0; i < numFilters; i++) {
+            visI.setSlice(i,convolution2D(h,MatrixUtil.reverse(W.getSlice(i)).add(vBias.get(i))));
+        }
+
+        DoubleMatrix I = visI.rowSums().addRowVector(vBias);
+
+        return sigmoid(I);
+    }
+
+    public Tensor poolGivenHidden(Tensor input) {
+        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
+        for(int i = 0;i  < numFilters; i++) {
+            I.setSlice(i,convolution2D(input,MatrixUtil.reverse(W.getSlice(i))));
+        }
+
+        return I;
+    }
+
+    public Tensor poolGivenVisible(Tensor input) {
+        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
+        for(int i = 0;i  < numFilters; i++) {
+                I.setSlice(i,convolution2D(input,MatrixUtil.reverse(W.getSlice(i))));
+        }
+
+        return I;
+    }
 
 
     public Tensor pooledActivations(Tensor input) {

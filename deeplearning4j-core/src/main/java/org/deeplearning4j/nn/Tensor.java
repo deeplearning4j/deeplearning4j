@@ -13,6 +13,7 @@ import org.jblas.SimpleBlas;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Tensor represents a set of matrices of all the same dimensions.
@@ -65,6 +66,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
         put(getRowIndicesForSlice(index),getColIndicesForSlice(),slice);
     }
 
+    public void setSlice(int index,Tensor slice) {
+         setSlice(index,slice);
+    }
+
     /**
      * Clones this tensor
      * @return a copy of this tensor
@@ -102,7 +107,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
     public Tensor columnSums() {
-       return new Tensor(columnsSums());
+        return new Tensor(columnsSums());
     }
 
     public Tensor getIndicesSlices(int[] rowIndices,int[] columnIndices) {
@@ -123,7 +128,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return
      */
     public DoubleMatrix toMatrix() {
-       return dup();
+        return dup();
     }
 
     /**
@@ -192,6 +197,16 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return rows;
     }
 
+
+    public Tensor ff() {
+        Tensor ret = new Tensor(this);
+        for(int i = 0; i < slices(); i++) {
+            DoubleMatrix slice = MatrixUtil.reverse(getSlice(i));
+            setSlice(i,slice);
+        }
+        return ret;
+    }
+
     /**
      * Gets the specified column from each slice
      * @param column the row to get from each slice
@@ -199,7 +214,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getColumn(int column,int slice) {
-             return getSlice(slice).getColumn(column);
+        return getSlice(slice).getColumn(column);
     }
 
 
@@ -301,7 +316,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a copy of this tensor with the matrices transposed
      */
     public Tensor transpose() {
-       return new Tensor(super.transpose());
+        return new Tensor(super.transpose());
     }
 
     /**
@@ -351,7 +366,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * based on the origin matrix
      */
     public static Tensor create(DoubleMatrix matrix,int numSlices) {
-           return new Tensor(matrix);
+        return new Tensor(matrix);
 
     }
 
@@ -363,7 +378,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the tensor with the specified slices and the random matrices
      */
     public static Tensor zeros(int rows, int cols,int slices) {
-         return new Tensor(DoubleMatrix.zeros(rows * slices,cols));
+        return new Tensor(DoubleMatrix.zeros(rows * slices,cols));
 
     }
 
@@ -481,7 +496,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a tensor with the elements of this tensor added by val
      */
     public Tensor add(double val) {
-         return new Tensor(add(val));
+        return new Tensor(add(val));
     }
 
     /**
@@ -496,7 +511,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
 
     public Tensor scale(double value) {
-       return new Tensor(SimpleBlas.scal(value,this));
+        return new Tensor(SimpleBlas.scal(value,this));
     }
 
 
