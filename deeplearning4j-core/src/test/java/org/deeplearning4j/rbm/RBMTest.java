@@ -70,15 +70,13 @@ public class RBMTest  {
 		RandomGenerator g = new MersenneTwister(123);
 
 		RBM r = new RBM.Builder()
-		.useAdaGrad(true).normalizeByInputRows(true)
-		.numberOfVisible(d.numInputs()).renderWeights(100)
-		.numHidden(600).withMomentum(0.3).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
-		.withRandom(g)
+		.numberOfVisible(d.numInputs()).renderWeights(1)
+		.numHidden(600)
 		.build();
 		
 
 		
-		r.trainTillConvergence(d.getFirst() ,1e-6,new Object[]{1,1e-6,3000});
+		r.trainTillConvergence(d.getFirst() ,1e-2,new Object[]{1,1e-2,3000});
 
 		DoubleMatrix reconstruct = r.reconstruct(d.getFirst());
 
