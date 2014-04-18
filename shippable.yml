@@ -6,7 +6,7 @@ before_install:
    - sudo apt-get install libblas-dev libatlas-dev liblapack-dev
 
 script:
-   - mvn test
+   - mvn test -Djava.awt.headless=true
 
 notifications:
   email:
