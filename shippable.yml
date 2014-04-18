@@ -3,7 +3,7 @@ jdk:
    - oraclejdk7
 
 before_install:
-   - apt-get install libblas-dev libatlas-dev liblapack-dev
+   - sudo apt-get install libblas-dev libatlas-dev liblapack-dev
 
 script:
    - mvn test
