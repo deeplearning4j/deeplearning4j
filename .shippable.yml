@@ -1,0 +1,9 @@
+language: java
+jdk:
+   - oraclejdk7
+
+
+notifications:
+  email:
+      recipients:
+         - 0@blix.io

@@ -41,7 +41,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 
     private static final long serialVersionUID = 1935520764586513365L;
     private static Logger log = LoggerFactory.getLogger(DataSet.class);
-
+    private List<String> columnNames = new ArrayList<>();
+    private List<String> labelNames = new ArrayList<>();
 
     public DataSet() {
         this(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
@@ -191,6 +192,9 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             else
                 getFirst().put(i,0);
     }
+
+
+
 
 
     public void normalizeZeroMeanZeroUnitVariance() {
@@ -644,6 +648,45 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             throw new RuntimeException(e);
         }
 
+    }
+
+    /**
+     * Gets the optional label names
+     * @return
+     */
+    public List<String> getLabelNames() {
+        return labelNames;
+    }
+
+    /**
+     * Sets the label names, will throw an exception if the passed
+     * in label names doesn't equal the number of outcomes
+     * @param labelNames the label names to use
+     */
+    public void setLabelNames(List<String> labelNames) {
+        if(labelNames == null || labelNames.size() != numOutcomes())
+            throw new IllegalArgumentException("Unable to set label names, does not match number of possible outcomes");
+        this.labelNames = labelNames;
+    }
+
+    /**
+     * Optional column names of the data set, this is mainly used
+     * for interpeting what columns are in the dataset
+     * @return
+     */
+    public List<String> getColumnNames() {
+        return columnNames;
+    }
+
+    /**
+     * Sets the column names, will throw an exception if the column names
+     * don't match the number of columns
+     * @param columnNames
+     */
+    public void setColumnNames(List<String> columnNames) {
+        if(columnNames.size() != numInputs())
+            throw new IllegalArgumentException("Column names don't match input");
+        this.columnNames = columnNames;
     }
 
     @Override
