@@ -27,7 +27,7 @@ public class ConvolutionalRBM extends RBM  {
     //bottom up signal from visibles to hiddens
     private Tensor hidI;
     private Tensor W;
-    private int[] stride;
+    private int[] stride = {2,2};
 
 
     protected ConvolutionalRBM() {
