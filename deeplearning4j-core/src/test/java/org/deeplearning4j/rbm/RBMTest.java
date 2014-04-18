@@ -78,26 +78,7 @@ public class RBMTest  {
 		
 		r.trainTillConvergence(d.getFirst() ,1e-2,new Object[]{1,1e-2,3000});
 
-		DoubleMatrix reconstruct = r.reconstruct(d.getFirst());
 
-        if(Boolean.parseBoolean(System.getProperty("java.awt.headless","false")))
-               return;
-		for(int j = 0; j < d.numExamples(); j++) {
-
-			DoubleMatrix draw1 = d.get(j).getFirst().mul(255);
-			DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-			DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,g).mul(255);
-
-			DrawMnistGreyScale d3 = new DrawMnistGreyScale(draw1);
-			d3.title = "REAL";
-			d3.draw();
-			DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
-			d2.title = "TEST";
-			d2.draw();
-			Thread.sleep(10000);
-			d3.frame.dispose();
-			d2.frame.dispose();
-		}
 
 
 	}

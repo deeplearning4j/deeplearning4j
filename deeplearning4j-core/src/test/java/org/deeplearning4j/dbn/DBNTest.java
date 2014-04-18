@@ -42,7 +42,7 @@ public class DBNTest {
 
         GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
                 .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
-                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(true)
+                .hiddenLayerSizes(hiddenLayerSizes)
                 .withRng(rng)
                 .build();
 
@@ -123,21 +123,19 @@ public class DBNTest {
         DataSetIterator iter = new LFWDataSetIterator(10,10,14,14);
 
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
-        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
-                .hiddenLayerSizes(new int[]{250, 150, 100}).normalizeByInputRows(true).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
+                .hiddenLayerSizes(new int[]{250, 150, 100}).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            next.normalizeZeroMeanZeroUnitVariance();;
             dbn.pretrain(next.getFirst(), 1, 1e-5, 10000);
         }
 
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            next.normalizeZeroMeanZeroUnitVariance();;
             dbn.setInput(next.getFirst());
             dbn.finetune(next.getSecond(), 1e-4, 10000);
         }
@@ -256,10 +254,9 @@ public class DBNTest {
         DBN dbn = new DBN.Builder()
                 .withActivation(Activations.sigmoid())
                 .hiddenLayerSizes(new int[]{500,250,100})
-                .withMomentum(0.5).normalizeByInputRows(true).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-                .numberOfInputs(784).useAdaGrad(true).withSparsity(0.01)
-                .numberOfOutPuts(2).useHiddenActivationsForwardProp(true)
-                .useRegularization(false)
+                .withMomentum(0.5).normalizeByInputRows(true)
+                .numberOfInputs(784).useAdaGrad(true)
+                .numberOfOutPuts(2)
                 .build();
 
         watch.start();
