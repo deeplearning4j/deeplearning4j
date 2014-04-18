@@ -1,5 +1,3 @@
-build_environment: Centos 6.5
-
 language: java
 jdk:
    - oraclejdk7
