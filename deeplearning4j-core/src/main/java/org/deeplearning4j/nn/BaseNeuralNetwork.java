@@ -81,11 +81,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected int renderWeightsEveryNumEpochs = -1;
     protected double fanIn = -1;
     protected boolean useRegularization = false;
-    protected boolean useAdaGrad = false;
+    protected boolean useAdaGrad = true;
     //used to track if adagrad needs to be changed
     protected boolean firstTimeThrough = false;
     //normalize by input rows or not
-    protected boolean normalizeByInputRows = false;
+    protected boolean normalizeByInputRows = true;
     //use only when binary hidden layers are active
     protected boolean applySparsity = true;
     protected List<NeuralNetworkGradientListener> gradientListeners;
@@ -306,7 +306,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void backProp(double lr,int epochs,Object[] extraParams) {
-        double currRecon = getReConstructionCrossEntropy();
+        double currRecon = this.negativeLogLikelihood();
         boolean train = true;
         NeuralNetwork revert = clone();
         int numEpochs = 0;
@@ -343,7 +343,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 delta.divi(input.rows);
 
 
-            getW().subi(delta);
+            getW().addi(W.sub(delta));
 
             if(isUseAdaGrad())
                 hBiasMean.muli(gethBiasAdaGrad().getLearningRates(gradient.gethBiasGradient()));
@@ -356,9 +356,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(normalizeByInputRows)
                 hBiasMean.divi(input.rows);
 
-            gethBias().subi(hBiasMean);
+            gethBias().addi(gethBias().sub(hBiasMean));
 
-            double newRecon = getReConstructionCrossEntropy();
+            double newRecon = negativeLogLikelihood();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -367,7 +367,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             }
 
             else if(newRecon == currRecon)
-                continue;
+                break;
 
             else {
                 currRecon = newRecon;
@@ -720,7 +720,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                                 .mul(log(oneMinus(sigV))));
 
         double ret =   inner.rowSums().mean();
-        if(this.normalizeByInputRows)
+        if(normalizeByInputRows)
             ret /= input.rows;
 
         return ret;
@@ -987,8 +987,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private double fanIn = 0.1;
         private boolean useRegularization = false;
         private RealDistribution dist;
-        private boolean useAdaGrad = false;
-        private boolean normalizeByInputRows = false;
+        private boolean useAdaGrad = true;
+        private boolean normalizeByInputRows = true;
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;

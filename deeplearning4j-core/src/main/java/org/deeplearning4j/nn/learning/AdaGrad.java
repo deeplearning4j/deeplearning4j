@@ -4,24 +4,25 @@ import java.io.Serializable;
 
 import static org.jblas.MatrixFunctions.sqrt;
 import static org.jblas.MatrixFunctions.pow;
+import static org.jblas.MatrixFunctions.abs;
 
 
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
 /**
- * 
+ *
  * Vectorized Learning Rate used per Connection Weight
- * 
+ *
  * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
- * 
+ *
  * @author Adam Gibson
  *
  */
 public class AdaGrad implements Serializable {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -4754127927704099888L;
 	private double masterStepSize = 1e-3; // default for masterStepSize (this is the numerator)
@@ -80,8 +81,8 @@ public class AdaGrad implements Serializable {
 		}
 
 		numIterations++;
-
-		this.adjustedGradient = this.gradient.div(sqrt(squaredGradient).add(fudgeFactor)).mul(currentLearningRate);
+        DoubleMatrix sqrtGradient = sqrt(squaredGradient);
+		this.adjustedGradient = abs(this.gradient.div(sqrtGradient).add(fudgeFactor).mul(currentLearningRate));
 		//ensure no zeros
 		this.adjustedGradient.addi(1e-6);
 		return adjustedGradient;
