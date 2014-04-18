@@ -20,19 +20,17 @@ public class DenoisingAutoEncoderMnistExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-		.numberOfVisible(784).numHidden(500).normalizeByInputRows(true).withLossFunction(LossFunction.NEGATIVELOGLIKELIHOOD)
-		.useAdaGrad(true).useRegularization(true).withSparsity(0).withL2(0.01)
-		.withOptmizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-		.withMomentum(0.5).build();
+                .withSparsity(1e-1)
+		.numberOfVisible(784).numHidden(600).build();
 
 
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new RawMnistDataSetIterator(10,30);
+		DataSetIterator iter = new MnistDataSetIterator(10,30);
 		for(int i = 0;i < 20; i++) {
 			while(iter.hasNext()) {
 				DataSet next = iter.next();
 				//train with k = 1 0.01 learning rate and 1000 epochs
-				autoEncoder.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
+				autoEncoder.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{0.3,1e-2,1000});
 
 
 			}
