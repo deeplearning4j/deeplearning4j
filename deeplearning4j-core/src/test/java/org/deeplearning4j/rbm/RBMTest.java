@@ -70,17 +70,20 @@ public class RBMTest  {
 		RandomGenerator g = new MersenneTwister(123);
 
 		RBM r = new RBM.Builder()
-		.useAdaGrad(true)
-		.numberOfVisible(d.numInputs())
-		.numHidden(500)
+		.useAdaGrad(true).normalizeByInputRows(true)
+		.numberOfVisible(d.numInputs()).renderWeights(100)
+		.numHidden(600).withMomentum(0.3)
 		.withRandom(g)
 		.build();
 		
 
 		
-		r.trainTillConvergence(d.getFirst() ,0.01,new Object[]{1,0.01,3000});
+		r.trainTillConvergence(d.getFirst() ,1e-6,new Object[]{1,1e-6,3000});
 
 		DoubleMatrix reconstruct = r.reconstruct(d.getFirst());
+
+        if(Boolean.parseBoolean(System.getProperty("java.awt.headless","false")))
+               return;
 		for(int j = 0; j < d.numExamples(); j++) {
 
 			DoubleMatrix draw1 = d.get(j).getFirst().mul(255);

@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.CRBM;
@@ -23,7 +24,7 @@ public class RawMnistRBMExample {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		CRBM r = new CRBM.Builder()
+		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
 		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.3)
 		.numHidden(600).normalizeByInputRows(true).useRegularization(false)
 		.build();
