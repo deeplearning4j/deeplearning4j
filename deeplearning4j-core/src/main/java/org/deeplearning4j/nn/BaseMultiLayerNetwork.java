@@ -1451,10 +1451,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private double sparsity = 0;
         private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
         private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
-        private boolean useAdaGrad = false;
+        private boolean useAdaGrad = true;
         private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
         private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
-        private boolean normalizeByInputRows = false;
+        private boolean normalizeByInputRows = true;
         private boolean useHiddenActivationsForwardProp = true;
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
