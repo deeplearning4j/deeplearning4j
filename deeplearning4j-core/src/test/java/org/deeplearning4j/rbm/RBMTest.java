@@ -72,7 +72,7 @@ public class RBMTest  {
 		RBM r = new RBM.Builder()
 		.useAdaGrad(true).normalizeByInputRows(true)
 		.numberOfVisible(d.numInputs()).renderWeights(100)
-		.numHidden(600).withMomentum(0.3)
+		.numHidden(600).withMomentum(0.3).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
 		.withRandom(g)
 		.build();
 		
