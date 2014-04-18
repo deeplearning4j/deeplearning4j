@@ -69,22 +69,12 @@ public class AdaGrad implements Serializable {
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
 		this.gradient = gradient.dup();
         DoubleMatrix squaredGradient = pow(this.gradient,2);
-        if(this.historicalGradient.length != this.gradient.length)
-               this.historicalGradient = DoubleMatrix.zeros(this.gradient.rows,this.gradient.columns);
         this.historicalGradient.addi(squaredGradient);
-		//lr annealing
-		double currentLearningRate = this.masterStepSize;
-		if(decayLr && numIterations > 0) {
-			this.masterStepSize *= lrDecay;
-			if(masterStepSize < minLearningRate)
-				masterStepSize = minLearningRate;
-		}
-
-		numIterations++;
-        DoubleMatrix sqrtGradient = sqrt(squaredGradient);
-		this.adjustedGradient = abs(this.gradient.div(sqrtGradient).add(fudgeFactor).mul(currentLearningRate));
+        numIterations++;
+        DoubleMatrix sqrtGradient = sqrt(squaredGradient).add(fudgeFactor);
+        DoubleMatrix div = abs(gradient).div(sqrtGradient);
+		this.adjustedGradient = div.mul(masterStepSize);
 		//ensure no zeros
-		this.adjustedGradient.addi(1e-6);
 		return adjustedGradient;
 	}
 

@@ -30,8 +30,8 @@ public class RBMMnistExample {
         //batches of 10, 60000 examples total
         DataSetIterator iter = new MnistDataSetIterator(10,50);
 
-        DataSet next = iter.next();
         while(iter.hasNext()) {
+            DataSet next = iter.next();
             r.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{1, 1e-1, 5000});
 
         }
