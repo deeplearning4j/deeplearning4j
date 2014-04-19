@@ -55,7 +55,8 @@ body {
 #navigation .navlinks li a:hover {
   text-decoration: none;
   color: #444;
-  background: #fcfcfc;
+  /**background: #fcfcfc;
+  */
 }
 
 .btn {
