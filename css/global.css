@@ -80,7 +80,7 @@ body {
   width: 100%;
   height: 210px;
   padding: 20px 0;
-  background: url('../images/indigo.jpg') no-repeat center center fixed; 
+  background: white no-repeat center center fixed; 
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
