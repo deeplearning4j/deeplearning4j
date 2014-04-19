@@ -9,6 +9,7 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.nn.Tensor;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
@@ -41,6 +42,10 @@ public class MatrixUtil {
 
     }
 
+    /**
+     * Divides each row by its max
+     * @param toScale the matrix to divide by its row maxes
+     */
     public static void scaleByMax(DoubleMatrix toScale) {
         DoubleMatrix scale = toScale.rowMaxs();
         for(int i = 0; i < toScale.rows; i++) {
@@ -127,6 +132,22 @@ public class MatrixUtil {
             }
         }
         return output;
+    }
+
+    /**
+     * Returns the maximum dimension of the passed in matrix
+     * @param d the max dimension of the passed in matrix
+     * @return the max dimension of the passed in matrix
+     */
+    public static double length(DoubleMatrix d) {
+        if(d instanceof Tensor) {
+            Tensor t = (Tensor) d;
+            return MathUtils.max(new double[]{t.rows(),t.columns(),t.slices()});
+        }
+        else
+            return Math.max(d.rows,d.columns);
+
+
     }
 
     /**
@@ -379,6 +400,17 @@ public class MatrixUtil {
                 throw new IllegalArgumentException("Found something that is not an integer at linear index " + i);
         }
     }
+
+
+    public static DoubleMatrix numDivideMatrix(double div,DoubleMatrix toDiv) {
+        DoubleMatrix ret = new DoubleMatrix(toDiv.rows,toDiv.columns);
+
+        for(int i = 0; i < ret.length; i++)
+            //prevent numerical underflow
+            ret.put(i,div / toDiv.get(i) +1e-6 );
+        return ret;
+    }
+
 
     public static boolean isInfinite(DoubleMatrix test) {
         DoubleMatrix nan = test.isInfinite();

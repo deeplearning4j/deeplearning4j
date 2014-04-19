@@ -35,9 +35,8 @@ public class RawDBNMnistExample {
 		DataSetIterator iter = new RawMnistDataSetIterator(10,40);
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
-				.useRegularization(false)
-				.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
+		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
+				.hiddenLayerSizes(new int[]{500,400,250})
 				.numberOfInputs(784).numberOfOutPuts(10)
 				.build();
 		while(iter.hasNext()) {
