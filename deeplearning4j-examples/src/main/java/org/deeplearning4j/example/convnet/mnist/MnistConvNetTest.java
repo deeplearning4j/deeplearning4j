@@ -1,29 +1,31 @@
-package org.deeplearning4j.example.mnist;
+package org.deeplearning4j.example.convnet.mnist;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
-import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.plot.FilterRenderer;
+import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RBMMnistExample {
+/**
+ *
+ */
+public class MnistConvNetTest {
 
-    private static Logger log = LoggerFactory.getLogger(RBMMnistExample.class);
+    private static Logger log = LoggerFactory.getLogger(MnistConvNetTest.class);
 
-    /**
-     * @param args
-     */
     public static void main(String[] args) throws Exception {
-        RBM r = new RBM.Builder()
+
+        ConvolutionalRBM r = new ConvolutionalRBM.Builder()
+                .withNumFilters(100)
                 .numberOfVisible(784)
-                .numHidden(600).renderWeights(100)
+                .numHidden(600)
                 .build();
 
 
@@ -57,7 +59,7 @@ public class RBMMnistExample {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
 
                 DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
                 d.title = "REAL";
@@ -72,7 +74,6 @@ public class RBMMnistExample {
 
 
         }
-
     }
 
 }

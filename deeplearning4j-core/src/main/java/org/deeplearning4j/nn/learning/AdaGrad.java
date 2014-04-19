@@ -69,6 +69,8 @@ public class AdaGrad implements Serializable {
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
 		this.gradient = gradient.dup();
         DoubleMatrix squaredGradient = pow(this.gradient,2);
+        if(this.historicalGradient.length != this.gradient.length)
+            this.historicalGradient = DoubleMatrix.zeros(this.gradient.rows,this.gradient.columns);
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
         DoubleMatrix sqrtGradient = sqrt(squaredGradient).add(fudgeFactor);

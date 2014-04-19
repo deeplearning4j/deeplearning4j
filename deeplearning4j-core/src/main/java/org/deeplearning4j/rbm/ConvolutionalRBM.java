@@ -9,6 +9,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.util.Convolution;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
@@ -64,7 +65,9 @@ public class ConvolutionalRBM extends RBM  {
     @Override
     public DoubleMatrix propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
-            hidI.setSlice(i,convolution2D(v,MatrixUtil.reverse(W.getSlice(i)).add(hBias.get(i))));
+            hidI.setSlice(i,
+                    Convolution.conv2d(v,
+                            MatrixUtil.reverse(W.getSlice(i)),Convolution.Type.VALID).add(hBias.get(i)));
         }
 
         Tensor expHidI = hidI.exp();
@@ -85,7 +88,7 @@ public class ConvolutionalRBM extends RBM  {
         Tensor h1 = (Tensor) h;
         for(int i = 0; i < numFilters; i++) {
             visI.setSlice(i,
-                    convolution2D(h1.getSlice(i),W.getSlice(i)));
+                    Convolution.conv2d(h1.getSlice(i), W.getSlice(i), Convolution.Type.FULL));
         }
 
         DoubleMatrix I = visI.sliceElementSums().addRowVector(vBias);
@@ -195,7 +198,11 @@ public class ConvolutionalRBM extends RBM  {
         Tensor hiddenMeans = (Tensor) nhMeans;
         Tensor wGradient = new Tensor(W.rows(),W.columns(),W.slices());
         for(int i = 0; i < numFilters; i++) {
-            wGradient.setSlice(i,convolution2D(input,eHiddenInitial.getSlice(i)).sub(convolution2D(nvSamples,MatrixUtil.reverse(hiddenMeans.getSlice(i)))));
+            wGradient.setSlice(i,Convolution.conv2d(input,
+                    eHiddenInitial.getSlice(i), Convolution.Type.VALID)
+                    .sub(Convolution.conv2d(nvSamples,
+                            MatrixUtil.reverse(hiddenMeans.getSlice(i)),
+                            Convolution.Type.VALID)));
         }
 
 
@@ -220,7 +227,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-    public class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
+    public static class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
 
         protected int numFilters;
         protected int[] stride;
