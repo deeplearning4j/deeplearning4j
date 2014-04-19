@@ -45,9 +45,8 @@ public class LFWRBMExample {
 
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
-                .useAdaGrad(true).withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .numHidden(1000).renderWeights(100)
-                .normalizeByInputRows(true)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 

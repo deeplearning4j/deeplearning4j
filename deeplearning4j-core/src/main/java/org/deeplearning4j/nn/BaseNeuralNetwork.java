@@ -306,7 +306,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void backProp(double lr,int epochs,Object[] extraParams) {
-        double currRecon = this.negativeLogLikelihood();
+        double currRecon = this.getReConstructionCrossEntropy();
         boolean train = true;
         NeuralNetwork revert = clone();
         int numEpochs = 0;
@@ -358,7 +358,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
             gethBias().addi(gethBias().sub(hBiasMean));
 
-            double newRecon = negativeLogLikelihood();
+            double newRecon = this.getReConstructionCrossEntropy();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);

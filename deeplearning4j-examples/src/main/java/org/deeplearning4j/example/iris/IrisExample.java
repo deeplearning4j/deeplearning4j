@@ -35,22 +35,16 @@ public class IrisExample {
     public static void main(String[] args) {
         RandomGenerator rng = new MersenneTwister(123);
         int nIns = 4,nOuts = 3;
-        int[] hiddenLayerSizes = new int[] {4,3};
+        int[] hiddenLayerSizes = new int[] {3};
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
 
         for(int i = 0; i < 3000; i++) {
             GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
-                    .useAdaGrad(true)
-                    .normalizeByInputRows(true).withMomentum(0.5)
-                    .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                     .numberOfInputs(nIns).numberOfOutPuts(nOuts)
-                    .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                    .hiddenLayerSizes(hiddenLayerSizes).useRegularization(false).withL2(2e-2)
-                    .useHiddenActivationsForwardProp(true).withActivation(Activations.sigmoid())
+                    .hiddenLayerSizes(hiddenLayerSizes).useAdaGrad(false)
                     .withRng(rng)
                     .build();
 
@@ -58,12 +52,12 @@ public class IrisExample {
 
             next.shuffle();
 
-            dbn.pretrain(next.getFirst(),1,1e-2,1000000);
+            dbn.pretrain(next.getFirst(),1,1e-4,1000000);
 
 
 
             //log.info(Info.activationsFor(next.getFirst(),dbn));
-            dbn.finetune(next.getSecond(),1e-2,1000000);
+            dbn.finetune(next.getSecond(),1e-4,1000000);
 
 
 

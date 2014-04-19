@@ -273,7 +273,7 @@ public class LogisticRegression implements Serializable {
 			wGradient.muli(lr);
 
         if(useAdaGrad)
-            dy.muli(biasAdaGrad.getLearningRates(dy));
+            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.columnMeans()));
         else
              dy.muli(lr);
 
