@@ -2,6 +2,7 @@
 layout: default
 ---
 
+*to run examples, go to our [quickstart](../quickstart.html) is here*
 #getting started
 
 1. DeepLearning4J requires Java 7 or above.
