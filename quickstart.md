@@ -1,4 +1,3 @@
-
 ---
 title: deeplearning4j
 layout: default
