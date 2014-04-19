@@ -1,10 +1,11 @@
 ---
+title:
 layout: default
 ---
 
 # quickstart
 
-1. Download these [DL4J examples](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)
+1. Download these [DL4J examples](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j).
 
 2. Unzip file.
 
@@ -20,7 +21,7 @@ Java works with deep and complex file systems, which are important to explain he
 
 For example, the file at 
 
-https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistConvNetTest.java
+[https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistConvNetTest.java](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistConvNetTest.java)
 
 can be entered into the command line as 
 
