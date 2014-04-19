@@ -1,2 +1,0 @@
-language: java
-before_script: cd deeplearning4j-parent
