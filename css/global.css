@@ -3,7 +3,6 @@
  * built (with love) using Bootstrap
  */
 
-
 body {
   padding-top: 55px;
   background-color:#F2F2EB;
@@ -31,8 +30,8 @@ body {
   background: -ms-linear-gradient(top,  rgb(30,87,153) 0%,rgb(1,60,91) 0%,rgb(32,124,202) 99%,rgb(47,147,170) 100%); /* IE10+ */
   background: linear-gradient(to bottom,  rgb(30,87,153) 0%,rgb(1,60,91) 0%,rgb(32,124,202) 99%,rgb(47,147,170) 100%); /* W3C */
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1e5799', endColorstr='#2f93aa',GradientType=0 ); /* IE6-9 */
-  border-top: 1px solid #e6e7e8;
-  /**border-bottom: 1px solid #e6e7e8;
+  /**border-top: 1px solid #e6e7e8;
+  border-bottom: 1px solid #e6e7e8;
   */
 }
 #navigation .navlinks {
