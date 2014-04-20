@@ -37,11 +37,11 @@ It's important to note that the parameters of each layer in a multilayer network
 
 ### job coordination
 
-Job coordination is central to the distributed training of neural nets, the method by which many worker nodes can act in concert. Its leitmotif is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
+Job coordination is central to the distributed training of neural nets, the method by which many worker nodes can act in concert. Its overarching theme is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
 
-The procedure is best described with an example: When you start your master node, it spawns local workers to enable multithreaded work. The master spins out workers according to the number of cores available to the server. 
+The procedure is best described with an example: When you start your master node, it spawns local workers to enable multithreaded work. The master spins out workers according to the number of cores available. External nodes are able to connect later: the system is built of one master and *n* workers.  
 
-Job coordination monitors the jobs assigned to each worker. Each job is associated with a minibatch. Workers, as they complete their jobs, will "heartbeat" back to the master to signal their availability. They also separately update a state tracker when its work is completed.
+Job coordination monitors the jobs assigned to each worker. Each job is associated with a minibatch. Workers, as they complete their jobs, will "heartbeat" back to the master to signal their availability. They also separately update a state tracker when their work is completed.
 
 Job coordination, in this case, also notifies the master of job failure, in which case the master can retry. One example of job failure would be a matrix multiplication error, which will send a signal to shut down training on the worker where the error occurred. These types of errors result from misconfiguration -- i.e. the number of inputs is unequal to the columns in the data -- and it happens early. Training typically should not fail in the middle. 
 
