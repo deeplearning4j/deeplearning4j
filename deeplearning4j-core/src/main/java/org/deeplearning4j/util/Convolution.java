@@ -3,12 +3,16 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
+import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
+import static org.deeplearning4j.util.MatrixUtil.exp;
+import static org.deeplearning4j.util.MatrixUtil.length;
+
 import org.jblas.SimpleBlas;
+
 import org.jblas.ranges.RangeUtils;
 
-import static org.jblas.MatrixFunctions.exp;
 
 import java.awt.*;
 import java.awt.image.*;
@@ -43,43 +47,71 @@ public class Convolution {
         return ret;
     }
 
-
-    public static DoubleMatrix inverseDisceteFourierTransform(DoubleMatrix input) {
-        double len = MatrixUtil.length(input);
-        Complex c = new Complex(2,1);
-        c = c.multiply(FastMath.PI / len);
-        double first = c.getReal();
-        DoubleMatrix second = input.getRange(0, (int) len - 1);
-        second = second.transpose().mmul(second);
-
-        DoubleMatrix ret = exp(MatrixUtil.numDivideMatrix(first,second));
-
-        if(input.isRowVector())
-            ret =  input.mmul(ret);
-        ret = ret.mmul(input);
-
-        ret = ret.neg();
-
-        MatrixUtil.scaleByMax(ret);
-
-        return ret;
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix inputC) {
+        double len = MatrixUtil.length(inputC);
+        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
+        ComplexDoubleMatrix complexRet = complexDisceteFourierTransform(inputC);
+        complexRet = complexRet.negi();
+        complexRet.divi(len);
+        return complexRet;
 
     }
 
 
-    public static DoubleMatrix disceteFourierTransform(DoubleMatrix input) {
-        double len = MatrixUtil.length(input);
-        ComplexDoubleMatrix c  = new ComplexDoubleMatrix(input);
-        Complex c2 = new Complex(-2,1);
-        c2 = c2.multiply(FastMath.PI / len);
-        double first = c2.getReal();
-        DoubleMatrix second = input.getRange(0, (int) len - 1);
-        second = second.transpose().mmul(second);
 
-        DoubleMatrix ret = exp(MatrixUtil.numDivideMatrix(first,second));
-        if(input.isRowVector())
-            return input.mmul(ret);
-        return ret.mmul(input);
+    public static ComplexDoubleMatrix complexDisceteFourierTransform(ComplexDoubleMatrix inputC) {
+        double len = MatrixUtil.length(inputC);
+        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
+        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
+        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
+        ComplexDoubleMatrix div3 = range.mmul(div2);
+        ComplexDoubleMatrix matrix = exp(div3);
+        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
+
+        return complexRet;
+
+    }
+
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input) {
+        double len = MatrixUtil.length(input);
+        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
+        ComplexDoubleMatrix inputC = new ComplexDoubleMatrix(input);
+        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
+        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
+        ComplexDoubleMatrix div3 = range.mmul(div2).negi();
+        ComplexDoubleMatrix matrix = exp(div3).div(len);
+        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
+
+        return complexRet;
+    }
+
+
+
+    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input) {
+        double len = MatrixUtil.length(input);
+        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
+        ComplexDoubleMatrix inputC = new ComplexDoubleMatrix(input);
+        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
+        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
+        ComplexDoubleMatrix div3 = range.mmul(div2);
+        ComplexDoubleMatrix matrix = exp(div3);
+        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
+
+        return complexRet;
+
+    }
+
+
+    public static DoubleMatrix inverseDisceteFourierTransform(DoubleMatrix input) {
+        return complexInverseDisceteFourierTransform(input).getReal();
+
+    }
+
+
+
+    public static DoubleMatrix disceteFourierTransform(DoubleMatrix input) {
+        return complexDisceteFourierTransform(input).getReal();
+
     }
 
 
