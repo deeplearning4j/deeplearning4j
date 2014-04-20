@@ -23,7 +23,7 @@ Minibatches also allow for parallel learning in the cluster, which is crucial to
 
 In Google's large-scale distributed training, minibatches are part of its [Sandblaster tool](http://research.google.com/archive/large_deep_networks_nips2012.html). The algorithm used to process them is called [Limited-memory BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS), or L-BFGS.
 
-## parameter averaging
+### parameter averaging
 
 Parameter averaging is an integral part of distributed training. Parameters are the weights and biases of node layers in the net. When training is distributed to several workers, they will send different sets of parameters back to the master. Parameter averaging is how the master coordinates the workers efforts, taking into account differences in the data that each worker trained on. 
 
@@ -34,3 +34,19 @@ Parameter averaging prevents over fitting by splitting a given data set up into 
 This tool is similar to L2 regularization, which also ensures that weights don't get too big.
 
 It's important to note that the parameters of each layer in a multilayer network, including the output layer, are added up and averaged. 
+
+### job coordination
+
+Job coordination is central to the distributed training of neural nets, the method by which many workers nodes can act in concert. Its leitmotif is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
+
+The procedure is best described with an example. When you start your master node, it spawns local workers to enable multithreaded work. The master spins out workers according to the number of cores available to the server. 
+
+Job coordination monitors the jobs assigned to each worker. Each job is associated with a minibatch. Workers, as they complete their jobs, will "heartbeat" back to the master to signal their availability. They also separately update a state tracker when its work is completed.
+
+Job coordination, in this case, also notifies the master of job failure, in which case the master can retry. One example of job failure would be a matrix multiplication error, which will send a signal to shut down training on the worker where the error occurred. These types of errors result from misconfiguration -- i.e. the number of inputs is unequal to the columns in the data -- and it happens early. Training typically should not fail in the middle. 
+
+Job coordination is set up with an actor network runner, which is responsible for starting the Akka cluster and connecting with the nodes in the cluster. It handles the instantiation and training of neural nets. 
+
+Zookeeper acts as the central store for configuration; it's what the system uses to bootstrap and connect with Akka and Hazelcast. When workers start, they conduct service discovery, locate the master on a given host, and retrieve the config from that master. The configuration determines the neural network architecture.
+
+Configuration will create a single-threaded network at each node, an acutal deep-belief network or restricted Boltzmann machine. The conf contains metadata about where the master is, the absolute path to the master actor, or parameter server. The parameter server functions as the source of truth, or current best model, for all nodes. 
