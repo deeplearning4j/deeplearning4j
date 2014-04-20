@@ -104,10 +104,21 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return get(getRowIndicesForSlice(index),getColIndicesForSlice());
     }
 
+    /**
+     * Sets the slice, note that the given slice must be
+     * the same dimensions
+     * @param index the slice to set
+     * @param slice the new slice
+     */
     public void setSlice(int index,DoubleMatrix slice) {
+        if(slice.rows != rows() && slice.columns != columns()) {
+            throw new IllegalArgumentException("Slice dimension mismatch");
+        }
+
         put(getRowIndicesForSlice(index),getColIndicesForSlice(),slice);
     }
 
+   
     public void setSlice(int index,Tensor slice) {
          setSlice(index,slice);
     }
