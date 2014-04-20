@@ -16,9 +16,9 @@ The first are preserialized datasets that can be downloaded directly for use wit
              d.load(bis);
              bis.close();
 
-*[Mnist dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
-*Iris dataset (forthcoming)
-*Labeled Faces in the Wild (forthcoming)
+* [Mnist dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
+* Iris dataset (forthcoming)
+* Labeled Faces in the Wild (forthcoming)
 
 ### distribution
 
