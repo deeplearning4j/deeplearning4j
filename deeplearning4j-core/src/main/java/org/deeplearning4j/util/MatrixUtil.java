@@ -515,10 +515,7 @@ public class MatrixUtil {
     public static ComplexDoubleMatrix exp(ComplexDoubleMatrix input) {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(input.rows,input.columns);
         for(int i = 0; i < ret.length; i++) {
-            Complex complex = new Complex(input.get(i).real(),input.get(i).imag());
-            complex = complex.exp();
-            ComplexDouble newComplex = new ComplexDouble(complex.getReal(),complex.getImaginary());
-            ret.put(i,newComplex);
+            ret.put(i,ComplexUtil.exp(input.get(i)));
         }
         return ret;
     }

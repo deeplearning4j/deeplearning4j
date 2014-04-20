@@ -3,6 +3,7 @@ package org.deeplearning4j.rbm;
 import static org.deeplearning4j.util.MatrixUtil.*;
 
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -13,7 +14,8 @@ import org.deeplearning4j.util.Convolution;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ConvolutionalRBM extends RBM  {
@@ -29,7 +31,7 @@ public class ConvolutionalRBM extends RBM  {
     private Tensor hidI;
     private Tensor W;
     private int[] stride = {2,2};
-
+    private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
 
     protected ConvolutionalRBM() {
         init();
@@ -65,9 +67,10 @@ public class ConvolutionalRBM extends RBM  {
     @Override
     public DoubleMatrix propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
-            hidI.setSlice(i,
-                    Convolution.conv2d(v,
-                            MatrixUtil.reverse(W.getSlice(i)),Convolution.Type.VALID).add(hBias.get(i)));
+            DoubleMatrix reversedSlice =  MatrixUtil.reverse(W.getSlice(i));
+            DoubleMatrix slice =  Convolution.conv2d(v, reversedSlice ,Convolution.Type.VALID).add(hBias.get(i));
+            hidI.setSlice(i,slice);
+
         }
 
         Tensor expHidI = hidI.exp();
@@ -145,7 +148,6 @@ public class ConvolutionalRBM extends RBM  {
 		 * This is the update rules for weights and biases
 		 */
         Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
-        Pair<Tensor,Tensor> probHiddenTensor = new Pair<>((Tensor) probHidden.getFirst(),(Tensor) probHidden.getSecond());
 		/*
 		 * Start the gibbs sampling.
 		 */
