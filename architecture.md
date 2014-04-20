@@ -37,9 +37,9 @@ It's important to note that the parameters of each layer in a multilayer network
 
 ### job coordination
 
-Job coordination is central to the distributed training of neural nets, the method by which many workers nodes can act in concert. Its leitmotif is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
+Job coordination is central to the distributed training of neural nets, the method by which many worker nodes can act in concert. Its leitmotif is internode communication. In Deeplearning4j, job coordination depends on Zookeeper and Hazelcast. 
 
-The procedure is best described with an example. When you start your master node, it spawns local workers to enable multithreaded work. The master spins out workers according to the number of cores available to the server. 
+The procedure is best described with an example: When you start your master node, it spawns local workers to enable multithreaded work. The master spins out workers according to the number of cores available to the server. 
 
 Job coordination monitors the jobs assigned to each worker. Each job is associated with a minibatch. Workers, as they complete their jobs, will "heartbeat" back to the master to signal their availability. They also separately update a state tracker when its work is completed.
 
