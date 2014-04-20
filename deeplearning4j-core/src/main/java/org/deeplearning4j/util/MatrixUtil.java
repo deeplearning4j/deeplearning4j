@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
@@ -10,9 +11,7 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.Tensor;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.SimpleBlas;
+import org.jblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +53,74 @@ public class MatrixUtil {
         }
     }
 
+
+    public static DoubleMatrix rangeVector(double begin, double end) {
+        int diff = (int) Math.abs(end - begin);
+        DoubleMatrix ret = new DoubleMatrix(1,diff);
+        for(int i = 0; i < ret.length; i++)
+            ret.put(i,i);
+        return ret;
+    }
+
+    public static ComplexDoubleMatrix complexRangeVector(double begin, double end) {
+        int diff = (int) Math.abs(end - begin);
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(1,diff);
+        for(int i = 0; i < ret.length; i++)
+            ret.put(i,i);
+        return ret.transpose();
+    }
+
+
+    public static double angle(ComplexDouble phase) {
+        Complex c = new Complex(phase.real(),phase.imag());
+        return c.atan().getReal();
+    }
+
+    /**
+     * Implements matlab's compare of complex numbers:
+     * compares the max(abs(d1),abs(d2))
+     * if they are equal, compares their angles
+     * @param d1 the first number
+     * @param d2 the second number
+     * @return standard comparator interface
+     */
+    private static int compare(ComplexDouble d1,ComplexDouble d2) {
+        if(d1.abs() > d2.abs())
+            return 1;
+        else if(d2.abs() > d1.abs())
+            return -1;
+        else {
+            if(angle(d1) > angle(d2))
+                return 1;
+            else if(angle(d1) < angle(d2))
+                return -1;
+            return 0;
+        }
+
+    }
+
+
+    public static ComplexDouble max(ComplexDoubleMatrix matrix) {
+        ComplexDouble max = matrix.get(0);
+        for(int i = 1; i < matrix.length; i++)
+            if(compare(max,matrix.get(i)) > 0)
+                max = matrix.get(i);
+        return max;
+    }
+
+
+
+    /**
+     * Divides each row by its max
+     * @param toScale the matrix to divide by its row maxes
+     */
+    public static void scaleByMax(ComplexDoubleMatrix toScale) {
+
+        for(int i = 0; i < toScale.rows; i++) {
+            ComplexDouble scaleBy = max(toScale.getRow(i));
+            toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
+        }
+    }
 
     public static DoubleMatrix variance(DoubleMatrix input) {
         DoubleMatrix means = input.columnMeans();
@@ -132,6 +199,18 @@ public class MatrixUtil {
             }
         }
         return output;
+    }
+
+
+    /**
+     * Returns the maximum dimension of the passed in matrix
+     * @param d the max dimension of the passed in matrix
+     * @return the max dimension of the passed in matrix
+     */
+    public static double length(ComplexDoubleMatrix d) {
+        return Math.max(d.rows,d.columns);
+
+
     }
 
     /**
@@ -399,6 +478,31 @@ public class MatrixUtil {
             if(cast != matrix.get(i))
                 throw new IllegalArgumentException("Found something that is not an integer at linear index " + i);
         }
+    }
+
+
+    public static ComplexDoubleMatrix exp(ComplexDoubleMatrix input) {
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(input.rows,input.columns);
+        for(int i = 0; i < ret.length; i++) {
+            Complex complex = new Complex(input.get(i).real(),input.get(i).imag());
+            complex = complex.exp();
+            ComplexDouble newComplex = new ComplexDouble(complex.getReal(),complex.getImaginary());
+            ret.put(i,newComplex);
+        }
+        return ret;
+    }
+
+
+    public static ComplexDoubleMatrix numDivideMatrix(ComplexDouble div,ComplexDoubleMatrix toDiv) {
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(toDiv.rows,toDiv.columns);
+
+        for(int i = 0; i < ret.length; i++) {
+            //prevent numerical underflow
+            ComplexDouble curr = toDiv.get(i).addi(1e-6);
+            ret.put(i,div.div(curr));
+        }
+
+        return ret;
     }
 
 

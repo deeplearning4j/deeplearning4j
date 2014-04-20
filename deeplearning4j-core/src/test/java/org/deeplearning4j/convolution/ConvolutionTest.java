@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 import static org.deeplearning4j.util.Convolution.*;
 
 import org.deeplearning4j.util.Convolution;
+import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -19,11 +20,11 @@ public class ConvolutionTest {
     @Test
     public void testDiscreteFourierTransform() {
 
-        DoubleMatrix rand = DoubleMatrix.rand(3);
-        DoubleMatrix fourier = disceteFourierTransform(rand);
-        DoubleMatrix inverse = inverseDisceteFourierTransform(rand);
-        DoubleMatrix toAndFro = inverseDisceteFourierTransform(disceteFourierTransform(rand));
-        assertEquals(true,toAndFro.distance1(rand) < 1e-1);
+        DoubleMatrix rand = new DoubleMatrix(new double[]{0.231312,0.17572,0.571717});
+        ComplexDoubleMatrix fourier = complexDisceteFourierTransform(rand);
+        ComplexDoubleMatrix inverse = complexInverseDisceteFourierTransform(rand);
+        ComplexDoubleMatrix toAndFro = complexInverseDisceteFourierTransform(complexDisceteFourierTransform(rand));
+
         log.info("Back and forth " + toAndFro);
 
     }
