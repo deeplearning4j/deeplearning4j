@@ -6,7 +6,7 @@ layout: default
 *previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
 # iris flower dataset tutorial
 
-The Iris flower dataset is widely used in machine and deep learning to test classification techniques. We will use it to verify the effectiveness of our neural nets. 
+The Iris flower dataset is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of our neural nets. 
 
 The dataset consists of four measurements taken from 50 examples of each of three species of Iris, so 150 flowers and 600 data points in all. The length and width of both sepals and petals were measured for the species Iris setosa, Iris virginica and Iris versicolor. 
 
