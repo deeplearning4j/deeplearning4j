@@ -6,12 +6,10 @@ import org.apache.commons.math3.util.FastMath;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
-import static org.deeplearning4j.util.MatrixUtil.exp;
-import static org.deeplearning4j.util.MatrixUtil.length;
-
-import org.jblas.SimpleBlas;
-
 import org.jblas.ranges.RangeUtils;
+
+import static org.deeplearning4j.util.MatrixUtil.exp;
+
 
 
 import java.awt.*;
@@ -43,39 +41,131 @@ public class Convolution {
     public static DoubleMatrix conv2d(DoubleMatrix input,DoubleMatrix kernel,Type type) {
         int retRows = input.rows + kernel.rows - 1;
         int retCols = input.columns + kernel.columns - 1;
-        DoubleMatrix ret = inverseDisceteFourierTransform(disceteFourierTransform(input).reshape(retRows,retCols).mmul(disceteFourierTransform(kernel).reshape(retRows, retCols)));
+        ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(input,retRows , retCols);
+        ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(kernel,retRows , retCols);
+        ComplexDoubleMatrix mul = fftKernel.mul(fftInput);
+        ComplexDoubleMatrix retComplex = complexInverseDisceteFourierTransform(mul);
+        DoubleMatrix ret = retComplex.getReal();
+        if(type == Type.VALID) {
+            int row = input.rows - kernel.rows + 1;
+            int col = input.columns - kernel.columns + 1;
+            if(row < 1 || col < 1) {
+                row = kernel.rows - input.rows + 1;
+                col = kernel.columns - input.columns + 1;
+            }
+
+            int beginRow = retRows - row;
+            int beginCol = retCols - col;
+
+            int endRow = beginRow + row;
+            int endCol = endRow + col;
+            ret = ret.get(new int[]{beginRow,endRow},new int[]{beginCol,endCol});
+
+
+        }
+
         return ret;
     }
 
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix inputC) {
-        double len = MatrixUtil.length(inputC);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix complexRet = complexDisceteFourierTransform(inputC);
-        complexRet = complexRet.negi();
-        complexRet.divi(len);
-        return complexRet;
+
+
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
+        ComplexDoubleMatrix base = null;
+
+        //pad
+        if(input.rows < rows || input.columns < cols)
+            base = MatrixUtil.padWithZeros(input, rows, cols);
+            //truncation
+        else if(input.rows > rows || input.columns > cols) {
+            base = input.dup();
+            base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
+        }
+
+        else
+            base = input.dup();
+
+        ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
+        for(int i = 0; i < base.columns; i++) {
+            ComplexDoubleMatrix column = base.getColumn(i);
+            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
+        }
+
+        for(int i = 0; i < ret.rows; i++) {
+            ComplexDoubleMatrix row = temp.getRow(i);
+            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
+        }
+
+        return ret;
 
     }
 
 
 
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(ComplexDoubleMatrix inputC) {
-        double len = MatrixUtil.length(inputC);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2);
-        ComplexDoubleMatrix matrix = exp(div3);
-        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
 
-        return complexRet;
 
+    /**
+     * Performs an inverse discrete fourier transform with the solution
+     * being the number of rows and number of columns.
+     * See matlab's iftt2 for more examples
+     * @param input the input to transform
+     * @param rows the number of rows for the transform
+     * @param cols the number of columns for the transform
+     * @return the 2d inverse discrete fourier transform
+     */
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
+        ComplexDoubleMatrix base = null;
+
+        //pad
+        if(input.rows < rows || input.columns < cols)
+            base = MatrixUtil.complexPadWithZeros(input, rows, cols);
+            //truncation
+        else if(input.rows > rows || input.columns > cols) {
+            base = new ComplexDoubleMatrix(input);
+            base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
+        }
+
+        else
+            base = new ComplexDoubleMatrix(input);
+
+        ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
+        for(int i = 0; i < base.columns; i++) {
+            ComplexDoubleMatrix column = base.getColumn(i);
+            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
+        }
+
+        for(int i = 0; i < ret.rows; i++) {
+            ComplexDoubleMatrix row = temp.getRow(i);
+            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
+        }
+
+        return ret;
     }
 
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input) {
-        double len = MatrixUtil.length(input);
+    /**
+     * 1d inverse discrete fourier transform
+     * see matlab's fft2 for more examples.
+     * Note that this will throw an exception if the input isn't a vector
+     * @param input the input to transform
+     * @return the inverse fourier transform of the passed in input
+     */
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(DoubleMatrix input) {
+       return complexInverseDisceteFourierTransform1d(new ComplexDoubleMatrix((input)));
+    }
+
+    /**
+     * 1d inverse discrete fourier transform
+     * see matlab's fft2 for more examples.
+     * Note that this will throw an exception if the input isn't a vector
+     * @param inputC the input to transform
+     * @return the inverse fourier transform of the passed in input
+     */
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(ComplexDoubleMatrix inputC) {
+        if(inputC.rows != 1 && inputC.columns != 1)
+            throw new IllegalArgumentException("Illegal input: Must be a vector");
+        double len = MatrixUtil.length(inputC);
         ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix inputC = new ComplexDoubleMatrix(input);
         ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
         ComplexDoubleMatrix div2 = range.transpose().mul(c2);
         ComplexDoubleMatrix div3 = range.mmul(div2).negi();
@@ -86,18 +176,125 @@ public class Convolution {
     }
 
 
-
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input) {
-        double len = MatrixUtil.length(input);
+    /**
+     * 1d discrete fourier transform, note that this will throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(ComplexDoubleMatrix inputC) {
+        if(inputC.rows != 1 && inputC.columns != 1)
+            throw new IllegalArgumentException("Illegal input: Must be a vector");
+        double len = Math.max(inputC.rows,inputC.columns);
         ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix inputC = new ComplexDoubleMatrix(input);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
+        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
         ComplexDoubleMatrix div2 = range.transpose().mul(c2);
         ComplexDoubleMatrix div3 = range.mmul(div2);
         ComplexDoubleMatrix matrix = exp(div3);
         ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
 
         return complexRet;
+    }
+
+
+
+
+    /**
+     * 1d discrete fourier transform, note that this will throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param input the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(DoubleMatrix input) {
+       return complexDiscreteFourierTransform1d(new ComplexDoubleMatrix(input));
+    }
+
+    /**
+     * Discrete fourier transform 2d
+     * @param input the input to transform
+     * @param rows the number of rows in the transformed output matrix
+     * @param cols the number of columns in the transformed output matrix
+     * @return the discrete fourier transform of the input
+     */
+    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
+        ComplexDoubleMatrix base = null;
+
+        //pad
+        if(input.rows < rows || input.columns < cols)
+            base = MatrixUtil.complexPadWithZeros(input, rows, cols);
+            //truncation
+        else if(input.rows > rows || input.columns > cols) {
+            base = new ComplexDoubleMatrix(input);
+            base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
+        }
+        else
+            base = new ComplexDoubleMatrix(input);
+
+        ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
+        for(int i = 0; i < base.columns; i++) {
+            ComplexDoubleMatrix column = base.getColumn(i);
+            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
+        }
+
+        for(int i = 0; i < ret.rows; i++) {
+            ComplexDoubleMatrix row = temp.getRow(i);
+            ret.putRow(i,complexDiscreteFourierTransform1d(row));
+        }
+        return ret;
+
+    }
+
+    /**
+     * Returns the real component of an inverse 2d fourier transform
+     * @param input the input to transform
+     * @param rows the number of rows of the solution
+     * @param cols the number of columns of the solution
+     * @return the real component of an inverse discrete fourier transform
+     */
+    public static DoubleMatrix inverseDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
+        return complexInverseDisceteFourierTransform(input,rows,cols).getReal();
+
+    }
+
+
+    /**
+     * Returns the real component of a 2d fourier transform
+     * @param input the input to transform
+     * @param rows the number of rows of the solution
+     * @param cols the number of columns of the solution
+     * @return the real component of a discrete fourier transform
+     */
+    public static DoubleMatrix disceteFourierTransform(DoubleMatrix input,int rows,int cols) {
+        return complexDisceteFourierTransform(input,rows,cols).getReal();
+
+    }
+
+
+    /**
+     * The inverse discrete fourier transform with the dimension size
+     * being the same as the passed in input.
+     *
+     * @param inputC the input to transform
+     * @return the
+     */
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix inputC) {
+        return complexInverseDisceteFourierTransform(inputC,inputC.rows,inputC.columns);
+
+    }
+
+
+
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input) {
+        return complexInverseDisceteFourierTransform(input,input.rows,input.columns);
+    }
+
+
+
+    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input) {
+        return complexDisceteFourierTransform(input,input.rows,input.columns);
 
     }
 
@@ -114,247 +311,5 @@ public class Convolution {
 
     }
 
-
-    /**
-     * Takes an image (grey-levels) and a kernel and a position,
-     * applies the convolution at that position and returns the
-     * new pixel value.
-     *
-     * @param input The 2D double array representing the image.
-     * @param x The x coordinate for the position of the convolution.
-     * @param y The y coordinate for the position of the convolution.
-     * @param k The 2D array representing the kernel.
-     * @param kernelWidth The width of the kernel.
-     * @param kernelHeight The height of the kernel.
-     * @return The new pixel value after the convolution.
-     */
-    public static double singlePixelConvolution(DoubleMatrix input,
-                                                int x, int y,
-                                                DoubleMatrix k,
-                                                int kernelWidth,
-                                                int kernelHeight){
-        double output = 0;
-        for(int i = 0;i < kernelWidth;++i){
-            for(int j = 0; j < kernelHeight;++j){
-                output += (input.get(x+i,y+j) * k.get(i,j));
-            }
-        }
-        return output;
-    }
-
-    public static int applyConvolution(int [][] input,
-                                       int x, int y,
-                                       DoubleMatrix k,
-                                       int kernelWidth,
-                                       int kernelHeight){
-        int output = 0;
-        for(int i = 0;i < kernelWidth;++i) {
-            for(int j = 0;j < kernelHeight;++j) {
-                output = output + (int) Math.round(input[x+i][y+j] * k.get(i,j));
-            }
-        }
-        return output;
-    }
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     *
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolution2D(DoubleMatrix input,
-                                             int width, int height,
-                                             DoubleMatrix kernel,
-                                             int kernelWidth,
-                                             int kernelHeight){
-        int smallWidth = width - kernelWidth + 1;
-        int smallHeight = height - kernelHeight + 1;
-        DoubleMatrix output = new DoubleMatrix(smallWidth,smallHeight);
-
-        for(int i=0;i < smallWidth;++i){
-            for(int j=0;j < smallHeight;++j){
-                output.put(i,j,singlePixelConvolution(input,i,j,kernel,kernelWidth,kernelHeight));
-            }
-        }
-        return output;
-    }
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel, applies the convolution
-     * over the area of the image specified by width and height and returns
-     * a part of the final image.
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolution2DPadded(DoubleMatrix input,
-                                                   int width, int height,
-                                                   DoubleMatrix kernel,
-                                                   int kernelWidth,
-                                                   int kernelHeight){
-        int smallWidth = width - kernelWidth + 1;
-        int smallHeight = height - kernelHeight + 1;
-        int top = kernelHeight / 2;
-        int left = kernelWidth / 2;
-        DoubleMatrix small  = new DoubleMatrix(smallWidth,smallHeight);
-        small = convolution2D(input,width,height,
-                kernel,kernelWidth,kernelHeight);
-        DoubleMatrix large  = new DoubleMatrix(width,height);
-
-        for(int j = 0;j < smallHeight;++j){
-            for(int i = 0;i < smallWidth;++i){
-                large.put(i+left,j+top,small.get(i,j));
-            }
-        }
-        return large;
-    }
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     *
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 1D array representing the new image
-     */
-    public static DoubleMatrix convolutionDouble(DoubleMatrix input,
-                                                 int width, int height,
-                                                 DoubleMatrix kernel,
-                                                 int kernelWidth, int kernelHeight){
-        int smallWidth = width - kernelWidth + 1;
-        int smallHeight = height - kernelHeight + 1;
-        DoubleMatrix small = convolution2D(input,width,height,kernel,kernelWidth,kernelHeight);
-        DoubleMatrix result = new  DoubleMatrix(smallWidth * smallHeight);
-        for(int j=0;j<smallHeight;++j){
-            for(int i=0;i<  smallWidth;++i){
-                result.put(j * smallWidth +i,small.get(i,j));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     *
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 1D array representing the new image
-     */
-    public static DoubleMatrix convolutionDoublePadded(DoubleMatrix input,
-                                                       int width, int height,
-                                                       DoubleMatrix kernel,
-                                                       int kernelWidth,
-                                                       int kernelHeight){
-        DoubleMatrix result2D = new DoubleMatrix(width,height);
-        result2D = convolution2DPadded(input,width,height,
-                kernel,kernelWidth,kernelHeight);
-        DoubleMatrix result = new DoubleMatrix(width * height);
-        for(int j=0;j < height;++j){
-            for(int i=0;i < width;++i){
-                result.put(j*width +i,result2D.get(i,j));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Converts a greylevel array into a pixel array.
-     * @param greys 1D array of greylevels.
-     * @return the 1D array of RGB pixels.
-     */
-    public static int [] doublesToValidPixels (double [] greys){
-        int [] result = new int [greys.length];
-        int grey;
-        for(int i=0;i<greys.length;++i){
-            if(greys[i]>255){
-                grey = 255;
-            }else if(greys[i]<0){
-                grey = 0;
-            }else{
-                grey = (int) Math.round(greys[i]);
-            }
-            result[i] = (new Color(grey,grey,grey)).getRGB();
-        }
-        return result;
-    }
-
-    /**
-     * Applies the convolution2D algorithm to the input array as many as
-     * iterations.
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @param iterations the number of iterations to apply the convolution
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolutionType1(DoubleMatrix input,
-                                                int width, int height,
-                                                DoubleMatrix kernel,
-                                                int kernelWidth, int kernelHeight,
-                                                int iterations){
-        DoubleMatrix newInput =  input.dup();
-        DoubleMatrix output =  input.dup();
-        for(int i = 0;i < iterations; ++i){
-            int smallWidth = width-kernelWidth + 1;
-            int smallHeight = height-kernelHeight + 1;
-            output = new DoubleMatrix(smallWidth,smallHeight);
-            output = convolution2D(newInput,width,height,
-                    kernel,kernelWidth,kernelHeight);
-            width = smallWidth;
-            height = smallHeight;
-            newInput = output.dup();
-        }
-        return output;
-    }
-    /**
-     * Applies the convolution2DPadded  algorithm to the input array as many as
-     * iterations.
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @param iterations the number of iterations to apply the convolution
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolutionType2(DoubleMatrix input,
-                                                int width, int height,
-                                                DoubleMatrix kernel,
-                                                int kernelWidth, int kernelHeight,
-                                                int iterations){
-        DoubleMatrix newInput = input.dup();
-        DoubleMatrix output =  input.dup();
-
-        for(int i=0;i<iterations;++i){
-            output = new DoubleMatrix(width,height);
-            output = convolution2DPadded(newInput,width,height,
-                    kernel,kernelWidth,kernelHeight);
-            newInput = output.dup();
-        }
-        return output;
-    }
 
 }
