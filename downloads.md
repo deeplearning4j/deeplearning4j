@@ -3,8 +3,7 @@ title:
 layout: default
 ---
 
-
-# data set downloads
+# dataset downloads
 
 Below are preserialized datasets that can be downloaded directly for use with deeplearning4j. Preserialized means they're in the correct format for ingestion. Here's how they can be loaded:
 
@@ -15,3 +14,5 @@ Below are preserialized datasets that can be downloaded directly for use with de
              bis.close();
 
 [Mnist Dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
+
+Pre-compiled DL4J examples to run can be downloaded from [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j).
