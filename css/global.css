@@ -76,6 +76,13 @@ body {
      background: #FF8300;
 }
 
+.highlight
+{
+  color:white;
+  background-color:black;
+  text-indent:50px;
+}
+
 #heading {
   display: block;
   width: 100%;

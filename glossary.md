@@ -30,7 +30,7 @@ A neural network that takes the initial input and triggers the [activation](#act
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
 
 ### <a name="gradient">Gradient</a>
-Gradient is another word for the rate of change of a neural net as it learns how to reconstruct a dataset. That process of minimizing error is called [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent). Gradient is synonymous with the idea a derivative in [differential calculus](https://en.wikipedia.org/wiki/Differential_calculus).
+Gradient is another word for the rate of change of a neural net as it learns how to reconstruct a dataset. That process of minimizing error is called [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent). Gradient is synonymous with the idea of a derivative in [differential calculus](https://en.wikipedia.org/wiki/Differential_calculus).
 
 ### <a name="graphicalmodels">Graphical Models</a>
 An undirected graphical model is another name for a [Bayesian net](https://en.wikipedia.org/wiki/Bayesian_network), which represents the probabilistic relationships between the variables represented by its nodes.
@@ -51,7 +51,7 @@ Also called a Loss Function. An objective function is a heuristic function for r
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
 
 ###<a name="serialization">Serialization</a> 
-Serialization is how you translate data structures or object state into storable formats. DL4J's nets are serialized.
+Serialization is how you translate data structures or object state into storable formats. DL4J's nets are serialized, which means they can operate on devices with limited memory.
 
 ###<a name="skipgram">Skipgram</a> 
 The prerequisite to a definition of skipgrams is one of ngrams. [An n-gram is a contiguous sequence of n items from a given sequence of text or speech.](https://en.wikipedia.org/wiki/N-gram) A unigram represents one "item," a bigram two, a trigram three and so forth. Skipgrams are ngrams in which the items are not necessarily contiguous. This can be illustrated best with [a few examples.](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) Skipping is a form of noise, in the sense of [noising and denoising](http://deeplearning4j.org/stackeddenoisingautoencoder.html), which allows neural nets to better generalize their extraction of features.
