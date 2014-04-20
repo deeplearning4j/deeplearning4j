@@ -12,6 +12,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.Tensor;
 import org.jblas.*;
+import org.jblas.ranges.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,25 @@ public class MatrixUtil {
             toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
         }
     }
+
+
+
+    /** Generate a new matrix which has the given number of replications of this. */
+    public static ComplexDoubleMatrix repmat(ComplexDoubleMatrix matrix,int rowMult, int columnMult) {
+        ComplexDoubleMatrix result = new ComplexDoubleMatrix(matrix.rows * rowMult, matrix.columns * columnMult);
+
+        for (int c = 0; c < columnMult; c++) {
+            for (int r = 0; r < rowMult; r++) {
+                for (int i = 0; i < matrix.rows; i++) {
+                    for (int j = 0; j < matrix.columns; j++) {
+                        result.put(r * matrix.rows + i, c * matrix.columns + j, matrix.get(i, j));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 
 
     public static DoubleMatrix rangeVector(double begin, double end) {
@@ -481,6 +501,17 @@ public class MatrixUtil {
     }
 
 
+    public static int[] toIndices(Range range) {
+        int[] ret = new int[range.length()];
+        for(int i = 0;i  < ret.length; i++) {
+            ret[i] = range.value();
+            range.next();;
+        }
+
+        return ret;
+    }
+
+
     public static ComplexDoubleMatrix exp(ComplexDoubleMatrix input) {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(input.rows,input.columns);
         for(int i = 0; i < ret.length; i++) {
@@ -492,6 +523,36 @@ public class MatrixUtil {
         return ret;
     }
 
+
+    public static ComplexDoubleMatrix complexPadWithZeros(DoubleMatrix toPad, int rows, int cols) {
+        ComplexDoubleMatrix ret = ComplexDoubleMatrix.zeros(rows,cols);
+        for(int i = 0; i < toPad.rows; i++) {
+            for(int j = 0; j < toPad.columns; j++) {
+                ret.put(i,j,toPad.get(i,j));
+            }
+        }
+        return ret;
+    }
+
+    public static ComplexDoubleMatrix padWithZeros(ComplexDoubleMatrix toPad, int rows, int cols) {
+        ComplexDoubleMatrix ret = ComplexDoubleMatrix.zeros(rows,cols);
+        for(int i = 0; i < toPad.rows; i++) {
+            for(int j = 0; j < toPad.columns; j++) {
+                ret.put(i,j,toPad.get(i,j));
+            }
+        }
+        return ret;
+    }
+
+    public static DoubleMatrix padWithZeros(DoubleMatrix toPad, int rows, int cols) {
+        DoubleMatrix ret = DoubleMatrix.zeros(rows, cols);
+        for(int i = 0; i < toPad.rows; i++) {
+            for(int j = 0; j < toPad.columns; j++) {
+                ret.put(i,j,toPad.get(i,j));
+            }
+        }
+        return ret;
+    }
 
     public static ComplexDoubleMatrix numDivideMatrix(ComplexDouble div,ComplexDoubleMatrix toDiv) {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(toDiv.rows,toDiv.columns);
