@@ -9,12 +9,16 @@ We'll talk about three types of downloads here.
 
 ### datasets
 
-The first are preserialized datasets that can be downloaded directly for use with DL4J neural nets. Preserialized means they're in the correct format for ingestion. You can load them to RAM without using a dataset iterator — you don’t have to create them. The [Mnist Dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing) is a good example. Here's how they can be loaded:
+The first are preserialized datasets that can be downloaded directly for use with DL4J neural nets. Preserialized means they're in the correct format for ingestion. You can load them to RAM without using a dataset iterator — you don’t have to create them.  Here's how they can be loaded:
 
              DataSet d = new DataSet();
              BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("path/to/your/file")));
              d.load(bis);
              bis.close();
+
+*[Mnist dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
+*Iris dataset (forthcoming)
+*Labeled Faces in the Wild (forthcoming)
 
 ### distribution
 
