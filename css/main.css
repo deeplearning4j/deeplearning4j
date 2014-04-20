@@ -90,6 +90,7 @@ a:visited { color: #a0a; }
 
 .header a.extra:hover {
   color: #000;
+  text-decoration: none;
 }
 
 .meta {
