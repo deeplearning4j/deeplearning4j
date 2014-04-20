@@ -7,7 +7,6 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
-import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -16,25 +15,26 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class MnistConvNetTest {
+public class MnistConvNet {
 
-    private static Logger log = LoggerFactory.getLogger(MnistConvNetTest.class);
+    private static Logger log = LoggerFactory.getLogger(MnistConvNet.class);
 
     public static void main(String[] args) throws Exception {
 
         ConvolutionalRBM r = new ConvolutionalRBM.Builder()
-                .withNumFilters(100)
-                .numberOfVisible(784)
-                .numHidden(600)
+                .withNumFilters(10)
+                .numberOfVisible(28)
+                .numHidden(28)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,50);
+        DataSetIterator iter = new MnistDataSetIterator(1,50);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            r.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{1, 1e-1, 5000});
+            DoubleMatrix reshape = next.getFirst().reshape(28,28);
+            r.trainTillConvergence(reshape, 1e-1, new Object[]{1, 1e-1, 5000});
 
         }
 
