@@ -1,24 +1,21 @@
 package org.deeplearning4j.util;
 
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.deeplearning4j.util.MatrixUtil.exp;
 
 
-
-import java.awt.*;
-import java.awt.image.*;
-import java.net.*;
-import java.util.*;
-import java.io.*;
-import java.lang.Math.*;
-import java.awt.Color.*;
 
 /**
  * Convolution is the code for applying the convolution operator.
@@ -27,7 +24,11 @@ import java.awt.Color.*;
  */
 public class Convolution {
 
+    private static Logger log = LoggerFactory.getLogger(Convolution.class);
+
     /**
+     *
+     *
      * Default no-arg constructor.
      */
     private Convolution() {
@@ -39,27 +40,37 @@ public class Convolution {
 
 
     public static DoubleMatrix conv2d(DoubleMatrix input,DoubleMatrix kernel,Type type) {
-        int retRows = input.rows + kernel.rows - 1;
-        int retCols = input.columns + kernel.columns - 1;
-        ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(input,retRows , retCols);
-        ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(kernel,retRows , retCols);
+
+        DoubleMatrix xShape = new DoubleMatrix(1,2);
+        xShape.put(0,input.rows);
+        xShape.put(1,input.columns);
+
+
+        DoubleMatrix yShape = new DoubleMatrix(1,2);
+        yShape.put(0,kernel.rows);
+        yShape.put(1,kernel.columns);
+
+
+        DoubleMatrix zShape = xShape.add(yShape).sub(1);
+        int retRows = (int) zShape.get(0);
+        int retCols = (int) zShape.get(1);
+
+        log.info("Conv 2d with dims " + retRows + " x " + retCols);
+        ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(input, retRows, retCols);
+        ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(kernel, retRows, retCols);
         ComplexDoubleMatrix mul = fftKernel.mul(fftInput);
         ComplexDoubleMatrix retComplex = complexInverseDisceteFourierTransform(mul);
         DoubleMatrix ret = retComplex.getReal();
         if(type == Type.VALID) {
-            int row = input.rows - kernel.rows + 1;
-            int col = input.columns - kernel.columns + 1;
-            if(row < 1 || col < 1) {
-                row = kernel.rows - input.rows + 1;
-                col = kernel.columns - input.columns + 1;
-            }
 
-            int beginRow = retRows - row;
-            int beginCol = retCols - col;
+            DoubleMatrix validShape = xShape.subi(yShape).add(1);
 
-            int endRow = beginRow + row;
-            int endCol = endRow + col;
-            ret = ret.get(MatrixUtil.toIndices(RangeUtils.interval(beginRow,endRow)),MatrixUtil.toIndices(RangeUtils.interval(beginCol,endCol)));
+            DoubleMatrix start = zShape.sub(validShape).div(2);
+            DoubleMatrix end = start.add(validShape);
+
+            ret = ret.get(RangeUtils.interval((int) start.get(0),(int) end.get(0)),RangeUtils.interval((int) start.get(1),(int) end.get(1)));
+
+
 
 
         }
@@ -115,7 +126,8 @@ public class Convolution {
      */
     public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
         ComplexDoubleMatrix base = null;
-
+        StopWatch watch = new StopWatch();
+        watch.start();
         //pad
         if(input.rows < rows || input.columns < cols)
             base = MatrixUtil.complexPadWithZeros(input, rows, cols);
@@ -139,7 +151,8 @@ public class Convolution {
             ComplexDoubleMatrix row = temp.getRow(i);
             ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
         }
-
+        watch.stop();
+        log.info("Took " + watch.getTime());
         return ret;
     }
 
@@ -151,7 +164,7 @@ public class Convolution {
      * @return the inverse fourier transform of the passed in input
      */
     public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(DoubleMatrix input) {
-       return complexInverseDisceteFourierTransform1d(new ComplexDoubleMatrix((input)));
+        return complexInverseDisceteFourierTransform1d(new ComplexDoubleMatrix((input)));
     }
 
     /**
@@ -186,14 +199,12 @@ public class Convolution {
     public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(ComplexDoubleMatrix inputC) {
         if(inputC.rows != 1 && inputC.columns != 1)
             throw new IllegalArgumentException("Illegal input: Must be a vector");
+
         double len = Math.max(inputC.rows,inputC.columns);
         ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2);
-        ComplexDoubleMatrix matrix = exp(div3);
+        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, len);
+        ComplexDoubleMatrix matrix = exp(range.mmul(range.transpose().mul(c2)));
         ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
-
         return complexRet;
     }
 
@@ -208,7 +219,7 @@ public class Convolution {
      * @return the the discrete fourier transform of the passed in input
      */
     public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(DoubleMatrix input) {
-       return complexDiscreteFourierTransform1d(new ComplexDoubleMatrix(input));
+        return complexDiscreteFourierTransform1d(new ComplexDoubleMatrix(input));
     }
 
     /**
