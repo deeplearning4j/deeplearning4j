@@ -5,24 +5,20 @@ layout: default
 
 # architecture
 
-DeepLearning4j uses a handful of technologies for normal and distributed training, as well as prediction with neural networks. Below you'll find the current architecture, an alpha version that is likely to change with the welcome feedback of our users.
+In building Deeplearning4j, we made a series of design decisions explained in depth below.
 
-### matrix computations
+### minibatch processing
 
-[Jblas](http://mikiobraun.github.io/jblas/) uses a Fortran library for matrix computations. We chose to use Jblas, a native dependency, because its matrix computations are faster than other options, and deep learning is nothing if not a series of matrix computations. The work of deep-learning nets is too computationally intense to select slow tools and expect timely results. 
+To train, deep-learning nets must ingest data, and to train well, they usually need to ingest a great deal. The networks can process the input more quickly and more accurately by ingesting minibatches 5-10 elements at a time in parallel. 
 
-### distributed service discovery
+This can best be illustrated with an example. Let's say you have a master coordinating 10 worker nodes. The master will shard a dataset of, say, 100 into 10 minibatches of 10, sending one minibatch to each worker. Those workers will process the input simultaneously, send their results to the master, which will average the results to create a new source of truth that is finally redistributed to the workers.
 
-[Zookeeper](http://zookeeper.apache.org/) does distributed service discovery and configuration/cluster coordination well. It comes embedded in many environments, and powers a number of well-known technologies, like Storm and Hadoop.
+Users of DL4J's distributed deep-learning can choose the minibatch size and the number of workers at their disposal, and based on those decisions, the software will optimally distribute the workload. This is an optimal input split similar to Hadoop's.
 
-### clustering / distributed computing
+Deep-learning actually learns *better* on minibatches of 5-10, rather than 100. Minibatches allow the net to encounter different orientations of the data, which it then reassembles into a bigger picture.
 
-[Akka](http://akka.io/) is a parallel framework written in Scala that powers [Spark](http://spark.apache.org). It has a great programming paradigm and transparent parallel computation via the actor model. This allows for training at scale as well as very simple, serializable models at prediction time.
+If the batch size is too large, the network tries to learn too quickly. Smaller batch sizes force the learning rate to slow down, which decreases the chances of divergence as the net approaches its error minimum.
 
-### distributed data structures
+Minibatches also allow for parallel learning in the cluster, which is crucial to increasing how fast a network trains. Thus, they allow learning to remain slow even as training speeds up.
 
-[Hazelcast](http://hazelcast.org/) is a distributed data structure framework for handling common object serialization requirements. It's primarily used to create transparent data structures for state tracking. While Hazelcast may seem redundant alongside zookeeper, zookeeper does not encourage and should not be used for distributed serialization stores.
-
-### optimization algorithms
-
-[Mallet](http://mallet.cs.umass.edu/optimization.php) is used for the optimization algorithms. The default optimization algorithm that Mallet uses is conjugate gradient, though it also contains an  implementation of gradient descent. Descent and weight decrements are implemented via a reverse objective function. Since Mallet is a maximizer rather than a minimzer, this will achieve the intended effect with regard to the objective functions, and therefore allow the use of maximization search algorithms.
+In Google's large-scale distributed training, minibatches are part of its [Sandblaster tool](http://research.google.com/archive/large_deep_networks_nips2012.html). The algorithm used to process them is called [Limited-memory BFGS](https://en.wikipedia.org/wiki/Limited-memory_BFGS), or L-BFGS.
