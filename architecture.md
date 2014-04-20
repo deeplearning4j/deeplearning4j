@@ -33,5 +33,4 @@ Parameter averaging prevents over fitting by splitting a given data set up into 
 
 This tool is similar to L2 regularization, which also ensures that weights don't get too big.
 
-It's important to note that parameter averaging in a multilayer net occurs layer by layer, RBM by RBM. Each level's weights and biases are added up and averaged. Likewise for the logistic regressions that form each output layer. 
-
+It's important to note that the parameters of each layer in a multilayer network, including the output layer, are added up and averaged. 
