@@ -15,3 +15,5 @@ The continuous nature of those measurements make the Iris dataset a perfect test
 While the dataset is small, which can present its own problems, the species virginica and versicolor are so similar that they partially overlap. That is, this set will make you work to classify it properly.
 
 DL4J's neural nets can classify the set within two minutes with an accuracy of greater than 90 percent. Once you've seen DL4J train a neural network on Iris, you may want to learn about [facial reconstruction](../facial-reconstruction-tutorial).
+
+![Alt text](../img/iris_dataset.png)
