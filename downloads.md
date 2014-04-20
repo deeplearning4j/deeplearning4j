@@ -16,7 +16,7 @@ The first are preserialized datasets that can be downloaded directly for use wit
              d.load(bis);
              bis.close();
 
-### code
+### distribution
 
 The second download is pre-compiled binaries, or jar files. These consist of the actual classes themselves, and can be found on [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With the binaries, you run everything. 
 
