@@ -87,8 +87,9 @@ public class ConvolutionTest {
 
 
 
-
         log.info(Convolution.conv2d(image, kernel, Type.FULL).toString());
+
+        log.info(Convolution.conv2d(image, kernel, Type.VALID).toString());
     }
 
 }

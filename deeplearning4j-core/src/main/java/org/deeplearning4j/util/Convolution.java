@@ -59,7 +59,7 @@ public class Convolution {
 
             int endRow = beginRow + row;
             int endCol = endRow + col;
-            ret = ret.get(new int[]{beginRow,endRow},new int[]{beginCol,endCol});
+            ret = ret.get(MatrixUtil.toIndices(RangeUtils.interval(beginRow,endRow)),MatrixUtil.toIndices(RangeUtils.interval(beginCol,endCol)));
 
 
         }
