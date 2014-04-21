@@ -24,18 +24,33 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     private int slices,rows;
 
-
+    /**
+     * Creates this tensor with the specified number of rows, columns and slices
+     * Note that this will throw an illegal argument exception if any of the given
+     * params are less than 1
+     * @param rows
+     * @param columns
+     * @param slices
+     */
     public Tensor(int rows, int columns, int slices) {
         super(rows * slices,columns);
+        if(slices < 1)
+            throw new IllegalArgumentException("Tensor has no slices");
+        if(rows < 1)
+            throw new IllegalArgumentException("Illegal number of rows");
+        if(columns < 1)
+            throw new IllegalArgumentException("Illegal number of columns");
         this.slices = slices;
         this.rows = rows;
     }
 
     public Tensor(DoubleMatrix t) {
         super(t.toArray2());
+        this.slices = 1;
     }
     public Tensor(Tensor t) {
         super(t.toArray2());
+        this.slices = 1;
     }
 
 
@@ -90,9 +105,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
 
     public Tensor sliceRowSums() {
-        Tensor ret = new Tensor(rows(),columns(),slices);
+        Tensor ret = new Tensor(1,rows(),slices);
         for(int i = 0; i < slices(); i++) {
-            DoubleMatrix rowSums = getSlice(i).rowSums();
+            DoubleMatrix rowSums = getSlice(i).rowSums().transpose();
             ret.setSlice(i,rowSums);
         }
         return ret;
@@ -118,7 +133,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
         put(getRowIndicesForSlice(index),getColIndicesForSlice(),slice);
     }
 
-   
+
     public void setSlice(int index,Tensor slice) {
          setSlice(index,slice);
     }
@@ -431,7 +446,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the tensor with the specified slices and the random matrices
      */
     public static Tensor zeros(int rows, int cols,int slices) {
-        return new Tensor(DoubleMatrix.zeros(rows * slices,cols));
+        return new Tensor(rows,cols,slices);
 
     }
 
@@ -613,10 +628,19 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return columns;
     }
 
+    /**
+     * Returns the number of rows in
+     * each slice
+     * @return the number of rows
+     */
     public int rows() {
-        return rows;
+        return super.rows / slices;
     }
 
+    /**
+     * The number of slices in this tensor
+     * @return the number of slices in this tensor
+     */
     public int slices() {
         return this.slices;
     }
