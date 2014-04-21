@@ -23,8 +23,9 @@ public class MnistConvNet {
 
         ConvolutionalRBM r = new ConvolutionalRBM.Builder()
                 .withNumFilters(10)
-                .numberOfVisible(28)
-                .numHidden(28)
+                .withVisibleSize(new int[]{28,28})
+                .withFilterSize(new int[]{10,10})
+                .numberOfVisible(28).numHidden(28)
                 .build();
 
 

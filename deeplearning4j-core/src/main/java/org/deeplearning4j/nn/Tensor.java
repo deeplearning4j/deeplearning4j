@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
@@ -24,7 +25,7 @@ import java.util.Collections;
  */
 public class Tensor extends DoubleMatrix implements Serializable {
 
-    private int slices,rows;
+    private int slices,perMatrixRows;
 
     /**
      * Creates this tensor with the specified number of rows, columns and slices
@@ -43,16 +44,23 @@ public class Tensor extends DoubleMatrix implements Serializable {
         if(columns < 1)
             throw new IllegalArgumentException("Illegal number of columns");
         this.slices = slices;
-        this.rows = rows;
+        this.perMatrixRows = rows;
     }
 
     public Tensor(DoubleMatrix t) {
         super(t.toArray2());
         this.slices = 1;
     }
+
+    /**
+     * Initializes this tensor's data
+     * and the number of slices and per matrix rows
+     * @param t the tensor to initialize with
+     */
     public Tensor(Tensor t) {
         super(t.toArray2());
-        this.slices = 1;
+        this.slices = t.slices();
+        this.perMatrixRows = t.perMatrixRows;
     }
 
 
@@ -432,8 +440,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * based on the origin matrix
      */
     public static Tensor create(DoubleMatrix matrix,int numSlices) {
-        return new Tensor(matrix);
-
+        Tensor ret = new Tensor(matrix);
+        ret.slices = numSlices;
+        return ret;
     }
 
     /**
@@ -518,8 +527,11 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the element wise subtraction of the passed in tensor
      * with this tensor
      */
-    public Tensor sub(Tensor tensor) {
-        return new Tensor(sub(tensor));
+    public Tensor sub(Tensor tensor)  {
+        Tensor ret = new Tensor(super.sub(tensor));
+        ret.slices = slices;
+        ret.perMatrixRows = perMatrixRows;
+        return ret;
     }
 
     /**
@@ -529,8 +541,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor add(Tensor tensor) {
-        return new Tensor(add(tensor));
-
+        Tensor ret = new Tensor(super.add(tensor));
+        ret.slices = slices;
+        ret.perMatrixRows = perMatrixRows;
+        return ret;
     }
 
     /**
@@ -540,8 +554,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor mul(Tensor tensor) {
-        return new Tensor(mul(tensor));
-
+        Tensor ret = new Tensor(mul(tensor));
+        ret.slices = slices;
+        ret.perMatrixRows = perMatrixRows;
+        return ret;
     }
 
 
@@ -551,7 +567,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return this tensor with values - val
      */
     public Tensor sub(double val) {
-        return new Tensor(super.sub(val));
+        Tensor ret = new Tensor(super.sub(val));
+        ret.perMatrixRows = perMatrixRows;
+        ret.slices = slices;
+        return ret;
     }
 
     /**
@@ -560,7 +579,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a tensor with the elements of this tensor added by val
      */
     public Tensor add(double val) {
-        return new Tensor(super.add(val));
+        Tensor ret = new Tensor(super.add(val));
+        ret.perMatrixRows = perMatrixRows;
+        ret.slices = slices;
+        return ret;
     }
 
     /**
@@ -570,7 +592,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor div(double val) {
-        return new Tensor(super.div(val));
+        Tensor ret = new Tensor(super.div(val));
+        ret.perMatrixRows = perMatrixRows;
+        ret.slices = slices;
+        return ret;
     }
 
 
@@ -581,7 +606,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor mul(double val) {
-        return new Tensor(mul(val));
+        Tensor ret = new Tensor(mul(val));
+        ret.slices = slices;
+        ret.perMatrixRows = perMatrixRows;
+        return ret;
     }
 
     /**
@@ -591,12 +619,18 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor div(Tensor val) {
-        return new Tensor(super.div(val));
+        Tensor copy = dup();
+        for(int i = 0; i < length; i++)
+            put(i, get(i) / val.get(i));
+        return copy;
     }
 
 
     public Tensor scale(double value) {
-        return new Tensor(SimpleBlas.scal(value,this));
+        Tensor ret = new Tensor(SimpleBlas.scal(value,this));
+        ret.slices = slices;
+        ret.perMatrixRows = perMatrixRows;
+        return ret;
     }
 
 
@@ -614,14 +648,21 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a copy of this tensor with tanh applied
      */
     public Tensor tanh() {
-        return new Tensor(MatrixFunctions.tanh(this));
+        Tensor copy = dup();
+        for(int i = 0; i < length; i++)
+            put(i, FastMath.tanh(get(i)));
+
+        return copy;
     }
     /**
      * A copy of this tensor with sigmoid applied
      * @return a copy of this tensor with sigmoid applied
      */
     public Tensor sigmoid() {
-        return new Tensor(MatrixUtil.sigmoid(this));
+        Tensor copy = dup();
+        for(int i = 0; i < length; i++)
+            put(i, MathUtils.sigmoid(get(i)));
+        return copy;
     }
 
     /**
@@ -629,7 +670,10 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a copy of this tensor with exp applied
      */
     public Tensor exp() {
-        return new Tensor(MatrixFunctions.exp(this));
+        Tensor copy = dup();
+        for(int i = 0; i < length; i++)
+            put(i,FastMath.exp(get(i)));
+        return copy;
     }
 
     /**
