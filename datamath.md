@@ -20,7 +20,7 @@ Neural nets, and computers in general, only perceive the world as it is processe
 We allow you to create word vectors with [Word2vec](../word2vec.html).
 
 ### pandas dataframe
-[Pandas dataframe](http://pandas.pydata.org/pandas-docs/version/0.13.1/index.html) is a Python data analysis toolkit. The dataset class in DL4J implements a bare-bones version of the Pandas dataframe. 
+[Pandas dataframe](http://pandas.pydata.org/pandas-docs/version/0.13.1/index.html) is a Python data analysis toolkit. The [dataset class](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/DataSet.java) in DL4J implements a bare-bones version of the Pandas dataframe. 
 
 ### other tools
 
