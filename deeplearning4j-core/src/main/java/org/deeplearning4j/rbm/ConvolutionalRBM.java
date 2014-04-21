@@ -3,7 +3,6 @@ package org.deeplearning4j.rbm;
 import static org.deeplearning4j.util.MatrixUtil.*;
 
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -32,9 +31,10 @@ public class ConvolutionalRBM extends RBM  {
     private Tensor W;
     private int[] stride = {2,2};
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
+    protected boolean convolutionInitCalled = false;
 
     protected ConvolutionalRBM() {
-        init();
+        convolutionInit();
     }
 
 
@@ -43,16 +43,27 @@ public class ConvolutionalRBM extends RBM  {
     protected ConvolutionalRBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
                                DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
-        init();
+        convolutionInit();
     }
 
 
 
 
-    private void init() {
+    private void convolutionInit() {
+       if(convolutionInitCalled)
+           return;
         W = new Tensor(getnVisible(),getnHidden(),numFilters);
         visI = Tensor.zeros(getnVisible(),getnHidden(),numFilters);
-        hidI = Tensor.zeros(getnVisible() - numFilters + 1,getnHidden() - numFilters + 1,numFilters);
+        int visibleNumFilters = getnVisible() - numFilters + 1;
+        int hiddenNumFilters = getnHidden() - numFilters + 1;
+
+        if(visibleNumFilters < 1 || hiddenNumFilters < 1)
+            throw new IllegalArgumentException("Invalid hidden filter size shape: (" + visibleNumFilters + "," + hiddenNumFilters + ")");
+
+        hidI = Tensor.zeros(visibleNumFilters,hiddenNumFilters,numFilters);
+        convolutionInitCalled = true;
+
+
     }
 
 
@@ -68,7 +79,7 @@ public class ConvolutionalRBM extends RBM  {
     public DoubleMatrix propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  MatrixUtil.reverse(W.getSlice(i));
-            DoubleMatrix slice =  Convolution.conv2d(v, reversedSlice ,Convolution.Type.VALID).add(hBias.get(i));
+            DoubleMatrix slice =  MatrixUtil.padWithZeros(Convolution.conv2d(v, reversedSlice, Convolution.Type.VALID).add(hBias.get(i)), hidI.rows(), hidI.columns());
             hidI.setSlice(i,slice);
 
         }
@@ -259,6 +270,7 @@ public class ConvolutionalRBM extends RBM  {
             ConvolutionalRBM ret = (ConvolutionalRBM) super.build();
             ret.numFilters = numFilters;
             ret.stride = stride;
+            ret.convolutionInit();
             return ret;
 
         }
