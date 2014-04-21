@@ -10,6 +10,8 @@ import org.jblas.DoubleMatrix;
 import org.jblas.Geometry;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
+import org.jblas.ranges.Range;
+import org.jblas.ranges.RangeUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -54,22 +56,14 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
 
-    private int[] getColIndicesForSlice() {
-        int[] ret = new int[columns];
-        for(int i = 0; i < ret.length; i++)
-            ret[i] = i;
-        return ret;
+    private Range getColIndicesForSlice() {
+        return RangeUtils.all();
     }
     /* Gets a block of the matrix such that the slice represents a subset of the rows in the matrix */
-    private int[] getRowIndicesForSlice(int slice) {
-        int[] ret = new int[Math.abs(slice * rows - (slice * rows) + rows)];
-        int start = slice * rows;
-        for(int i = 0; i < ret.length; i++) {
-            ret[i] = start;
-            start++;
-        }
-
-        return ret;
+    private Range getRowIndicesForSlice(int slice) {
+        int start = slice * rows();
+        int end =  (slice * rows()) + rows();
+        return RangeUtils.interval(start,end);
     }
 
     public Tensor sliceColumnSums() {
@@ -114,9 +108,22 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
 
-
+    /**
+     * Returns the given slice
+     * @param index the index of the slice
+     * @return the given slice
+     */
     public DoubleMatrix getSlice(int index) {
-        return get(getRowIndicesForSlice(index),getColIndicesForSlice());
+      if(index >= slices())
+          throw new IllegalArgumentException("Unable to get slice " + index + " out of bounds");
+
+       try {
+           DoubleMatrix slice =  get(getRowIndicesForSlice(index),getColIndicesForSlice());
+           return slice;
+
+       } catch(Exception e) {
+           throw new IllegalArgumentException("Unable to get a slice ",e);
+       }
     }
 
     /**
@@ -135,7 +142,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
 
     public void setSlice(int index,Tensor slice) {
-         setSlice(index,slice);
+        setSlice(index, slice);
     }
 
     /**
@@ -178,16 +185,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return new Tensor(columnsSums());
     }
 
-    public Tensor getIndicesSlices(int[] rowIndices,int[] columnIndices) {
-        DoubleMatrix first = getSlice(0).get(rowIndices, columnIndices);
-        Tensor ret = new Tensor(first.rows,first.columns,slices());
-        ret.setSlice(0,first);
-        for(int i = 1; i < slices(); i++) {
-            ret.setSlice(i, getSlice(i).get(rowIndices, columnIndices));;
-        }
 
-        return ret;
-    }
 
     /**
      * Returns this tensor as a matrix such that
@@ -234,7 +232,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
         int[] indices = new int[slices()];
         for(int i = 0; i < slices(); i++)
             indices[i] = row * i;
-        DoubleMatrix ret = get(indices,getColIndicesForSlice());
+        DoubleMatrix ret = get(indices);
         return ret;
     }
 
@@ -261,7 +259,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRow(int row,int slice) {
-        DoubleMatrix rows = get(this.getRowIndicesForSlice(slice),this.getColIndicesForSlice());
+        DoubleMatrix rows = get(getRowIndicesForSlice(slice),getColIndicesForSlice());
         return rows;
     }
 
@@ -511,9 +509,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     }
 
-    public Tensor repmat(int rows,int cols) {
-        return new Tensor(repmat(rows,cols));
-    }
+
 
 
     /**
@@ -555,7 +551,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return this tensor with values - val
      */
     public Tensor sub(double val) {
-        return new Tensor(sub(val));
+        return new Tensor(super.sub(val));
     }
 
     /**
@@ -564,8 +560,19 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return a tensor with the elements of this tensor added by val
      */
     public Tensor add(double val) {
-        return new Tensor(add(val));
+        return new Tensor(super.add(val));
     }
+
+    /**
+     * This tensor's elements multiplied by val
+     * @param val the tensor to multiply by
+     * @return the element wise multiplication of the passed in tensor
+     * with this tensor
+     */
+    public Tensor div(double val) {
+        return new Tensor(super.div(val));
+    }
+
 
     /**
      * This tensor's elements multiplied by val
@@ -575,6 +582,16 @@ public class Tensor extends DoubleMatrix implements Serializable {
      */
     public Tensor mul(double val) {
         return new Tensor(mul(val));
+    }
+
+    /**
+     * This tensor's elements divided by val
+     * @param val the tensor to multiply by
+     * @return the element wise multiplication of the passed in tensor
+     * with this tensor
+     */
+    public Tensor div(Tensor val) {
+        return new Tensor(super.div(val));
     }
 
 
