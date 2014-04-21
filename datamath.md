@@ -22,6 +22,8 @@ We allow you to create word vectors with [Word2vec](../word2vec.html).
 ### pandas dataframe
 [Pandas dataframe](http://pandas.pydata.org/pandas-docs/version/0.13.1/index.html) is a Python data analysis toolkit. The dataset class in DL4J implements a bare-bones version of the Pandas dataframe. 
 
+### other tools
+
 * [MatrixUtil](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/util/MatrixUtil.java) is where our matrix transformations live. 
 
 * [Conjugate Gradient](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/util/NonZeroStoppingConjugateGradient.java) is one of the optimization algorithms we have to train neural nets. 
