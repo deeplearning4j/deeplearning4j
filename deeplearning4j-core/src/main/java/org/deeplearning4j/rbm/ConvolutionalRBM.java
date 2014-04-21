@@ -16,7 +16,10 @@ import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * Convolutional RBM
+ * @author Adam Gibson
+ */
 public class ConvolutionalRBM extends RBM  {
 
     /**
@@ -33,9 +36,7 @@ public class ConvolutionalRBM extends RBM  {
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
 
-    protected ConvolutionalRBM() {
-        convolutionInit();
-    }
+    protected ConvolutionalRBM() {}
 
 
 
@@ -43,15 +44,14 @@ public class ConvolutionalRBM extends RBM  {
     protected ConvolutionalRBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
                                DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
-        convolutionInit();
     }
 
 
 
-
+    /* convolutional specific init */
     private void convolutionInit() {
-       if(convolutionInitCalled)
-           return;
+        if(convolutionInitCalled)
+            return;
         W = new Tensor(getnVisible(),getnHidden(),numFilters);
         visI = Tensor.zeros(getnVisible(),getnHidden(),numFilters);
         int visibleNumFilters = getnVisible() - numFilters + 1;
@@ -76,7 +76,7 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated activations of the visible layer
      */
     @Override
-    public DoubleMatrix propUp(DoubleMatrix v) {
+    public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  MatrixUtil.reverse(W.getSlice(i));
             DoubleMatrix slice =  MatrixUtil.padWithZeros(Convolution.conv2d(v, reversedSlice, Convolution.Type.VALID).add(hBias.get(i)), hidI.rows(), hidI.columns());
@@ -86,7 +86,7 @@ public class ConvolutionalRBM extends RBM  {
 
         Tensor expHidI = hidI.exp();
 
-        DoubleMatrix eHid = expHidI.div(pool(expHidI));
+        Tensor eHid = expHidI.div(pool(expHidI));
         return eHid;
     }
 
@@ -98,16 +98,15 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated output of the hidden layer
      */
     @Override
-    public DoubleMatrix propDown(DoubleMatrix h) {
+    public Tensor propDown(DoubleMatrix h) {
         Tensor h1 = (Tensor) h;
         for(int i = 0; i < numFilters; i++) {
             visI.setSlice(i,
-                    Convolution.conv2d(h1.getSlice(i), W.getSlice(i), Convolution.Type.FULL));
+                    MatrixUtil.padWithZeros(Convolution.conv2d(h1.getSlice(i), W.getSlice(i), Convolution.Type.FULL),visI.rows(),visI.columns()));
         }
 
-        DoubleMatrix I = visI.sliceElementSums().addRowVector(vBias);
 
-        return sigmoid(I);
+        return  new Tensor(sigmoid(visI.sliceElementSums().addRowVector(vBias)));
     }
 
 
@@ -119,27 +118,50 @@ public class ConvolutionalRBM extends RBM  {
         int rows = input.rows();
         Tensor ret = Tensor.zeros(rows,nCols,input.slices());
         for(int i = 0;i < Math.ceil(nCols / stride[0]); i++) {
-            int rowsMin = (i - 1) * stride[0] + 1;
-            int rowsMax = i * stride[0];
+            int rowsMin = i  * stride[0] + 1;
+            int rowsMax = (i + 1) * stride[0];
             for(int j = 0; j < Math.ceil(nCols / stride[1]); j++) {
-                int cols = (j - 1) * stride[1] + 1;
-                int colsMax = j * stride[1];
-                Tensor blockVal =  null;
+                int cols = j  * stride[1] + 1;
+                int colsMax = (j + 1) * stride[1];
+                double blockVal = input.columnsSums().sum();
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
-
-                Tensor set = blockVal.permute(new int[]{2,3,1}).repmat(rowLength,colLength);
-                ret.put(RangeUtils.interval(rowsMin, rowsMax), RangeUtils.interval(cols, colsMax), set);
-
-
+                DoubleMatrix block = new DoubleMatrix(rowLength,colLength);
+                MatrixUtil.assign(block,blockVal);
+                ret.put(RangeUtils.interval(rowsMin,rowsMax),RangeUtils.interval(cols,colsMax),block);
 
             }
 
         }
         return ret;
     }
+    /**
+     * Guess the visible values given the hidden
+     * @param h
+     * @return
+     */
+    @Override
+    public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
+        Tensor v1Mean = propDown(h);
+        Tensor v1Sample = new Tensor(binomial(v1Mean, 1, rng));
+        return new Pair<>((DoubleMatrix)v1Mean,(DoubleMatrix) v1Sample);
+    }
 
 
+    /**
+     * Binomial sampling of the hidden values given visible
+     * @param v the visible values
+     * @return a binomial distribution containing the expected values and the samples
+     */
+    @Override
+    public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+        Tensor h1Mean = propUp(v);
+        Tensor h1Sample = new Tensor(binomial(h1Mean, 1, rng));
+        //apply dropout
+        applyDropOutIfNecessary(h1Sample);
+        return new Pair<>((DoubleMatrix)h1Mean,(DoubleMatrix) h1Sample);
+
+    }
 
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
@@ -242,8 +264,8 @@ public class ConvolutionalRBM extends RBM  {
 
     public static class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
 
-        protected int numFilters;
-        protected int[] stride;
+        protected int numFilters = 4;
+        protected int[] stride = {2,2};
 
 
 

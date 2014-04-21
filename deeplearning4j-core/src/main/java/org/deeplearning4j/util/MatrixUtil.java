@@ -541,6 +541,12 @@ public class MatrixUtil {
         return ret;
     }
 
+
+    public static void assign(DoubleMatrix toAssign,double val) {
+        for(int i = 0; i < toAssign.length; i++)
+            toAssign.put(i,val);
+    }
+
     public static DoubleMatrix padWithZeros(DoubleMatrix toPad, int rows, int cols) {
         if(rows < 1)
             throw new IllegalArgumentException("Illegal number of rows " + rows);
