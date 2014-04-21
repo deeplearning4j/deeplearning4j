@@ -49,4 +49,4 @@ Job coordination is set up with an actor network runner, which is responsible fo
 
 Zookeeper acts as the central store for configuration; it's what the system uses to bootstrap and connect with Akka and Hazelcast. When workers start, they conduct service discovery, locate the master on a given host, and retrieve the config from that master. The configuration determines the neural network architecture.
 
-Configuration will create a single-threaded network at each node, an acutal deep-belief network or restricted Boltzmann machine. The conf contains metadata about where the master is, the absolute path to the master actor, or parameter server. The parameter server functions as the source of truth, or current best model, for all nodes. 
+Configuration will create a single-threaded network at each node, an actual deep-belief network or restricted Boltzmann machine. The conf contains metadata about where the master is, the absolute path to the master actor, or parameter server. The parameter server functions as the source of truth, or current best model, for all nodes. 
