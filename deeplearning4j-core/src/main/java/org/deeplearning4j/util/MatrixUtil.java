@@ -547,12 +547,40 @@ public class MatrixUtil {
             toAssign.put(i,val);
     }
 
+    /**
+     * Pads the matrix with zeros to surround the passed in matrix
+     * with the given rows and columns
+     * @param toPad the matrix to pad
+     * @param rows the rows of the destination matrix
+     * @param cols the columns of the destination matrix
+     * @return a new matrix with the elements of toPad with zeros or
+     * a clone of toPad if the rows and columns are both greater in length than
+     * rows and cols
+     */
     public static DoubleMatrix padWithZeros(DoubleMatrix toPad, int rows, int cols) {
         if(rows < 1)
             throw new IllegalArgumentException("Illegal number of rows " + rows);
         if(cols < 1)
             throw new IllegalArgumentException("Illegal number of columns " + cols);
-        DoubleMatrix ret = new DoubleMatrix(rows, cols);
+        DoubleMatrix ret = null;
+        //nothing to pad
+        if(toPad.rows >= rows) {
+            if(toPad.columns >= cols)
+                return toPad.dup();
+            else
+                ret = new DoubleMatrix(toPad.rows, cols);
+
+
+        }
+        else if(toPad.columns >= cols) {
+            if(toPad.rows >= rows)
+                return toPad.dup();
+            else
+                ret = new DoubleMatrix(rows,toPad.columns);
+        }
+        else
+            ret = new DoubleMatrix(rows, cols);
+
         for(int i = 0; i < toPad.rows; i++) {
             for(int j = 0; j < toPad.columns; j++) {
                 double d = toPad.get(i,j);
