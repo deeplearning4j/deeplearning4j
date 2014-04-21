@@ -28,6 +28,12 @@ public class TensorTests {
         Tensor t = new Tensor(1,1,1);
         t.set(0,0,0,2.0);
         assertEquals(true,2.0 == t.get(0,0,0));
+
+
+        Tensor t2 = new Tensor(2,2,2);
+        t2.set(0,0,0,1);
+        assertEquals(true,1 == t2.get(0,0,0));
+
     }
 
 
@@ -40,13 +46,13 @@ public class TensorTests {
         assertEquals(true, matrix.columns == 3);
     }
 
-      @Test
+    @Test
     public void testTensorRowSums() {
         Tensor t = Tensor.rand(2,3,3,4.0,6.0);
         Tensor rowSums = t.sliceRowSums();
         assertEquals(t.slices(),rowSums.slices());
         assertEquals(true ,Math.abs(t.sum() - rowSums.sum()) < 1e-1);
-        assertEquals(rowSums.rows(),t.rows());
+        assertEquals(rowSums.rows(),1);
     }
 
     @Test

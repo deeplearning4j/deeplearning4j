@@ -542,10 +542,15 @@ public class MatrixUtil {
     }
 
     public static DoubleMatrix padWithZeros(DoubleMatrix toPad, int rows, int cols) {
-        DoubleMatrix ret = DoubleMatrix.zeros(rows, cols);
+        if(rows < 1)
+            throw new IllegalArgumentException("Illegal number of rows " + rows);
+        if(cols < 1)
+            throw new IllegalArgumentException("Illegal number of columns " + cols);
+        DoubleMatrix ret = new DoubleMatrix(rows, cols);
         for(int i = 0; i < toPad.rows; i++) {
             for(int j = 0; j < toPad.columns; j++) {
-                ret.put(i,j,toPad.get(i,j));
+                double d = toPad.get(i,j);
+                ret.put(i,j,d);
             }
         }
         return ret;
