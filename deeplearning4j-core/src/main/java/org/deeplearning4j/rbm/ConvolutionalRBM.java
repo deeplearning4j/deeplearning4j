@@ -33,8 +33,12 @@ public class ConvolutionalRBM extends RBM  {
     private Tensor hidI;
     private Tensor W;
     private int[] stride = {2,2};
+    protected int[] visibleSize;
+    protected int[] filterSize;
+    protected int[] fmSize;
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
+
 
     protected ConvolutionalRBM() {}
 
@@ -52,18 +56,12 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = new Tensor(getnVisible(),getnHidden(),numFilters);
-        visI = Tensor.zeros(getnVisible(),getnHidden(),numFilters);
-        int visibleNumFilters = getnVisible() - numFilters + 1;
-        int hiddenNumFilters = getnHidden() - numFilters + 1;
-
-        if(visibleNumFilters < 1 || hiddenNumFilters < 1)
-            throw new IllegalArgumentException("Invalid hidden filter size shape: (" + visibleNumFilters + "," + hiddenNumFilters + ")");
-
-        hidI = Tensor.zeros(visibleNumFilters,hiddenNumFilters,numFilters);
+        W = new Tensor(filterSize[0],filterSize[1],numFilters);
+        visI = Tensor.zeros(visibleSize[0],visibleSize[1],numFilters);
+        hidI = Tensor.zeros(fmSize[0],fmSize[1],numFilters);
         convolutionInitCalled = true;
-
-
+        vBias = DoubleMatrix.zeros(1);
+        hBias = DoubleMatrix.zeros(numFilters);
     }
 
 
@@ -79,14 +77,14 @@ public class ConvolutionalRBM extends RBM  {
     public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  MatrixUtil.reverse(W.getSlice(i));
-            DoubleMatrix slice =  MatrixUtil.padWithZeros(Convolution.conv2d(v, reversedSlice, Convolution.Type.VALID).add(hBias.get(i)), hidI.rows(), hidI.columns());
+            DoubleMatrix slice =  Convolution.conv2d(v, reversedSlice, Convolution.Type.VALID).add(hBias.get(i));
             hidI.setSlice(i,slice);
 
         }
 
         Tensor expHidI = hidI.exp();
 
-        Tensor eHid = expHidI.div(pool(expHidI));
+        Tensor eHid = expHidI.div(pool(expHidI).add(1));
         return eHid;
     }
 
@@ -101,12 +99,18 @@ public class ConvolutionalRBM extends RBM  {
     public Tensor propDown(DoubleMatrix h) {
         Tensor h1 = (Tensor) h;
         for(int i = 0; i < numFilters; i++) {
-            visI.setSlice(i,
-                    MatrixUtil.padWithZeros(Convolution.conv2d(h1.getSlice(i), W.getSlice(i), Convolution.Type.FULL),visI.rows(),visI.columns()));
+            /*
+               Each tensor only has one slice, need to figure out what's going on here
+             */
+            DoubleMatrix conv = Convolution.conv2d
+                    (h1.getSlice(i), W.getSlice(i),
+                            Convolution.Type.FULL);
+            log.info("Slice shape " + conv.rows  + " with " + conv.columns);
+            visI.setSlice(i,conv);
         }
 
 
-        return  new Tensor(sigmoid(visI.sliceElementSums().addRowVector(vBias)));
+        return  new Tensor(sigmoid(visI.sliceElementSums().add(vBias)));
     }
 
 
@@ -115,14 +119,19 @@ public class ConvolutionalRBM extends RBM  {
 
     public Tensor pool(Tensor input) {
         int nCols = input.columns();
-        int rows = input.rows();
-        Tensor ret = Tensor.zeros(rows,nCols,input.slices());
-        for(int i = 0;i < Math.ceil(nCols / stride[0]); i++) {
-            int rowsMin = i  * stride[0] + 1;
-            int rowsMax = (i + 1) * stride[0];
-            for(int j = 0; j < Math.ceil(nCols / stride[1]); j++) {
-                int cols = j  * stride[1] + 1;
-                int colsMax = (j + 1) * stride[1];
+        int nRows = input.rows;
+        int yStride = stride[0];
+        int xStride = stride[1];
+
+        Tensor ret = Tensor.zeros(input.rows,input.columns,input.slices());
+        int endRowBlock =  (int) Math.ceil(nRows / yStride);
+        for(int i = 1;i < endRowBlock; i++) {
+            int rowsMin = (i -1)  * yStride + 1;
+            int rowsMax = i * yStride;
+            int endColBlock = (int) Math.ceil(nCols / xStride);
+            for(int j = 1; j < endColBlock; j++) {
+                int cols = (j - 1)  * xStride + 1;
+                int colsMax = j  * xStride;
                 double blockVal = input.columnsSums().sum();
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
@@ -135,6 +144,27 @@ public class ConvolutionalRBM extends RBM  {
         }
         return ret;
     }
+
+    @Override
+    public DoubleMatrix getW() {
+        return W;
+    }
+
+    /**
+     * Reconstruction entropy.
+     * This compares the similarity of two probability
+     * distributions, in this case that would be the input
+     * and the reconstructed input with gaussian noise.
+     * This will account for either regularization or none
+     * depending on the configuration.
+     *
+     * @return reconstruction error
+     */
+    @Override
+    public double getReConstructionCrossEntropy() {
+        return negativeLogLikelihood();
+    }
+
     /**
      * Guess the visible values given the hidden
      * @param h
@@ -180,26 +210,12 @@ public class ConvolutionalRBM extends RBM  {
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
 		 */
-        Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
 		/*
 		 * Start the gibbs sampling.
 		 */
-        DoubleMatrix chainStart = probHidden.getSecond();
+        Tensor chainStart = this.propUp(input);
 
-		/*
-		 * Note that at a later date, we can explore alternative methods of
-		 * storing the chain transitions for different kinds of sampling
-		 * and exploring the search space.
-		 */
-        Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
-        //negative visible means or expected values
-        DoubleMatrix nvMeans = null;
-        //negative value samples
-        DoubleMatrix nvSamples = null;
-        //negative hidden means or expected values
-        DoubleMatrix nhMeans = null;
-        //negative hidden samples
-        DoubleMatrix nhSamples = null;
+
 
 		/*
 		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
@@ -210,31 +226,21 @@ public class ConvolutionalRBM extends RBM  {
 		 *
 		 */
 
+        Tensor nvSamples = null;
+        Tensor hiddenMeans = chainStart;
         for(int i = 0; i < k; i++) {
-
-
-            if(i == 0)
-                matrices = gibbhVh(chainStart);
-            else
-                matrices = gibbhVh(nhSamples);
-
-            //get the cost updates for sampling in the chain after k iterations
-            nvMeans = matrices.getFirst().getFirst();
-            nvSamples = matrices.getFirst().getSecond();
-            nhMeans = matrices.getSecond().getFirst();
-            nhSamples = matrices.getSecond().getSecond();
+            nvSamples = new Tensor(MatrixUtil.binomial(propDown(hiddenMeans),1,rng));
+            hiddenMeans = propUp(nvSamples);
         }
 
 		/*
 		 * Update gradient parameters
 		 */
 
-        Tensor eHiddenInitial = (Tensor) probHidden.getSecond();
-        Tensor hiddenMeans = (Tensor) nhMeans;
         Tensor wGradient = new Tensor(W.rows(),W.columns(),W.slices());
         for(int i = 0; i < numFilters; i++) {
             wGradient.setSlice(i,Convolution.conv2d(input,
-                    eHiddenInitial.getSlice(i), Convolution.Type.VALID)
+                    chainStart.getSlice(i), Convolution.Type.VALID)
                     .sub(Convolution.conv2d(nvSamples,
                             MatrixUtil.reverse(hiddenMeans.getSlice(i)),
                             Convolution.Type.VALID)));
@@ -246,7 +252,7 @@ public class ConvolutionalRBM extends RBM  {
         DoubleMatrix hBiasGradient = null;
 
         //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-        hBiasGradient = DoubleMatrix.scalar(probHidden.getSecond().sub(nhMeans).columnSums().sum());
+        hBiasGradient = DoubleMatrix.scalar(hiddenMeans.sub(nvSamples).columnSums().sum());
 
 
 
@@ -266,8 +272,9 @@ public class ConvolutionalRBM extends RBM  {
 
         protected int numFilters = 4;
         protected int[] stride = {2,2};
-
-
+        protected int[] visibleSize;
+        protected int[] filterSize;
+        protected int[] fmSize;
 
 
         public Builder() {
@@ -275,6 +282,20 @@ public class ConvolutionalRBM extends RBM  {
 
         }
 
+        public Builder withFilterSize(int[] filterSize) {
+            if(filterSize == null || filterSize.length != 2)
+                throw new IllegalArgumentException("Filter size must be of length 2");
+            this.filterSize = filterSize;
+            return this;
+        }
+
+
+        public Builder withVisibleSize(int[] visibleSize) {
+            if(visibleSize == null || visibleSize.length != 2)
+                throw new IllegalArgumentException("Visible size must be of length 2");
+            this.visibleSize = visibleSize;
+            return this;
+        }
 
         public Builder withStride(int[] stride) {
             this.stride = stride;
@@ -290,8 +311,18 @@ public class ConvolutionalRBM extends RBM  {
 
         public ConvolutionalRBM build() {
             ConvolutionalRBM ret = (ConvolutionalRBM) super.build();
+            if(filterSize == null)
+                throw new IllegalStateException("Please specify a filter size");
+            if(visibleSize == null)
+                throw new IllegalStateException("Please specify a viisble size");
             ret.numFilters = numFilters;
             ret.stride = stride;
+            fmSize = new int[2];
+            fmSize[0] = visibleSize[0] - filterSize[0] + 1;
+            fmSize[1] = visibleSize[1] - filterSize[1] + 1;
+            ret.fmSize = fmSize;
+            ret.visibleSize = visibleSize;
+            ret.filterSize = filterSize;
             ret.convolutionInit();
             return ret;
 

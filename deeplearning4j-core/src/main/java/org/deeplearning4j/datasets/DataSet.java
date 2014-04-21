@@ -107,6 +107,18 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         return new DataSet(in,out);
     }
 
+    /**
+     * Reshapes the input in to the given rows and columns
+     * @param rows the row size
+     * @param cols the column size
+     * @return a copy of this data set with the input resized
+     */
+    public DataSet reshape(int rows,int cols) {
+        DataSet ret = new DataSet(getFirst().reshape(rows,cols),getSecond());
+        return ret;
+
+    }
+
 
     public void multiplyBy(int num) {
         getFirst().muli(num);
