@@ -21,9 +21,9 @@ Neural nets, and computers in general, only perceive the world as it is processe
 
 ### optimization algorithms
 
-* [Conjugate Gradient](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/VectorizedNonZeroStoppingConjugateGradient.java) is one of the optimization algorithms we have to train neural nets. 
+* [Conjugate Gradient](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/VectorizedNonZeroStoppingConjugateGradient.java)
 
-* [Stochastic Gradient Descent](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/VectorizedDeepLearningGradientAscent.java) is another. 
+* [Stochastic Gradient Descent](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/optimize/VectorizedDeepLearningGradientAscent.java)
 
 ### tensors
 [Tensors](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/Tensor.java) are a way of representing data as n-dimensional matrices. They are the basis of recursive tensor networks, which are useful in identifying many different objects in a single scene or image. They make use of [convolutional networks](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/util/Convolution.java), a more complicated and processing-intensive form of restricted Boltzmann machine.
