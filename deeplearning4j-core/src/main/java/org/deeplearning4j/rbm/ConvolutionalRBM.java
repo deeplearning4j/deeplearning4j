@@ -252,7 +252,7 @@ public class ConvolutionalRBM extends RBM  {
         DoubleMatrix hBiasGradient = null;
 
         //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-        hBiasGradient = DoubleMatrix.scalar(hiddenMeans.sub(nvSamples).columnSums().sum());
+        hBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
 
 
 

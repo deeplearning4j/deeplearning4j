@@ -606,7 +606,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * with this tensor
      */
     public Tensor mul(double val) {
-        Tensor ret = new Tensor(mul(val));
+        Tensor ret = new Tensor(super.mul(val));
         ret.slices = slices;
         ret.perMatrixRows = perMatrixRows;
         return ret;

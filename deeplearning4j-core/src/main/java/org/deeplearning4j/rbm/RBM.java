@@ -88,9 +88,9 @@ public class RBM extends BaseNeuralNetwork {
 		if(input != null)
 			this.input = input;
 		NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate});
-		W.addi(gradient.getwGradient());
-		hBias.addi(gradient.gethBiasGradient());
-		vBias.addi(gradient.getvBiasGradient());
+		getW().addi(gradient.getwGradient());
+		gethBias().addi(gradient.gethBiasGradient());
+		getvBias().addi(gradient.getvBiasGradient());
 
 	}
 
