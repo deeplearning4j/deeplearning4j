@@ -16,7 +16,7 @@ public class LFWDataSetIterator extends BaseDatasetIterator {
 	}
 	
 	public LFWDataSetIterator(int batch,int numExamples,int imageHeight,int imageWidth) {
-		super(batch, numExamples,new LFWDataFetcher(imageHeight,imageWidth));
+		super(batch, numExamples,new LFWDataFetcher(imageWidth,imageHeight));
 	}
 
 }
