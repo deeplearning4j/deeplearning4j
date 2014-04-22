@@ -221,7 +221,7 @@ public class ConvolutionalRBM extends RBM  {
      */
     @Override
     public void backProp(double lr,int epochs,Object[] extraParams) {
-        boolean train = true;
+        boolean train = false;
 
         double currRecon = this.getReConstructionCrossEntropy();
 
