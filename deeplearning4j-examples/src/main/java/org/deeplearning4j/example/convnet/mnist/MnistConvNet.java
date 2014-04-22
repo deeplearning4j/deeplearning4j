@@ -24,7 +24,7 @@ public class MnistConvNet {
     public static void main(String[] args) throws Exception {
 
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{7, 7})
+                .Builder().withFilterSize(new int[]{28, 28})
                 .withNumFilters(4).withStride(new int[]{2, 2})
                 .withVisibleSize(new int[]{28, 28}).numberOfVisible(28).numHidden(28)
                 .build();
@@ -59,7 +59,7 @@ public class MnistConvNet {
             Tensor W = (Tensor) r.getW().dup();
             DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
             FilterRenderer render = new FilterRenderer();
-            render.renderFilters(draw,"tmpfile.png",7,7);
+            render.renderFilters(draw,"tmpfile.png",28,28);
         }
     }
 
