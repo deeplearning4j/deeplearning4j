@@ -382,13 +382,12 @@ public class FilterRenderer {
 		int numberCols = data.columns;
 
 
-		double min = MatrixUtil.min(data);
-		double max = MatrixUtil.max(data);
-
 
 		int patchesPerRow = 10;
-
-		int numPatchRows = numberCols / patchesPerRow;
+        double approx = (double) numberCols / (double) patchesPerRow;
+		int numPatchRows = (int) Math.round(approx);
+        if(numPatchRows < 1)
+            numPatchRows = 1;
 
 		int patchBorder = 2;
 
@@ -415,9 +414,7 @@ public class FilterRenderer {
 
 		for ( int col = 0; col < data.columns; col++ ) {
 
-			int curRow = 0;
 
-			// TODO: calc min/max per patch!
 
 
 

@@ -5,7 +5,9 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.plot.FilterRenderer;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -21,21 +23,20 @@ public class MnistConvNet {
 
     public static void main(String[] args) throws Exception {
 
-        ConvolutionalRBM r = new ConvolutionalRBM.Builder()
-                .withNumFilters(10)
-                .withVisibleSize(new int[]{28,28})
-                .withFilterSize(new int[]{10,10})
-                .numberOfVisible(28).numHidden(28)
+        ConvolutionalRBM r = new ConvolutionalRBM
+                .Builder().withFilterSize(new int[]{7, 7})
+                .withNumFilters(4).withStride(new int[]{2, 2})
+                .withVisibleSize(new int[]{28, 28}).numberOfVisible(28).numHidden(28)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1,50);
+        DataSetIterator iter = new MnistDataSetIterator(1,2);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
             DoubleMatrix reshape = next.getFirst().reshape(28,28);
-            r.trainTillConvergence(reshape, 1e-1, new Object[]{1, 1e-1, 5000});
+            r.trainTillConvergence(reshape, 1e-3, new Object[]{1, 1e-3, 5000});
 
         }
 
@@ -44,10 +45,8 @@ public class MnistConvNet {
 
 
 
-        iter.reset();
 
-        FilterRenderer render = new FilterRenderer();
-        render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
+        iter.reset();
 
 
 
@@ -55,25 +54,12 @@ public class MnistConvNet {
         //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct = r.reconstruct(first.getFirst());
-            for(int j = 0; j < first.numExamples(); j++) {
-
-                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
-
-                DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
-                d.title = "REAL";
-                d.draw();
-                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
-                d2.title = "TEST";
-                d2.draw();
-                Thread.sleep(10000);
-                d.frame.dispose();
-                d2.frame.dispose();
-            }
-
-
+            DoubleMatrix next = first.getFirst();
+            next = next.reshape(28,28);
+            Tensor W = (Tensor) r.getW().dup();
+            DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
+            FilterRenderer render = new FilterRenderer();
+            render.renderFilters(draw,"tmpfile.png",7,7);
         }
     }
 

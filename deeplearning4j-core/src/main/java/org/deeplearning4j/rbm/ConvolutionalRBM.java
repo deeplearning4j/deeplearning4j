@@ -7,8 +7,11 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Convolution;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -62,6 +65,11 @@ public class ConvolutionalRBM extends RBM  {
         convolutionInitCalled = true;
         vBias = DoubleMatrix.zeros(1);
         hBias = DoubleMatrix.zeros(numFilters);
+
+
+        wAdaGrad = new AdaGrad(W.rows,W.columns);
+        vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
+        hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
     }
 
 
@@ -105,7 +113,6 @@ public class ConvolutionalRBM extends RBM  {
             DoubleMatrix conv = Convolution.conv2d
                     (h1.getSlice(i), W.getSlice(i),
                             Convolution.Type.FULL);
-            log.info("Slice shape " + conv.rows  + " with " + conv.columns);
             visI.setSlice(i,conv);
         }
 
@@ -116,6 +123,21 @@ public class ConvolutionalRBM extends RBM  {
 
 
 
+
+    public Tensor poolGivenVis(DoubleMatrix input) {
+        Tensor eHid = propUp(input);
+        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
+        for(int i = 0; i < W.slices(); i++) {
+            I.setSlice(i,Convolution.conv2d(input,MatrixUtil.reverse(W.getSlice(i)), Convolution.Type.VALID).add(hBias.get(i)));
+        }
+
+        Tensor ret = Tensor.ones(I.rows(),I.columns(),I.slices());
+        //1 / 1 + pool(exp(I))
+        Tensor poolExpI = pool(I.exp()).add(1);
+        Tensor sub = ret.div(poolExpI);
+        ret.subi(sub);
+        return ret;
+    }
 
     public Tensor pool(Tensor input) {
         int nCols = input.columns();
@@ -191,6 +213,86 @@ public class ConvolutionalRBM extends RBM  {
         applyDropOutIfNecessary(h1Sample);
         return new Pair<>((DoubleMatrix)h1Mean,(DoubleMatrix) h1Sample);
 
+    }
+
+
+    /**
+     * Backprop with the output being the reconstruction
+     */
+    @Override
+    public void backProp(double lr,int epochs,Object[] extraParams) {
+        boolean train = true;
+
+        double currRecon = this.getReConstructionCrossEntropy();
+
+        NeuralNetwork revert = clone();
+        int numEpochs = 0;
+        while(train) {
+            if(numEpochs > epochs)
+                break;
+
+            NeuralNetworkGradient gradient = getGradient(extraParams);
+            DoubleMatrix wLearningRates = getAdaGrad().getLearningRates(gradient.getwGradient());
+            DoubleMatrix z = reconstruct(input);
+
+            //Scale the input and reconstruction to see the relative difference in absolute space
+           /*
+           Other current problems: the hbias mmul output diff is being calculated wrong.
+           We should be able to calculate the w gradient with 1 mmul.
+            */
+            DoubleMatrix scaledInput = input.dup();
+            MatrixUtil.normalizeZeroMeanAndUnitVariance(scaledInput);
+            MatrixUtil.normalizeZeroMeanAndUnitVariance(z);
+            DoubleMatrix outputDiff = z.sub(scaledInput);
+            //changes in error relative to neurons
+            DoubleMatrix delta = W.transpose().mmul(outputDiff);
+            //hidden activations
+            DoubleMatrix hBiasMean = z.columnSums().transpose();
+
+            if(isUseAdaGrad()) {
+                delta.muli(wLearningRates);
+            }
+            else
+                delta.muli(lr);
+
+            if(momentum != 0)
+                delta.muli(momentum).add(delta.mul(1 - momentum));
+
+            if(normalizeByInputRows)
+                delta.divi(input.rows);
+
+
+            getW().addi(W.sub(delta));
+
+
+            double newRecon = this.getReConstructionCrossEntropy();
+            //prevent weights from exploding too far in either direction, we want this as close to zero as possible
+            if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
+                update((BaseNeuralNetwork) revert);
+                log.info("Converged for new recon; breaking...");
+                break;
+            }
+
+            else if(newRecon == currRecon)
+                break;
+
+            else {
+                currRecon = newRecon;
+                revert = clone();
+                log.info("Recon went down " + currRecon);
+            }
+
+            numEpochs++;
+
+            int plotEpochs = getRenderEpochs();
+            if(plotEpochs > 0) {
+                NeuralNetPlotter plotter = new NeuralNetPlotter();
+                if(numEpochs % plotEpochs == 0) {
+                    plotter.plotNetworkGradient(this,getGradient(extraParams));
+                }
+            }
+
+        }
     }
 
     @Override
