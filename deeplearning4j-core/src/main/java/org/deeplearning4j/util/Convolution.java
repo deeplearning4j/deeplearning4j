@@ -55,7 +55,6 @@ public class Convolution {
         int retRows = (int) zShape.get(0);
         int retCols = (int) zShape.get(1);
 
-        log.info("Conv 2d with dims " + retRows + " x " + retCols);
         ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(input, retRows, retCols);
         ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(kernel, retRows, retCols);
         ComplexDoubleMatrix mul = fftKernel.mul(fftInput);
@@ -152,7 +151,6 @@ public class Convolution {
             ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
         }
         watch.stop();
-        log.info("Took " + watch.getTime());
         return ret;
     }
 

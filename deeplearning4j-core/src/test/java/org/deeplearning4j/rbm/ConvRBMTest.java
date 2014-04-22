@@ -20,7 +20,7 @@ public class ConvRBMTest {
         ConvolutionalRBM rbm = new ConvolutionalRBM
                 .Builder().withFilterSize(new int[]{7,7})
                 .withNumFilters(4).withStride(new int[]{2,2})
-                .withVisibleSize(new int[]{28,28}).numberOfVisible(28).numHidden(28)
+                .withVisibleSize(new int[]{28,28}).numberOfVisible(28).numHidden(28).renderWeights(100)
                 .build();
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
@@ -28,7 +28,7 @@ public class ConvRBMTest {
         DataSet d = fetcher.next();
         DoubleMatrix train = d.getFirst().reshape(28,28);
 
-       rbm.train(train,1e-2,new Object[]{1,1e-2,1000});
+       rbm.trainTillConvergence(train,1e-2,new Object[]{1,1e-2,1000});
 
 
 

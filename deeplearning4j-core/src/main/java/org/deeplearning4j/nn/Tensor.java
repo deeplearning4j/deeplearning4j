@@ -457,6 +457,18 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     }
 
+    /**
+     * Returns a 1 tensor
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static Tensor ones(int rows, int cols,int slices) {
+        Tensor ret =  new Tensor(rows,cols,slices);
+        ret.assign(1);
+        return ret;
+    }
 
 
 
@@ -639,7 +651,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @param val the value to assign
      */
     public void assign(double val) {
-        put(new int[]{0,rows},new int[]{0,columns},val);
+       for(int i = 0;i < length; i++)
+           put(i,val);
     }
 
 
@@ -695,7 +708,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the number of rows
      */
     public int rows() {
-        return super.rows / slices;
+        return perMatrixRows;
     }
 
     /**
