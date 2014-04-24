@@ -8,6 +8,7 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,10 +49,14 @@ public class TweetOpinionMining {
         TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),1000);
         DataSet data = vectorizor.vectorize();
         data.binarize();
+
+
+        SerializationUtils.saveObject(data,new File("tweet-data.ser"));
+
         log.info("Vocab " + vectorizor.vocab());
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
-        DBN dbn = new DBN.Builder().useAdaGrad(true).useRegularization(false)
+        DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4,iter.inputColumns() / 6}).normalizeByInputRows(true)
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
                 .build();
@@ -65,7 +71,7 @@ public class TweetOpinionMining {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-2, 10000);
+            dbn.finetune(next.getSecond(), 1e-1, 10000);
         }
 
 
