@@ -24,9 +24,10 @@ public class MnistConvNet {
     public static void main(String[] args) throws Exception {
 
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{28, 28})
+                .Builder().withFilterSize(new int[]{7, 7})
                 .withNumFilters(4).withStride(new int[]{2, 2})
-                .withVisibleSize(new int[]{28, 28}).numberOfVisible(28).numHidden(28)
+                .withVisibleSize(new int[]{28, 28}).numberOfVisible(28).numHidden(28).useAdaGrad(false)
+
                 .build();
 
 
@@ -54,12 +55,12 @@ public class MnistConvNet {
         //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix next = first.getFirst();
-            next = next.reshape(28,28);
+            DoubleMatrix next = first.getFirst().reshape(28,28);
             Tensor W = (Tensor) r.getW().dup();
             DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
+            log.info("Draw sum " + draw.sum());
             FilterRenderer render = new FilterRenderer();
-            render.renderFilters(draw,"tmpfile.png",28,28);
+            render.renderFilters(draw,"tmpfile.png",7,7);
         }
     }
 

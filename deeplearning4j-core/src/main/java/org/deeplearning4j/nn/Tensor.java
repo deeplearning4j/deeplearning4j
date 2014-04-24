@@ -633,7 +633,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     public Tensor div(Tensor val) {
         Tensor copy = dup();
         for(int i = 0; i < length; i++)
-            put(i, get(i) / val.get(i));
+            copy.put(i, get(i) / val.get(i));
         return copy;
     }
 
@@ -663,7 +663,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     public Tensor tanh() {
         Tensor copy = dup();
         for(int i = 0; i < length; i++)
-            put(i, FastMath.tanh(get(i)));
+            copy.put(i, FastMath.tanh(get(i)));
 
         return copy;
     }
@@ -674,7 +674,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     public Tensor sigmoid() {
         Tensor copy = dup();
         for(int i = 0; i < length; i++)
-            put(i, MathUtils.sigmoid(get(i)));
+            copy.put(i, MathUtils.sigmoid(get(i)));
         return copy;
     }
 
@@ -685,7 +685,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     public Tensor exp() {
         Tensor copy = dup();
         for(int i = 0; i < length; i++)
-            put(i,FastMath.exp(get(i)));
+            copy.put(i,FastMath.exp(get(i)));
         return copy;
     }
 
