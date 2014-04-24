@@ -2,6 +2,9 @@ package org.deeplearning4j.rbm;
 
 import static org.deeplearning4j.util.MatrixUtil.*;
 
+import static org.deeplearning4j.util.Convolution.*;
+
+import static org.deeplearning4j.util.Convolution.Type.*;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -13,8 +16,8 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Convolution;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,8 @@ public class ConvolutionalRBM extends RBM  {
     protected int[] fmSize;
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
-
+    //cache last propup/propdown
+    protected Tensor eVis,eHid;
 
     protected ConvolutionalRBM() {}
 
@@ -67,6 +71,10 @@ public class ConvolutionalRBM extends RBM  {
         hBias = DoubleMatrix.zeros(numFilters);
 
 
+        for(int i = 0; i < this.W.rows; i++)
+            this.W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
+
+
         wAdaGrad = new AdaGrad(W.rows,W.columns);
         vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
         hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
@@ -84,8 +92,8 @@ public class ConvolutionalRBM extends RBM  {
     @Override
     public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
-            DoubleMatrix reversedSlice =  MatrixUtil.reverse(W.getSlice(i));
-            DoubleMatrix slice =  Convolution.conv2d(v, reversedSlice, Convolution.Type.VALID).add(hBias.get(i));
+            DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
+            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(hBias.get(i));
             hidI.setSlice(i,slice);
 
         }
@@ -93,6 +101,7 @@ public class ConvolutionalRBM extends RBM  {
         Tensor expHidI = hidI.exp();
 
         Tensor eHid = expHidI.div(pool(expHidI).add(1));
+        this.eHid = eHid;
         return eHid;
     }
 
@@ -110,25 +119,27 @@ public class ConvolutionalRBM extends RBM  {
             /*
                Each tensor only has one slice, need to figure out what's going on here
              */
-            DoubleMatrix conv = Convolution.conv2d
-                    (h1.getSlice(i), W.getSlice(i),
-                            Convolution.Type.FULL);
+            DoubleMatrix conv = conv2d(h1.getSlice(i), W.getSlice(i),FULL);
             visI.setSlice(i,conv);
         }
 
 
-        return  new Tensor(sigmoid(visI.sliceElementSums().add(vBias)));
+        Tensor ret =   new Tensor(sigmoid(visI.sliceElementSums().add(vBias)));
+        this.eVis = ret;
+        return ret;
     }
 
 
-
-
-
+    /**
+     * Pooled exepcations given visibles for sampling
+     * @param input the input to sample from
+     * @return  the pooled expecations given visible
+     */
     public Tensor poolGivenVis(DoubleMatrix input) {
         Tensor eHid = propUp(input);
         Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
         for(int i = 0; i < W.slices(); i++) {
-            I.setSlice(i,Convolution.conv2d(input,MatrixUtil.reverse(W.getSlice(i)), Convolution.Type.VALID).add(hBias.get(i)));
+            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
         }
 
         Tensor ret = Tensor.ones(I.rows(),I.columns(),I.slices());
@@ -139,6 +150,11 @@ public class ConvolutionalRBM extends RBM  {
         return ret;
     }
 
+    /**
+     * Pooled expectations of I by summing over blocks of alpha
+     * @param input the input to sum over
+     * @return the pooled expectations
+     */
     public Tensor pool(Tensor input) {
         int nCols = input.columns();
         int nRows = input.rows;
@@ -147,7 +163,7 @@ public class ConvolutionalRBM extends RBM  {
 
         Tensor ret = Tensor.zeros(input.rows,input.columns,input.slices());
         int endRowBlock =  (int) Math.ceil(nRows / yStride);
-        for(int i = 1;i < endRowBlock; i++) {
+        for(int i = 1; i < endRowBlock; i++) {
             int rowsMin = (i -1)  * yStride + 1;
             int rowsMax = i * yStride;
             int endColBlock = (int) Math.ceil(nCols / xStride);
@@ -158,9 +174,8 @@ public class ConvolutionalRBM extends RBM  {
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
                 DoubleMatrix block = new DoubleMatrix(rowLength,colLength);
-                MatrixUtil.assign(block,blockVal);
+                assign(block,blockVal);
                 ret.put(RangeUtils.interval(rowsMin,rowsMax),RangeUtils.interval(cols,colsMax),block);
-
             }
 
         }
@@ -184,7 +199,10 @@ public class ConvolutionalRBM extends RBM  {
      */
     @Override
     public double getReConstructionCrossEntropy() {
-        return negativeLogLikelihood();
+        if(eVis == null)
+            reconstruct(input);
+        double squaredLoss = MatrixFunctions.pow(eVis.sub(input), 2).sum();
+        return squaredLoss;
     }
 
     /**
@@ -241,11 +259,11 @@ public class ConvolutionalRBM extends RBM  {
            We should be able to calculate the w gradient with 1 mmul.
             */
             DoubleMatrix scaledInput = input.dup();
-            MatrixUtil.normalizeZeroMeanAndUnitVariance(scaledInput);
-            MatrixUtil.normalizeZeroMeanAndUnitVariance(z);
+            normalizeZeroMeanAndUnitVariance(scaledInput);
+            normalizeZeroMeanAndUnitVariance(z);
             DoubleMatrix outputDiff = z.sub(scaledInput);
             //changes in error relative to neurons
-            DoubleMatrix delta = W.transpose().mmul(outputDiff);
+            DoubleMatrix delta = W.mmul(outputDiff);
             //hidden activations
             DoubleMatrix hBiasMean = z.columnSums().transpose();
 
@@ -315,7 +333,7 @@ public class ConvolutionalRBM extends RBM  {
 		/*
 		 * Start the gibbs sampling.
 		 */
-        Tensor chainStart = this.propUp(input);
+        Tensor chainStart = propUp(input);
 
 
 
@@ -331,7 +349,7 @@ public class ConvolutionalRBM extends RBM  {
         Tensor nvSamples = null;
         Tensor hiddenMeans = chainStart;
         for(int i = 0; i < k; i++) {
-            nvSamples = new Tensor(MatrixUtil.binomial(propDown(hiddenMeans),1,rng));
+            nvSamples = new Tensor(propDown(binomial(eHid,1,rng)));
             hiddenMeans = propUp(nvSamples);
         }
 
@@ -340,21 +358,14 @@ public class ConvolutionalRBM extends RBM  {
 		 */
 
         Tensor wGradient = new Tensor(W.rows(),W.columns(),W.slices());
-        for(int i = 0; i < numFilters; i++) {
-            wGradient.setSlice(i,Convolution.conv2d(input,
-                    chainStart.getSlice(i), Convolution.Type.VALID)
-                    .sub(Convolution.conv2d(nvSamples,
-                            MatrixUtil.reverse(hiddenMeans.getSlice(i)),
-                            Convolution.Type.VALID)));
-        }
+        for(int i = 0; i < numFilters; i++)
+            wGradient.setSlice(i,conv2d(input,chainStart.getSlice(i),VALID).sub(conv2d(nvSamples,reverse(hiddenMeans.getSlice(i)),VALID)));
 
 
 
 
-        DoubleMatrix hBiasGradient = null;
 
-        //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-        hBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
+        DoubleMatrix hBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
 
 
 

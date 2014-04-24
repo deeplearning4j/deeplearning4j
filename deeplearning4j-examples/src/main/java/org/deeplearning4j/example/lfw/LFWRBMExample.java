@@ -46,7 +46,7 @@ public class LFWRBMExample {
         GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
                 .numberOfVisible(iter.inputColumns())
                 .withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .numHidden(1000).renderWeights(100)
+                .numHidden(1000)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 
@@ -58,8 +58,9 @@ public class LFWRBMExample {
          */
         while(iter.hasNext()) {
             DataSet curr = iter.next();
+            curr.normalize();
             log.info("Training on pics " + curr.labelDistribution());
-            r.trainTillConvergence(curr.getFirst(),1e-4,  new Object[]{1,1e-4,10000});
+            r.trainTillConvergence(curr.getFirst(),1e-2,  new Object[]{1,1e-2,10000});
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {

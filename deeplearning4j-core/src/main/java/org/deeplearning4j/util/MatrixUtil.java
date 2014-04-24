@@ -531,6 +531,13 @@ public class MatrixUtil {
         return ret;
     }
 
+    /**
+     * Pads a matrix with zeros
+     * @param toPad the matrix to pad
+     * @param rows the number of rows to pad the matrix to
+     * @param cols the number of columns to pad the matrix to
+     * @return
+     */
     public static ComplexDoubleMatrix padWithZeros(ComplexDoubleMatrix toPad, int rows, int cols) {
         ComplexDoubleMatrix ret = ComplexDoubleMatrix.zeros(rows,cols);
         for(int i = 0; i < toPad.rows; i++) {
@@ -542,9 +549,25 @@ public class MatrixUtil {
     }
 
 
+    /**
+     * Assigns every element in the matrix to the given value
+     * @param toAssign the matrix to modify
+     * @param val the value to assign
+     */
     public static void assign(DoubleMatrix toAssign,double val) {
         for(int i = 0; i < toAssign.length; i++)
             toAssign.put(i,val);
+    }
+
+    /**
+     * Rotate a matrix 90 degrees
+     * @param toRotate the matrix to rotate
+     */
+    public static void rot90(DoubleMatrix toRotate) {
+        for (int i= 0; i< toRotate.rows; i++)
+            for (int j= 0; j< toRotate.columns; j++)
+                toRotate.put(i,j,toRotate.get(toRotate.columns - i - 1));
+
     }
 
     /**
@@ -603,6 +626,15 @@ public class MatrixUtil {
     }
 
 
+    /**
+     * div / matrix. This also does padding of the matrix
+     * so that no numbers are 0 by adding 1e-6 when dividing
+     * @param div the number to divide by
+     * @param toDiv the matrix to divide
+     * @return the matrix such that each element i in the matrix
+     * is div / num
+     *
+     */
     public static DoubleMatrix numDivideMatrix(double div,DoubleMatrix toDiv) {
         DoubleMatrix ret = new DoubleMatrix(toDiv.rows,toDiv.columns);
 
@@ -772,6 +804,22 @@ public class MatrixUtil {
         return ret;
     }
 
+
+    /**
+     * Generate a binomial distribution based on the given rng,
+     * a matrix of p values, and a max number.
+     * @param p the p matrix to use
+     * @param n the n to use
+     * @param rng the rng to use
+     * @return a binomial distribution based on the one n, the passed in p values, and rng
+     */
+    public static Tensor binomial(Tensor p,int n,RandomGenerator rng) {
+        Tensor ret = new Tensor(p.rows(),p.columns,p.slices());
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i,MathUtils.binomial(rng, n, p.get(i)));
+        }
+        return ret;
+    }
 
     public static DoubleMatrix columnWiseMean(DoubleMatrix x,int axis) {
         DoubleMatrix ret = DoubleMatrix.zeros(x.columns);

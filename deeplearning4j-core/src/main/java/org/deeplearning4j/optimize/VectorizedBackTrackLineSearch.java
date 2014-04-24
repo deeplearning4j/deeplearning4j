@@ -48,7 +48,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 	}
 
 	final int maxIterations = 100;
-	final double stpmax = 100;
+	double stpmax = 100;
 	final double EPS = 3.0e-12;
 
 	// termination conditions: either
@@ -59,8 +59,16 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 	private double absTolx = 1e-4; // tolerance on absolute value difference
 	final double ALF = 1e-4;
 
+    public void setStpmax(double stpmax) {
+        this.stpmax = stpmax;
+    }
 
-	/** 
+
+    public double getStpmax() {
+        return stpmax;
+    }
+
+    /**
 	 * Sets the tolerance of relative diff in function value.
 	 *  Line search converges if <tt>abs(delta x / x) < tolx</tt>
 	 *  for all coordinates. */
