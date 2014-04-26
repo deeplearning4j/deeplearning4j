@@ -381,6 +381,68 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
+    /**
+     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     * @param gradient the gradient to modify
+     * @param learningRate the learning rate for the current iteratiaon
+     */
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
+        DoubleMatrix wGradient = gradient.getwGradient();
+        DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
+        DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
+        DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
+        if (useAdaGrad)
+            wGradient.muli(wLearningRates);
+        else
+            wGradient.muli(learningRate);
+
+        if (useAdaGrad)
+            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(momentum));
+        else
+            hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(momentum));
+
+
+        if (useAdaGrad)
+            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(momentum));
+        else
+            vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(momentum));
+
+
+
+        //only do this with binary hidden layers
+        if (applySparsity)
+            applySparsity(hBiasGradient, learningRate);
+
+        if (momentum != 0) {
+            DoubleMatrix change = wGradient.mul(momentum).add(wGradient.mul(1 - momentum));
+            wGradient.addi(change);
+
+        }
+
+        if(useRegularization) {
+            if(l2 > 0) {
+                DoubleMatrix penalized = W.mul(l2);
+                if(useAdaGrad)
+                    penalized.muli(wAdaGrad.getLearningRates(wGradient));
+                else
+                    penalized.muli(learningRate);
+
+                wGradient.subi(penalized);
+
+            }
+
+        }
+
+
+        if (normalizeByInputRows) {
+            wGradient.divi(input.rows);
+            vBiasGradient.divi(input.rows);
+            hBiasGradient.divi(input.rows);
+        }
+
+    }
+
+
     public static class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
 
         protected int numFilters = 4;

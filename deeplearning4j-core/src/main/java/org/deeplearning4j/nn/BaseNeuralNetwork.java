@@ -87,7 +87,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     //normalize by input rows or not
     protected boolean normalizeByInputRows = true;
     //use only when binary hidden layers are active
-    protected boolean applySparsity = true;
+    protected boolean applySparsity = false;
     protected List<NeuralNetworkGradientListener> gradientListeners;
     protected double dropOut = 0;
     protected DoubleMatrix doMask;
@@ -988,11 +988,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private boolean useRegularization = false;
         private RealDistribution dist;
         private boolean useAdaGrad = true;
+        private boolean applySparsity = false;
         private boolean normalizeByInputRows = true;
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
 
+
+        public Builder<E> applySparsity(boolean applySparsity) {
+            this.applySparsity = applySparsity;
+            return this;
+        }
 
 
         public Builder<E> withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
@@ -1130,6 +1136,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                     try {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
                         ret.sparsity = this.sparsity;
+                        ret.applySparsity = this.applySparsity;
                         ret.normalizeByInputRows = this.normalizeByInputRows;
                         ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;
                         ret.l2 = this.l2;

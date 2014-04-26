@@ -24,20 +24,21 @@ public class MnistConvNet {
     public static void main(String[] args) throws Exception {
 
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{7, 7})
-                .withNumFilters(4).withStride(new int[]{2, 2})
-                .withVisibleSize(new int[]{28, 28}).numberOfVisible(28).numHidden(28).useAdaGrad(false)
-
+                .Builder().withFilterSize(new int[]{28, 28})
+                .withNumFilters(9).withStride(new int[]{2, 2})
+                .withVisibleSize(new int[]{28, 28})
+                .numberOfVisible(28).numHidden(28)
+                .useRegularization(true).withL2(1e-3)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1,2);
+        DataSetIterator iter = new MnistDataSetIterator(1,10);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
             DoubleMatrix reshape = next.getFirst().reshape(28,28);
-            r.trainTillConvergence(reshape, 1e-3, new Object[]{1, 1e-3, 5000});
+            r.trainTillConvergence(reshape, 1e-5, new Object[]{1, 1e-5, 5000});
 
         }
 
@@ -60,7 +61,7 @@ public class MnistConvNet {
             DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
             log.info("Draw sum " + draw.sum());
             FilterRenderer render = new FilterRenderer();
-            render.renderFilters(draw,"tmpfile.png",7,7);
+            render.renderFilters(draw,"tmpfile.png",28,28);
         }
     }
 
