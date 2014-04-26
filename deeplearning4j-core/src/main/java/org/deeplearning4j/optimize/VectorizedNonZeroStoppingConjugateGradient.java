@@ -190,7 +190,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
 			iterations++;
 			if (iterations > maxIterations) {
-				logger.info("Passed max umber of iterations");
+				logger.info("Passed max number of iterations");
 				converged = true;
 				return true;
 			}
