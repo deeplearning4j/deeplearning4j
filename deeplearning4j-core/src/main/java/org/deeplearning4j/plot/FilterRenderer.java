@@ -408,9 +408,6 @@ public class FilterRenderer {
 
 		// plot the learned filter (same dim as the input data)
 
-		if (patchWidth * patchHeight != data.rows) {
-			throw new Exception( "patch size does not match filter patch size" );
-		}
 
 		for ( int col = 0; col < data.columns; col++ ) {
 

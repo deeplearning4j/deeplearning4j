@@ -24,21 +24,20 @@ public class MnistConvNet {
     public static void main(String[] args) throws Exception {
 
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{28, 28})
+                .Builder().withFilterSize(new int[]{7,7})
                 .withNumFilters(9).withStride(new int[]{2, 2})
-                .withVisibleSize(new int[]{28, 28})
-                .numberOfVisible(28).numHidden(28)
-                .useRegularization(true).withL2(1e-3)
+                .withVisibleSize(new int[]{28, 28}).renderWeights(1)
+                .numberOfVisible(28).numHidden(28).withMomentum(0)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1,10);
+        DataSetIterator iter = new MnistDataSetIterator(1,1000);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
             DoubleMatrix reshape = next.getFirst().reshape(28,28);
-            r.trainTillConvergence(reshape, 1e-5, new Object[]{1, 1e-5, 5000});
+            r.trainTillConvergence(reshape, 1e-2, new Object[]{1, 1e-2, 5000});
 
         }
 
@@ -61,7 +60,7 @@ public class MnistConvNet {
             DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
             log.info("Draw sum " + draw.sum());
             FilterRenderer render = new FilterRenderer();
-            render.renderFilters(draw,"tmpfile.png",28,28);
+            render.renderFilters(draw,"tmpfile.png",7,7);
         }
     }
 
