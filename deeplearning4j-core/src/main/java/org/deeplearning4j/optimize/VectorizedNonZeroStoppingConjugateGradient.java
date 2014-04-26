@@ -157,6 +157,9 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 				logger.info("ConjugateGradient converged: gradient two norm " + twoNorm + ", less than "
 						+ gradientTolerance);
 				converged = true;
+                if(listener != null) {
+                    listener.epochDone(iterationCount);
+                }
 				return true;
 			}
 
@@ -192,6 +195,9 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			if (iterations > maxIterations) {
 				logger.info("Passed max number of iterations");
 				converged = true;
+                if(listener != null) {
+                    listener.epochDone(iterationCount);
+                }
 				return true;
 			}
 
