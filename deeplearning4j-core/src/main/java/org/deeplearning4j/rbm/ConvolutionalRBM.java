@@ -123,17 +123,19 @@ public class ConvolutionalRBM extends RBM  {
             visI.setSlice(i,conv);
         }
 
+        DoubleMatrix I = visI.sliceElementSums().add(vBias);
+        I = sigmoid(I);
 
-        Tensor ret =   new Tensor(sigmoid(visI.sliceElementSums().add(vBias)));
+        Tensor ret =   new Tensor(I);
         this.eVis = ret;
         return ret;
     }
 
 
     /**
-     * Pooled exepcations given visibles for sampling
+     * Pooled expectations given visibles for sampling
      * @param input the input to sample from
-     * @return  the pooled expecations given visible
+     * @return  the pooled expectations given visible
      */
     public Tensor poolGivenVis(DoubleMatrix input) {
         Tensor eHid = propUp(input);
@@ -348,8 +350,9 @@ public class ConvolutionalRBM extends RBM  {
 
         Tensor nvSamples = null;
         Tensor hiddenMeans = chainStart;
+        //contrastive divergence
         for(int i = 0; i < k; i++) {
-            nvSamples = new Tensor(propDown(binomial(eHid,1,rng)));
+            nvSamples = propDown(binomial(eHid,1,rng));
             hiddenMeans = propUp(nvSamples);
         }
 
