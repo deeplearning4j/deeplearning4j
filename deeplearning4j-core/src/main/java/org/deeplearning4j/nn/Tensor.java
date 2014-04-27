@@ -92,16 +92,19 @@ public class Tensor extends DoubleMatrix implements Serializable {
      */
     public DoubleMatrix sliceElementSums() {
         DoubleMatrix ret = new DoubleMatrix(rows(),columns());
-        int currI = 0,currJ = 0;
-        for(int i = 0; i < ret.length; i++) {
-            double sum = 0;
-            for(int slice = 0; i < slices; i++)
-                sum += get(currI,currJ,slice);
-            ret.put(i,sum);
-        }
-        for(int slice = 0; slice < slices(); slice++) {
+        for(int i = 0; i < ret.rows; i++) {
+            for(int j = 0; j < ret.columns; j++) {
+                double sum = 0;
+               for(int slice = 0; slice < slices(); slice++) {
+                   sum += getSlice(slice).get(i,j);
+               }
+                ret.put(i,j,sum);
+
+            }
+
 
         }
+
         return ret;
     }
 
