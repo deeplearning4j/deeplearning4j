@@ -1,4 +1,4 @@
-from numpy import tanh, fabs, mean, ones,loadtxt,fromfile
+from numpy import tanh, fabs, mean, ones,loadtxt,fromfile,zeros,product
 import sys
 import math
 from PIL import Image
@@ -13,7 +13,11 @@ def from_file(path):
     return loadtxt(path,delimiter=',')
     
 def hist_matrix(values,show = True,chart_title = ''):
-    hist(from_file(values))
+    if product(values.shape) < 2:
+      values = zeros((3,3))
+      chart_title += '-fake'
+
+    hist(values)
     magnitude = ' mm %g ' % mean(fabs(values))
     chart_title += ' ' + magnitude
     title(chart_title)
