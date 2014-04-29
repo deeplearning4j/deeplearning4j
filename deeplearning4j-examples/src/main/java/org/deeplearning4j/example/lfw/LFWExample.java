@@ -6,11 +6,9 @@ import java.io.FileOutputStream;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
-import org.deeplearning4j.dbn.CDBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +25,8 @@ public class LFWExample {
 		DataSetIterator iter = new LFWDataSetIterator(10,10000,56,56);
 		
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
-		.hiddenLayerSizes(new int[]{500,400,250})
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
+		.hiddenLayerSizes(new int[]{500, 400, 250})
 		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
 		.build();
 		

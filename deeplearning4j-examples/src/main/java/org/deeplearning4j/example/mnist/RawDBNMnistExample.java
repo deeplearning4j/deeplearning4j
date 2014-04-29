@@ -1,24 +1,14 @@
 package org.deeplearning4j.example.mnist;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
-import org.deeplearning4j.dbn.CDBN;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.util.SerializationUtils;
+import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +25,8 @@ public class RawDBNMnistExample {
 		DataSetIterator iter = new RawMnistDataSetIterator(10,40);
 
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
-				.hiddenLayerSizes(new int[]{500,400,250})
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
+				.hiddenLayerSizes(new int[]{500, 400, 250})
 				.numberOfInputs(784).numberOfOutPuts(10)
 				.build();
 		while(iter.hasNext()) {

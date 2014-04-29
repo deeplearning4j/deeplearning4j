@@ -1,19 +1,15 @@
 package org.deeplearning4j.example.iris;
 
-import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;
 
@@ -42,7 +38,9 @@ public class IrisMultiThreaded {
         c.setnOut(3);
         c.setSplit(150);
         c.setFunction(Activations.tanh());
-        c.setMultiLayerClazz(GaussianRectifiedLinearDBN.class);
+        c.setMultiLayerClazz(DBN.class);
+        c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
+        c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setUseRegularization(false);
         c.setL2(1e-3);
         c.setDeepLearningParams(new Object[]{1, 1e-6, 30000});

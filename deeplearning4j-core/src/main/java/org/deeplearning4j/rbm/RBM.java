@@ -39,11 +39,22 @@ import org.jblas.SimpleBlas;
 @SuppressWarnings("unused")
 public class RBM extends BaseNeuralNetwork {
 
+    public  static enum VisibleUnit {
+        BINARY,GAUSSIAN
+    }
+
+    public  static enum HiddenUnit {
+        RECTIFIED,BINARY
+    }
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 6189188205731511957L;
 	protected NeuralNetworkOptimizer optimizer;
+    protected VisibleUnit visibleType = VisibleUnit.BINARY;
+    protected HiddenUnit  hiddenType = HiddenUnit.BINARY;
+    protected DoubleMatrix sigma;
+
 
 
 	protected RBM() {}
@@ -65,7 +76,10 @@ public class RBM extends BaseNeuralNetwork {
 	public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
+		if(visibleType == VisibleUnit.GAUSSIAN)
+            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+
+        optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
 		optimizer.train(input);
 	}
 
@@ -215,11 +229,32 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	@Override
 	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
-		DoubleMatrix h1Mean = propUp(v);
-		DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
-		//apply dropout
-		applyDropOutIfNecessary(h1Sample);
-		return new Pair<>(h1Mean,h1Sample);
+		if(hiddenType == HiddenUnit.RECTIFIED) {
+            DoubleMatrix h1Mean = propUp(v);
+            DoubleMatrix sigH1Mean = sigmoid(h1Mean);
+		/*
+		 * Rectified linear part
+		 */
+            DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
+            MatrixUtil.max(0.0, h1Sample);
+            //apply dropout
+            applyDropOutIfNecessary(h1Sample);
+
+
+            return new Pair<>(h1Mean,h1Sample);
+
+        }
+        else if(hiddenType == HiddenUnit.BINARY) {
+            DoubleMatrix h1Mean = propUp(v);
+            DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
+            //apply dropout
+            applyDropOutIfNecessary(h1Sample);
+            return new Pair<>(h1Mean,h1Sample);
+        }
+
+
+
+        throw new IllegalStateException("Hidden unit type must either be rectified linear or binary");
 
 	}
 
@@ -244,9 +279,21 @@ public class RBM extends BaseNeuralNetwork {
 	 */
 	@Override
 	public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-		DoubleMatrix v1Mean = propDown(h);
-		DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
-		return new Pair<>(v1Mean,v1Sample);
+		if(visibleType == VisibleUnit.GAUSSIAN) {
+            DoubleMatrix v1Mean = propDown(h);
+            DoubleMatrix v1Sample = MatrixUtil.normal(getRng(), v1Mean, 1).mulRowVector(sigma);
+            return new Pair<>(v1Mean,v1Sample);
+
+        }
+        else if(visibleType == VisibleUnit.BINARY) {
+            DoubleMatrix v1Mean = propDown(h);
+            DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
+            return new Pair<>(v1Mean,v1Sample);
+        }
+
+
+        throw new IllegalStateException("Visible type must either be binary or gaussian");
+
 	}
 
 	/**
@@ -256,8 +303,15 @@ public class RBM extends BaseNeuralNetwork {
 	 * @return the approximated activations of the visible layer
 	 */
 	public DoubleMatrix propUp(DoubleMatrix v) {
-		DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
-		return sigmoid(preSig);
+		if(hiddenType == HiddenUnit.RECTIFIED) {
+            DoubleMatrix preSig = v.divRowVector(sigma).mmul(W).addiRowVector(hBias);
+            return preSig;
+        }
+        else if(hiddenType == HiddenUnit.BINARY) {
+            DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
+            return sigmoid(preSig);
+        }
+        throw new IllegalStateException("Hidden unit type should either be binary or rectified linear");
 
 	}
 
@@ -268,8 +322,17 @@ public class RBM extends BaseNeuralNetwork {
 	 * @return the approximated output of the hidden layer
 	 */
 	public DoubleMatrix propDown(DoubleMatrix h) {
-		DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
-		return sigmoid(preSig);
+		if(visibleType  == VisibleUnit.GAUSSIAN) {
+            DoubleMatrix vMean = h.mmul(W.transpose()).mulRowVector(vBias.add(sigma));
+            return vMean;
+        }
+
+        else if(visibleType == VisibleUnit.BINARY) {
+            DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
+            return sigmoid(preSig);
+        }
+
+       throw new IllegalStateException("Visible unit type should either be binary or gaussian");
 
 	}
 
@@ -285,12 +348,7 @@ public class RBM extends BaseNeuralNetwork {
 		return propDown(propUp(v));
 	}
 
-	public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
-		public Builder() {
-			clazz =  RBM.class;
-		}
 
-	}
 
 	/**
 	 * Note: k is the first input in params.
@@ -300,7 +358,10 @@ public class RBM extends BaseNeuralNetwork {
 			Object[] params) {
 		if(input != null)
 			this.input = input;
-		optimizer = new RBMOptimizer(this, lr, params, optimizationAlgo, lossFunction);
+		if(visibleType == VisibleUnit.GAUSSIAN)
+            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+
+        optimizer = new RBMOptimizer(this, lr, params, optimizationAlgo, lossFunction);
 		optimizer.train(input);
 	}
 
@@ -311,9 +372,44 @@ public class RBM extends BaseNeuralNetwork {
 
 	@Override
 	public void train(DoubleMatrix input,double lr, Object[] params) {
-		int k = (int) params[0];
+		if(visibleType == VisibleUnit.GAUSSIAN)
+            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+
+
+        int k = (int) params[0];
 		contrastiveDivergence(lr, k, input);
 	}
+
+    public static class Builder extends BaseNeuralNetwork.Builder<RBM> {
+        private VisibleUnit visible = VisibleUnit.BINARY;
+        private HiddenUnit hidden = HiddenUnit.BINARY;
+
+        public Builder() {
+            clazz =  RBM.class;
+        }
+
+        public Builder withVisible(VisibleUnit visible) {
+            this.visible = visible;
+            return this;
+        }
+
+        public Builder withHidden(HiddenUnit hidden) {
+            this.hidden = hidden;
+            return this;
+        }
+
+
+        public RBM build() {
+            RBM ret = super.build();
+            ret.hiddenType = hidden;
+            ret.visibleType = visible;
+            return ret;
+        }
+
+    }
+
+
+
 
 
 

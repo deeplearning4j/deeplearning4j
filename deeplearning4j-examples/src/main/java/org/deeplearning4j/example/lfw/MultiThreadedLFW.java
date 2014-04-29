@@ -4,13 +4,12 @@ import java.io.File;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;
@@ -37,9 +36,11 @@ public class MultiThreadedLFW {
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setNumPasses(3);
-		c.setMultiLayerClazz(GaussianRectifiedLinearDBN.class);
+		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(false);
         c.setL2(1e-3);
+        c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
+        c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
 		c.setDeepLearningParams(new Object[]{1,1e-6,10000});
         StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker();
 
