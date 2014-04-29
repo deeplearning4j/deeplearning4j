@@ -2,28 +2,19 @@ package org.deeplearning4j.example.lfw;
 
 import java.io.File;
 
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.datasets.fetchers.LFWDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.rbm.CRBM;
-import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +25,7 @@ public class LFWRBMExample {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new LFWDataSetIterator(10,150000,40,40);
+        DataSetIterator iter = new LFWDataSetIterator(10,150000,28,28);
         log.info("Loading LFW...");
         DataSet all = iter.next(300);
         iter = new SamplingDataSetIterator(all,10,100);
@@ -43,10 +34,12 @@ public class LFWRBMExample {
 
 
 
-        GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
+        RBM r = new RBM.Builder()
+                .withVisible(RBM.VisibleUnit.GAUSSIAN)
+                .withHidden(RBM.HiddenUnit.RECTIFIED)
                 .numberOfVisible(iter.inputColumns())
                 .withOptmizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .numHidden(1000)
+                .numHidden(600).renderWeights(1)
                 .withLossFunction(LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
 
@@ -58,9 +51,9 @@ public class LFWRBMExample {
          */
         while(iter.hasNext()) {
             DataSet curr = iter.next();
-            curr.normalize();
+            curr.normalizeZeroMeanZeroUnitVariance();
             log.info("Training on pics " + curr.labelDistribution());
-            r.trainTillConvergence(curr.getFirst(),1e-2,  new Object[]{1,1e-2,10000});
+            r.trainTillConvergence(curr.getFirst(),1e-1,  new Object[]{1,1e-1,10000});
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {

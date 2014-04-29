@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Convolutional RBM
+ * Convolutional RBM (binary)
  * @author Adam Gibson
  */
 public class ConvolutionalRBM extends RBM  {
@@ -44,6 +44,7 @@ public class ConvolutionalRBM extends RBM  {
     protected int[] fmSize;
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
+
     //cache last propup/propdown
     protected Tensor eVis,eHid;
 

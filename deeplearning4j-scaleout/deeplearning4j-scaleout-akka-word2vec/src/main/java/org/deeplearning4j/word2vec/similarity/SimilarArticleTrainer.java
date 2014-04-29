@@ -10,10 +10,10 @@ import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.dbn.CDBN;
+import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.loader.Word2VecLoader;
-import org.deeplearning4j.word2vec.similarity.WordMetaData;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,8 @@ public class SimilarArticleTrainer {
 		}
 
 		Random r = new Random();
-		CDBN dbn  = new CDBN.Builder()
+		DBN dbn  = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
+                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
 		.numberOfInputs(examples.get(0).getFirst().columns)
 		.numberOfOutPuts(2)
 		.hiddenLayerSizes(new int[]{500,500,2000}).build();

@@ -1,11 +1,9 @@
 package org.deeplearning4j.example.text;
 
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
@@ -21,9 +19,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by agibsonccc on 4/13/14.

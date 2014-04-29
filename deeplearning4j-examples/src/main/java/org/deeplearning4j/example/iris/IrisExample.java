@@ -2,28 +2,18 @@ package org.deeplearning4j.example.iris;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.dbn.CDBN;
-import org.deeplearning4j.dbn.GaussianRectifiedLinearDBN;
-import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.transformation.MatrixTransformations;
-import org.deeplearning4j.util.Info;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class IrisExample {
 
@@ -42,7 +32,7 @@ public class IrisExample {
         DataSet next = iter.next();
 
         for(int i = 0; i < 3000; i++) {
-            GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
+            DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
                     .numberOfInputs(nIns).numberOfOutPuts(nOuts)
                     .hiddenLayerSizes(hiddenLayerSizes).useAdaGrad(false)
                     .withRng(rng)
