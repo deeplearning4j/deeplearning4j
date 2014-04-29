@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 
@@ -63,6 +64,24 @@ public class Conf implements Serializable,Cloneable {
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
     private boolean normalizeZeroMeanAndUnitVariance;
     private boolean scale;
+    private RBM.VisibleUnit visibleUnit;
+    private RBM.HiddenUnit hiddenUnit;
+
+    public RBM.VisibleUnit getVisibleUnit() {
+        return visibleUnit;
+    }
+
+    public void setVisibleUnit(RBM.VisibleUnit visibleUnit) {
+        this.visibleUnit = visibleUnit;
+    }
+
+    public RBM.HiddenUnit getHiddenUnit() {
+        return hiddenUnit;
+    }
+
+    public void setHiddenUnit(RBM.HiddenUnit hiddenUnit) {
+        this.hiddenUnit = hiddenUnit;
+    }
 
     public boolean isScale() {
         return scale;

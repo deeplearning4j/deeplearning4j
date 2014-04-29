@@ -12,6 +12,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Tanh;
+import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class DBNTest {
         double fineTuneLr = 0.01;
         int fineTuneEpochs = 10000;
 
-        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
                 .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .withRng(rng)
@@ -61,69 +62,13 @@ public class DBNTest {
 
     }
 
-
-
-    @Test
-    public void testCDBN() {
-        DoubleMatrix x = new DoubleMatrix( new double[][]
-                {{0.4, 0.5, 0.5, 0.,  0.,  0.},
-                        {0.5, 0.3,  0.5, 0.,  0.,  0.},
-                        {0.4, 0.5, 0.5, 0.,  0.,  0.},
-                        {0.,  0.,  0.5, 0.3, 0.5, 0.},
-                        {0.,  0.,  0.5, 0.4, 0.5, 0.},
-                        {0.,  0.,  0.5, 0.5, 0.5, 0.}});
-
-
-
-        DoubleMatrix  y = new DoubleMatrix(new double[][]
-                {{1, 0},
-                        {1, 0},
-                        {1, 0},
-                        {0, 1},
-                        {0, 1},
-                        {0, 1}});
-
-        RandomGenerator rng = new MersenneTwister(123);
-
-        double preTrainLr = 0.01;
-        int preTrainEpochs = 10000;
-        int k = 1;
-        int nIns = 6,nOuts = 2;
-        int[] hiddenLayerSizes = new int[] {3};
-        double fineTuneLr = 0.01;
-        int fineTuneEpochs = 1000;
-
-        CDBN dbn = new CDBN.Builder().useAdaGrad(true).withActivation(new Tanh())
-                .numberOfInputs(nIns).numberOfOutPuts(nOuts)
-                .hiddenLayerSizes(hiddenLayerSizes).useRegularization(false)
-                .withRng(rng)
-                .build();
-
-
-        dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
-        dbn.finetune(y,fineTuneLr, fineTuneEpochs);
-
-
-        DoubleMatrix testX = new DoubleMatrix(new double[][]
-                {{0.5, 0.5, 0., 0., 0., 0.},
-                        {0., 0., 0., 0.5, 0.5, 0.},
-                        {0.5, 0.5, 0.5, 0.5, 0.5, 0.}});
-
-        DoubleMatrix predict =  dbn.predict(x);
-        Evaluation eval = new Evaluation();
-        eval.eval(y,predict);
-        log.info(eval.stats());
-
-    }
-
-
     @Test
     public void testLFW() throws Exception {
         //batches of 10, 60000 examples total
         DataSetIterator iter = new LFWDataSetIterator(10,10,14,14);
 
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
-        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder()
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenLayerSizes(new int[]{250, 150, 100}).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
                 .build();
@@ -170,7 +115,7 @@ public class DBNTest {
         double fineTuneLr = 0.01;
         int fineTuneEpochs = 10000;
 
-        GaussianRectifiedLinearDBN dbn = new GaussianRectifiedLinearDBN.Builder().useAdaGrad(true)
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
                 .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.hardTanh())
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .withRng(rng)

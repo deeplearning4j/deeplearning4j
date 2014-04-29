@@ -3,7 +3,7 @@ package org.deeplearning4j.example.iris;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.rbm.GaussianRectifiedLinearRBM;
+import org.deeplearning4j.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +22,7 @@ public class IrisRBMExample {
 		int numExamples = next.numExamples();
 		log.info("Training on " + numExamples);
 
-		GaussianRectifiedLinearRBM r = new GaussianRectifiedLinearRBM.Builder()
+        RBM r = new RBM.Builder().withHidden(RBM.HiddenUnit.RECTIFIED).withVisible(RBM.VisibleUnit.GAUSSIAN)
 		.numberOfVisible(irisData.inputColumns())
 		.useAdaGrad(true)
 		.numHidden(10).normalizeByInputRows(false).useRegularization(false)
