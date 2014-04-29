@@ -7,6 +7,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -27,22 +28,38 @@ public class MnistConvNet {
         RandomGenerator gen = new MersenneTwister(123);
 
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{7, 7})
+                .Builder().withFilterSize(new int[]{28,28})
                 .withNumFilters(9).withStride(new int[]{2, 2})
                 .withVisibleSize(new int[]{28, 28})
-                .renderWeights(10)
-                .numberOfVisible(28).numHidden(28).withMomentum(0.5).withRandom(gen)
+                .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .numberOfVisible(28).numHidden(28)
+                .withMomentum(0.3)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1,1000);
+        DataSetIterator iter = new MnistDataSetIterator(1,10);
+        for(int i = 0; i < 10 ;i++) {
+            while(iter.hasNext()) {
+                DataSet next = iter.next();
+                DoubleMatrix reshape = next.getFirst().reshape(28,28);
+                r.train(reshape, 1e-1, new Object[]{1, 1e-1, 5000});
+                Tensor W = (Tensor) r.getW().dup();
 
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            DoubleMatrix reshape = next.getFirst().reshape(28,28);
-            r.trainTillConvergence(reshape, 1e-2, new Object[]{1, 1e-2, 5000});
+                DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
+                FilterRenderer render = new FilterRenderer();
+                render.renderFilters(draw,"tmpfile.png",28,28);
 
+
+            }
+
+
+
+
+
+
+
+            iter.reset();
         }
 
 
@@ -50,21 +67,6 @@ public class MnistConvNet {
 
 
 
-
-        iter.reset();
-
-
-
-
-        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
-        while(iter.hasNext()) {
-            DataSet first = iter.next();
-            DoubleMatrix next = first.getFirst().reshape(28,28);
-            Tensor W = (Tensor) r.getW().dup();
-            DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
-            FilterRenderer render = new FilterRenderer();
-            render.renderFilters(draw,"tmpfile.png",7,7);
-        }
     }
 
 }

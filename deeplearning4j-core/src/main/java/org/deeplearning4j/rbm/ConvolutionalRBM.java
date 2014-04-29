@@ -67,8 +67,8 @@ public class ConvolutionalRBM extends RBM  {
         visI = Tensor.zeros(visibleSize[0],visibleSize[1],numFilters);
         hidI = Tensor.zeros(fmSize[0],fmSize[1],numFilters);
         convolutionInitCalled = true;
-        vBias = DoubleMatrix.zeros(1);
-        hBias = DoubleMatrix.zeros(numFilters);
+        vBias = DoubleMatrix.zeros(numFilters);
+        hBias = DoubleMatrix.zeros(1);
 
 
         for(int i = 0; i < this.W.rows; i++)
@@ -93,7 +93,7 @@ public class ConvolutionalRBM extends RBM  {
     public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
-            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(hBias.get(i));
+            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(vBias.get(0));
             hidI.setSlice(i,slice);
 
         }
@@ -123,7 +123,7 @@ public class ConvolutionalRBM extends RBM  {
             visI.setSlice(i,conv);
         }
 
-        DoubleMatrix I = visI.sliceElementSums().add(vBias);
+        DoubleMatrix I = visI.sliceElementSums().add(hBias);
         I = sigmoid(I);
 
         Tensor ret =   new Tensor(I);
@@ -368,13 +368,10 @@ public class ConvolutionalRBM extends RBM  {
 
 
 
-        DoubleMatrix hBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
-
-
-
+        DoubleMatrix vBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        DoubleMatrix  vBiasGradient = DoubleMatrix.scalar((input.sub(nvSamples)).columnSums().sum());
+        DoubleMatrix  hBiasGradient = DoubleMatrix.scalar((input.sub(nvSamples)).columnSums().sum());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
         updateGradientAccordingToParams(ret, learningRate);
