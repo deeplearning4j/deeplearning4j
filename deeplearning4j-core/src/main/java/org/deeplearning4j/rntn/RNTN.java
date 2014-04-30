@@ -4,6 +4,8 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.optimize.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.MultiDimensionalMap;
@@ -33,7 +35,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     private double scalingForInit = 1.0;
     public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
-
+    protected ActivationFunction activationFunction = Activations.hardTanh();
     /** Regularization cost for the transform matrix  */
     private double regTransformMatrix = 0.001;
 
@@ -500,17 +502,14 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             String word = tree.children().get(0).label();
             word = getVocabWord(word);
 
-            //DoubleMatrix currentVectorDerivative = MatrixFunctions.tanh(currentVector);
-            //DoubleMatrix deltaFromClass = getUnaryClassification(category).transpose().mult(deltaClass);
-            //DoubleMatrix deltaFull = deltaFromClass.extractMatrix(0, numHid, 0, 1).add(deltaUp);
-            //DoubleMatrix wordDerivative = deltaFull.elementMult(currentVectorDerivative);
-            //wordVectorD.put(word, wordVectorD.get(word).add(wordDerivative));
 
-            DoubleMatrix currentVectorDerivative = MatrixFunctions.tanh(currentVector);
+            DoubleMatrix currentVectorDerivative = activationFunction.apply(currentVector);
             DoubleMatrix deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
-            deltaFromClass = deltaFromClass.get(RangeUtils.interval(0, 1),RangeUtils.interval(0, numHidden)).mul(currentVectorDerivative);
+            deltaFromClass = deltaFromClass.get(RangeUtils.interval(0, 1), RangeUtils.interval(0, numHidden)).mul(currentVectorDerivative);
             DoubleMatrix deltaFull = deltaFromClass.add(deltaUp);
             wordVectorD.put(word, wordVectorD.get(word).add(deltaFull));
+
+
         } else {
             // Otherwise, this must be a binary node
             String leftCategory = basicCategory(tree.children().get(0).label());
@@ -521,16 +520,20 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
                 binaryCD.put(leftCategory, rightCategory, binaryCD.get(leftCategory, rightCategory).add(localCD));
             }
 
-            DoubleMatrix currentVectorDerivative = MatrixFunctions.tanh(currentVector);
+            DoubleMatrix currentVectorDerivative = activationFunction.apply(currentVector);
             DoubleMatrix deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
             deltaFromClass = deltaFromClass.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, numHidden)).mul(currentVectorDerivative);
             DoubleMatrix deltaFull = deltaFromClass.add(deltaUp);
 
             DoubleMatrix leftVector =tree.children().get(0).vector();
             DoubleMatrix rightVector = tree.children().get(1).vector();
+
             DoubleMatrix childrenVector = DoubleMatrix.concatHorizontally(leftVector, rightVector);
+
+
             DoubleMatrix W_df = deltaFull.mmul(childrenVector.transpose());
             binaryTD.put(leftCategory, rightCategory, binaryTD.get(leftCategory, rightCategory).add(W_df));
+
             DoubleMatrix deltaDown;
             if (useTensors) {
                 Tensor Wt_df = getTensorGradient(deltaFull, leftVector, rightVector);
@@ -540,8 +543,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
                 deltaDown = getBinaryTransform(leftCategory, rightCategory).transpose().mmul(deltaFull);
             }
 
-            DoubleMatrix leftDerivative = MatrixFunctions.tanh(leftVector);
-            DoubleMatrix rightDerivative = MatrixFunctions.tanh(rightVector);
+            DoubleMatrix leftDerivative = activationFunction.apply(leftVector);
+            DoubleMatrix rightDerivative = activationFunction.apply(rightVector);
             DoubleMatrix leftDeltaDown = deltaDown.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, deltaFull.rows));
             DoubleMatrix rightDeltaDown = deltaDown.get(RangeUtils.interval( 0, 1),RangeUtils.interval(deltaFull.rows, deltaFull.rows * 2));
             backpropDerivativesAndError(tree.children().get(0), binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD, leftDerivative.mul(leftDeltaDown));
@@ -568,10 +571,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
      * This is the method to call for assigning labels and node vectors
      * to the Tree.  After calling this, each of the non-leaf nodes will
      * have the node vector and the predictions of their classes
-     * assigned to that subtree's node.  The annotations filled in are
-     * the RNNCoreAnnotations.NodeVector, Predictions, and
-     * PredictedClass.  In general, PredictedClass will be the most
-     * useful annotation except when training.
+     * assigned to that subtree's node.
      */
     public void forwardPropagateTree(Tree tree) {
         DoubleMatrix nodeVector = null;
@@ -606,24 +606,20 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
                 Tensor tensor = getBinaryTensor(leftCategory, rightCategory);
                 DoubleMatrix tensorIn = DoubleMatrix.concatHorizontally(leftVector, rightVector);
                 DoubleMatrix tensorOut = tensor.bilinearProducts(tensorIn);
-                nodeVector = MatrixFunctions.tanh(W.mmul(childrenVector).add(tensorOut));
+                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(tensorOut));
             } else {
-                nodeVector = MatrixFunctions.tanh(W.mmul(childrenVector));
+                nodeVector = activationFunction.apply(W.mmul(childrenVector));
             }
         } else {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-        DoubleMatrix predictions = MatrixUtil.softmax(classification.mmul(DoubleMatrix.concatHorizontally(nodeVector,DoubleMatrix.ones(nodeVector.columns,1))));
+        DoubleMatrix predictions = MatrixUtil.softmax(classification.mmul(DoubleMatrix.concatHorizontally(nodeVector, DoubleMatrix.ones(nodeVector.columns, 1))));
 
         int index = SimpleBlas.iamax(predictions);
-     /*   if (!(tree.label() instanceof CoreLabel)) {
-            throw new AssertionError("Expected CoreLabels in the nodes");
-        }
-        CoreLabel label = (CoreLabel) tree.label();
-        label.set(RNNCoreAnnotations.Predictions.class, predictions);
-        label.set(RNNCoreAnnotations.PredictedClass.class, index);
-        label.set(RNNCoreAnnotations.NodeVector.class, nodeVector);*/
+        tree.setPrediction(predictions);
+        tree.setVector(nodeVector);
+        tree.setLabel(String.valueOf(index));
     }
     
     @Override
