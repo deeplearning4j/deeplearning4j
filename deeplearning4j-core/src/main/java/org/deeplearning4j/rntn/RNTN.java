@@ -269,6 +269,11 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         return MatrixUtil.uniform(rng,1,size);
     }
 
+
+    /**
+     * Trains the network on this mini batch
+     * @param trainingBatch the trees to train on
+     */
     public void train(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;
          getValueGradient();
@@ -599,7 +604,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             classification = getUnaryClassification(tree.label());
             String word = tree.children().get(0).label();
             DoubleMatrix wordVector = getFeatureVector(word);
-            nodeVector = MatrixFunctions.tanh(wordVector);
+            nodeVector = activationFunction.apply(wordVector);
         } else if (tree.children().size() == 1) {
             throw new AssertionError("Non-preterminal nodes of size 1 should have already been collapsed");
         } else if (tree.children().size() == 2) {
