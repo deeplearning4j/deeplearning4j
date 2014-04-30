@@ -21,6 +21,15 @@ import java.util.*;
 /**
  * Recursive Neural Tensor Network by Socher et. al
  *
+ * This is a modified implementation of the sentiment analysis RNTN
+ * from Stanford that is intended to work with more general purpose inputs (scene detection with images, labeling
+ * series of sentences, among others)
+ *
+ * This implementation will also be faster in terms of parallelization as well as integration with
+ * native matrices/GPUs
+ *
+ * @author Adam Gibson
+ *
  */
 public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
@@ -263,7 +272,6 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
 
 
-    // TODO: combine this and getClassWForNode?
     public DoubleMatrix getWForNode(Tree node) {
         if (node.children().size() == 2) {
             String leftLabel = node.children().get(0).value();
@@ -318,7 +326,6 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     private Tensor getTensorGradient(DoubleMatrix deltaFull, DoubleMatrix leftVector, DoubleMatrix rightVector) {
         int size = deltaFull.length;
         Tensor Wt_df = new Tensor(size*2, size*2, size);
-        // TODO: combine this concatenation with computeTensorDeltaDown?
         DoubleMatrix fullVector = DoubleMatrix.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             Wt_df.setSlice(slice, SimpleBlas.scal(deltaFull.get(slice),fullVector).mmul(fullVector.transpose()));
