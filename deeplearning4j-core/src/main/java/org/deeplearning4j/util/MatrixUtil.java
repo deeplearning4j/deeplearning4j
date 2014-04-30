@@ -16,6 +16,9 @@ import org.jblas.ranges.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 
 public class MatrixUtil {
     private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
@@ -806,6 +809,15 @@ public class MatrixUtil {
 
 
 
+    public static DoubleMatrix rand(int rows, int columns,double min,double max,RandomGenerator rng) {
+        DoubleMatrix ret = new DoubleMatrix(rows,columns);
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i,MathUtils.randomNumberBetween(min,max,rng));
+        }
+        return ret;
+    }
+
+
 
     /**
      * Generate a binomial distribution based on the given rng,
@@ -828,6 +840,57 @@ public class MatrixUtil {
         for(int i = 0; i < x.columns; i++) {
             ret.put(i,x.getColumn(axis).mean());
         }
+        return ret;
+    }
+
+
+    public static DoubleMatrix toFlattened(Collection<DoubleMatrix> matrices) {
+        int length = 0;
+        for(DoubleMatrix m : matrices)  length += m.length;
+        DoubleMatrix ret = new DoubleMatrix(1,length);
+        int linearIndex = 0;
+        for(DoubleMatrix d : matrices) {
+            for(int i = 0; i < d.length; i++) {
+                ret.put(linearIndex++,d.get(i));
+            }
+        }
+
+        return ret;
+
+    }
+
+
+    public static DoubleMatrix toFlattened(int length,Iterator<? extends DoubleMatrix>...matrices) {
+
+        DoubleMatrix ret = new DoubleMatrix(1,length);
+        int linearIndex = 0;
+
+
+        for(Iterator<? extends DoubleMatrix> iter : matrices) {
+            while(iter.hasNext()) {
+                DoubleMatrix d = iter.next();
+                for(int i = 0; i < d.length; i++) {
+                    ret.put(linearIndex++,d.get(i));
+                }
+            }
+        }
+
+
+        return ret;
+    }
+
+
+    public static DoubleMatrix toFlattened(DoubleMatrix...matrices) {
+        int length = 0;
+        for(DoubleMatrix m : matrices)  length += m.length;
+        DoubleMatrix ret = new DoubleMatrix(1,length);
+        int linearIndex = 0;
+        for(DoubleMatrix d : matrices) {
+            for(int i = 0; i < d.length; i++) {
+                ret.put(linearIndex++,d.get(i));
+            }
+        }
+
         return ret;
     }
 

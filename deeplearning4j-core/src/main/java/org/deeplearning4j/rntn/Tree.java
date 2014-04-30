@@ -17,8 +17,39 @@ public class Tree implements Serializable {
     private List<Tree> children;
     private double error;
     private Tree parent;
+    private String value;
+    private String label;
+    private int goldLabel;
 
 
+
+
+    public void setGoldLabel(int goldLabel) {
+        this.goldLabel = goldLabel;
+    }
+
+    public int goldLabel() {
+        return goldLabel;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String label() {
+        return label;
+    }
+
+
+    public String value() {
+        return value;
+    }
+
+
+    public void setValue(String value) {
+        this.value = value;
+
+    }
 
     public Tree(Tree parent) {
         this.parent = parent;
@@ -163,6 +194,49 @@ public class Tree implements Serializable {
             return error() + error;
         }
     }
+
+
+    /**
+     * Gets the leaves of the tree.  All leaves nodes are returned as a list
+     * ordered by the natural left to right order of the tree.  Null values,
+     * if any, are inserted into the list like any other value.
+     *
+     * @return a <code>List</code> of the leaves.
+     */
+    public <T extends Tree> List<T> getLeaves() {
+        return getLeaves(new ArrayList<T>());
+    }
+
+    /**
+     * Gets the leaves of the tree.
+     *
+     * @param list The list in which the leaves of the tree will be
+     *             placed. Normally, this will be empty when the routine is called,
+     *             but if not, the new yield is added to the end of the list.
+     * @return a <code>List</code> of the leaves.
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Tree> List<T> getLeaves(List<T> list) {
+        if (isLeaf()) {
+            list.add((T)this);
+        } else {
+            for (Tree kid : children()) {
+                kid.getLeaves(list);
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public Tree clone() {
+        Tree ret = new Tree();
+        ret.setChildren(children());
+        ret.setError(error);
+        ret.setValue(value);
+        ret.setVector(vector);
+        return ret;
+    }
+
 
     /**
      * Returns the prediction error for this node

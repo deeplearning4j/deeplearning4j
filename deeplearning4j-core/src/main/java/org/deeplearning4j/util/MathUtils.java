@@ -1222,6 +1222,18 @@ public class MathUtils  {
         return	(int)begin + (int)(Math.random() * ((end - begin) + 1));
 	}
 
+    /**
+     * Generates a random integer between the specified numbers
+     * @param begin the begin of the interval
+     * @param end the end of the interval
+     * @return an int between begin and end
+     */
+    public static int randomNumberBetween(double begin,double end,RandomGenerator rng) {
+        if(begin > end)
+            throw new IllegalArgumentException("Begin must not be less than end");
+        return	(int)begin + (int)(rng.nextDouble() * ((end - begin) + 1));
+    }
+
 	public static double randomDoubleBetween(double begin,double end) {
 		return	begin + (Math.random() * ((end - begin)));
 	}
