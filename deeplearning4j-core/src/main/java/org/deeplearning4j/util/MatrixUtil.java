@@ -978,12 +978,20 @@ public class MatrixUtil {
 
     }
 
+
+    /**
+     * Column wise variance
+     * @param input the input to get the variance for
+     * @return the column wise variance of the input
+     */
     public static DoubleMatrix columnVariance(DoubleMatrix input) {
         DoubleMatrix columnMeans = input.columnMeans();
         DoubleMatrix ret = new DoubleMatrix(1,columnMeans.columns);
         for(int i = 0;i < ret.columns; i++) {
             DoubleMatrix column = input.getColumn(i);
             double variance = StatUtils.variance(column.toArray(),columnMeans.get(i));
+            if(variance == 0)
+                variance = 1e-6;
             ret.put(i,variance);
         }
         return ret;
