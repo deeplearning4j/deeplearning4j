@@ -6,6 +6,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.OptimizableByGradientValueMatrix;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.MultiDimensionalMap;
@@ -33,6 +34,7 @@ import java.util.*;
  */
 public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
+    protected double value = 0;
     private int numOuts;
     private int numHidden = 25;
     private RandomGenerator rng;
@@ -45,6 +47,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.hardTanh();
+    protected AdaGrad paramAdaGrad;
+
     /** Regularization cost for the transform matrix  */
     private double regTransformMatrix = 0.001;
 
@@ -185,7 +189,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
         unaryClassification = new TreeMap<>();
 
-        // When making a flat model (no symantic untying) the
+        // When making a flat model (no semantic untying) the
         // basicCategory function will return the same basic category for
         // all labels, so all entries will map to the same matrix
         for (String unary : unaryProductions) {
@@ -647,10 +651,12 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     @Override
     public DoubleMatrix getValueGradient() {
+
+
         // We use TreeMap for each of these so that they stay in a
         // canonical sorted order
         // TODO: factor out the initialization routines
-        // binaryTD stands for Transform Derivatives (see the SentimentModel)
+        // binaryTD stands for Transform Derivatives
         MultiDimensionalMap<String, String, DoubleMatrix> binaryTD = MultiDimensionalMap.newTreeBackedMap();
         // the derivatives of the tensors for the binary nodes
         MultiDimensionalMap<String, String, Tensor> binaryTensorTD = MultiDimensionalMap.newTreeBackedMap();
@@ -720,7 +726,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         // scale the error by the number of sentences so that the
         // regularization isn't drowned out for large training batchs
         double scale = (1.0 / trainingTrees.size());
-        double value = error * scale;
+        value = error * scale;
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
         value += scaleAndRegularize(binaryCD, binaryClassification, scale, regClassification);
@@ -731,11 +737,16 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         DoubleMatrix derivative = MatrixUtil.toFlattened(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryTensorTD.values().iterator()
                 , unaryCD.values().iterator(), wordVectorD.values().iterator());
 
+        if(paramAdaGrad == null)
+            paramAdaGrad = new AdaGrad(1,derivative.columns);
+
+        derivative.muli(paramAdaGrad.getLearningRates(derivative));
+
         return derivative;
     }
 
     @Override
     public double getValue() {
-        return 0;
+        return value;
     }
 }
