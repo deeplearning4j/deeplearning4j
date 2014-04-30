@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.util.MathUtils;
@@ -500,6 +501,34 @@ public class Tensor extends DoubleMatrix implements Serializable {
         return t;
 
     }
+
+
+    /**
+     * Returns a random tensor sampling from the normal distribution
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static Tensor rand(int rows, int cols,int slices,double min,double max,RandomGenerator rng) {
+        Tensor t = new Tensor(rows ,cols,slices);
+        for(int i = 0; i < slices; i++) {
+            DoubleMatrix d = new DoubleMatrix(rows,cols);
+            for(int j = 0; j < d.length; j++) {
+                double val =  MathUtils.randomDoubleBetween(min,max);
+                if(val == 0)
+                    val += Math.random();
+                d.put(j,val);
+
+            }
+            t.setSlice(i,d);
+        }
+
+
+        return t;
+
+    }
+
 
     /**
      * Returns a random tensor sampling from the normal distribution

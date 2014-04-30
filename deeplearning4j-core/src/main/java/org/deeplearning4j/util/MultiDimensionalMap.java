@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.berkeley.Pair;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -13,7 +14,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 /**
  * Multiple key map
  */
-public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
+public class MultiDimensionalMap<K,T,V>  {
 
     private Map<Pair<K,T>,V> backedMap;
 
@@ -72,7 +73,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *
      * @return the number of key-value mappings in this map
      */
-    @Override
+    
     public int size() {
         return backedMap.size();
     }
@@ -82,7 +83,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *
      * @return <tt>true</tt> if this map contains no key-value mappings
      */
-    @Override
+    
     public boolean isEmpty() {
         return backedMap.isEmpty();
     }
@@ -104,7 +105,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *                              does not permit null keys
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @Override
+    
     public boolean containsKey(Object key) {
         return backedMap.containsKey(key);
     }
@@ -127,7 +128,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *                              map does not permit null values
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @Override
+    
     public boolean containsValue(Object value) {
         return backedMap.containsValue(value);
     }
@@ -157,7 +158,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *                              does not permit null keys
      *                              (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @Override
+    
     public V get(Object key) {
         return backedMap.get(key);
     }
@@ -186,7 +187,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      * @throws IllegalArgumentException      if some property of the specified key
      *                                       or value prevents it from being stored in this map
      */
-    @Override
+    
     public V put(Pair<K, T> key, V value) {
         return backedMap.put(key,value);
     }
@@ -221,7 +222,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *                                       map does not permit null keys
      *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
      */
-    @Override
+    
     public V remove(Object key) {
         return backedMap.remove(key);
     }
@@ -245,7 +246,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      * @throws IllegalArgumentException      if some property of a key or value in
      *                                       the specified map prevents it from being stored in this map
      */
-    @Override
+    
     public void putAll(Map<? extends Pair<K, T>, ? extends V> m) {
         backedMap.putAll(m);
     }
@@ -257,7 +258,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      * @throws UnsupportedOperationException if the <tt>clear</tt> operation
      *                                       is not supported by this map
      */
-    @Override
+    
     public void clear() {
         backedMap.clear();
     }
@@ -277,7 +278,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *
      * @return a set view of the keys contained in this map
      */
-    @Override
+    
     public Set<Pair<K, T>> keySet() {
         return backedMap.keySet();
     }
@@ -297,7 +298,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *
      * @return a collection view of the values contained in this map
      */
-    @Override
+    
     public Collection<V> values() {
         return backedMap.values();
     }
@@ -318,12 +319,10 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
      *
      * @return a set view of the mappings contained in this map
      */
-    @Override
-    public Set<Entry<Pair<K, T>, V>> entrySet() {
-        return backedMap.entrySet();
+
+    public Set<Entry<K,T,V>> entrySet() {
+        return null;
     }
-
-
 
     public V get(K k,T t) {
         return get(new Pair<>(k,t));
@@ -333,7 +332,7 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
         put(new Pair<>(k,t),v);
     }
 
-    @Override
+    
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof MultiDimensionalMap)) return false;
@@ -345,15 +344,94 @@ public class MultiDimensionalMap<K,T,V> implements Map<Pair<K,T>,V> {
         return true;
     }
 
-    @Override
+    
     public int hashCode() {
         return backedMap != null ? backedMap.hashCode() : 0;
     }
 
-    @Override
+    
     public String toString() {
         return "MultiDimensionalMap{" +
                 "backedMap=" + backedMap +
                 '}';
     }
+
+
+    public boolean contains(K k ,T t) {
+        return containsKey(new Pair<>(k,t));
+    }
+
+
+    public static class Entry<K,T,V> implements Map.Entry<Pair<K,T>,V> {
+
+        private K firstKey;
+        private T secondKey;
+        private V value;
+
+
+        public K getFirstKey() {
+            return firstKey;
+        }
+
+        public void setFirstKey(K firstKey) {
+            this.firstKey = firstKey;
+        }
+
+        public T getSecondKey() {
+            return secondKey;
+        }
+
+        public void setSecondKey(T secondKey) {
+            this.secondKey = secondKey;
+        }
+
+        public V getValue() {
+            return value;
+        }
+
+        /**
+         * Replaces the value corresponding to this entry with the specified
+         * value (optional operation).  (Writes through to the map.)  The
+         * behavior of this call is undefined if the mapping has already been
+         * removed from the map (by the iterator's <tt>remove</tt> operation).
+         *
+         * @param value new value to be stored in this entry
+         * @return old value corresponding to the entry
+         * @throws UnsupportedOperationException if the <tt>put</tt> operation
+         *                                       is not supported by the backing map
+         * @throws ClassCastException            if the class of the specified value
+         *                                       prevents it from being stored in the backing map
+         * @throws NullPointerException          if the backing map does not permit
+         *                                       null values, and the specified value is null
+         * @throws IllegalArgumentException      if some property of this value
+         *                                       prevents it from being stored in the backing map
+         * @throws IllegalStateException         implementations may, but are not
+         *                                       required to, throw this exception if the entry has been
+         *                                       removed from the backing map.
+         */
+        
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
+
+
+        /**
+         * Returns the key corresponding to this entry.
+         *
+         * @return the key corresponding to this entry
+         * @throws IllegalStateException implementations may, but are not
+         *                               required to, throw this exception if the entry has been
+         *                               removed from the backing map.
+         */
+        
+        public Pair<K, T> getKey() {
+            return new Pair<>(firstKey,secondKey);
+        }
+    }
+
+
+
+
 }
