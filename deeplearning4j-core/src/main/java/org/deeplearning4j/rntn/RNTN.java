@@ -257,7 +257,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     }
 
     public void train(List<Tree> trainingBatch) {
-
+        this.trainingTrees = trainingBatch;
+         getValueGradient();
     }
 
 
