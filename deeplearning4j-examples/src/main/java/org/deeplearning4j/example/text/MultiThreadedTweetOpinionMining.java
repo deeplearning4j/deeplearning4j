@@ -6,6 +6,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
@@ -42,7 +43,6 @@ public class MultiThreadedTweetOpinionMining {
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1", "2"),2000);
         DataSet data = vectorizor.vectorize();
-        data.binarize();
         log.info("Vocab " + vectorizor.vocab());
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
@@ -56,7 +56,8 @@ public class MultiThreadedTweetOpinionMining {
         //c.setRenderWeightEpochs(1000);
         c.setnOut(3);
         c.setSplit(10);
-
+        c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
+        c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(false);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
