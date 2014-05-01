@@ -6,11 +6,11 @@ layout: default
 *previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
 # deep-belief networks
 
-For our purposes, a [deep-belief network](http://www.scholarpedia.org/article/Deep_belief_networks) can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both its previous and subsequent layers. The nodes of any single layer do not communicate with each other laterally. 
+For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both its previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
-With the exception of the first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes that come before, and as the input layer to the lower nodes after. It is a network of single-layer networks. 
+With the exception of the first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes that come before it, and as the input (or visible) layer to the lower nodes that come after. It is a network of single-layer networks. 
 
-Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. 
+Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. 
 
 ### parameters & k
 
