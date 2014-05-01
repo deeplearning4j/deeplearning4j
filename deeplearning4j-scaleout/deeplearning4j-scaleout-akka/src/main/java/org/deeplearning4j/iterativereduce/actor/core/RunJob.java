@@ -1,7 +1,21 @@
 package org.deeplearning4j.iterativereduce.actor.core;
 
+import java.io.Serializable;
+
+
 /**
- * Created by agibsonccc on 4/30/14.
+   Alerts a worker a job is available
+ * @author Adam Gibson
  */
-public class RunJob {
+public class RunJob implements Serializable {
+
+    private static RunJob INSTANCE = new RunJob();
+
+    private RunJob(){}
+
+    public static RunJob getInstance() {
+        return INSTANCE;
+    }
+
+
 }
