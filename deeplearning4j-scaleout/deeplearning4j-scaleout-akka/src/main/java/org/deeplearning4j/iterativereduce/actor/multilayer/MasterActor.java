@@ -16,7 +16,6 @@ import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
-import org.deeplearning4j.iterativereduce.actor.core.NoJobFound;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
@@ -44,13 +43,12 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
     protected BaseMultiLayerNetwork network;
-    protected AtomicLong lastUpdated = new AtomicLong(System.currentTimeMillis());
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
      * @param batchActor the batch actor that handles data set dispersion
      */
-    public MasterActor(Conf conf,ActorRef batchActor,HazelCastStateTracker stateTracker) {
+    public MasterActor(Conf conf,ActorRef batchActor, final HazelCastStateTracker stateTracker) {
         super(conf,batchActor,stateTracker);
         setup(conf);
 		/*
@@ -63,8 +61,20 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                     @Override
                     public void run() {
                         try {
-                            List<Job> currentJobs = MasterActor.this.stateTracker.currentJobs();
+                            List<Job> currentJobs = stateTracker.currentJobs();
                             log.info("Status check on next iteration");
+                            if(stateTracker.getCurrent() == null) {
+                                try {
+                                    log.info("State tracker did not have a network; reinitializing");
+                                    if(network == null)
+                                        stateTracker.setCurrent(new UpdateableImpl(network));
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+
+                            List<UpdateableImpl> updates = stateTracker.updates();
+
 
                             if(updates.size() >= partition || currentJobs.isEmpty())
                                 nextIteration();
@@ -151,6 +161,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         try {
             stateTracker.setCurrent(masterResults);
+
+            //alert the workers to update
+            for(String workerId : stateTracker.workers())
+                stateTracker.addReplicate(workerId);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -188,31 +202,31 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         log.info("Broadcasting initial master network");
         BaseMultiLayerNetwork network = null;
         if(this.network == null) {
-           if(conf.getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-               network =  new DBN.Builder().withHiddenUnits(conf.getHiddenUnit()).withVisibleUnits(conf.getVisibleUnit())
-                       .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-                       .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
-                       .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
-                       .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                       .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
-                       .withGradientListeners(conf.getGradientListeners())
-                       .build();
+            if(conf.getMultiLayerClazz().isAssignableFrom(DBN.class)) {
+                network =  new DBN.Builder().withHiddenUnits(conf.getHiddenUnit()).withVisibleUnits(conf.getVisibleUnit())
+                        .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+                        .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
+                        .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
+                        .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
+                        .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
+                        .withGradientListeners(conf.getGradientListeners())
+                        .build();
 
 
 
-           }
+            }
 
             else {
-               network =  new BaseMultiLayerNetwork.Builder<>()
-                       .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-                       .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
-                       .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
-                       .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                       .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
-                       .withGradientListeners(conf.getGradientListeners())
-                       .build();
+                network =  new BaseMultiLayerNetwork.Builder<>()
+                        .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
+                        .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
+                        .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
+                        .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
+                        .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
+                        .withGradientListeners(conf.getGradientListeners())
+                        .build();
 
-           }
+            }
         }
 
         else
@@ -251,7 +265,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
      * @throws Exception
      */
     protected void nextIteration() throws Exception {
-
+        List<UpdateableImpl> updates = stateTracker.updates();
         if(!updates.isEmpty()) {
             UpdateableImpl masterResults = this.compute(updates, updates);
 
@@ -260,13 +274,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             //tell the batch actor to send out another dataset
             if(!isDone())
                 batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
-            updates.clear();
+            //clear previous batch
+            stateTracker.updates().clear();
             log.info("Broadcasting weights");
-            //replicate the network
-            mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-                    masterResults), getSelf());
-            this.stateTracker.setCurrent(masterResults);
 
+            for(String worker : stateTracker.workers())
+                stateTracker.addReplicate(worker);
         }
 
 
@@ -279,6 +292,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
      */
     protected void checkDone() throws Exception {
         UpdateableImpl masterResults = null;
+        List<UpdateableImpl> updates = stateTracker.updates();
+
         if(!updates.isEmpty()) {
             masterResults = compute(updates, updates);
 
@@ -286,7 +301,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
             epochsComplete++;
-            updates.clear();
+            stateTracker.updates().clear();
 
         }
 
@@ -331,13 +346,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-        else if(message instanceof NoJobFound) {
-            partition--;
-            if(updates.size() >= partition)
-                nextIteration();
-
-        }
-
         else if(message instanceof DoneMessage) {
             log.info("Received done message");
             checkDone();
@@ -346,19 +354,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         else if(message instanceof String) {
             getSender().tell(Ack.getInstance(),getSelf());
-
-        }
-
-
-        else if(message instanceof UpdateableImpl) {
-            UpdateableImpl up = (UpdateableImpl) message;
-            updates.add(up);
-            log.info("Num updates so far " + updates.size() + " and partition size is " + partition);
-
-            //note that partition is always the current number of workers that was dispatched to
-            //this means that the number of workers will never outpace the number of datasets
-            if(updates.size() >= partition)
-                nextIteration();
 
         }
 

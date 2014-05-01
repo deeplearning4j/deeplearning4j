@@ -66,6 +66,16 @@ public class Conf implements Serializable,Cloneable {
     private boolean scale;
     private RBM.VisibleUnit visibleUnit;
     private RBM.HiddenUnit hiddenUnit;
+    private String stateTrackerConnectionString;
+
+
+    public String getStateTrackerConnectionString() {
+        return stateTrackerConnectionString;
+    }
+
+    public void setStateTrackerConnectionString(String stateTrackerConnectionString) {
+        this.stateTrackerConnectionString = stateTrackerConnectionString;
+    }
 
     public RBM.VisibleUnit getVisibleUnit() {
         return visibleUnit;
