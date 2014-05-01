@@ -30,6 +30,17 @@ public class Job implements Serializable {
 		this.work = work;
 		this.pretrain = pretrain;
 	}
+
+
+
+    public Job(Job job) {
+        this.done = job.done;
+        this.workerId = job.workerId;
+        this.work = job.work;
+        this.pretrain = job.pretrain;
+    }
+
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -66,6 +77,12 @@ public class Job implements Serializable {
 			return false;
 		return true;
 	}
+
+
+    @Override
+    public Job clone() {
+        return new Job(this);
+    }
 	
 	
 	public boolean isDone() {

@@ -20,6 +20,50 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+
+    /**
+     * Updates the status of the worker to not needing replication
+     * @param workerId the worker id to update
+     */
+    public void doneReplicating(String workerId);
+
+    /**
+     * Adds a worker to the list to be replicate d
+     * @param workerId the worker id to add
+     */
+    public void addReplicate(String workerId);
+
+    /**
+     * Tracks worker ids that need state replication
+     * @param workerId the worker id to replicate
+     * @return the list of worker ids that need state replication
+     */
+    public boolean needsReplicate(String workerId);
+
+    /**
+     * Adds an update to the current mini batch
+     * @param update the update to add
+     */
+    public void addUpdate(E update);
+
+    /**
+     * Updates  for mini batches
+     * @return the current list of updates for mini batches
+     */
+    public List<E> updates();
+
+    /**
+     * Sets the connection string for connecting to the server
+     * @param connectionString the connection string to use
+     */
+    public void setConnectionString(String connectionString);
+
+    /**
+     * Connection string for connecting to the server
+     * @return the connection string for connecting to the server
+     */
+    public String connectionString();
+
     /**
      * Setter for the server port
      * @param port

@@ -6,6 +6,7 @@ import java.io.File;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
@@ -142,7 +143,12 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
 			Conf conf = retriever.retreive();
 			String address = conf.getMasterUrl();
-			runner = new ActorNetworkRunner(type,address);
+
+            HazelCastStateTracker stateTracker = new HazelCastStateTracker(conf.getStateTrackerConnectionString());
+
+            log.info("Creating hazel cast via worker " + stateTracker.connectionString());
+            runner = new ActorNetworkRunner(type,address);
+            runner.setStateTracker(stateTracker);
 			runner.setup(conf);
 			retriever.close();
 

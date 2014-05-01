@@ -130,11 +130,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
     /**
      * Start a backend with the given role
      * @param joinAddress the join address
-     * @param role the role to start with
      * @param c the neural network configuration
      * @return the actor for this backend
      */
-    public Address startBackend(Address joinAddress, String role,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
+    public Address startBackend(Address joinAddress,Conf c,DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker) {
 
         ActorRefUtils.addShutDownForSystem(system);
 
@@ -218,10 +217,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
                 }
 
+                log.info("Started state tracker with connection string " + stateTracker.connectionString());
+
+
                 if(finetune)
                     stateTracker.moveToFinetune();
 
-                masterAddress  = startBackend(null,"master",conf,iter,stateTracker);
+                masterAddress  = startBackend(null,conf,iter,stateTracker);
                 Thread.sleep(60000);
 
             } catch (Exception e1) {
@@ -247,7 +249,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
             //store it in zookeeper for service discovery
             conf.setMasterUrl(getMasterAddress().toString());
             conf.setMasterAbsPath(ActorRefUtils.absPath(masterActor, system));
-
+            //sets up the connection string for reference on the external worker
+            conf.setStateTrackerConnectionString(stateTracker.connectionString());
             ActorRefUtils.registerConfWithZooKeeper(conf, system);
 
 
@@ -286,11 +289,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 if(host == null)
                     throw new IllegalArgumentException("No host set for worker");
 
-                int port = this.stateTrackerPort < 1 ? HazelCastStateTracker.DEFAULT_HAZELCAST_PORT : this.stateTrackerPort;
 
-                String connectionString = host + ":" + port;
+                String connectionString = conf.getStateTrackerConnectionString();
 
-                stateTracker = new HazelCastStateTracker(connectionString,"worker",port);
+                stateTracker = new HazelCastStateTracker(connectionString);
 
             } catch (Exception e1) {
                 Thread.currentThread().interrupt();

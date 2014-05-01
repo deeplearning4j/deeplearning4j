@@ -58,6 +58,8 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected StateTracker<E> tracker;
     protected boolean isNormalizeZeroMeanAndUnitVariance;
     protected boolean scale;
+    protected boolean active;
+
 	public WorkerActor(Conf conf,StateTracker<E> tracker) {
 		this(conf,null,tracker);
 	}
@@ -101,7 +103,9 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	 * @return a UUID for this worker
 	 */
 	public String generateId() {
-		return UUID.randomUUID().toString();
+        String base = UUID.randomUUID().toString();
+        String host = System.getProperty("akka.remote.netty.tcp.hostname","localhost");
+        return host + "-" + base;
     }
 
 
@@ -116,11 +120,13 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		}
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
+        active = false;
 	}
 
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
+        active = true;
 		cluster.subscribe(getSelf(), MemberEvent.class);
 		log.info("Pre start on worker");
 
