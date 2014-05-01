@@ -49,7 +49,9 @@ public class MultiThreadedTweetOpinionMining {
         HazelCastStateTracker tracker = new HazelCastStateTracker();
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
+        c.setPretrainEpochs(10000);
         c.setFinetuneLearningRate(1e-1);
+
         c.setLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setnIn(iter.inputColumns());
         c.setUseAdaGrad(true);

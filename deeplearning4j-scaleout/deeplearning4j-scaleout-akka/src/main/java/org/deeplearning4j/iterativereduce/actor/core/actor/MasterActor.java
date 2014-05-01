@@ -4,13 +4,9 @@ import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.time.StopWatch;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.core.RunJob;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -64,8 +60,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     protected int partition = 1;
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
-    //worker received confirmations
-    protected Map<String,String> confirmations = new ConcurrentHashMap<>();
+
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
@@ -216,7 +211,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
         //block till there's an available worker
         log.info("Possible workers " + stateTracker.workers());
 
-        Job j2 = null;
+        Job j2;
 
         boolean sent = false;
         String host = System.getProperty("akka.remote.netty.tcp.hostname","localhost");
@@ -298,32 +293,12 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
         return conf;
     }
 
-    public int getEpochsComplete() {
-        return epochsComplete;
-    }
-
-    public int getPartition() {
-        return partition;
-    }
-
     public E getMasterResults() {
         return getResults();
     }
 
     public boolean isDone() {
         return isDone;
-    }
-
-
-    public ActorRef getBatchActor() {
-        return batchActor;
-    }
-
-
-
-
-    public ActorRef getMediator() {
-        return mediator;
     }
 
 
