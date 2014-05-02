@@ -73,7 +73,7 @@ public class ConvolutionalRBM extends RBM  {
 
 
         for(int i = 0; i < this.W.rows; i++)
-            this.W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
+            W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
 
 
         wAdaGrad = new AdaGrad(W.rows,W.columns);
@@ -94,7 +94,7 @@ public class ConvolutionalRBM extends RBM  {
     public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
-            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(vBias.get(0));
+            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(vBias.get(i));
             hidI.setSlice(i,slice);
 
         }
@@ -125,7 +125,8 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         DoubleMatrix I = visI.sliceElementSums().add(hBias);
-        I = sigmoid(I);
+        if(visibleType == VisibleUnit.BINARY)
+            I = sigmoid(I);
 
         Tensor ret =   new Tensor(I);
         this.eVis = ret;
@@ -142,7 +143,7 @@ public class ConvolutionalRBM extends RBM  {
         Tensor eHid = propUp(input);
         Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
         for(int i = 0; i < W.slices(); i++) {
-            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
+            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(vBias.get(i)));
         }
 
         Tensor ret = Tensor.ones(I.rows(),I.columns(),I.slices());
@@ -444,7 +445,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-    public static class Builder extends BaseNeuralNetwork.Builder<ConvolutionalRBM> {
+    public static class Builder extends RBM.Builder {
 
         protected int numFilters = 4;
         protected int[] stride = {2,2};
@@ -456,6 +457,155 @@ public class ConvolutionalRBM extends RBM  {
         public Builder() {
             this.clazz = ConvolutionalRBM.class;
 
+        }
+
+        @Override
+        public Builder withVisible(VisibleUnit visible) {
+             super.withVisible(visible);
+            return this;
+        }
+
+        @Override
+        public Builder withHidden(HiddenUnit hidden) {
+             super.withHidden(hidden);
+            return this;
+        }
+
+        @Override
+        public Builder applySparsity(boolean applySparsity) {
+             super.applySparsity(applySparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
+             super.withOptmizationAlgo(optimizationAlgo);
+            return this;
+        }
+
+        @Override
+        public Builder withLossFunction(LossFunction lossFunction) {
+             super.withLossFunction(lossFunction);
+            return this;
+        }
+
+        @Override
+        public Builder withDropOut(double dropOut) {
+             super.withDropOut(dropOut);
+            return this;
+        }
+
+        @Override
+        public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+             super.normalizeByInputRows(normalizeByInputRows);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+             super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder withDistribution(RealDistribution dist) {
+             super.withDistribution(dist);
+            return this;
+        }
+
+        @Override
+        public Builder useRegularization(boolean useRegularization) {
+             super.useRegularization(useRegularization);
+            return this;
+        }
+
+        @Override
+        public Builder fanIn(double fanIn) {
+             super.fanIn(fanIn);
+            return this;
+        }
+
+        @Override
+        public Builder withL2(double l2) {
+             super.withL2(l2);
+            return this;
+        }
+
+        @Override
+        public Builder renderWeights(int numEpochs) {
+             super.renderWeights(numEpochs);
+            return this;
+        }
+
+        @Override
+        public ConvolutionalRBM buildEmpty() {
+            return build();
+        }
+
+        @Override
+        public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
+             super.withClazz(clazz);
+            return this;
+        }
+
+        @Override
+        public Builder withSparsity(double sparsity) {
+             super.withSparsity(sparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withMomentum(double momentum) {
+             super.withMomentum(momentum);
+            return this;
+        }
+
+        @Override
+        public Builder withInput(DoubleMatrix input) {
+             super.withInput(input);
+            return this;
+        }
+
+        @Override
+        public Builder asType(Class<RBM> clazz) {
+             super.asType(clazz);
+            return this;
+        }
+
+        @Override
+        public Builder withWeights(DoubleMatrix W) {
+             super.withWeights(W);
+            return this;
+        }
+
+        @Override
+        public Builder withVisibleBias(DoubleMatrix vBias) {
+             super.withVisibleBias(vBias);
+            return this;
+        }
+
+        @Override
+        public Builder withHBias(DoubleMatrix hBias) {
+             super.withHBias(hBias);
+            return this;
+        }
+
+        @Override
+        public Builder numberOfVisible(int numVisible) {
+             super.numberOfVisible(numVisible);
+            return this;
+        }
+
+        @Override
+        public Builder numHidden(int numHidden) {
+             super.numHidden(numHidden);
+            return this;
+        }
+
+        @Override
+        public Builder withRandom(RandomGenerator gen) {
+             super.withRandom(gen);
+            return this;
         }
 
         public Builder withFilterSize(int[] filterSize) {
@@ -484,7 +634,7 @@ public class ConvolutionalRBM extends RBM  {
         }
 
 
-
+        @Override
         public ConvolutionalRBM build() {
             ConvolutionalRBM ret = (ConvolutionalRBM) super.build();
             if(filterSize == null)

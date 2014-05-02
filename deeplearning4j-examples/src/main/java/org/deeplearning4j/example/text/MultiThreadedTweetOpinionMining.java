@@ -55,6 +55,7 @@ public class MultiThreadedTweetOpinionMining {
         c.setLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setnIn(iter.inputColumns());
         c.setUseAdaGrad(true);
+        c.setNormalizeZeroMeanAndUnitVariance(true);
         //c.setRenderWeightEpochs(1000);
         c.setnOut(3);
         c.setSplit(10);
