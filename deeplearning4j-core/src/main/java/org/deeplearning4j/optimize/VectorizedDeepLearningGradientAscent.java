@@ -157,7 +157,6 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
 			xi = optimizable.getValueGradient();
 
 
-
 			if(listener != null && !calledEpochDone) {
 				listener.epochDone(iterations);
 			}

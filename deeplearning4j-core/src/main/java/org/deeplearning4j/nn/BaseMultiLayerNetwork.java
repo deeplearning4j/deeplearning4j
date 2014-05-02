@@ -31,11 +31,7 @@ import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
 
 
 /**
@@ -189,18 +185,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             initializeLayers(input);
     }
 
-    /**
-     * Returns the -fanIn to fanIn
-     * coefficient used for initializing the
-     * weights.
-     * The default is 1 / nIns
-     * @return the fan in coefficient
-     */
-    public double fanIn() {
-        if(this.fanIn < 0)
-            return 1.0 / nIns;
-        return fanIn;
-    }
+
 
     /* sanity check for hidden layer and inter layer dimensions */
     private void dimensionCheck() {
@@ -306,6 +291,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param input the input matrix for training
      */
     public void initializeLayers(DoubleMatrix input) {
+        log.info("Initializing layers with input of dims " + input.rows + " x " + input.columns);
         if(input == null)
             throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
@@ -560,8 +546,50 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
-
-
+    @Override
+    public String toString() {
+        return "BaseMultiLayerNetwork{" +
+                "nIns=" + nIns +
+                ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
+                ", nOuts=" + nOuts +
+                ", sigmoidLayers=" + Arrays.toString(sigmoidLayers) +
+                ", logLayer=" + logLayer +
+                ", rng=" + rng +
+                ", dist=" + dist +
+                ", momentum=" + momentum +
+                ", input=" + input +
+                ", labels=" + labels +
+                ", optimizer=" + optimizer +
+                ", activation=" + activation +
+                ", toDecode=" + toDecode +
+                ", l2=" + l2 +
+                ", shouldInit=" + shouldInit +
+                ", fanIn=" + fanIn +
+                ", renderWeightsEveryNEpochs=" + renderWeightsEveryNEpochs +
+                ", useRegularization=" + useRegularization +
+                ", weightTransforms=" + weightTransforms +
+                ", hiddenBiasTransforms=" + hiddenBiasTransforms +
+                ", visibleBiasTransforms=" + visibleBiasTransforms +
+                ", shouldBackProp=" + shouldBackProp +
+                ", forceNumEpochs=" + forceNumEpochs +
+                ", sparsity=" + sparsity +
+                ", columnSums=" + columnSums +
+                ", columnMeans=" + columnMeans +
+                ", columnStds=" + columnStds +
+                ", initCalled=" + initCalled +
+                ", useHiddenActivationsForwardProp=" + useHiddenActivationsForwardProp +
+                ", useAdaGrad=" + useAdaGrad +
+                ", learningRateUpdate=" + learningRateUpdate +
+                ", layers=" + Arrays.toString(layers) +
+                ", errorTolerance=" + errorTolerance +
+                ", gradientListeners=" + gradientListeners +
+                ", multiLayerGradientListeners=" + multiLayerGradientListeners +
+                ", dropOut=" + dropOut +
+                ", normalizeByInputRows=" + normalizeByInputRows +
+                ", optimizationAlgorithm=" + optimizationAlgorithm +
+                ", lossFunction=" + lossFunction +
+                '}';
+    }
 
     @Override
     public BaseMultiLayerNetwork clone() {
@@ -907,12 +935,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * network. This is used in loading from input streams, factory methods, etc
      * @param network the network to get parameters from
      */
-    protected synchronized void update(BaseMultiLayerNetwork network) {
+    protected  void update(BaseMultiLayerNetwork network) {
         if(network.layers != null && network.getnLayers() > 0) {
             this.setnLayers(network.getnLayers());
+            this.layers = new NeuralNetwork[network.getnLayers()];
             for(int i = 0; i < layers.length; i++)
-                if((this.getnLayers()) > i && (network.getnLayers() > i))
+                if((this.getnLayers()) > i && (network.getnLayers() > i)) {
+                    if(network.getLayers()[i] == null) {
+                        throw new IllegalStateException("Will not clone uninitialized network, layer " + i + " of network was null");
+                    }
+
                     this.getLayers()[i] = network.getLayers()[i].clone();
+
+                }
         }
 
         this.normalizeByInputRows = network.normalizeByInputRows;
@@ -1007,8 +1042,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     /**
      * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.CDBN}
-     * where the first layer needs to be an {@link org.deeplearning4j.rbm.CRBM} for continuous inputs.
+     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.DBN}
+     * where the first layer needs to be an {@link org.deeplearning4j.rbm.RBM} for continuous inputs.
      *
      * Please be sure to call super.initializeNetwork
      *
@@ -1428,6 +1463,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.layers = layers;
     }
 
+    public void clearInput() {
+        this.input = null;
+        for(int i = 0; i < layers.length; i++)
+            layers[i].clearInput();
+    }
+
+
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
         private E ret;
@@ -1459,6 +1501,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+
+
+
+
+
 
 
         /**

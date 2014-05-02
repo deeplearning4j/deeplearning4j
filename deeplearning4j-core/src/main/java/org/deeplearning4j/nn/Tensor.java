@@ -64,6 +64,15 @@ public class Tensor extends DoubleMatrix implements Serializable {
         this.perMatrixRows = t.perMatrixRows;
     }
 
+    public DoubleMatrix shape() {
+        DoubleMatrix ret = new DoubleMatrix(1,3);
+        ret.put(0,rows());
+        ret.put(1,columns());
+        ret.put(2,slices());
+        return ret;
+    }
+
+
 
     private Range getColIndicesForSlice() {
         return RangeUtils.all();
@@ -130,7 +139,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
           throw new IllegalArgumentException("Unable to get slice " + index + " out of bounds");
 
        try {
-           DoubleMatrix slice =  get(getRowIndicesForSlice(index),getColIndicesForSlice());
+           DoubleMatrix slice =  get(RangeUtils.interval(index,index + rows()),RangeUtils.interval(0,columns()));
            return slice;
 
        } catch(Exception e) {
@@ -145,17 +154,19 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @param slice the new slice
      */
     public void setSlice(int index,DoubleMatrix slice) {
-        if(slice.rows != rows() && slice.columns != columns()) {
-            throw new IllegalArgumentException("Slice dimension mismatch");
+        if(slice.rows != rows() || slice.columns != columns()) {
+           if(slice.rows < rows() || slice.columns < columns())
+               slice = MatrixUtil.padWithZeros(slice,rows(),columns());
+            else
+                slice = MatrixUtil.truncate(slice,rows(),columns());
+            if(slice.rows != rows() || slice.columns != columns())
+                throw new IllegalStateException("WTF IS THIS");
         }
 
-        put(getRowIndicesForSlice(index),getColIndicesForSlice(),slice);
+        put(RangeUtils.interval(index,index + rows()),RangeUtils.interval(0,slice.columns),slice);
     }
 
 
-    public void setSlice(int index,Tensor slice) {
-        setSlice(index, slice);
-    }
 
     /**
      * Clones this tensor
@@ -722,14 +733,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
     /**
-     * Rows * cols * numSlices - the total number of elements in this tensor
-     * @return rows * cols * slices
+     * The number of columns of each slice
+     * @return the number of columns of each slice
      */
-    public int numElements() {
-        return length;
-    }
-
-
     public int columns() {
         return columns;
     }

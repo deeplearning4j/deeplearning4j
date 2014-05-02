@@ -34,12 +34,7 @@ public class DrawMnistGreyScale {
 	
 	public DrawMnistGreyScale(DoubleMatrix data) {
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		WritableRaster r = img.getRaster();
-		int[] equiv = new int[data.length];
-		for(int i = 0; i < equiv.length; i++)
-			equiv[i] = (int) Math.round(data.get(i));
-		
-		r.setDataElements(0, 0, width, height, equiv);
+		this.data = data;
 
 
 	}
@@ -47,6 +42,8 @@ public class DrawMnistGreyScale {
 	public void readjustToData() {
         this.width = data.columns;
         this.height = data.rows;
+        img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
     }
 
 

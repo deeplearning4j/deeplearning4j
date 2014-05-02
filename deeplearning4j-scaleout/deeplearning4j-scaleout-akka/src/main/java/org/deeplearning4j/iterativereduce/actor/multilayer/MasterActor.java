@@ -234,6 +234,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
+
+
         if(conf.getColumnMeans() != null)
             network.setColumnMeans(conf.getColumnMeans());
         if(conf.getColumnStds() != null)
@@ -241,11 +243,21 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         UpdateableImpl masterResults = new UpdateableImpl(network);
 
+        /**
+         * Note that at this point we are storing an unitialized network.
+         *
+         *
+         */
         try {
             this.stateTracker.setCurrent(masterResults);
+            UpdateableImpl u2 = this.stateTracker.getCurrent();
+            log.info("Stored " + u2.get());
         } catch (Exception e1) {
             throw new RuntimeException(e1);
         }
+
+
+
 
 
         //after worker is instantiated broadcast the master network to the worker

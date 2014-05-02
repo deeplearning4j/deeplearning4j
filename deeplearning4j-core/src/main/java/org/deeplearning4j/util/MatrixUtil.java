@@ -58,6 +58,27 @@ public class MatrixUtil {
     }
 
 
+    /**
+     * Truncates a matrix down to size rows x columns
+     * @param toTruncate the matrix to truncate
+     * @param rows the rows to reduce to
+     * @param columns the columns to reduce to
+     * @return a subset of the old matrix
+     * with the specified dimensions
+     */
+    public static DoubleMatrix truncate(DoubleMatrix toTruncate,int rows,int columns) {
+        if(rows >= toTruncate.rows && columns >= toTruncate.columns || rows < 1 || columns < 1)
+            return toTruncate;
+
+        DoubleMatrix ret = new DoubleMatrix(rows,columns);
+        for(int i = 0; i < rows; i++) {
+            for(int j = 0; j < columns; j++) {
+                ret.put(i,j,toTruncate.get(i,j));
+            }
+        }
+        return ret;
+    }
+
 
     /** Generate a new matrix which has the given number of replications of this. */
     public static ComplexDoubleMatrix repmat(ComplexDoubleMatrix matrix,int rowMult, int columnMult) {

@@ -40,6 +40,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     protected LossFunction lossFunction;
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected double maxStep = -1;
+    protected int numParams = -1;
     /**
      *
      * @param network
@@ -73,6 +74,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
             createOptimizationAlgorithm();
         }
 
+        network.setInput(x);
         int epochs =  extraParams.length < 3 ? 1000 : (int) extraParams[2];
         opt.setMaxIterations(epochs);
         opt.optimize(epochs);
@@ -100,7 +102,12 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
     @Override
     public int getNumParameters() {
-        return network.getW().length + network.gethBias().length + network.getvBias().length;
+        if(numParams < 0) {
+            numParams = network.getW().length + network.gethBias().length + network.getvBias().length;
+            return numParams;
+        }
+
+        return numParams;
     }
 
 
@@ -205,7 +212,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     }
     @Override
     public DoubleMatrix getValueGradient() {
-        double[] d = new double[this.getNumParameters()];
+        double[] d = new double[getNumParameters()];
         getValueGradient(d);
         return new DoubleMatrix(d);
     }
