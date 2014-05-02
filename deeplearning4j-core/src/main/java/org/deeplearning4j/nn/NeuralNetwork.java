@@ -38,6 +38,16 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD
 	}
 
+    /**
+     * Clears the input from the neural net
+     */
+    public void clearInput();
+
+    /**
+     * Whether to cache the input at training time
+     * @return true if the input should be cached at training time otherwise false
+     */
+    public boolean cacheInput();
 
     /**
      * Backprop with the output being the reconstruction

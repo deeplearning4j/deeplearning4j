@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.hazelcast.config.*;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
@@ -14,10 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.ListConfig;
-import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
@@ -326,7 +323,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
             return false;
         }
 
-        r.set(j.clone());
+        r.set(j);
 
         //iterate over jobs without the work/data
         j.setWork(null);
@@ -363,7 +360,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         }
 
         IAtomicReference<Job> jRef = h.getAtomicReference("job-" + j.getWorkerId());
-        jRef.destroy();
+        jRef.clear();
         log.info("Destroyed job ref " + j.getWorkerId());
         jobs.remove(j);
 
@@ -396,7 +393,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     @Override
     public  void setCurrent(UpdateableImpl e) throws Exception {
-        this.master.set(e.clone());
+        this.master.set(e);
     }
 
 

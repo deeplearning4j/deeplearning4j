@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Convolution;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.ranges.RangeUtils;
@@ -38,15 +39,22 @@ public class ConvolutionalRBM extends RBM  {
     //bottom up signal from visibles to hiddens
     private Tensor hidI;
     private Tensor W;
+    //overlapping pixels
     private int[] stride = {2,2};
+    //visible layer size
     protected int[] visibleSize;
+
     protected int[] filterSize;
+    //feature map sizes
     protected int[] fmSize;
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
-
+    protected DoubleMatrix chainStart;
     //cache last propup/propdown
     protected Tensor eVis,eHid;
+    protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
+    protected double sparseGain = 5;
+    public int wRows = 0,wCols = 0,wSlices = 0;
 
     protected ConvolutionalRBM() {}
 
@@ -65,11 +73,18 @@ public class ConvolutionalRBM extends RBM  {
         if(convolutionInitCalled)
             return;
         W = new Tensor(filterSize[0],filterSize[1],numFilters);
+        wRows = W.rows();
+        wCols = W.columns();
+        wSlices = W.slices();
         visI = Tensor.zeros(visibleSize[0],visibleSize[1],numFilters);
         hidI = Tensor.zeros(fmSize[0],fmSize[1],numFilters);
         convolutionInitCalled = true;
-        vBias = DoubleMatrix.zeros(numFilters);
-        hBias = DoubleMatrix.zeros(1);
+        vBias = DoubleMatrix.zeros(1);
+        hBias = DoubleMatrix.zeros(numFilters);
+
+        double fanIn = visibleSize[0] * visibleSize[1];
+        double fanOut = fanIn * 9;
+        double range = Math.sqrt(6 / (fanIn + fanOut));
 
 
         for(int i = 0; i < this.W.rows; i++)
@@ -79,6 +94,9 @@ public class ConvolutionalRBM extends RBM  {
         wAdaGrad = new AdaGrad(W.rows,W.columns);
         vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
         hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
+        convolutionInitCalled = true;
+        //dont normalize by input rows here, the batch size can only be 1
+        this.normalizeByInputRows = false;
     }
 
 
@@ -94,8 +112,9 @@ public class ConvolutionalRBM extends RBM  {
     public Tensor propUp(DoubleMatrix v) {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
-            DoubleMatrix slice =  conv2d(v, reversedSlice, VALID).add(vBias.get(i));
-            hidI.setSlice(i,slice);
+            //a bias for each hidden unit
+            DoubleMatrix slice = MatrixUtil.padWithZeros(conv2d(v, reversedSlice, VALID).add(hBias.get(i)),hidI.rows(),hidI.columns());
+            hidI.setSlice(i, slice);
 
         }
 
@@ -103,6 +122,7 @@ public class ConvolutionalRBM extends RBM  {
 
         Tensor eHid = expHidI.div(pool(expHidI).add(1));
         this.eHid = eHid;
+
         return eHid;
     }
 
@@ -120,11 +140,11 @@ public class ConvolutionalRBM extends RBM  {
             /*
                Each tensor only has one slice, need to figure out what's going on here
              */
-            DoubleMatrix conv = conv2d(h1.getSlice(i), W.getSlice(i),FULL);
-            visI.setSlice(i,conv);
+            //all hidden units each have a bias
+            visI.setSlice(i,conv2d(h1.getSlice(i), W.getSlice(i),FULL));
         }
 
-        DoubleMatrix I = visI.sliceElementSums().add(hBias);
+        DoubleMatrix I = visI.sliceElementSums().add(vBias);
         if(visibleType == VisibleUnit.BINARY)
             I = sigmoid(I);
 
@@ -143,7 +163,7 @@ public class ConvolutionalRBM extends RBM  {
         Tensor eHid = propUp(input);
         Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
         for(int i = 0; i < W.slices(); i++) {
-            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(vBias.get(i)));
+            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
         }
 
         Tensor ret = Tensor.ones(I.rows(),I.columns(),I.slices());
@@ -153,6 +173,83 @@ public class ConvolutionalRBM extends RBM  {
         ret.subi(sub);
         return ret;
     }
+
+
+    /**
+     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     * @param gradient the gradient to modify
+     * @param learningRate the learning rate for the current iteratiaon
+     */
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
+        DoubleMatrix wGradient = gradient.getwGradient();
+
+        DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
+        DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
+        DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
+        if (useAdaGrad)
+            wGradient.muli(wLearningRates);
+        else
+            wGradient.muli(learningRate);
+
+        if (useAdaGrad)
+            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(momentum));
+        else
+            hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(momentum));
+
+
+        if (useAdaGrad)
+            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(momentum));
+        else
+            vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(momentum));
+
+
+
+        //only do this with binary hidden layers
+        if (applySparsity && this.hBiasGradient != null)
+            applySparsity(hBiasGradient, learningRate);
+
+        if (momentum != 0 && this.wGradient != null)
+            wGradient.addi(this.wGradient.mul(momentum).add(wGradient.mul(1 - momentum)));
+
+
+        if(momentum != 0 && this.vBiasGradient != null)
+            vBiasGradient.addi(this.vBiasGradient.mul(momentum).add(vBiasGradient.mul(1 - momentum)));
+
+        if(momentum != 0 && this.hBiasGradient != null)
+            hBiasGradient.addi(this.hBiasGradient.mul(momentum).add(hBiasGradient.mul(1 - momentum)));
+
+
+        if(useRegularization) {
+            if(l2 > 0) {
+                DoubleMatrix penalized = W.mul(l2);
+                if(useAdaGrad)
+                    penalized.muli(wAdaGrad.getLearningRates(wGradient));
+                else
+                    penalized.muli(learningRate);
+
+
+
+
+                wGradient.subi(penalized);
+
+            }
+
+        }
+
+
+        if (normalizeByInputRows) {
+            wGradient.divi(lastMiniBatchSize);
+            vBiasGradient.divi(lastMiniBatchSize);
+            hBiasGradient.divi(lastMiniBatchSize);
+        }
+
+        this.wGradient = wGradient;
+        this.vBiasGradient = vBiasGradient;
+        this.hBiasGradient = hBiasGradient;
+
+    }
+
+
 
     /**
      * Pooled expectations of I by summing over blocks of alpha
@@ -229,6 +326,8 @@ public class ConvolutionalRBM extends RBM  {
      */
     @Override
     public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+
+
         Tensor h1Mean = propUp(v);
         Tensor h1Sample = new Tensor(binomial(h1Mean, 1, rng));
         //apply dropout
@@ -338,7 +437,7 @@ public class ConvolutionalRBM extends RBM  {
 		 * Start the gibbs sampling.
 		 */
         Tensor chainStart = propUp(input);
-
+        this.chainStart = chainStart;
 
 
 		/*
@@ -369,81 +468,45 @@ public class ConvolutionalRBM extends RBM  {
 
 
 
-
         DoubleMatrix vBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
         DoubleMatrix  hBiasGradient = DoubleMatrix.scalar((input.sub(nvSamples)).columnSums().sum());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
+
         updateGradientAccordingToParams(ret, learningRate);
         triggerGradientEvents(ret);
+
+
+
 
         return ret;
     }
 
-
     /**
-     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
-     * @param gradient the gradient to modify
-     * @param learningRate the learning rate for the current iteratiaon
+     * Applies sparsity to the passed in hbias gradient
+     *
+     * @param hBiasGradient the hbias gradient to apply to
+     * @param learningRate  the learning rate used
      */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
-        DoubleMatrix wGradient = gradient.getwGradient();
-        DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
-        DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
-        DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
-        if (useAdaGrad)
-            wGradient.muli(wLearningRates);
-        else
-            wGradient.muli(learningRate);
+    @Override
+    protected void applySparsity(DoubleMatrix hBiasGradient, double learningRate) {
+        // dcSparse = self.lRate*self.sparseGain*(squeeze(self.sparsity -mean(mean(self.eHid0))));
+        //self.c = self.c + dcSparse;
+        if(sparsity != 0) {
+            DoubleMatrix negMean = DoubleMatrix.scalar(sparseGain * (sparsity -chainStart.columnMeans().mean()));
+            if(useAdaGrad)
+                negMean.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
+            else
+                negMean.muli(learningRate);
 
-        if (useAdaGrad)
-            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(momentum));
-        else
-            hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(momentum));
+            hBias.addi(negMean);
 
 
-        if (useAdaGrad)
-            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(momentum));
-        else
-            vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(momentum));
-
-
-
-        //only do this with binary hidden layers
-        if (applySparsity)
-            applySparsity(hBiasGradient, learningRate);
-
-        if (momentum != 0) {
-            DoubleMatrix change = wGradient.mul(momentum).add(wGradient.mul(1 - momentum));
-            wGradient.addi(change);
 
         }
-
-        if(useRegularization) {
-            if(l2 > 0) {
-                DoubleMatrix penalized = W.mul(l2);
-                if(useAdaGrad)
-                    penalized.muli(wAdaGrad.getLearningRates(wGradient));
-                else
-                    penalized.muli(learningRate);
-
-                wGradient.subi(penalized);
-
-            }
-
-        }
-
-
-        if (normalizeByInputRows) {
-            wGradient.divi(input.rows);
-            vBiasGradient.divi(input.rows);
-            hBiasGradient.divi(input.rows);
-        }
-
     }
-
 
     public static class Builder extends RBM.Builder {
 
@@ -452,88 +515,94 @@ public class ConvolutionalRBM extends RBM  {
         protected int[] visibleSize;
         protected int[] filterSize;
         protected int[] fmSize;
-
+        protected double sparseGain = 5;
 
         public Builder() {
             this.clazz = ConvolutionalRBM.class;
 
         }
 
+
+        public Builder withSparseGain(double sparseGain) {
+            this.sparseGain = sparseGain;
+            return this;
+        }
+
         @Override
         public Builder withVisible(VisibleUnit visible) {
-             super.withVisible(visible);
+            super.withVisible(visible);
             return this;
         }
 
         @Override
         public Builder withHidden(HiddenUnit hidden) {
-             super.withHidden(hidden);
+            super.withHidden(hidden);
             return this;
         }
 
         @Override
         public Builder applySparsity(boolean applySparsity) {
-             super.applySparsity(applySparsity);
+            super.applySparsity(applySparsity);
             return this;
         }
 
         @Override
         public Builder withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
-             super.withOptmizationAlgo(optimizationAlgo);
+            super.withOptmizationAlgo(optimizationAlgo);
             return this;
         }
 
         @Override
         public Builder withLossFunction(LossFunction lossFunction) {
-             super.withLossFunction(lossFunction);
+            super.withLossFunction(lossFunction);
             return this;
         }
 
         @Override
         public Builder withDropOut(double dropOut) {
-             super.withDropOut(dropOut);
+            super.withDropOut(dropOut);
             return this;
         }
 
         @Override
         public Builder normalizeByInputRows(boolean normalizeByInputRows) {
-             super.normalizeByInputRows(normalizeByInputRows);
+            super.normalizeByInputRows(normalizeByInputRows);
             return this;
         }
 
         @Override
         public Builder useAdaGrad(boolean useAdaGrad) {
-             super.useAdaGrad(useAdaGrad);
+            super.useAdaGrad(useAdaGrad);
             return this;
         }
 
         @Override
         public Builder withDistribution(RealDistribution dist) {
-             super.withDistribution(dist);
+            super.withDistribution(dist);
             return this;
         }
 
         @Override
         public Builder useRegularization(boolean useRegularization) {
-             super.useRegularization(useRegularization);
+            super.useRegularization(useRegularization);
             return this;
         }
 
         @Override
         public Builder fanIn(double fanIn) {
-             super.fanIn(fanIn);
+            super.fanIn(fanIn);
             return this;
         }
 
         @Override
         public Builder withL2(double l2) {
-             super.withL2(l2);
+            super.withL2(l2);
             return this;
         }
 
         @Override
         public Builder renderWeights(int numEpochs) {
-             super.renderWeights(numEpochs);
+            super.renderWeights(numEpochs);
             return this;
         }
 
@@ -544,67 +613,67 @@ public class ConvolutionalRBM extends RBM  {
 
         @Override
         public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
-             super.withClazz(clazz);
+            super.withClazz(clazz);
             return this;
         }
 
         @Override
         public Builder withSparsity(double sparsity) {
-             super.withSparsity(sparsity);
+            super.withSparsity(sparsity);
             return this;
         }
 
         @Override
         public Builder withMomentum(double momentum) {
-             super.withMomentum(momentum);
+            super.withMomentum(momentum);
             return this;
         }
 
         @Override
         public Builder withInput(DoubleMatrix input) {
-             super.withInput(input);
+            super.withInput(input);
             return this;
         }
 
         @Override
         public Builder asType(Class<RBM> clazz) {
-             super.asType(clazz);
+            super.asType(clazz);
             return this;
         }
 
         @Override
         public Builder withWeights(DoubleMatrix W) {
-             super.withWeights(W);
+            super.withWeights(W);
             return this;
         }
 
         @Override
         public Builder withVisibleBias(DoubleMatrix vBias) {
-             super.withVisibleBias(vBias);
+            super.withVisibleBias(vBias);
             return this;
         }
 
         @Override
         public Builder withHBias(DoubleMatrix hBias) {
-             super.withHBias(hBias);
+            super.withHBias(hBias);
             return this;
         }
 
         @Override
         public Builder numberOfVisible(int numVisible) {
-             super.numberOfVisible(numVisible);
+            super.numberOfVisible(numVisible);
             return this;
         }
 
         @Override
         public Builder numHidden(int numHidden) {
-             super.numHidden(numHidden);
+            super.numHidden(numHidden);
             return this;
         }
 
         @Override
         public Builder withRandom(RandomGenerator gen) {
-             super.withRandom(gen);
+            super.withRandom(gen);
             return this;
         }
 
@@ -643,6 +712,7 @@ public class ConvolutionalRBM extends RBM  {
                 throw new IllegalStateException("Please specify a viisble size");
             ret.numFilters = numFilters;
             ret.stride = stride;
+            ret.sparseGain = sparseGain;
             fmSize = new int[2];
             fmSize[0] = visibleSize[0] - filterSize[0] + 1;
             fmSize[1] = visibleSize[1] - filterSize[1] + 1;

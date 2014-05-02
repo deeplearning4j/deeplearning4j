@@ -227,6 +227,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
                     stateTracker.addJobToCurrent(j2);
                     log.info("Delegated work to worker " + s + " with size " + work.size());
                     sent = true;
+                    work = null;
                     break;
 
                 }
