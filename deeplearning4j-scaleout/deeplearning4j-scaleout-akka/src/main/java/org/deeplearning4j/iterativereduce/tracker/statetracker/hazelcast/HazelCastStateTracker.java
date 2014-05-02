@@ -95,8 +95,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
      */
     @Override
     public void addReplicate(String workerId) {
-         if(!replicate.contains(workerId))
-             replicate.add(workerId);
+        if(!replicate.contains(workerId))
+            replicate.add(workerId);
     }
 
     /**
@@ -425,6 +425,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     @Override
     public Job jobFor(String id) {
         IAtomicReference<Job> j = h.getAtomicReference("job-" + id);
+        if(j.isNull())
+            return null;
         return j.get();
     }
 

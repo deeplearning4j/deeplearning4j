@@ -15,6 +15,7 @@ public class DrawMnistGreyScale {
 
 	public  JFrame frame;
 	BufferedImage img;
+    private DoubleMatrix data;
 	private int width = 28;
 	private int height = 28;
 	public String title = "TEST";
@@ -24,14 +25,9 @@ public class DrawMnistGreyScale {
 	
 	public DrawMnistGreyScale(DoubleMatrix data,int heightOffset,int widthOffset) {
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		this.heightOffset = heightOffset;
+	    this.data = data;
+        this.heightOffset = heightOffset;
 		this.widthOffset = widthOffset;
-		WritableRaster r = img.getRaster();
-		int[] equiv = new int[data.length];
-		for(int i = 0; i < equiv.length; i++)
-			equiv[i] = (int) Math.round(data.get(i));
-		
-		r.setDataElements(0, 0, width, height, equiv);
 
 
 	}
@@ -48,9 +44,23 @@ public class DrawMnistGreyScale {
 
 	}
 
-	
+	public void readjustToData() {
+        this.width = data.columns;
+        this.height = data.rows;
+    }
+
+
 	public void draw() {
-		frame = new JFrame(title);
+        WritableRaster r = img.getRaster();
+        int[] equiv = new int[data.length];
+        for(int i = 0; i < equiv.length; i++)
+            equiv[i] = (int) Math.round(data.get(i));
+
+        r.setDataElements(0, 0, width, height, equiv);
+
+
+
+        frame = new JFrame(title);
 		frame.setVisible(true);
 		start();
 		frame.add(new JLabel(new ImageIcon(getImage())));

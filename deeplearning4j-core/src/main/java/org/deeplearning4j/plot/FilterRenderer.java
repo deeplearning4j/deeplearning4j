@@ -373,7 +373,7 @@ public class FilterRenderer {
      * @throws Exception
      *
      */
-    public void renderFilters( DoubleMatrix data, String filename, int patchWidth, int patchHeight ) throws Exception {
+    public BufferedImage renderFilters( DoubleMatrix data, String filename, int patchWidth, int patchHeight ) throws Exception {
 
         int[] equiv = new int[ data.getColumn(0).length  ];
 
@@ -492,7 +492,7 @@ public class FilterRenderer {
             throw new RuntimeException(e);
         }
 
-
+        return img;
 
     }
 
