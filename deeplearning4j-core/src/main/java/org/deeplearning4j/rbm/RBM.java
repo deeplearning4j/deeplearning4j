@@ -75,7 +75,7 @@ public class RBM extends BaseNeuralNetwork {
      * @param input
      */
     public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
-        if(input != null)
+        if(input != null && cacheInput)
             this.input = input;
         if(visibleType == VisibleUnit.GAUSSIAN)
             this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
@@ -100,8 +100,9 @@ public class RBM extends BaseNeuralNetwork {
      * @param input the input to sample from
      */
     public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
-        if(input != null)
+        if(input != null && cacheInput)
             this.input = input;
+        this.lastMiniBatchSize = input.rows;
         NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate});
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
@@ -213,7 +214,7 @@ public class RBM extends BaseNeuralNetwork {
      * Lower energy models have higher probability
      * of activations
      * @param visibleSample the sample to test on
-     * @return the free engery for this sample
+     * @return the free energy for this sample
      */
     public double freeEnergy(DoubleMatrix visibleSample) {
         DoubleMatrix wxB = visibleSample.mmul(W).addRowVector(hBias);
@@ -361,13 +362,36 @@ public class RBM extends BaseNeuralNetwork {
     @Override
     public void trainTillConvergence(DoubleMatrix input, double lr,
                                      Object[] params) {
-        if(input != null)
+        if(input != null && cacheInput)
             this.input = input;
-        if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+        this.lastMiniBatchSize = input.rows;
+
+        if(visibleType == VisibleUnit.GAUSSIAN) {
+            this.sigma = MatrixUtil.columnVariance(input);
+            if(normalizeByInputRows)
+                this.sigma.divi(input.rows);
+        }
 
         optimizer = new RBMOptimizer(this, lr, params, optimizationAlgo, lossFunction);
         optimizer.train(input);
+    }
+
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(" W dims " + W.rows + " x " + W.columns + "\n");
+        builder.append("Visible bias dims " + vBias.rows + " x "  + vBias.columns + "\n");
+        builder.append("Hidden bias dims "  + hBias.rows + " x " + hBias.columns + "\n");
+        builder.append("Conf: \n" + " Adagrad " + isUseAdaGrad() + " Regularization " + isUseRegularization() + "\n");
+        builder.append("Visible units " + visibleType.toString() + " Hidden units " + hiddenType.toString() + "\n");
+        builder.append("L2 " + l2 + " Momentum " + momentum + " Sparsity " + sparsity);
+        return builder.toString();
+
+
+
+
+
     }
 
     @Override

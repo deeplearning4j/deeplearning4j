@@ -4,6 +4,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.distributions.Distributions;
@@ -34,36 +35,62 @@ public class MnistConvNet {
     public static void main(String[] args) throws Exception {
         RandomGenerator gen = new MersenneTwister(123);
 
-        int rows = 7;
-        int cols = 7;
+        int rows = 28;
+        int cols = 28;
 
+        double fanIn = 28 * 28;
+        double abs = Math.sqrt(6 / fanIn);
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{rows, cols})
-                .withNumFilters(9).withStride(new int[]{2, 2}).withVisible(RBM.VisibleUnit.BINARY)
-                .withVisibleSize(new int[]{28,28})
-                .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .Builder().withFilterSize(new int[]{20,20}).useAdaGrad(true)
+                .withNumFilters(9).withStride(new int[]{2, 2}).renderWeights(10)
+                .withVisibleSize(new int[]{rows,cols}).withVisible(RBM.VisibleUnit.GAUSSIAN)
+                .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT).withRandom(gen)
+                .withSparsity(5e-2).withSparseGain(5).withDistribution(Distributions.uniform(gen,abs))
                 .numberOfVisible(28).numHidden(28)
-                .withMomentum(0.5)
+                .withMomentum(0)
                 .build();
 
 
         //batches of 10, 60000 examples total
         DataSetIterator iter = new MnistDataSetIterator(1,10);
+        //DataSetIterator iter = new LFWDataSetIterator(1,150000,rows,cols);
+
+        for(int i = 0; i < 10 ;i++) {
+            while(iter.hasNext()) {
+                DataSet next = iter.next();
+                next.scale();
+                log.info("Len " + next.getFirst().length);
+                log.info("This is a " + next.labelDistribution());
+                DoubleMatrix reshape = next.getFirst().reshape(rows,cols);
+                Tensor W = (Tensor) r.getW();
+                log.info("W shape " + W.shape());
+                r.trainTillConvergence(reshape, 5e-1, new Object[]{1, 5e-1, 20});
+
+
+            }
+
+
+
+
+
+
+
+            iter.reset();
+        }
+
+
+        iter.reset();
+
         for(int i = 0; i < 10 ;i++) {
             while(iter.hasNext()) {
                 DataSet next = iter.next();
                 log.info("This is a " + next.labelDistribution());
-                DoubleMatrix reshape = next.getFirst().reshape(28,28);
-                for(int j = 0; j < 10; j++)
-                    r.train(reshape, 1e-2, new Object[]{1, 1e-2, 20});
 
-
-                Tensor reshapePool = r.poolGivenVis(reshape);
-
+                Tensor reshapePool = r.propUp(next.getFirst());
+                DoubleMatrix reshapedHidden = reshapePool.reshape(reshapePool.rows() * reshapePool.columns(),reshapePool.slices());
                 drawFilters(r,rows,cols);
                 //drawSample(r,rows,cols,reshape);
-                for(int j = 0; j < reshapePool.slices(); j++)
-                    drawSample(r,reshapePool.getSlice(j).rows,reshapePool.getSlice(j).columns,reshapePool.getSlice(j));
+                drawSample(r,reshapedHidden.rows,reshapedHidden.columns,reshapedHidden);
 
 
             }
@@ -81,7 +108,6 @@ public class MnistConvNet {
 
 
 
-
     }
 
 
@@ -89,8 +115,7 @@ public class MnistConvNet {
     public static void drawSample(ConvolutionalRBM r,int rows, int cols,DoubleMatrix input) throws Exception {
 
         DoubleMatrix draw = input.dup();
-        draw.muli(255);
-        DrawMnistGreyScale greyScale = new DrawMnistGreyScale(input,input.rows,input.columns);
+        DrawMnistGreyScale greyScale = new DrawMnistGreyScale(input);
         greyScale.readjustToData();
         greyScale.draw();
 

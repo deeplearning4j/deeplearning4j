@@ -44,7 +44,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     private static final long serialVersionUID = -7074102204433996574L;
     /* Number of visible inputs */
-    public int nVisible;
+    protected int nVisible;
     /**
      * Number of hidden units
      * One tip with this is usually having
@@ -94,8 +94,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected OptimizationAlgorithm optimizationAlgo;
     protected LossFunction lossFunction;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
+    //cache input when training?
+    protected boolean cacheInput;
+    //previous gradient used for updates
+    protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
 
-
+    protected int lastMiniBatchSize = 1;
 
     protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
@@ -158,7 +162,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
-
+    /**
+     * Whether to cache the input at training time
+     *
+     * @return true if the input should be cached at training time otherwise false
+     */
+    @Override
+    public boolean cacheInput() {
+        return cacheInput;
+    }
 
     @Override
     public double l2RegularizedCoefficient() {
@@ -272,33 +284,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.fanIn = fanIn;
     }
 
-
-    public void jostleWeighMatrix() {
-		/*
-		 * Initialize based on the number of visible units..
-		 * The lower bound is called the fan in
-		 * The outer bound is called the fan out.
-		 * 
-		 * Below's advice works for Denoising AutoEncoders and other 
-		 * neural networks you will use due to the same baseline guiding principles for
-		 * both RBMs and Denoising Autoencoders.
-		 * 
-		 * Hinton's Guide to practical RBMs:
-		 * The weights are typically initialized to small random values chosen from a zero-mean Gaussian with
-		 * a standard deviation of about 0.01. Using larger random values can speed the initial learning, but
-		 * it may lead to a slightly worse final model. Care should be taken to ensure that the initial weight
-		 * values do not allow typical visible vectors to drive the hidden unit probabilities very close to 1 or 0
-		 * as this significantly slows the learning.
-		 */
-
-        DoubleMatrix W = DoubleMatrix.zeros(nVisible,nHidden);
-        for(int i = 0; i < this.W.rows; i++)
-            W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
-
-
-
-
-    }
 
 
     /**
@@ -426,6 +411,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
         DoubleMatrix wGradient = gradient.getwGradient();
+
+        if(this.wGradient != null && (wGradient.rows != this.wGradient.rows || wGradient.columns != this.wGradient.columns))
+            log.warn("This is weird");
+
         DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
         DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
         DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
@@ -448,14 +437,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
         //only do this with binary hidden layers
-        if (applySparsity)
+        if (applySparsity && this.hBiasGradient != null)
             applySparsity(hBiasGradient, learningRate);
 
-        if (momentum != 0) {
-            DoubleMatrix change = wGradient.mul(momentum).add(wGradient.mul(1 - momentum));
-            wGradient.addi(change);
+        if (momentum != 0 && this.wGradient != null)
+            wGradient.addi(this.wGradient.mul(momentum).add(wGradient.mul(1 - momentum)));
 
-        }
+
+        if(momentum != 0 && this.vBiasGradient != null)
+            vBiasGradient.addi(this.vBiasGradient.mul(momentum).add(vBiasGradient.mul(1 - momentum)));
+
+        if(momentum != 0 && this.hBiasGradient != null)
+            hBiasGradient.addi(this.hBiasGradient.mul(momentum).add(hBiasGradient.mul(1 - momentum)));
+
 
         if(useRegularization) {
             if(l2 > 0) {
@@ -463,7 +457,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 if(useAdaGrad)
                     penalized.muli(wAdaGrad.getLearningRates(wGradient));
                 else
-                     penalized.muli(learningRate);
+                    penalized.muli(learningRate);
+
+
+
 
                 wGradient.subi(penalized);
 
@@ -473,10 +470,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
         if (normalizeByInputRows) {
-            wGradient.divi(input.rows);
-            vBiasGradient.divi(input.rows);
-            hBiasGradient.divi(input.rows);
+            wGradient.divi(lastMiniBatchSize);
+            vBiasGradient.divi(lastMiniBatchSize);
+            hBiasGradient.divi(lastMiniBatchSize);
         }
+
+        this.wGradient = wGradient;
+        this.vBiasGradient = vBiasGradient;
+        this.hBiasGradient = hBiasGradient;
 
     }
 
@@ -494,7 +495,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-
+    /**
+     * Clears the input from the neural net
+     */
+    @Override
+    public void clearInput() {
+        this.input = null;
+    }
 
     @Override
     public void setDropOut(double dropOut) {
@@ -625,6 +632,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.vBiasAdaGrad = n.vBiasAdaGrad;
         this.optimizationAlgo = n.optimizationAlgo;
         this.lossFunction = n.lossFunction;
+        this.cacheInput = n.cacheInput;
     }
 
     /**
@@ -993,7 +1001,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private boolean cacheInput = true;
 
+        public Builder<E> cacheInput(boolean cacheInput) {
+            this.cacheInput = cacheInput;
+            return this;
+        }
 
         public Builder<E> applySparsity(boolean applySparsity) {
             this.applySparsity = applySparsity;
@@ -1135,6 +1148,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
                     try {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
+                        ret.cacheInput = cacheInput;
                         ret.sparsity = this.sparsity;
                         ret.applySparsity = this.applySparsity;
                         ret.normalizeByInputRows = this.normalizeByInputRows;

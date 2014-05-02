@@ -72,12 +72,13 @@ public class NeuralNetPlotter implements Serializable {
         FilterRenderer render = new FilterRenderer();
         try {
             if(network.getW() instanceof Tensor) {
-                Tensor w = (Tensor) network.getW();
-                render.renderFilters(network.getW(), "currimg.png", (int)Math.sqrt(network.getW().rows / w.slices()) , (int) Math.sqrt( network.getW().rows / w.slices()));
+                Tensor w = (Tensor) network.getW().dup();
+                DoubleMatrix render2 = w.reshape(w.rows() * w.columns(),w.slices());
+                render.renderFilters(render2, "currimg.png", w.columns() , w.rows());
 
             }
             else
-                render.renderFilters(network.getW(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows));
+                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows));
 
 
         } catch (Exception e) {

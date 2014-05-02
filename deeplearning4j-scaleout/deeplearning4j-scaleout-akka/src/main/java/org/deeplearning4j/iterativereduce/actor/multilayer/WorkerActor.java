@@ -250,10 +250,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
     @Override
     public  UpdateableImpl compute() {
         log.info("Training network");
-        BaseMultiLayerNetwork network = this.getNetwork();
+        BaseMultiLayerNetwork network = getNetwork();
         isWorking = true;
         while(network == null) {
             try {
+                //note that this always returns a copy
                 network = tracker.getCurrent().get();
                 this.network = network;
                 log.info("Network is currently null");
@@ -314,6 +315,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         try {
             if(currentJob != null) {
                 tracker.clearJob(currentJob);
+
+                currentJob = null;
                 log.info("Clearing job for worker " + id);
             }
         } catch (Exception e) {

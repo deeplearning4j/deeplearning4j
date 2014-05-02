@@ -207,6 +207,10 @@ public class TfidfVectorizer implements TextVectorizer {
             data.add(vectorize(sentenceIterator.nextSentence(), sentenceIterator.currentLabel()));
         }
 
+        tf.clear();
+        idf.clear();
+        tfIdfWeights.clear();
+        allWords().clear();
         return DataSet.merge(data);
     }
 
