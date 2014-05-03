@@ -113,7 +113,7 @@ public class ConvolutionalRBM extends RBM  {
         for(int i = 0; i < numFilters; i++) {
             DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
             //a bias for each hidden unit
-            DoubleMatrix slice = MatrixUtil.padWithZeros(conv2d(v, reversedSlice, VALID).add(hBias.get(i)),hidI.rows(),hidI.columns());
+            DoubleMatrix slice = sigmoid(conv2d(v, reversedSlice, VALID).add(hBias.get(i)));
             hidI.setSlice(i, slice);
 
         }
@@ -141,7 +141,7 @@ public class ConvolutionalRBM extends RBM  {
                Each tensor only has one slice, need to figure out what's going on here
              */
             //all hidden units each have a bias
-            visI.setSlice(i,conv2d(h1.getSlice(i), W.getSlice(i),FULL));
+            visI.setSlice(i,sigmoid(conv2d(h1.getSlice(i), W.getSlice(i),FULL)));
         }
 
         DoubleMatrix I = visI.sliceElementSums().add(vBias);
