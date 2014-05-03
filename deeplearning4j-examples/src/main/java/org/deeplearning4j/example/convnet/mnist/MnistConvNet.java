@@ -41,7 +41,8 @@ public class MnistConvNet {
         double fanIn = 28 * 28;
         double abs = Math.sqrt(6 / fanIn);
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{20,20}).useAdaGrad(true)
+                .Builder().withFilterSize(new int[]{7,7}).useAdaGrad(true)
+                .useRegularization(true).withL2(1e-2)
                 .withNumFilters(9).withStride(new int[]{2, 2}).renderWeights(10)
                 .withVisibleSize(new int[]{rows,cols}).withVisible(RBM.VisibleUnit.GAUSSIAN)
                 .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT).withRandom(gen)
@@ -58,7 +59,6 @@ public class MnistConvNet {
         for(int i = 0; i < 10 ;i++) {
             while(iter.hasNext()) {
                 DataSet next = iter.next();
-                next.scale();
                 log.info("Len " + next.getFirst().length);
                 log.info("This is a " + next.labelDistribution());
                 DoubleMatrix reshape = next.getFirst().reshape(rows,cols);
