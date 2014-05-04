@@ -119,7 +119,31 @@ public class MatrixUtil {
         return result;
     }
 
+    public static DoubleMatrix shape(DoubleMatrix d) {
+        return new DoubleMatrix(new double[]{d.rows,d.columns});
+    }
 
+    public static DoubleMatrix size(DoubleMatrix d) {
+        return shape(d);
+    }
+
+
+    public static DoubleMatrix downSample(DoubleMatrix d,DoubleMatrix scale) {
+        DoubleMatrix shape = size(d);
+
+        DoubleMatrix idx = new DoubleMatrix(shape.length,1);
+
+
+        for(int i = 0; i < shape.length; i++) {
+            DoubleMatrix tmp = DoubleMatrix.zeros((int) shape.get(i) * (int) scale.get(i),1);
+
+            Range r1 = RangeUtils.interval(0,(int) scale.get(i));
+            Range r2 = RangeUtils.interval((int) shape.get(i),(int)scale.get(i));
+            tmp.put(toIndices(r1),toIndices(r2),1.0);
+            idx.put(i,cumsum(tmp).sum());
+        }
+        return idx;
+    }
 
     public static DoubleMatrix rangeVector(double begin, double end) {
         int diff = (int) Math.abs(end - begin);

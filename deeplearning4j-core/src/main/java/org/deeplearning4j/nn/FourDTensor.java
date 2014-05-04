@@ -1,10 +1,12 @@
 package org.deeplearning4j.nn;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
 
 /**
- * Created by agibsonccc on 5/3/14.
+ * Four dimensional tensor
+ * @author Adam Gibson
  */
 public class FourDTensor extends Tensor {
 
@@ -77,6 +79,20 @@ public class FourDTensor extends Tensor {
         return getSliceOfTensor(tensor,slice).get(row,column);
     }
 
+    /**
+     * Sets the slice of the given tensor
+     * @param tensor the tensor to insert in to
+     * @param slice the slice to set
+     * @param put the matrix to put
+     */
+    public void put(int tensor,int slice,DoubleMatrix put) {
+        int tensorIndex = tensor *  slices();
+        //row of the tensor
+        int row = tensorIndex * slice * rows();
+        Range rows = RangeUtils.interval(row,row + put.rows);
+        Range columns = RangeUtils.interval(0,put.columns);
+        put(rows,columns,put);
+    }
 
     /**
      * Returns a slice of a tensor
