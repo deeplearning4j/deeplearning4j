@@ -104,6 +104,9 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 if(tracker.needsReplicate(id)) {
                     try {
                         log.info("Updating worker " + id);
+                        if(tracker.getCurrent() == null || tracker.getCurrent().get() == null) {
+                           return;
+                        }
                         setE(tracker.getCurrent());
                         setNetwork(tracker.getCurrent().get());
                         tracker.doneReplicating(id);
