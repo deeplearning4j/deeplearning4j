@@ -17,7 +17,6 @@ import org.junit.Test;
 public class ActorNetworkRunnerTest {
 
     @Test
-    @Ignore
     public void testNumTimesDataSetHit() throws IOException {
         MnistDataSetIterator mnist = new MnistDataSetIterator(20, 100);
         TestDataSetIterator iter = new TestDataSetIterator(mnist);
@@ -32,7 +31,6 @@ public class ActorNetworkRunnerTest {
         conf.setnIn(784);
         conf.setL2(0.001);
         conf.setMomentum(0);
-        conf.setWeightTransforms(Collections.singletonMap(0,(MatrixTransform) new MultiplyScalar(1000)));
         conf.setSplit(10);
         //conf.setRenderWeightEpochs(100);
         conf.setUseRegularization(false);
@@ -40,6 +38,8 @@ public class ActorNetworkRunnerTest {
         runner.setup(conf);
 
         runner.train();
+
+
 
 
     }

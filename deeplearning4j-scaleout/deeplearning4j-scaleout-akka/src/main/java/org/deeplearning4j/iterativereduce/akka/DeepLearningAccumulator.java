@@ -6,37 +6,40 @@ import java.util.List;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
 
-
+/**
+ * Parameter averaging algorithm.
+ * It handles summing and averaging over all of the results
+ * accumulated so far
+ */
 public class DeepLearningAccumulator {
 
 	private List<BaseMultiLayerNetwork> workers = new ArrayList<BaseMultiLayerNetwork>();
+    private BaseMultiLayerNetwork averaged = null;
+    private int numWorkers;
 
-	public void accumulate(BaseMultiLayerNetwork sda) {
-		workers.add(sda);
+
+    public DeepLearningAccumulator(int numWorkers) {
+        this.numWorkers = numWorkers;
+    }
+
+    /**
+     * Averages the results of the network so far
+     * @param toAccumulate the network to average in
+     */
+    public void accumulate(BaseMultiLayerNetwork toAccumulate) {
+		if(averaged == null)
+            this.averaged = toAccumulate;
+        else
+            averaged.merge(toAccumulate,numWorkers);
+
 	}
 
+    /**
+     * The averaged network
+     * @return the averaged network
+     */
 	public BaseMultiLayerNetwork averaged() {
-		if(workers.isEmpty())
-			return null;
-
-
-	
-
-		BaseMultiLayerNetwork first = workers.get(0);
-		BaseMultiLayerNetwork ret = first;
-
-
-
-		//sum and scale each of the weight vectors
-		//start with the second worker as the baseline
-		for(int worker = 1; worker <  workers.size(); worker++) {
-			BaseMultiLayerNetwork network = workers.get(worker);
-			first.merge(network, workers.size());
-
-		}
-
-	
-		return ret;
+		return averaged;
 	}
 
 }
