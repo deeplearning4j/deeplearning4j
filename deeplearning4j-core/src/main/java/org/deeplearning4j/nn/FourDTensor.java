@@ -45,14 +45,60 @@ public class FourDTensor extends Tensor {
      * @return the tensor at the specified index
      */
     public Tensor getTensor(int tensor) {
-        DoubleMatrix ret = get(RangeUtils.interval(tensor * slices(),tensor * slices * rows),RangeUtils.interval(0,columns()));
+        int tensorIndex = tensor *  slices();
+        int end = tensorIndex + slices();
+        DoubleMatrix ret = get(RangeUtils.interval(tensorIndex ,end),RangeUtils.interval(0,columns()));
         return new Tensor(ret,slices(),rows());
     }
-    
+
+
+    /**
+     * Assigns an element at the specific tensor,slice,row,column
+     * @param tensor the tensor to assign to
+     * @param slice the slice to assign to
+     * @param row the row to assign to
+     * @param column the column to assign to
+     * @param element the element to assign
+     */
+    public void put(int tensor,int slice,int row,int column,double element) {
+        int tensorIndex = tensor *  slices();
+        put(tensorIndex  + slice  + row, column,element);
+    }
+
+    /**
+     * Gets an individual element
+     * @param tensor the tensor to retrieve from
+     * @param slice the slice of the tensor to retrieve from
+     * @param row the row of the element
+     * @param column the column of the element
+     * @return
+     */
+    public double get(int tensor,int slice,int row,int column) {
+        return getSliceOfTensor(tensor,slice).get(row,column);
+    }
+
+
+    /**
+     * Returns a slice of a tensor
+     * @param tensor the tensor to get the slice of
+     * @param slice the slice of the tensor to get
+     * @return the slice of the specified tensor
+     */
     public DoubleMatrix getSliceOfTensor(int tensor, int slice) {
-        DoubleMatrix ret = get(RangeUtils.interval(tensor * slices(),tensor * slices * rows),RangeUtils.interval(0,columns()));
+        int tensorIndex = tensor *  slices();
+        int end = tensorIndex + slices();
+        DoubleMatrix ret = get(RangeUtils.interval(tensorIndex,end),RangeUtils.interval(0,columns()));
         return new Tensor(ret,slices(),rows()).getSlice(slice);
     }
+
+    /**
+     * Returns the number of tensors in this tensor
+     * @return the number of tensors in this tensor
+     */
+    public int numTensors() {
+        return numTensor;
+    }
+
 
 
 }
