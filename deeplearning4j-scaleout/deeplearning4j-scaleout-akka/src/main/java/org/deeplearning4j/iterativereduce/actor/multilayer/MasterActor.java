@@ -79,7 +79,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                                 nextBatch();
 
                             else
-                                log.info("Still waiting on next batch, so far we have updates of size: " + updates.size()  + " out of " + stateTracker.partition());
+                                log.info("Still waiting on next batch, so far we have updates of size: " + updates.size()  + " out of " + stateTracker.workers().size());
 
                             log.info("Current jobs left " + currentJobs);
 
