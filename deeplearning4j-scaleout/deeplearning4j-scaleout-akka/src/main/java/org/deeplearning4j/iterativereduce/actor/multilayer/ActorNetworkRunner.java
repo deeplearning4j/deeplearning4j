@@ -220,6 +220,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 log.info("Started state tracker with connection string " + stateTracker.connectionString());
 
 
+                if(!stateTracker.isPretrain())
+                    throw new IllegalStateException("State tracker must start on pretrain");
+
                 if(finetune)
                     stateTracker.moveToFinetune();
 

@@ -9,6 +9,23 @@ import org.jblas.DoubleMatrix;
  * Created by agibsonccc on 4/29/14.
  */
 public class ConvolutionalDBN extends BaseMultiLayerNetwork {
+
+
+    //filter size per layer
+    protected int[][] filterSizes;
+    //layer wise stride (arr[k] is an array)
+    protected int[][] stride;
+    //layer wise filter number of filters
+    protected int[] numFilters;
+    //layer type: convolution or subsampling
+    protected LayerType[] layerTypes;
+    public  static enum LayerType {
+        SUBSAMPLE,CONVOLUTION
+    }
+
+
+
+
     protected ConvolutionalDBN() {
     }
 
@@ -47,8 +64,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
     /**
      * Creates a layer depending on the index.
-     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.CDBN}
-     * where the first layer needs to be an {@link org.deeplearning4j.rbm.CRBM} for continuous inputs.
+     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.DBN}
+     * where the first layer needs to be an {@link org.deeplearning4j.rbm.RBM} for continuous inputs.
      * <p/>
      * Please be sure to call super.initializeNetwork
      * <p/>
@@ -72,6 +89,6 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
-        return new NeuralNetwork[0];
+        return new NeuralNetwork[numLayers];
     }
 }

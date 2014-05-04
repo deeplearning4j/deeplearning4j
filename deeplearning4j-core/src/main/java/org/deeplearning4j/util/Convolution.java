@@ -66,6 +66,10 @@ public class Convolution {
 
             DoubleMatrix start = zShape.sub(validShape).div(2);
             DoubleMatrix end = start.add(validShape);
+            if(start.get(0) < 1 || start.get(1) < 1)
+                throw new IllegalStateException("Illegal row index " + start);
+            if(end.get(0) < 1 || end.get(1) < 1)
+                throw new IllegalStateException("Illegal column index " + end);
 
             ret = ret.get(RangeUtils.interval((int) start.get(0),(int) end.get(0)),RangeUtils.interval((int) start.get(1),(int) end.get(1)));
 
