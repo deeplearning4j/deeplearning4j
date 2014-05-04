@@ -1,11 +1,14 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
+import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+
 /**
  * A StateTracker is a cross cluster 
  * monitor for state of workers and jobs
@@ -20,6 +23,25 @@ import org.deeplearning4j.scaleout.iterativereduce.Updateable;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+
+    /**
+     * A collection of worker updates.
+     * This should be used to track
+     * which workers have actually contributed an update for a given mini batch
+     * @return the worker updates
+     */
+    public Collection<String> workerUpdates();
+    /**
+     * The update saver to use
+     * @param updateSaver the update saver to use
+     */
+    public void setUpdateSaver(UpdateSaver<E> updateSaver);
+
+    /**
+     * The update saver used with this state tracker
+     * @return the update saver used with this state tracker
+     */
+    public UpdateSaver<E> updateSaver();
 
     /**
      * Assuming a job already exists, updates the job
@@ -92,15 +114,16 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
     /**
      * Adds an update to the current mini batch
+     * @param id the id of the worker who did the update
      * @param update the update to add
      */
-    public void addUpdate(E update);
+    public void addUpdate(String id,E update);
 
     /**
      * Updates  for mini batches
      * @return the current list of updates for mini batches
      */
-    public List<E> updates();
+    public IterateAndUpdate<E> updates();
 
     /**
      * Sets the connection string for connecting to the server

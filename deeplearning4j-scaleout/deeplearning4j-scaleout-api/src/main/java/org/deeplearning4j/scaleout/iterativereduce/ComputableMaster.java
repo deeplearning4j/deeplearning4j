@@ -17,6 +17,6 @@ import org.deeplearning4j.scaleout.conf.Conf;
 public interface ComputableMaster<RECORD_TYPE extends Updateable<?>> {
     void setup(Conf conf);
 	void complete(DataOutputStream ds);
-	RECORD_TYPE compute(Collection<RECORD_TYPE> workerUpdates,Collection<RECORD_TYPE> masterUpdates);
+	RECORD_TYPE compute();
 	RECORD_TYPE getResults();
 }

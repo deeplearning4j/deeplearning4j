@@ -17,6 +17,7 @@ import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -42,6 +43,8 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
     protected BaseMultiLayerNetwork network;
+
+
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
@@ -72,7 +75,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                                 }
                             }
 
-                            List<UpdateableImpl> updates = stateTracker.updates();
+                            Collection<String> updates = stateTracker.workerUpdates();
 
 
                             if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
@@ -145,18 +148,21 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
     @Override
-    public  UpdateableImpl compute(Collection<UpdateableImpl> workerUpdates,
-                                   Collection<UpdateableImpl> masterUpdates) {
+    public  UpdateableImpl compute() {
 
 
-        DeepLearningAccumulator acc = new DeepLearningAccumulator();
-        for(UpdateableImpl m : workerUpdates)
-            acc.accumulate(m.get());
+        DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
+        try {
+            update.accumulate();
+
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
         UpdateableImpl masterResults = this.getResults();
         if(masterResults == null)
-            masterResults = new UpdateableImpl(acc.averaged());
+            masterResults = update.accumulated();
         else
-            masterResults.set(acc.averaged());
+            masterResults.set(update.accumulated().get());
 
         try {
             stateTracker.setCurrent(masterResults);
@@ -257,10 +263,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
      * @throws Exception
      */
     protected void nextBatch() throws Exception {
-        List<UpdateableImpl> updates = stateTracker.updates();
+        Collection<String> updates = stateTracker.workerUpdates();
         //ensure there aren't any jobs still in progress
         if(!updates.isEmpty() && stateTracker.currentJobs().isEmpty()) {
-            UpdateableImpl masterResults = compute(updates, updates);
+            UpdateableImpl masterResults = compute();
             log.info("Updating next batch");
             stateTracker.setCurrent(masterResults);
             for(String s : stateTracker.workers()) {
@@ -269,7 +275,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
             }
             epochsComplete++;
-            stateTracker.updates().clear();
+            stateTracker.workerUpdates().clear();
             for(String worker : stateTracker.workers()) {
                 log.info("Enabling worker post batch " + worker);
                 stateTracker.enableWorker(worker);
@@ -286,16 +292,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
     private void doDoneOrNextPhase() throws Exception {
         UpdateableImpl masterResults = null;
-        List<UpdateableImpl> updates = stateTracker.updates();
+        Collection<String> updates = stateTracker.workerUpdates();
 
         if(!updates.isEmpty()) {
-            masterResults = compute(updates, updates);
+            masterResults = compute();
 
             stateTracker.setCurrent(masterResults);
 
 
             epochsComplete++;
-            stateTracker.updates().clear();
+            stateTracker.workerUpdates().clear();
 
         }
 

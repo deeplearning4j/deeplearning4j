@@ -1,6 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -8,7 +9,10 @@ import com.hazelcast.config.*;
 import com.hazelcast.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
+import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.IterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.UpdateSaver;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +45,6 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public final static String HEART_BEAT = "heartbeat";
     public final static String WORKER_ENABLED = "workerenabled";
     public final static String INPUT_SPLIT = "inputsplit";
-    public final static String PARTITION = "partition";
     public final static String IS_PRETRAIN = "ispretrain";
     private volatile transient IAtomicReference<Object> master;
     private volatile transient IList<Job> jobs;
@@ -52,9 +55,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     private volatile transient IMap<String,Boolean> workerEnabled;
     private volatile transient IList<String> workers;
     private volatile  transient IList<String> topics;
-    private volatile  transient IList<UpdateableImpl> updates;
+    private volatile  transient IList<String> updates;
     private volatile IAtomicReference<Integer> miniBatchSize;
-
+    private UpdateSaver<UpdateableImpl> saver = new LocalFileUpdateSaver();
     private volatile IAtomicReference<Boolean> isPretrain;
     private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
     private transient Config config;
@@ -67,6 +70,38 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public HazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
+    }
+
+    /**
+     * A collection of worker updates.
+     * This should be used to track
+     * which workers have actually contributed an update for a given mini batch
+     *
+     * @return the worker updates
+     */
+    @Override
+    public Collection<String> workerUpdates() {
+        return updates;
+    }
+
+    /**
+     * The update saver to use
+     *
+     * @param updateSaver the update saver to use
+     */
+    @Override
+    public void setUpdateSaver(UpdateSaver<UpdateableImpl> updateSaver) {
+        this.saver = updateSaver;
+    }
+
+    /**
+     * The update saver used with this state tracker
+     *
+     * @return the update saver used with this state tracker
+     */
+    @Override
+    public UpdateSaver<UpdateableImpl> updateSaver() {
+        return saver;
     }
 
     /**
@@ -171,12 +206,18 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     /**
      * Adds an update to the current mini batch
-     *
+     * @param id the id of the worker who did the update
      * @param update the update to add
      */
     @Override
-    public void addUpdate(UpdateableImpl update) {
-        updates.add(update);
+    public void addUpdate(String id,UpdateableImpl update) {
+        try {
+            updateSaver().save(id,update);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        updates.add(id);
+
     }
 
     /**
@@ -185,8 +226,10 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
      * @return the current list of updates for mini batches
      */
     @Override
-    public List<UpdateableImpl> updates() {
-        return updates;
+    public IterateAndUpdate<UpdateableImpl> updates() {
+        DeepLearningAccumulator d = new DeepLearningAccumulator(workerUpdates().size());
+        DeepLearningAccumulatorIterateAndUpdate d2 = new DeepLearningAccumulatorIterateAndUpdate(d,updateSaver(),workers());
+        return d2;
     }
 
     /**

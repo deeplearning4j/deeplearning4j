@@ -21,6 +21,14 @@ public class MatrixUtilTests {
     }
 
     @Test
+    public void testUpSample() {
+        DoubleMatrix d = DoubleMatrix.ones(28,28);
+        DoubleMatrix scale = new DoubleMatrix(2,1);
+        MatrixUtil.assign(scale,2);
+        MatrixUtil.downSample(d,scale);
+    }
+
+    @Test
     public void testCumSum() {
         DoubleMatrix test = new DoubleMatrix(new double[][]{
                 {1,2,3},
