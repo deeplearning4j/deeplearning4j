@@ -151,12 +151,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
     public  UpdateableImpl compute() {
 
 
-        DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
+       DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
+       if(stateTracker.workerUpdates().isEmpty())
+           return null;
+
         try {
             update.accumulate();
 
         }catch(Exception e) {
-            throw new RuntimeException(e);
+            log.debug("Unable to accumulate results",e);
+            return null;
         }
         UpdateableImpl masterResults = this.getResults();
         if(masterResults == null)
@@ -272,15 +276,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             for(String s : stateTracker.workers()) {
                 log.info("Replicating new network to " + s);
                 stateTracker.addReplicate(s);
+                stateTracker.enableWorker(s);
 
             }
             epochsComplete++;
             stateTracker.workerUpdates().clear();
-            for(String worker : stateTracker.workers()) {
-                log.info("Enabling worker post batch " + worker);
-                stateTracker.enableWorker(worker);
-
-            }
 
             //tell the batch actor to send more work
             batchActor.tell(new MoreWorkMessage(masterResults),getSelf());

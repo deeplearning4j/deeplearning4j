@@ -39,8 +39,20 @@ public class LocalFileUpdateSaver implements UpdateSaver<UpdateableImpl> {
 
     @Override
     public void save(String id,UpdateableImpl save) throws Exception {
+       if(save.get() == null)
+           throw new IllegalArgumentException("Saving null network not allowed");
         File saveFile = new File(id);
         SerializationUtils.saveObject(save,saveFile);
+        boolean loadedProperly = false;
+        while(!loadedProperly) {
+            try {
+                UpdateableImpl u =  SerializationUtils.readObject(saveFile);
+
+            }catch(Exception e) {
+
+            }
+            loadedProperly = true;
+        }
         paths.put(id,saveFile.getAbsolutePath());
 
     }
