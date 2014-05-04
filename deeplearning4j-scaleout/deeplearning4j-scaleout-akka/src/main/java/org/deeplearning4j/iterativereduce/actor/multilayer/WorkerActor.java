@@ -203,10 +203,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
     /* Run compute on the data set */
     protected  void processDataSet(final List<DataSet> list) {
-         if(list == null || list.isEmpty()) {
-             log.warn("Worker " + id + " was passed an empty or null list");
-             return;
-         }
+        if(list == null || list.isEmpty()) {
+            log.warn("Worker " + id + " was passed an empty or null list");
+            return;
+        }
 
 
         Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
@@ -262,9 +262,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
     @SuppressWarnings("unchecked")
     @Override
     public  UpdateableImpl compute() {
-        log.info("Training network on worker " + id);
-        if(!tracker.workerEnabled(id))
+        if(!tracker.workerEnabled(id)) {
+            log.info("Worker " + id + " should be re enabled if not doing work");
             return null;
+        }
+
+        log.info("Training network on worker " + id);
+
         BaseMultiLayerNetwork network = getNetwork();
         isWorking.set(true);
         while(network == null) {

@@ -515,6 +515,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     @Override
     public  UpdateableImpl getCurrent() throws Exception {
         UpdateableImpl u =  (UpdateableImpl) master.get();
+        if(u == null)
+            return null;
         return u.clone();
     }
 
