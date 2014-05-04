@@ -62,18 +62,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     @Override
                     public void run() {
+                      if(stateTracker.isDone())
+                          return;
+
                         try {
                             List<Job> currentJobs = stateTracker.currentJobs();
                             log.info("Status check on next iteration");
-                            if(stateTracker.getCurrent() == null) {
-                                try {
-                                    log.info("State tracker did not have a network; reinitializing");
-                                    if(network == null)
-                                        stateTracker.setCurrent(new UpdateableImpl(network));
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
+
 
                             Collection<String> updates = stateTracker.workerUpdates();
 
@@ -100,6 +95,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     @Override
                     public void run() {
+                        if(stateTracker.isDone())
+                            return;
+
                         try {
                             long now = System.currentTimeMillis();
                             Map<String,Long> heartbeats = MasterActor.this.stateTracker.getHeartBeats();
@@ -281,7 +279,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             }
             epochsComplete++;
             stateTracker.workerUpdates().clear();
-
+            while(masterResults == null) {
+                log.info("On next batch master results was null, attempting to grab results again");
+                masterResults = getResults();
+            }
             //tell the batch actor to send more work
             batchActor.tell(new MoreWorkMessage(masterResults),getSelf());
         }
@@ -309,11 +310,20 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             masterResults = getMasterResults();
 
 
+        while(!stateTracker.currentJobs().isEmpty()) {
+            log.info("Waiting fo jobs to finish up before next phase...");
+            Thread.sleep(30000);
+        }
+
         if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
             log.info("Switching to finetune mode");
             stateTracker.moveToFinetune();
             SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 
+
+            while(masterResults == null) {
+                masterResults = getMasterResults();
+            }
 
             batchActor.tell(ResetMessage.getInstance(), getSelf());
             batchActor.tell(new MoreWorkMessage(masterResults), getSelf());

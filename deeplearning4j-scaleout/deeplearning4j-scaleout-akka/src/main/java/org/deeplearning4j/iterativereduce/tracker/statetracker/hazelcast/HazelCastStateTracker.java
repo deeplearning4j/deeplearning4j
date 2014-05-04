@@ -522,6 +522,10 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     @Override
     public  void setCurrent(UpdateableImpl e) throws Exception {
+        if(e == null || e.get() == null) {
+            log.warn("Not setting a null update");
+            return;
+        }
         this.master.set(e);
     }
 

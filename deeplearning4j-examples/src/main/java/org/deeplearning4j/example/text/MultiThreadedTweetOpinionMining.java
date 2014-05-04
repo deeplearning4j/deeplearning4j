@@ -44,7 +44,7 @@ public class MultiThreadedTweetOpinionMining {
         TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1", "2"),2000);
         DataSet data = vectorizor.vectorize();
         log.info("Vocab " + vectorizor.vocab());
-        DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
+        DataSetIterator iter = new ListDataSetIterator(data.asList().subList(0,100),10);
 
         HazelCastStateTracker tracker = new HazelCastStateTracker();
         if(!tracker.isPretrain())
