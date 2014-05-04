@@ -47,6 +47,8 @@ public class MultiThreadedTweetOpinionMining {
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
         HazelCastStateTracker tracker = new HazelCastStateTracker();
+        if(!tracker.isPretrain())
+            throw new IllegalStateException("Tracker should be on pretrain");
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
         c.setPretrainEpochs(10000);

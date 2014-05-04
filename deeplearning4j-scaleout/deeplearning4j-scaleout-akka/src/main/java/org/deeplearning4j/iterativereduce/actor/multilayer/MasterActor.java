@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.DBN;
@@ -56,7 +55,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 		 * that if the system is done it shuts down
 		 */
         forceNextPhase =  context().system().scheduler()
-                .schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
+                .schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
 
                     @Override
                     public void run() {
@@ -76,10 +75,11 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                             List<UpdateableImpl> updates = stateTracker.updates();
 
 
-                            if(updates.size() >= partition || currentJobs.isEmpty())
-                                nextIteration();
+                            if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
+                                nextBatch();
 
-
+                            else
+                                log.info("Still waiting on next batch, so far we have updates of size: " + updates.size()  + " out of " + stateTracker.partition());
 
                             log.info("Current jobs left " + currentJobs);
 
@@ -107,7 +107,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                                 if(seconds >= 30) {
                                     log.info("Removing stale worker " + key);
                                     MasterActor.this.stateTracker.removeWorker(key);
-                                    partition--;
                                 }
 
                             }
@@ -162,9 +161,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         try {
             stateTracker.setCurrent(masterResults);
 
-            //alert the workers to update
-            for(String workerId : stateTracker.workers())
-                stateTracker.addReplicate(workerId);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -188,15 +184,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-
-
-        //Wait for backend to be up
-
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
 
         log.info("Broadcasting initial master network");
@@ -256,13 +243,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             throw new RuntimeException(e1);
         }
 
-
-
-
-
-        //after worker is instantiated broadcast the master network to the worker
-        mediator.tell(new DistributedPubSubMediator.Publish(BROADCAST,
-                masterResults), getSelf());
+        stateTracker.setMiniBatchSize(conf.getSplit());
 
     }
 
@@ -271,38 +252,39 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-
     /**
-     * Check on the next iteration
+     * Checks if done
      * @throws Exception
      */
-    protected void nextIteration() throws Exception {
+    protected void nextBatch() throws Exception {
         List<UpdateableImpl> updates = stateTracker.updates();
-        if(!updates.isEmpty()) {
-            UpdateableImpl masterResults = this.compute(updates, updates);
+        //ensure there aren't any jobs still in progress
+        if(!updates.isEmpty() && stateTracker.currentJobs().isEmpty()) {
+            UpdateableImpl masterResults = compute(updates, updates);
+            log.info("Updating next batch");
+            stateTracker.setCurrent(masterResults);
+            for(String s : stateTracker.workers()) {
+                log.info("Replicating new network to " + s);
+                stateTracker.addReplicate(s);
 
-
+            }
             epochsComplete++;
-            //tell the batch actor to send out another dataset
-            if(!isDone())
-                batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
-            //clear previous batch
             stateTracker.updates().clear();
-            log.info("Broadcasting weights");
+            for(String worker : stateTracker.workers()) {
+                log.info("Enabling worker post batch " + worker);
+                stateTracker.enableWorker(worker);
 
-            for(String worker : stateTracker.workers())
-                stateTracker.addReplicate(worker);
+            }
+
+            //tell the batch actor to send more work
+            batchActor.tell(new MoreWorkMessage(masterResults),getSelf());
         }
 
 
 
     }
 
-    /**
-     * Checks if done
-     * @throws Exception
-     */
-    protected void checkDone() throws Exception {
+    private void doDoneOrNextPhase() throws Exception {
         UpdateableImpl masterResults = null;
         List<UpdateableImpl> updates = stateTracker.updates();
 
@@ -320,9 +302,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         else
             masterResults = getMasterResults();
 
+
         if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
             log.info("Switching to finetune mode");
-            pretrain = false;
             stateTracker.moveToFinetune();
             SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
 
@@ -337,8 +319,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             stateTracker.finish();
             log.info("Done training!");
         }
-
-
 
     }
 
@@ -360,7 +340,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         else if(message instanceof DoneMessage) {
             log.info("Received done message");
-            checkDone();
+            doDoneOrNextPhase();
         }
 
 

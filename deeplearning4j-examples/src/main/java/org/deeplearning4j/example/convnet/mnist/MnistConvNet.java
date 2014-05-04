@@ -1,5 +1,6 @@
 package org.deeplearning4j.example.convnet.mnist;
 
+import cc.mallet.util.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
@@ -14,6 +15,7 @@ import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.util.DeepLearningIOUtil;
 import org.deeplearning4j.util.ImageLoader;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -41,71 +43,34 @@ public class MnistConvNet {
         double fanIn = 28 * 28;
         double abs = Math.sqrt(6 / fanIn);
         ConvolutionalRBM r = new ConvolutionalRBM
-                .Builder().withFilterSize(new int[]{7,7}).useAdaGrad(true)
-                .useRegularization(true).withL2(1e-2)
-                .withNumFilters(9).withStride(new int[]{2, 2}).renderWeights(10)
-                .withVisibleSize(new int[]{rows,cols}).withVisible(RBM.VisibleUnit.GAUSSIAN)
-                .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT).withRandom(gen)
-                .withSparsity(5e-2).withSparseGain(5).withDistribution(Distributions.uniform(gen,abs))
+                .Builder().withFilterSize(new int[]{7, 7})
+                .withNumFilters(9).withStride(new int[]{2, 2}).withVisibleSize(new int[]{rows,cols}).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
+                .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT).withRandom(gen)
+                .withSparsity(5e-2).withSparseGain(5)
                 .numberOfVisible(28).numHidden(28)
-                .withMomentum(0)
+                .withMomentum(0.5)
                 .build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1,10);
+        DataSetIterator iter = new MnistDataSetIterator(1,200);
         //DataSetIterator iter = new LFWDataSetIterator(1,150000,rows,cols);
 
-        for(int i = 0; i < 10 ;i++) {
-            while(iter.hasNext()) {
-                DataSet next = iter.next();
-                log.info("Len " + next.getFirst().length);
-                log.info("This is a " + next.labelDistribution());
-                DoubleMatrix reshape = next.getFirst().reshape(rows,cols);
-                Tensor W = (Tensor) r.getW();
-                log.info("W shape " + W.shape());
-                r.trainTillConvergence(reshape, 5e-1, new Object[]{1, 5e-1, 20});
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            log.info("Len " + next.getFirst().length);
+            log.info("This is a " + next.labelDistribution());
+            DoubleMatrix reshape = next.getFirst().reshape(rows,cols);
+            Tensor W = (Tensor) r.getW();
+            log.info("W shape " + W.shape());
+            r.trainTillConvergence(reshape, 5e-2, new Object[]{1, 5e-2, 20});
 
 
-            }
+        };
 
 
-
-
-
-
-
-            iter.reset();
-        }
-
-
-        iter.reset();
-
-        for(int i = 0; i < 10 ;i++) {
-            while(iter.hasNext()) {
-                DataSet next = iter.next();
-                log.info("This is a " + next.labelDistribution());
-
-                Tensor reshapePool = r.propUp(next.getFirst());
-                DoubleMatrix reshapedHidden = reshapePool.reshape(reshapePool.rows() * reshapePool.columns(),reshapePool.slices());
-                drawFilters(r,rows,cols);
-                //drawSample(r,rows,cols,reshape);
-                drawSample(r,reshapedHidden.rows,reshapedHidden.columns,reshapedHidden);
-
-
-            }
-
-
-
-
-
-
-
-            iter.reset();
-        }
-
-
-
+        FileUtils.writeObject(new File("mnist-conv.ser"),r);
+        drawFilters(r);
 
 
     }
@@ -144,13 +109,13 @@ public class MnistConvNet {
 
     }
 
-    public static void drawFilters(ConvolutionalRBM r,int rows, int cols) throws Exception {
+    public static void drawFilters(ConvolutionalRBM r) throws Exception {
         Tensor W = (Tensor) r.getW().dup();
 
         DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
         draw.muli(255);
         FilterRenderer render = new FilterRenderer();
-        BufferedImage img = render.renderFilters(draw,"tmpfile.png",rows,cols);
+        BufferedImage img = render.renderFilters(draw,"tmpfile.png",draw.rows,draw.columns);
         BufferedImage resizedImage = new BufferedImage(49, 49, img.getType());
         Graphics2D g = resizedImage.createGraphics();
         g.drawImage(img, 0, 0, 49, 49, null);

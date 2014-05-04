@@ -26,7 +26,7 @@ import java.util.Collections;
  */
 public class Tensor extends DoubleMatrix implements Serializable {
 
-    private int slices,perMatrixRows;
+    protected int slices,perMatrixRows;
 
     /**
      * Creates this tensor with the specified number of rows, columns and slices
@@ -48,9 +48,28 @@ public class Tensor extends DoubleMatrix implements Serializable {
         this.perMatrixRows = rows;
     }
 
+    /**
+     * Initializes this tensor with 1 slice
+     * and the number of slice rows equal
+     * the number of rows in the passed in matrix
+     * @param t the matrix to initialize this tensor with
+     */
     public Tensor(DoubleMatrix t) {
+       this(t,1,t.rows);
+    }
+
+    /**
+     * Initializes the given matrix with the
+     * number of slices
+     * @param t the matrix to use as a base for
+     *  this tensor
+     * @param slices the number of slices of the matrix
+     * @param rows the number of rows per slice
+     */
+    public Tensor(DoubleMatrix t,int slices,int rows) {
         super(t.toArray2());
-        this.slices = 1;
+        this.slices = slices;
+        this.perMatrixRows = rows;
     }
 
     /**

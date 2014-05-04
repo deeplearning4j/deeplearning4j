@@ -22,6 +22,56 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 
     /**
+     * Assuming a job already exists, updates the job
+     * @param j the job to update
+     */
+    public void updateJob(Job j);
+
+    /**
+     * Sets the input split
+     * @param inputSplit the input split to use
+     */
+    public void setMiniBatchSize(int inputSplit);
+
+    /**
+     * The input split to use.
+     * This means that each data set that is trained on
+     * and loaded will be this batch size or lower
+     * per worker
+     * @return the input split to use
+     */
+    public int inputSplit();
+
+    /**
+     * Returns the partition (optimal batch size)
+     * given the available workers and the specified input split
+     * @return the optimal batch size
+     */
+    public int partition();
+
+    /**
+     * Returns the status of whether the worker is enabled or not
+     * @param id the id of the worker to test
+     * @return true if the worker is enabled, false otherwise
+     */
+    public boolean workerEnabled(String id);
+
+    /**
+     * Enables the worker with the given id,
+     * allowing it to take jobs again
+     * @param id the id of the worker to enable
+     */
+    public void enableWorker(String id);
+
+    /**
+     * Disables the worker with the given id,
+     * this means that it will not train
+     * or take any new jobs until re enabled
+     * @param id the id of the worker to disable
+     */
+    public void disableWorker(String id);
+
+    /**
      * Updates the status of the worker to not needing replication
      * @param workerId the worker id to update
      */
@@ -198,12 +248,16 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	List<String> topics() throws Exception;
 	/**
 	 * Clears a job from the cluster
-	 * @param j the job to clear
+     * This should throw an exception when the job
+     * doesn't exist
+	 * @param id the job to clear
 	 * @throws Exception
 	 */
-	void clearJob(Job j) throws Exception;
+	void clearJob(String id) throws Exception;
 	/**
 	 * Attempts to add a job to the cluster
+     * This should throw an exception when
+     * the job being added to already exists
 	 * @param j the job to add
 	 * @return true if the job was added, false otherwise
 	 * @throws Exception
@@ -223,11 +277,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	 */
 	void setCurrent(E e) throws Exception;
 	
-	/**
-	 * Marks the job as done
-	 * @param job the job to mark
-	 */
-	void jobDone(Job job);
+
 	
 	/**
 	 * Shutsdown any connections on the cluster
