@@ -165,9 +165,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
     protected void checkJobAvailable() throws Exception {
         Job j = null;
-        int numRetries = 0;
-        int maxRetries = 10;
+
         if((j = tracker.jobFor(id)) == null || !tracker.workerEnabled(id)) {
+            //inconsistent state
+            if(!isWorking.get() && j != null)  {
+                tracker.clearJob(id);
+                log.info("Clearing stale job " + id);
+            }
+
             return;
         }
 
@@ -230,10 +235,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 if(work != null) {
                     log.info("Done working; adding update to mini batch on worker " + id);
                     //update parameters in master param server
-                    tracker.addUpdate(work);
+                    tracker.addUpdate(id,work);
                     //disable the worker till next batch
                     tracker.disableWorker(id);
-                    log.info("Number of updates so far " + tracker.updates().size());
+                    log.info("Number of updates so far " + tracker.workerUpdates().size());
                 }
 
 

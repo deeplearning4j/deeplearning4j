@@ -141,19 +141,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     }
 
 
-
-
-    @Override
-    public abstract E compute(Collection<E> workerUpdates,
-                              Collection<E> masterUpdates);
-
-    @Override
-    public abstract void setup(Conf conf);
-
-
-
-
-
     /**
      * Delegates the list of datasets to the workers.
      * Each worker receives a portion of work and
