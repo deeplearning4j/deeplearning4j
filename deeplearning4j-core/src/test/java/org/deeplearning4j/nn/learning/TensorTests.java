@@ -43,6 +43,10 @@ public class TensorTests {
 
         fd.put(1,1,1,1,0.5);
         assertEquals("Was " + fd.get(1,1,1,1),true, 0.5 == fd.get(1,1,1,1));
+
+        DoubleMatrix slice = DoubleMatrix.rand(2,2);
+        fd.put(0,0,slice);
+        assertEquals(slice,fd.getSliceOfTensor(0,0));
     }
 
     @Test
