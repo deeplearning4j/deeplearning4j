@@ -23,14 +23,33 @@ public class HazelCastStateTrackerTest  {
 
 
 
+    @Test
+    public void testReplication() throws Exception {
+        HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master",HazelCastStateTracker.DEFAULT_HAZELCAST_PORT);
+        master.addReplicate("1");
+        assertEquals(true,master.needsReplicate("1"));
+        master.doneReplicating("1");
+        assertEquals(false,master.needsReplicate("1"));
+        master.shutdown();
+    }
+	
+	@Test
+    public void testJob() throws Exception {
+        HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master",HazelCastStateTracker.DEFAULT_HAZELCAST_PORT);
+        Job j = new Job("1","hi");
+        master.addJobToCurrent(j);
+        assertEquals(true,master.jobFor("1") != null);
+        master.clearJob(j.getWorkerId());
+        assertEquals(true,master.jobFor("1") == null);
+        master.shutdown();
+    }
 
-	
-	
 
 	@Test
 	public void testClientServer() throws Exception {
 		HazelCastStateTracker master = new HazelCastStateTracker("localhost:" + HazelCastStateTracker.DEFAULT_HAZELCAST_PORT,"master",HazelCastStateTracker.DEFAULT_HAZELCAST_PORT);
-
+        assertEquals(true,master.isPretrain());
+        assertEquals(false,master.isDone());
 		master.runPreTrainIterations(10);
 		master.addWorker("id");
 		master.moveToFinetune();
@@ -43,6 +62,9 @@ public class HazelCastStateTrackerTest  {
 		assertEquals(master.isPretrain(),worker.isPretrain());
 		assertEquals(master.numWorkers(),worker.numWorkers());
 		assertEquals(10,worker.runPreTrainIterations());
+
+        master.shutdown();
+        worker.shutdown();
 
 		
 	}

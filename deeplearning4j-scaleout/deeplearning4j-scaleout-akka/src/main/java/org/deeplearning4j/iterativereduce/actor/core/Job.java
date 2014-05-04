@@ -17,18 +17,12 @@ public class Job implements Serializable {
 	private boolean done;
 	private String workerId;
 	private Serializable work;
-	private boolean pretrain;
-	
-	public Job(String workerId, Serializable work,boolean pretrain) {
-		this(false,workerId,work,pretrain);
-	}
-	
-	public Job(boolean done, String workerId, Serializable work,boolean pretrain) {
+
+
+	public Job(String workerId, Serializable work) {
 		super();
-		this.done = done;
 		this.workerId = workerId;
 		this.work = work;
-		this.pretrain = pretrain;
 	}
 
 
@@ -37,47 +31,30 @@ public class Job implements Serializable {
         this.done = job.done;
         this.workerId = job.workerId;
         this.work = job.work;
-        this.pretrain = job.pretrain;
     }
 
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (done ? 1231 : 1237);
-		result = prime * result + (pretrain ? 1231 : 1237);
-		result = prime * result + ((work == null) ? 0 : work.hashCode());
-		result = prime * result
-				+ ((workerId == null) ? 0 : workerId.hashCode());
-		return result;
-	}
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Job other = (Job) obj;
-		if (done != other.done)
-			return false;
-		if (pretrain != other.pretrain)
-			return false;
-		if (work == null) {
-			if (other.work != null)
-				return false;
-		} else if (!work.equals(other.work))
-			return false;
-		if (workerId == null) {
-			if (other.workerId != null)
-				return false;
-		} else if (!workerId.equals(other.workerId))
-			return false;
-		return true;
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Job)) return false;
 
+        Job job = (Job) o;
+
+        if (done != job.done) return false;
+        if (work != null ? !work.equals(job.work) : job.work != null) return false;
+        if (workerId != null ? !workerId.equals(job.workerId) : job.workerId != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (done ? 1 : 0);
+        result = 31 * result + (workerId != null ? workerId.hashCode() : 0);
+        result = 31 * result + (work != null ? work.hashCode() : 0);
+        return result;
+    }
 
     @Override
     public Job clone() {
@@ -104,22 +81,29 @@ public class Job implements Serializable {
 		this.work = work;
 	}
 
-	public  boolean isPretrain() {
-		return pretrain;
-	}
-
-	public void setPretrain(boolean pretrain) {
-		this.pretrain = pretrain;
-	}
-
-	@Override
-	public String toString() {
-		return "Job [done=" + done + ", workerId=" + workerId + ", pretrain="
-				+ pretrain + "]";
-	}
-	
-	
-	
-	
-
+    /**
+     * Returns a string representation of the object. In general, the
+     * {@code toString} method returns a string that
+     * "textually represents" this object. The result should
+     * be a concise but informative representation that is easy for a
+     * person to read.
+     * It is recommended that all subclasses override this method.
+     * <p/>
+     * The {@code toString} method for class {@code Object}
+     * returns a string consisting of the name of the class of which the
+     * object is an instance, the at-sign character `{@code @}', and
+     * the unsigned hexadecimal representation of the hash code of the
+     * object. In other words, this method returns a string equal to the
+     * value of:
+     * <blockquote>
+     * <pre>
+     * getClass().getName() + '@' + Integer.toHexString(hashCode())
+     * </pre></blockquote>
+     *
+     * @return a string representation of the object.
+     */
+    @Override
+    public String toString() {
+        return super.toString();
+    }
 }

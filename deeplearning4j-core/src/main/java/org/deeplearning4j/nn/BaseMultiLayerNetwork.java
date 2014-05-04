@@ -1162,9 +1162,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param input
      */
     public  void setInput(DoubleMatrix input) {
-        this.input = input;
         if(input != null && this.layers == null)
             this.initializeLayers(input);
+        this.input = input;
+
     }
 
     public boolean isShouldBackProp() {

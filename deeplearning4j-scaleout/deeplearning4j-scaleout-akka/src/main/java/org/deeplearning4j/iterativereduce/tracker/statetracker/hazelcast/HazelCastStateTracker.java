@@ -1,11 +1,11 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import com.hazelcast.config.*;
+import com.hazelcast.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
@@ -15,13 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicReference;
-import com.hazelcast.core.IList;
-import com.hazelcast.core.MemberAttributeEvent;
-import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.core.MembershipListener;
+
 /**
  * Tracks state of workers and jobs 
  * via hazelcast distributed data structures
@@ -42,30 +36,31 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public final static String TOPICS = "topics";
     public final static String RESULT = "RESULT";
     public final static String DONE = "done";
-    public final static String LOCKS = "LOCKS";
     public final static String UPDATES = "updates";
     public final static String REPLICATE_WEIGHTS = "replicate";
     public final static String HEART_BEAT = "heartbeat";
+    public final static String WORKER_ENABLED = "workerenabled";
+    public final static String INPUT_SPLIT = "inputsplit";
+    public final static String PARTITION = "partition";
     public final static String IS_PRETRAIN = "ispretrain";
-    public final static String RESULT_LOC = "RESULT_LOC";
     private volatile transient IAtomicReference<Object> master;
     private volatile transient IList<Job> jobs;
     private volatile transient IAtomicReference<Integer> numTimesPretrain;
     private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
     private volatile transient IAtomicReference<Boolean> done;
     private volatile transient IList<String> replicate;
-
+    private volatile transient IMap<String,Boolean> workerEnabled;
     private volatile transient IList<String> workers;
     private volatile  transient IList<String> topics;
     private volatile  transient IList<UpdateableImpl> updates;
+    private volatile IAtomicReference<Integer> miniBatchSize;
 
-    private volatile IAtomicReference<Object> isPretrain;
+    private volatile IAtomicReference<Boolean> isPretrain;
     private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
     private transient Config config;
     public final static int DEFAULT_HAZELCAST_PORT = 2510;
-    public final static String CURRENT_JOBS = "JOBS";
     private transient HazelcastInstance h;
-    private String type;
+    private String type = "master";
     private int hazelCastPort = -1;
     private String connectionString;
     private Map<String,Long> heartbeat;
@@ -74,6 +69,73 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     }
 
+    /**
+     * Sets the input split
+     *
+     * @param batchSize the input split to use
+     */
+    @Override
+    public void setMiniBatchSize(int batchSize) {
+        this.miniBatchSize.set(batchSize);
+    }
+
+    /**
+     * The input split to use.
+     * This means that each data set that is trained on
+     * and loaded will be this batch size or lower
+     * per worker
+     *
+     * @return the input split to use
+     */
+    @Override
+    public int inputSplit() {
+        return (miniBatchSize.get() * numWorkers()) / numWorkers();
+    }
+
+    /**
+     * Returns the partition (optimal batch size)
+     * given the available workers and the specified input split
+     *
+     * @return the optimal batch size
+     */
+    @Override
+    public int partition() {
+        return  inputSplit();
+    }
+
+    /**
+     * Returns the status of whether the worker is enabled or not
+     *
+     * @param id the id of the worker to test
+     * @return true if the worker is enabled, false otherwise
+     */
+    @Override
+    public boolean workerEnabled(String id) {
+        return workerEnabled.containsKey(id) && workerEnabled.get(id);
+    }
+
+    /**
+     * Enables the worker with the given id,
+     * allowing it to take jobs again
+     *
+     * @param id the id of the worker to enable
+     */
+    @Override
+    public void enableWorker(String id) {
+        workerEnabled.put(id,true);
+    }
+
+    /**
+     * Disables the worker with the given id,
+     * this means that it will not train
+     * or take any new jobs until re enabled
+     *
+     * @param id the id of the worker to disable
+     */
+    @Override
+    public void disableWorker(String id) {
+        workerEnabled.put(id,false);
+    }
 
     /**
      * Updates the status of the worker to not needing replication
@@ -231,6 +293,8 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
         }
 
+        miniBatchSize = h.getAtomicReference(INPUT_SPLIT);
+        workerEnabled = h.getMap(WORKER_ENABLED);
         replicate = h.getList(REPLICATE_WEIGHTS);
         topics = h.getList(TOPICS);
         updates = h.getList(UPDATES);
@@ -303,6 +367,9 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         heartbeatConfig.setName(HEART_BEAT);
         conf.addMapConfig(heartbeatConfig);
 
+        MapConfig workerEnabledConifg = new MapConfig();
+        workerEnabledConifg.setName(WORKER_ENABLED);
+        conf.addMapConfig(workerEnabledConifg);
 
         return conf;
 
@@ -313,14 +380,12 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     @Override
     public boolean addJobToCurrent(Job j) throws Exception {
-        if(j == null)
-            return false;
-
 
         IAtomicReference<Job> r = h.getAtomicReference("job-" + j.getWorkerId());
-        if(r.get() != null) {
-            log.info("Currently locked unable to add job for current worker");
-            return false;
+
+
+        if(r.get() != null || !r.isNull()) {
+            throw new IllegalArgumentException("Tried to add job with id " + j.getWorkerId() + " when one already exists");
         }
 
         r.set(j);
@@ -345,25 +410,44 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     }
     @Override
     public List<Job> currentJobs() throws Exception {
-        return new ArrayList<Job>(jobs);
+        return new ArrayList<>(jobs);
     }
 
 
-
+    /**
+     * Assuming a job already exists, updates the job
+     *
+     * @param j the job to update
+     */
+    @Override
+    public void updateJob(Job j) {
+        IAtomicReference<Job> jRef = h.getAtomicReference("job-" + j.getWorkerId());
+        jRef.set(j);
+    }
 
     @Override
-    public void clearJob(Job j) throws Exception {
-        if(j == null) {
+    public void clearJob(String id) throws Exception {
+        if(id == null) {
             log.warn("No job to clear; was null, returning");
             return;
 
         }
 
-        IAtomicReference<Job> jRef = h.getAtomicReference("job-" + j.getWorkerId());
+        IAtomicReference<Job> jRef = h.getAtomicReference("job-" + id);
+        if(jRef.isNull())
+            return;
         jRef.clear();
-        log.info("Destroyed job ref " + j.getWorkerId());
-        jobs.remove(j);
+        log.info("Destroyed job ref " + id);
+        Job remove = null;
+        for(Job j : jobs) {
+            if(j.getWorkerId().equals(id)) {
+                remove = j;
+                break;
+            }
+        }
 
+
+        jobs.remove(remove);
     }
 
     @Override
@@ -397,34 +481,30 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     }
 
 
-
-
-
-    @Override
-    public void jobDone(Job job) {
-        try {
-            clearJob(job);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public boolean isPretrain() {
-        return (boolean) isPretrain.get() && numTimesPretrainRan.get() < runPreTrainIterations();
+        return  isPretrain.get();
     }
 
     @Override
     public void moveToFinetune() {
+        log.info("Moving to finetune");
         isPretrain.set(false);
     }
 
     @Override
     public Job jobFor(String id) {
         IAtomicReference<Job> j = h.getAtomicReference("job-" + id);
-        if(j.isNull())
+        if(j.isNull() || isCurrentlyJob(id))
             return null;
         return j.get();
+    }
+
+    private boolean isCurrentlyJob(String id) {
+        for(Job j : jobs)
+            if(j.equals(id))
+                return true;
+        return false;
     }
 
     @Override

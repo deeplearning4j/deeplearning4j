@@ -48,7 +48,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     protected ActorRef batchActor;
     protected HazelCastStateTracker stateTracker;
     protected int epochsComplete;
-    protected boolean pretrain = true;
     protected final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     public static String BROADCAST = "broadcast";
     public static String MASTER = "result";
@@ -56,8 +55,6 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     public static String FINISH = "finish";
     Cluster cluster = Cluster.get(getContext().system());
     ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-    //number of batches over time
-    protected int partition = 1;
     protected boolean isDone = false;
     protected Cancellable forceNextPhase,clearStateWorkers;
 
@@ -170,36 +167,21 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
      * @throws Exception
      */
     protected void sendToWorkers(List<DataSet> datasets) throws Exception {
-        int split = this.getConf().getSplit();
+        //enable workers for sending out data
+        for(String worker : stateTracker.workers())
+            stateTracker.enableWorker(worker);
+        int split = stateTracker.inputSplit();
         final List<List<DataSet>> splitList = Lists.partition(datasets,split);
-        partition = splitList.size();
 
 
-        log.info("Found partition of size " + partition);
-
+        log.info("Found partition of size " + stateTracker.partition());
+        Set<String> workerDelegated = new HashSet<>();
         for(int i = 0; i < splitList.size(); i++)  {
             final List<DataSet> wrap = splitList.get(i);
             final List<DataSet> work = new ArrayList<>(wrap);
+            delegateJob(work,workerDelegated);
 
-            Future<Void> f  =Futures.future(new Callable<Void>() {
-
-                /**
-                 * Computes a result, or throws an exception if unable to do so.
-                 *
-                 * @return computed result
-                 * @throws Exception if unable to compute a result
-                 */
-                @Override
-                public Void call() throws Exception {
-                    delegateJob(work);
-
-                    log.info("Sending off work for batch ");
-
-                    return null;
-                }
-            },context().system().dispatcher());
-
-            ActorRefUtils.throwExceptionIfExists(f,context().dispatcher());
+            log.info("Sending off work for batch " + i);
 
 
         }
@@ -207,24 +189,24 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
     }
 
-    private void delegateJob(List<DataSet> work) throws Exception {
+    private void delegateJob(List<DataSet> work,Set<String> workerDelegated) throws Exception {
         //block till there's an available worker
         log.info("Possible workers " + stateTracker.workers());
 
         Job j2;
 
         boolean sent = false;
-        String host = System.getProperty("akka.remote.netty.tcp.hostname","localhost");
 
         while(!sent) {
             //always update
             for(String s : stateTracker.workers()) {
-                if(stateTracker.jobFor(s) == null) {
-
+                if(stateTracker.jobFor(s) == null && !workerDelegated.contains(s)) {
+                    stateTracker.addReplicate(s);
                     //wrap in a job for additional metadata
-                    j2 = new Job(s,(Serializable) work,pretrain);
+                    j2 = new Job(s,(Serializable) work);
                     //replicate the job to hazelcast
                     stateTracker.addJobToCurrent(j2);
+                    workerDelegated.add(s);
                     log.info("Delegated work to worker " + s + " with size " + work.size());
                     sent = true;
                     work = null;

@@ -100,7 +100,7 @@ public class BatchActor extends UntypedActor {
 				 * 
 				 * 
 				 */
-				int numWorkers = stateTracker.workers().size();
+				int numWorkers = workers2.size();
 				int miniBatchSize = conf.getSplit();
 
 				if(numWorkers == 0)
