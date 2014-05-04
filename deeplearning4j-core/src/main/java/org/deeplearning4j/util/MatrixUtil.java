@@ -13,6 +13,7 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.Tensor;
 import org.jblas.*;
 import org.jblas.ranges.Range;
+import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,28 @@ public class MatrixUtil {
             double scaleBy = scale.get(i,0);
             toScale.putRow(i,toScale.getRow(i).divi(scaleBy));
         }
+    }
+
+
+    /**
+     * Cumulative sum
+     * @param sum the matrix to get the cumulatie sum of
+     * @return a matrix of the same dimensions such that the at i,j
+     * is the cumulative sum of it + the predecessor elements in the column
+     */
+    public static DoubleMatrix cumsum(DoubleMatrix sum) {
+        DoubleMatrix ret = new DoubleMatrix(sum.rows,sum.columns);
+        for(int i = 0; i < ret.columns; i++) {
+            for(int j = 0; j < ret.rows; j++) {
+                int[] indices = new int[j +1];
+                for(int row = 0; row < indices.length; row++)
+                    indices[row] = row;
+                DoubleMatrix toSum = sum.get(indices,new int[]{i});
+                double d =  toSum.sum();
+                ret.put(j,i,d);
+            }
+        }
+        return ret;
     }
 
 
