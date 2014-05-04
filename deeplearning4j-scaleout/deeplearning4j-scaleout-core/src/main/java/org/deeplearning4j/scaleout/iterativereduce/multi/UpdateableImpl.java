@@ -23,7 +23,9 @@ public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 
 
 	public UpdateableImpl(BaseMultiLayerNetwork wrapped) {
-		this.wrapped = wrapped;
+		if(wrapped == null)
+           throw new IllegalArgumentException("Null argument not allowed");
+        this.wrapped = wrapped;
 		if(clazz == null)
 			clazz = wrapped.getClass();
 	}
