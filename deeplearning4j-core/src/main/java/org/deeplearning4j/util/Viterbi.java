@@ -10,7 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Created by agibsonccc on 5/5/14.
+ * Based on the impl from:
+ * https://gist.github.com/rmcgibbo/3915977
+ *
  */
 public class Viterbi implements Persistable {
 
@@ -25,6 +27,12 @@ public class Viterbi implements Persistable {
     private  double logOfDiangnalTProb;
     private double logStates;
 
+    /**
+     * The possible outcomes for the chain.
+     * This should be the labels in the form of the possible outcomes (1,2,3)
+     * not the binarized label matrix
+     * @param possibleLabels the possible labels of the markov chain
+     */
 
     public Viterbi(DoubleMatrix possibleLabels) {
         this.possibleLabels = possibleLabels;
@@ -36,7 +44,7 @@ public class Viterbi implements Persistable {
     /**
      * Decodes the given labels, assuming its a binary label matrix
      * @param labels the labels as a binary label matrix
-     * @return the decoded labels
+     * @return the decoded labels and the most likely outcome of the sequence
      */
     public Pair<Double,DoubleMatrix> decode(DoubleMatrix labels) {
         return decode(labels,true);
