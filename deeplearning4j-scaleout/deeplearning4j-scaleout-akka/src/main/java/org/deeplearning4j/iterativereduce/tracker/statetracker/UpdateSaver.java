@@ -25,4 +25,9 @@ public interface UpdateSaver<E> extends Serializable {
      */
     void save(String id,E save) throws Exception;
 
+    /**
+     * Cleans up the persistence layer.
+     * This will usually be used to clear up left over files from updates
+     */
+    void cleanup();
 }

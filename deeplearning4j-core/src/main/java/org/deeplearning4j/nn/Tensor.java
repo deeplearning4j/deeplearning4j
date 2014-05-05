@@ -28,6 +28,33 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     protected int slices,perMatrixRows;
 
+
+
+    /**
+     * Creates this tensor with the specified number of rows, columns and slices
+     * Note that this will throw an illegal argument exception if any of the given
+     * params are less than 1
+     * @param baseLineMatrix the matrix to get the data from
+     * @param rows
+     * @param columns
+     * @param slices
+     */
+    public Tensor(DoubleMatrix baseLineMatrix,int rows, int columns, int slices) {
+        super(rows * slices,columns);
+        if(baseLineMatrix.length != rows * columns * slices)
+            throw new IllegalArgumentException("Illegal matrix, amount of data does not match the specified dimensions");
+        if(slices < 1)
+            throw new IllegalArgumentException("Tensor has no slices");
+        if(rows < 1)
+            throw new IllegalArgumentException("Illegal number of rows");
+        if(columns < 1)
+            throw new IllegalArgumentException("Illegal number of columns");
+        this.slices = slices;
+        this.perMatrixRows = rows;
+    }
+
+
+
     /**
      * Creates this tensor with the specified number of rows, columns and slices
      * Note that this will throw an illegal argument exception if any of the given
@@ -83,6 +110,12 @@ public class Tensor extends DoubleMatrix implements Serializable {
         this.perMatrixRows = t.perMatrixRows;
     }
 
+    /**
+     * Returns a 1 x 3 matrix with the dimensions of this tensor
+     * in the following order:
+     * rows,columns,slices
+     * @return the dimensions of this tensor
+     */
     public DoubleMatrix shape() {
         DoubleMatrix ret = new DoubleMatrix(1,3);
         ret.put(0,rows());
