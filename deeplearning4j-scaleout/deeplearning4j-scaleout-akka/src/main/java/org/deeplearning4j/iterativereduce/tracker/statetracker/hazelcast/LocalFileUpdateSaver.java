@@ -37,6 +37,16 @@ public class LocalFileUpdateSaver implements UpdateSaver<UpdateableImpl> {
         return u;
     }
 
+    /**
+     * Cleans up the persistence layer.
+     * This will usually be used to clear up left over files from updates
+     */
+    @Override
+    public void cleanup() {
+        for(String s : paths.values())
+            new File(s).delete();
+    }
+
     @Override
     public void save(String id,UpdateableImpl save) throws Exception {
        if(save.get() == null)

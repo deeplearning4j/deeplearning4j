@@ -650,6 +650,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         //returns true in case hazelcast is shutdown
         try {
             done.set(true);
+            updateSaver().cleanup();
         }catch(Exception e) {
             log.warn("Hazelcast already shutdown...done() being set is pointless");
         }

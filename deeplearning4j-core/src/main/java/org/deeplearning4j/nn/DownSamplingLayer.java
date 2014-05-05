@@ -113,8 +113,9 @@ public class DownSamplingLayer extends HiddenLayer {
         }
 
         @Override
-        public HiddenLayer.Builder withInput(DoubleMatrix input) {
-            return super.withInput(input);
+        public Builder withInput(DoubleMatrix input) {
+             super.withInput(input);
+            return this;
         }
 
         @Override

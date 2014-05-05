@@ -105,7 +105,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
                     try {
                         log.info("Updating worker " + id);
                         if(tracker.getCurrent() == null || tracker.getCurrent().get() == null) {
-                           return;
+                            return;
                         }
                         setE(tracker.getCurrent());
                         setNetwork(tracker.getCurrent().get());
@@ -265,6 +265,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
     @SuppressWarnings("unchecked")
     @Override
     public  UpdateableImpl compute() {
+
+        if(tracker.isDone())
+            return null;
+
         if(!tracker.workerEnabled(id)) {
             log.info("Worker " + id + " should be re enabled if not doing work");
             return null;
@@ -333,13 +337,14 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         //job is delegated, clear so as not to cause redundancy
         try {
-            tracker.clearJob(id);
+            if(!tracker.isDone())
+                tracker.clearJob(id);
 
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
-
-        isWorking .set(false);
+        if(!tracker.isDone())
+            isWorking.set(false);
         return new UpdateableImpl(network);
     }
 

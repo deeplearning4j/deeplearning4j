@@ -9,7 +9,7 @@ import org.jblas.ranges.RangeUtils;
  * @author Adam Gibson
  */
 public class FourDTensor extends Tensor {
-
+    //number of tensors for the fourth dimension
     protected int numTensor;
 
     /**
@@ -27,8 +27,30 @@ public class FourDTensor extends Tensor {
         this.numTensor = numTensor;
     }
 
+    /**
+     * Initializes this tensor as a t.rows x 1 x 1 x 1 4d tensor
+     * @param t the matrix to use for data
+     */
     public FourDTensor(DoubleMatrix t) {
         super(t);
+    }
+
+    /**
+     * Initializes this four d tensor with the given data and
+     * the specified dimensions
+     * @param t the baseline data for this tensor
+     * @param rows the number of rows per slice
+     * @param columns the number of columns for the tensor
+     * @param slices the number of slices per tensor
+     * @param tensor the number of tensors for this tensor
+     */
+    public FourDTensor(DoubleMatrix t,int rows,int columns,int slices,int tensor) {
+        super(t,rows,columns,slices * tensor);
+        this.perMatrixRows = rows;
+        this.columns = columns;
+        this.slices = slices;
+        this.numTensor = tensor;
+
     }
 
     /**
@@ -92,6 +114,21 @@ public class FourDTensor extends Tensor {
         Range rows = RangeUtils.interval(row,row + put.rows);
         Range columns = RangeUtils.interval(0,put.columns);
         put(rows,columns,put);
+    }
+
+    /**
+     * Returns the dimensions of this fourd tensor as a row matrix, in the following order:
+     * rows,columns,slices,tensors
+     * @return a 1 x 4 matrix with the dimensions of this tensor
+     */
+    @Override
+    public DoubleMatrix shape() {
+        DoubleMatrix ret = new DoubleMatrix(1,4);
+        ret.put(0,rows());
+        ret.put(1,columns());
+        ret.put(2,slices());
+        ret.put(3,numTensors());
+        return ret;
     }
 
     /**
