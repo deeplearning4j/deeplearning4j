@@ -1,6 +1,8 @@
 package org.deeplearning4j.example.word2vec;
 
 import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
@@ -8,18 +10,14 @@ import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCa
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.Viterbi;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.iterator.Word2VecDataSetIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
-import org.deeplearning4j.word2vec.util.Window;
-import org.deeplearning4j.word2vec.util.Windows;
-import org.deeplearning4j.word2vec.viterbi.CounterUtil;
-import org.deeplearning4j.word2vec.viterbi.Index;
-import org.deeplearning4j.word2vec.viterbi.Viterbi;
-import org.deeplearning4j.word2vec.viterbi.ViterbiUtil;
+
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,36 +96,18 @@ public class MovingWindowExample {
 
         iterator.reset();
 
-        Index labelIndex = new Index();
-        for(int i = 0; i < labels.size(); i++)
-            labelIndex.add(labels.get(i));
-        Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
-        CounterMap<Integer,Integer> transitions = new CounterMap<>();
-        while(iterator.hasNext()) {
-            String sentence = iterator.nextSentence();
-            if(sentence.isEmpty())
-                continue;
-            List<Window> windows = Windows.windows(sentence);
-
-            for(int i = 1; i < windows.size(); i++) {
-                String firstLabel = windows.get(i - 1).getLabel();
-                String secondLabel = windows.get(i).getLabel();
-                int first = labelIndex.indexOf(firstLabel);
-                int second = labelIndex.indexOf(secondLabel);
-
-
-                transitions.incrementCount(first,second,1.0);
-            }
-
-            DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
             //viterbi optimization
-            Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
-
+            Viterbi viterbi = new Viterbi(new DoubleMatrix(new double[]{0,1,2}));
+            iter.reset();
+            while(iter.hasNext()) {
+                DataSet next = iter.next();
+                Pair<Double,DoubleMatrix> decoded = viterbi.decode(next.getSecond());
+                log.info("Pair " + decoded.getSecond());
+            }
 
 
         }
 
 
-    }
 
 }

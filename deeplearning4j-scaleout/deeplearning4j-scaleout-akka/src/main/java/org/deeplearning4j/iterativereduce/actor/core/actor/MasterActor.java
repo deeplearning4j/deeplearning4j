@@ -178,7 +178,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
 
     private void delegateJob(List<DataSet> work,Set<String> workerDelegated) throws Exception {
         //block till there's an available worker
-        log.info("Possible workers " + stateTracker.workers());
+        log.info("Possible workers " + new ArrayList<>(stateTracker.workers()));
 
         Job j2;
 

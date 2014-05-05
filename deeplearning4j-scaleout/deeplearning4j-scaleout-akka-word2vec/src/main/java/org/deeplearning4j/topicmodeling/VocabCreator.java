@@ -21,7 +21,7 @@ import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
