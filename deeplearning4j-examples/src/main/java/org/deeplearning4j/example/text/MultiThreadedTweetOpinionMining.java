@@ -44,7 +44,7 @@ public class MultiThreadedTweetOpinionMining {
         TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1", "2"),2000);
         DataSet data = vectorizor.vectorize();
         log.info("Vocab " + vectorizor.vocab());
-        DataSetIterator iter = new ListDataSetIterator(data.asList().subList(0,100),10);
+        DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
         HazelCastStateTracker tracker = new HazelCastStateTracker();
         if(!tracker.isPretrain())
@@ -57,7 +57,8 @@ public class MultiThreadedTweetOpinionMining {
         c.setLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setnIn(iter.inputColumns());
         c.setUseAdaGrad(true);
-        c.setNormalizeZeroMeanAndUnitVariance(true);
+        c.setMomentum(0.3);
+        c.setNormalizeZeroMeanAndUnitVariance(false);
         //c.setRenderWeightEpochs(1000);
         c.setnOut(3);
         c.setSplit(10);
