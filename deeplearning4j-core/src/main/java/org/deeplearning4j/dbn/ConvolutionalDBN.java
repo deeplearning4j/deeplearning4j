@@ -90,8 +90,13 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
     public List<DoubleMatrix> feedForward(DoubleMatrix input) {
         /* Number of tensors is equivalent to the number of mini batches */
         FourDTensor tensor = new FourDTensor(input,inputSize[0],inputSize[1],  input.rows / inputSize[0],input.rows / input.length);
+        FourDTensor curr = tensor;
         for(int i = 0; i < getnLayers(); i++) {
+            ConvolutionalRBM currLayer = (ConvolutionalRBM) getLayers()[i];
+            for(int j = 0; j < currLayer.getNumFilters(); j++) {
+                DoubleMatrix prevLayerShape = curr.shape();
 
+            }
         }
         return super.feedForward(input);
     }

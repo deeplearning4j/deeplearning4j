@@ -5,7 +5,7 @@ import java.io.File;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 
 /**
  * Vectorizes text

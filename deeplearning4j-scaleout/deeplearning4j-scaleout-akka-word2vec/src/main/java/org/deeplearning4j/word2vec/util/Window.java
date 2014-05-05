@@ -25,8 +25,8 @@ public class Window implements Serializable {
 	private boolean endLabel;
 	private int windowSize;
 	private int median;
-	private static String BEGIN_LABEL = "<[A-Z]+>";
-	private static String END_LABEL = "</[A-Z]+>";
+	private static String BEGIN_LABEL = "<[A-Z]+|\\d+>";
+	private static String END_LABEL = "</[A-Z]+\\d+>";
 
 	/**
 	 * Creates a window with a context of size 3

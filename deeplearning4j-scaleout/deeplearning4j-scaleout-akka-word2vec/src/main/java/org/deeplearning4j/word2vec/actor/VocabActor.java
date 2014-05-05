@@ -11,7 +11,7 @@ import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

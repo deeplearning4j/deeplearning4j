@@ -10,7 +10,7 @@ import java.util.StringTokenizer;
 
 import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.Word2Vec;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

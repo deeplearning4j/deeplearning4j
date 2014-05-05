@@ -8,6 +8,7 @@ import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.text.tokenizerfactory.PosUimaTokenizerFactory;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
@@ -23,7 +24,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
- * Created by agibsonccc on 4/14/14.
+ * @author Adam Gibson
  */
 public class MultiThreadedTweetOpinionMining {
     private static Logger log = LoggerFactory.getLogger(MultiThreadedTweetOpinionMining.class);
@@ -40,12 +41,23 @@ public class MultiThreadedTweetOpinionMining {
                 return new InputHomogenization(sentence).transform();
             }
         });
-        TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
+
+
+        TokenizerFactory tokenizerFactory = new PosUimaTokenizerFactory(Arrays.asList("JJ","JJR","VB","VBZ","RB","VBD","VBN","VBP","VBG"));
+        //note that we are only using 2000 length feature vectors. Due to the sparsity of bag of words, this is actually very little.
+        //We need to tune the number of words (bump them up, or use better filtering mechanisms)
+
         TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1", "2"),2000);
         DataSet data = vectorizor.vectorize();
+        data.binarize();
         log.info("Vocab " + vectorizor.vocab());
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
+
+        /*
+        Note that this is an example of how to train. The parameters are not optimally tuned here, but serve to demonstrate
+        how to use bag of words classification
+         */
         HazelCastStateTracker tracker = new HazelCastStateTracker();
         if(!tracker.isPretrain())
             throw new IllegalStateException("Tracker should be on pretrain");
@@ -62,8 +74,8 @@ public class MultiThreadedTweetOpinionMining {
         //c.setRenderWeightEpochs(1000);
         c.setnOut(3);
         c.setSplit(10);
-        c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
-        c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
+        c.setHiddenUnit(RBM.HiddenUnit.BINARY);
+        c.setVisibleUnit(RBM.VisibleUnit.BINARY);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(false);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
