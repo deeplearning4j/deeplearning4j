@@ -15,7 +15,7 @@ import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 import org.jblas.DoubleMatrix;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Turns a set of documents in to a tfidf bag of words

@@ -15,36 +15,40 @@ import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 /**
  * Uses a uima {@link AnalysisEngine} to 
  * tokenize text.
- * 
- * 
+ *
+ *
  * @author agibsonccc
  *
  */
 public class UimaTokenizerFactory implements TokenizerFactory {
 
-	private AnalysisEngine tokenizer;
-	
-	public UimaTokenizerFactory() throws ResourceInitializationException {
-		this(defaultAnalysisEngine());
-	}
+    private AnalysisEngine tokenizer;
 
-	
-	public UimaTokenizerFactory(AnalysisEngine tokenizer) {
-		super();
-		this.tokenizer = tokenizer;
-	}
+    public UimaTokenizerFactory() throws ResourceInitializationException {
+        this(defaultAnalysisEngine());
+    }
 
 
+    public UimaTokenizerFactory(AnalysisEngine tokenizer) {
+        super();
+        this.tokenizer = tokenizer;
+    }
 
-	@Override
-	public Tokenizer create(String toTokenize) {
-		return new UimaTokenizer(toTokenize,tokenizer);
-	}
-	
-	
-	public static AnalysisEngine defaultAnalysisEngine() throws ResourceInitializationException {
-		return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(),TokenizerAnnotator.getDescription(),DefaultSnowballStemmer.getDescription("English")));
-	}
 
-	
+
+    @Override
+    public Tokenizer create(String toTokenize) {
+        return new UimaTokenizer(toTokenize,tokenizer);
+    }
+
+
+    public static AnalysisEngine defaultAnalysisEngine()  {
+        try {
+            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), DefaultSnowballStemmer.getDescription("English")));
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 }

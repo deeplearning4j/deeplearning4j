@@ -2,12 +2,7 @@ package org.deeplearning4j.word2vec.actor;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.word2vec.VocabWord;
-import org.deeplearning4j.word2vec.viterbi.Index;
 
 
 public class VocabMessage implements Serializable {

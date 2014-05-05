@@ -11,7 +11,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.SerializableFileIter;
 import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.word2vec.viterbi.Index;
+import org.deeplearning4j.util.Index;
 import org.jblas.DoubleMatrix;
 
 

@@ -1,16 +1,12 @@
-package org.deeplearning4j.word2vec.viterbi;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+package org.deeplearning4j.util;
+
+import org.deeplearning4j.nn.Persistable;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.deeplearning4j.nn.Persistable;
 
 /**
  * An index is a set of objects augmented with a list and a reverse lookup table
