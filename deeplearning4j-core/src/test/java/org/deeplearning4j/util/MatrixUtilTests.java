@@ -11,6 +11,9 @@ public class MatrixUtilTests {
 
     private static Logger log = LoggerFactory.getLogger(MatrixUtilTests.class);
 
+
+
+
     @Test
     public void testRot90() {
         DoubleMatrix zeros = DoubleMatrix.rand(1, 3);
@@ -25,7 +28,7 @@ public class MatrixUtilTests {
         DoubleMatrix d = DoubleMatrix.ones(28,28);
         DoubleMatrix scale = new DoubleMatrix(2,1);
         MatrixUtil.assign(scale,2);
-        MatrixUtil.downSample(d,scale);
+        MatrixUtil.upSample(d, scale);
     }
 
     @Test

@@ -128,7 +128,29 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix downSample(DoubleMatrix d,DoubleMatrix scale) {
+    public static DoubleMatrix downSample(DoubleMatrix data,DoubleMatrix stride) {
+        DoubleMatrix d = DoubleMatrix.ones((int) stride.get(0),(int) stride.get(1));
+        d.divi(prod(stride));
+        DoubleMatrix ret = Convolution.conv2d(data,d, Convolution.Type.VALID);
+        ret = ret.get(RangeUtils.interval(0,(int) stride.get(0)),RangeUtils.interval(0,(int) stride.get(1)));
+        return ret;
+    }
+
+    /**
+     * Takes the product of all the elemnts in the matrix
+     * @param product the matrix to get the product of elemnents of
+     *
+     * @return the product of all the elements in the matrix
+     */
+    public static double prod(DoubleMatrix product) {
+        double ret = 1.0;
+        for(int i = 0; i < product.length; i++)
+            ret*= product.get(i);
+        return ret;
+    }
+
+
+    public static DoubleMatrix upSample(DoubleMatrix d, DoubleMatrix scale) {
         DoubleMatrix shape = size(d);
 
         DoubleMatrix idx = new DoubleMatrix(shape.length,1);
@@ -136,14 +158,32 @@ public class MatrixUtil {
 
         for(int i = 0; i < shape.length; i++) {
             DoubleMatrix tmp = DoubleMatrix.zeros((int) shape.get(i) * (int) scale.get(i),1);
-
-            Range r1 = RangeUtils.interval(0,(int) scale.get(i));
-            Range r2 = RangeUtils.interval((int) shape.get(i),(int)scale.get(i));
-            tmp.put(toIndices(r1),toIndices(r2),1.0);
+            int[] indices = indicesCustomRange(0,(int)scale.get(i),(int) scale.get(i) * (int)shape.get(i));
+            tmp.put(indices,1.0);
             idx.put(i,cumsum(tmp).sum());
         }
         return idx;
     }
+
+    public static int[] indicesCustomRange(int start,int increment,int end) {
+        int len = end - start - increment;
+        if(len >= end )
+            len = end;
+        int[] ret = new int[len];
+        int idx = 0;
+        int count = 0;
+        for(int i = 0; i < len; i++) {
+            ret[i] = idx;
+            idx+= increment;
+            if(idx >= len)
+                break;
+            count++;
+        }
+        int[] realRet = new int[count];
+        System.arraycopy(ret, 0, realRet, 0, realRet.length);
+        return realRet;
+    }
+
 
     public static DoubleMatrix rangeVector(double begin, double end) {
         int diff = (int) Math.abs(end - begin);
@@ -223,35 +263,6 @@ public class MatrixUtil {
     }
 
 
-    /**
-     * Takes an image (grey-levels) and a kernel and a position,
-     * applies the convolution at that position and returns the
-     * new pixel value.
-     *
-     * @param input The 2D double array representing the image.
-     * @param x The x coordinate for the position of the convolution.
-     * @param y The y coordinate for the position of the convolution.
-     * @param k The 2D array representing the kernel.
-     * @param kernelWidth The width of the kernel.
-     * @param kernelHeight The height of the kernel.
-     * @return The new pixel value after the convolution.
-     */
-    public static double singlePixelConvolution(DoubleMatrix input,
-                                                int x, int y,
-                                                DoubleMatrix k,
-                                                int kernelWidth,
-                                                int kernelHeight) {
-        double output = 0;
-
-        for (int i = 0; i < kernelWidth; ++i) {
-            for (int j = 0; j < kernelHeight; ++j) {
-                output += (input.get(x + i,y + j) * k.get(i,j));
-            }
-        }
-        return output;
-    }
-
-
     public static DoubleMatrix reverse(DoubleMatrix toReverse) {
         DoubleMatrix ret = new DoubleMatrix(toReverse.rows,toReverse.columns);
         int reverseIndex = 0;
@@ -261,36 +272,6 @@ public class MatrixUtil {
         return ret;
     }
 
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     *
-     * @param input the 2D double array representing the image
-     * @param width the width of the image
-     * @param height the height of the image
-     * @param kernel the 2D array representing the kernel
-     * @param kernelWidth the width of the kernel
-     * @param kernelHeight the height of the kernel
-     * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolution2D(DoubleMatrix input,
-                                             int width, int height,
-                                             DoubleMatrix kernel,
-                                             int kernelWidth,
-                                             int kernelHeight) {
-        int smallWidth = width - kernelWidth + 1;
-        int smallHeight = height - kernelHeight + 1;
-        DoubleMatrix output = DoubleMatrix.zeros(smallWidth,smallHeight);
-
-        for (int i = 0; i < smallWidth; ++i) {
-            for (int j = 0; j < smallHeight; ++j) {
-                output.put(i,j,singlePixelConvolution(input, i, j, kernel,
-                        kernelWidth, kernelHeight));
-            }
-        }
-        return output;
-    }
 
 
     /**
@@ -318,20 +299,6 @@ public class MatrixUtil {
             return Math.max(d.rows,d.columns);
 
 
-    }
-
-    /**
-     * Takes a 2D array of grey-levels and a kernel and applies the convolution
-     * over the area of the image specified by width and height.
-     * The specified height is implied from the input and given kernel
-     *
-     * @param input the 2D double array representing the image
-     @param kernel the 2D array representing the kernel
-      * @return the 2D array representing the new image
-     */
-    public static DoubleMatrix convolution2D(DoubleMatrix input,
-                                             DoubleMatrix kernel) {
-        return convolution2D(input,input.rows,input.columns,kernel,kernel.rows,kernel.columns);
     }
 
 
