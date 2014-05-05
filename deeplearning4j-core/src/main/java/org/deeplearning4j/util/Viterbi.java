@@ -102,11 +102,92 @@ public class Viterbi implements Persistable {
 
     @Override
     public void write(OutputStream os) {
-
+          SerializationUtils.writeObject(this,os);
     }
 
     @Override
     public void load(InputStream is) {
+        Viterbi ret = SerializationUtils.readObject(is);
+        this.states = ret.states;
+        this.logStates = ret.logStates;
+        this.metaStability = ret.metaStability;
+        this.logMetaInstability = ret.logMetaInstability;
+        this.logOfDiangnalTProb = ret.logOfDiangnalTProb;
+        this.logPCorrect = ret.logPCorrect;
+        this.pCorrect = ret.pCorrect;
 
+    }
+
+
+    public double getMetaStability() {
+        return metaStability;
+    }
+
+    public void setMetaStability(double metaStability) {
+        this.metaStability = metaStability;
+    }
+
+    public double getpCorrect() {
+        return pCorrect;
+    }
+
+    public void setpCorrect(double pCorrect) {
+        this.pCorrect = pCorrect;
+    }
+
+    public DoubleMatrix getPossibleLabels() {
+        return possibleLabels;
+    }
+
+    public void setPossibleLabels(DoubleMatrix possibleLabels) {
+        this.possibleLabels = possibleLabels;
+    }
+
+    public int getStates() {
+        return states;
+    }
+
+    public void setStates(int states) {
+        this.states = states;
+    }
+
+    public double getLogPCorrect() {
+        return logPCorrect;
+    }
+
+    public void setLogPCorrect(double logPCorrect) {
+        this.logPCorrect = logPCorrect;
+    }
+
+    public double getLogPIncorrect() {
+        return logPIncorrect;
+    }
+
+    public void setLogPIncorrect(double logPIncorrect) {
+        this.logPIncorrect = logPIncorrect;
+    }
+
+    public double getLogMetaInstability() {
+        return logMetaInstability;
+    }
+
+    public void setLogMetaInstability(double logMetaInstability) {
+        this.logMetaInstability = logMetaInstability;
+    }
+
+    public double getLogOfDiangnalTProb() {
+        return logOfDiangnalTProb;
+    }
+
+    public void setLogOfDiangnalTProb(double logOfDiangnalTProb) {
+        this.logOfDiangnalTProb = logOfDiangnalTProb;
+    }
+
+    public double getLogStates() {
+        return logStates;
+    }
+
+    public void setLogStates(double logStates) {
+        this.logStates = logStates;
     }
 }
