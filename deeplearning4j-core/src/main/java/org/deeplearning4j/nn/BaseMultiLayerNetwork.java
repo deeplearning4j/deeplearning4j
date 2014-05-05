@@ -47,59 +47,59 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     private static Logger log = LoggerFactory.getLogger(BaseMultiLayerNetwork.class);
     private static final long serialVersionUID = -5029161847383716484L;
     //number of columns in the input matrix
-    private int nIns;
+    protected int nIns;
     //the hidden layer sizes at each layer
-    private int[] hiddenLayerSizes;
+    protected int[] hiddenLayerSizes;
     //the number of outputs/labels for logistic regression
-    private int nOuts;
+    protected int nOuts;
     //the hidden layers
-    private HiddenLayer[] sigmoidLayers;
+    protected HiddenLayer[] sigmoidLayers;
     //logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
-    private LogisticRegression logLayer;
-    private RandomGenerator rng;
+    protected LogisticRegression logLayer;
+    protected RandomGenerator rng;
     /* probability distribution for generation of weights */
-    private RealDistribution dist;
-    private double momentum = 0.1;
+    protected RealDistribution dist;
+    protected double momentum = 0.1;
     //default training examples and associated layers
-    private DoubleMatrix input,labels;
-    private MultiLayerNetworkOptimizer optimizer;
+    protected DoubleMatrix input,labels;
+    protected MultiLayerNetworkOptimizer optimizer;
     //activation function for each hidden layer
-    private ActivationFunction activation = new Sigmoid();
-    private boolean toDecode;
+    protected ActivationFunction activation = new Sigmoid();
+    protected boolean toDecode;
     //l2 regularization constant for weight decay
-    private double l2 = 0.01;
+    protected double l2 = 0.01;
     //whether to initialize layers
-    private boolean shouldInit = true;
+    protected boolean shouldInit = true;
     //fan in for uniform distributions
-    private double fanIn = -1;
+    protected double fanIn = -1;
     //whether to render weights or not; anything <=0 will not render the weights
-    private int renderWeightsEveryNEpochs = -1;
-    private boolean useRegularization = false;
+    protected int renderWeightsEveryNEpochs = -1;
+    protected boolean useRegularization = false;
     //sometimes we may need to transform weights; this allows a
     //weight transform upon layer setup
-    private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
+    protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
     //hidden bias transforms; for initialization
-    private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
+    protected Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
     //visible bias transforms for initialization
-    private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
+    protected Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
-    private boolean shouldBackProp = true;
+    protected boolean shouldBackProp = true;
     //whether to only train a certain number of epochs
-    private boolean forceNumEpochs = false;
+    protected boolean forceNumEpochs = false;
     //don't use sparsity by default
-    private double sparsity = 0;
+    protected double sparsity = 0;
     //optional: used in normalizing input. This is used in saving the model for prediction purposes in normalizing incoming data
-    private DoubleMatrix columnSums;
+    protected DoubleMatrix columnSums;
     //subtract input by column means for zero mean
-    private DoubleMatrix  columnMeans;
+    protected DoubleMatrix  columnMeans;
     //divide by the std deviation
-    private DoubleMatrix columnStds;
-    private boolean initCalled = false;
-    private boolean useHiddenActivationsForwardProp = true;
+    protected DoubleMatrix columnStds;
+    protected boolean initCalled = false;
+    protected boolean useHiddenActivationsForwardProp = true;
     /*
      * Use adagrad or not
      */
-    private boolean useAdaGrad = false;
+    protected boolean useAdaGrad = false;
 
     /*
      * Hinton's Practical guide to RBMS:
@@ -110,7 +110,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      *
      * For biases this can be bigger.
      */
-    public double learningRateUpdate = 0.95;
+    protected double learningRateUpdate = 0.95;
     /*
      * Any neural networks used as layers.
      * This will always have an equivalent sigmoid layer
@@ -119,13 +119,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Typically, this is some mix of:
      *        RBMs,Denoising AutoEncoders, or their Continuous counterparts
      */
-    private NeuralNetwork[] layers;
+    protected NeuralNetwork[] layers;
 
     /*
      * The delta from the previous iteration to this iteration for
      * cross entropy must change >= this amount in order to continue.
      */
-    public double errorTolerance = 0.0001;
+    protected double errorTolerance = 0.0001;
 
     /* Gradient listeners for each neural network */
     protected Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();

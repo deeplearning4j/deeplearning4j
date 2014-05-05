@@ -508,6 +508,156 @@ public class ConvolutionalRBM extends RBM  {
         }
     }
 
+    public int[] getVisibleSize() {
+        return visibleSize;
+    }
+
+    public void setVisibleSize(int[] visibleSize) {
+        this.visibleSize = visibleSize;
+    }
+
+    public int[] getFilterSize() {
+        return filterSize;
+    }
+
+    public void setFilterSize(int[] filterSize) {
+        this.filterSize = filterSize;
+    }
+
+    public int[] getFmSize() {
+        return fmSize;
+    }
+
+    public void setFmSize(int[] fmSize) {
+        this.fmSize = fmSize;
+    }
+
+    public int[] getStride() {
+        return stride;
+    }
+
+    public void setStride(int[] stride) {
+        this.stride = stride;
+    }
+
+    public int getNumFilters() {
+
+        return numFilters;
+    }
+
+    public void setNumFilters(int numFilters) {
+        this.numFilters = numFilters;
+    }
+
+    public Tensor getVisI() {
+        return visI;
+    }
+
+    public void setVisI(Tensor visI) {
+        this.visI = visI;
+    }
+
+    public Tensor getHidI() {
+        return hidI;
+    }
+
+    public void setHidI(Tensor hidI) {
+        this.hidI = hidI;
+    }
+
+    public void setW(Tensor w) {
+        W = w;
+    }
+
+    public boolean isConvolutionInitCalled() {
+
+        return convolutionInitCalled;
+    }
+
+    public void setConvolutionInitCalled(boolean convolutionInitCalled) {
+        this.convolutionInitCalled = convolutionInitCalled;
+    }
+
+    public DoubleMatrix getChainStart() {
+        return chainStart;
+    }
+
+    public void setChainStart(DoubleMatrix chainStart) {
+        this.chainStart = chainStart;
+    }
+
+    public Tensor geteVis() {
+        return eVis;
+    }
+
+    public void seteVis(Tensor eVis) {
+        this.eVis = eVis;
+    }
+
+    public Tensor geteHid() {
+        return eHid;
+    }
+
+    public void seteHid(Tensor eHid) {
+        this.eHid = eHid;
+    }
+
+    public DoubleMatrix getwGradient() {
+        return wGradient;
+    }
+
+    public void setwGradient(DoubleMatrix wGradient) {
+        this.wGradient = wGradient;
+    }
+
+    public DoubleMatrix getvBiasGradient() {
+        return vBiasGradient;
+    }
+
+    public void setvBiasGradient(DoubleMatrix vBiasGradient) {
+        this.vBiasGradient = vBiasGradient;
+    }
+
+    public DoubleMatrix gethBiasGradient() {
+        return hBiasGradient;
+    }
+
+    public void sethBiasGradient(DoubleMatrix hBiasGradient) {
+        this.hBiasGradient = hBiasGradient;
+    }
+
+    public double getSparseGain() {
+        return sparseGain;
+    }
+
+    public void setSparseGain(double sparseGain) {
+        this.sparseGain = sparseGain;
+    }
+
+    public int getwRows() {
+        return wRows;
+    }
+
+    public void setwRows(int wRows) {
+        this.wRows = wRows;
+    }
+
+    public int getwCols() {
+        return wCols;
+    }
+
+    public void setwCols(int wCols) {
+        this.wCols = wCols;
+    }
+
+    public int getwSlices() {
+        return wSlices;
+    }
+
+    public void setwSlices(int wSlices) {
+        this.wSlices = wSlices;
+    }
+
     public static class Builder extends RBM.Builder {
 
         protected int numFilters = 4;
