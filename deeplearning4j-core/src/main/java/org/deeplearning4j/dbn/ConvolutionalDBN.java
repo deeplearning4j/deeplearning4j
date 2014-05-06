@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
+import org.deeplearning4j.util.Convolution;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -91,10 +92,35 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         /* Number of tensors is equivalent to the number of mini batches */
         FourDTensor tensor = new FourDTensor(input,inputSize[0],inputSize[1],  input.rows / inputSize[0],input.rows / input.length);
         FourDTensor curr = tensor;
-        for(int i = 0; i < getnLayers(); i++) {
-            ConvolutionalRBM currLayer = (ConvolutionalRBM) getLayers()[i];
+        for(int i = 1; i < getnLayers(); i++) {
+            ConvolutionalRBM currLayer = (ConvolutionalRBM) getLayers()[i - 1];
+            ConvolutionalRBM prevLayer = (ConvolutionalRBM) getLayers()[i];
+
             for(int j = 0; j < currLayer.getNumFilters(); j++) {
+                /**
+                 * A fourd tensor will have the following shape of mnist with a mini batch size of 5
+                 * and four mini batches
+                 * row wise will be:
+                 * 28,28,5,4
+                 *
+                 *
+                 */
                 DoubleMatrix prevLayerShape = curr.shape();
+                //number of columns
+                int nInY = (int)prevLayerShape.get(0);
+                //number of rows
+                int nInX = (int) prevLayerShape.get(1);
+                //number feature maps
+                int nInFM = (int) prevLayerShape.get(2);
+                //number of batches
+                int nObs = (int) prevLayerShape.get(3);
+
+                Tensor featureMap = Tensor.zeros(nFm[j],1,nObs);
+                for(int l = 0; l < prevLayer.getNumFilters(); l++) {
+                    //featureMap.addi(Convolution.conv2d(curr.getTensor(l),))
+                }
+
+
 
             }
         }

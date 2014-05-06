@@ -13,6 +13,60 @@ public class MatrixUtilTests {
 
 
 
+    @Test
+    public void test1DFilter() {
+        DoubleMatrix x = new DoubleMatrix(new double[]{
+                0.166968,
+                0.064888,
+                0.428329,
+                0.864608,
+                0.154120,
+                0.881056,
+                0.608056,
+                0.575432,
+                0.197161,
+                0.047612
+        });
+
+        DoubleMatrix A = new DoubleMatrix(new double[]{
+                1,
+                2.7804e-4,
+                3.2223e-4,
+                2.4192e-4,
+                9.5975e-4,
+                8.5936e-4,
+                7.5952e-4,
+                2.6142e-4,
+                4.7416e-4,
+                1.3154e-4,
+                1.8972e-4
+        });
+
+        log.info("A  " + A);
+        DoubleMatrix B = new DoubleMatrix(new double[]{
+                0.0063109 ,
+                .3856189,
+                .9307907,
+                .1634197,
+                0.9245115
+        });
+        log.info("B " + B);
+
+        DoubleMatrix test = MatrixUtil.oneDimensionalDigitalFilter(B,A,x);
+        DoubleMatrix answer = new DoubleMatrix(new double[]{
+                0.0010537,
+                0.0647952,
+                0.1831190,
+                0.2582388,
+                0.8978864,
+                0.9993074,
+                1.0234692,
+                1.8814360,
+                1.0732472,
+                1.5226931
+        });
+        assertEquals(answer,test);
+    }
 
     @Test
     public void testRot90() {
