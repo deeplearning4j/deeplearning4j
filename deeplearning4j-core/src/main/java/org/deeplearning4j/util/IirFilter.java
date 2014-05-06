@@ -7,24 +7,21 @@ import static org.jblas.DoubleMatrix.concatVertically;
 import static org.jblas.ranges.RangeUtils.interval;
 
 /**
- * Created by agibsonccc on 5/5/14.
+ * IirFilter:
+ * http://www.mathworks.com/help/matlab/ref/filter.html
+ * @author Adam Gibson
  */
 public class IirFilter {
 
     private DoubleMatrix a,b;
     private DoubleMatrix x,y;
-    private int np;
-    private int ord;
+
 
     public IirFilter(DoubleMatrix x,DoubleMatrix a,DoubleMatrix b) {
         this.a = a;
         this.b = b;
         this.x = x;
-        this.np = x.length - 1;
-        this.ord = b.length - 1;
         this.y = new DoubleMatrix(x.rows,x.columns);
-        np = x.length - 1;
-        ord = b.length - 1;
     }
 
 
@@ -39,8 +36,7 @@ public class IirFilter {
         DoubleMatrix v = xv.mul(b.get(0));
 
         for(int i = 1; i < Math.min(NB,NX); i++) {
-            DoubleMatrix xvConcat = xv.get(toIndices(interval(0,NX  - i)));
-            DoubleMatrix xDelayed = concatVertically(DoubleMatrix.zeros(i , 1), xvConcat);
+            DoubleMatrix xDelayed = concatVertically(DoubleMatrix.zeros(i , 1),  xv.get(toIndices(interval(0,NX  - i))));
             v.addi(xDelayed.mul(b.get(i)));
 
         }
