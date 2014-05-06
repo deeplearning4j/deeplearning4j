@@ -755,9 +755,13 @@ public class MatrixUtil {
     }
 
 
-
-
-
+    /**
+     * One dimensional filter on a signal
+     * @param b
+     * @param a
+     * @param x
+     * @return
+     */
     public static DoubleMatrix oneDimensionalDigitalFilter(DoubleMatrix b, DoubleMatrix a, DoubleMatrix x) {
         return new IirFilter(x,a,b).filter();
     }
