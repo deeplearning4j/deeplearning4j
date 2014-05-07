@@ -3,7 +3,7 @@ package org.deeplearning4j.nn;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
-
+import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
 /**
  * Four dimensional tensor
  * @author Adam Gibson
@@ -11,6 +11,8 @@ import org.jblas.ranges.RangeUtils;
 public class FourDTensor extends Tensor {
     //number of tensors for the fourth dimension
     protected int numTensor;
+
+    public FourDTensor() {}
 
     /**
      * Creates this tensor with the specified number of rows, columns and slices
@@ -30,9 +32,47 @@ public class FourDTensor extends Tensor {
     /**
      * Initializes this tensor as a t.rows x 1 x 1 x 1 4d tensor
      * @param t the matrix to use for data
+     * @param copy whether to copy the input matrix
+     */
+    public FourDTensor(DoubleMatrix t,boolean copy) {
+        this.slices = 1;
+        this.perMatrixRows = 1;
+
+        if(copy) {
+            this.data = new double[t.length];
+            System.arraycopy(t.data,0,this.data,0,this.data.length);
+        }
+        else
+            this.data = t.data;
+    }
+
+    /**
+     * Initializes this tensor as a t.rows x 1 x 1 x 1 4d tensor
+     * @param t the matrix to use for data
      */
     public FourDTensor(DoubleMatrix t) {
-        super(t);
+        this(t,true);
+    }
+
+
+    /**
+     * Initializes this four d tensor with the given data and
+     * the specified dimensions
+     * @param t the baseline data for this tensor
+     * @param rows the number of rows per slice
+     * @param columns the number of columns for the tensor
+     * @param slices the number of slices per tensor
+     * @param tensor the number of tensors for this tensor
+     * @param copy whether to copy the input data or reference it directly (DANGEROUS)
+     */
+    public FourDTensor(DoubleMatrix t,int rows,int columns,int slices,int tensor,boolean copy) {
+        super(t,rows,columns,slices * tensor,copy);
+
+        this.perMatrixRows = rows;
+        this.columns = columns;
+        this.slices = slices;
+        this.numTensor = tensor;
+
     }
 
     /**
@@ -153,5 +193,180 @@ public class FourDTensor extends Tensor {
     }
 
 
+
+    /**
+     * Returns a zero tensor
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param slices the slices
+     * @param numTensor the number of tensors
+     * @return the tensor with the specified slices and the random matrices
+     */
+    public static FourDTensor zeros(int rows, int cols,int slices,int numTensor) {
+        return new FourDTensor(rows,cols,slices,numTensor);
+
+    }
+
+    /**
+     * Add a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor addi(DoubleMatrix other) {
+        return createBasedOn(super.addi(other), this);
+    }
+
+    /**
+     * Add a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor add(DoubleMatrix other) {
+        return createBasedOn(super.add(other), this);
+    }
+    /**
+     * Add a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor add(double v) {
+        return createBasedOn(super.add(v), this);
+    }
+    /**
+     * Add a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor addi(double v) {
+        return createBasedOn(super.addi(v), this);
+    }
+
+    /**
+     * Subtract a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor subi(DoubleMatrix other) {
+        return createBasedOn(super.subi(other), this);
+    }
+
+    /**
+     * Subtract a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor sub(DoubleMatrix other) {
+        return createBasedOn(super.sub(other), this);
+    }
+
+    /**
+     * Subtract a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor subi(double v) {
+        return createBasedOn(super.subi(v), this);
+    }
+
+    /**
+     * Subtract a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor sub(double v) {
+        return createBasedOn(super.sub(v), this);
+    }
+
+    /**
+     * Elementwise multiply by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor muli(DoubleMatrix other) {
+        return createBasedOn(super.muli(other), this);
+    }
+
+    /**
+     * Elementwise multiply by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor mul(DoubleMatrix other) {
+        return createBasedOn(super.mul(other), this);
+    }
+
+    /**
+     * Elementwise multiply by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor muli(double v) {
+        return createBasedOn(super.muli(v), this);
+    }
+
+    /**
+     * Elementwise divide by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public FourDTensor divi(DoubleMatrix other) {
+        return createBasedOn(super.divi(other), this);
+    }
+
+    /**
+     * Elementwise divide by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public  FourDTensor div(DoubleMatrix other) {
+        return createBasedOn(super.div(other), this);
+    }
+    /**
+     * Elementwise divide by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor div(double v) {
+        return createBasedOn(super.div(v), this);
+    }
+
+    /**
+     * Elementwise divide by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor divi(double v) {
+        return createBasedOn(super.divi(v), this);
+    }
+
+    public int getNumTensor() {
+        return numTensor;
+    }
+
+    public void setNumTensor(int numTensor) {
+        this.numTensor = numTensor;
+    }
+
+
+    public static FourDTensor ones(int rows,int columns,int slices,int tensors) {
+        FourDTensor ret = new FourDTensor(rows,columns,slices,tensors);
+        ret.assign(1);
+        return ret;
+    }
 
 }

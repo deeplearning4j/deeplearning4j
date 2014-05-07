@@ -19,6 +19,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
+
 /**
  * Tensor represents a set of matrices of all the same dimensions.
  * Based on the Recursive Neural Tensor Network by Socher et. al
@@ -28,19 +30,28 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     protected int slices,perMatrixRows;
 
-
+    public Tensor(){}
 
     /**
      * Creates this tensor with the specified number of rows, columns and slices
      * Note that this will throw an illegal argument exception if any of the given
      * params are less than 1
      * @param baseLineMatrix the matrix to get the data from
-     * @param rows
-     * @param columns
-     * @param slices
+     * @param rows the number of rows per slice
+     * @param columns the number of columns in the matrix
+     * @param slices the number of slices in the tensor
+     * @param copy whether to copy the data or directly reference
      */
-    public Tensor(DoubleMatrix baseLineMatrix,int rows, int columns, int slices) {
-        super(rows * slices,columns);
+    public Tensor(DoubleMatrix baseLineMatrix,int rows, int columns, int slices,boolean copy) {
+        this.rows = rows * slices;
+        this.columns = columns;
+        if(copy) {
+            this.data = new double[baseLineMatrix.length];
+            System.arraycopy(baseLineMatrix.data,0,this.data,0,baseLineMatrix.length);
+        }
+        else
+            this.data = baseLineMatrix.data;
+
         if(baseLineMatrix.length != rows * columns * slices)
             throw new IllegalArgumentException("Illegal matrix, amount of data does not match the specified dimensions");
         if(slices < 1)
@@ -51,6 +62,19 @@ public class Tensor extends DoubleMatrix implements Serializable {
             throw new IllegalArgumentException("Illegal number of columns");
         this.slices = slices;
         this.perMatrixRows = rows;
+    }
+
+    /**
+     * Creates this tensor with the specified number of rows, columns and slices
+     * Note that this will throw an illegal argument exception if any of the given
+     * params are less than 1
+     * @param baseLineMatrix the matrix to get the data from
+     * @param rows the number of rows per matrix
+     * @param columns the number of columns for the tensor
+     * @param slices the number of slices in the tensor
+     */
+    public Tensor(DoubleMatrix baseLineMatrix,int rows, int columns, int slices) {
+       this(baseLineMatrix,rows,columns,slices,true);
     }
 
 
@@ -81,8 +105,55 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * the number of rows in the passed in matrix
      * @param t the matrix to initialize this tensor with
      */
+    public Tensor(DoubleMatrix t,boolean copy) {
+        this.rows  = t.rows;
+        this.perMatrixRows = 1;
+        this.columns = t.columns;
+        if(copy) {
+            this.data = new double[t.length];
+            System.arraycopy(t.data,0,this.data,0,this.data.length);
+            this.rows  = t.rows;
+            this.perMatrixRows = 1;
+            this.columns = t.columns;
+        }
+        else
+            this.data = t.data;
+    }
+    /**
+     * Initializes this tensor with 1 slice
+     * and the number of slice rows equal
+     * the number of rows in the passed in matrix
+     * @param t the matrix to initialize this tensor with
+     */
     public Tensor(DoubleMatrix t) {
-       this(t,1,t.rows);
+        this(t,false);
+    }
+
+    /**
+     * Initializes the given matrix with the
+     * number of slices
+     * @param t the matrix to use as a base for
+     *  this tensor
+     * @param slices the number of slices of the matrix
+     * @param rows the number of rows per slice
+     * @param copy whether to copy the data or use a direct reference (DANGEROUS)
+     */
+    public Tensor(DoubleMatrix t,int slices,int rows,boolean copy) {
+        this.slices = slices;
+        this.perMatrixRows = rows;
+        if(copy) {
+            this.data = new double[t.length];
+            System.arraycopy(t.data,0,this.data,0,this.data.length);
+            this.rows = t.rows;
+            this.perMatrixRows = rows;
+            this.columns = t.columns;
+        }
+        else {
+            this.rows = rows;
+            this.columns = t.columns;
+            this.perMatrixRows = rows;
+            this.data = t.data;
+        }
     }
 
     /**
@@ -94,9 +165,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @param rows the number of rows per slice
      */
     public Tensor(DoubleMatrix t,int slices,int rows) {
-        super(t.toArray2());
-        this.slices = slices;
-        this.perMatrixRows = rows;
+        this(t,slices,rows,false);
     }
 
     /**
@@ -157,9 +226,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
         for(int i = 0; i < ret.rows; i++) {
             for(int j = 0; j < ret.columns; j++) {
                 double sum = 0;
-               for(int slice = 0; slice < slices(); slice++) {
-                   sum += getSlice(slice).get(i,j);
-               }
+                for(int slice = 0; slice < slices(); slice++) {
+                    sum += getSlice(slice).get(i,j);
+                }
                 ret.put(i,j,sum);
 
             }
@@ -187,16 +256,16 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @return the given slice
      */
     public DoubleMatrix getSlice(int index) {
-      if(index >= slices())
-          throw new IllegalArgumentException("Unable to get slice " + index + " out of bounds");
+        if(index >= slices())
+            throw new IllegalArgumentException("Unable to get slice " + index + " out of bounds");
 
-       try {
-           DoubleMatrix slice =  get(RangeUtils.interval(index,index + rows()),RangeUtils.interval(0,columns()));
-           return slice;
+        try {
+            DoubleMatrix slice =  get(RangeUtils.interval(index,index + rows()),RangeUtils.interval(0,columns()));
+            return slice;
 
-       } catch(Exception e) {
-           throw new IllegalArgumentException("Unable to get a slice ",e);
-       }
+        } catch(Exception e) {
+            throw new IllegalArgumentException("Unable to get a slice ",e);
+        }
     }
 
     /**
@@ -207,8 +276,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
      */
     public void setSlice(int index,DoubleMatrix slice) {
         if(slice.rows != rows() || slice.columns != columns()) {
-           if(slice.rows < rows() || slice.columns < columns())
-               slice = MatrixUtil.padWithZeros(slice,rows(),columns());
+            if(slice.rows < rows() || slice.columns < columns())
+                slice = MatrixUtil.padWithZeros(slice,rows(),columns());
             else
                 slice = MatrixUtil.truncate(slice,rows(),columns());
             if(slice.rows != rows() || slice.columns != columns())
@@ -746,8 +815,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * @param val the value to assign
      */
     public void assign(double val) {
-       for(int i = 0;i < length; i++)
-           put(i,val);
+        for(int i = 0;i < length; i++)
+            put(i,val);
     }
 
 
@@ -807,6 +876,136 @@ public class Tensor extends DoubleMatrix implements Serializable {
      */
     public int slices() {
         return this.slices;
+    }
+
+    public void setSlices(int slices) {
+        this.slices = slices;
+    }
+
+    public void setPerMatrixRows(int perMatrixRows) {
+        this.perMatrixRows = perMatrixRows;
+    }
+
+
+
+    /**
+     * Add a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor addi(DoubleMatrix other) {
+        return createBasedOn(super.addi(other),this);
+    }
+
+    /**
+     * Add a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor add(DoubleMatrix other) {
+        return createBasedOn(super.add(other),this);
+    }
+
+    /**
+     * Add a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public Tensor addi(double v) {
+        return createBasedOn(super.addi(v),this);
+    }
+
+    /**
+     * Subtract a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor subi(DoubleMatrix other) {
+        return createBasedOn(super.subi(other),this);
+    }
+
+    /**
+     * Subtract a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor sub(DoubleMatrix other) {
+        return createBasedOn(super.sub(other),this);
+    }
+
+    /**
+     * Subtract a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public Tensor subi(double v) {
+        return createBasedOn(super.subi(v),this);
+    }
+
+    /**
+     * Elementwise multiply by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor muli(DoubleMatrix other) {
+        return createBasedOn(super.muli(other),this);
+    }
+
+    /**
+     * Elementwise multiply by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor mul(DoubleMatrix other) {
+        return createBasedOn(super.mul(other),this);
+    }
+
+    /**
+     * Elementwise multiply by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public Tensor muli(double v) {
+        return createBasedOn(super.muli(v),this);
+    }
+
+    /**
+     * Elementwise divide by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public Tensor divi(DoubleMatrix other) {
+        return createBasedOn(super.divi(other),this);
+    }
+
+    /**
+     * Elementwise divide by a matrix (in place).
+     *
+     * @param other
+     */
+    @Override
+    public  Tensor div(DoubleMatrix other) {
+        return createBasedOn(super.div(other),this);
+    }
+
+    /**
+     * Elementwise divide by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public Tensor divi(double v) {
+        return createBasedOn(super.divi(v),this);
     }
 
 }

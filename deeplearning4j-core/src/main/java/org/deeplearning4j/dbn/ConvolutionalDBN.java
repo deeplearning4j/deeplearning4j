@@ -117,7 +117,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
                 Tensor featureMap = Tensor.zeros(nFm[j],1,nObs);
                 for(int l = 0; l < prevLayer.getNumFilters(); l++) {
-                    //featureMap.addi(Convolution.conv2d(curr.getTensor(l),))
+                    //TODO: Filter
+                    featureMap.addi(Convolution.conv2d(curr.getTensor(l),currLayer.getW().getSlice(l), Convolution.Type.VALID));
                 }
 
 

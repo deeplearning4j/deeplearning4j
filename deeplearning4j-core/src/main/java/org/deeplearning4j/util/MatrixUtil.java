@@ -10,6 +10,7 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.Tensor;
 import org.jblas.*;
 import org.jblas.ranges.Range;
@@ -25,7 +26,7 @@ public class MatrixUtil {
     private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
 
 
-    public static void complainAboutMissMatchedMatrices(DoubleMatrix d1, DoubleMatrix d2) {
+    public static <E extends DoubleMatrix> void complainAboutMissMatchedMatrices(E d1, E d2) {
         if (d1 == null || d2 == null)
             throw new IllegalArgumentException("No null matrices allowed");
         if (d1.rows != d2.rows)
@@ -40,7 +41,7 @@ public class MatrixUtil {
      * @param minNumber the min number to check
      * @param matrix    the matrix to max by
      */
-    public static void max(double minNumber, DoubleMatrix matrix) {
+    public static  <E extends DoubleMatrix> void max(double minNumber, E matrix) {
         for (int i = 0; i < matrix.length; i++)
             matrix.put(i, Math.max(0, matrix.get(i)));
 
@@ -67,7 +68,7 @@ public class MatrixUtil {
      * @return a matrix of the same dimensions such that the at i,j
      * is the cumulative sum of it + the predecessor elements in the column
      */
-    public static DoubleMatrix cumsum(DoubleMatrix sum) {
+    public static  <E extends DoubleMatrix> E cumsum(E sum) {
         DoubleMatrix ret = new DoubleMatrix(sum.rows, sum.columns);
         for (int i = 0; i < ret.columns; i++) {
             for (int j = 0; j < ret.rows; j++) {
@@ -79,7 +80,7 @@ public class MatrixUtil {
                 ret.put(j, i, d);
             }
         }
-        return ret;
+        return (E) ret;
     }
 
 
@@ -142,12 +143,12 @@ public class MatrixUtil {
     }
 
     /**
-     * Takes the product of all the elemnts in the matrix
+     * Takes the product of all the elements in the matrix
      *
-     * @param product the matrix to get the product of elemnents of
+     * @param product the matrix to get the product of elements of
      * @return the product of all the elements in the matrix
      */
-    public static double prod(DoubleMatrix product) {
+    public static <E extends DoubleMatrix> double prod(E product) {
         double ret = 1.0;
         for (int i = 0; i < product.length; i++)
             ret *= product.get(i);
@@ -155,7 +156,7 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix upSample(DoubleMatrix d, DoubleMatrix scale) {
+    public static <E extends DoubleMatrix> E upSample(E d, E scale) {
         DoubleMatrix shape = size(d);
 
         DoubleMatrix idx = new DoubleMatrix(shape.length, 1);
@@ -167,7 +168,7 @@ public class MatrixUtil {
             tmp.put(indices, 1.0);
             idx.put(i, cumsum(tmp).sum());
         }
-        return idx;
+        return createBasedOn(idx,d);
     }
 
     public static int[] indicesCustomRange(int start, int increment, int end) {
@@ -259,23 +260,64 @@ public class MatrixUtil {
         }
     }
 
-    public static DoubleMatrix variance(DoubleMatrix input) {
-        DoubleMatrix means = input.columnMeans();
+    public static <E extends DoubleMatrix>  E variance(E input) {
+        DoubleMatrix means = (E) input.columnMeans();
         DoubleMatrix diff = MatrixFunctions.pow(input.subRowVector(means), 2);
         //avg of the squared differences from the mean
-        DoubleMatrix variance = diff.columnMeans().div(input.rows);
-        return variance;
+        DoubleMatrix variance =  diff.columnMeans().div(input.rows);
+        return createBasedOn(variance,input);
 
     }
 
 
-    public static DoubleMatrix reverse(DoubleMatrix toReverse) {
+    /**
+     * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
+     * @param toReverse the matrix to reverse
+     * @param <E>
+     * @return the reversed matrix
+     */
+    public static  <E extends DoubleMatrix> E reverse(E toReverse) {
         DoubleMatrix ret = new DoubleMatrix(toReverse.rows, toReverse.columns);
         int reverseIndex = 0;
         for (int i = toReverse.length - 1; i >= 0; i--) {
             ret.put(reverseIndex++, toReverse.get(i));
         }
-        return ret;
+        return createBasedOn(ret,toReverse);
+    }
+
+    /**
+     * Utility method for creating a variety of matrices, useful for handling conversions.
+     *
+     * This method is always O(1) due to not needing to copy data.
+     *
+     * Note however, that this makes the assumption that the passed in matrix isn't being referenced
+     * by anything else as this being a safe operation
+     * @param result the result matrix to cast
+     * @param input the input it was based on
+     * @param <E> the type of matrix
+     * @return the casted matrix
+     */
+     public static <E extends DoubleMatrix> E createBasedOn(DoubleMatrix result,E input) {
+        if(input instanceof FourDTensor) {
+            FourDTensor tensor = new FourDTensor(result,false);
+            FourDTensor casted = (FourDTensor) input;
+            tensor.setSlices(casted.slices());
+            tensor.setPerMatrixRows(casted.rows());
+            tensor.setNumTensor(casted.getNumTensor());
+            return (E) tensor;
+        }
+
+        else if(input instanceof Tensor) {
+            Tensor ret = new Tensor(result,false);
+            Tensor casted = (Tensor) input;
+            ret.setPerMatrixRows(ret.rows());
+            ret.setSlices(casted.slices());
+            return (E) ret;
+        }
+        else
+            return (E) result;
+
+
     }
 
 
@@ -285,7 +327,7 @@ public class MatrixUtil {
      * @param d the max dimension of the passed in matrix
      * @return the max dimension of the passed in matrix
      */
-    public static double length(ComplexDoubleMatrix d) {
+    public static double  length(ComplexDoubleMatrix d) {
         return Math.max(d.rows, d.columns);
 
 
@@ -297,7 +339,7 @@ public class MatrixUtil {
      * @param d the max dimension of the passed in matrix
      * @return the max dimension of the passed in matrix
      */
-    public static double length(DoubleMatrix d) {
+    public static <E extends DoubleMatrix> double length(E d) {
         if (d instanceof Tensor) {
             Tensor t = (Tensor) d;
             return MathUtils.max(new double[]{t.rows(), t.columns(), t.slices()});
@@ -353,7 +395,7 @@ public class MatrixUtil {
 
     }
 
-    public static double magnitude(DoubleMatrix vec) {
+    public static <E extends DoubleMatrix>  double magnitude(E vec) {
         double sum_mag = 0;
         for (int i = 0; i < vec.length; i++)
             sum_mag = sum_mag + vec.get(i) * vec.get(i);
@@ -362,46 +404,74 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix unroll(DoubleMatrix d) {
+    /**
+     * Exp with more generic casting
+     * @param d the input
+     * @param <E>
+     * @return the exp of this matrix
+     */
+    public static <E extends DoubleMatrix> E exp(E d) {
+        return createBasedOn(MatrixFunctions.exp(d),d);
+    }
+
+    /**
+     * Flattens the matrix
+     * @param d
+     * @param <E>
+     * @return
+     */
+    public static <E extends DoubleMatrix> E unroll(E d) {
         DoubleMatrix ret = new DoubleMatrix(1, d.length);
         for (int i = 0; i < d.length; i++)
             ret.put(i, d.get(i));
-        return ret;
+        return createBasedOn(ret,d);
     }
 
 
-    public static DoubleMatrix outcomes(DoubleMatrix d) {
+    public static <E extends DoubleMatrix> E outcomes(E d) {
         DoubleMatrix ret = new DoubleMatrix(d.rows, 1);
         for (int i = 0; i < d.rows; i++)
             ret.put(i, SimpleBlas.iamax(d.getRow(i)));
-        return ret;
+        return createBasedOn(ret,d);
     }
 
-    public static double cosineSim(DoubleMatrix d1, DoubleMatrix d2) {
-        d1 = MatrixUtil.unitVec(d1);
-        d2 = MatrixUtil.unitVec(d2);
+    /**
+     *
+     * @param d1
+     * @param d2
+     * @param <E>
+     * @return
+     */
+    public static <E extends DoubleMatrix> double cosineSim(E d1, E d2) {
+        d1 = unitVec(d1);
+        d2 = unitVec(d2);
         double ret = d1.dot(d2);
         return ret;
     }
 
-
-    public static DoubleMatrix normalize(DoubleMatrix input) {
+    /**
+     * Normalizes the matrix by subtracting the min,
+     * dividing by the max - min
+     * @param input the input to normalize
+     * @param <E>
+     * @return the normalized matrix
+     */
+    public static <E extends DoubleMatrix> E normalize(E input) {
         double min = input.min();
         double max = input.max();
-        return input.subi(min).divi(max - min);
+        return createBasedOn(input.subi(min).divi(max - min),input);
     }
 
 
-    public static double cosine(DoubleMatrix matrix) {
-        //1.0 * math.sqrt(sum(val * val for val in vec1.itervalues()))
+    public static <E extends DoubleMatrix> double  cosine(E matrix) {
         return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
     }
 
 
-    public static DoubleMatrix unitVec(DoubleMatrix toScale) {
+    public static <E extends DoubleMatrix> E unitVec(E toScale) {
         double length = toScale.norm2();
         if (length > 0)
-            return SimpleBlas.scal(1.0 / length, toScale);
+            return createBasedOn((SimpleBlas.scal(1.0 / length, toScale)),toScale);
         return toScale;
     }
 
@@ -435,7 +505,7 @@ public class MatrixUtil {
      * <p/>
      * with numbers between 0 and 1
      */
-    public static DoubleMatrix normal(RandomGenerator rng, DoubleMatrix mean, double sigma) {
+    public static <E extends DoubleMatrix> E normal(RandomGenerator rng, E mean, double sigma) {
         DoubleMatrix U = new DoubleMatrix(mean.rows, mean.columns);
         for (int i = 0; i < U.rows; i++)
             for (int j = 0; j < U.columns; j++) {
@@ -443,7 +513,7 @@ public class MatrixUtil {
                 U.put(i, j, reals.sample());
 
             }
-        return U;
+        return createBasedOn(U,mean);
     }
 
 
@@ -458,7 +528,7 @@ public class MatrixUtil {
      * <p/>
      * with numbers between 0 and 1
      */
-    public static DoubleMatrix normal(RandomGenerator rng, DoubleMatrix mean, DoubleMatrix variance) {
+    public static <E extends DoubleMatrix> E normal(RandomGenerator rng, E mean, E variance) {
         DoubleMatrix std = MatrixFunctions.sqrt(variance);
         for (int i = 0; i < variance.length; i++)
             if (variance.get(i) <= 0)
@@ -471,7 +541,7 @@ public class MatrixUtil {
                 U.put(i, j, reals.sample());
 
             }
-        return U;
+        return createBasedOn(U,mean);
     }
 
 
@@ -494,7 +564,7 @@ public class MatrixUtil {
         return U;
     }
 
-    public static boolean isValidOutcome(DoubleMatrix out) {
+    public static <E extends DoubleMatrix> boolean isValidOutcome(E out) {
         boolean found = false;
         for (int col = 0; col < out.length; col++) {
             if (out.get(col) > 0) {
@@ -505,47 +575,6 @@ public class MatrixUtil {
         return found;
     }
 
-
-    public static double min(DoubleMatrix matrix) {
-        double ret = matrix.get(0);
-        for (int i = 0; i < matrix.length; i++) {
-            if (matrix.get(i) < ret)
-                ret = matrix.get(i);
-        }
-        return ret;
-    }
-
-    public static double max(DoubleMatrix matrix) {
-        double ret = matrix.get(0);
-        for (int i = 0; i < matrix.length; i++) {
-            if (matrix.get(i) > ret)
-                ret = matrix.get(i);
-        }
-        return ret;
-    }
-
-    public static void ensureValidOutcomeMatrix(DoubleMatrix out) {
-        boolean found = false;
-        for (int col = 0; col < out.length; col++) {
-            if (out.get(col) > 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            log.warn("Found invalid matrix assuming; nothing which means adding a 1 to the first spot");
-            out.put(0, 1.0);
-        }
-
-    }
-
-    public static void assertIntMatrix(DoubleMatrix matrix) {
-        for (int i = 0; i < matrix.length; i++) {
-            int cast = (int) matrix.get(i);
-            if (cast != matrix.get(i))
-                throw new IllegalArgumentException("Found something that is not an integer at linear index " + i);
-        }
-    }
 
 
     public static int[] toIndices(Range range) {
@@ -604,7 +633,7 @@ public class MatrixUtil {
      * @param toAssign the matrix to modify
      * @param val      the value to assign
      */
-    public static void assign(DoubleMatrix toAssign, double val) {
+    public static <E extends DoubleMatrix> void assign(E toAssign, double val) {
         for (int i = 0; i < toAssign.length; i++)
             toAssign.put(i, val);
     }
@@ -614,7 +643,7 @@ public class MatrixUtil {
      *
      * @param toRotate the matrix to rotate
      */
-    public static void rot90(DoubleMatrix toRotate) {
+    public static <E extends DoubleMatrix> void rot90(E toRotate) {
         for (int i = 0; i < toRotate.rows; i++)
             for (int j = 0; j < toRotate.columns; j++)
                 toRotate.put(i, j, toRotate.get(toRotate.columns - i - 1));
@@ -632,7 +661,7 @@ public class MatrixUtil {
      * a clone of toPad if the rows and columns are both greater in length than
      * rows and cols
      */
-    public static DoubleMatrix padWithZeros(DoubleMatrix toPad, int rows, int cols) {
+    public  static <E extends DoubleMatrix> E padWithZeros(E toPad, int rows, int cols) {
         if (rows < 1)
             throw new IllegalArgumentException("Illegal number of rows " + rows);
         if (cols < 1)
@@ -641,14 +670,14 @@ public class MatrixUtil {
         //nothing to pad
         if (toPad.rows >= rows) {
             if (toPad.columns >= cols)
-                return toPad.dup();
+                return createBasedOn(toPad.dup(),toPad);
             else
                 ret = new DoubleMatrix(toPad.rows, cols);
 
 
         } else if (toPad.columns >= cols) {
             if (toPad.rows >= rows)
-                return toPad.dup();
+                return createBasedOn(toPad.dup(),toPad);
             else
                 ret = new DoubleMatrix(rows, toPad.columns);
         } else
@@ -660,7 +689,7 @@ public class MatrixUtil {
                 ret.put(i, j, d);
             }
         }
-        return ret;
+        return createBasedOn(ret,toPad);
     }
 
     public static ComplexDoubleMatrix numDivideMatrix(ComplexDouble div, ComplexDoubleMatrix toDiv) {
@@ -685,17 +714,17 @@ public class MatrixUtil {
      * @return the matrix such that each element i in the matrix
      * is div / num
      */
-    public static DoubleMatrix numDivideMatrix(double div, DoubleMatrix toDiv) {
+    public static <E extends DoubleMatrix> E numDivideMatrix(double div, E toDiv) {
         DoubleMatrix ret = new DoubleMatrix(toDiv.rows, toDiv.columns);
 
         for (int i = 0; i < ret.length; i++)
             //prevent numerical underflow
             ret.put(i, div / toDiv.get(i) + 1e-6);
-        return ret;
+        return createBasedOn(ret,toDiv);
     }
 
 
-    public static boolean isInfinite(DoubleMatrix test) {
+    public static <E extends DoubleMatrix> boolean isInfinite(E test) {
         DoubleMatrix nan = test.isInfinite();
         for (int i = 0; i < nan.length; i++) {
             if (nan.get(i) > 0)
@@ -805,11 +834,11 @@ public class MatrixUtil {
      * @return the softmax output (a probability matrix) scaling each row to between
      * 0 and 1
      */
-    public static DoubleMatrix softmax(DoubleMatrix input) {
+    public static <E extends DoubleMatrix> E softmax(E input) {
         DoubleMatrix max = input.rowMaxs();
         DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
         diff.diviColumnVector(diff.rowSums());
-        return diff;
+        return createBasedOn(diff,input);
     }
     public static DoubleMatrix mean(DoubleMatrix input,int axis) {
         DoubleMatrix ret = new DoubleMatrix(input.rows,1);
@@ -859,12 +888,12 @@ public class MatrixUtil {
      * @param rng the rng to use
      * @return a binomial distribution based on the one n, the passed in p values, and rng
      */
-    public static DoubleMatrix binomial(DoubleMatrix p,int n,RandomGenerator rng) {
+    public static <E extends DoubleMatrix> E binomial(E p,int n,RandomGenerator rng) {
         DoubleMatrix ret = new DoubleMatrix(p.rows,p.columns);
         for(int i = 0; i < ret.length; i++) {
             ret.put(i,MathUtils.binomial(rng, n, p.get(i)));
         }
-        return ret;
+        return createBasedOn(ret,p);
     }
 
 
@@ -879,21 +908,6 @@ public class MatrixUtil {
 
 
 
-    /**
-     * Generate a binomial distribution based on the given rng,
-     * a matrix of p values, and a max number.
-     * @param p the p matrix to use
-     * @param n the n to use
-     * @param rng the rng to use
-     * @return a binomial distribution based on the one n, the passed in p values, and rng
-     */
-    public static Tensor binomial(Tensor p,int n,RandomGenerator rng) {
-        Tensor ret = new Tensor(p.rows(),p.columns,p.slices());
-        for(int i = 0; i < ret.length; i++) {
-            ret.put(i,MathUtils.binomial(rng, n, p.get(i)));
-        }
-        return ret;
-    }
 
     public static DoubleMatrix columnWiseMean(DoubleMatrix x,int axis) {
         DoubleMatrix ret = DoubleMatrix.zeros(x.columns);
@@ -980,10 +994,15 @@ public class MatrixUtil {
     }
 
 
-
-    public static DoubleMatrix sigmoid(DoubleMatrix x) {
+    /**
+     * Takes the sigmoid of a given matrix
+     * @param x the input
+     * @param <E>
+     * @return the input with the sigmoid function applied
+     */
+    public static <E extends DoubleMatrix> E sigmoid(E x) {
         DoubleMatrix ones = DoubleMatrix.ones(x.rows, x.columns);
-        return ones.div(ones.add(MatrixFunctions.exp(x.neg())));
+        return createBasedOn(ones.div(ones.add(MatrixFunctions.exp(x.neg()))),x);
     }
 
     public static DoubleMatrix dot(DoubleMatrix a,DoubleMatrix b) {
@@ -1007,11 +1026,11 @@ public class MatrixUtil {
         return d.sub(ep);
     }
 
-    public static DoubleMatrix oneMinus(DoubleMatrix ep) {
-        return DoubleMatrix.ones(ep.rows, ep.columns).sub(ep);
+    public static <E extends DoubleMatrix> E oneMinus(E ep) {
+        return createBasedOn(DoubleMatrix.ones(ep.rows, ep.columns).sub(ep),ep);
     }
 
-    public static DoubleMatrix oneDiv(DoubleMatrix ep) {
+    public static <E extends DoubleMatrix> E oneDiv(E ep) {
         for(int i = 0; i < ep.rows; i++) {
             for(int j = 0; j < ep.columns; j++) {
                 if(ep.get(i,j) == 0) {
@@ -1019,7 +1038,7 @@ public class MatrixUtil {
                 }
             }
         }
-        return DoubleMatrix.ones(ep.rows, ep.columns).div(ep);
+        return createBasedOn(DoubleMatrix.ones(ep.rows, ep.columns).div(ep),ep);
     }
 
 
@@ -1028,7 +1047,7 @@ public class MatrixUtil {
      * and dividing by the standard deviation
      * @param toNormalize the matrix to normalize
      */
-    public static void normalizeZeroMeanAndUnitVariance(DoubleMatrix toNormalize) {
+    public static <E extends DoubleMatrix> void normalizeZeroMeanAndUnitVariance(E toNormalize) {
         DoubleMatrix columnMeans = toNormalize.columnMeans();
         DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(toNormalize);
 
@@ -1044,7 +1063,7 @@ public class MatrixUtil {
      * @param input the input to get the variance for
      * @return the column wise variance of the input
      */
-    public static DoubleMatrix columnVariance(DoubleMatrix input) {
+    public static <E extends DoubleMatrix> E columnVariance(E input) {
         DoubleMatrix columnMeans = input.columnMeans();
         DoubleMatrix ret = new DoubleMatrix(1,columnMeans.columns);
         for(int i = 0;i < ret.columns; i++) {
@@ -1054,7 +1073,7 @@ public class MatrixUtil {
                 variance = 1e-6;
             ret.put(i,variance);
         }
-        return ret;
+        return createBasedOn(ret,input);
     }
 
     /**
@@ -1064,7 +1083,7 @@ public class MatrixUtil {
      * @return the standard deviations of each column in the matrix
      * as a row matrix
      */
-    public static DoubleMatrix columnStd(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E columnStd(E m) {
         DoubleMatrix ret = new DoubleMatrix(1,m.columns);
         StandardDeviation std = new StandardDeviation();
 
@@ -1075,7 +1094,7 @@ public class MatrixUtil {
 
         ret.divi(m.rows);
 
-        return ret;
+        return createBasedOn(ret,m);
     }
 
     /**
@@ -1085,7 +1104,7 @@ public class MatrixUtil {
      * @return the standard deviations of each column in the matrix
      * as a row matrix
      */
-    public static DoubleMatrix rowStd(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E rowStd(E m) {
         StandardDeviation std = new StandardDeviation();
 
         DoubleMatrix ret = new DoubleMatrix(1,m.columns);
@@ -1093,7 +1112,7 @@ public class MatrixUtil {
             double result = std.evaluate(m.getRow(i).data);
             ret.put(i,result);
         }
-        return ret;
+        return createBasedOn(ret,m);
     }
 
     /**
@@ -1104,7 +1123,7 @@ public class MatrixUtil {
      * @param other the second one
      * @return the mean square error of the matrices
      */
-    public static double meanSquaredError(DoubleMatrix input,DoubleMatrix other) {
+    public static <E extends DoubleMatrix> double meanSquaredError(E input,E other) {
         if(input.length != other.length)
             throw new IllegalArgumentException("Matrices must be same length");
         SimpleRegression r = new SimpleRegression();
@@ -1119,7 +1138,7 @@ public class MatrixUtil {
      * @param vals the vals to convert to log
      * @return the log of the numbers or 1e-6 for anomalies
      */
-    public static DoubleMatrix log(DoubleMatrix vals) {
+    public static <E extends DoubleMatrix> E log(E vals) {
         DoubleMatrix ret = new DoubleMatrix(vals.rows,vals.columns);
         for(int i = 0; i < vals.length; i++) {
             double logVal = Math.log(vals.get(i));
@@ -1128,7 +1147,7 @@ public class MatrixUtil {
             else
                 ret.put(i,1e-6);
         }
-        return ret;
+        return createBasedOn(ret,vals);
     }
 
     /**
@@ -1139,7 +1158,7 @@ public class MatrixUtil {
      * @param other the second one
      * @return the sum square error of the matrices
      */
-    public static double sumSquaredError(DoubleMatrix input,DoubleMatrix other) {
+    public static <E extends DoubleMatrix> double sumSquaredError(E input,E other) {
         if(input.length != other.length)
             throw new IllegalArgumentException("Matrices must be same length");
         SimpleRegression r = new SimpleRegression();
@@ -1147,7 +1166,7 @@ public class MatrixUtil {
         return r.getSumSquaredErrors();
     }
 
-    public static void normalizeMatrix(DoubleMatrix toNormalize) {
+    public static <E extends DoubleMatrix> void normalizeMatrix(E toNormalize) {
         DoubleMatrix columnMeans = toNormalize.columnMeans();
         toNormalize.subiRowVector(columnMeans);
         DoubleMatrix std = columnStd(toNormalize);
@@ -1156,7 +1175,7 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix normalizeByColumnSums(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E normalizeByColumnSums(E m) {
         DoubleMatrix columnSums = m.columnSums();
         for(int i = 0; i < m.columns; i++) {
             m.putColumn(i,m.getColumn(i).div(columnSums.get(i)));
@@ -1166,7 +1185,7 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix columnStdDeviation(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E columnStdDeviation(E m) {
         DoubleMatrix ret = new DoubleMatrix(1,m.columns);
 
         for(int i = 0; i < ret.length; i++) {
@@ -1175,7 +1194,7 @@ public class MatrixUtil {
             ret.put(i,std);
         }
 
-        return ret;
+        return createBasedOn(ret,m);
     }
 
     /**
@@ -1184,7 +1203,7 @@ public class MatrixUtil {
      * @param m the matrix to divide
      * @return the column divided by the standard deviation
      */
-    public static DoubleMatrix divColumnsByStDeviation(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E divColumnsByStDeviation(E m) {
         DoubleMatrix std = columnStdDeviation(m);
         for(int i = 0; i < m.columns; i++) {
             m.putColumn(i,m.getColumn(i).div(std.get(i)));
@@ -1202,7 +1221,7 @@ public class MatrixUtil {
      * @return the normalized matrix which each
      * column subtracted by its mean
      */
-    public static DoubleMatrix normalizeByColumnMeans(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E normalizeByColumnMeans(E m) {
         DoubleMatrix columnMeans = m.columnMeans();
         for(int i = 0; i < m.columns; i++) {
             m.putColumn(i,m.getColumn(i).sub(columnMeans.get(i)));
@@ -1211,7 +1230,7 @@ public class MatrixUtil {
         return m;
     }
 
-    public static DoubleMatrix normalizeByRowSums(DoubleMatrix m) {
+    public static <E extends DoubleMatrix> E  normalizeByRowSums(E m) {
         DoubleMatrix rowSums = m.rowSums();
         for(int i = 0; i < m.rows; i++) {
             m.putRow(i,m.getRow(i).div(rowSums.get(i)));
