@@ -57,7 +57,7 @@ public class ConvolutionalRBM extends RBM  {
     protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
     protected double sparseGain = 5;
     public int wRows = 0,wCols = 0,wSlices = 0;
-
+    private FourDTensor featureMap;
     protected ConvolutionalRBM() {}
 
 
@@ -291,7 +291,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
     @Override
-    public Tensor getW() {
+    public FourDTensor getW() {
         return W;
     }
 
@@ -320,8 +320,8 @@ public class ConvolutionalRBM extends RBM  {
      */
     @Override
     public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-        Tensor v1Mean = propDown(h);
-        Tensor v1Sample = new Tensor(binomial(v1Mean, 1, rng));
+        FourDTensor v1Mean = propDown(h);
+        FourDTensor v1Sample = new FourDTensor(binomial(v1Mean, 1, rng));
         return new Pair<>((DoubleMatrix)v1Mean,(DoubleMatrix) v1Sample);
     }
 
@@ -335,8 +335,8 @@ public class ConvolutionalRBM extends RBM  {
     public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
 
 
-        Tensor h1Mean = propUp(v);
-        Tensor h1Sample = new Tensor(binomial(h1Mean, 1, rng));
+        FourDTensor h1Mean = propUp(v);
+        FourDTensor h1Sample = new FourDTensor(binomial(h1Mean, 1, rng));
         //apply dropout
         applyDropOutIfNecessary(h1Sample);
         return new Pair<>((DoubleMatrix)h1Mean,(DoubleMatrix) h1Sample);
@@ -667,6 +667,15 @@ public class ConvolutionalRBM extends RBM  {
         this.wSlices = wSlices;
     }
 
+
+    public FourDTensor getFeatureMap() {
+        return featureMap;
+    }
+
+    public void setFeatureMap(FourDTensor featureMap) {
+        this.featureMap = featureMap;
+    }
+
     public static class Builder extends RBM.Builder {
 
         protected int[] numFilters = {4,4};
@@ -679,6 +688,11 @@ public class ConvolutionalRBM extends RBM  {
         public Builder() {
             this.clazz = ConvolutionalRBM.class;
 
+        }
+
+        public Builder withFmSize(int[] fmSize) {
+            this.fmSize = fmSize;
+            return this;
         }
 
 
@@ -872,9 +886,12 @@ public class ConvolutionalRBM extends RBM  {
             ret.numFilters = numFilters;
             ret.stride = stride;
             ret.sparseGain = sparseGain;
-            fmSize = new int[2];
-            fmSize[0] = visibleSize[0] - filterSize[0] + 1;
-            fmSize[1] = visibleSize[1] - filterSize[1] + 1;
+            if(fmSize == null) {
+                fmSize = new int[2];
+                fmSize[0] = visibleSize[0] - filterSize[0] + 1;
+                fmSize[1] = visibleSize[1] - filterSize[1] + 1;
+            }
+
             ret.fmSize = fmSize;
             ret.visibleSize = visibleSize;
             ret.filterSize = filterSize;

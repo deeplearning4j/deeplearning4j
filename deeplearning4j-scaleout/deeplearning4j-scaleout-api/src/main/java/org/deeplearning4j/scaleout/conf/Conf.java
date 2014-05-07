@@ -64,8 +64,8 @@ public class Conf implements Serializable,Cloneable {
 	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
     private boolean normalizeZeroMeanAndUnitVariance;
     private boolean scale;
-    private RBM.VisibleUnit visibleUnit;
-    private RBM.HiddenUnit hiddenUnit;
+    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
+    private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private String stateTrackerConnectionString;
 
 
