@@ -134,12 +134,12 @@ public class MatrixUtil {
     }
 
 
-    public static DoubleMatrix downSample(DoubleMatrix data, DoubleMatrix stride) {
+    public static <E extends DoubleMatrix> E downSample(E data, DoubleMatrix stride) {
         DoubleMatrix d = DoubleMatrix.ones((int) stride.get(0), (int) stride.get(1));
         d.divi(prod(stride));
         DoubleMatrix ret = Convolution.conv2d(data, d, Convolution.Type.VALID);
         ret = ret.get(RangeUtils.interval(0, (int) stride.get(0)), RangeUtils.interval(0, (int) stride.get(1)));
-        return ret;
+        return createBasedOn(ret,data);
     }
 
     /**
@@ -270,6 +270,14 @@ public class MatrixUtil {
     }
 
 
+    public static <E extends DoubleMatrix> int[] toInts(E ints)  {
+        int[] ret = new int[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (int) ints.get(i);
+        return ret;
+    }
+
+
     /**
      * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
      * @param toReverse the matrix to reverse
@@ -332,6 +340,19 @@ public class MatrixUtil {
 
 
     }
+
+    /**
+     * Floor function applied to the matrix
+     * @param input
+     * @param <E>
+     * @return
+     */
+    public static <E extends DoubleMatrix> E floor(E input) {
+        return createBasedOn(MatrixFunctions.floor(input),input);
+    }
+
+
+
 
     /**
      * Returns the maximum dimension of the passed in matrix

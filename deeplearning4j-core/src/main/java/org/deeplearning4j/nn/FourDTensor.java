@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn;
 
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
@@ -115,6 +117,20 @@ public class FourDTensor extends Tensor {
         return new Tensor(ret,slices(),rows());
     }
 
+    /**
+     * Sets the tensor at the specified index
+     * @param tensor the tensor to set
+     * @param set the new tensor
+     * @return the tensor at the specified index
+     */
+    public Tensor setTensor(int tensor,Tensor set) {
+        int tensorIndex = tensor *  slices();
+        int end = tensorIndex + slices();
+        put(RangeUtils.interval(tensorIndex ,end),RangeUtils.interval(0,columns()),set);
+        DoubleMatrix ret = get(RangeUtils.interval(tensorIndex ,end),RangeUtils.interval(0,columns()));
+        return new Tensor(ret,slices(),rows());
+    }
+
 
     /**
      * Assigns an element at the specific tensor,slice,row,column
@@ -200,12 +216,32 @@ public class FourDTensor extends Tensor {
      * @param cols the number of columns
      * @param slices the slices
      * @param numTensor the number of tensors
-     * @return the tensor with the specified slices and the random matrices
+     * @return the tensor with the specified slices and the zeros matrices
      */
     public static FourDTensor zeros(int rows, int cols,int slices,int numTensor) {
         return new FourDTensor(rows,cols,slices,numTensor);
 
     }
+
+    /**
+     * Creates a random fourd tensor
+     * @param rows the the number of rows
+     * @param cols the number of columns
+     * @param slices the number of slices per tensor
+     * @param numTensor the number of tensors
+     * @param sample the distribution to sample from
+     * @return a randomly initialized tensor based on the passed in probability distribution
+     */
+    public static FourDTensor rand(int rows,int cols,int slices,int numTensor,RealDistribution sample) {
+        FourDTensor tensor = new FourDTensor(rows,cols,slices,numTensor);
+        for(int i = 0; i < tensor.rows; i++) {
+            tensor.putRow(i,new DoubleMatrix(sample.sample(cols)));
+        }
+        return tensor;
+    }
+
+
+
 
     /**
      * Add a matrix (in place).
@@ -303,6 +339,15 @@ public class FourDTensor extends Tensor {
     @Override
     public FourDTensor mul(DoubleMatrix other) {
         return createBasedOn(super.mul(other), this);
+    }
+    /**
+     * Elementwise multiply by a scalar (in place).
+     *
+     * @param v
+     */
+    @Override
+    public FourDTensor mul(double v) {
+        return createBasedOn(super.mul(v), this);
     }
 
     /**

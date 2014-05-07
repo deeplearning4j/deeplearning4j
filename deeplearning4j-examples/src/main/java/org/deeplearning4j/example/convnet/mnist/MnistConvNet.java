@@ -44,7 +44,7 @@ public class MnistConvNet {
         double abs = Math.sqrt(6 / fanIn);
         ConvolutionalRBM r = new ConvolutionalRBM
                 .Builder().withFilterSize(new int[]{7, 7})
-                .withNumFilters(9).withStride(new int[]{2, 2}).withVisibleSize(new int[]{rows,cols}).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
+                .withNumFilters(new int[]{9,9}).withStride(new int[]{2, 2}).withVisibleSize(new int[]{rows,cols}).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
                 .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT).withRandom(gen)
                 .withSparsity(5e-2).withSparseGain(5)
                 .numberOfVisible(28).numHidden(28)

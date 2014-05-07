@@ -3,6 +3,7 @@ package org.deeplearning4j.dbn;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
@@ -31,7 +32,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
     //layer wise stride (arr[k] is an array)
     protected int[][] stride;
     //layer wise filter number of filters
-    protected int[] numFilters;
+    protected int[][] numFilters;
     //sparse gain for each rbm
     protected double sparseGain;
     //layer type: convolution or subsampling
@@ -89,42 +90,41 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      */
     @Override
     public List<DoubleMatrix> feedForward(DoubleMatrix input) {
+        Tensor realInput = (Tensor) input;
         /* Number of tensors is equivalent to the number of mini batches */
         FourDTensor tensor = new FourDTensor(input,inputSize[0],inputSize[1],  input.rows / inputSize[0],input.rows / input.length);
         FourDTensor curr = tensor;
-        for(int i = 1; i < getnLayers(); i++) {
-            ConvolutionalRBM currLayer = (ConvolutionalRBM) getLayers()[i - 1];
-            ConvolutionalRBM prevLayer = (ConvolutionalRBM) getLayers()[i];
+        for(int i = 0; i < getnLayers(); i++) {
+            ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[i];
+            DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[i];
+            for(int j = 0; j < r.getNumFilters()[0]; j++) {
 
-            for(int j = 0; j < currLayer.getNumFilters(); j++) {
-                /**
-                 * A fourd tensor will have the following shape of mnist with a mini batch size of 5
-                 * and four mini batches
-                 * row wise will be:
-                 * 28,28,5,4
-                 *
-                 *
-                 */
-                DoubleMatrix prevLayerShape = curr.shape();
-                //number of columns
-                int nInY = (int)prevLayerShape.get(0);
-                //number of rows
-                int nInX = (int) prevLayerShape.get(1);
-                //number feature maps
-                int nInFM = (int) prevLayerShape.get(2);
-                //number of batches
-                int nObs = (int) prevLayerShape.get(3);
-
-                Tensor featureMap = Tensor.zeros(nFm[j],1,nObs);
-                for(int l = 0; l < prevLayer.getNumFilters(); l++) {
-                    //TODO: Filter
-                    featureMap.addi(Convolution.conv2d(curr.getTensor(l),currLayer.getW().getSlice(l), Convolution.Type.VALID));
+                int nInY = curr.rows();
+                int nInX = curr.columns();
+                int nInFm = curr.slices();
+                int nObs = curr.getNumTensor();
+                //equivalent to a 3d tensor: only one tensor
+                FourDTensor featureMap = FourDTensor.zeros(r.getFmSize()[0],r.getFmSize()[1],1,nObs);
+                for(int k = 0; j < r.getNumFilters()[0]; j++) {
+                    featureMap.addi(Convolution.conv2d(featureMap.getTensor(i),r.getW().getSliceOfTensor(j,i), Convolution.Type.VALID));
                 }
+                featureMap.addi(r.gethBias().get(i));
+                r.getFeatureMap().setSlice(j,d.activate(featureMap));
 
+                //put the down sampled
+                d.getFeatureMap().setTensor(j,MatrixUtil.downSample(r.getFeatureMap().getTensor(j),MatrixUtil.toMatrix(r.getStride())));
 
 
             }
+
+
+
+
+
+
+
         }
+
         return super.feedForward(input);
     }
 
@@ -179,10 +179,9 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
     @Override
     public void init() {
-        DoubleMatrix layerInput = input;
+        Tensor input = (Tensor) this.input;
         if(!(rng instanceof SynchronizedRandomGenerator))
             rng = new SynchronizedRandomGenerator(rng);
-        int inputSize;
         if(getnLayers() < 1)
             throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
 
@@ -192,34 +191,58 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         this.layers = new NeuralNetwork[getnLayers()];
 
         // construct multi-layer
-        for(int i = 0; i < this.getnLayers(); i++) {
-            if(i == 0)
-                inputSize = this.nIns;
-            else
-                inputSize = this.hiddenLayerSizes[i-1];
+        int nInY,nInX,nInFM,nFm = -1;
+        for(int i = 0; i < getnLayers(); i++) {
+            ConvolutionalRBM prevLayer = (ConvolutionalRBM) getLayers()[i];
 
             if(i == 0) {
-                // construct sigmoid_layer
-                sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
+                nInY = input.rows();
+                nInX = input.columns();
+                nInFM = input.slices();
             }
+
             else {
-                if(input != null) {
-                    if(this.useHiddenActivationsForwardProp)
-                        layerInput = sigmoidLayers[i - 1].sampleHiddenGivenVisible();
-                    else
-                        layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
-
-                }
-
-                // construct sigmoid_layer
-                sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
-
-
+                nInX = prevLayer.getFmSize()[1];
+                nInY = prevLayer.getFmSize()[0];
+                nInFM = prevLayer.getFmSize()[0];
             }
 
-            this.layers[i] = createLayer(layerInput,inputSize, this.hiddenLayerSizes[i], this.sigmoidLayers[i].getW(), this.sigmoidLayers[i].getB(), null, rng,i);
+            nFm = this.nFm[i];
+            DoubleMatrix filterSize = MatrixUtil.toMatrix(this.filterSizes[i]);
+            DoubleMatrix fmSize = MatrixUtil.toMatrix(new int[]{nInY,nInX}).sub(filterSize).add(1);
+            double prodFilterSize = MatrixUtil.prod(filterSize);
+            DoubleMatrix stride = MatrixUtil.toMatrix(this.stride[i]);
+            double fanIn = nInFM * prodFilterSize;
+            double fanOut = nFm * prodFilterSize;
+
+            double range = 2 * FastMath.sqrt(6 / fanIn + fanOut);
+            FourDTensor W = FourDTensor.rand((int) filterSize.get(0),(int) filterSize.get(1),nInFM,nFm,dist).mul(range);
+
+            ConvolutionalRBM r = new ConvolutionalRBM.Builder().withDistribution(getDist())
+                    .withDropOut(getDropOut()).withOptmizationAlgo(getOptimizationAlgorithm())
+                    .withFilterSize(MatrixUtil.toInts(filterSize)).withInput(input).numberOfVisible(1)
+                    .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
+                    .numHidden(1).withHBias(DoubleMatrix.zeros(nFm,1)).withMomentum(getMomentum())
+                    .withL2(getL2()).useRegularization(isUseRegularization())
+                    .withRandom(rng).withLossFunction(getLossFunction()).withFmSize(MatrixUtil.toInts(fmSize))
+                    .withStride(this.stride[i]).withNumFilters(new int[]{nFm,nFm})
+                    .withSparseGain(sparseGain).withSparsity(getSparsity())
+                    .withWeights(W).build();
+            this.layers[i] = r;
+
+
+            DownSamplingLayer d = new DownSamplingLayer.Builder()
+                    .dist(dist).withStride(this.stride[i])
+                    .withFmSize(MatrixUtil.floor(MatrixUtil.toMatrix(r.getFmSize()).div(stride)))
+                    .numFeatureMaps(nFm).withBias(r.gethBias())
+                    .withRng(rng).build();
+
+
+            this.sigmoidLayers[i] = d;
+
 
         }
+
 
 
 

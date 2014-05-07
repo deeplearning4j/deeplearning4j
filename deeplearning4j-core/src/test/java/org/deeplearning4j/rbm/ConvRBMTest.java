@@ -19,7 +19,7 @@ public class ConvRBMTest {
     public void testConvNet() throws Exception {
         ConvolutionalRBM rbm = new ConvolutionalRBM
                 .Builder().withFilterSize(new int[]{7,7})
-                .withNumFilters(4).withStride(new int[]{2,2})
+                .withNumFilters(new int[]{4,4}).withStride(new int[]{2,2})
                 .withVisibleSize(new int[]{28,28}).numberOfVisible(28).numHidden(28).renderWeights(100)
                 .build();
 
