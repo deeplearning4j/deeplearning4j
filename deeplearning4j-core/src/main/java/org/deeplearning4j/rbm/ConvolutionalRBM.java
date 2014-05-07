@@ -10,6 +10,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
@@ -34,17 +35,17 @@ public class ConvolutionalRBM extends RBM  {
      */
     private static final long serialVersionUID = 6868729665328916878L;
     //number of feature maps
-    protected int numFilters = 4;
+    protected int[] numFilters = {4,4};
     //top down signal from hidden feature maps to visibles
-    private Tensor visI;
+    private FourDTensor visI;
     //bottom up signal from visibles to hiddens
-    private Tensor hidI;
-    private Tensor W;
+    private FourDTensor hidI;
+    //also called the filters
+    private FourDTensor W;
     //overlapping pixels
     private int[] stride = {2,2};
     //visible layer size
     protected int[] visibleSize;
-
     protected int[] filterSize;
     //feature map sizes
     protected int[] fmSize;
@@ -52,7 +53,7 @@ public class ConvolutionalRBM extends RBM  {
     protected boolean convolutionInitCalled = false;
     protected DoubleMatrix chainStart;
     //cache last propup/propdown
-    protected Tensor eVis,eHid;
+    protected FourDTensor eVis,eHid;
     protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
     protected double sparseGain = 5;
     public int wRows = 0,wCols = 0,wSlices = 0;
@@ -73,19 +74,16 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = new Tensor(filterSize[0],filterSize[1],numFilters);
+        W = new FourDTensor(filterSize[0],filterSize[1],numFilters[0],numFilters[1]);
         wRows = W.rows();
         wCols = W.columns();
         wSlices = W.slices();
-        visI = Tensor.zeros(visibleSize[0],visibleSize[1],numFilters);
-        hidI = Tensor.zeros(fmSize[0],fmSize[1],numFilters);
+        visI = FourDTensor.zeros(visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]);
+        hidI = FourDTensor.zeros(fmSize[0],fmSize[1],numFilters[0],numFilters[1]);
         convolutionInitCalled = true;
         vBias = DoubleMatrix.zeros(1);
-        hBias = DoubleMatrix.zeros(numFilters);
+        hBias = DoubleMatrix.zeros(numFilters[0]);
 
-        double fanIn = visibleSize[0] * visibleSize[1];
-        double fanOut = fanIn * 9;
-        double range = Math.sqrt(6 / (fanIn + fanOut));
 
 
         for(int i = 0; i < this.W.rows; i++)
@@ -110,18 +108,21 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated activations of the visible layer
      */
     @Override
-    public Tensor propUp(DoubleMatrix v) {
-        for(int i = 0; i < numFilters; i++) {
-            DoubleMatrix reversedSlice =  reverse(W.getSlice(i));
-            //a bias for each hidden unit
-            DoubleMatrix slice = sigmoid(conv2d(v, reversedSlice, VALID).add(hBias.get(i)));
-            hidI.setSlice(i, slice);
+    public FourDTensor propUp(DoubleMatrix v) {
+        for(int i = 0; i < numFilters[0]; i++) {
+            for(int j = 0; j < numFilters[1]; j++) {
+                DoubleMatrix reversedSlice =  reverse(W.getSliceOfTensor(i,j));
+                //a bias for each hidden unit
+                DoubleMatrix slice = sigmoid(conv2d(v, reversedSlice, VALID).add(hBias.get(i)));
+                hidI.put(i,j,slice);
+            }
+
 
         }
 
-        Tensor expHidI = hidI.exp();
+        FourDTensor expHidI = MatrixUtil.exp(hidI);
 
-        Tensor eHid = expHidI.div(pool(expHidI).add(1));
+        FourDTensor eHid = expHidI.div((DoubleMatrix) pool(expHidI).add(1));
         this.eHid = eHid;
 
         return eHid;
@@ -135,21 +136,23 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated output of the hidden layer
      */
     @Override
-    public Tensor propDown(DoubleMatrix h) {
-        Tensor h1 = (Tensor) h;
-        for(int i = 0; i < numFilters; i++) {
-            /*
+    public FourDTensor propDown(DoubleMatrix h) {
+        FourDTensor h1 = (FourDTensor) h;
+        for(int i = 0; i < numFilters[0]; i++) {
+            for(int j = 0; j < numFilters[1]; j++) {
+ /*
                Each tensor only has one slice, need to figure out what's going on here
              */
-            //all hidden units each have a bias
-            visI.setSlice(i,sigmoid(conv2d(h1.getSlice(i), W.getSlice(i),FULL)));
+                visI.put(j,i,sigmoid(conv2d(h1.getSlice(i), W.getSlice(i),FULL)));
+            }
+
         }
 
         DoubleMatrix I = visI.sliceElementSums().add(vBias);
         if(visibleType == VisibleUnit.BINARY)
             I = sigmoid(I);
 
-        Tensor ret =   new Tensor(I);
+        FourDTensor ret =   new FourDTensor(I);
         this.eVis = ret;
         return ret;
     }
@@ -161,16 +164,19 @@ public class ConvolutionalRBM extends RBM  {
      * @return  the pooled expectations given visible
      */
     public Tensor poolGivenVis(DoubleMatrix input) {
-        Tensor eHid = propUp(input);
-        Tensor I = Tensor.zeros(eHid.rows(),eHid.columns(),eHid.slices());
+        FourDTensor eHid = propUp(input);
+        FourDTensor I = new FourDTensor(eHid.rows(),eHid.columns(),eHid.slices(),eHid.getNumTensor());
         for(int i = 0; i < W.slices(); i++) {
-            I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
+            for(int j = 0; j < W.getNumTensor(); j++) {
+                I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
+                I.put(j,i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
+            }
         }
 
-        Tensor ret = Tensor.ones(I.rows(),I.columns(),I.slices());
+        FourDTensor ret = FourDTensor.ones(I.rows(),I.columns(),I.slices(),I.numTensors());
         //1 / 1 + pool(exp(I))
-        Tensor poolExpI = pool(I.exp()).add(1);
-        Tensor sub = ret.div(poolExpI);
+        FourDTensor poolExpI = pool(MatrixUtil.exp(I)).add(1);
+        FourDTensor sub = ret.div((DoubleMatrix) poolExpI);
         ret.subi(sub);
         return ret;
     }
@@ -257,13 +263,13 @@ public class ConvolutionalRBM extends RBM  {
      * @param input the input to sum over
      * @return the pooled expectations
      */
-    public Tensor pool(Tensor input) {
+    public FourDTensor pool(FourDTensor input) {
         int nCols = input.columns();
         int nRows = input.rows;
         int yStride = stride[0];
         int xStride = stride[1];
 
-        Tensor ret = Tensor.zeros(input.rows,input.columns,input.slices());
+        FourDTensor ret = new FourDTensor(input.rows,input.columns,input.slices(),input.numTensors());
         int endRowBlock =  (int) Math.ceil(nRows / yStride);
         for(int i = 1; i < endRowBlock; i++) {
             int rowsMin = (i -1)  * yStride + 1;
@@ -285,7 +291,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
     @Override
-    public DoubleMatrix getW() {
+    public Tensor getW() {
         return W;
     }
 
@@ -437,7 +443,7 @@ public class ConvolutionalRBM extends RBM  {
 		/*
 		 * Start the gibbs sampling.
 		 */
-        Tensor chainStart = propUp(input);
+        FourDTensor chainStart = propUp(input);
         this.chainStart = chainStart;
 
 
@@ -450,8 +456,8 @@ public class ConvolutionalRBM extends RBM  {
 		 *
 		 */
 
-        Tensor nvSamples = null;
-        Tensor hiddenMeans = chainStart;
+        FourDTensor nvSamples = null;
+        FourDTensor hiddenMeans = chainStart;
         //contrastive divergence
         for(int i = 0; i < k; i++) {
             nvSamples = propDown(binomial(eHid,1,rng));
@@ -462,9 +468,11 @@ public class ConvolutionalRBM extends RBM  {
 		 * Update gradient parameters
 		 */
 
-        Tensor wGradient = new Tensor(W.rows(),W.columns(),W.slices());
-        for(int i = 0; i < numFilters; i++)
-            wGradient.setSlice(i,conv2d(input,chainStart.getSlice(i),VALID).sub(conv2d(nvSamples,reverse(hiddenMeans.getSlice(i)),VALID)));
+        FourDTensor wGradient = new FourDTensor(W.rows(),W.columns(),W.slices(),W.getNumTensor());
+        for(int i = 0; i < numFilters[0]; i++)
+            for(int j = 0; j < numFilters[1]; j++) {
+                wGradient.put(j,i,conv2d(input,chainStart.getSliceOfTensor(j, i),VALID).sub(conv2d(nvSamples, reverse(hiddenMeans.getSliceOfTensor(j, i)), VALID)));
+            }
 
 
 
@@ -541,32 +549,32 @@ public class ConvolutionalRBM extends RBM  {
         this.stride = stride;
     }
 
-    public int getNumFilters() {
+    public int[] getNumFilters() {
 
         return numFilters;
     }
 
-    public void setNumFilters(int numFilters) {
+    public void setNumFilters(int [] numFilters) {
         this.numFilters = numFilters;
     }
 
-    public Tensor getVisI() {
+    public FourDTensor getVisI() {
         return visI;
     }
 
-    public void setVisI(Tensor visI) {
+    public void setVisI(FourDTensor visI) {
         this.visI = visI;
     }
 
-    public Tensor getHidI() {
+    public FourDTensor getHidI() {
         return hidI;
     }
 
-    public void setHidI(Tensor hidI) {
+    public void setHidI(FourDTensor hidI) {
         this.hidI = hidI;
     }
 
-    public void setW(Tensor w) {
+    public void setW(FourDTensor w) {
         W = w;
     }
 
@@ -591,7 +599,7 @@ public class ConvolutionalRBM extends RBM  {
         return eVis;
     }
 
-    public void seteVis(Tensor eVis) {
+    public void seteVis(FourDTensor eVis) {
         this.eVis = eVis;
     }
 
@@ -599,7 +607,7 @@ public class ConvolutionalRBM extends RBM  {
         return eHid;
     }
 
-    public void seteHid(Tensor eHid) {
+    public void seteHid(FourDTensor eHid) {
         this.eHid = eHid;
     }
 
@@ -661,7 +669,7 @@ public class ConvolutionalRBM extends RBM  {
 
     public static class Builder extends RBM.Builder {
 
-        protected int numFilters = 4;
+        protected int[] numFilters = {4,4};
         protected int[] stride = {2,2};
         protected int[] visibleSize;
         protected int[] filterSize;
@@ -848,7 +856,7 @@ public class ConvolutionalRBM extends RBM  {
             return this;
         }
 
-        public Builder withNumFilters(int numFilters) {
+        public Builder withNumFilters(int[] numFilters) {
             this.numFilters = numFilters;
             return this;
         }
