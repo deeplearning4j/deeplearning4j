@@ -14,10 +14,18 @@ public class DownSamplingLayer extends HiddenLayer {
     private int[] stride;
     private int numFeatureMaps;
     private DoubleMatrix fmSize;
-
+    private FourDTensor featureMap;
 
     private DownSamplingLayer() {}
 
+
+    public FourDTensor getFeatureMap() {
+        return featureMap;
+    }
+
+    public void setFeatureMap(FourDTensor featureMap) {
+        this.featureMap = featureMap;
+    }
 
     public int[] getStride() {
         return stride;

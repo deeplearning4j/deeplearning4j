@@ -173,8 +173,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = new TreeMap<Integer, Integer>();
 
-        double min = MatrixUtil.min(data);
-        double max = MatrixUtil.max(data);
+        double min = data.min();
+        double max = data.max();
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -249,8 +249,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        double min = MatrixUtil.min(data); //data.get(0, 0);
-        double max = MatrixUtil.max(data); //data.get(0, 0);
+        double min = data.min(); //data.get(0, 0);
+        double max = data.max(); //data.get(0, 0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -420,8 +420,8 @@ public class FilterRenderer {
 
             DoubleMatrix column = data.getColumn(col);
 
-            double col_max = MatrixUtil.min(column);
-            double col_min = MatrixUtil.max(column);
+            double col_max = column.min();
+            double col_min = column.max();
 
             // now reshape the column into the shape of the filter patch
 
