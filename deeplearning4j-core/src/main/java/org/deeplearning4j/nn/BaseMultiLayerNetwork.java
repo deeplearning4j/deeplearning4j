@@ -403,10 +403,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return getSigmoidLayers()[layer].activate(input);
     }
 
-    protected void initializeNetwork(NeuralNetwork network) {
-        network.setFanIn(fanIn);
-        network.setRenderEpochs(this.renderWeightsEveryNEpochs);
-    }
 
     /**
      * Finetunes with the current cached labels
@@ -502,7 +498,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     /* delta computation for back prop */
-    private  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
+    protected  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
         DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
         ActivationFunction derivative = getSigmoidLayers()[0].getActivationFunction();

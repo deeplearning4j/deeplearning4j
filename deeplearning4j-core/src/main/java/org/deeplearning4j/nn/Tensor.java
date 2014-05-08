@@ -521,6 +521,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
     }
 
 
+
+
     /**
      * This tensor with all the matrices transposed
      * @return a copy of this tensor with the matrices transposed
