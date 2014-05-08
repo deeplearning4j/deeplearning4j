@@ -106,6 +106,21 @@ public class MatrixUtil {
         return ret;
     }
 
+    /**
+     * Reshapes this matrix in to a 3d matrix
+     * @param input the input matrix
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param numSlices the number of slices in the tensor
+     * @return the reshaped matrix as a tensor
+     */
+    public static <E extends DoubleMatrix> Tensor reshape(E input,int rows, int columns,int numSlices) {
+        DoubleMatrix ret = input.reshape(rows * numSlices,columns);
+        Tensor retTensor = new Tensor(ret,false);
+        retTensor.setSlices(numSlices);
+        return retTensor;
+    }
+
 
     /**
      * Generate a new matrix which has the given number of replications of this.
@@ -134,6 +149,13 @@ public class MatrixUtil {
     }
 
 
+    /**
+     * Down sample a signal
+     * @param data
+     * @param stride
+     * @param <E>
+     * @return
+     */
     public static <E extends DoubleMatrix> E downSample(E data, DoubleMatrix stride) {
         DoubleMatrix d = DoubleMatrix.ones((int) stride.get(0), (int) stride.get(1));
         d.divi(prod(stride));
@@ -156,6 +178,13 @@ public class MatrixUtil {
     }
 
 
+    /**
+     * Upsampling a signal
+     * @param d
+     * @param scale
+     * @param <E>
+     * @return
+     */
     public static <E extends DoubleMatrix> E upSample(E d, E scale) {
         DoubleMatrix shape = size(d);
 
