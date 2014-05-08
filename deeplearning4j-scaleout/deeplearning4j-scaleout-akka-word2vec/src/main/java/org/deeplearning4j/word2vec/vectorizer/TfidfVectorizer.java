@@ -127,6 +127,7 @@ public class TfidfVectorizer implements TextVectorizer {
         while(sentenceIterator.hasNext()) {
             final Counter<String> runningTotal = Util.parallelCounter();
             final Counter<String> documentOccurrences = Util.parallelCounter();
+            final String sentence = sentenceIterator.nextSentence();
             futures.add(Futures.future(new Callable<Void>() {
 
                 /**
@@ -137,7 +138,8 @@ public class TfidfVectorizer implements TextVectorizer {
                  */
                 @Override
                 public Void call() throws Exception {
-                    Tokenizer tokenizer = tokenizerFactory.create(sentenceIterator.nextSentence());
+                    log.info("Handling " + sentence);
+                    Tokenizer tokenizer = tokenizerFactory.create(sentence);
                     numDocs++;
                     for (String token : tokenizer.getTokens()) {
                         if (stopWords.contains(token))

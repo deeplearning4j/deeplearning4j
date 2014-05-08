@@ -1,6 +1,7 @@
 package org.deeplearning4j.word2vec.sentenceiterator.labelaware;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.util.StringGrid;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 
 import java.io.IOException;
@@ -39,8 +40,10 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
         this.delimiter = delimiter;
         this.labelPosition = labelPosition;
         this.textPosition = textPosition;
-        lines = IOUtils.readLines(is);
-        initLists();
+        StringGrid grid = StringGrid.fromInput(is,delimiter);
+        labels = grid.getColumn(labelPosition);
+        text = grid.getColumn(textPosition);
+
 
         is.close();
 
@@ -55,18 +58,18 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
         this(is,"\t",0,1);
     }
 
-    private void initLists() {
-        labels = new ArrayList<>(lines.size());
-        text = new ArrayList<>(lines.size());
-
-        for(String line : lines) {
-            String[] split = line.split(delimiter);
-            String label = split[labelPosition];
-            String text = split[textPosition];
-            labels.add(label);
-            this.text.add(text);
-        }
+    /**
+     * Same as calling (is,\t,0,1)
+     * @param is the input stream to read lines from
+     * @param sep the separator for the file
+     * @throws IOException
+     */
+    public LabelAwareListSentenceIterator(InputStream is,String sep) throws IOException {
+        this(is,sep,0,1);
     }
+
+
+
 
     /**
      * Returns the current label for nextSentence()
