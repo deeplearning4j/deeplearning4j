@@ -3,6 +3,10 @@ package org.deeplearning4j.dbn;
 import static org.deeplearning4j.util.MatrixUtil.downSample;
 import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
 
+import static org.deeplearning4j.util.MatrixUtil.rot;
+import static org.jblas.ranges.RangeUtils.interval;
+
+
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -154,27 +158,50 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
          * Prediction will actually be a tensor, need to map this out
          */
         DoubleMatrix error = labels.sub(activations.get(activations.size() - 1)).neg().mul(softMaxDerivative.applyDerivative(activations.get(activations.size() - 1)));
-
+        //should this be a 4d tensor?
         DoubleMatrix es = logLayer.getW().mmul(error);
         DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[getSigmoidLayers().length - 1];
         DoubleMatrix shape = d.getFeatureMap().shape();
         ConvolutionalRBM rbm = (ConvolutionalRBM) getLayers()[getnLayers() - 1];
         DoubleMatrix[] errorSignals = new DoubleMatrix[getnLayers()];
+        FourDTensor layerErrorSignal = FourDTensor.zeros((int) shape.get(0),(int) shape.get(1),(int) shape.get(2),(int) shape.get(3));
         errorSignals[errorSignals.length - 1] = es;
         //initial hidden layer error signal
-        FourDTensor layerErrorSignal = FourDTensor.zeros((int) shape.get(0),(int) shape.get(1),(int) shape.get(2),(int) shape.get(3));
 
         int nMap = (int) shape.get(0) * (int) shape.get(1);
 
-
+        //translate in to a 2d feature map
         for(int i = 0; i < rbm.getNumFilters()[0]; i++) {
            /*
              These will be different slices of the tensor
             */
-           // DoubleMatrix subSlice = es.get(RangeUtils.interval(i + 1 * nMap,))
-            //layerErrorSignal.setTensor(i,)
+            DoubleMatrix subSlice = es.get(RangeUtils.interval(i * nMap,(i + 1)* nMap),RangeUtils.interval(0,es.columns));
+            Tensor reshaped = MatrixUtil.reshape(subSlice,(int)shape.get(0),(int)shape.get(1),(int) shape.get(3));
+            layerErrorSignal.setTensor(i,reshaped);
+
         }
 
+        for(int i = getnLayers() -2; i >= 0; i--) {
+            DownSamplingLayer layer = (DownSamplingLayer) getSigmoidLayers()[i];
+            DoubleMatrix shape2 = d.getFeatureMap().shape();
+            ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
+
+            DownSamplingLayer forwardDownSamplingLayer = (DownSamplingLayer) getSigmoidLayers()[i + 1];
+            ConvolutionalRBM forwardRBM = (ConvolutionalRBM) getLayers()[i + 1];
+
+            FourDTensor propErrorSignal = FourDTensor.zeros((int) shape2.get(0),(int) shape2.get(1),(int) shape2.get(2),(int) shape2.get(3));
+            // for kM = 1:self.layers{lL+1}.nFM
+            //       rotFilt = self.ROT(self.layers{lL+1}.filter(:,:,jM,kM));
+            //es = self.layers{lL+1}.es(:,:,kM,:);
+            //propES = propES + convn(es,rotFilt,'full');
+            //end
+            //handle subsampling layer first
+            for(int k = 0; k < layer.getNumFeatureMaps(); k++) {
+                DoubleMatrix rotFilter = rot(forwardRBM.getW().getSliceOfTensor(i,k));
+
+            }
+
+        }
 
 
 
@@ -226,7 +253,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         for(int j = 0; j < d.getNumFeatureMaps(); j++) {
             Tensor map = d.getFeatureMap().getTensor(j);
-            features.put(RangeUtils.interval(j * nMap + 1,j * nMap),RangeUtils.interval(0,features.columns),map.reshape(nMap,noBs));
+            features.put(interval(j * nMap + 1,j * nMap),interval(0,features.columns),map.reshape(nMap,noBs));
         }
 
 

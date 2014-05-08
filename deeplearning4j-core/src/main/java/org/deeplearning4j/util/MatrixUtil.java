@@ -123,6 +123,75 @@ public class MatrixUtil {
 
 
     /**
+     * Rotates a matrix by reversing its input
+     * If its  any kind of tensor each slice of each tensor
+     * will be reversed
+     * @param input the input to rotate
+     * @param <E>
+     * @return the rotated matrix or tensor
+     */
+    public static <E extends DoubleMatrix> E rot(E input) {
+        if(input instanceof FourDTensor) {
+            FourDTensor t = (FourDTensor) input;
+            FourDTensor ret = new FourDTensor(t);
+            for(int i = 0; i < ret.numTensors(); i++) {
+                Tensor t1 = ret.getTensor(i);
+                for(int j = 0; j < t1.slices(); j++) {
+                    ret.setSlice(j,reverse(t1.getSlice(j)));
+                }
+            }
+
+            return createBasedOn(ret,input);
+        }
+
+        else if(input instanceof Tensor) {
+            Tensor t = (Tensor) input;
+            Tensor ret = new Tensor(t);
+            for(int j = 0; j < t.slices(); j++) {
+                ret.setSlice(j,reverse(t.getSlice(j)));
+            }
+            return createBasedOn(ret,input);
+
+
+        }
+
+        else
+            return reverse(input);
+
+    }
+
+
+
+    /**
+     * Reshapes this matrix in to a 3d matrix
+     * @param input the input matrix
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param numSlices the number of slices in the tensor
+     * @return the reshaped matrix as a tensor
+     */
+    public static <E extends DoubleMatrix> FourDTensor reshape(E input,int rows, int columns,int numSlices,int numTensors) {
+        DoubleMatrix ret = input.reshape(rows * numSlices,columns);
+        FourDTensor retTensor = new FourDTensor(ret,false);
+        retTensor.setSlices(numSlices);
+        retTensor.setNumTensor(numTensors);
+        return retTensor;
+    }
+
+    /**
+     * Binarizes the matrix such that any number greater than cutoff is 1 otherwise zero
+     * @param cutoff the cutoff point
+     */
+    public static void binarize(double cutoff,DoubleMatrix input) {
+        for(int i = 0; i < input.length; i++)
+            if(input.get(i) > cutoff)
+                input.put(i,1);
+            else
+                input.put(i,0);
+    }
+
+
+    /**
      * Generate a new matrix which has the given number of replications of this.
      */
     public static ComplexDoubleMatrix repmat(ComplexDoubleMatrix matrix, int rowMult, int columnMult) {
@@ -334,8 +403,11 @@ public class MatrixUtil {
      * @param <E> the type of matrix
      * @return the casted matrix
      */
-     public static <E extends DoubleMatrix> E createBasedOn(DoubleMatrix result,E input) {
-        if(input instanceof FourDTensor) {
+    public static <E extends DoubleMatrix> E createBasedOn(DoubleMatrix result,E input) {
+        if(input.getClass().equals(result.getClass()))
+            return input;
+
+        else if(input instanceof FourDTensor) {
             FourDTensor tensor = new FourDTensor(result,false);
             FourDTensor casted = (FourDTensor) input;
             tensor.setSlices(casted.slices());
