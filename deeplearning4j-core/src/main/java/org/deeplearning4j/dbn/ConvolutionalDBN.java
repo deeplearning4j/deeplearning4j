@@ -5,6 +5,8 @@ import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
 import static org.deeplearning4j.util.MatrixUtil.prod;
 import static org.deeplearning4j.util.MatrixUtil.toMatrix;
 
+import static org.deeplearning4j.util.Convolution.*;
+
 import static org.deeplearning4j.util.MatrixUtil.rot;
 import static org.jblas.ranges.RangeUtils.interval;
 
@@ -194,17 +196,13 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             int[] stride = forwardRBM.getStride();
 
             FourDTensor propErrorSignal = FourDTensor.zeros((int) shape2.get(0),(int) shape2.get(1),(int) shape2.get(2),(int) shape2.get(3));
-            // for kM = 1:self.layers{lL+1}.nFM
-            //       rotFilt = self.ROT(self.layers{lL+1}.filter(:,:,jM,kM));
-            //es = self.layers{lL+1}.es(:,:,kM,:);
-            //propES = propES + convn(es,rotFilt,'full');
-            //end
+
             //handle subsampling layer first
             for(int k = 0; k < layer.getNumFeatureMaps(); k++) {
                 DoubleMatrix rotFilter = rot(forwardRBM.getW().getSliceOfTensor(i,k));
                 FourDTensor tensor = (FourDTensor) errorSignals[i + 1];
                 Tensor currEs = tensor.getTensor(k);
-                propErrorSignal.addi(currEs);
+                propErrorSignal.addi(conv2d(currEs,rotFilter,Type.FULL));
 
             }
 
@@ -228,7 +226,13 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         //now calculate the gradients
 
-
+        for(int i = getnLayers() -2; i >= 0; i--) {
+            ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
+            DoubleMatrix shape2 = r2.getFeatureMap().shape();
+            for(int j = 0; j < r2.getNumFilters()[0]; j++) {
+               //figure out what to do wrt error signal for each neural net here.
+            }
+        }
 
     }
 
