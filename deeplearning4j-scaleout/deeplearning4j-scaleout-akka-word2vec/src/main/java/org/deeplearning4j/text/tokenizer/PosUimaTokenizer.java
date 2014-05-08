@@ -25,80 +25,83 @@ import org.uimafit.util.JCasUtil;
  */
 public class PosUimaTokenizer  implements Tokenizer {
 
-	private AnalysisEngine engine;
-	private List<String> tokens;
-	private Collection<String> allowedPosTags;
-	private int index;
+    private static AnalysisEngine engine;
+    private List<String> tokens;
+    private Collection<String> allowedPosTags;
+    private int index;
+    private static CAS cas;
+    public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags) {
+        if(engine == null)
+            PosUimaTokenizer.engine = engine;
+        this.allowedPosTags = allowedPosTags;
+        this.tokens = new ArrayList<String>();
+        try {
+            if(cas == null)
+                cas = engine.newCAS();
 
-	public PosUimaTokenizer(String tokens,AnalysisEngine engine,Collection<String> allowedPosTags) {
-		this.engine = engine;
-		this.allowedPosTags = allowedPosTags;
-		this.tokens = new ArrayList<String>();
-		try {
-			CAS cas = this.engine.newCAS();
-			cas.setDocumentText(tokens);
-			synchronized(this.engine) {
-				this.engine.process(cas);
-				for(Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-					for(Token t : JCasUtil.selectCovered(Token.class,s)) {
-						//add NONE for each invalid token
-						if(valid(t))
-							if(t.getLemma() != null)
-								this.tokens.add(t.getLemma());
-							else if(t.getStem() != null)
-								this.tokens.add(t.getStem());
-							else
-								this.tokens.add(t.getCoveredText());
-						else
-							this.tokens.add("NONE");
-					}
-				}
-
-			}
-
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
-	private boolean valid(Token token) {
-		String check = token.getCoveredText();
-		if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
-			return false;
-		else if(token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
-			return false;
-		return true;
-	}
+            cas.reset();
+            cas.setDocumentText(tokens);
+            PosUimaTokenizer.engine.process(cas);
+            for(Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                for(Token t : JCasUtil.selectCovered(Token.class,s)) {
+                    //add NONE for each invalid token
+                    if(valid(t))
+                        if(t.getLemma() != null)
+                            this.tokens.add(t.getLemma());
+                        else if(t.getStem() != null)
+                            this.tokens.add(t.getStem());
+                        else
+                            this.tokens.add(t.getCoveredText());
+                    else
+                        this.tokens.add("NONE");
+                }
+            }
 
 
 
-	@Override
-	public boolean hasMoreTokens() {
-		return index < tokens.size();
-	}
 
-	@Override
-	public int countTokens() {
-		return tokens.size();
-	}
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-	@Override
-	public String nextToken() {
-		String ret = tokens.get(index);
-		index++;
-		return ret;
-	}
+    }
 
-	@Override
-	public List<String> getTokens() {
-		List<String> tokens = new ArrayList<String>();
-		while(hasMoreTokens()) {
-			tokens.add(nextToken());
-		}
-		return tokens;
-	}
+    private boolean valid(Token token) {
+        String check = token.getCoveredText();
+        if(check.matches("<[A-Z]+>") || check.matches("</[A-Z]+>"))
+            return false;
+        else if(token.getPos() != null && !this.allowedPosTags.contains(token.getPos()))
+            return false;
+        return true;
+    }
+
+
+
+    @Override
+    public boolean hasMoreTokens() {
+        return index < tokens.size();
+    }
+
+    @Override
+    public int countTokens() {
+        return tokens.size();
+    }
+
+    @Override
+    public String nextToken() {
+        String ret = tokens.get(index);
+        index++;
+        return ret;
+    }
+
+    @Override
+    public List<String> getTokens() {
+        List<String> tokens = new ArrayList<String>();
+        while(hasMoreTokens()) {
+            tokens.add(nextToken());
+        }
+        return tokens;
+    }
 
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {

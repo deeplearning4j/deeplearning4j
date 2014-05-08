@@ -1,5 +1,6 @@
 package org.deeplearning4j.example.text;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.Arrays;
 
@@ -30,11 +32,10 @@ public class MultiThreadedTweetOpinionMining {
     private static Logger log = LoggerFactory.getLogger(MultiThreadedTweetOpinionMining.class);
 
     public static void main(String[] args) throws Exception {
-        ClassPathResource resource = new ClassPathResource("/tweets_clean.txt");
-        InputStream is = resource.getInputStream();
+        InputStream is = FileUtils.openInputStream(new File(args[0]));
 
 
-        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is);
+        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,",");
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {
@@ -43,11 +44,11 @@ public class MultiThreadedTweetOpinionMining {
         });
 
 
-        TokenizerFactory tokenizerFactory = new PosUimaTokenizerFactory(Arrays.asList("JJ","JJR","VB","VBZ","RB","VBD","VBN","VBP","VBG"));
+        TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         //note that we are only using 2000 length feature vectors. Due to the sparsity of bag of words, this is actually very little.
         //We need to tune the number of words (bump them up, or use better filtering mechanisms)
 
-        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1", "2"),2000);
+        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory, Arrays.asList("0", "1"),4000);
         DataSet data = vectorizor.vectorize();
         data.binarize();
         log.info("Vocab " + vectorizor.vocab());
@@ -72,8 +73,8 @@ public class MultiThreadedTweetOpinionMining {
         c.setMomentum(0.3);
         c.setNormalizeZeroMeanAndUnitVariance(false);
         //c.setRenderWeightEpochs(1000);
-        c.setnOut(3);
-        c.setSplit(10);
+        c.setnOut(2);
+        c.setSplit(5);
         c.setHiddenUnit(RBM.HiddenUnit.BINARY);
         c.setVisibleUnit(RBM.VisibleUnit.BINARY);
         c.setMultiLayerClazz(DBN.class);

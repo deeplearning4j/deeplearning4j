@@ -1,6 +1,5 @@
 package org.deeplearning4j.dbn;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;

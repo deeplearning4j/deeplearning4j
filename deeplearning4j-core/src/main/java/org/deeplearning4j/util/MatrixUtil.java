@@ -9,7 +9,6 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.Tensor;
 import org.jblas.*;
