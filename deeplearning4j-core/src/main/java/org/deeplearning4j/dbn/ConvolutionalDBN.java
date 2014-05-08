@@ -2,6 +2,8 @@ package org.deeplearning4j.dbn;
 
 import static org.deeplearning4j.util.MatrixUtil.downSample;
 import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
+import static org.deeplearning4j.util.MatrixUtil.prod;
+import static org.deeplearning4j.util.MatrixUtil.toMatrix;
 
 import static org.deeplearning4j.util.MatrixUtil.rot;
 import static org.jblas.ranges.RangeUtils.interval;
@@ -159,7 +161,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
          */
         DoubleMatrix error = labels.sub(activations.get(activations.size() - 1)).neg().mul(softMaxDerivative.applyDerivative(activations.get(activations.size() - 1)));
         //should this be a 4d tensor?
-        DoubleMatrix es = logLayer.getW().mmul(error);
+        DoubleMatrix es = logLayer.getW().transpose().mmul(error);
         DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[getSigmoidLayers().length - 1];
         DoubleMatrix shape = d.getFeatureMap().shape();
         ConvolutionalRBM rbm = (ConvolutionalRBM) getLayers()[getnLayers() - 1];
@@ -181,13 +183,15 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         }
 
+        errorSignals[errorSignals.length - 2] = layerErrorSignal;
+
         for(int i = getnLayers() -2; i >= 0; i--) {
             DownSamplingLayer layer = (DownSamplingLayer) getSigmoidLayers()[i];
             DoubleMatrix shape2 = d.getFeatureMap().shape();
             ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
-
             DownSamplingLayer forwardDownSamplingLayer = (DownSamplingLayer) getSigmoidLayers()[i + 1];
             ConvolutionalRBM forwardRBM = (ConvolutionalRBM) getLayers()[i + 1];
+            int[] stride = forwardRBM.getStride();
 
             FourDTensor propErrorSignal = FourDTensor.zeros((int) shape2.get(0),(int) shape2.get(1),(int) shape2.get(2),(int) shape2.get(3));
             // for kM = 1:self.layers{lL+1}.nFM
@@ -198,12 +202,31 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             //handle subsampling layer first
             for(int k = 0; k < layer.getNumFeatureMaps(); k++) {
                 DoubleMatrix rotFilter = rot(forwardRBM.getW().getSliceOfTensor(i,k));
+                FourDTensor tensor = (FourDTensor) errorSignals[i + 1];
+                Tensor currEs = tensor.getTensor(k);
+                propErrorSignal.addi(currEs);
 
             }
+
+
+            errorSignals[i] = propErrorSignal;
+
+            DoubleMatrix mapSize = forwardRBM.getFeatureMap().shape();
+            FourDTensor rbmEs = FourDTensor.zeros((int) mapSize.get(0),(int) mapSize.get(1),(int) mapSize.get(2),(int) mapSize.get(3));
+            for(int k = 0; k < rbm.getNumFilters()[0]; k++) {
+                Tensor propEs = MatrixUtil.upSample(forwardDownSamplingLayer.getFeatureMap().getTensor(k),new Tensor(toMatrix(new int[]{stride[0],stride[1],1,1}).div(prod(toMatrix(stride)))));
+                rbmEs.setTensor(k,propEs);
+            }
+
+            errorSignals[i - 1] = rbmEs;
+
+
 
         }
 
 
+
+        //now calculate the gradients
 
 
 
