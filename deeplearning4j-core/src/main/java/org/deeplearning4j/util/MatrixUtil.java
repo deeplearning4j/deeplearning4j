@@ -8,6 +8,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.Tensor;
@@ -58,6 +59,73 @@ public class MatrixUtil {
             toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
         }
     }
+
+
+    /**
+     * Flips the dimensions of each slice of a tensor or 4d tensor
+     * slice wise
+     * @param input the input to flip
+     * @param <E>
+     * @return the flipped tensor
+     */
+    public static <E extends DoubleMatrix> E flipDimMultiDim(E input) {
+        if(input instanceof FourDTensor) {
+            FourDTensor t = (FourDTensor) input;
+            DoubleMatrix ret = new DoubleMatrix(input.rows,input.columns);
+            FourDTensor flipped = createBasedOn(ret,t);
+            for(int i = 0; i < flipped.numTensors(); i++) {
+                for(int j = 0; j < flipped.getTensor(i).slices(); j++) {
+                    flipped.put(i,j,flipDim(t.getSliceOfTensor(i,j)));
+                }
+            }
+
+            return createBasedOn(flipped,input);
+        }
+        else if(input instanceof Tensor) {
+            Tensor t = (Tensor) input;
+            DoubleMatrix ret = new DoubleMatrix(input.rows,input.columns);
+            Tensor flipped = createBasedOn(ret,t);
+            for(int j = 0; j < flipped.slices(); j++) {
+                flipped.setSlice(j,flipDim(t.getSlice(j)));
+            }
+            return createBasedOn(ret,input);
+        }
+
+        else
+            return (E) flipDim(input);
+    }
+
+
+    /**
+     * Flips the dimensions of the given matrix.
+     * [1,2]       [3,4]
+     * [3,4] --->  [1,2]
+     * @param flip the matrix to flip
+     * @return the flipped matrix
+     */
+    public static DoubleMatrix flipDim(DoubleMatrix flip) {
+        DoubleMatrix ret = new DoubleMatrix(flip.rows,flip.columns);
+        CounterMap<Integer,Integer> dimsFlipped = new CounterMap<>();
+        for(int j = 0; j < flip.columns; j++) {
+            for(int i = 0; i < flip.rows;  i++) {
+                for(int k = flip.rows - 1; k >= 0; k--) {
+                    if(dimsFlipped.getCount(i,j) > 0 || dimsFlipped.getCount(k,j) > 0)
+                        continue;
+                    dimsFlipped.incrementCount(i,j,1.0);
+                    dimsFlipped.incrementCount(k,j,1.0);
+                    double first = flip.get(i,j);
+                    double second = flip.get(k,j);
+                    ret.put(k,j,first);
+                    ret.put(i,j,second);
+                }
+            }
+        }
+
+
+        return ret;
+
+    }
+
 
 
     /**
