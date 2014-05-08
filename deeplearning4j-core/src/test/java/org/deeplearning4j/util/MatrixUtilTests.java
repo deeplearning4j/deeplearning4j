@@ -12,6 +12,21 @@ public class MatrixUtilTests {
     private static Logger log = LoggerFactory.getLogger(MatrixUtilTests.class);
 
 
+    @Test
+    public void testFlip() {
+        DoubleMatrix d = new DoubleMatrix(new double[][]{
+                {1,2},
+                {3,4}
+        });
+
+        DoubleMatrix flipped = new DoubleMatrix(new double[][]{
+                {3,4},
+                {1,2}
+        });
+
+        assertEquals(flipped,MatrixUtil.flipDim(d));
+
+    }
 
     @Test
     public void test1DFilter() {
