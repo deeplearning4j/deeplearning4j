@@ -1,5 +1,6 @@
 package org.deeplearning4j.example.text;
 
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -30,8 +31,8 @@ public class TweetOpinionMining {
 
     public static void main(String[] args) throws Exception {
 
-        ClassPathResource resource = new ClassPathResource("/tweets_clean.txt");
-        InputStream is = resource.getInputStream();
+
+        InputStream is = FileUtils.openInputStream(new File(args[0]));
 
 
         LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is);
@@ -41,8 +42,11 @@ public class TweetOpinionMining {
                 return new InputHomogenization(sentence).transform();
             }
         });
+
+
+
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1","2"),1000);
+        TextVectorizer vectorizor = new TfidfVectorizer(iterator,tokenizerFactory,Arrays.asList("0","1"),2000);
         DataSet data = vectorizor.vectorize();
         data.binarize();
 
@@ -53,7 +57,7 @@ public class TweetOpinionMining {
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
 
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4,iter.inputColumns() / 6}).normalizeByInputRows(true)
+                .hiddenLayerSizes(new int[]{iter.inputColumns() / 2,iter.inputColumns() / 4,iter.inputColumns() / 6})
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
