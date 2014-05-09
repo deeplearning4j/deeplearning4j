@@ -35,7 +35,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 *
 	 */
 	public static enum LossFunction {
-		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD
+		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD,MSE
 	}
 
     /**
@@ -57,9 +57,18 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      */
     public void backProp(double lr,int epochs,Object[] extraParams);
 
+    /**
+     * The loss function for this network
+     * @return the loss function for this network
+     */
 	public LossFunction getLossFunction();
 	public void setLossFunction(LossFunction lossFunction);
-	
+
+    /**
+     * The optimization algorithm.
+     * SGD and CG are currently supported
+     * @return the optimization algorithm for this network
+     */
 	public OptimizationAlgorithm getOptimizationAlgorithm();
 	public void setOptimizationAlgorithm(OptimizationAlgorithm optimziationAlgorithm);
 	
@@ -129,7 +138,14 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	public double getL2();
 	public void setL2(double l2);
-	
+
+    /**
+     * Mean squared error. Used for regression tasks
+     * @return the mean squared error with respect to the output
+     * of the network
+     */
+    public double mse();
+
 	public double getMomentum();
 	public void setMomentum(double momentum);
 	
