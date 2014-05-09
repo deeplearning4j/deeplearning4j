@@ -8,6 +8,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.nn.FourDTensor;
@@ -21,7 +22,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Iterator;
 
-
+/**
+ * Matrix Ops
+ *
+ * @author Adam Gibson
+ */
 public class MatrixUtil {
     private static Logger log = LoggerFactory.getLogger(MatrixUtil.class);
 
@@ -131,7 +136,7 @@ public class MatrixUtil {
     /**
      * Cumulative sum
      *
-     * @param sum the matrix to get the cumulatie sum of
+     * @param sum the matrix to get the cumulative sum of
      * @return a matrix of the same dimensions such that the at i,j
      * is the cumulative sum of it + the predecessor elements in the column
      */
@@ -698,7 +703,7 @@ public class MatrixUtil {
         DoubleMatrix U = new DoubleMatrix(mean.rows, mean.columns);
         for (int i = 0; i < U.rows; i++)
             for (int j = 0; j < U.columns; j++) {
-                RealDistribution reals = new NormalDistribution(mean.get(i, j), Math.sqrt(sigma));
+                RealDistribution reals = new NormalDistribution(rng,mean.get(i, j), FastMath.sqrt(sigma),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
                 U.put(i, j, reals.sample());
 
             }
@@ -718,7 +723,7 @@ public class MatrixUtil {
      * with numbers between 0 and 1
      */
     public static <E extends DoubleMatrix> E normal(RandomGenerator rng, E mean, E variance) {
-        DoubleMatrix std = MatrixFunctions.sqrt(variance);
+        DoubleMatrix std =  sqrt(variance);
         for (int i = 0; i < variance.length; i++)
             if (variance.get(i) <= 0)
                 variance.put(i, 1e-4);
@@ -726,7 +731,7 @@ public class MatrixUtil {
         DoubleMatrix U = new DoubleMatrix(mean.rows, mean.columns);
         for (int i = 0; i < U.rows; i++)
             for (int j = 0; j < U.columns; j++) {
-                RealDistribution reals = new NormalDistribution(mean.get(i, j), std.get(j));
+                RealDistribution reals = new NormalDistribution(rng,mean.get(i, j), std.get(j),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
                 U.put(i, j, reals.sample());
 
             }
@@ -1189,9 +1194,24 @@ public class MatrixUtil {
      * @param <E>
      * @return the input with the sigmoid function applied
      */
+    public static <E extends DoubleMatrix> E sqrt(E x) {
+        DoubleMatrix ret = new DoubleMatrix(x.rows,x.columns);
+        for(int i = 0; i < ret.length; i++)
+             ret.put(i, x.get(i) > 0 ? FastMath.sqrt(x.get(i)) : 0.0);
+
+        return createBasedOn(ret,x);
+    }
+
+
+    /**
+     * Takes the sigmoid of a given matrix
+     * @param x the input
+     * @param <E>
+     * @return the input with the sigmoid function applied
+     */
     public static <E extends DoubleMatrix> E sigmoid(E x) {
         DoubleMatrix ones = DoubleMatrix.ones(x.rows, x.columns);
-        return createBasedOn(ones.div(ones.add(MatrixFunctions.exp(x.neg()))),x);
+        return createBasedOn(ones.div(ones.add(exp(x.neg()))),x);
     }
 
     public static DoubleMatrix dot(DoubleMatrix a,DoubleMatrix b) {
@@ -1252,7 +1272,7 @@ public class MatrixUtil {
      * @param input the input to get the variance for
      * @return the column wise variance of the input
      */
-    public static <E extends DoubleMatrix> E columnVariance(E input) {
+    public static DoubleMatrix columnVariance(DoubleMatrix input) {
         DoubleMatrix columnMeans = input.columnMeans();
         DoubleMatrix ret = new DoubleMatrix(1,columnMeans.columns);
         for(int i = 0;i < ret.columns; i++) {
@@ -1262,7 +1282,7 @@ public class MatrixUtil {
                 variance = 1e-6;
             ret.put(i,variance);
         }
-        return createBasedOn(ret,input);
+        return ret;
     }
 
     /**
