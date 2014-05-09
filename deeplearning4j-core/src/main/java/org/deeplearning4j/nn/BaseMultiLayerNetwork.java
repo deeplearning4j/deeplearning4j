@@ -6,6 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
@@ -324,7 +325,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
 
         if(this.dist == null)
-            dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+            dist = Distributions.normal(rng,1e-2);
 
         this.layers = new NeuralNetwork[getnLayers()];
 
