@@ -19,13 +19,13 @@ public class MultiLayerGradient implements Persistable,Cloneable {
 	 */
 	private static final long serialVersionUID = 5262146791172613616L;
 	private List<NeuralNetworkGradient> gradients;
-	private LogisticRegressionGradient logRegGradient;
+	private OutputLayerGradient logRegGradient;
 	
 	
 	
 	
 	public MultiLayerGradient(List<NeuralNetworkGradient> gradients,
-			LogisticRegressionGradient logRegGradient) {
+			OutputLayerGradient logRegGradient) {
 		super();
 		this.gradients = gradients;
 		this.logRegGradient = logRegGradient;
@@ -72,12 +72,12 @@ public class MultiLayerGradient implements Persistable,Cloneable {
 		this.gradients = gradients;
 	}
 
-	public  LogisticRegressionGradient getLogRegGradient() {
+	public OutputLayerGradient getLogRegGradient() {
 		return logRegGradient;
 	}
 
 	public  void setLogRegGradient(
-			LogisticRegressionGradient logRegGradient) {
+			OutputLayerGradient logRegGradient) {
 		this.logRegGradient = logRegGradient;
 	}
 

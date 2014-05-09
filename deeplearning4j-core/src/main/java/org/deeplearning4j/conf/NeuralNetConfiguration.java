@@ -6,13 +6,11 @@ import java.util.Map;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.HiddenLayer;
-import org.deeplearning4j.nn.LogisticRegression;
+import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
 import org.deeplearning4j.transformation.MatrixTransform;
-import org.jblas.DoubleMatrix;
 
 
 public class NeuralNetConfiguration implements Serializable {
@@ -30,7 +28,7 @@ public class NeuralNetConfiguration implements Serializable {
 	public int nOuts;
 	public int nLayers;
 	//logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
-	public LogisticRegression logLayer;
+	public OutputLayer logLayer;
 	public RandomGenerator rng;
 	/* probability distribution for generation of weights */
 	public RealDistribution dist;
@@ -70,10 +68,10 @@ public class NeuralNetConfiguration implements Serializable {
 	public void setnLayers(int nLayers) {
 		this.nLayers = nLayers;
 	}
-	public LogisticRegression getLogLayer() {
+	public OutputLayer getLogLayer() {
 		return logLayer;
 	}
-	public void setLogLayer(LogisticRegression logLayer) {
+	public void setLogLayer(OutputLayer logLayer) {
 		this.logLayer = logLayer;
 	}
 	public RandomGenerator getRng() {

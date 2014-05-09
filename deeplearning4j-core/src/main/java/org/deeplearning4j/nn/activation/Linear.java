@@ -18,7 +18,7 @@ public class Linear implements ActivationFunction {
      */
     @Override
     public DoubleMatrix applyDerivative(DoubleMatrix input) {
-        return input;
+        return DoubleMatrix.ones(input.rows,input.columns);
     }
 
     @Override

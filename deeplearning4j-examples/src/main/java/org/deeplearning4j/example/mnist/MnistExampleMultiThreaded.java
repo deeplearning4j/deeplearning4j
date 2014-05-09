@@ -25,9 +25,9 @@ public class MnistExampleMultiThreaded {
 
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(1e-2);
-        c.setPretrainLearningRate(1e-2);
-		c.setLayerSizes(new int[]{500,400,250});
+		c.setFinetuneLearningRate(1e-1);
+        c.setPretrainLearningRate(1e-1);
+		c.setLayerSizes(new int[]{600,400,250});
 		c.setnIn(784);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
