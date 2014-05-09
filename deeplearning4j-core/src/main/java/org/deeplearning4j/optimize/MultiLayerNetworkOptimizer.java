@@ -3,7 +3,7 @@ package org.deeplearning4j.optimize;
 import java.io.Serializable;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +135,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public void getValueGradient(double[] buffer) {
-		LogisticRegressionGradient gradient = network.getLogLayer().getGradient(lr);
+		OutputLayerGradient gradient = network.getLogLayer().getGradient(lr);
 
 		DoubleMatrix weightGradient = gradient.getwGradient();
 		DoubleMatrix biasGradient = gradient.getbGradient();

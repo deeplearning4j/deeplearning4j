@@ -1,19 +1,19 @@
 package org.deeplearning4j.optimize;
 
-import org.deeplearning4j.nn.LogisticRegression;
-import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.OutputLayer;
+import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.jblas.DoubleMatrix;
 
 import cc.mallet.optimize.Optimizable;
 
-public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
+public class OutputLayerOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
 
-	private LogisticRegression logReg;
+	private OutputLayer logReg;
 	private double lr;
 	
 	
 	
-	public LogisticRegressionOptimizer(LogisticRegression logReg, double lr) {
+	public OutputLayerOptimizer(OutputLayer logReg, double lr) {
 		super();
 		this.logReg = logReg;
 		this.lr = lr;
@@ -60,7 +60,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public void getValueGradient(double[] buffer) {
-		LogisticRegressionGradient grad = logReg.getGradient(lr);
+		OutputLayerGradient grad = logReg.getGradient(lr);
 		for(int i = 0; i < buffer.length; i++) {
 			if(i < logReg.getW().length)
 				buffer[i] = grad.getwGradient().get(i);
@@ -72,7 +72,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public double getValue() {
-		return -logReg.negativeLogLikelihood();
+		return -logReg.score();
 	}
 
 	@Override
@@ -91,7 +91,7 @@ public class LogisticRegressionOptimizer implements Optimizable.ByGradientValue,
 
 	@Override
 	public DoubleMatrix getValueGradient() {
-		LogisticRegressionGradient grad = logReg.getGradient(lr);
+		OutputLayerGradient grad = logReg.getGradient(lr);
 		DoubleMatrix ret = new DoubleMatrix(getNumParameters());
 		for(int i = 0; i < ret.length; i++) {
 			if(i < logReg.getW().length)

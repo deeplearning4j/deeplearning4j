@@ -6,7 +6,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
@@ -14,7 +13,7 @@ import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
-import org.deeplearning4j.nn.gradient.LogisticRegressionGradient;
+import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.gradient.MultiLayerGradient;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
@@ -56,7 +55,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     //the hidden layers
     protected HiddenLayer[] sigmoidLayers;
     //logistic regression output layer (aka the softmax layer) for translating network outputs in to probabilities
-    protected LogisticRegression logLayer;
+    protected OutputLayer logLayer;
     protected RandomGenerator rng;
     /* probability distribution for generation of weights */
     protected RealDistribution dist;
@@ -362,8 +361,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-        // layer for output using LogisticRegression
-        this.logLayer = new LogisticRegression.Builder()
+        // layer for output using OutputLayer
+        this.logLayer = new OutputLayer.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
                 .normalizeByInputRows(normalizeByInputRows)
                 .useRegularization(useRegularization)
@@ -445,7 +444,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             lr = (double) params[1];
 
         this.feedForward(input);
-        LogisticRegressionGradient g2 = logLayer.getGradient(lr);
+        OutputLayerGradient g2 = logLayer.getGradient(lr);
 
 
         MultiLayerGradient ret =  new MultiLayerGradient(gradient,g2);
@@ -482,7 +481,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
 
         logLayer.setInput(currInput);
-        activations.add(getLogLayer().predict(currInput));
+        activations.add(getLogLayer().output(currInput));
         return activations;
     }
 
@@ -623,7 +622,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             int backPropIterations = 0;
             while(train) {
                 if(backPropIterations >= epochs) {
-                    log.info("Backprop number of iterations max hit; convering");
+                    log.info("Backprop number of iterations max hit; converging");
                     break;
 
                 }
@@ -997,7 +996,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @return the negative log likelihood of the model
      */
     public  double negativeLogLikelihood() {
-        return logLayer.negativeLogLikelihood();
+        return logLayer.score();
     }
 
     /**
@@ -1139,7 +1138,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             count++;
         }
 
-        this.logLayer = new LogisticRegression(hiddenLayerSizes[getnLayers() - 1],network.input.columns);
+        this.logLayer = new OutputLayer(hiddenLayerSizes[getnLayers() - 1],network.input.columns);
 
     }
 
@@ -1149,7 +1148,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return labels;
     }
 
-    public  LogisticRegression getLogLayer() {
+    public OutputLayer getLogLayer() {
         return logLayer;
     }
 
@@ -1450,7 +1449,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.sigmoidLayers = sigmoidLayers;
     }
 
-    public  void setLogLayer(LogisticRegression logLayer) {
+    public  void setLogLayer(OutputLayer logLayer) {
         this.logLayer = logLayer;
     }
 

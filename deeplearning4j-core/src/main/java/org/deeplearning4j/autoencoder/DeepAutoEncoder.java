@@ -5,7 +5,9 @@ import java.io.Serializable;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.jblas.DoubleMatrix;
 
-
+/**
+ * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
+ */
 public class DeepAutoEncoder implements Serializable {
 
 	/**
