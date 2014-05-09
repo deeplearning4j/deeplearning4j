@@ -1,9 +1,10 @@
 package org.deeplearning4j.rbm;
 
 
-import static org.jblas.MatrixFunctions.*;
-
 import static org.deeplearning4j.util.MatrixUtil.log;
+import static org.deeplearning4j.util.MatrixUtil.sqrt;
+import static org.deeplearning4j.util.MatrixUtil.exp;
+import static org.deeplearning4j.util.MatrixUtil.normal;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.deeplearning4j.util.MatrixUtil.mean;
 import static org.deeplearning4j.util.MatrixUtil.scalarMinus;
@@ -237,7 +238,9 @@ public class RBM extends BaseNeuralNetwork {
 		/*
 		 * Rectified linear part
 		 */
-            DoubleMatrix h1Sample = h1Mean.addi(MatrixUtil.normal(getRng(), h1Mean,1).mul(sqrt(sigH1Mean)));
+            DoubleMatrix sqrtSigH1Mean = sqrt(sigH1Mean);
+            //NANs here with Word2Vec
+            DoubleMatrix h1Sample = h1Mean.addi(normal(getRng(), h1Mean,1).mul(sqrtSigH1Mean));
             MatrixUtil.max(0.0, h1Sample);
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
