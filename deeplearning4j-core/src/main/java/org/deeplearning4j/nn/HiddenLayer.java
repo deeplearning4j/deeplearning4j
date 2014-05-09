@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn;
 
+import static org.deeplearning4j.util.MatrixUtil.stabilizeInput;
+import static org.deeplearning4j.util.MatrixUtil.binomial;
+
 import java.io.Serializable;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -223,7 +226,7 @@ public class HiddenLayer implements Serializable {
 	 */
 	public synchronized DoubleMatrix activate(DoubleMatrix input) {
 		if(input != null)
-			this.input = input;
+			this.input = stabilizeInput(input.dup(),1);
 		return activate();
 	}
 
@@ -235,8 +238,10 @@ public class HiddenLayer implements Serializable {
 	 * given the input
 	 */
 	public DoubleMatrix sampleHGivenV(DoubleMatrix input) {
-		this.input = input;
-		DoubleMatrix ret = MatrixUtil.binomial(activate(), 1, rng);
+        if(input != null)
+            this.input = stabilizeInput(input.dup(),1);
+
+        DoubleMatrix ret = binomial(activate(), 1, rng);
 		return ret;
 	}
 

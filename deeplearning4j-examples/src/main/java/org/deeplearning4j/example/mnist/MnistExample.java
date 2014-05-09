@@ -4,10 +4,13 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.eval.Evaluation;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -24,10 +27,10 @@ public class MnistExample {
 	public static void main(String[] args) throws IOException {
 		//batches of 10, 60000 examples total
 		DataSetIterator iter = new MnistDataSetIterator(10,500);
-		
+        RandomGenerator rng = new MersenneTwister(123);
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-		DBN dbn = new DBN.Builder().useAdaGrad(true).useRegularization(false)
-		.hiddenLayerSizes(new int[]{500,400,250}).normalizeByInputRows(true)
+		DBN dbn = new DBN.Builder()
+		.hiddenLayerSizes(new int[]{500,400,250}).renderWeights(100).withRng(rng)
 		.numberOfInputs(784).numberOfOutPuts(10)
 		.build();
 		

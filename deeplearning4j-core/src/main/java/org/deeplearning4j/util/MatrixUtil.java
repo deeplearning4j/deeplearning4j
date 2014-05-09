@@ -477,7 +477,7 @@ public class MatrixUtil {
      */
     public static <E extends DoubleMatrix> E createBasedOn(DoubleMatrix result,E input) {
         if(input.getClass().equals(result.getClass()))
-            return input;
+            return (E) result;
 
         else if(input instanceof FourDTensor) {
             FourDTensor tensor = new FourDTensor(result,false);
@@ -1223,6 +1223,30 @@ public class MatrixUtil {
             return  a.mmul(b);
         }
     }
+
+    /**
+     * Ensures numerical stability.
+     * Clips values of input such that
+     * exp(k * in) is within single numerical precision
+     * @param input the input to trim
+     * @param k the k (usually 1)
+     * @param <E>
+     * @return the stabilized input
+     */
+    public static <E extends DoubleMatrix> E stabilizeInput(E input,double k) {
+        double realMin =  1.1755e-38;
+        double cutOff = FastMath.log(realMin);
+        for(int i = 0; i < input.length; i++) {
+            if(input.get(i) * k > -cutOff)
+                input.put(i,-cutOff / k);
+            else if(input.get(i) * k < cutOff)
+                input.put(i,cutOff / k);
+        }
+
+        return input;
+
+    }
+
 
     public static DoubleMatrix out(DoubleMatrix a,DoubleMatrix b) {
         return a.mmul(b);
