@@ -120,6 +120,8 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         else {
             while(cachedWindow.size() < num && iter.hasNext()) {
                 String sentence = iter.nextSentence();
+                if(sentence.isEmpty())
+                    continue;
                 List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
                 for(Window w : windows)
                     w.setLabel(iter.currentLabel());

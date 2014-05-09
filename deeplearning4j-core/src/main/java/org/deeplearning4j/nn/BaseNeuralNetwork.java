@@ -291,7 +291,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void backProp(double lr,int epochs,Object[] extraParams) {
-        double currRecon = this.getReConstructionCrossEntropy();
+        double currRecon = getReConstructionCrossEntropy();
         boolean train = true;
         NeuralNetwork revert = clone();
         int numEpochs = 0;
