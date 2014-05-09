@@ -1238,7 +1238,7 @@ public class MatrixUtil {
      */
     public static <E extends DoubleMatrix> void normalizeZeroMeanAndUnitVariance(E toNormalize) {
         DoubleMatrix columnMeans = toNormalize.columnMeans();
-        DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(toNormalize);
+        DoubleMatrix columnStds = columnStdDeviation(toNormalize);
 
         toNormalize.subiRowVector(columnMeans);
         columnStds.addi(1e-6);
@@ -1272,7 +1272,7 @@ public class MatrixUtil {
      * @return the standard deviations of each column in the matrix
      * as a row matrix
      */
-    public static <E extends DoubleMatrix> E columnStd(E m) {
+    public static DoubleMatrix columnStd(DoubleMatrix m) {
         DoubleMatrix ret = new DoubleMatrix(1,m.columns);
         StandardDeviation std = new StandardDeviation();
 
@@ -1283,7 +1283,7 @@ public class MatrixUtil {
 
         ret.divi(m.rows);
 
-        return createBasedOn(ret,m);
+        return ret;
     }
 
     /**
@@ -1374,7 +1374,7 @@ public class MatrixUtil {
     }
 
 
-    public static <E extends DoubleMatrix> E columnStdDeviation(E m) {
+    public static DoubleMatrix columnStdDeviation(DoubleMatrix m) {
         DoubleMatrix ret = new DoubleMatrix(1,m.columns);
 
         for(int i = 0; i < ret.length; i++) {
@@ -1383,7 +1383,7 @@ public class MatrixUtil {
             ret.put(i,std);
         }
 
-        return createBasedOn(ret,m);
+        return ret;
     }
 
     /**
