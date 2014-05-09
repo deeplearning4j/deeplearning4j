@@ -963,8 +963,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-
-
+    @Override
+    public double mse() {
+        DoubleMatrix reconstructed = reconstruct(input);
+        DoubleMatrix diff = reconstructed.sub(input);
+        double sum = 0.5 * MatrixFunctions.pow(diff,2).columnSums().sum() / input.rows;
+        return -sum;
+    }
 
     @Override
     public DoubleMatrix hBiasMean() {

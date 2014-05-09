@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn;
 
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-import static org.jblas.MatrixFunctions.sqrt;
+import static org.deeplearning4j.util.MatrixUtil.sqrt;
+import static org.deeplearning4j.util.MatrixUtil.max;
+import static org.deeplearning4j.util.MatrixUtil.normal;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -123,7 +125,7 @@ public class RectifiedLinearHiddenLayer extends HiddenLayer {
 		/*
 		 * Rectified linear part
 		 */
-		DoubleMatrix h1Sample = output.addi(MatrixUtil.normal(getRng(), output,1).mul(sqrt(sigH1Mean)));
+		DoubleMatrix h1Sample = output.addi(normal(getRng(), output,1).mul(sqrt(sigH1Mean)));
 		MatrixUtil.max(0.0, h1Sample);
 
 		return h1Sample;

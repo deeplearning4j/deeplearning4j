@@ -32,6 +32,7 @@ public class HiddenLayer implements Serializable {
 	protected ActivationFunction activationFunction = new Sigmoid();
 	protected RealDistribution dist;
 
+
 	protected HiddenLayer() {}
 
 	public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {

@@ -6,6 +6,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.rbm.RBM;
@@ -101,6 +102,7 @@ public class MovingWindowExample {
         c.setUseRegularization(false);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
+        runner.setModelSaver(new DefaultModelSaver(new File("word2vec-modelsaver.ser")));
         runner.setStateTracker(tracker);
         runner.setup(c);
         runner.train();
