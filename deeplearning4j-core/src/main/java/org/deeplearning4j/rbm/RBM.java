@@ -366,7 +366,7 @@ public class RBM extends BaseNeuralNetwork {
     public void trainTillConvergence(DoubleMatrix input, double lr,
                                      Object[] params) {
         if(input != null && cacheInput)
-            this.input = input;
+            this.input = MatrixUtil.stabilizeInput(input,1);
         this.lastMiniBatchSize = input.rows;
 
         if(visibleType == VisibleUnit.GAUSSIAN) {

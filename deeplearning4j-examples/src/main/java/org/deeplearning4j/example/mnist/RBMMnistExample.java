@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.RBM;
@@ -22,17 +23,17 @@ public class RBMMnistExample {
      */
     public static void main(String[] args) throws Exception {
         RBM r = new RBM.Builder()
-                .numberOfVisible(784)
+                .numberOfVisible(784).withDistribution(Distributions.normal(new MersenneTwister(123),1e-1))
                 .numHidden(600).renderWeights(100)
                 .build();
-
 
         //batches of 10, 60000 examples total
         DataSetIterator iter = new MnistDataSetIterator(10,50);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            r.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{1, 1e-1, 5000});
+            log.info(String.valueOf(next.labelDistribution()));
+            r.trainTillConvergence(next.getFirst(), 1e-3, new Object[]{1, 1e-3, 5000});
 
         }
 
@@ -43,8 +44,6 @@ public class RBMMnistExample {
 
         iter.reset();
 
-        FilterRenderer render = new FilterRenderer();
-        render.renderFilters(r.getW(), "example-render.jpg", 28, 28);
 
 
 
@@ -57,12 +56,12 @@ public class RBMMnistExample {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123));
 
                 DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
                 d.title = "REAL";
                 d.draw();
-                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
+                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2);
                 d2.title = "TEST";
                 d2.draw();
                 Thread.sleep(10000);
