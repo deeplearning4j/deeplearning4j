@@ -15,61 +15,59 @@ import org.jblas.DoubleMatrix;
 
 public class DenoisingAutoEncoderMnistExample {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
+    /**
+     * @param args
+     */
+    public static void main(String[] args) throws Exception {
+        DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
                 .withSparsity(1e-1)
-		.numberOfVisible(784).numHidden(600).build();
+                .numberOfVisible(784).numHidden(600).build();
 
 
-		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(10,30);
-		for(int i = 0;i < 20; i++) {
-			while(iter.hasNext()) {
-				DataSet next = iter.next();
-				//train with k = 1 0.01 learning rate and 1000 epochs
-				autoEncoder.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{0.3,1e-2,1000});
+        //batches of 10, 60000 examples total
+        DataSetIterator iter = new MnistDataSetIterator(10,30);
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            //train with k = 1 0.01 learning rate and 1000 epochs
+            autoEncoder.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
 
 
-			}
+        }
 
 
-			iter.reset();
+        iter.reset();
 
-		}
 
-		FilterRenderer render = new FilterRenderer();
-		render.renderFilters(autoEncoder.getW(), "example-render.jpg", 28, 28);
+        FilterRenderer render = new FilterRenderer();
+        render.renderFilters(autoEncoder.getW(), "example-render.jpg", 28, 28);
 
 
 
 
-		//Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
-		while(iter.hasNext()) {
-			DataSet first = iter.next();
-			DoubleMatrix reconstruct = autoEncoder.reconstruct(first.getFirst());
-			for(int j = 0; j < first.numExamples(); j++) {
+        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
+        while(iter.hasNext()) {
+            DataSet first = iter.next();
+            DoubleMatrix reconstruct = autoEncoder.reconstruct(first.getFirst());
+            for(int j = 0; j < first.numExamples(); j++) {
 
-				DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
+                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
 
-				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
-				d.title = "REAL";
-				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
-				d2.title = "TEST";
-				d2.draw();
-				Thread.sleep(10000);
-				d.frame.dispose();
-				d2.frame.dispose();
-			}
+                DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+                d.title = "REAL";
+                d.draw();
+                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
+                d2.title = "TEST";
+                d2.draw();
+                Thread.sleep(10000);
+                d.frame.dispose();
+                d2.frame.dispose();
+            }
 
 
-		}
+        }
 
-	}
+    }
 
 }
