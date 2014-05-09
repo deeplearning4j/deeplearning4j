@@ -3,16 +3,10 @@ package org.deeplearning4j.nn;
 
 import java.io.IOException;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.LogisticRegression;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,21 +42,6 @@ public class LogisticTest {
 
 
 
-	@Test
-	public void testLogistic() {
-		LogisticRegression log2 = new LogisticRegression(xTestMatrix,x[0].length,2);
-		double learningRate = 0.01;
-		for(int i = 0; i < 1000; i++) {
-			log2.train(xMatrix, yMatrix,learningRate);
-			learningRate *= 0.95;
-		}
-		
-		
-		log.info(log2.predict(xTestMatrix).toString());
-
-
-	}
-
 
 	@Test
 	public void testIris() throws IOException {
@@ -70,38 +49,13 @@ public class LogisticTest {
 		fetcher.fetch(110);
 
 		DataSet iris = fetcher.next();
-		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
+		OutputLayer classifier = new OutputLayer.Builder().numberOfInputs(4).numberOfOutputs(3)
 				.build();
-		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(), 0.01,10000);
-		fetcher.fetch(40);
-		iris = fetcher.next();
+		iris.normalizeZeroMeanZeroUnitVariance();
 
-		DoubleMatrix predicted = classifier.predict(iris.getFirst());		
+		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(),1e-1, 40000);
 
-
-		Evaluation eval = new Evaluation();
-		eval.eval(iris.getSecond(), predicted);
-
-		log.info(eval.stats());
-
-	}
-
-
-	@Test
-	public void testIrisCg() throws IOException {
-		IrisDataFetcher fetcher = new IrisDataFetcher();
-		fetcher.fetch(110);
-
-		DataSet iris = fetcher.next();
-		LogisticRegression classifier = new LogisticRegression.Builder().numberOfInputs(4).numberOfOutputs(3)
-				.build();
-		
-		classifier.trainTillConvergence(iris.getFirst(), iris.getSecond(),0.01, 1000);
-		
-		fetcher.fetch(40);
-		iris = fetcher.next();
-
-		DoubleMatrix predicted = classifier.predict(iris.getFirst());		
+		DoubleMatrix predicted = classifier.output(iris.getFirst());
 
 
 		Evaluation eval = new Evaluation();

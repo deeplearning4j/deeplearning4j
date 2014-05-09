@@ -286,7 +286,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
 
-        return createBasedOn(logLayer.predict(features),features);
+        return createBasedOn(logLayer.output(features),features);
     }
 
     /**
@@ -371,8 +371,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         int nOuts = r.getFmSize()[0] * r.getFmSize()[1] * nFmIn;
 
 
-        // layer for output using LogisticRegression
-        this.logLayer = new LogisticRegression.Builder()
+        // layer for output using OutputLayer
+        this.logLayer = new OutputLayer.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
                 .normalizeByInputRows(normalizeByInputRows)
                 .useRegularization(useRegularization)

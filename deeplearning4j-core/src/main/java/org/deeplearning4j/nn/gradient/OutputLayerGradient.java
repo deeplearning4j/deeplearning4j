@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.jblas.DoubleMatrix;
 
-public class LogisticRegressionGradient implements Serializable {
+public class OutputLayerGradient implements Serializable {
 
 	
 	private static final long serialVersionUID = -2843336269630396562L;
@@ -26,7 +26,7 @@ public class LogisticRegressionGradient implements Serializable {
 	 * Sums this gradient with the given one
 	 * @param gradient the gradient to add
 	 */
-	public void add(LogisticRegressionGradient gradient) {
+	public void add(OutputLayerGradient gradient) {
 		wGradient.addi(gradient.getwGradient());
 		bGradient.addi(gradient.getbGradient());
 	}
@@ -49,7 +49,7 @@ public class LogisticRegressionGradient implements Serializable {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		LogisticRegressionGradient other = (LogisticRegressionGradient) obj;
+		OutputLayerGradient other = (OutputLayerGradient) obj;
 		if (bGradient == null) {
 			if (other.bGradient != null)
 				return false;
@@ -62,8 +62,8 @@ public class LogisticRegressionGradient implements Serializable {
 			return false;
 		return true;
 	}
-	public LogisticRegressionGradient(DoubleMatrix wGradient,
-			DoubleMatrix bGradient) {
+	public OutputLayerGradient(DoubleMatrix wGradient,
+                               DoubleMatrix bGradient) {
 		super();
 		this.wGradient = wGradient;
 		this.bGradient = bGradient;
