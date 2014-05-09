@@ -128,7 +128,6 @@ public class DBN extends BaseMultiLayerNetwork {
      */
     public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
         /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
-        this.setUseHiddenActivationsForwardProp(false);
         if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
             setInput(input);
             initializeLayers(input);
