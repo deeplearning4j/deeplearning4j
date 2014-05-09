@@ -325,7 +325,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
 
         if(this.dist == null)
-            dist = Distributions.normal(rng,1e-2);
+            this.dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+
 
         this.layers = new NeuralNetwork[getnLayers()];
 

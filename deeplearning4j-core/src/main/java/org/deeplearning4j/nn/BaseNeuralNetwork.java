@@ -350,6 +350,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 log.info("Converged for new recon; breaking...");
                 break;
             }
+            else if(Double.isNaN(newRecon) || Double.isInfinite(newRecon)) {
+                update((BaseNeuralNetwork) revert);
+                log.info("Converged for new recon; breaking...");
+                break;
+            }
+
 
             else if(newRecon == currRecon)
                 break;
