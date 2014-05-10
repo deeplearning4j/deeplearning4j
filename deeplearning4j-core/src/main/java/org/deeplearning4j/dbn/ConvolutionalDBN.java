@@ -228,9 +228,18 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         for(int i = getnLayers() -2; i >= 0; i--) {
             ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
+            ConvolutionalRBM prevRBM = (ConvolutionalRBM) getLayers()[i - 1];
+
             DoubleMatrix shape2 = r2.getFeatureMap().shape();
+            FourDTensor errorSignal = (FourDTensor) errorSignals[i - 1];
             for(int j = 0; j < r2.getNumFilters()[0]; j++) {
-               //figure out what to do wrt error signal for each neural net here.
+                for(int k = 0; k < prevRBM.getNumFilters()[0]; k++)  {
+
+                    //figure out what to do wrt error signal for each neural net here.
+                    Tensor flipped = MatrixUtil.flipDimMultiDim(prevRBM.getFeatureMap().getTensor(k));
+                    // need to add filters now
+                }
+
             }
         }
 
