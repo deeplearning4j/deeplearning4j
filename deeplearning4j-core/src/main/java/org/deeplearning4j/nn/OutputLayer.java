@@ -41,7 +41,6 @@ public class OutputLayer implements Serializable {
     private boolean useRegularization = false;
     private boolean useAdaGrad = true;
     private AdaGrad adaGrad,biasAdaGrad;
-    private boolean firstTimeThrough = false;
     private boolean normalizeByInputRows = true;
     private OptimizationAlgorithm optimizationAlgorithm;
     private LossFunction lossFunction;

@@ -58,6 +58,8 @@ public class ConvolutionalRBM extends RBM  {
     protected double sparseGain = 5;
     public int wRows = 0,wCols = 0,wSlices = 0;
     private FourDTensor featureMap;
+    //same size as W
+    protected FourDTensor dWeights;
     protected ConvolutionalRBM() {}
 
 
@@ -94,6 +96,7 @@ public class ConvolutionalRBM extends RBM  {
         vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
         hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
         convolutionInitCalled = true;
+        dWeights = new FourDTensor(W.rows(),W.columns(),W.slices(),W.getNumTensor());
         //dont normalize by input rows here, the batch size can only be 1
         this.normalizeByInputRows = false;
     }
@@ -674,6 +677,15 @@ public class ConvolutionalRBM extends RBM  {
 
     public void setFeatureMap(FourDTensor featureMap) {
         this.featureMap = featureMap;
+    }
+
+
+    public FourDTensor getdWeights() {
+        return dWeights;
+    }
+
+    public void setdWeights(FourDTensor dWeights) {
+        this.dWeights = dWeights;
     }
 
     public static class Builder extends RBM.Builder {
