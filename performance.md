@@ -15,3 +15,5 @@ With the default parameters, our code runs for 1000 pre-training epochs with min
 On an [[UPDATE THIS -->Intel(R) Xeon(R) CPU X5560 running at 2.80GHz]], using DL4J’s built-in parallelism running on 8 cores, pretraining and fine-tuning took 12 hours.
 
 bullet point list TK
+
+<code data-gist-id="896b92f2f8d0a4acc9df"></code>
