@@ -168,6 +168,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         DoubleMatrix shape = d.getFeatureMap().shape();
         ConvolutionalRBM rbm = (ConvolutionalRBM) getLayers()[getnLayers() - 1];
         DoubleMatrix[] errorSignals = new DoubleMatrix[getnLayers()];
+        DoubleMatrix[] biasGradients = new DoubleMatrix[getnLayers()];
+
         FourDTensor layerErrorSignal = FourDTensor.zeros((int) shape.get(0),(int) shape.get(1),(int) shape.get(2),(int) shape.get(3));
         errorSignals[errorSignals.length - 1] = es;
         //initial hidden layer error signal
@@ -230,18 +232,27 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
             ConvolutionalRBM prevRBM = (ConvolutionalRBM) getLayers()[i - 1];
 
-            DoubleMatrix shape2 = r2.getFeatureMap().shape();
             FourDTensor errorSignal = (FourDTensor) errorSignals[i - 1];
+            Tensor biasGradient = new Tensor(errorSignal.rows(),errorSignal.columns(),errorSignal.slices());
             for(int j = 0; j < r2.getNumFilters()[0]; j++) {
+                Tensor es2 = errorSignal.getTensor(j);
                 for(int k = 0; k < prevRBM.getNumFilters()[0]; k++)  {
 
                     //figure out what to do wrt error signal for each neural net here.
                     Tensor flipped = MatrixUtil.flipDimMultiDim(prevRBM.getFeatureMap().getTensor(k));
-                    // need to add filters now
+
+                    DoubleMatrix dedFilter = conv2d(flipped,es2,Type.VALID);
+                    r2.getdWeights().put(j,k,dedFilter);
                 }
 
+                biasGradient.setSlice(j,es.columnSums().div(errorSignal.numTensors()));
+
             }
+            biasGradients[i] = biasGradient;
+
         }
+
+        //return the gradients here
 
     }
 
