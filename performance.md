@@ -16,4 +16,4 @@ On an [[UPDATE THIS -->Intel(R) Xeon(R) CPU X5560 running at 2.80GHz]], using DL
 
 bullet point list TK
 
-<code data-gist-id="896b92f2f8d0a4acc9df"></code>
+<script src="https://gist.github.com/chrisvnicholson/896b92f2f8d0a4acc9df.js"></script>
