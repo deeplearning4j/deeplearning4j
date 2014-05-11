@@ -23,13 +23,11 @@ public class DeepAutoEncoderTest {
         log.info("Training on " + d.numExamples());
         StopWatch watch = new StopWatch();
 
-        log.info("Data set " + d);
 
         DBN dbn = new DBN.Builder()
-                .withActivation(Activations.sigmoid())
                 .hiddenLayerSizes(new int[]{1000,500,250,30})
                 .withMomentum(0.5).renderWeights(100)
-                .numberOfInputs(784)
+                .numberOfInputs(784).useAdaGrad(false)
                 .numberOfOutPuts(2)
                 .build();
 

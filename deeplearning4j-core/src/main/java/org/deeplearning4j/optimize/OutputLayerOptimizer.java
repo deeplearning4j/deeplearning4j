@@ -93,7 +93,14 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 	public DoubleMatrix getValueGradient() {
 		OutputLayerGradient grad = logReg.getGradient(lr);
 		DoubleMatrix ret = new DoubleMatrix(getNumParameters());
-		for(int i = 0; i < ret.length; i++) {
+        if(logReg.getW().length != grad.getwGradient().length)
+            throw new IllegalStateException("Illegal length for gradient");
+        if(logReg.getB().length != grad.getbGradient().length)
+            throw new IllegalStateException("Illegal length for gradient");
+
+
+
+        for(int i = 0; i < ret.length; i++) {
 			if(i < logReg.getW().length)
 				ret.put(i,grad.getwGradient().get(i));
 			else

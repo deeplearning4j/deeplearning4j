@@ -45,7 +45,7 @@ public class DeepAutoEncoder implements Serializable {
 
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
-            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
+            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit()).withOutputLossFunction(OutputLayer.LossFunction.XENT)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
@@ -93,6 +93,13 @@ public class DeepAutoEncoder implements Serializable {
 
         decoder.setSigmoidLayers(clonedHidden);
         decoder.setLayers(cloned);
+
+        for(int i = 0; i < decoder.getLayers().length; i++) {
+            decoder.getLayers()[i].setAdaGrad(null);
+            decoder.getLayers()[i].setHbiasAdaGrad(null);
+            decoder.getLayers()[i].setVBiasAdaGrad(null);
+        }
+
 
 
         decoder.setInput(decoderInput);

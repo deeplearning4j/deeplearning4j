@@ -321,6 +321,11 @@ public class OutputLayer implements Serializable {
     public OutputLayerGradient getGradient(double lr) {
         MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
+
+        if(adaGrad.historicalGradient.rows != W.rows || adaGrad.historicalGradient.columns != W.columns)
+            adaGrad = new AdaGrad(W.rows,W.columns);
+        if(biasAdaGrad.historicalGradient.rows != b.rows || biasAdaGrad.historicalGradient.columns != b.columns)
+            biasAdaGrad = new AdaGrad(b.rows,b.columns);
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
@@ -367,12 +372,12 @@ public class OutputLayer implements Serializable {
 
             case XENT:
                 DoubleMatrix xEntDiff = z.sub(labels);
-                return xEntDiff.div(z.mul(oneMinus(z)));
+                return input.transpose().mmul(xEntDiff.div(z.mul(oneMinus(z))));
             case MSE:
                 DoubleMatrix mseDelta = labels.sub(z);
-                return mseDelta.neg();
+                return input.transpose().mmul(mseDelta.neg());
             case EXPLL:
-                return oneMinus(labels).div(z);
+                return input.transpose().mmul(oneMinus(labels).div(z));
 
 
         }
@@ -501,10 +506,13 @@ public class OutputLayer implements Serializable {
         return useAdaGrad;
     }
 
+    public void setAdaGrad(AdaGrad adaGrad) {
+        this.adaGrad = adaGrad;
+    }
 
-
-
-
+    public void setBiasAdaGrad(AdaGrad biasAdaGrad) {
+        this.biasAdaGrad = biasAdaGrad;
+    }
 
     public OptimizationAlgorithm getOptimizationAlgorithm() {
         return optimizationAlgorithm;
