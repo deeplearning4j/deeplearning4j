@@ -7,12 +7,17 @@ import java.util.Map;
 
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.DataSetCache;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.IterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.UpdateSaver;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
+import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +51,35 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public final static String WORKER_ENABLED = "workerenabled";
     public final static String INPUT_SPLIT = "inputsplit";
     public final static String IS_PRETRAIN = "ispretrain";
+    public final static String BEST_LOSS = "bestloss";
+    public final static String IMPROVEMENT_THRESHOLD = "improvementthreshold";
+    public final static String VALIDATION_EPOCHS = "validationepochs";
+    public final static String EARLY_STOP = "earlystop";
+    public final static String PATIENCE = "patience";
+    public final static String PATIENCE_INCREASE = "patienceincrease";
+
     private volatile transient IAtomicReference<Object> master;
     private volatile transient IList<Job> jobs;
     private volatile transient IAtomicReference<Integer> numTimesPretrain;
     private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
+    private volatile transient IAtomicReference<Double> bestLoss;
+    private volatile transient IAtomicReference<Double> improvementThreshold;
+
+    private volatile transient IAtomicReference<Boolean> earlyStop;
+
     private volatile transient IAtomicReference<Boolean> done;
     private volatile transient IList<String> replicate;
     private volatile transient IMap<String,Boolean> workerEnabled;
     private volatile transient IList<String> workers;
     private volatile  transient IList<String> topics;
     private volatile  transient IList<String> updates;
+    private volatile IAtomicReference<Double> patience;
+    private volatile IAtomicReference<Double> patienceIncrease;
+    private volatile IAtomicReference<Integer> validationEpochs;
     private volatile IAtomicReference<Integer> miniBatchSize;
+
     private UpdateSaver<UpdateableImpl> saver = new LocalFileUpdateSaver();
+    private DataSetCache cache = new LocalDataSetCache();
     private volatile IAtomicReference<Boolean> isPretrain;
     private static Logger log = LoggerFactory.getLogger(HazelCastStateTracker.class);
     private transient Config config;
@@ -70,6 +92,140 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public HazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
+    }
+
+
+    /**
+     * Creates a training evaluator using the given neural network
+     *
+     * @param network the neural network to use
+     * @return a training evaluator based on the configuration of the state tracker
+     * and the given network
+     */
+    @Override
+    public TrainingEvaluator create(BaseMultiLayerNetwork network) {
+        OutputLayerTrainingEvaluator eval = new OutputLayerTrainingEvaluator
+                .Builder().bestLoss(bestLoss()).improvementThreshold(improvementThreshold())
+                .patience(patience()).testSet(testSet())
+                .withNetwork(network).validationEpochs(validationEpochs()).patienceIncrease(patienceIncrease.get())
+                .build();
+        return eval;
+    }
+
+    /**
+     * Set the data set cache to use for fetching the test set
+     *
+     * @param cache the cache to use
+     */
+    @Override
+    public void setDataSetCache(DataSetCache cache) {
+        if(cache == null)
+            throw new IllegalArgumentException("Cache must not be null");
+         this.cache = cache;
+    }
+
+
+    /**
+     * The patience improvement to use
+     *
+     * @param improvmentThreshold the patience improvement to set
+     */
+    @Override
+    public void setImprovmentThreshold(double improvmentThreshold) {
+        improvementThreshold.set(improvmentThreshold);
+    }
+
+    /**
+     * Improvement threshold for early stopping, aka
+     * the minimum
+     *
+     * @return
+     */
+    @Override
+    public double improvementThreshold() {
+        return improvementThreshold.get();
+    }
+
+    /**
+     * Setter for patience
+     *
+     * @param patience
+     */
+    @Override
+    public void setPatience(double patience) {
+        this.patience.set(patience);
+    }
+
+
+    /**
+     * Patience is what controls early stopping
+     *
+     * @return the patience for the trainer
+     */
+    @Override
+    public double patience() {
+        return patience.get();
+    }
+
+    /**
+     * Improvement threshold for early stopping, aka
+     * the minimum
+     *
+     * @return
+     */
+    @Override
+    public double improvmentThreshold() {
+        return improvementThreshold.get();
+    }
+
+    /**
+     * The test set to use for validation
+     *
+     * @return the test to use for validation
+     */
+    @Override
+    public DataSet testSet() {
+        return cache.get();
+    }
+
+    /**
+     * Sets the best loss
+     *
+     * @param bestLoss the best loss to use
+     */
+    @Override
+    public void setBestLoss(double bestLoss) {
+        this.bestLoss.set(bestLoss);
+    }
+
+    /**
+     * The best validation loss so far
+     *
+     * @return the best validation loss so far
+     */
+    @Override
+    public double bestLoss() {
+        return bestLoss.get();
+    }
+
+    /**
+     * The number of epochs to test on
+     *
+     * @return the number of epochs to test on
+     */
+    @Override
+    public int validationEpochs() {
+        return validationEpochs.get();
+    }
+
+    /**
+     * Whether to validate against a held out test set and test for validation error.
+     *
+     * @return whether to validate against a held out test set and test for validation error.
+     */
+    @Override
+    public boolean isEarlyStopTesting() {
+        return earlyStop.get();
     }
 
     /**
@@ -347,7 +503,12 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         numTimesPretrain = h.getAtomicReference(NUM_TIMES_RUN_PRETRAIN);
         numTimesPretrainRan = h.getAtomicReference(NUM_TIMES_PRETRAIN_RAN);
         done = h.getAtomicReference(DONE);
-
+        validationEpochs = h.getAtomicReference(VALIDATION_EPOCHS);
+        improvementThreshold = h.getAtomicReference(IMPROVEMENT_THRESHOLD);
+        bestLoss = h.getAtomicReference(BEST_LOSS);
+        earlyStop = h.getAtomicReference(EARLY_STOP);
+        patience = h.getAtomicReference(PATIENCE);
+        patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
 
         //set defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
@@ -355,6 +516,11 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
             numTimesPretrain.set(1);
             isPretrain.set(true);
             done.set(false);
+            earlyStop.set(true);
+            patience.set(40.0);
+            patienceIncrease.set(2.0);
+            improvementThreshold.set(0.995);
+            validationEpochs.set((int) Math.min(10,patience() / 2));
         }
 
 

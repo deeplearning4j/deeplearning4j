@@ -16,7 +16,6 @@ import org.deeplearning4j.word2vec.vectorizer.TextVectorizer;
 import org.deeplearning4j.word2vec.vectorizer.TfidfVectorizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
@@ -76,7 +75,7 @@ public class TweetOpinionMining {
 
 
         Evaluation eval = new Evaluation();
-        eval.eval(data.getSecond(),dbn.predict(data.getFirst()));
+        eval.eval(data.getSecond(),dbn.output(data.getFirst()));
         log.info(eval.stats());
         log.info("Example tweets " + data.numExamples());
 

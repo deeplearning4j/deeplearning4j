@@ -23,8 +23,8 @@ public class RBMMnistExample {
      */
     public static void main(String[] args) throws Exception {
         RBM r = new RBM.Builder()
-                .numberOfVisible(784).withDistribution(Distributions.normal(new MersenneTwister(123),1e-1))
-                .numHidden(600).renderWeights(100)
+                .numberOfVisible(784).renderWeights(100)
+                .numHidden(600).useRegularization(false).withL2(2e-2)
                 .build();
 
         //batches of 10, 60000 examples total
@@ -33,7 +33,7 @@ public class RBMMnistExample {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             log.info(String.valueOf(next.labelDistribution()));
-            r.trainTillConvergence(next.getFirst(), 1e-3, new Object[]{1, 1e-3, 5000});
+            r.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{1, 1e-2, 5000});
 
         }
 
@@ -56,7 +56,7 @@ public class RBMMnistExample {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123));
+                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
 
                 DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
                 d.title = "REAL";

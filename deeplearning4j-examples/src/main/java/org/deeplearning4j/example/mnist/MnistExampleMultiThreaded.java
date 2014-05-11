@@ -1,9 +1,7 @@
 package org.deeplearning4j.example.mnist;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -26,15 +24,19 @@ public class MnistExampleMultiThreaded {
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
 		c.setFinetuneLearningRate(1e-1);
-        c.setPretrainLearningRate(1e-1);
+        c.setPretrainLearningRate(1e-2);
 		c.setLayerSizes(new int[]{600,400,250});
 		c.setnIn(784);
+        c.setUseRegularization(true);
+        c.setDropOut(1e-1);
+        c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
 		c.setSplit(10);
 		c.setMultiLayerClazz(DBN.class);
-		c.setUseRegularization(false);
-		c.setDeepLearningParams(new Object[]{1,1e-2,1000});
+		c.setUseRegularization(true);
+        c.setL2(2e-2);
+		c.setDeepLearningParams(new Object[]{1,1e-1,1000});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
 		runner.setup(c);
 		runner.train();

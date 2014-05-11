@@ -28,7 +28,7 @@ public class DeepAutoEncoder implements Serializable {
 		encoder.trainNetwork(input, labels, trainingParams);
 		decoder = new BaseMultiLayerNetwork.Builder<>().withClazz(encoder.getClass()).buildEmpty();
 		decoder.asDecoder(encoder);
-		DoubleMatrix encoderInput = encoder.predict(input);
+		DoubleMatrix encoderInput = encoder.output(input);
 		DoubleMatrix encoderLabels = input;
 		decoder.trainNetwork(encoderInput, encoderLabels, trainingParams);
 
@@ -36,11 +36,11 @@ public class DeepAutoEncoder implements Serializable {
 
 
 	public DoubleMatrix encode(DoubleMatrix input) {
-		return encoder.predict(input);
+		return encoder.output(input);
 	}
 
 	public DoubleMatrix decode(DoubleMatrix input) {
-		return decoder.predict(input);
+		return decoder.output(input);
 	}
 
 

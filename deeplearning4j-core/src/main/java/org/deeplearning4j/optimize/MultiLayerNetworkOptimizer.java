@@ -34,7 +34,33 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 	}
 
 
+    public void optimize(DoubleMatrix labels,double lr,int epochs,TrainingEvaluator eval) {
+        network.getLogLayer().setLabels(labels);
+        DoubleMatrix train = sampleHiddenGivenVisible();
 
+        if(!network.isForceNumEpochs()) {
+            network.getLogLayer().trainTillConvergence(labels,lr,epochs,eval);
+
+            if(network.isShouldBackProp())
+                network.backProp(lr, epochs,eval);
+
+        }
+
+        else {
+            log.info("Training for " + epochs + " epochs");
+            for(int i = 0; i < epochs; i++) {
+                network.getLogLayer().train(train, labels,lr);
+            }
+
+
+            if(network.isShouldBackProp())
+                network.backProp(lr, epochs,eval);
+
+        }
+
+
+
+    }
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		network.getLogLayer().setLabels(labels);
 		DoubleMatrix train = sampleHiddenGivenVisible();
@@ -153,7 +179,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 	@Override
 	public double getValue() {
-		return network.negativeLogLikelihood();
+		return network.score();
 	}
 
 
