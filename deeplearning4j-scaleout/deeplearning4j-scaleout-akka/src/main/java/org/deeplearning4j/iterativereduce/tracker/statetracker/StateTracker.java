@@ -5,7 +5,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 
@@ -23,6 +26,84 @@ import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
  */
 public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
+
+    /**
+     * Creates a training evaluator using the given neural network
+     * @param network the neural network to use
+     * @return a training evaluator based on the configuration of the state tracker
+     * and the given network
+     */
+    public TrainingEvaluator create(BaseMultiLayerNetwork network);
+
+    /**
+     * Set the data set cache to use for fetching the test set
+     * @param cache the cache to use
+     */
+    public void setDataSetCache(DataSetCache cache);
+
+    /**
+     * The patience improvement to use
+     * @param improvmentThreshold the patience improvement to set
+     */
+    public void setImprovmentThreshold(double improvmentThreshold);
+
+    /**
+     * How much to bump up the patience wrt training improvements
+     * for early stopping
+     * @return the current patience improvement
+     */
+    public double improvmentThreshold();
+
+    /**
+     * Setter for patience
+     * @param patience
+     */
+    public void setPatience(double patience);
+
+    /**
+     * Patience is what controls early stopping
+     * @return the patience for the trainer
+     */
+    public double patience();
+
+
+    /**
+     * Improvement threshold for early stopping, aka
+     * the minimum
+     * @return
+     */
+    public double improvementThreshold();
+
+    /**
+     * The test set to use for validation
+     * @return the test to use for validation
+     */
+    public DataSet testSet();
+
+    /**
+     * Sets the best loss
+     * @param bestLoss the best loss to use
+     */
+    public void setBestLoss(double bestLoss);
+
+    /**
+     * The best validation loss so far
+     * @return the best validation loss so far
+     */
+    public double bestLoss();
+
+    /**
+     * The number of epochs to test on
+     * @return the number of epochs to test on
+     */
+    public int validationEpochs();
+
+    /**
+     * Whether to validate against a held out test set and test for validation error.
+     *
+     * @return whether to validate against a held out test set and test for validation error.
+     */
+    public boolean isEarlyStopTesting();
 
     /**
      * A collection of worker updates.

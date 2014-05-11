@@ -488,7 +488,6 @@ public class ConvolutionalRBM extends RBM  {
 
 
         updateGradientAccordingToParams(ret, learningRate);
-        triggerGradientEvents(ret);
 
 
 

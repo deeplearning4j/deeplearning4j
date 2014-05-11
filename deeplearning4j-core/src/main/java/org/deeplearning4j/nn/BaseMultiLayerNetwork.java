@@ -6,17 +6,13 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
-import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
-import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.deeplearning4j.nn.gradient.MultiLayerGradient;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
+import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.util.Dl4jReflection;
@@ -127,11 +123,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     protected double errorTolerance = 0.0001;
 
-    /* Gradient listeners for each neural network */
-    protected Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
-
-    protected List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
-
     /*
      * Drop out: randomly zero examples
      */
@@ -151,6 +142,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Squared loss, Reconstruction entropy, negative log likelihood
      */
     protected LossFunction lossFunction;
+
+    /**
+     * Loss function for output layer
+     */
+    protected OutputLayer.LossFunction outputLossFunction;
+    /**
+     * Output activation function
+     */
+    protected ActivationFunction outputActivationFunction;
 
 
     /* Reflection/factory constructor */
@@ -364,8 +364,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         // layer for output using OutputLayer
         this.logLayer = new OutputLayer.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
-                .normalizeByInputRows(normalizeByInputRows)
-                .useRegularization(useRegularization)
+                .normalizeByInputRows(normalizeByInputRows).withLossFunction(outputLossFunction)
+                .useRegularization(useRegularization).withActivationFunction(outputActivationFunction)
                 .numberOfInputs(hiddenLayerSizes[getnLayers()-1])
                 .numberOfOutputs(nOuts).withL2(l2).build();
 
@@ -427,36 +427,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
-    /**
-     * Gets the multi layer gradient for this network.
-     * This includes calculating the gradients for each layer
-     * @param params the params to pass (k, corruption level,...)
-     * @return the multi layer gradient for the whole network
-     */
-    public MultiLayerGradient getGradient(Object[] params) {
-        List<NeuralNetworkGradient> gradient = new ArrayList<NeuralNetworkGradient>();
-        for(NeuralNetwork network : layers) {
-            gradient.add(network.getGradient(params));
-        }
-
-        double lr = 0.01;
-        if(params.length >= 2)
-            lr = (double) params[1];
-
-        this.feedForward(input);
-        OutputLayerGradient g2 = logLayer.getGradient(lr);
-
-
-        MultiLayerGradient ret =  new MultiLayerGradient(gradient,g2);
-
-        if(multiLayerGradientListeners != null && !multiLayerGradientListeners.isEmpty()) {
-            for(MultiLayerGradientListener listener : multiLayerGradientListeners) {
-                listener.onMultiLayerGradient(ret);
-            }
-        }
-
-        return ret;
-    }
 
 
 
@@ -480,7 +450,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             activations.add(currInput);
         }
 
-        logLayer.setInput(currInput);
+        getLogLayer().setInput(currInput);
+        if(getLogLayer().getActivationFunction() == null)
+            logLayer.setActivationFunction(outputActivationFunction);
         activations.add(getLogLayer().output(currInput));
         return activations;
     }
@@ -579,8 +551,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ", learningRateUpdate=" + learningRateUpdate +
                 ", layers=" + Arrays.toString(layers) +
                 ", errorTolerance=" + errorTolerance +
-                ", gradientListeners=" + gradientListeners +
-                ", multiLayerGradientListeners=" + multiLayerGradientListeners +
                 ", dropOut=" + dropOut +
                 ", normalizeByInputRows=" + normalizeByInputRows +
                 ", optimizationAlgorithm=" + optimizationAlgorithm +
@@ -595,6 +565,77 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return ret;
     }
 
+
+
+
+
+
+
+
+    /**
+     * Backpropagation of errors for weights
+     * @param lr the learning rate to use
+     * @param epochs  the number of epochs to iterate (this is already called in finetune)
+     * @param eval the evaluator for stopping
+     */
+    public void backProp(double lr,int epochs,TrainingEvaluator eval) {
+
+        Double lastEntropy = this.score();
+        //store a copy of the network for when binary cross entropy gets
+        //worse after an iteration
+        BaseMultiLayerNetwork revert = clone();
+        //sgd style; only train a certain number of epochs
+        if(forceNumEpochs) {
+            for(int i = 0; i < epochs; i++) {
+                backPropStep(revert,lr,i);
+            }
+        }
+
+        else {
+
+
+            boolean train = true;
+            int count = 0;
+            double changeTolerance = 1e-5;
+            int backPropIterations = 0;
+            while(train) {
+                if(backPropIterations >= epochs) {
+                    log.info("Backprop number of iterations max hit; converging");
+                    break;
+
+                }
+                count++;
+                backPropStep(revert,lr,count);
+                /* Trains logistic regression post weight updates */
+                getLogLayer().trainTillConvergence(lr, epochs,eval);
+                if(eval.shouldStop(count))
+                    break;
+                Double entropy = score();
+                if(lastEntropy == null || entropy < lastEntropy) {
+                    double diff = Math.abs(entropy - lastEntropy);
+                    if(diff < changeTolerance) {
+                        log.info("Not enough of a change on back prop...breaking");
+                        break;
+                    }
+                    else
+                        lastEntropy = entropy;
+                    log.info("New negative log likelihood " + lastEntropy);
+                    revert = clone();
+                }
+
+                else if(entropy >= lastEntropy) {
+                    train = false;
+                    update(revert);
+
+                }
+
+                backPropIterations++;
+            }
+
+
+        }
+    }
+
     /**
      * Backpropagation of errors for weights
      * @param lr the learning rate to use
@@ -602,7 +643,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public void backProp(double lr,int epochs) {
 
-        Double lastEntropy = this.negativeLogLikelihood();
+        Double lastEntropy = this.score();
         //store a copy of the network for when binary cross entropy gets
         //worse after an iteration
         BaseMultiLayerNetwork revert = clone();
@@ -631,7 +672,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 /* Trains logistic regression post weight updates */
                 getLogLayer().trainTillConvergence(lr, epochs);
 
-                Double entropy = negativeLogLikelihood();
+                Double entropy = score();
                 if(lastEntropy == null || entropy < lastEntropy) {
                     double diff = Math.abs(entropy - lastEntropy);
                     if(diff < changeTolerance) {
@@ -773,7 +814,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param epochs the number of times to iterate
      */
     public void finetune(DoubleMatrix labels,double lr, int epochs) {
-        this.setUseHiddenActivationsForwardProp(true);
         feedForward();
         if(labels != null)
             this.labels = labels;
@@ -781,6 +821,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         optimizer.optimize(this.labels, lr,epochs);
     }
 
+    /**
+     * Run training algorithm based on the given labels
+     * @param labels the labels to use
+     * @param lr the learning rate during training
+     * @param epochs the number of times to iterate
+     */
+    public void finetune(DoubleMatrix labels,double lr, int epochs,TrainingEvaluator eval) {
+        feedForward();
+        if(labels != null)
+            this.labels = labels;
+        optimizer = new MultiLayerNetworkOptimizer(this,lr);
+        optimizer.optimize(this.labels, lr,epochs,eval);
+    }
 
 
 
@@ -794,7 +847,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
-    public DoubleMatrix predict(DoubleMatrix x) {
+    public DoubleMatrix output(DoubleMatrix x) {
         List<DoubleMatrix> activations = feedForward(x);
         if(columnSums != null) {
             for(int i = 0; i < x.columns; i++) {
@@ -908,23 +961,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         update(loaded);
     }
 
-    /**
-     * Load (using {@link ObjectInputStream}
-     * @param is the input stream to load from (usually a file)
-     */
-    public static BaseMultiLayerNetwork loadFromFile(InputStream is) {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(is);
-            log.info("Loading network model...");
-
-            BaseMultiLayerNetwork loaded = (BaseMultiLayerNetwork) ois.readObject();
-            return loaded;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
 
 
     /**
@@ -953,7 +989,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(network.logLayer != null)
             this.logLayer = network.logLayer.clone();
         this.nIns = network.nIns;
-//        this.setnLayers(network.getnLayers());
         this.nOuts = network.nOuts;
         this.rng = network.rng;
         this.dist = network.dist;
@@ -992,10 +1027,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     /**
-     * Negative log likelihood of the model
-     * @return the negative log likelihood of the model
+     * Score of the model (relative to the objective function)
+     * @return the score of the model (relative to the objective function)
      */
-    public  double negativeLogLikelihood() {
+    public  double score() {
         return logLayer.score();
     }
 
@@ -1119,7 +1154,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     /**
      * Transposes this network to turn it in to
-     * ad encoder for the given auto encoder networkk
+     * ad encoder for the given auto encoder network
      * @param network the network to decode
      */
     public void encode(BaseMultiLayerNetwork network) {
@@ -1467,6 +1502,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             layers[i].clearInput();
     }
 
+    public OutputLayer.LossFunction getOutputLossFunction() {
+        return outputLossFunction;
+    }
+
+    public void setOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
+        this.outputLossFunction = outputLossFunction;
+    }
+
+    public ActivationFunction getOutputActivationFunction() {
+        return outputActivationFunction;
+    }
+
+    public void setOutputActivationFunction(ActivationFunction outputActivationFunction) {
+        this.outputActivationFunction = outputActivationFunction;
+    }
 
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
@@ -1492,19 +1542,35 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
         private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
         private boolean useAdaGrad = true;
-        private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
-        private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
         private boolean normalizeByInputRows = true;
         private boolean useHiddenActivationsForwardProp = true;
         private double dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
+        private ActivationFunction outputActivationFunction = Activations.softmax();
 
 
+        /**
+         * Activation function for output layer
+         * @param outputActivationFunction the output activation function to use
+         * @return builder pattern
+         */
+        public Builder withOutputActivationFunction(ActivationFunction outputActivationFunction) {
+            this.outputActivationFunction = outputActivationFunction;
+            return this;
+        }
 
 
-
-
+        /**
+         * Output loss function
+         * @param outputLossFunction the output loss function
+         * @return
+         */
+        public Builder withOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
+            this.outputLossFunction = outputLossFunction;
+            return this;
+        }
 
         /**
          * Which optimization algorithm to use with neural nets and Logistic regression
@@ -1561,15 +1627,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
 
 
-        public Builder<E> withMultiLayerGradientListeners(List<MultiLayerGradientListener> multiLayerGradientListeners) {
-            this.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
-            return this;
-        }
 
-        public Builder<E> withGradientListeners(Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners) {
-            this.gradientListeners.putAll(gradientListeners);
-            return this;
-        }
 
         public Builder<E> useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
@@ -1794,7 +1852,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.setDropOut(dropOut);
                 ret.setOptimizationAlgorithm(optimizationAlgo);
                 ret.setLossFunction(lossFunction);
-
+                ret.setOutputActivationFunction(outputActivationFunction);
+                ret.setOutputLossFunction(outputLossFunction);
                 if(activation != null)
                     ret.setActivation(activation);
                 if(dist != null)
@@ -1802,8 +1861,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
-                ret.gradientListeners.putAll(gradientListeners);
-                ret.multiLayerGradientListeners.addAll(multiLayerGradientListeners);
 
                 if(hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");

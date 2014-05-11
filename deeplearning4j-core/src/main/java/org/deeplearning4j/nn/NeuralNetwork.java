@@ -1,12 +1,10 @@
 package org.deeplearning4j.nn;
 
 import java.io.Serializable;
-import java.util.List;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetEpochListener;
@@ -113,10 +111,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public void setDist(RealDistribution dist);
 	public RealDistribution getDist();
 	
-	
-	List<NeuralNetworkGradientListener> getGradientListeners();
-	void setGradientListeners(List<NeuralNetworkGradientListener> gradientListeners);
-	
+
 	
 	DoubleMatrix hBiasMean();
 	

@@ -136,7 +136,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         }
 
-        activations.add(predict(activations.get( activations.size()  - 1)));
+        activations.add(output(activations.get(activations.size() - 1)));
 
 
         return activations;
@@ -285,7 +285,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     @Override
-    public DoubleMatrix predict(DoubleMatrix x) {
+    public DoubleMatrix output(DoubleMatrix x) {
         DownSamplingLayer d = (DownSamplingLayer)  getSigmoidLayers()[getSigmoidLayers().length - 1];
         FourDTensor lastLayer = d.getFeatureMap();
         int nY = lastLayer.getRows();

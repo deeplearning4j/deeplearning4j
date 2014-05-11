@@ -98,7 +98,7 @@ public class RawMnistGradientDescent {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			DoubleMatrix predict = dbn.predict(next.getFirst());
+			DoubleMatrix predict = dbn.output(next.getFirst());
 			DoubleMatrix labels = next.getSecond();
 			eval.eval(labels, predict);
 		}

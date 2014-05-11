@@ -1,25 +1,13 @@
 package org.deeplearning4j.sda;
-import static org.junit.Assert.*;
 
-
-import java.io.IOException;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.base.IrisUtils;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.HardTanh;
-import org.deeplearning4j.sda.StackedDenoisingAutoEncoder;
-import org.deeplearning4j.transformation.MultiplyScalar;
-import org.deeplearning4j.transformation.ScalarMatrixTransform;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +58,7 @@ public class SdaTest {
 
 		sda.finetune(xor.getSecond(),finetune_lr, finetune_epochs);
 		log.info("OUTPUT TEST");
-		DoubleMatrix predicted = sda.predict(x);
+		DoubleMatrix predicted = sda.output(x);
 
 		Evaluation eval = new Evaluation();
 		eval.eval(xor.getSecond(), predicted);

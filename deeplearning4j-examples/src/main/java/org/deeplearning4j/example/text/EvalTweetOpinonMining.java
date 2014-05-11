@@ -52,7 +52,7 @@ public class EvalTweetOpinonMining {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            eval.eval(next.getSecond(),d.predict(next.getFirst()));
+            eval.eval(next.getSecond(),d.output(next.getFirst()));
         }
 
         log.info(eval.stats());

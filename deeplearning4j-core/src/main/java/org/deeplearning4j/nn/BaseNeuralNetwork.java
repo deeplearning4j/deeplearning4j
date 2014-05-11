@@ -10,7 +10,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.util.List;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -18,7 +17,6 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
@@ -88,7 +86,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected boolean normalizeByInputRows = true;
     //use only when binary hidden layers are active
     protected boolean applySparsity = false;
-    protected List<NeuralNetworkGradientListener> gradientListeners;
     protected double dropOut = 0;
     protected DoubleMatrix doMask;
     protected OptimizationAlgorithm optimizationAlgo;
@@ -257,14 +254,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
     }
-    public  List<NeuralNetworkGradientListener> getGradientListeners() {
-        return gradientListeners;
-    }
-    public synchronized void setGradientListeners(
-            List<NeuralNetworkGradientListener> gradientListeners) {
-        this.gradientListeners = gradientListeners;
-    }
-    @Override
+
     public void setRenderEpochs(int renderEpochs) {
         this.renderWeightsEveryNumEpochs = renderEpochs;
 
@@ -410,6 +400,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
+
+
     /**
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
@@ -417,9 +409,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
         DoubleMatrix wGradient = gradient.getwGradient();
-
-        if(this.wGradient != null && (wGradient.rows != this.wGradient.rows || wGradient.columns != this.wGradient.columns))
-            log.warn("This is weird");
 
         DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
         DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
@@ -457,22 +446,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             hBiasGradient.addi(this.hBiasGradient.mul(momentum).add(hBiasGradient.mul(1 - momentum)));
 
 
-        if(useRegularization) {
-            if(l2 > 0) {
-                DoubleMatrix penalized = W.mul(l2);
-                if(useAdaGrad)
-                    penalized.muli(wAdaGrad.getLearningRates(wGradient));
-                else
-                    penalized.muli(learningRate);
-
-
-
-
-                wGradient.subi(penalized);
-
-            }
-
-        }
 
 
         if (normalizeByInputRows) {
@@ -481,24 +454,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             hBiasGradient.divi(lastMiniBatchSize);
         }
 
+        //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
+        if(useRegularization && l2 > 0)
+            wGradient.subi(wGradient.mul(l2).mul(wLearningRates));
+
         this.wGradient = wGradient;
         this.vBiasGradient = vBiasGradient;
         this.hBiasGradient = hBiasGradient;
 
     }
 
-    /**
-     * Triggers network gradient listeners. This should be called in
-     * getGradient
-     * @param gradient the gradient that triggered the event
-     */
-    protected void triggerGradientEvents(NeuralNetworkGradient gradient) {
-        if(gradientListeners != null && !gradientListeners.isEmpty()) {
-            for(NeuralNetworkGradientListener listener : gradientListeners) {
-                listener.onGradient(gradient);
-            }
-        }
-    }
 
 
     /**

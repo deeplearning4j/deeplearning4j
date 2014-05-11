@@ -171,7 +171,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public synchronized NeuralNetworkGradient getGradient(Object[] params) {
+    public  NeuralNetworkGradient getGradient(Object[] params) {
 
         double corruptionLevel = (double) params[0];
         double lr = (double) params[1];
@@ -201,7 +201,6 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         DoubleMatrix vBiasGradient = L_vbias.columnMeans();
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        triggerGradientEvents(gradient);
         updateGradientAccordingToParams(gradient, lr);
 
         return gradient;
