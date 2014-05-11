@@ -252,7 +252,11 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         }
 
-        //return the gradients here
+
+        for(int i = 0; i < biasGradients.length; i++) {
+            deltaRet.add(new Pair<>(errorSignals[i],biasGradients[i]));
+        }
+
 
     }
 
