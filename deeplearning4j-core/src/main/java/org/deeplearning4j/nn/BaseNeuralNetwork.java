@@ -494,16 +494,25 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     @Override
     public NeuralNetwork transpose() {
         try {
-            NeuralNetwork ret = getClass().newInstance();
-            ret.sethBias(hBias.dup());
-            ret.setvBias(vBias.dup());
+            Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
+            c.setAccessible(true);
+            NeuralNetwork ret = (NeuralNetwork) c.newInstance();
+            ret.setHbiasAdaGrad(vBiasAdaGrad);
+            ret.setVBiasAdaGrad(hBiasAdaGrad);
+            ret.sethBias(vBias.dup());
+            ret.setvBias(hBias.dup());
             ret.setnHidden(getnVisible());
             ret.setnVisible(getnHidden());
             ret.setW(W.transpose());
+            ret.setL2(l2);
+            ret.setMomentum(momentum);
+            ret.setRenderEpochs(getRenderEpochs());
+            ret.setSparsity(sparsity);
             ret.setRng(getRng());
-            ret.setAdaGrad(wAdaGrad);
             ret.setDist(getDist());
-
+            ret.setAdaGrad(wAdaGrad);
+            ret.setLossFunction(lossFunction);
+            ret.setOptimizationAlgorithm(optimizationAlgo);
             return ret;
         } catch (Exception e) {
             throw new RuntimeException(e);
