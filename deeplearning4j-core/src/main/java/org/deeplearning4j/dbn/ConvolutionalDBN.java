@@ -163,7 +163,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
          */
         DoubleMatrix error = labels.sub(activations.get(activations.size() - 1)).neg().mul(softMaxDerivative.applyDerivative(activations.get(activations.size() - 1)));
         //should this be a 4d tensor?
-        DoubleMatrix es = logLayer.getW().transpose().mmul(error);
+        DoubleMatrix es = outputLayer.getW().transpose().mmul(error);
         DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[getSigmoidLayers().length - 1];
         DoubleMatrix shape = d.getFeatureMap().shape();
         ConvolutionalRBM rbm = (ConvolutionalRBM) getLayers()[getnLayers() - 1];
@@ -310,7 +310,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
 
-        return createBasedOn(logLayer.output(features),features);
+        return createBasedOn(outputLayer.output(features),features);
     }
 
     /**
@@ -396,7 +396,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
         // layer for output using OutputLayer
-        this.logLayer = new OutputLayer.Builder()
+        this.outputLayer = new OutputLayer.Builder()
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
                 .normalizeByInputRows(normalizeByInputRows)
                 .useRegularization(useRegularization)

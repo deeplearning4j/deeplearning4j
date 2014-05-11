@@ -1,6 +1,26 @@
 package org.deeplearning4j.util;
 
 public class ArrayUtil {
+    public static  void reverse(int[] e) {
+        for(int i = 0; i < e.length / 2; i++)
+        {
+            int temp = e[i];
+            e[i] = e[e.length - i - 1];
+            e[e.length - i - 1] = temp;
+        }
+
+    }
+
+    public static <E> void reverse(E[] e) {
+        for(int i = 0; i < e.length / 2; i++)
+        {
+            E temp = e[i];
+            e[i] = e[e.length - i - 1];
+            e[e.length - i - 1] = temp;
+        }
+
+    }
+
 
 	public static int[] flatten(int[][] arr) {
 		int[] ret = new int[arr.length * arr[0].length];
