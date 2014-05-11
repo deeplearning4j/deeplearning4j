@@ -32,7 +32,7 @@ public class DeepAutoEncoderTest {
                 .build();
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-2,10000});
-        encoder.train(d.getFirst(),d.getFirst(),1e-2);
+        encoder.train(d.getFirst(),1e-2,1);
 
 
 

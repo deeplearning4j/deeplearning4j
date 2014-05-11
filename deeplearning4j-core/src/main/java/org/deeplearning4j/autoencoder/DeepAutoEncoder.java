@@ -34,7 +34,7 @@ public class DeepAutoEncoder implements Serializable {
     }
 
 
-    public void train(DoubleMatrix input, DoubleMatrix labels, double lr) {
+    public void train(DoubleMatrix input, double lr,int n) {
         //final hidden layer needs to be linear activation
         encoder.pretrain(input,trainingParams);
         encoder.getSigmoidLayers()[encoder.getSigmoidLayers().length - 1].setActivationFunction(Activations.linear());
@@ -64,6 +64,7 @@ public class DeepAutoEncoder implements Serializable {
 
 
         }
+
 
 
 
@@ -99,6 +100,10 @@ public class DeepAutoEncoder implements Serializable {
             decoder.getLayers()[i].setHbiasAdaGrad(null);
             decoder.getLayers()[i].setVBiasAdaGrad(null);
         }
+
+        //weights on the first layer are n times bigger
+        decoder.getLayers()[0].getW().muli(n);
+
 
 
 
