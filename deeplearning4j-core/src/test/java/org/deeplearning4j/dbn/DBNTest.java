@@ -11,7 +11,6 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.activation.Tanh;
 import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -93,7 +92,7 @@ public class DBNTest {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            DoubleMatrix predict = dbn.predict(next.getFirst());
+            DoubleMatrix predict = dbn.output(next.getFirst());
             DoubleMatrix labels = next.getSecond();
             eval.eval(labels, predict);
         }
@@ -171,7 +170,7 @@ public class DBNTest {
 
         for(int i = 0; i < miniBatches.size(); i++) {
             DataSet test = miniBatches.get(i);
-            DoubleMatrix predicted = dbn.predict(test.getFirst());
+            DoubleMatrix predicted = dbn.output(test.getFirst());
             DoubleMatrix real = test.getSecond();
 
 
@@ -213,7 +212,7 @@ public class DBNTest {
 
         log.info("Took " + watch.getTime());
         Evaluation eval = new Evaluation();
-        DoubleMatrix predict = dbn.predict(d.getFirst());
+        DoubleMatrix predict = dbn.output(d.getFirst());
         eval.eval(d.getSecond(), predict);
         log.info(eval.stats());
     }

@@ -12,6 +12,7 @@ import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.jblas.DoubleMatrix;
@@ -332,7 +333,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
             network.setInput(d.getFirst());
             log.info("Worker " + id + " finetune");
-            network.finetune(d.getSecond(), learningRate, fineTuneEpochs);
+            TrainingEvaluator eval = tracker.create(network);
+            network.finetune(d.getSecond(), learningRate, fineTuneEpochs,eval);
         }
 
         //job is delegated, clear so as not to cause redundancy

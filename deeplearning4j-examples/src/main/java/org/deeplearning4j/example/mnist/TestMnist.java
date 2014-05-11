@@ -1,12 +1,9 @@
 package org.deeplearning4j.example.mnist;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
@@ -31,7 +28,7 @@ public class TestMnist {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			DoubleMatrix predict = dbn.predict(next.getFirst());
+			DoubleMatrix predict = dbn.output(next.getFirst());
 			DoubleMatrix labels = next.getSecond();
 			eval.eval(labels, predict);
 			log.info("Current stats " + eval.stats());

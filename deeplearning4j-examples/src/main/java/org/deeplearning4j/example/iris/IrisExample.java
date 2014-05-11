@@ -54,7 +54,7 @@ public class IrisExample {
 
 
             Evaluation eval = new Evaluation();
-            DoubleMatrix predict = dbn.predict(next.getFirst());
+            DoubleMatrix predict = dbn.output(next.getFirst());
             eval.eval(predict,next.getSecond());
 
             double f1 = eval.f1();

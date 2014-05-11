@@ -1,15 +1,11 @@
 package org.deeplearning4j.scaleout.conf;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.gradient.NeuralNetworkGradientListener;
-import org.deeplearning4j.gradient.multilayer.MultiLayerGradientListener;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
@@ -60,9 +56,7 @@ public class Conf implements Serializable,Cloneable {
 	private double dropOut;
 	private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
 	private OptimizationAlgorithm optimizationAlgorithm = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-	private Map<Integer,List<NeuralNetworkGradientListener>> gradientListeners = new HashMap<>();
-	private List<MultiLayerGradientListener> multiLayerGradientListeners = new ArrayList<>();
-    private boolean normalizeZeroMeanAndUnitVariance;
+	 private boolean normalizeZeroMeanAndUnitVariance;
     private boolean scale;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
@@ -129,20 +123,7 @@ public class Conf implements Serializable,Cloneable {
 	}
 	
 	
-	public  Map<Integer, List<NeuralNetworkGradientListener>> getGradientListeners() {
-		return gradientListeners;
-	}
-	public  void setGradientListeners(
-			Map<Integer, List<NeuralNetworkGradientListener>> gradientListeners) {
-		this.gradientListeners = gradientListeners;
-	}
-	public  List<MultiLayerGradientListener> getMultiLayerGradientListeners() {
-		return multiLayerGradientListeners;
-	}
-	public synchronized void setMultiLayerGradientListeners(
-			List<MultiLayerGradientListener> multiLayerGradientListeners) {
-		this.multiLayerGradientListeners = multiLayerGradientListeners;
-	}
+
 	public synchronized boolean isUseAdaGrad() {
 		return useAdaGrad;
 	}

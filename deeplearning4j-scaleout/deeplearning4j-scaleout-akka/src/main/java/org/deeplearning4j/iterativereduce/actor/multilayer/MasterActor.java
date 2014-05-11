@@ -160,7 +160,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             log.debug("Unable to accumulate results",e);
             return null;
         }
-        UpdateableImpl masterResults = this.getResults();
+        UpdateableImpl masterResults = getResults();
         if(masterResults == null)
             masterResults = update.accumulated();
         else
@@ -203,8 +203,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                         .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
                         .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
                         .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                        .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
-                        .withGradientListeners(conf.getGradientListeners())
                         .build();
 
 
@@ -217,8 +215,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                         .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
                         .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
                         .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                        .withMultiLayerGradientListeners(conf.getMultiLayerGradientListeners())
-                        .withGradientListeners(conf.getGradientListeners())
                         .build();
 
             }
@@ -283,6 +279,14 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 log.info("On next batch master results was null, attempting to grab results again");
                 masterResults = getResults();
             }
+
+            if(!stateTracker.isPretrain()) {
+                DataSet test = stateTracker.testSet();
+
+
+            }
+
+
             //tell the batch actor to send more work
             batchActor.tell(new MoreWorkMessage(masterResults),getSelf());
         }

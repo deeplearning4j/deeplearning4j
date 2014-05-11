@@ -39,7 +39,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 	boolean converged = false;
 	OptimizableByGradientValueMatrix optimizable;
 	VectorizedBackTrackLineSearch lineMaximizer;
-
+    TrainingEvaluator eval;
 	double initialStepSize = 1;
 	double tolerance = 1e-5;
 	double gradientTolerance = 1e-5;
@@ -206,11 +206,26 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			if(listener != null) {
 				listener.epochDone(iterationCount);
 			}
+
+            if(eval != null && eval.shouldStop(iterations)) {
+                return true;
+            }
+
 		}
 		return false;
 	}
 
-	public void reset() {
+    /**
+     * Sets the training evaluator
+     *
+     * @param eval the evaluator to use
+     */
+    @Override
+    public void setTrainingEvaluator(TrainingEvaluator eval) {
+        this.eval = eval;
+    }
+
+    public void reset() {
 		xi = null;
 	}
 

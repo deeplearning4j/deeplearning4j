@@ -204,7 +204,6 @@ public class RBM extends BaseNeuralNetwork {
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
         updateGradientAccordingToParams(ret, learningRate);
-        triggerGradientEvents(ret);
 
         return ret;
     }

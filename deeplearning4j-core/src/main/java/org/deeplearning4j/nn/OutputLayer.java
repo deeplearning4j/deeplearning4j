@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.OutputLayerOptimizer;
+import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.optimize.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.VectorizedNonZeroStoppingConjugateGradient;
 import org.deeplearning4j.util.MatrixUtil;
@@ -128,12 +129,16 @@ public class OutputLayer implements Serializable {
 
     }
 
+
     /**
-     * Run conjugate gradient
+     * Run the optimization algorithm for training
      * @param learningRate the learning rate to train with
      * @param numEpochs the number of epochs
+     * @param eval the training evaluator to use for early stopping (where applicable)
      */
-    public  void trainTillConvergence(double learningRate, int numEpochs) {
+    public  void trainTillConvergence(DoubleMatrix labels,double learningRate, int numEpochs,TrainingEvaluator eval) {
+
+        this.labels = labels;
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
         adaGrad.setMasterStepSize(learningRate);
         biasAdaGrad.setMasterStepSize(learningRate);
@@ -141,6 +146,7 @@ public class OutputLayer implements Serializable {
         if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
             g.setTolerance(1e-3);
+            g.setTrainingEvaluator(eval);
             g.setMaxIterations(numEpochs);
             g.optimize(numEpochs);
 
@@ -149,11 +155,53 @@ public class OutputLayer implements Serializable {
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
             g.setTolerance(1e-3);
+            g.setTrainingEvaluator(eval);
             g.optimize(numEpochs);
 
         }
 
 
+    }
+
+    /**
+     * Run the optimization algorithm for training
+     * @param learningRate the learning rate to train with
+     * @param numEpochs the number of epochs
+     * @param eval the training evaluator to use for early stopping (where applicable)
+     */
+    public  void trainTillConvergence(double learningRate, int numEpochs,TrainingEvaluator eval) {
+        OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
+        adaGrad.setMasterStepSize(learningRate);
+        biasAdaGrad.setMasterStepSize(learningRate);
+
+        if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
+            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
+            g.setTolerance(1e-3);
+            g.setTrainingEvaluator(eval);
+            g.setMaxIterations(numEpochs);
+            g.optimize(numEpochs);
+
+        }
+
+        else {
+            VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
+            g.setTolerance(1e-3);
+            g.setTrainingEvaluator(eval);
+            g.optimize(numEpochs);
+
+        }
+
+
+    }
+
+
+    /**
+     * Run conjugate gradient
+     * @param learningRate the learning rate to train with
+     * @param numEpochs the number of epochs
+     */
+    public  void trainTillConvergence(double learningRate, int numEpochs) {
+        trainTillConvergence(learningRate,numEpochs,null);
     }
 
 
@@ -344,8 +392,20 @@ public class OutputLayer implements Serializable {
      * @return a probability distribution for each row
      */
     public  DoubleMatrix output(DoubleMatrix x) {
+        if(x == null)
+            throw new IllegalArgumentException("No null input allowed");
         this.input = x;
-        return activationFunction.apply(x.mmul(W).addRowVector(b));
+        if(W == null)
+            throw new IllegalStateException("EH?");
+        if(b == null)
+            throw new IllegalStateException("EH?");
+        try {
+            return activationFunction.apply(this.input.mmul(W).addRowVector(b));
+
+        }catch(Exception e) {
+            throw new IllegalStateException("EH?");
+        }
+
     }
 
 
@@ -456,7 +516,13 @@ public class OutputLayer implements Serializable {
         this.optimizationAlgorithm = optimizationAlgorithm;
     }
 
+    public ActivationFunction getActivationFunction() {
+        return activationFunction;
+    }
 
+    public void setActivationFunction(ActivationFunction activationFunction) {
+        this.activationFunction = activationFunction;
+    }
 
     public static class Builder {
         private DoubleMatrix W;
