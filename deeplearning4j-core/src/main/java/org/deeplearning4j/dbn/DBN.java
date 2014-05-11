@@ -162,6 +162,22 @@ public class DBN extends BaseMultiLayerNetwork {
         }
     }
 
+    public RBM.VisibleUnit getVisibleUnit() {
+        return visibleUnit;
+    }
+
+    public void setVisibleUnit(RBM.VisibleUnit visibleUnit) {
+        this.visibleUnit = visibleUnit;
+    }
+
+    public RBM.HiddenUnit getHiddenUnit() {
+        return hiddenUnit;
+    }
+
+    public void setHiddenUnit(RBM.HiddenUnit hiddenUnit) {
+        this.hiddenUnit = hiddenUnit;
+    }
+
     public void pretrain(int k,double learningRate,int epochs) {
         pretrain(this.getInput(),k,learningRate,epochs);
     }

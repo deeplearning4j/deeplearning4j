@@ -112,6 +112,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public RealDistribution getDist();
 	
 
+    public DoubleMatrix reconstruct(DoubleMatrix input);
+
 	
 	DoubleMatrix hBiasMean();
 	
