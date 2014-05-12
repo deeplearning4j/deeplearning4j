@@ -516,6 +516,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
             numTimesPretrain.set(1);
             isPretrain.set(true);
             done.set(false);
+            bestLoss.set(Double.POSITIVE_INFINITY);
             earlyStop.set(true);
             patience.set(40.0);
             patienceIncrease.set(2.0);

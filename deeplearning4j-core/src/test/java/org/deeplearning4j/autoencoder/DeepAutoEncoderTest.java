@@ -27,12 +27,14 @@ public class DeepAutoEncoderTest {
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{1000,500,250,30})
                 .withMomentum(0.5).renderWeights(100)
-                .numberOfInputs(784).useAdaGrad(false)
+                .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-2,10000});
         encoder.train(d.getFirst(),1e-2,1);
+
+
 
 
 

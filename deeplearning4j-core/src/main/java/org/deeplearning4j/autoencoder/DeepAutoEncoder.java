@@ -87,32 +87,35 @@ public class DeepAutoEncoder implements Serializable {
 
 
 
-        List<DoubleMatrix> activations = encoder.feedForward();
 
-        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
 
 
         decoder.setSigmoidLayers(clonedHidden);
         decoder.setLayers(cloned);
 
-        for(int i = 0; i < decoder.getLayers().length; i++) {
-            decoder.getLayers()[i].setAdaGrad(null);
-            decoder.getLayers()[i].setHbiasAdaGrad(null);
-            decoder.getLayers()[i].setVBiasAdaGrad(null);
-        }
 
         //weights on the first layer are n times bigger
-        decoder.getLayers()[0].getW().muli(n);
 
 
-
-
-        decoder.setInput(decoderInput);
-        decoder.initializeLayers(decoderInput);
-        decoder.finetune(input,1e-2,1000);
 
 
     }
+
+    /**
+     * Trains the decoder on the given input
+     * @param input the given input to train on
+     */
+    public void finetune(DoubleMatrix input,double lr,int epochs) {
+        List<DoubleMatrix> activations = encoder.feedForward(input);
+
+        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
+
+        decoder.setInput(decoderInput);
+        decoder.initializeLayers(decoderInput);
+        decoder.finetune(input,lr,epochs);
+
+    }
+
 
     /**
      * Reconstructs the given input by running the input

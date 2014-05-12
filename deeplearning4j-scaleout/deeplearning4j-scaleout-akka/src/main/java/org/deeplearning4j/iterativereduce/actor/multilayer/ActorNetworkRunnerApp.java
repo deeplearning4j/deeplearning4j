@@ -263,7 +263,6 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 
 	/**
 	 * @param args
-	 * @throws ParseException 
 	 */
 	public static void main(String[] args) throws Exception {
 		ActorNetworkRunnerApp app = new ActorNetworkRunnerApp(args);

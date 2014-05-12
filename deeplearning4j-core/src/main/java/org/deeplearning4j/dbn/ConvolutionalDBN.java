@@ -233,7 +233,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             ConvolutionalRBM prevRBM = (ConvolutionalRBM) getLayers()[i - 1];
 
             FourDTensor errorSignal = (FourDTensor) errorSignals[i - 1];
-            Tensor biasGradient = new Tensor(errorSignal.rows(),errorSignal.columns(),errorSignal.slices());
+            DoubleMatrix biasGradient = new DoubleMatrix(1,r2.getNumFilters()[0]);
             for(int j = 0; j < r2.getNumFilters()[0]; j++) {
                 Tensor es2 = errorSignal.getTensor(j);
                 for(int k = 0; k < prevRBM.getNumFilters()[0]; k++)  {
@@ -245,7 +245,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
                     r2.getdWeights().put(j,k,dedFilter);
                 }
 
-                biasGradient.setSlice(j,es.columnSums().div(errorSignal.numTensors()));
+                biasGradient.put(j,es.columnSums().div(errorSignal.numTensors()).sum());
 
             }
             biasGradients[i] = biasGradient;
@@ -257,6 +257,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             deltaRet.add(new Pair<>(errorSignals[i],biasGradients[i]));
         }
 
+        //output layer gradients
+        deltaRet.add(new Pair<>(errorSignals[errorSignals.length - 1].mmul(outputLayer.getInput()),errorSignals[errorSignals.length - 1].columnMeans()));
 
     }
 
@@ -273,8 +275,107 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      */
     @Override
     protected void backPropStep(BaseMultiLayerNetwork revert, double lr, int epoch) {
+        //feedforward to compute activations
+        //initial error
 
-        super.backPropStep(revert, lr, epoch);
+
+        //precompute deltas
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+        //compute derivatives and gradients given activations
+        computeDeltas(deltas);
+
+
+        for(int l = 0; l < getnLayers(); l++) {
+            ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[l];
+            FourDTensor wGradient =  (FourDTensor) deltas.get(l).getFirst();
+            DoubleMatrix biasGradient =  deltas.get(l).getSecond();
+
+            for(int m = 0; m < r.getNumFilters()[0]; m++) {
+            }
+
+
+            DoubleMatrix gradientChange = deltas.get(l).getFirst();
+            //get the gradient
+            if(isUseAdaGrad())
+                gradientChange.muli(getLayers()[l].getAdaGrad().getLearningRates(gradientChange));
+
+            else
+                gradientChange.muli(lr);
+
+            //l2
+            if(useRegularization)
+                gradientChange.muli(getLayers()[l].getW().mul(l2));
+
+            if(momentum != 0)
+                gradientChange.muli(momentum);
+
+            if(this.isNormalizeByInputRows())
+                gradientChange.divi(input.rows);
+
+            //update W
+            getLayers()[l].getW().subi(gradientChange);
+            getSigmoidLayers()[l].setW(layers[l].getW());
+
+
+            //update hidden bias
+            DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+
+            if(sparsity != 0)
+                deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
+
+            if(useAdaGrad)
+                deltaColumnSums.muli(layers[l].gethBiasAdaGrad().getLearningRates(deltaColumnSums));
+            else
+                deltaColumnSums.muli(lr);
+
+            if(momentum != 0)
+                deltaColumnSums.muli(momentum);
+
+            if(isNormalizeByInputRows())
+                deltaColumnSums.divi(input.rows);
+
+
+            getLayers()[l].gethBias().subi(deltaColumnSums);
+            getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
+        }
+
+        DoubleMatrix logLayerGradient = deltas.get(getnLayers()).getFirst();
+        DoubleMatrix biasGradient = deltas.get(getnLayers()).getSecond().columnSums();
+
+        if(momentum != 0)
+            logLayerGradient.muli(momentum);
+
+
+        if(useAdaGrad)
+            logLayerGradient.muli(outputLayer.getAdaGrad().getLearningRates(logLayerGradient));
+
+
+        else
+            logLayerGradient.muli(lr);
+
+        if(isNormalizeByInputRows())
+            logLayerGradient.divi(input.rows);
+
+
+
+        if(momentum != 0)
+            biasGradient.muli(momentum);
+
+        if(useAdaGrad)
+            biasGradient.muli(outputLayer.getBiasAdaGrad().getLearningRates(biasGradient));
+        else
+            biasGradient.muli(lr);
+
+        if(isNormalizeByInputRows())
+            biasGradient.divi(input.rows);
+
+
+        getOutputLayer().getW().subi(logLayerGradient);
+
+        if(getOutputLayer().getB().length == biasGradient.length)
+            getOutputLayer().getB().subi(biasGradient);
+        else
+            getOutputLayer().getB().subi(biasGradient.mean());
     }
 
 
