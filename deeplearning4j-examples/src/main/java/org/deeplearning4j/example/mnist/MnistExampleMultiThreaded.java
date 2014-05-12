@@ -3,8 +3,12 @@ package org.deeplearning4j.example.mnist;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.scaleout.conf.Conf;
+
+import java.io.File;
+
 /**
  * Equivalent multi threaded example
  * from the {@link MnistExample}
@@ -25,10 +29,10 @@ public class MnistExampleMultiThreaded {
 		c.setFinetuneEpochs(10000);
 		c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-2);
-		c.setLayerSizes(new int[]{600,400,250});
+		c.setLayerSizes(new int[]{600,500,450});
 		c.setnIn(784);
         c.setUseRegularization(true);
-        c.setDropOut(1e-1);
+        c.setDropOut(5e-1);
         c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
@@ -36,8 +40,9 @@ public class MnistExampleMultiThreaded {
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
         c.setL2(2e-2);
-		c.setDeepLearningParams(new Object[]{1,1e-1,1000});
+		c.setDeepLearningParams(new Object[]{1,1e-1,10000});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
+        runner.setModelSaver(new DefaultModelSaver(new File("mnist-example.ser")));
 		runner.setup(c);
 		runner.train();
 	}

@@ -34,7 +34,7 @@ public class ConvolutionalRBM extends RBM  {
      *
      */
     private static final long serialVersionUID = 6868729665328916878L;
-    //number of feature maps
+    //number of feature mapConvolution
     protected int[] numFilters = {4,4};
     //top down signal from hidden feature maps to visibles
     private FourDTensor visI;

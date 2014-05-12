@@ -18,44 +18,27 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 /**
- * Created by agibsonccc on 5/10/14.
+ * Read a DBN from a file and use that as the basis for the deep autoencoder
  */
-public class DeepAutoEncoderExample {
-
-    private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
+public class DeepAutoEncoderFromFile {
+    private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderFromFile.class);
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
         DataSetIterator iter = new MnistDataSetIterator(80,1000);
 
 
-        DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30})
-                .withMomentum(0.5).withDropOut(0.5)
-                .numberOfInputs(784).transformWeightsAt(0, MatrixTransformations.multiplyScalar(1.0))
-                .numberOfOutPuts(2)
-                .build();
-
+        DBN dbn = SerializationUtils.readObject(new File(args[0]));
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-1,30000});
 
-        while(iter.hasNext()) {
-            DataSet d = iter.next();
-            log.info("Training on " + d.numExamples());
-            StopWatch watch = new StopWatch();
-            encoder.train(d.getFirst(),1e-2,1);
 
-        }
-        SerializationUtils.saveObject(encoder,new File("deepautoencoder-pretrain.ser"));
-
-
-
-        iter.reset();
 
 
 
 
         while(iter.hasNext()) {
             DataSet d = iter.next();
+            dbn.setInput(d.getFirst());
             log.info("Training on " + d.numExamples());
             StopWatch watch = new StopWatch();
             encoder.finetune(d.getFirst(),1e-1,30000);
@@ -91,8 +74,5 @@ public class DeepAutoEncoderExample {
 
         }
 
-
-
     }
-
 }
