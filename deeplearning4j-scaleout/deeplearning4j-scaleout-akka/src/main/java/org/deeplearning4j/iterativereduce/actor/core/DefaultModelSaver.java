@@ -71,7 +71,7 @@ public class DefaultModelSaver implements ModelSaver {
      */
     @Override
     public boolean exists() {
-        RETURN FILE.EXISTS();
+       return file.exists();
     }
 
     /**
