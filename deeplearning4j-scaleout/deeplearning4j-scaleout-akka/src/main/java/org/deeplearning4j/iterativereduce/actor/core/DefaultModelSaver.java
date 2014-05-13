@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.Serializable;
 
 import org.deeplearning4j.util.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Saves a file to the relative path nn-model.bin
  * or another location specified by the user.
@@ -20,7 +23,7 @@ public class DefaultModelSaver implements ModelSaver {
 	private static final long serialVersionUID = -7563476748417989927L;
 	private File file;
 	private boolean rewrite = false;
-
+    private static Logger log = LoggerFactory.getLogger(DefaultModelSaver.class);
 
 	public DefaultModelSaver(File file) {
 		this(file,false);
@@ -54,10 +57,28 @@ public class DefaultModelSaver implements ModelSaver {
 			file = new File(path);
 
 		}
-
+        log.info("Saving to " + file);
 
 		SerializationUtils.saveObject(ser, file);
+
+
 	}
 
+    /**
+     * Returns whether a model exists or not
+     *
+     * @return true if the model exists, false otherwise
+     */
+    @Override
+    public boolean exists() {
+        RETURN FILE.EXISTS();
+    }
 
+    /**
+     * Loads the model from the location that it saves to
+     */
+    @Override
+    public <E>  E load(Class<E> clazz) {
+        return SerializationUtils.readObject(file);
+    }
 }

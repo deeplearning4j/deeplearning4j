@@ -6,6 +6,7 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.transformation.MatrixTransformations;
 
 import java.io.File;
 
@@ -29,9 +30,8 @@ public class MnistExampleMultiThreaded {
 		c.setFinetuneEpochs(10000);
 		c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-2);
-		c.setLayerSizes(new int[]{600,500,450});
+		c.setLayerSizes(new int[]{1000, 500, 250, 30});
 		c.setnIn(784);
-        c.setUseRegularization(true);
         c.setDropOut(5e-1);
         c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);

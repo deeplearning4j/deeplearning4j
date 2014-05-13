@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.learning;
 
 import org.deeplearning4j.nn.FourDTensor;
-import org.deeplearning4j.nn.Tensor;
 import org.jblas.DoubleMatrix;
 
 import static org.jblas.MatrixFunctions.abs;
@@ -22,7 +21,7 @@ public class FourDTensorAdaGrad extends TensorAdaGrad {
     }
 
     /**
-     * Initializes the tensor adad grad with a gamma
+     * Initializes the tensor ada grad with a gamma
      * of 1e-2
      *
      * @param rows   number of rows for the gradients
