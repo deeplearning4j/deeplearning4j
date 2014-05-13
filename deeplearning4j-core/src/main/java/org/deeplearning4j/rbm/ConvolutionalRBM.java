@@ -88,7 +88,6 @@ public class ConvolutionalRBM extends RBM  {
         hBias = DoubleMatrix.zeros(numFilters[0]);
 
 
-
         for(int i = 0; i < this.W.rows; i++)
             W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
 
