@@ -775,6 +775,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
     }
 
+    public Map<Integer, ActivationFunction> getActivationFunctionForLayer() {
+        return activationFunctionForLayer;
+    }
+
+    public void setActivationFunctionForLayer(Map<Integer, ActivationFunction> activationFunctionForLayer) {
+        this.activationFunctionForLayer = activationFunctionForLayer;
+    }
 
     /**
      * Do a back prop iteration.

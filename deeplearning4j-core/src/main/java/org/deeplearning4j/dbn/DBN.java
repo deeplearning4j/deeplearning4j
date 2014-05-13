@@ -12,6 +12,9 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Deep Belief Network. This is a MultiLayer Perceptron Model
@@ -28,6 +31,9 @@ public class DBN extends BaseMultiLayerNetwork {
     private static Logger log = LoggerFactory.getLogger(DBN.class);
     private RBM.VisibleUnit visibleUnit;
     private RBM.HiddenUnit hiddenUnit;
+    private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
+    private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
+
 
     public DBN() {}
 
@@ -188,7 +194,8 @@ public class DBN extends BaseMultiLayerNetwork {
                                      int nHidden, DoubleMatrix W, DoubleMatrix hBias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
 
-        RBM ret = new RBM.Builder().withHidden(hiddenUnit).withVisible(visibleUnit)
+        RBM ret = new RBM.Builder()
+                .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit).withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
                 .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows()).withLossFunction(getLossFunction())
                 .withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist()).normalizeByInputRows(normalizeByInputRows)
@@ -212,11 +219,24 @@ public class DBN extends BaseMultiLayerNetwork {
 
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+        private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
+        private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
+
 
         public Builder() {
             this.clazz = DBN.class;
         }
 
+
+        public Builder withVisibleUnitsByLayer(Map<Integer,RBM.VisibleUnit> visibleUnitByLayer) {
+            this.visibleUnitByLayer.putAll(visibleUnitByLayer);
+            return this;
+        }
+
+        public Builder withHiddenUnitsByLayer(Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer) {
+            this.hiddenUnitByLayer.putAll(hiddenUnitByLayer);
+            return this;
+        }
 
         public Builder withVisibleUnits(RBM.VisibleUnit visibleUnit) {
             this.visibleUnit = visibleUnit;
@@ -233,6 +253,8 @@ public class DBN extends BaseMultiLayerNetwork {
             DBN ret = super.build();
             ret.hiddenUnit = hiddenUnit;
             ret.visibleUnit = visibleUnit;
+            ret.visibleUnitByLayer.putAll(visibleUnitByLayer);
+            ret.hiddenUnitByLayer.putAll(hiddenUnitByLayer);
             return ret;
         }
     }
