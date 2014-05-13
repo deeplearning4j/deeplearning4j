@@ -121,7 +121,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     public void setDataSetCache(DataSetCache cache) {
         if(cache == null)
             throw new IllegalArgumentException("Cache must not be null");
-         this.cache = cache;
+        this.cache = cache;
     }
 
 
@@ -751,6 +751,14 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     @Override
     public void removeWorker(String worker) {
         workers.remove(worker);
+        if(jobFor(worker) != null) {
+            try {
+                clearJob(worker);
+
+            }catch(Exception e) {
+              log.warn("Unable to clear job for worker with id" + worker);
+            }
+        }
     }
 
     @Override
