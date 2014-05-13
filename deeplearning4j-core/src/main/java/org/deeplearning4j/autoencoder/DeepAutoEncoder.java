@@ -121,7 +121,8 @@ public class DeepAutoEncoder implements Serializable {
      */
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         List<DoubleMatrix> activations = encoder.feedForward(input);
-
+        if(decoder == null)
+           initDecoder();
         DoubleMatrix decoderInput = activations.get(activations.size() - 2);
 
         decoder.setInput(decoderInput);

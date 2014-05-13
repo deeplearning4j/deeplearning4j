@@ -19,6 +19,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.util.Convolution;
@@ -285,12 +286,44 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         computeDeltas(deltas);
 
 
-        for(int l = 0; l < getnLayers(); l++) {
+        for(int l = 1; l < getnLayers(); l++) {
             ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[l];
+            ConvolutionalRBM prevR = (ConvolutionalRBM) getLayers()[l - 1];
+
             FourDTensor wGradient =  (FourDTensor) deltas.get(l).getFirst();
             DoubleMatrix biasGradient =  deltas.get(l).getSecond();
+            FourDTensorAdaGrad wAdaGrad = (FourDTensorAdaGrad) r.getAdaGrad();
+            DoubleMatrix biasLearningRates = null;
+            if(useAdaGrad)
+                biasLearningRates = layers[l].gethBiasAdaGrad().getLearningRates(biasGradient);
+
 
             for(int m = 0; m < r.getNumFilters()[0]; m++) {
+                if(useAdaGrad)
+                    biasGradient.put(m,biasLearningRates.get(m) *  r.gethBias().get(m));
+
+                else
+                    biasGradient.put(m,lr *  r.gethBias().get(m));
+                for(int n = 0; n < prevR.getNumFilters()[0]; n++) {
+                    if(useRegularization)  {
+                        DoubleMatrix penalty = r.getFeatureMap().getSliceOfTensor(m,n).mul(l2) ;
+                        if(useAdaGrad) {
+                            DoubleMatrix learningRates = wAdaGrad.getLearningRates(m,n,wGradient.getSliceOfTensor(m,n));
+                            penalty.muli(learningRates);
+
+                        }
+                        else
+                            penalty.muli(lr);
+                        wGradient.put(m,n,wGradient.getSliceOfTensor(m,n).mul(penalty));
+
+                    }
+                    //hmm: https://github.com/agibsonccc/medal/blob/master/models/mlcnn.m#L422
+                    // wGradient.subi()
+
+                    //r.getW().put(m,n,r.getW().getSliceOfTensor(m,n).sub(wGradient.getSliceOfTensor(m,n)));
+
+                }
+
 
             }
 
@@ -310,7 +343,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             if(momentum != 0)
                 gradientChange.muli(momentum);
 
-            if(this.isNormalizeByInputRows())
+            if(isNormalizeByInputRows())
                 gradientChange.divi(input.rows);
 
             //update W
