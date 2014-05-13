@@ -62,6 +62,25 @@ public class Conf implements Serializable,Cloneable {
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private String stateTrackerConnectionString;
+    private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
+    private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
+
+
+    public Map<Integer, RBM.VisibleUnit> getVisibleUnitByLayer() {
+        return visibleUnitByLayer;
+    }
+
+    public void setVisibleUnitByLayer(Map<Integer, RBM.VisibleUnit> visibleUnitByLayer) {
+        this.visibleUnitByLayer = visibleUnitByLayer;
+    }
+
+    public Map<Integer, RBM.HiddenUnit> getHiddenUnitByLayer() {
+        return hiddenUnitByLayer;
+    }
+
+    public void setHiddenUnitByLayer(Map<Integer, RBM.HiddenUnit> hiddenUnitByLayer) {
+        this.hiddenUnitByLayer = hiddenUnitByLayer;
+    }
 
     public Map<Integer, ActivationFunction> getActivationFunctionForLayer() {
         return activationFunctionForLayer;

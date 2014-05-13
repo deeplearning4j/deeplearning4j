@@ -6,6 +6,7 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 
 import java.io.File;
@@ -42,7 +43,8 @@ public class MnistExampleMultiThreaded {
 		c.setUseRegularization(true);
         c.setL2(2e-2);
         c.setActivationFunctionForLayer(Collections.singletonMap(c.getLayerSizes().length - 1, Activations.linear()));
-		c.setDeepLearningParams(new Object[]{1,1e-1,10000});
+        c.setVisibleUnitByLayer(Collections.singletonMap(0, RBM.VisibleUnit.GAUSSIAN));
+        c.setDeepLearningParams(new Object[]{1,1e-1,10000});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example-deepautoencoder.ser")));
 		runner.setup(c);
