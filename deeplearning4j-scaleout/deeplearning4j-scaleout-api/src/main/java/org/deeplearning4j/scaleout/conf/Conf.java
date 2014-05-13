@@ -46,7 +46,8 @@ public class Conf implements Serializable,Cloneable {
 	private Object[] deepLearningParams;
 	private String masterUrl;
 	private double l2;
-	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<Integer,MatrixTransform>();
+	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
+    private Map<Integer,ActivationFunction> activationFunctionForLayer = new HashMap<>();
 	private int renderWeightEpochs = 0;
 	private String masterAbsPath;
 	private DoubleMatrix columnMeans;
@@ -62,6 +63,13 @@ public class Conf implements Serializable,Cloneable {
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private String stateTrackerConnectionString;
 
+    public Map<Integer, ActivationFunction> getActivationFunctionForLayer() {
+        return activationFunctionForLayer;
+    }
+
+    public void setActivationFunctionForLayer(Map<Integer, ActivationFunction> activationFunctionForLayer) {
+        this.activationFunctionForLayer = activationFunctionForLayer;
+    }
 
     public String getStateTrackerConnectionString() {
         return stateTrackerConnectionString;

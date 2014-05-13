@@ -96,6 +96,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Use adagrad or not
      */
     protected boolean useAdaGrad = false;
+    /**
+     * Override the activation function for a particular layer
+     */
+    protected Map<Integer,ActivationFunction> activationFunctionForLayer = new HashMap<>();
 
     /*
      * Hinton's Practical guide to RBMS:
@@ -1160,7 +1164,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
         return new HiddenLayer.Builder()
-                .nIn(nIn).nOut(nOut).withActivation(activation)
+                .nIn(nIn).nOut(nOut).withActivation(activationFunctionForLayer.get(index) != null ? activationFunctionForLayer.get(index) : activation)
                 .withRng(rng).withInput(layerInput).dist(dist)
                 .build();
 
@@ -1593,15 +1597,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private boolean normalizeByInputRows = true;
         private boolean useHiddenActivationsForwardProp = true;
         private double dropOut = 0;
+        private Map<Integer,ActivationFunction> activationForLayer = new HashMap<>();
         private boolean buildAutoEncoder = false;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
         private ActivationFunction outputActivationFunction = Activations.softmax();
 
+        public Builder activateForLayer(Map<Integer,ActivationFunction> activationForLayer) {
+            this.activationForLayer.putAll(activationForLayer);
+            return this;
+        }
 
-        public Builder buildAutoEncoder() {
-            this.buildAutoEncoder = true;
+        public Builder activateForLayer(int layer,ActivationFunction function) {
+            activationForLayer.put(layer,function);
             return this;
         }
 
@@ -1905,6 +1914,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.setMomentum(momentum);
                 ret.setLabels(labels);
                 ret.setFanIn(fanIn);
+                ret.activationFunctionForLayer.putAll(activationForLayer);
                 ret.setSparsity(sparsity);
                 ret.setRenderWeightsEveryNEpochs(renderWeithsEveryNEpochs);
                 ret.setL2(l2);
