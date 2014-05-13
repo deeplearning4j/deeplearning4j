@@ -483,6 +483,113 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BaseMultiLayerNetwork)) return false;
+
+        BaseMultiLayerNetwork that = (BaseMultiLayerNetwork) o;
+
+        if (buildAutoEncoder != that.buildAutoEncoder) return false;
+        if (Double.compare(that.dropOut, dropOut) != 0) return false;
+        if (Double.compare(that.errorTolerance, errorTolerance) != 0) return false;
+        if (Double.compare(that.fanIn, fanIn) != 0) return false;
+        if (forceNumEpochs != that.forceNumEpochs) return false;
+        if (initCalled != that.initCalled) return false;
+        if (Double.compare(that.l2, l2) != 0) return false;
+        if (Double.compare(that.learningRateUpdate, learningRateUpdate) != 0) return false;
+        if (Double.compare(that.momentum, momentum) != 0) return false;
+        if (nIns != that.nIns) return false;
+        if (nOuts != that.nOuts) return false;
+        if (normalizeByInputRows != that.normalizeByInputRows) return false;
+        if (renderWeightsEveryNEpochs != that.renderWeightsEveryNEpochs) return false;
+        if (shouldBackProp != that.shouldBackProp) return false;
+        if (shouldInit != that.shouldInit) return false;
+        if (Double.compare(that.sparsity, sparsity) != 0) return false;
+        if (useAdaGrad != that.useAdaGrad) return false;
+        if (useHiddenActivationsForwardProp != that.useHiddenActivationsForwardProp) return false;
+        if (useRegularization != that.useRegularization) return false;
+        if (activation != null ? !activation.equals(that.activation) : that.activation != null) return false;
+        if (columnMeans != null ? !columnMeans.equals(that.columnMeans) : that.columnMeans != null) return false;
+        if (columnStds != null ? !columnStds.equals(that.columnStds) : that.columnStds != null) return false;
+        if (columnSums != null ? !columnSums.equals(that.columnSums) : that.columnSums != null) return false;
+        if (dist != null ? !dist.equals(that.dist) : that.dist != null) return false;
+        if (hiddenBiasTransforms != null ? !hiddenBiasTransforms.equals(that.hiddenBiasTransforms) : that.hiddenBiasTransforms != null)
+            return false;
+        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
+        if (input != null ? !input.equals(that.input) : that.input != null) return false;
+        if (labels != null ? !labels.equals(that.labels) : that.labels != null) return false;
+        if (!Arrays.equals(layers, that.layers)) return false;
+        if (lossFunction != that.lossFunction) return false;
+        if (optimizationAlgorithm != that.optimizationAlgorithm) return false;
+        if (optimizer != null ? !optimizer.equals(that.optimizer) : that.optimizer != null) return false;
+        if (outputActivationFunction != null ? !outputActivationFunction.equals(that.outputActivationFunction) : that.outputActivationFunction != null)
+            return false;
+        if (outputLayer != null ? !outputLayer.equals(that.outputLayer) : that.outputLayer != null) return false;
+        if (outputLossFunction != that.outputLossFunction) return false;
+        if (rng != null ? !rng.equals(that.rng) : that.rng != null) return false;
+        if (!Arrays.equals(sigmoidLayers, that.sigmoidLayers)) return false;
+        if (visibleBiasTransforms != null ? !visibleBiasTransforms.equals(that.visibleBiasTransforms) : that.visibleBiasTransforms != null)
+            return false;
+        if (weightTransforms != null ? !weightTransforms.equals(that.weightTransforms) : that.weightTransforms != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = nIns;
+        result = 31 * result + (hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0);
+        result = 31 * result + nOuts;
+        result = 31 * result + (sigmoidLayers != null ? Arrays.hashCode(sigmoidLayers) : 0);
+        result = 31 * result + (outputLayer != null ? outputLayer.hashCode() : 0);
+        result = 31 * result + (rng != null ? rng.hashCode() : 0);
+        result = 31 * result + (dist != null ? dist.hashCode() : 0);
+        temp = Double.doubleToLongBits(momentum);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (input != null ? input.hashCode() : 0);
+        result = 31 * result + (labels != null ? labels.hashCode() : 0);
+        result = 31 * result + (optimizer != null ? optimizer.hashCode() : 0);
+        result = 31 * result + (activation != null ? activation.hashCode() : 0);
+        result = 31 * result + (buildAutoEncoder ? 1 : 0);
+        temp = Double.doubleToLongBits(l2);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (shouldInit ? 1 : 0);
+        temp = Double.doubleToLongBits(fanIn);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + renderWeightsEveryNEpochs;
+        result = 31 * result + (useRegularization ? 1 : 0);
+        result = 31 * result + (weightTransforms != null ? weightTransforms.hashCode() : 0);
+        result = 31 * result + (hiddenBiasTransforms != null ? hiddenBiasTransforms.hashCode() : 0);
+        result = 31 * result + (visibleBiasTransforms != null ? visibleBiasTransforms.hashCode() : 0);
+        result = 31 * result + (shouldBackProp ? 1 : 0);
+        result = 31 * result + (forceNumEpochs ? 1 : 0);
+        temp = Double.doubleToLongBits(sparsity);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (columnSums != null ? columnSums.hashCode() : 0);
+        result = 31 * result + (columnMeans != null ? columnMeans.hashCode() : 0);
+        result = 31 * result + (columnStds != null ? columnStds.hashCode() : 0);
+        result = 31 * result + (initCalled ? 1 : 0);
+        result = 31 * result + (useHiddenActivationsForwardProp ? 1 : 0);
+        result = 31 * result + (useAdaGrad ? 1 : 0);
+        temp = Double.doubleToLongBits(learningRateUpdate);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (layers != null ? Arrays.hashCode(layers) : 0);
+        temp = Double.doubleToLongBits(errorTolerance);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(dropOut);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (normalizeByInputRows ? 1 : 0);
+        result = 31 * result + (optimizationAlgorithm != null ? optimizationAlgorithm.hashCode() : 0);
+        result = 31 * result + (lossFunction != null ? lossFunction.hashCode() : 0);
+        result = 31 * result + (outputLossFunction != null ? outputLossFunction.hashCode() : 0);
+        result = 31 * result + (outputActivationFunction != null ? outputActivationFunction.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "BaseMultiLayerNetwork{" +
                 "nIns=" + nIns +

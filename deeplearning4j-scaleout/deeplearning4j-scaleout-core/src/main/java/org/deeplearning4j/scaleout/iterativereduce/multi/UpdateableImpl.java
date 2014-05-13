@@ -13,7 +13,9 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
-
+/**
+ * Wrapper for message passing on a model
+ */
 public class UpdateableImpl implements Updateable<BaseMultiLayerNetwork> {
 
 

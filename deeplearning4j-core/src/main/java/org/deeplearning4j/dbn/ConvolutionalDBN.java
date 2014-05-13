@@ -291,6 +291,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             DoubleMatrix biasGradient =  deltas.get(l).getSecond();
 
             for(int m = 0; m < r.getNumFilters()[0]; m++) {
+
             }
 
 

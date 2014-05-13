@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
+import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Convolution;
 import org.deeplearning4j.util.MatrixUtil;
@@ -92,7 +93,7 @@ public class ConvolutionalRBM extends RBM  {
             W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
 
 
-        wAdaGrad = new AdaGrad(W.rows,W.columns);
+        wAdaGrad = new FourDTensorAdaGrad(W.rows(),W.columns(),W.slices(),W.numTensors());
         vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
         hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
         convolutionInitCalled = true;
@@ -191,7 +192,7 @@ public class ConvolutionalRBM extends RBM  {
      * @param learningRate the learning rate for the current iteratiaon
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
-        DoubleMatrix wGradient = gradient.getwGradient();
+        FourDTensor wGradient = (FourDTensor) gradient.getwGradient();
 
         DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
         DoubleMatrix vBiasGradient = gradient.getvBiasGradient();

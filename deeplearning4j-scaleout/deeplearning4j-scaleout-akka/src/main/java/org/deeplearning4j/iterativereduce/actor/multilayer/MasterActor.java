@@ -2,10 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.io.DataOutputStream;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.deeplearning4j.datasets.DataSet;
@@ -23,6 +20,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;
+import org.deeplearning4j.util.SetUtils;
 import org.jblas.DoubleMatrix;
 
 import scala.concurrent.duration.Duration;
@@ -71,6 +69,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
                             Collection<String> updates = stateTracker.workerUpdates();
+
+                            Set<String> workersLeft = new HashSet<>();
+                            for(Job s : currentJobs)
+                                  workersLeft.add(s.getWorkerId());
+
+                            workersLeft = SetUtils.difference(workersLeft,updates);
 
 
                             if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
@@ -280,11 +284,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 masterResults = getResults();
             }
 
-            if(!stateTracker.isPretrain()) {
-                DataSet test = stateTracker.testSet();
-
-
-            }
 
 
             //tell the batch actor to send more work
