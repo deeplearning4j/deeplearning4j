@@ -241,11 +241,11 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 startingNetwork.setUseRegularization(conf.isUseRegularization());
             }
 
-            log.info("Starting model saver");
+            log.info("Starting Save saver");
             if(modelSaver == null)
-                system.actorOf(Props.create(ModelSavingActor.class,"model-saver"));
+                system.actorOf(Props.create(ModelSavingActor.class,"model-saver",stateTracker));
             else
-                system.actorOf(Props.create(ModelSavingActor.class,modelSaver));
+                system.actorOf(Props.create(ModelSavingActor.class,modelSaver,stateTracker));
 
 
 

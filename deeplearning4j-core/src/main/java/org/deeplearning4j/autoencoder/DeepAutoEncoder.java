@@ -31,6 +31,7 @@ public class DeepAutoEncoder implements Serializable {
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams) {
         this.encoder = encoder;
         this.trainingParams = trainingParams;
+        initDecoder();
     }
 
 
@@ -38,7 +39,16 @@ public class DeepAutoEncoder implements Serializable {
         //final hidden layer needs to be linear activation
         encoder.pretrain(input,trainingParams);
         encoder.getSigmoidLayers()[encoder.getSigmoidLayers().length - 1].setActivationFunction(Activations.linear());
+        //initialize the decoder from the newly trained weights
+        initDecoder();
 
+
+
+
+    }
+
+
+    private void initDecoder() {
         int[] hiddenLayerSizes = new int[encoder.getHiddenLayerSizes().length - 1];
         System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
         ArrayUtil.reverse(hiddenLayerSizes);
@@ -95,9 +105,6 @@ public class DeepAutoEncoder implements Serializable {
 
 
         //weights on the first layer are n times bigger
-
-
-
 
     }
 
