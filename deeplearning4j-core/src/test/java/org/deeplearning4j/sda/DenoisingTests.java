@@ -3,6 +3,7 @@ package org.deeplearning4j.sda;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.da.DenoisingAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.DataSets;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Before;
@@ -62,14 +63,9 @@ public class DenoisingTests {
 	@Test
 	public void testOther() {
 		MersenneTwister rand = new MersenneTwister(123);
-		DataSet xor = MatrixUtil.xorData(10);
-		for(int j = 0; j < 5; j++) {
-			DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(xor.getFirst().columns).numHidden(1).withRandom(rand).build();
-			double lr = 0.1;
-			da.trainTillConvergence(xor.getFirst(), lr, 0.3);
-			log.info(da.reconstruct(test_X_matrix).toString());
-		}
-		
+		DataSet xor = DataSets.mnist(10);
+        DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(xor.getFirst().columns).numHidden(1).withRandom(rand).build();
+        da.trainTillConvergence(xor.getFirst(),1e-1,0.3);
 	}
 
 	

@@ -81,11 +81,9 @@ public class BatchActor extends UntypedActor {
 
 		else if(message instanceof MoreWorkMessage) {
 			MoreWorkMessage m = (MoreWorkMessage) message;
-			UpdateableImpl result = (UpdateableImpl) m.getUpdateable();
-			UpdateableImpl save = SerializationUtils.clone(result);
 			log.info("Saving model");
 			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
-					save), mediator);
+					MoreWorkMessage.getInstance()), mediator);
 
 			if(iter.hasNext()) {
 				log.info("Propagating new work to master");
