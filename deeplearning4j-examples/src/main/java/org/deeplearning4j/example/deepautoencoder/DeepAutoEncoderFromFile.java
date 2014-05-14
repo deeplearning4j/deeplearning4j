@@ -40,7 +40,6 @@ public class DeepAutoEncoderFromFile {
             DataSet d = iter.next();
             dbn.setInput(d.getFirst());
             log.info("Training on " + d.numExamples());
-            StopWatch watch = new StopWatch();
             encoder.finetune(d.getFirst(),1e-1,30000);
 
         }

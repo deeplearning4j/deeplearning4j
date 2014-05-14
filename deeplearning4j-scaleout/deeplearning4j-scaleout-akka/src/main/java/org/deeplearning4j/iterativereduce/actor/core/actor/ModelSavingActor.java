@@ -111,7 +111,11 @@ public class ModelSavingActor extends UntypedActor {
     public void onReceive(final Object message) throws Exception {
         if(message instanceof Updateable) {
             Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
-            modelSaver.save(u.get());
+            BaseMultiLayerNetwork current = stateTracker.getCurrent().get();
+            if(current.getLayers() == null || current.getSigmoidLayers() == null)
+                throw new IllegalStateException("Invalid model found when prompted to save..");
+
+            modelSaver.save(current);
             log.info("saved model to " + pathToSave);
 
 
