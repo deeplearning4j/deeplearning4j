@@ -97,7 +97,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         if(x != null)
             this.input = x;
         this.lastMiniBatchSize = x.rows;
-        optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel}, optimizationAlgo, lossFunction);
+        optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel,lr}, optimizationAlgo, lossFunction);
         optimizer.train(x);
     }
 
