@@ -94,9 +94,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption level
      */
     public void trainTillConvergence(DoubleMatrix x, double lr,double corruptionLevel) {
-        if(x != null)
+        if(x != null) {
             this.input = x;
-        this.lastMiniBatchSize = x.rows;
+            this.lastMiniBatchSize = x.rows;
+        }
         optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel}, optimizationAlgo, lossFunction);
         optimizer.train(x);
     }
