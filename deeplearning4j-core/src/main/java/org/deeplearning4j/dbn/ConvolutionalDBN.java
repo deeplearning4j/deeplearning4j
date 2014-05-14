@@ -122,7 +122,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
                 //equivalent to a 3d tensor: only one tensor
                 FourDTensor featureMap = FourDTensor.zeros(r.getFmSize()[0],r.getFmSize()[1],1,nObs);
                 for(int k = 0; j < r.getNumFilters()[0]; j++) {
-                    featureMap.addi(Convolution.conv2d(featureMap.getTensor(i),r.getW().getSliceOfTensor(j,i), Convolution.Type.VALID));
+                    featureMap.addi(conv2d(featureMap.getTensor(i),r.getW().getSliceOfTensor(j,i), Convolution.Type.VALID));
                 }
                 featureMap.addi(r.gethBias().get(i));
                 r.getFeatureMap().setSlice(j,d.activate(featureMap));

@@ -128,9 +128,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     }
 
-                    else if(!isWorking.get() && tracker.jobFor(id) != null) {
-                        tracker.clearJob(id);
-                        log.info("Clearing stable job... " + id);
+                    else if(currentJob == null || !isWorking.get() && tracker.jobFor(id) != null) {
+                        if(tracker.jobFor(id) != null)
+                            tracker.clearJob(id);
+                        log.info("Clearing stale job... " + id);
                     }
 
 

@@ -688,7 +688,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 if(eval.shouldStop(count))
                     break;
                 Double entropy = score();
+
+
                 if(lastEntropy == null || entropy < lastEntropy) {
+
+                    if(lastEntropy > 0 && entropy < 0) {
+                        log.info("Breaking...change of sign on backprop");
+                    }
                     double diff = Math.abs(entropy - lastEntropy);
                     if(diff < changeTolerance) {
                         log.info("Not enough of a change on back prop...breaking");
