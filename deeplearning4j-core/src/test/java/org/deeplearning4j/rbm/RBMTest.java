@@ -70,7 +70,7 @@ public class RBMTest  {
 		RandomGenerator g = new MersenneTwister(123);
 
 		RBM r = new RBM.Builder()
-		.numberOfVisible(d.numInputs()).renderWeights(1)
+		.numberOfVisible(d.numInputs())
 		.numHidden(600)
 		.build();
 		
