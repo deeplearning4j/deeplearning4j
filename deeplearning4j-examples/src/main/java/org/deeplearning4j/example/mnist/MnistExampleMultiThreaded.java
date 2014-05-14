@@ -5,9 +5,11 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.transformation.MatrixTransformations;
+import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;
 import java.util.Collections;
@@ -43,7 +45,7 @@ public class MnistExampleMultiThreaded {
 		c.setUseRegularization(true);
         c.setL2(2e-2);
 		c.setDeepLearningParams(new Object[]{1,1e-1,10000});
-		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
+		ActorNetworkRunner runner = args.length < 1 ?  new ActorNetworkRunner("master",iter) : new ActorNetworkRunner("master",iter,(BaseMultiLayerNetwork) SerializationUtils.readObject(new File(args[0])));
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example.ser")));
 		runner.setup(c);
 		runner.train();
