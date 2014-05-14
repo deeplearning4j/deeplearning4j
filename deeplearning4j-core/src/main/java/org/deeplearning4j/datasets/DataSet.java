@@ -589,8 +589,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
                 if(!withReplacement) {
                     while (added.contains(picked)) {
                         picked = rng.nextInt(numExamples());
-                        added.add(picked);
                     }
+                    added.add(picked);
                 }
                 examples.putRow(i,get(picked).getFirst());
                 outcomes.putRow(i,get(picked).getSecond());
