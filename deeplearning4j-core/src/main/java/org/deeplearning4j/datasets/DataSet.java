@@ -586,11 +586,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             Set<Integer> added = new HashSet<Integer>();
             for(int i = 0; i < numSamples; i++) {
                 int picked = rng.nextInt(numExamples());
-                if(!withReplacement)
-                    while(added.contains(picked)) {
+                if(!withReplacement) {
+                    while (added.contains(picked)) {
                         picked = rng.nextInt(numExamples());
-
+                        added.add(picked);
                     }
+                }
                 examples.putRow(i,get(picked).getFirst());
                 outcomes.putRow(i,get(picked).getSecond());
 
