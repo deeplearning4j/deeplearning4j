@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.HiddenLayer;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
 
@@ -31,7 +32,6 @@ public class DeepAutoEncoder implements Serializable {
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams) {
         this.encoder = encoder;
         this.trainingParams = trainingParams;
-        initDecoder();
     }
 
 
@@ -49,13 +49,18 @@ public class DeepAutoEncoder implements Serializable {
 
 
     private void initDecoder() {
+        //encoder hasn't been pretrained yet
+        if(encoder.getLayers() == null || encoder.getSigmoidLayers() == null)
+            return;
+
         int[] hiddenLayerSizes = new int[encoder.getHiddenLayerSizes().length - 1];
         System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
         ArrayUtil.reverse(hiddenLayerSizes);
 
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
-            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit()).withOutputLossFunction(OutputLayer.LossFunction.XENT)
+            //note the gaussian visible unit, we want a GBRBM here for the continuous inputs for the real value codes from the encoder
+            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withOutputLossFunction(OutputLayer.LossFunction.XENT)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
@@ -65,7 +70,9 @@ public class DeepAutoEncoder implements Serializable {
 
         }
         else {
-            decoder = new DBN.Builder().withOutputLossFunction(OutputLayer.LossFunction.XENT)
+            decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
+                    .withOutputLossFunction(OutputLayer.LossFunction.XENT)
+                    .activateForLayer(encoder.getActivationFunctionForLayer())
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
@@ -114,7 +121,8 @@ public class DeepAutoEncoder implements Serializable {
      */
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         List<DoubleMatrix> activations = encoder.feedForward(input);
-
+        if(decoder == null)
+           initDecoder();
         DoubleMatrix decoderInput = activations.get(activations.size() - 2);
 
         decoder.setInput(decoderInput);

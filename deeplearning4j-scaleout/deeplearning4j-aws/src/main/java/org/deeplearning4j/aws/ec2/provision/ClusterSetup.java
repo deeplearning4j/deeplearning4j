@@ -38,7 +38,7 @@ public class ClusterSetup {
 	private String libDirPath;
 	@Option(name = "-datapath", usage = "path to serialized dataset")
 	private String dataSetPath;
-	@Option(name = "-uploddeps",usage = "whether to uploade deps: default true")
+	@Option(name = "-uploddeps",usage = "whether to upload deps: default true")
 	private boolean uploadDeps = true;
 	
 	private static Logger log = LoggerFactory.getLogger(ClusterSetup.class);
