@@ -159,9 +159,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     @Override
     public void train(DoubleMatrix input,double lr,Object[] params) {
         double corruptionLevel = (double) params[0];
-       if(input != null && cacheInput)
-        this.input = input;
-        this.lastMiniBatchSize = input.rows;
+        if(input != null && cacheInput)
+            this.input = input;
+        if(input != null)
+            this.lastMiniBatchSize = input.rows;
         NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
 
         vBias.addi(gradient.getvBiasGradient());
