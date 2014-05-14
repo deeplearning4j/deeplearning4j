@@ -9,6 +9,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
+import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.Persistable;
@@ -109,14 +110,12 @@ public class ModelSavingActor extends UntypedActor {
     @Override
     @SuppressWarnings("unchecked")
     public void onReceive(final Object message) throws Exception {
-        if(message instanceof Updateable) {
-            Updateable<? extends Persistable> u = (Updateable<? extends Persistable>) message;
+        if(message instanceof MoreWorkMessage) {
             BaseMultiLayerNetwork current = stateTracker.getCurrent().get();
             if(current.getLayers() == null || current.getSigmoidLayers() == null)
                 throw new IllegalStateException("Invalid model found when prompted to save..");
 
             modelSaver.save(current);
-            log.info("saved model to " + pathToSave);
 
 
         }
