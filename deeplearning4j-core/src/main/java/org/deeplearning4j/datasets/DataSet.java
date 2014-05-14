@@ -279,10 +279,10 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @return the counts of each possible outcome
      */
     public Counter<Integer> outcomeCounts() {
-        List<DataSet> list = asList();
+        List<DataSet> dataSets = asList();
         Counter<Integer> ret = new Counter<>();
-        for(int i = 0; i < list.size(); i++) {
-            ret.incrementCount(list.get(i).outcome(),1.0);
+        for (DataSet dataSet : dataSets) {
+            ret.incrementCount(dataSet.outcome(), 1.0);
         }
         return ret;
     }
