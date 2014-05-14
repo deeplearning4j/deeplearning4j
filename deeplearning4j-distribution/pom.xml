@@ -8,7 +8,16 @@
 	</parent>
 	<artifactId>deeplearning4j-distribution</artifactId>
 	<packaging>pom</packaging>
-	
+
+
+    <distributionManagement>
+        <repository>
+            <id>bintray-agibsonccc-maven-DeepLearning4j</id>
+            <name>agibsonccc-maven-DeepLearning4j</name>
+            <url>https://api.bintray.com/maven/agibsonccc/maven/DeepLearning4j</url>
+        </repository>
+    </distributionManagement>
+
 	<dependencies>
 
 		<dependency>
