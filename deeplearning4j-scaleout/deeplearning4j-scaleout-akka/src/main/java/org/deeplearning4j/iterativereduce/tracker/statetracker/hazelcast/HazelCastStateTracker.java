@@ -693,6 +693,15 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
             log.warn("Not setting a null update");
             return;
         }
+        else {
+            BaseMultiLayerNetwork n = (BaseMultiLayerNetwork) e.get();
+            if(n.getLayers() == null || n.getSigmoidLayers() == null) {
+                log.warn("Not setting a null layer neural net update");
+                return;
+            }
+        }
+
+
         this.master.set(e);
     }
 
