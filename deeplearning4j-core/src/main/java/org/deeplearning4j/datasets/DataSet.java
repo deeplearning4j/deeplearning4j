@@ -1,18 +1,6 @@
 package org.deeplearning4j.datasets;
 
-import java.io.*;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-
+import com.google.common.collect.Lists;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
@@ -28,7 +16,8 @@ import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
+import java.io.*;
+import java.util.*;
 
 /**
  * A data set (example/outcome pairs)
@@ -93,12 +82,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         DoubleMatrix out = new DoubleMatrix(numExamples,first.getSecond().columns);
         int count = 0;
 
-        for(int i = 0; i < data.size(); i++) {
-            DataSet d1 = data.get(i);
-            for(int j = 0; j < d1.numExamples(); j++) {
+        for (DataSet d1 : data) {
+            for (int j = 0; j < d1.numExamples(); j++) {
                 DataSet example = d1.get(j);
-                in.putRow(count,example.getFirst());
-                out.putRow(count,example.getSecond());
+                in.putRow(count, example.getFirst());
+                out.putRow(count, example.getSecond());
                 count++;
             }
 
