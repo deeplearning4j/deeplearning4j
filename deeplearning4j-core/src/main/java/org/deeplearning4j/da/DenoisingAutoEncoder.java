@@ -1,11 +1,5 @@
 package org.deeplearning4j.da;
 
-import static org.deeplearning4j.util.MathUtils.binomial;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-
-import java.io.Serializable;
-
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -13,6 +7,12 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
+
+import java.io.Serializable;
+
+import static org.deeplearning4j.util.MathUtils.binomial;
+import static org.deeplearning4j.util.MatrixUtil.oneMinus;
+import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 
 
 /**
@@ -110,7 +110,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     public void train(DoubleMatrix x,double lr,double corruptionLevel) {
         if(x != null && cacheInput)
             this.input = x;
-        this.lastMiniBatchSize = x.rows;
+        if(x != null)
+            this.lastMiniBatchSize = x.rows;
         NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
