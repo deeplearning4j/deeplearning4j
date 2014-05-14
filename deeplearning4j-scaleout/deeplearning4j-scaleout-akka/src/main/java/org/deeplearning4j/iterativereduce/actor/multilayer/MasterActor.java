@@ -4,6 +4,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.DBN;
@@ -41,7 +42,7 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
     protected BaseMultiLayerNetwork network;
-
+    protected AtomicLong oneDown;
 
     /**
      * Creates the master and the workers with this given conf
@@ -69,13 +70,19 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
                             Collection<String> updates = stateTracker.workerUpdates();
+                            if(currentJobs.size() == 1 && oneDown != null) {
+                                long curr = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - oneDown.get());
+                                if(curr >= 5) {
+                                   stateTracker.currentJobs().clear();
+                                  oneDown = null;
+                                   log.info("Clearing out stale jobs");
+                                }
+                            }
 
-                            Set<String> workersLeft = new HashSet<>();
-                            for(Job s : currentJobs)
-                                  workersLeft.add(s.getWorkerId());
-
-                            workersLeft = SetUtils.difference(workersLeft,updates);
-
+                            else if(currentJobs.size() == 1) {
+                                log.info("Marking start of stale jobs");
+                                oneDown = new AtomicLong(System.currentTimeMillis());
+                            }
 
                             if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
                                 nextBatch();
@@ -289,7 +296,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
             //tell the batch actor to send more work
-            batchActor.tell(new MoreWorkMessage(masterResults),getSelf());
+            batchActor.tell(MoreWorkMessage.getInstance(),getSelf());
         }
 
 
@@ -331,7 +338,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             }
 
             batchActor.tell(ResetMessage.getInstance(), getSelf());
-            batchActor.tell(new MoreWorkMessage(masterResults), getSelf());
+            batchActor.tell(MoreWorkMessage.getInstance(), getSelf());
 
         }
 

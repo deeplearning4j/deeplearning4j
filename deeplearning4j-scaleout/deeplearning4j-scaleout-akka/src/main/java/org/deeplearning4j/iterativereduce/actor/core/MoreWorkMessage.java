@@ -4,28 +4,26 @@ import java.io.Serializable;
 
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
-
+/**
+ * Asks for more work from the batch actor
+ */
 public class MoreWorkMessage implements Serializable {
+    /**
+     *
+     */
+    private static final long serialVersionUID = -4149080551476702735L;
+    private static MoreWorkMessage INSTANCE = new MoreWorkMessage();
 
-	public MoreWorkMessage(Updateable<?> updateable) {
+    private MoreWorkMessage() {
 		super();
-		this.updateable = updateable;
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -4149080551476702735L;
-	private Updateable<?> updateable;
+    public static MoreWorkMessage getInstance() {
+        return INSTANCE;
+    }
 
-	public synchronized Updateable<?> getUpdateable() {
-		return updateable;
-	}
 
-	public synchronized void setUpdateable(Updateable<?> updateable) {
-		this.updateable = updateable;
-	}
-	
+
 	
 
 }
