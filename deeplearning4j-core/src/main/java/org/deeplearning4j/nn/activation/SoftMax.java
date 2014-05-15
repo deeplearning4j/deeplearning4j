@@ -9,9 +9,9 @@ import org.jblas.DoubleMatrix;
  * @author Adam Gibson
  *
  */
-public class SoftMax implements ActivationFunction {
+public class SoftMax extends BaseActivationFunction {
 
-	/**
+    /**
 	 * 
 	 */
 	private static final long serialVersionUID = -3407472284248637360L;

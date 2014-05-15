@@ -9,7 +9,9 @@ import org.jblas.DoubleMatrix;
  * The exponential activation function
  * @author Adam Gibson
  */
-public class Exp implements ActivationFunction {
+public class Exp extends BaseActivationFunction {
+
+
 
     /**
      * Applies the derivative of this function

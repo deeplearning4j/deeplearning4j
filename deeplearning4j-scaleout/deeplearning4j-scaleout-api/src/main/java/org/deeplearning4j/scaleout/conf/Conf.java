@@ -6,12 +6,15 @@ import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
+import org.deeplearning4j.nn.activation.SoftMax;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
@@ -31,8 +34,9 @@ public class Conf implements Serializable,Cloneable {
 	private long seed = 123;
 	private double corruptionLevel = 0.3;
 	private double sparsity = 0;
-	private ActivationFunction function = new Sigmoid();
-	private int[] layerSizes = new int[]{300,300,300};
+	private ActivationFunction function = Activations.sigmoid();
+    private ActivationFunction outputActivationFunction = Activations.softmax();
+    private int[] layerSizes = new int[]{300,300,300};
 	private int pretrainEpochs = 1000;
 	private int finetuneEpochs = 1000;
 	private double pretrainLearningRate = 0.01;
@@ -48,7 +52,7 @@ public class Conf implements Serializable,Cloneable {
 	private double l2;
 	private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
     private Map<Integer,ActivationFunction> activationFunctionForLayer = new HashMap<>();
-	private int renderWeightEpochs = 0;
+	private int renderWeightEpochs = -1;
 	private String masterAbsPath;
 	private DoubleMatrix columnMeans;
 	private DoubleMatrix columnStds;
@@ -65,6 +69,13 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
 
+    public ActivationFunction getOutputActivationFunction() {
+        return outputActivationFunction;
+    }
+
+    public void setOutputActivationFunction(ActivationFunction outputActivationFunction) {
+        this.outputActivationFunction = outputActivationFunction;
+    }
 
     public Map<Integer, RBM.VisibleUnit> getVisibleUnitByLayer() {
         return visibleUnitByLayer;
@@ -411,5 +422,33 @@ public class Conf implements Serializable,Cloneable {
 	public void setOptimizationAlgorithm(OptimizationAlgorithm optimizationAlgorithm) {
 		this.optimizationAlgorithm = optimizationAlgorithm;
 	}
+    
+    
+    public BaseMultiLayerNetwork init() {
+        if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
+           return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit())
+                    .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
+                    .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
+                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
+                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputActivationFunction(outputActivationFunction)
+                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
+                    .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
+                    .build();
+
+
+
+        }
+
+        else {
+            return  new BaseMultiLayerNetwork.Builder<>()
+                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).withOutputActivationFunction(outputActivationFunction)
+                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
+                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
+                    .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
+                    .build();
+
+        }
+    }
+    
 
 }
