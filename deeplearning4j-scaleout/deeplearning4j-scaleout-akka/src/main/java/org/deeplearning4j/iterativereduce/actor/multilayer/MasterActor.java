@@ -208,29 +208,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         log.info("Broadcasting initial master network");
         BaseMultiLayerNetwork network = null;
         if(this.network == null) {
-            if(conf.getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-                network =  new DBN.Builder().withHiddenUnits(conf.getHiddenUnit()).withVisibleUnits(conf.getVisibleUnit())
-                        .withVisibleUnitsByLayer(conf.getVisibleUnitByLayer()).withHiddenUnitsByLayer(conf.getHiddenUnitByLayer())
-                        .activateForLayer(conf.getActivationFunctionForLayer())
-                        .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-                        .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs())
-                        .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
-                        .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                        .build();
-
-
-
-            }
-
-            else {
-                network =  new BaseMultiLayerNetwork.Builder<>()
-                        .numberOfInputs(conf.getnIn()).numberOfOutPuts(conf.getnOut()).withClazz(conf.getMultiLayerClazz())
-                        .hiddenLayerSizes(conf.getLayerSizes()).renderWeights(conf.getRenderWeightEpochs()).activateForLayer(conf.getActivationFunctionForLayer())
-                         .useRegularization(conf.isUseRegularization()).withDropOut(conf.getDropOut()).withLossFunction(conf.getLossFunction())
-                        .withSparsity(conf.getSparsity()).useAdaGrad(conf.isUseAdaGrad()).withOptimizationAlgorithm(conf.getOptimizationAlgorithm())
-                        .build();
-
-            }
+            this.network = conf.init();
         }
 
         else

@@ -141,7 +141,7 @@ public class DeepAutoEncoder implements Serializable {
     public DoubleMatrix reconstruct(DoubleMatrix input) {
         List<DoubleMatrix> activations = encoder.feedForward(input);
 
-        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
+        DoubleMatrix decoderInput = activations.get(activations.size() - 1);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
     }

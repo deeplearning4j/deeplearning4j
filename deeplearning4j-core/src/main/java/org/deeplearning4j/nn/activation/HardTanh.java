@@ -2,14 +2,27 @@ package org.deeplearning4j.nn.activation;
 
 import org.jblas.DoubleMatrix;
 
-public class HardTanh implements ActivationFunction {
+/**
+ * Tanh with a hard range of -1,t
+ */
+public class HardTanh extends BaseActivationFunction {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -8484119406683594852L;
 
-	@Override
+    /**
+     * Name of the function
+     *
+     * @return the name of the function
+     */
+    @Override
+    public String type() {
+        return "hardtanh";
+    }
+
+    @Override
 	public DoubleMatrix apply(DoubleMatrix matrix) {
 		for(int i = 0; i < matrix.length; i++) {
 			double val = matrix.get(i);
