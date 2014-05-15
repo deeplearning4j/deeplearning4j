@@ -236,21 +236,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    /**
-     * Returns the sum of the reconstruction entropies
-     * divided by the number of layers
-     * @return the average reconstruction entropy across layers
-     */
-    public double getReconstructionCrossEntropy() {
-        double sum = 0;
-        for(int i = 0; i < getnLayers(); i++) {
-            sum += layers[i].getReConstructionCrossEntropy();
-        }
-
-        sum /= (double) getnLayers();
-        return sum;
-    }
-
 
     /**
      * Base class for initializing the layers based on the input.
@@ -297,9 +282,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         if(this.layers == null || sigmoidLayers == null || this.sigmoidLayers[0] == null || this.layers[0] == null) {
             this.layers = new NeuralNetwork[getnLayers()];
-
             // construct multi-layer
             for(int i = 0; i < this.getnLayers(); i++) {
+                ActivationFunction currLayerActivation = activationFunctionForLayer.get(i) != null ?activationFunctionForLayer.get(i) : activation;
+
                 if(i == 0)
                     inputSize = this.nIns;
                 else
@@ -307,7 +293,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 if(i == 0) {
                     // construct sigmoid_layer
-                    sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
+                    sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],currLayerActivation,rng,layerInput,dist);
                 }
                 else {
                     if(input != null) {
@@ -319,7 +305,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                     }
 
                     // construct sigmoid_layer
-                    sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],activation,rng,layerInput,dist);
+                    sigmoidLayers[i] = createHiddenLayer(i,inputSize,this.hiddenLayerSizes[i],currLayerActivation,rng,layerInput,dist);
 
 
                 }
@@ -1174,11 +1160,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param layerInput the layer starting input
      * @param dist the probability distribution to use
      * for generating weights
-     * @return a hidden layer with the given paremters
+     * @return a hidden layer with the given parameters
      */
     public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
         return new HiddenLayer.Builder()
-                .nIn(nIn).nOut(nOut).withActivation(activationFunctionForLayer.get(index) != null ? activationFunctionForLayer.get(index) : activation)
+                .nIn(nIn).nOut(nOut)
+                .withActivation(activation)
                 .withRng(rng).withInput(layerInput).dist(dist)
                 .build();
 
