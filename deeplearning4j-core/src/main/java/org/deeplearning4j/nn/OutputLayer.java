@@ -4,6 +4,7 @@ import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.jblas.MatrixFunctions.pow;
+import static org.jblas.MatrixFunctions.sqrt;
 
 import java.io.Serializable;
 
@@ -56,11 +57,12 @@ public class OutputLayer implements Serializable {
      * EXPLL: Exponential log likelihood: Poisson Regression
      * XENT: Cross Entropy: Binary Classification
      * SOFTMAX: Softmax Regression
+     * RMSE_XENT: RMSE Cross Entropy
      *
      *
      */
     public static enum LossFunction {
-        MSE,EXPLL,XENT,MCXENT
+        MSE,EXPLL,XENT,MCXENT,RMSE_XENT
     }
 
 
@@ -241,6 +243,8 @@ public class OutputLayer implements Serializable {
                 DoubleMatrix xEntOneMinusLabelsOut = oneMinus(labels);
                 DoubleMatrix xEntOneMinusLogOneMinusZ = oneMinus(log(z));
                 return -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
+            case RMSE_XENT:
+                return sqrt(pow(labels.sub(z),2)).columnSums().sum() / labels.rows;
             case MSE:
                 DoubleMatrix mseDelta = labels.sub(z);
                 return 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;

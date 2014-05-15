@@ -430,7 +430,8 @@ public class Conf implements Serializable,Cloneable {
                     .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
                     .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputActivationFunction(outputActivationFunction)
+                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs())
+                   .withOutputActivationFunction(outputActivationFunction)
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
