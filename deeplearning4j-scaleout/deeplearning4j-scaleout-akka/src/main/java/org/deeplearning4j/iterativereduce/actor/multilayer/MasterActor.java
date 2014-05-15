@@ -208,7 +208,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         log.info("Broadcasting initial master network");
         BaseMultiLayerNetwork network = null;
         if(this.network == null) {
-            this.network = conf.init();
+            network = conf.init();
+
         }
 
         else
