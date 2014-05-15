@@ -8,6 +8,15 @@ import org.jblas.DoubleMatrix;
  * @author Adam Gibson
  */
 public class Linear implements ActivationFunction {
+    /**
+     * Name of the function
+     *
+     * @return the name of the function
+     */
+    @Override
+    public String type() {
+        return "linear";
+    }
 
     /**
      * Applies the derivative of this function

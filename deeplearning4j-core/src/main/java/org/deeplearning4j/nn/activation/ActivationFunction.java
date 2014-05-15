@@ -12,6 +12,13 @@ import com.google.common.base.Function;
  */
 public interface ActivationFunction extends Function<DoubleMatrix,DoubleMatrix>,Serializable {
 
+    /**
+     * Name of the function
+     * @return the name of the function
+     */
+    public String type();
+
+
 	/**
 	 * Applies the derivative of this function
 	 * @param input the input to apply it to

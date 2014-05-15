@@ -5,10 +5,13 @@ import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 
+/**
+ * Sigmoid function
+ * @author Adam Gibson
+ */
+public class Sigmoid extends BaseActivationFunction {
 
-public class Sigmoid implements ActivationFunction {
-
-	/**
+    /**
 	 * 
 	 */
 	private static final long serialVersionUID = -6280602270833101092L;

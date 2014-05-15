@@ -420,11 +420,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
             activations.add(currInput);
         }
+        if(getOutputLayer() != null) {
+            getOutputLayer().setInput(currInput);
+            if(getOutputLayer().getActivationFunction() == null)
+                outputLayer.setActivationFunction(outputActivationFunction);
+            activations.add(getOutputLayer().output(currInput));
 
-        getOutputLayer().setInput(currInput);
-        if(getOutputLayer().getActivationFunction() == null)
-            outputLayer.setActivationFunction(outputActivationFunction);
-        activations.add(getOutputLayer().output(currInput));
+        }
         return activations;
     }
 
@@ -513,10 +515,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if (useHiddenActivationsForwardProp != that.useHiddenActivationsForwardProp) return false;
         if (useRegularization != that.useRegularization) return false;
         if (activation != null ? !activation.equals(that.activation) : that.activation != null) return false;
+        if (activationFunctionForLayer != null ? !activationFunctionForLayer.equals(that.activationFunctionForLayer) : that.activationFunctionForLayer != null)
+            return false;
         if (columnMeans != null ? !columnMeans.equals(that.columnMeans) : that.columnMeans != null) return false;
         if (columnStds != null ? !columnStds.equals(that.columnStds) : that.columnStds != null) return false;
         if (columnSums != null ? !columnSums.equals(that.columnSums) : that.columnSums != null) return false;
-        if (dist != null ? !dist.equals(that.dist) : that.dist != null) return false;
         if (hiddenBiasTransforms != null ? !hiddenBiasTransforms.equals(that.hiddenBiasTransforms) : that.hiddenBiasTransforms != null)
             return false;
         if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
@@ -530,7 +533,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             return false;
         if (outputLayer != null ? !outputLayer.equals(that.outputLayer) : that.outputLayer != null) return false;
         if (outputLossFunction != that.outputLossFunction) return false;
-        if (rng != null ? !rng.equals(that.rng) : that.rng != null) return false;
         if (!Arrays.equals(sigmoidLayers, that.sigmoidLayers)) return false;
         if (visibleBiasTransforms != null ? !visibleBiasTransforms.equals(that.visibleBiasTransforms) : that.visibleBiasTransforms != null)
             return false;
@@ -549,8 +551,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         result = 31 * result + nOuts;
         result = 31 * result + (sigmoidLayers != null ? Arrays.hashCode(sigmoidLayers) : 0);
         result = 31 * result + (outputLayer != null ? outputLayer.hashCode() : 0);
-        result = 31 * result + (rng != null ? rng.hashCode() : 0);
-        result = 31 * result + (dist != null ? dist.hashCode() : 0);
         temp = Double.doubleToLongBits(momentum);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (input != null ? input.hashCode() : 0);
@@ -578,6 +578,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         result = 31 * result + (initCalled ? 1 : 0);
         result = 31 * result + (useHiddenActivationsForwardProp ? 1 : 0);
         result = 31 * result + (useAdaGrad ? 1 : 0);
+        result = 31 * result + (activationFunctionForLayer != null ? activationFunctionForLayer.hashCode() : 0);
         temp = Double.doubleToLongBits(learningRateUpdate);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (layers != null ? Arrays.hashCode(layers) : 0);
