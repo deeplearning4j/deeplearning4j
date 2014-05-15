@@ -76,7 +76,7 @@ public class RBMTest  {
 		
 
 		
-		r.trainTillConvergence(d.getFirst() ,1e-2,new Object[]{1,1e-2,3000});
+		r.trainTillConvergence(d.getFirst() ,1e-2,new Object[]{1,1e-1,100});
 
 
 

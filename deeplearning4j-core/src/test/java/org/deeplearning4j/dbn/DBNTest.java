@@ -74,14 +74,14 @@ public class DBNTest {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), 1, 1e-5, 10000);
+            dbn.pretrain(next.getFirst(), 1, 1e-5, 1000);
         }
 
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
             dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-4, 10000);
+            dbn.finetune(next.getSecond(), 1e-4, 1000);
         }
 
 

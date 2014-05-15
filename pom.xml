@@ -15,9 +15,23 @@
 		<artifactId>oss-parent</artifactId>
 		<version>7</version>
 	</parent>
+   
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>bintray-agibsonccc-maven-DeepLearning4j</id>
+            <name>agibsonccc-maven-DeepLearning4j</name>
+            <url>https://api.bintray.com/maven/agibsonccc/maven/DeepLearning4j</url>
+        </repository>
+    </distributionManagement>
 
 
-	<properties>
+    <properties>
 		<slf4j.version>1.7.5</slf4j.version>
 		<junit.version>4.11</junit.version>
 	</properties>
@@ -54,6 +68,35 @@
 				</plugins>
 			</build>
 		</profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 	</profiles>
 	<scm>
 		<connection>scm:git:git@github.com:agibsonccc/java-deeplearning.git</connection>
@@ -85,20 +128,9 @@
 		</developer>
 	</developers>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>sonatype-nexus-snapshots</id>
-			<name>Sonatype Nexus snapshot repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>sonatype-nexus-staging</id>
-			<name>Sonatype Nexus release repository</name>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
 
 	<build>
+
 		<pluginManagement>
 			<plugins>
 				<plugin>

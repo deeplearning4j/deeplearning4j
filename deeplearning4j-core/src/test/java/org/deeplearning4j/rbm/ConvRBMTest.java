@@ -28,7 +28,7 @@ public class ConvRBMTest {
         DataSet d = fetcher.next();
         DoubleMatrix train = d.getFirst().reshape(28,28);
 
-       rbm.trainTillConvergence(train,1e-2,new Object[]{1,1e-2,1000});
+       rbm.trainTillConvergence(train,1e-2,new Object[]{1,1e-2,100});
 
 
 

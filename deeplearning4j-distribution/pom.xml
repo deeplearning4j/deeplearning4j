@@ -4,19 +4,11 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-		<version>0.0.3.1-SNAPSHOT</version>
+		<version>0.0.3.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-distribution</artifactId>
 	<packaging>pom</packaging>
 
-
-    <distributionManagement>
-        <repository>
-            <id>bintray-agibsonccc-maven-DeepLearning4j</id>
-            <name>agibsonccc-maven-DeepLearning4j</name>
-            <url>https://api.bintray.com/maven/agibsonccc/maven/DeepLearning4j</url>
-        </repository>
-    </distributionManagement>
 
 	<dependencies>
 
