@@ -1,7 +1,10 @@
 package org.deeplearning4j.example.lfw;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -9,6 +12,8 @@ import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.util.ImageLoader;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +34,10 @@ public class LFWExample {
 		.hiddenLayerSizes(new int[]{500, 400, 250})
 		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
 		.build();
+
+
+
+
 		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();

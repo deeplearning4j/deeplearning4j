@@ -537,10 +537,18 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         conf.setProperty("hazelcast.initial.min.cluster.size","1");
         conf.setProperty("hazelcast.shutdownhook.enabled","false");
 
+
         JoinConfig join = conf.getNetworkConfig().getJoin();
-        join.getMulticastConfig().setEnabled(true);
-        join.getAwsConfig().setEnabled(false);
-        join.getMulticastConfig().setEnabled(true);
+
+        boolean isAws = System.getProperty("hazelcast.aws","false").equals("true");
+        log.info("Setting up Joiner with this being "  + (isAws ? "AWS" : "Multicast"));
+
+        join.getAwsConfig().setEnabled(isAws);
+        if(isAws) {
+            join.getAwsConfig().setAccessKey(System.getProperty("hazelcast.access-key"));
+            join.getAwsConfig().setSecretKey(System.getProperty("hazelcast.access-secret"));
+        }
+        join.getMulticastConfig().setEnabled(!isAws);
 
 
 

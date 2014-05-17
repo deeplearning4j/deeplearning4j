@@ -1,8 +1,8 @@
 package org.deeplearning4j.autoencoder;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
+import static org.deeplearning4j.util.MatrixUtil.round;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -14,7 +14,9 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 /**
  * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
@@ -60,10 +62,13 @@ public class DeepAutoEncoder implements Serializable {
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
             //note the gaussian visible unit, we want a GBRBM here for the continuous inputs for the real value codes from the encoder
-            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withOutputLossFunction(OutputLayer.LossFunction.XENT)
-                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
+            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
+                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
+                    .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
+                    .withOutputActivationFunction(Activations.sigmoid())
                     .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad()).withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
                     .build();
 
@@ -71,7 +76,7 @@ public class DeepAutoEncoder implements Serializable {
         }
         else {
             decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
-                    .withOutputLossFunction(OutputLayer.LossFunction.XENT)
+                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                     .activateForLayer(encoder.getActivationFunctionForLayer())
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
@@ -123,8 +128,7 @@ public class DeepAutoEncoder implements Serializable {
         List<DoubleMatrix> activations = encoder.feedForward(input);
         if(decoder == null)
            initDecoder();
-        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
-
+        DoubleMatrix decoderInput = round(activations.get(activations.size() - 2));
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);
@@ -141,9 +145,9 @@ public class DeepAutoEncoder implements Serializable {
     public DoubleMatrix reconstruct(DoubleMatrix input) {
         List<DoubleMatrix> activations = encoder.feedForward(input);
 
-        DoubleMatrix decoderInput = activations.get(activations.size() - 1);
+        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
-        return decoderActivations.get(decoderActivations.size() - 1);
+        return round(decoderActivations.get(decoderActivations.size() - 1));
     }
 
 
