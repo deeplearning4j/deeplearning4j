@@ -960,7 +960,7 @@ public class MatrixUtil {
      * @param num the number of decimal places to round to(example: pass 2 for the 10s place)
      * @return the rounded matrix
      */
-    public static DoubleMatrix roundToTheNearest(DoubleMatrix d, int num) {
+    public static <E extends DoubleMatrix> E  roundToTheNearest(E d, int num) {
         DoubleMatrix ret = d.mul(num);
         for (int i = 0; i < d.rows; i++)
             for (int j = 0; j < d.columns; j++) {
@@ -968,9 +968,25 @@ public class MatrixUtil {
                 double newNum = MathUtils.roundDouble(d2, num);
                 ret.put(i, j, newNum);
             }
-        return ret;
+        return createBasedOn(ret,d);
     }
 
+
+    /**
+     * Rounds the matrix to the number of specified by decimal places
+     *
+     * @param d   the matrix to round
+     * @return the rounded matrix
+     */
+    public static <E extends DoubleMatrix> E  round(E d) {
+        DoubleMatrix ret = d;
+        for (int i = 0; i < d.rows; i++)
+            for (int j = 0; j < d.columns; j++) {
+                double d2 = d.get(i, j);
+                ret.put(i, j, FastMath.round(d2));
+            }
+        return createBasedOn(ret,d);
+    }
 
     public static void columnNormalizeBySum(DoubleMatrix x) {
         for (int i = 0; i < x.columns; i++)
