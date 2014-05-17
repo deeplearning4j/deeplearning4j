@@ -161,6 +161,22 @@ public class DBN extends BaseMultiLayerNetwork {
         }
     }
 
+    public Map<Integer, RBM.VisibleUnit> getVisibleUnitByLayer() {
+        return visibleUnitByLayer;
+    }
+
+    public void setVisibleUnitByLayer(Map<Integer, RBM.VisibleUnit> visibleUnitByLayer) {
+        this.visibleUnitByLayer = visibleUnitByLayer;
+    }
+
+    public Map<Integer, RBM.HiddenUnit> getHiddenUnitByLayer() {
+        return hiddenUnitByLayer;
+    }
+
+    public void setHiddenUnitByLayer(Map<Integer, RBM.HiddenUnit> hiddenUnitByLayer) {
+        this.hiddenUnitByLayer = hiddenUnitByLayer;
+    }
+
     public RBM.VisibleUnit getVisibleUnit() {
         return visibleUnit;
     }

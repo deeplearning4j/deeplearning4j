@@ -3,6 +3,7 @@ package org.deeplearning4j.autoencoder;
 import java.io.Serializable;
 import static org.deeplearning4j.util.MatrixUtil.round;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.deeplearning4j.dbn.DBN;
@@ -61,11 +62,15 @@ public class DeepAutoEncoder implements Serializable {
         System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
         ArrayUtil.reverse(hiddenLayerSizes);
 
+
+
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
             //note the gaussian visible unit, we want a GBRBM here for the continuous inputs for the real value codes from the encoder
-            decoder = new DBN.Builder().withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
+            decoder = new DBN.Builder().withVisibleUnitsByLayer(Collections.singletonMap(0,RBM.VisibleUnit.GAUSSIAN))
+                    .withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
                     .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
@@ -132,7 +137,9 @@ public class DeepAutoEncoder implements Serializable {
             initDecoder();
         RBM r = (RBM)  encoder.getLayers()[0];
         //round the input for the binary codes for input, this is only applicable for the forward layer.
-        DoubleMatrix decoderInput = r.getHiddenType() == RBM.HiddenUnit.BINARY ? round(activations.get(activations.size() - 2)) : activations.get(activations.size() - 2);
+        DoubleMatrix decoderInput = r.getHiddenType() == RBM.HiddenUnit.BINARY ?
+                round(activations.get(activations.size() - 2)) :
+                activations.get(activations.size() - 2);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);
