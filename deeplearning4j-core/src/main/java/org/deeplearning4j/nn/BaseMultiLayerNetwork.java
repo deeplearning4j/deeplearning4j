@@ -789,7 +789,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected void backPropStep(BaseMultiLayerNetwork revert,double lr,int epoch) {
         //feedforward to compute activations
         //initial error
-
+        log.info("Back prop step " + epoch);
 
         //precompute deltas
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();

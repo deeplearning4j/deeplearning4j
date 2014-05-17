@@ -396,6 +396,22 @@ public class RBM extends BaseNeuralNetwork {
 
     }
 
+    public VisibleUnit getVisibleType() {
+        return visibleType;
+    }
+
+    public void setVisibleType(VisibleUnit visibleType) {
+        this.visibleType = visibleType;
+    }
+
+    public HiddenUnit getHiddenType() {
+        return hiddenType;
+    }
+
+    public void setHiddenType(HiddenUnit hiddenType) {
+        this.hiddenType = hiddenType;
+    }
+
     @Override
     public double lossFunction(Object[] params) {
         return getReConstructionCrossEntropy();
