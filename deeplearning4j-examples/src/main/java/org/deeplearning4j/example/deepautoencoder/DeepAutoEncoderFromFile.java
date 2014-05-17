@@ -28,19 +28,19 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,1000);
+        DataSetIterator iter = new MnistDataSetIterator(10,100);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
         dbn.setRenderWeightsEveryNEpochs(1);
         dbn.getSigmoidLayers()[dbn.getSigmoidLayers().length - 1].setActivationFunction(Activations.sigmoid());
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-1,30000});
+        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-1,100});
 
         while(iter.hasNext()) {
             DataSet d = iter.next();
             dbn.setInput(d.getFirst());
             log.info("Training on " + d.numExamples());
-            encoder.finetune(d.getFirst(),1e-1,10000);
+            encoder.finetune(d.getFirst(),1e-1,1000);
 
         }
 

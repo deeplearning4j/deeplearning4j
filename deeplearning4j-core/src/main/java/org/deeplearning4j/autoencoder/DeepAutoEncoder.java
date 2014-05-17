@@ -3,7 +3,6 @@ package org.deeplearning4j.autoencoder;
 import java.io.Serializable;
 import static org.deeplearning4j.util.MatrixUtil.round;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.deeplearning4j.dbn.DBN;
@@ -14,12 +13,23 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
 /**
  * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
+ *
+ * The focus of a deep auto encoder is the code layer.
+ * This code layer is the end of the encoder
+ * and the input to the decoder.
+ *
+ * For real valued data, this is a gaussian rectified linear layer.
+ *
+ * For binary, its binary/binary
+ *
+ *
+ * @author Adam Gibson
+ *
+ *
  */
 public class DeepAutoEncoder implements Serializable {
 
@@ -30,25 +40,17 @@ public class DeepAutoEncoder implements Serializable {
     private BaseMultiLayerNetwork encoder;
     private BaseMultiLayerNetwork decoder;
     private Object[] trainingParams;
+    private boolean binary = true;
 
-    public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams) {
+    public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams,boolean binary) {
         this.encoder = encoder;
         this.trainingParams = trainingParams;
+        this.binary = binary;
     }
 
-
-    public void train(DoubleMatrix input, double lr,int n) {
-        //final hidden layer needs to be linear activation
-        encoder.pretrain(input,trainingParams);
-        encoder.getSigmoidLayers()[encoder.getSigmoidLayers().length - 1].setActivationFunction(Activations.linear());
-        //initialize the decoder from the newly trained weights
-        initDecoder();
-
-
-
-
+    public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams) {
+        this(encoder,trainingParams,true);
     }
-
 
     private void initDecoder() {
         //encoder hasn't been pretrained yet
@@ -127,8 +129,10 @@ public class DeepAutoEncoder implements Serializable {
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         List<DoubleMatrix> activations = encoder.feedForward(input);
         if(decoder == null)
-           initDecoder();
-        DoubleMatrix decoderInput = round(activations.get(activations.size() - 2));
+            initDecoder();
+        RBM r = (RBM)  encoder.getLayers()[0];
+        //round the input for the binary codes for input, this is only applicable for the forward layer.
+        DoubleMatrix decoderInput = r.getHiddenType() == RBM.HiddenUnit.BINARY ? round(activations.get(activations.size() - 2)) : activations.get(activations.size() - 2);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);
@@ -147,7 +151,7 @@ public class DeepAutoEncoder implements Serializable {
 
         DoubleMatrix decoderInput = activations.get(activations.size() - 2);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
-        return round(decoderActivations.get(decoderActivations.size() - 1));
+        return decoderActivations.get(decoderActivations.size() - 1);
     }
 
 
