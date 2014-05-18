@@ -28,12 +28,10 @@ public class DeepAutoEncoderTest {
         DataSet data = fetcher.next();
         data.filterAndStrip(new int[]{0, 1});
         log.info("Training on " + data.numExamples());
-        StopWatch watch = new StopWatch();
 
-        data = DataSet.merge(data.asList().subList(0,10));
+        data = DataSet.merge(data.asList().subList(0,27));
         DBN dbn = new DBN.Builder()
-                .withHiddenUnitsByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN))
-               .hiddenLayerSizes(new int[]{1000, 500, 250, 30})
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 30})
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
@@ -41,7 +39,7 @@ public class DeepAutoEncoderTest {
         dbn.pretrain(data.getFirst(),new Object[]{1,1e-2,10000});
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-2,10000});
-        encoder.finetune(data.getFirst(),1e-2,1000);
+        encoder.finetune(data.getFirst(),1e-1,1000);
 
         DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
         for(int j = 0; j < data.numExamples(); j++) {

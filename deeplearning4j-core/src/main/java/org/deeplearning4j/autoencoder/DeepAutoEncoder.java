@@ -1,10 +1,12 @@
 package org.deeplearning4j.autoencoder;
 
 import java.io.Serializable;
+import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.deeplearning4j.util.MatrixUtil.round;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -14,6 +16,7 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
+import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 
 /**
@@ -66,11 +69,17 @@ public class DeepAutoEncoder implements Serializable {
 
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
+            RBM finalRbm = (RBM) d.getLayers()[d.getLayers().length - 1];
             //note the gaussian visible unit, we want a GBRBM here for the continuous inputs for the real value codes from the encoder
-            decoder = new DBN.Builder().withVisibleUnitsByLayer(Collections.singletonMap(0,RBM.VisibleUnit.GAUSSIAN))
-                    .withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
-                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+            Map<Integer,RBM.HiddenUnit> m = Collections.singletonMap(0, RBMUtil.inverse(finalRbm.getHiddenType()));
+            Map<Integer,RBM.VisibleUnit> m2 = Collections.singletonMap(0, RBMUtil.inverse(finalRbm.getVisibleType()));
 
+            decoder = new DBN.Builder()
+                    .withVisibleUnitsByLayer(m2)
+                    .withHiddenUnitsByLayer(m)
+                    .withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
+                    .withVisibleUnits(d.getVisibleUnit())
+                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
@@ -83,7 +92,7 @@ public class DeepAutoEncoder implements Serializable {
         }
         else {
             decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
-                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+                    .withOutputLossFunction(OutputLayer.LossFunction.XENT)
                     .activateForLayer(encoder.getActivationFunctionForLayer())
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
@@ -137,9 +146,7 @@ public class DeepAutoEncoder implements Serializable {
             initDecoder();
         RBM r = (RBM)  encoder.getLayers()[0];
         //round the input for the binary codes for input, this is only applicable for the forward layer.
-        DoubleMatrix decoderInput = r.getHiddenType() == RBM.HiddenUnit.BINARY ?
-                round(activations.get(activations.size() - 2)) :
-                activations.get(activations.size() - 2);
+        DoubleMatrix decoderInput = round(activations.get(activations.size() - 2));
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);
