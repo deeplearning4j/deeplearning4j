@@ -401,16 +401,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             getLayers()[i].setInput(currInput);
             getSigmoidLayers()[i].setInput(input);
             if(useHiddenActivationsForwardProp)
-                currInput = getSigmoidLayers()[i].activate(currInput);
+                currInput = getSigmoidLayers()[i].sampleHGivenV(currInput);
             else
                 currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
             activations.add(currInput);
         }
         if(getOutputLayer() != null) {
-            getOutputLayer().setInput(currInput);
+            getOutputLayer().setInput(activations.get(activations.size() - 1));
             if(getOutputLayer().getActivationFunction() == null)
                 outputLayer.setActivationFunction(outputActivationFunction);
-            activations.add(getOutputLayer().output(currInput));
+            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
 
         }
         return activations;

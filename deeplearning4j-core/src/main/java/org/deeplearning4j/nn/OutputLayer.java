@@ -405,16 +405,14 @@ public class OutputLayer implements Serializable {
     public  DoubleMatrix output(DoubleMatrix x) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
+
         this.input = x;
-        if(W == null)
-            throw new IllegalStateException("EH?");
-        if(b == null)
-            throw new IllegalStateException("EH?");
+
         try {
             return activationFunction.apply(this.input.mmul(W).addRowVector(b));
 
         }catch(Exception e) {
-            throw new IllegalStateException("EH?");
+            throw new IllegalStateException(e);
         }
 
     }
