@@ -38,6 +38,10 @@ If you don’t have a prebuilt net, just call "train" on a net that's been passe
 
 [CODE HERE]
 
+### training nuances
+
+At the stage of the decoder's backpropagation, the learning rate should be lowered, or made slower. It should be somewhere between 1e-3 and 1e-6, depending on whether you're handling binary or continuous data, respectively.
+
 ### image search
 
 As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. So searching for images is as simple as uploading an image, which the search engine will then compress to 30 numbers, and compare that vector to all the others in its index. 
