@@ -2,16 +2,16 @@ package org.deeplearning4j.dbn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.HiddenLayer;
-import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.RectifiedLinearHiddenLayer;
+import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.transformation.MatrixTransform;
+import org.deeplearning4j.util.Dl4jReflection;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,7 +99,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @return a hidden layer with the given paremters
      */
     public HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
-            return super.createHiddenLayer(index, nIn, nOut, activation, rng, layerInput, dist);
+        return super.createHiddenLayer(index, nIn, nOut, activation, rng, layerInput, dist);
 
     }
 
@@ -257,6 +257,267 @@ public class DBN extends BaseMultiLayerNetwork {
             this.hiddenUnit = hiddenUnit;
             return this;
         }
+
+
+
+        public Builder activateForLayer(Map<Integer,ActivationFunction> activationForLayer) {
+            super.activateForLayer(activationForLayer);
+            return this;
+        }
+
+        public Builder activateForLayer(int layer,ActivationFunction function) {
+            super.activateForLayer(layer,function);
+            return this;
+        }
+
+        /**
+         * Activation function for output layer
+         * @param outputActivationFunction the output activation function to use
+         * @return builder pattern
+         */
+        public Builder withOutputActivationFunction(ActivationFunction outputActivationFunction) {
+            super.withOutputActivationFunction(outputActivationFunction);
+            return this;
+        }
+
+
+        /**
+         * Output loss function
+         * @param outputLossFunction the output loss function
+         * @return
+         */
+        public Builder withOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
+            super.withOutputLossFunction(outputLossFunction);
+            return this;
+        }
+
+        /**
+         * Which optimization algorithm to use with neural nets and Logistic regression
+         * @param optimizationAlgo which optimization algorithm to use with
+         * neural nets and logistic regression
+         * @return builder pattern
+         */
+        public Builder withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+            super.withOptimizationAlgorithm(optimizationAlgo);
+            return this;
+        }
+
+        /**
+         * Loss function to use with neural networks
+         * @param lossFunction loss function to use with neural networks
+         * @return builder pattern
+         */
+        public Builder withLossFunction(NeuralNetwork.LossFunction lossFunction) {
+            super.withLossFunction(lossFunction);
+            return this;
+        }
+
+        /**
+         * Whether to use drop out on the neural networks or not:
+         * random zero out of examples
+         * @param dropOut the dropout to use
+         * @return builder pattern
+         */
+        public Builder withDropOut(double dropOut) {
+            super.withDropOut(dropOut);
+            return this;
+        }
+
+        /**
+         * Whether to use hidden layer activations or neural network sampling
+         * on feed forward pass
+         * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
+         * @return builder pattern
+         */
+        public Builder useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
+            super.useHiddenActivationsForwardProp(useHiddenActivationsForwardProp);
+            return this;
+        }
+
+        /**
+         * Turn this off for full dataset training
+         * @param normalizeByInputRows whether to normalize the changes
+         * by the number of input rows
+         * @return builder pattern
+         */
+        public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+            super.normalizeByInputRows(normalizeByInputRows);
+            return this;
+        }
+
+
+
+
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        public Builder withSparsity(double sparsity) {
+            super.withSparsity(sparsity);
+            return this;
+        }
+
+
+        public Builder withVisibleBiasTransforms(Map<Integer,MatrixTransform> visibleBiasTransforms) {
+            super.withVisibleBiasTransforms(visibleBiasTransforms);
+            return this;
+        }
+
+        public Builder withHiddenBiasTransforms(Map<Integer,MatrixTransform> hiddenBiasTransforms) {
+            super.withHiddenBiasTransforms(hiddenBiasTransforms);
+            return this;
+        }
+
+        /**
+         * Forces use of number of epochs for training
+         * SGD style rather than conjugate gradient
+         * @return
+         */
+        public Builder forceEpochs() {
+            shouldForceEpochs = true;
+            return this;
+        }
+
+        /**
+         * Disables back propagation
+         * @return
+         */
+        public Builder disableBackProp() {
+            backProp = false;
+            return this;
+        }
+
+        /**
+         * Transform the weights at the given layer
+         * @param layer the layer to transform
+         * @param transform the function used for transformation
+         * @return
+         */
+        public Builder transformWeightsAt(int layer,MatrixTransform transform) {
+            weightTransforms.put(layer,transform);
+            return this;
+        }
+
+        /**
+         * A map of transformations for transforming
+         * the given layers
+         * @param transforms
+         * @return
+         */
+        public Builder transformWeightsAt(Map<Integer,MatrixTransform> transforms) {
+            weightTransforms.putAll(transforms);
+            return this;
+        }
+
+        /**
+         * Probability distribution for generating weights
+         * @param dist
+         * @return
+         */
+        public Builder withDist(RealDistribution dist) {
+            super.withDist(dist);
+            return this;
+        }
+
+        /**
+         * Specify momentum
+         * @param momentum
+         * @return
+         */
+        public Builder withMomentum(double momentum) {
+            super.withMomentum(momentum);
+            return this;
+        }
+
+        /**
+         * Use l2 reg
+         * @param useRegularization
+         * @return
+         */
+        public Builder useRegularization(boolean useRegularization) {
+            super.useRegularization(useRegularization);
+            return this;
+        }
+
+        /**
+         * L2 coefficient
+         * @param l2
+         * @return
+         */
+        public Builder withL2(double l2) {
+            super.withL2(l2);
+            return this;
+        }
+
+        /**
+         * Whether to plot weights or not
+         * @param everyN
+         * @return
+         */
+        public Builder renderWeights(int everyN) {
+            super.renderWeights(everyN);
+            return this;
+        }
+
+        public Builder withFanIn(Double fanIn) {
+            super.withFanIn(fanIn);
+            return this;
+        }
+
+        /**
+         * Pick an activation function, default is sigmoid
+         * @param activation
+         * @return
+         */
+        public Builder withActivation(ActivationFunction activation) {
+            super.withActivation(activation);
+            return this;
+        }
+
+
+        public Builder numberOfInputs(int nIns) {
+            super.numberOfInputs(nIns);
+            return this;
+        }
+
+
+        public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
+            super.hiddenLayerSizes(hiddenLayerSizes);
+            return this;
+        }
+
+        public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
+            super.hiddenLayerSizes(hiddenLayerSizes);
+            return this;
+        }
+
+        public Builder numberOfOutPuts(int nOuts) {
+            super.numberOfOutPuts(nOuts);
+            return this;
+        }
+
+        public Builder withRng(RandomGenerator gen) {
+            super.withRng(gen);
+            return this;
+        }
+
+        public Builder withInput(DoubleMatrix input) {
+            super.withInput(input);
+            return this;
+        }
+
+        public Builder withLabels(DoubleMatrix labels) {
+            super.withLabels(labels);
+            return this;
+        }
+
+        public Builder withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
+            this.clazz =  clazz;
+            return this;
+        }
+
+
 
         public DBN build() {
             DBN ret = super.build();
