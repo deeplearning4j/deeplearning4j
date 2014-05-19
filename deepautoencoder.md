@@ -36,7 +36,7 @@ You then feed this pretrained net into a DeepAutoEncoder object that will produc
 
 If you don’t have a prebuilt net, just call "train" on a net that's been passed in, which will then have the decoder copied from the encoder’s architecture.
 
-[CODE HERE]
+<script src="https://gist.github.com/agibsonccc/2405792db73191bfaaf5.js"></script>
 
 ### training nuances
 
