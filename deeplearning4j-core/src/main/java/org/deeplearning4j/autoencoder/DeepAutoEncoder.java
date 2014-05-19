@@ -43,18 +43,12 @@ public class DeepAutoEncoder implements Serializable {
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
     private BaseMultiLayerNetwork decoder;
-    private Object[] trainingParams;
-    private boolean binary = true;
 
-    public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams,boolean binary) {
+    public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
-        this.trainingParams = trainingParams;
-        this.binary = binary;
-    }
+   }
 
-    public DeepAutoEncoder(BaseMultiLayerNetwork encoder, Object[] trainingParams) {
-        this(encoder,trainingParams,true);
-    }
+
 
     private void initDecoder() {
         //encoder hasn't been pretrained yet
