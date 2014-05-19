@@ -20,7 +20,7 @@ public class DenoisingAutoEncoderMnistExample {
      */
     public static void main(String[] args) throws Exception {
         DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-                .withSparsity(1e-1)
+                .withSparsity(1e-1).renderWeights(1)
                 .numberOfVisible(784).numHidden(600).build();
 
 

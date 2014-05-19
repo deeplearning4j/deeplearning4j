@@ -34,7 +34,7 @@ public class DeepAutoEncoderFromFile {
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
         dbn.setRenderWeightsEveryNEpochs(1);
         dbn.getSigmoidLayers()[dbn.getSigmoidLayers().length - 1].setActivationFunction(Activations.sigmoid());
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-1,100});
+        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
 
         while(iter.hasNext()) {
             DataSet d = iter.next();

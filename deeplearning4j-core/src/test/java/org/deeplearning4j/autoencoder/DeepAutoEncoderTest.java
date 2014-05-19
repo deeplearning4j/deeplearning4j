@@ -24,22 +24,22 @@ public class DeepAutoEncoderTest {
     @Test
     public void testWithMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(100);
+        fetcher.fetch(200);
         DataSet data = fetcher.next();
         data.filterAndStrip(new int[]{0, 1});
         log.info("Training on " + data.numExamples());
 
-        data = DataSet.merge(data.asList().subList(0,27));
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30})
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 10})
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
 
-        dbn.pretrain(data.getFirst(),new Object[]{1,1e-2,10000});
+        dbn.pretrain(data.getFirst(),new Object[]{1,1e-1,10000});
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-2,10000});
-        encoder.finetune(data.getFirst(),1e-1,1000);
+
+        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        encoder.finetune(data.getFirst(),1e-3,1000);
 
         DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
         for(int j = 0; j < data.numExamples(); j++) {
