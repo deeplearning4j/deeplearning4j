@@ -35,8 +35,9 @@ In other words, to train a deep autoencoder, pretrain a net a your choice. The p
 You then feed this pretrained net into a DeepAutoEncoder object that will produce the associated decoder, and from there you call "finetune." This type of fine-tuning doesn't use labels for classification. It's using the pretrained net's output as its input, in order to reconstruct. 
 
 If you don’t have a prebuilt net, just call "train" on a net that's been passed in, which will then have the decoder copied from the encoder’s architecture.
-
+<div>
 <script src="https://gist.github.com/agibsonccc/2405792db73191bfaaf5.js"></script>
+</div>
 
 ### training nuances
 
