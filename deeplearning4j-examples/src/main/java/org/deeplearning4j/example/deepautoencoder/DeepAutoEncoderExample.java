@@ -4,6 +4,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
@@ -18,77 +19,47 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 /**
- * Created by agibsonccc on 5/10/14.
+ * Demonstrates a DeepAutoEncoder reconstructions with
+ * the MNIST digits
  */
 public class DeepAutoEncoderExample {
 
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(80,1000);
-
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        fetcher.fetch(200);
+        DataSet data = fetcher.next();
+        log.info("Training on " + data.numExamples());
 
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30})
-                .withMomentum(0.5).withDropOut(0.5)
-                .numberOfInputs(784).transformWeightsAt(0, MatrixTransformations.multiplyScalar(1.0))
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 10})
+                .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn,new Object[]{1,1e-1,30000});
-
-        while(iter.hasNext()) {
-            DataSet d = iter.next();
-            log.info("Training on " + d.numExamples());
-            StopWatch watch = new StopWatch();
-            encoder.train(d.getFirst(),1e-2,1);
-
-        }
-        SerializationUtils.saveObject(encoder,new File("deepautoencoder-pretrain.ser"));
+        dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 10000});
 
 
+        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        encoder.finetune(data.getFirst(),1e-3,1000);
 
-        iter.reset();
+        DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
+        for(int j = 0; j < data.numExamples(); j++) {
 
+            DoubleMatrix draw1 = data.get(j).getFirst().mul(255);
+            DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+            DoubleMatrix draw2 = reconstructed2.mul(255);
 
-
-
-        while(iter.hasNext()) {
-            DataSet d = iter.next();
-            log.info("Training on " + d.numExamples());
-            StopWatch watch = new StopWatch();
-            encoder.finetune(d.getFirst(),1e-1,30000);
-
-        }
-
-
-        SerializationUtils.saveObject(encoder,new File("deepautoencoder.ser"));
-
-        iter.reset();
-
-        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
-        while(iter.hasNext()) {
-            DataSet first = iter.next();
-            DoubleMatrix reconstruct = encoder.reconstruct(first.getFirst());
-            for(int j = 0; j < first.numExamples(); j++) {
-
-                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
-
-                DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
-                d.title = "REAL";
-                d.draw();
-                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
-                d2.title = "TEST";
-                d2.draw();
-                Thread.sleep(10000);
-                d.frame.dispose();
-                d2.frame.dispose();
-            }
-
-
+            DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+            d.title = "REAL";
+            d.draw();
+            DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2);
+            d2.title = "TEST";
+            d2.draw();
+            Thread.sleep(10000);
+            d.frame.dispose();
+            d2.frame.dispose();
         }
 
 
