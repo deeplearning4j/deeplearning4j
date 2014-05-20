@@ -34,23 +34,48 @@ layout: default
          mvn clean install -DskipTests
 
 
-4. Use this as a dependency in your project.
+
+
+4. Use this repo in your pom:
+
+        <repositories>
+       <repository>
+         <id>snapshots-repo</id>
+         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+         <releases><enabled>false</enabled></releases>
+         <snapshots><enabled>true</enabled></snapshots>
+       </repository>
+     </repositories>
+
+5. Use this as a dependency in your project.
 
       <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
-			<version>0.0.3.1</version>
+			<version>0.0.3.2-SNAPSHOT</version>
 		</dependency>
 
 
 
-5. For multithreaded/clustering support, please use:
+6. For multithreaded/clustering support, please use:
 
        <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
-			<version>0.0.3.1</version>
+			<version>0.0.3.2-SNAPSHOT</version>
 		</dependency>
+
+7. for NLP, use
+             <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
+            <version>0.0.3.2-SNAPSHOT</version>
+        </dependency>
+
+
+
+
+
 
 From here, you can check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
 
