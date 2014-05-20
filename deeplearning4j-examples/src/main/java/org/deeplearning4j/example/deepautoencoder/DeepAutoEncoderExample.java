@@ -6,6 +6,7 @@ import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.dbn.DBN;
@@ -28,21 +29,32 @@ public class DeepAutoEncoderExample {
 
     public static void main(String[] args) throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(200);
+        fetcher.fetch(20);
         DataSet data = fetcher.next();
         log.info("Training on " + data.numExamples());
 
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 10})
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
 
-        dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 10000});
+        DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
+        while(iter.hasNext()) {
+            dbn.pretrain(iter.next().getFirst(), new Object[]{1, 1e-1, 10000});
+
+        }
+
+
+        iter.reset();
+
+
+
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-        encoder.finetune(data.getFirst(),1e-3,1000);
+        while (iter.hasNext())
+            encoder.finetune(iter.next().getFirst(),1e-2,1000);
 
         DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
         for(int j = 0; j < data.numExamples(); j++) {
