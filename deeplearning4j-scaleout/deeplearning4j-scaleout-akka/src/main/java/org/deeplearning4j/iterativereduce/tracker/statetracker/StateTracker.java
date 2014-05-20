@@ -28,6 +28,33 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 
     /**
+     * The collection of dat
+     * @return
+     */
+    public Collection<String> workerData();
+
+    /**
+     * Sets the work retriever to use for storing data sets for workers
+     * @param workRetriever the work retreiver to use with this state tracker
+     */
+    public void setWorkRetriever(WorkRetriever workRetriever);
+
+    /**
+     * Loads the data for a given worker
+     * @param workerId the worker id to load data for
+     * @return the data set for a given worker
+     */
+    public DataSet loadForWorker(String workerId);
+
+    /**
+     * Saves the data for the given worker to work on
+     * @param workerId the worker to save
+     * @param d the data for the worker
+     */
+   public void saveWorker(String workerId,DataSet d);
+
+
+    /**
      * Creates a training evaluator using the given neural network
      * @param network the neural network to use
      * @return a training evaluator based on the configuration of the state tracker

@@ -13,6 +13,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
+import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.core.actor.ModelSavingActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
@@ -264,10 +265,10 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                         @Override
                         public void run() {
                             if(!system.isTerminated()) {
-                               try {
-                                   log.info("Current cluster members " +
-                                           Cluster.get(system).readView().members());
-                               }catch(Exception e) {
+                                try {
+                                    log.info("Current cluster members " +
+                                            Cluster.get(system).readView().members());
+                                }catch(Exception e) {
                                     log.warn("Tried reading cluster members during shutdown");
                                 }
                             }
@@ -366,36 +367,6 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
     }
 
 
-    public void train(List<DataSet> list) {
-        log.info("Publishing to results for training");
-        //wait for cluster to be up
-        try {
-            log.info("Waiting for cluster to go up...");
-            Thread.sleep(30000);
-            log.info("Done waiting");
-        } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-        }
-
-
-        log.info("Started pipeline");
-        //start the pipeline
-        mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-                list), mediator);
-
-
-        log.info("Published results");
-        while(!stateTracker.isDone()) {
-            log.info("State tracker not done...blocking");
-            try {
-                Thread.sleep(15000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        shutdown();
-    }
 
 
     /**
@@ -413,26 +384,35 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
      * 80, this would be 10 per worker.
      */
     public void train() {
-        int numWorkers = stateTracker.numWorkers();
-        int batch = conf.getSplit();
-        int miniBatches = numWorkers * batch;
-        if(iter.hasNext())
-            train(iter.next(miniBatches));
-
-        else
-            log.warn("No data found");
-    }
-
-    public void train(DataSet input) {
-        List<DataSet> list = input.asList();
-        train(list);
-
-    }
+        log.info("Publishing to results for training");
+        //wait for cluster to be up
+        try {
+            log.info("Waiting for cluster to go up...");
+            Thread.sleep(30000);
+            log.info("Done waiting");
+        } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+        }
 
 
+        log.info("Started pipeline");
+        //start the pipeline
+        mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                MoreWorkMessage.getInstance()), mediator);
 
-    public void train(DoubleMatrix input,DoubleMatrix labels) {
-        train(new DataSet(input,labels));
+
+        log.info("Published results");
+        while(!stateTracker.isDone()) {
+            log.info("State tracker not done...blocking");
+            try {
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        shutdown();
+
     }
 
 
