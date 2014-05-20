@@ -123,8 +123,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     if(currentJob != null && !isWorking.get() && tracker.jobFor(id) != null) {
                         log.info("Confirmation from " + currentJob.getWorkerId() + " on work");
-                        List<DataSet> input = (List<DataSet>) currentJob.getWork();
-                        processDataSet(input);
+                        DataSet data = (DataSet) currentJob.getWork();
+                        processDataSet(data.asList());
 
                     }
 

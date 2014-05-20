@@ -11,10 +11,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.DataSetCache;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.IterateAndUpdate;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.UpdateSaver;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
 import org.deeplearning4j.optimize.TrainingEvaluator;
@@ -77,7 +74,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     private volatile IAtomicReference<Double> patienceIncrease;
     private volatile IAtomicReference<Integer> validationEpochs;
     private volatile IAtomicReference<Integer> miniBatchSize;
-
+    private WorkRetriever workRetriever = new LocalWorkRetriever();
     private UpdateSaver<UpdateableImpl> saver = new LocalFileUpdateSaver();
     private DataSetCache cache = new LocalDataSetCache();
     private volatile IAtomicReference<Boolean> isPretrain;
@@ -94,6 +91,47 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
     }
 
+    /**
+     * The collection of dat
+     *
+     * @return
+     */
+    @Override
+    public Collection<String> workerData() {
+        return workRetriever.workers();
+    }
+
+    /**
+     * Sets the work retriever to use for storing data sets for workers
+     *
+     * @param workRetriever the work retreiver to use with this state tracker
+     */
+    @Override
+    public void setWorkRetriever(WorkRetriever workRetriever) {
+          this.workRetriever = workRetriever;
+    }
+
+    /**
+     * Loads the data for a given worker
+     *
+     * @param workerId the worker id to load data for
+     * @return the data set for a given worker
+     */
+    @Override
+    public DataSet loadForWorker(String workerId) {
+        return workRetriever.load(workerId);
+    }
+
+    /**
+     * Saves the data for the given worker to work on
+     *
+     * @param workerId the worker to save
+     * @param d        the data for the worker
+     */
+    @Override
+    public void saveWorker(String workerId, DataSet d) {
+         workRetriever.save(workerId,d);
+    }
 
     /**
      * Creates a training evaluator using the given neural network

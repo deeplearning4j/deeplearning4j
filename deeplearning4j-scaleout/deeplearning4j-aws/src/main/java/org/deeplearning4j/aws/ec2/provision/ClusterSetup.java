@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
+import akka.dispatch.OnComplete;
 import org.deeplearning4j.aws.ec2.Ec2BoxCreator;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -89,9 +90,16 @@ public class ClusterSetup {
 
                         HostProvisioner uploader = new HostProvisioner(workerHost, "ec2-user");
                         uploader.addKeyFile(pathToPrivateKey);
-                        uploader.runRemoteCommand("sudo hostname " + workerHost);
+                        //uploader.runRemoteCommand("sudo hostname " + workerHost);
                         uploader.uploadAndRun(workerSetupScriptPath, "");
                         return null;
+                    }
+                },as.dispatcher());
+                f.onComplete(new OnComplete<Void>() {
+                    @Override
+                    public void onComplete(Throwable throwable, Void aVoid) throws Throwable {
+                        if(throwable != null)
+                            throw throwable;
                     }
                 },as.dispatcher());
 

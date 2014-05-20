@@ -64,32 +64,6 @@ public class ModelSavingActor extends UntypedActor {
 
     }
 
-    private void checkModel() {
-        saveCheck =  context().system().scheduler().schedule(Duration.apply(30, TimeUnit.SECONDS), Duration.apply(30, TimeUnit.SECONDS), new Runnable() {
-
-            @Override
-            public void run() {
-
-                try {
-                    if(!modelSaver.exists())
-                        return;
-                   //address eventually consistent storage being an issue
-                    BaseMultiLayerNetwork n = modelSaver.load(BaseMultiLayerNetwork.class);
-                    if(n.getLayers() == null || n.getSigmoidLayers() == null) {
-                        log.info("Corrupted model was saved...resaving");
-                        modelSaver.save(stateTracker.getCurrent().get());
-                    }
-
-                }catch(Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-
-
-            }
-
-        }, context().dispatcher());
-    }
 
     @Override
     public void postStop() throws Exception {
@@ -103,7 +77,6 @@ public class ModelSavingActor extends UntypedActor {
     @Override
     public void preStart() throws Exception {
         super.preStart();
-        this.checkModel();
         log.info("Pre start on model saver");
     }
 
