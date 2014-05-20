@@ -73,6 +73,8 @@ Now we are going to run one of the examples:
 
 Use this to create the workers:
 			
+
+
 				#!/bin/bash
 				sudo yum -y update
 				sudo yum -y install blas
