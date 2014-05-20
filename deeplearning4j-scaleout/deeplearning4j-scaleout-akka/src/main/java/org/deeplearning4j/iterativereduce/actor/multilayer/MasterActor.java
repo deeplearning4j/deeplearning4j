@@ -2,6 +2,7 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,8 +62,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     @Override
                     public void run() {
-                      if(stateTracker.isDone())
-                          return;
+                        if(stateTracker.isDone())
+                            return;
 
                         try {
                             List<Job> currentJobs = stateTracker.currentJobs();
@@ -73,9 +74,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                             if(currentJobs.size() == 1 && oneDown != null) {
                                 long curr = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - oneDown.get());
                                 if(curr >= 5) {
-                                   stateTracker.currentJobs().clear();
-                                  oneDown = null;
-                                   log.info("Clearing out stale jobs");
+                                    stateTracker.currentJobs().clear();
+                                    oneDown = null;
+                                    log.info("Clearing out stale jobs");
                                 }
                             }
 
@@ -160,9 +161,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
     public  UpdateableImpl compute() {
 
 
-       DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
-       if(stateTracker.workerUpdates().isEmpty())
-           return null;
+        DeepLearningAccumulatorIterateAndUpdate update = (DeepLearningAccumulatorIterateAndUpdate) stateTracker.updates();
+        if(stateTracker.workerUpdates().isEmpty())
+            return null;
 
         try {
             update.accumulate();
@@ -357,35 +358,30 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         }
 
 
+
+        else if(message instanceof MoreWorkMessage) {
+            log.info("Prompted for more work, starting pipeline");
+            batchActor.tell(message,getSelf());
+        }
+
         //list of examples
-        else if(message instanceof List || message instanceof DataSet) {
+        else if(message instanceof Collection) {
 
-            if(message instanceof List) {
-                List<DataSet> list = (List<DataSet>) message;
-                //each pair in the matrix pairs maybe multiple rows
-                splitListIntoRows(list);
-                //delegate split to workers
-                sendToWorkers(list);
-
-            }
-
-            //ensure split then send to workers
-            else if(message instanceof DataSet) {
-                DataSet pair = (DataSet) message;
-
-                //split pair up in to rows to ensure parallelism
-                List<DoubleMatrix> inputs = pair.getFirst().rowsAsList();
-                List<DoubleMatrix> labels = pair.getSecond().rowsAsList();
-
-                List<DataSet> pairs = new ArrayList<>();
-                for(int i = 0; i < inputs.size(); i++) {
-                    pairs.add(new DataSet(inputs.get(i),labels.get(i)));
+            if(message instanceof Collection) {
+                Collection<String> list = (Collection<String>) message;
+                //workers to send job to
+                for(String worker : list) {
+                    DataSet data = stateTracker.loadForWorker(worker);
+                    Job j2 = new Job(worker, (Serializable) data);
+                    //replicate the job to hazelcast
+                    stateTracker.addJobToCurrent(j2);
+                    //clear data immediately afterwards
+                    data = null;
+                    log.info("Job delegated for " + worker);
                 }
-
-
-                sendToWorkers(pairs);
-
             }
+
+
         }
 
         else

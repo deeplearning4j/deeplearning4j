@@ -201,14 +201,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 * 
 	 */
 	public void train() {
-
-		DataSet batch = null;
-		if(iter.hasNext()) {
-			batch = iter.next();
-			runner.train(batch);
-		}
-		else 
-			throw new IllegalStateException("Nothing to train");
+       runner.train();
 	}
 
 

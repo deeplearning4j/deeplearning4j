@@ -1,14 +1,14 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
 
+import java.io.Serializable;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
-import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
-import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
-import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
+import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.multilayer.MasterActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -29,116 +29,144 @@ import akka.contrib.pattern.DistributedPubSubMediator;
  */
 public class BatchActor extends UntypedActor {
 
-	protected DataSetIterator iter;
-	private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-	private static Logger log = LoggerFactory.getLogger(BatchActor.class);
-	public final static String FINETUNE = "finetune";
-	private transient StateTracker<UpdateableImpl> stateTracker;
-	private transient Conf conf;
-	private int numDataSets = 0;
+    protected DataSetIterator iter;
+    private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
+    private static Logger log = LoggerFactory.getLogger(BatchActor.class);
+    public final static String FINETUNE = "finetune";
+    private transient StateTracker<UpdateableImpl> stateTracker;
+    private transient Conf conf;
+    private int numDataSets = 0;
 
 
-	public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
-		this.iter = iter;
-		this.stateTracker = stateTracker;
-		this.conf = conf;
-		//subscribe to shutdown messages
-		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-		mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
+    public BatchActor(DataSetIterator iter,StateTracker<UpdateableImpl> stateTracker,Conf conf) {
+        this.iter = iter;
+        this.stateTracker = stateTracker;
+        this.conf = conf;
+        //subscribe to shutdown messages
+        mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
+        mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
 
-	}
-
-
-	@Override
-	public void onReceive(Object message) throws Exception {
-		if(message instanceof DistributedPubSubMediator.SubscribeAck || message instanceof DistributedPubSubMediator.UnsubscribeAck) {
-			log.info("Susbcribed batch actor");
-			mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
-					message), getSelf());	
-		}
-		else if(message instanceof ResetMessage) {
-			iter.reset();
-
-			if(iter.hasNext()) {
-				log.info("Propagating new work to master");
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						iter.next()), mediator);
-			}
-			else if(!iter.hasNext()) {
-				int iterations = stateTracker.runPreTrainIterations();
-				if (iterations < conf.getNumPasses()) {
-					stateTracker.incrementNumTimesPreTrainRan();
-					iter.reset();
-					log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
-				}
-
-				else
-					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-							DoneMessage.getInstance()), mediator);
-			}
-		}
+    }
 
 
-		else if(message instanceof MoreWorkMessage) {
-			MoreWorkMessage m = (MoreWorkMessage) message;
-			log.info("Saving model");
-			mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
-					MoreWorkMessage.getInstance()), mediator);
+    @Override
+    public void onReceive(Object message) throws Exception {
+        if(message instanceof DistributedPubSubMediator.SubscribeAck || message instanceof DistributedPubSubMediator.UnsubscribeAck) {
+            log.info("Susbcribed batch actor");
+            mediator.tell(new DistributedPubSubMediator.Publish(ClusterListener.TOPICS,
+                    message), getSelf());
+        }
+        else if(message instanceof ResetMessage) {
+            iter.reset();
 
-			if(iter.hasNext()) {
-				log.info("Propagating new work to master");
-				numDataSets++;
-				log.info("Iterating over next dataset " + numDataSets);
-				List<String> workers2 = stateTracker.workers();
-				for(String s : workers2)
-					log.info("Worker " + s);
+            if(iter.hasNext()) {
+                log.info("Propagating new work to master");
+                mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                        iter.next()), mediator);
+            }
+            else if(!iter.hasNext()) {
+                int iterations = stateTracker.runPreTrainIterations();
+                if (iterations < conf.getNumPasses()) {
+                    stateTracker.incrementNumTimesPreTrainRan();
+                    iter.reset();
+                    log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
+                }
+
+                else
+                    mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                            DoneMessage.getInstance()), mediator);
+            }
+        }
+
+
+        else if(message instanceof MoreWorkMessage) {
+            MoreWorkMessage m = (MoreWorkMessage) message;
+            log.info("Saving model");
+            mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
+                    MoreWorkMessage.getInstance()), mediator);
+
+            if(iter.hasNext()) {
+                log.info("Propagating new work to master");
+                numDataSets++;
+                log.info("Iterating over next dataset " + numDataSets);
+                List<String> workers2 = stateTracker.workers();
+                for(String s : workers2)
+                    log.info("Worker " + s);
 
 				/*
 				 * Ideal number is target mini batch size per worker.
 				 * 
 				 * 
 				 */
-				int numWorkers = workers2.size();
-				int miniBatchSize = conf.getSplit();
+                int numWorkers = workers2.size();
+                int miniBatchSize = conf.getSplit();
 
-				if(numWorkers == 0)
-					numWorkers = Runtime.getRuntime().availableProcessors();
+                if(numWorkers == 0)
+                    numWorkers = Runtime.getRuntime().availableProcessors();
 
-				log.info("Number of workers " + numWorkers + " and batch size is " + miniBatchSize);
+                log.info("Number of workers " + numWorkers + " and batch size is " + miniBatchSize);
 
-				//fetch specified batch
-				int batch = numWorkers * miniBatchSize;
-				log.info("Batch size for worker is " + batch);
+                //enable workers for sending out data
+                for(String worker : stateTracker.workers())
+                    stateTracker.enableWorker(worker);
 
-				DataSet next = iter.next(batch);
-
-				List<DataSet> list = next.asList();
-				mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-						list), mediator);
-			}
-			else if(!iter.hasNext()) {
-				int iterations = stateTracker.runPreTrainIterations();
-				if (iterations < conf.getNumPasses()) {
-					stateTracker.incrementNumTimesPreTrainRan();
-					iter.reset();
-					log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
-				}
-
-				else
-					mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
-							DoneMessage.getInstance()), mediator);
-			}
+                //fetch specified batch
+                int batch = numWorkers * miniBatchSize;
+                log.info("Batch size for worker is " + batch);
 
 
-			else
-				unhandled(message);
-		}
-	}
+                //partition the data and save it for access later. Avoid loading it in to memory all at once.
+                for(int i = 0; i < numWorkers; i++) {
+                    DataSet next = iter.next(miniBatchSize);
+                    String worker = nextWorker();
+                    stateTracker.saveWorker(worker,next);
+
+                }
+
+                mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                        stateTracker.workerData()), mediator);
+            }
+            else if(!iter.hasNext()) {
+                int iterations = stateTracker.runPreTrainIterations();
+                if (iterations < conf.getNumPasses()) {
+                    stateTracker.incrementNumTimesPreTrainRan();
+                    iter.reset();
+                    log.info("Next pretrain iteration " + stateTracker.numTimesPreTrainRun() + " out of " + stateTracker.runPreTrainIterations());
+                }
+
+                else
+                    mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
+                            DoneMessage.getInstance()), mediator);
+            }
+
+
+            else
+                unhandled(message);
+        }
+    }
+
+
+    private String nextWorker() {
+        boolean sent = false;
+
+        while(!sent) {
+            //always update
+            for(String s : stateTracker.workers()) {
+                if(!stateTracker.workerData().contains(s)) {
+                    return s;
+
+                }
+            }
+
+        }
+        return null;
+
+    }
 
 
 
-	public DataSetIterator getIter() {
-		return iter;
-	}
+    public DataSetIterator getIter() {
+        return iter;
+    }
 
 }
