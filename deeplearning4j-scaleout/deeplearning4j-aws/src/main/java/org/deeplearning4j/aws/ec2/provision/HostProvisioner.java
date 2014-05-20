@@ -60,7 +60,6 @@ public class HostProvisioner implements UserInfo {
 	 * Connects to port 22
 	 * @param host host to connect to (public facing dns)
 	 * @param user the user to connect with (default root otherwise)
-	 * @param password the password to use if any
 	 */
 	public HostProvisioner(String host,String user) {
 		this(host,user,"",22);
@@ -236,22 +235,28 @@ public class HostProvisioner implements UserInfo {
 			}
 		}
 
+        try {
+            Channel channel = session.openChannel("sftp");
 
-		Channel channel = session.openChannel("sftp");
-		channel.connect();
 
-		ChannelSftp c = (ChannelSftp) channel;
+            channel.connect();
 
-		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));
-		if(this.fileExists(remoteFile, c)) 
-			if(f.isDirectory())
-				c.rmdir(remoteFile);
-			else
-				c.rm(remoteFile);
-		c.put(bis,remoteFile);
-		bis.close();
-		c.exit();
-		session.disconnect();
+            ChannelSftp c = (ChannelSftp) channel;
+
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));
+            if (this.fileExists(remoteFile, c))
+                if (f.isDirectory())
+                    c.rmdir(remoteFile);
+                else
+                    c.rm(remoteFile);
+            c.put(bis, remoteFile);
+            bis.close();
+            c.exit();
+            session.disconnect();
+        }catch(Exception e) {
+            log.info("Session was down...trying again");
+            upload(f,remoteFile);
+        }
 	}
 
 
