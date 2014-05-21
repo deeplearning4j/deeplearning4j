@@ -26,7 +26,10 @@ public class LocalDataSetCache implements DataSetCache {
 
     @Override
     public DataSet get() {
-        return SerializationUtils.readObject(new File(dataSetPath));
+        File f = new File(dataSetPath);
+        if(f.exists())
+            return SerializationUtils.readObject(f);
+        return null;
     }
 
     @Override

@@ -43,7 +43,7 @@ public class MnistExampleMultiThreaded {
 		c.setUseRegularization(true);
         c.setL2(2e-2);
         c.setActivationFunctionForLayer(Collections.singletonMap(c.getLayerSizes().length - 1, Activations.linear()));
-        c.setDeepLearningParams(new Object[]{1,1e-1,100});
+        c.setDeepLearningParams(new Object[]{1,1e-1,1});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example-deepautoencoder.ser")));
 		runner.setup(c);

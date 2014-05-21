@@ -344,8 +344,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
             network.setInput(d.getFirst());
             log.info("Worker " + id + " finetune");
-            TrainingEvaluator eval = tracker.create(network);
-            network.finetune(d.getSecond(), learningRate, fineTuneEpochs,eval);
+            if(tracker.testSet() != null) {
+                TrainingEvaluator eval = tracker.create(network);
+
+            }
+            else
+                network.finetune(d.getSecond(), learningRate, fineTuneEpochs,null);
+
         }
 
         //job is delegated, clear so as not to cause redundancy

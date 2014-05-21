@@ -33,6 +33,7 @@ public class BatchActor extends UntypedActor {
     private final ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     private static Logger log = LoggerFactory.getLogger(BatchActor.class);
     public final static String FINETUNE = "finetune";
+    public final static String BATCH = "batch";
     private transient StateTracker<UpdateableImpl> stateTracker;
     private transient Conf conf;
     private int numDataSets = 0;
@@ -44,7 +45,7 @@ public class BatchActor extends UntypedActor {
         this.conf = conf;
         //subscribe to shutdown messages
         mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.SHUTDOWN, getSelf()), getSelf());
-        mediator.tell(new DistributedPubSubMediator.Subscribe(MasterActor.MASTER, getSelf()), getSelf());
+        mediator.tell(new DistributedPubSubMediator.Subscribe(BATCH, getSelf()), getSelf());
 
     }
 
@@ -80,7 +81,6 @@ public class BatchActor extends UntypedActor {
 
 
         else if(message instanceof MoreWorkMessage) {
-            MoreWorkMessage m = (MoreWorkMessage) message;
             log.info("Saving model");
             mediator.tell(new DistributedPubSubMediator.Publish(ModelSavingActor.SAVE,
                     MoreWorkMessage.getInstance()), mediator);
@@ -98,6 +98,12 @@ public class BatchActor extends UntypedActor {
 				 * 
 				 * 
 				 */
+
+                for(String s : stateTracker.workerData()) {
+                    stateTracker.removeWorkerData(s);
+                }
+
+
                 int numWorkers = workers2.size();
                 int miniBatchSize = conf.getSplit();
 

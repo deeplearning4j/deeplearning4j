@@ -92,6 +92,16 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
     }
 
     /**
+     * Removes the worker data
+     *
+     * @param worker the worker to remove
+     */
+    @Override
+    public void removeWorkerData(String worker) {
+       workRetriever.clear(worker);
+    }
+
+    /**
      * The collection of dat
      *
      * @return
