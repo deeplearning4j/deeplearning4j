@@ -17,6 +17,12 @@ public interface WorkRetriever extends Serializable {
 
 
     /**
+     * Clears the worker
+     * @param worker the worker to clear
+     */
+    void clear(String worker);
+
+    /**
      * The collection of workers that are saved
      * @return the collection of workers that have data saved
      */

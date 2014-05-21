@@ -672,7 +672,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 backPropStep(revert,lr,count);
                 /* Trains logistic regression post weight updates */
                 getOutputLayer().trainTillConvergence(lr, epochs,eval);
-                if(eval.shouldStop(count))
+                if(eval != null && eval.shouldStop(count))
                     break;
                 Double entropy = score();
 

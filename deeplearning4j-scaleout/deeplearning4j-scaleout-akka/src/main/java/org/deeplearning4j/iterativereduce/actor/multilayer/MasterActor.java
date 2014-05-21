@@ -4,9 +4,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import akka.dispatch.Futures;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
@@ -15,6 +17,8 @@ import org.deeplearning4j.iterativereduce.actor.core.DoneMessage;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.core.MoreWorkMessage;
 import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
+import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
+import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
@@ -25,6 +29,7 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.util.SetUtils;
 import org.jblas.DoubleMatrix;
 
+import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -276,7 +281,26 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
             //tell the batch actor to send more work
-            batchActor.tell(MoreWorkMessage.getInstance(),getSelf());
+
+            Future<Void> f = Futures.future(new Callable<Void>() {
+                /**
+                 * Computes a result, or throws an exception if unable to do so.
+                 *
+                 * @return computed result
+                 * @throws Exception if unable to compute a result
+                 */
+                @Override
+                public Void call() throws Exception {
+                    mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
+                            MoreWorkMessage.getInstance() ), getSelf());
+
+                    log.info("Requesting more work...");
+                    return null;
+                }
+            },context().dispatcher());
+
+            ActorRefUtils.throwExceptionIfExists(f,context().dispatcher());
+
         }
 
 
@@ -316,6 +340,14 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             while(masterResults == null) {
                 masterResults = getMasterResults();
             }
+
+
+            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
+                    ResetMessage.getInstance() ), getSelf());
+            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
+                    MoreWorkMessage.getInstance() ), getSelf());
+
+
 
             batchActor.tell(ResetMessage.getInstance(), getSelf());
             batchActor.tell(MoreWorkMessage.getInstance(), getSelf());
@@ -361,7 +393,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         else if(message instanceof MoreWorkMessage) {
             log.info("Prompted for more work, starting pipeline");
-            batchActor.tell(message,getSelf());
+            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
+                    MoreWorkMessage.getInstance() ), getSelf());
+
         }
 
         //list of examples
