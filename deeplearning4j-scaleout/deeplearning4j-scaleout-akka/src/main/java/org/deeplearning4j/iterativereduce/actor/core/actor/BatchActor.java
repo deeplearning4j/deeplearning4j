@@ -115,10 +115,12 @@ public class BatchActor extends UntypedActor {
                 log.info("Batch size for worker is " + batch);
 
 
-                //partition the data and save it for access later. Avoid loading it in to memory all at once.
+                //partition the data and save it for access later.
+                //Avoid loading it in to memory all at once.
                 for(int i = 0; i < numWorkers; i++) {
                     DataSet next = iter.next(miniBatchSize);
                     String worker = nextWorker();
+                    log.info("Saving data for worker " + worker);
                     stateTracker.saveWorker(worker,next);
 
                 }
@@ -152,7 +154,7 @@ public class BatchActor extends UntypedActor {
         while(!sent) {
             //always update
             for(String s : stateTracker.workers()) {
-                if(!stateTracker.workerData().contains(s)) {
+                if(!stateTracker.workerData().contains(s) && stateTracker.jobFor(s) == null) {
                     return s;
 
                 }
