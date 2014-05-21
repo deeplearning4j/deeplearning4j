@@ -123,6 +123,9 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                     if(currentJob != null && !isWorking.get() && tracker.jobFor(id) != null) {
                         log.info("Confirmation from " + currentJob.getWorkerId() + " on work");
+                        if(currentJob.getWork() == null)
+                            throw new IllegalStateException("Work for worker " + id + " was null");
+
                         DataSet data = (DataSet) currentJob.getWork();
                         processDataSet(data.asList());
 

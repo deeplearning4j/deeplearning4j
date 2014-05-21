@@ -26,7 +26,7 @@ public class MnistExampleMultiThreaded {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(80,48000);
+		DataSetIterator iter = new MnistDataSetIterator(80,160);
 
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);

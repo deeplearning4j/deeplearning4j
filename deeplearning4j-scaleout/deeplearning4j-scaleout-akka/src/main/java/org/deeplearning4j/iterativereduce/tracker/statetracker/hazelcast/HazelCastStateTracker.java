@@ -641,7 +641,19 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
 
 
         if(r.get() != null || !r.isNull()) {
-            throw new IllegalArgumentException("Tried to add job with id " + j.getWorkerId() + " when one already exists");
+            boolean sent = false;
+            while(!sent) {
+                //always update
+                for(String s : workers()) {
+                    if(jobFor(s) == null) {
+                        log.info("Redirecting worker " + j.getWorkerId() + " to " + s + " due to work already being allocated");
+                        r = h.getAtomicReference("job-" + s);
+                        j.setWorkerId(s);
+                        sent = true;
+                    }
+                }
+
+            }
         }
 
         r.set(j);

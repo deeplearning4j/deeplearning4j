@@ -38,7 +38,7 @@ public class LocalWorkRetriever implements WorkRetriever {
      */
     @Override
     public DataSet load(String worker) {
-        File f =workerData.get(worker) != null ? new File(workerData.get(worker)) : null;
+        File f = workerData.get(worker) != null ? new File(workerData.get(worker)) : null;
         if(f == null || !f.exists())
             return null;
         DataSet d = SerializationUtils.readObject(f);
@@ -55,7 +55,7 @@ public class LocalWorkRetriever implements WorkRetriever {
      */
     @Override
     public void save(String worker, DataSet data) {
-        File f = new File(worker);
+        File f = new File(worker + "-work");
         SerializationUtils.saveObject(data,f);
         workerData.put(worker,f.getAbsolutePath());
 

@@ -372,7 +372,9 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 //workers to send job to
                 for(String worker : list) {
                     DataSet data = stateTracker.loadForWorker(worker);
-                    Job j2 = new Job(worker, (Serializable) data);
+                    if(data == null)
+                        throw new IllegalStateException("Data was null!");
+                    Job j2 = new Job(worker, (Serializable) data.copy());
                     //replicate the job to hazelcast
                     stateTracker.addJobToCurrent(j2);
                     //clear data immediately afterwards
