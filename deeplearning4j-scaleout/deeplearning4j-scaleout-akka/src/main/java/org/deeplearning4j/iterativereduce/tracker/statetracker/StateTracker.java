@@ -28,8 +28,14 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
 
     /**
+     * Removes the worker data
+     * @param worker the worker to remove
+     */
+    public void removeWorkerData(String worker);
+
+    /**
      * The collection of dat
-     * @return
+     * @return the collection of workers who have data
      */
     public Collection<String> workerData();
 

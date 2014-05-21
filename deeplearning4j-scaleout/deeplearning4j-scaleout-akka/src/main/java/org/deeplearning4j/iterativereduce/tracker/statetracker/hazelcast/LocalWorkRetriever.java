@@ -6,7 +6,6 @@ import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +18,16 @@ public class LocalWorkRetriever implements WorkRetriever {
 
     private Map<String,String> workerData = new ConcurrentHashMap<>();
 
+
+    /**
+     * Clears the worker
+     *
+     * @param worker the worker to clear
+     */
+    @Override
+    public void clear(String worker) {
+        workerData.remove(worker);
+    }
 
     /**
      * The collection of workers that are saved
