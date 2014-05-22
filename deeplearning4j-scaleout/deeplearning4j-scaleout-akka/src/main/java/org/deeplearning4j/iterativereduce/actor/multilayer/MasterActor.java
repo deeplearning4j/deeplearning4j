@@ -122,7 +122,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                                 long lastChecked = heartbeats.get(key);
                                 long diff = now - lastChecked;
                                 long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
-                                if(seconds >= 30) {
+                                if(seconds >= 120) {
                                     log.info("Removing stale worker " + key);
                                     MasterActor.this.stateTracker.removeWorker(key);
                                 }

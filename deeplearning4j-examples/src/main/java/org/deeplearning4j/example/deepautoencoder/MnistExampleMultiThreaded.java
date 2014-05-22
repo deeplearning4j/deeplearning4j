@@ -26,7 +26,7 @@ public class MnistExampleMultiThreaded {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new MnistDataSetIterator(80,160);
+		DataSetIterator iter = new MnistDataSetIterator(80,60000);
 
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
@@ -42,8 +42,7 @@ public class MnistExampleMultiThreaded {
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
         c.setL2(2e-2);
-        c.setActivationFunctionForLayer(Collections.singletonMap(c.getLayerSizes().length - 1, Activations.linear()));
-        c.setDeepLearningParams(new Object[]{1,1e-1,1});
+        c.setDeepLearningParams(new Object[]{1,1e-1,1000});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example-deepautoencoder.ser")));
 		runner.setup(c);
