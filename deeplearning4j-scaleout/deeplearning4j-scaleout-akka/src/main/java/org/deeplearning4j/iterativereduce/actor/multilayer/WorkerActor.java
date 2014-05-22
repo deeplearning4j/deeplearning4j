@@ -203,10 +203,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         }
 
 
-        if(j != null) {
+        if(j != null && currentJob == null) {
             log.info("Assigning job for worker " + id);
             currentJob = j;
-            //clear data, no point in keeping both in memory+
+            //clear data, no point in keeping both in memory
             tracker.updateJob(new Job(id,null));
 
         }
