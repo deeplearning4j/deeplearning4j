@@ -1,6 +1,5 @@
 package org.deeplearning4j.aws.ec2.provision;
 
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.Callable;
 

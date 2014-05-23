@@ -87,7 +87,7 @@ public class ModelSavingActor extends UntypedActor {
             BaseMultiLayerNetwork current = stateTracker.getCurrent().get();
             if(current.getLayers() == null || current.getSigmoidLayers() == null)
                 throw new IllegalStateException("Invalid model found when prompted to save..");
-
+            stateTracker.setCurrent(new UpdateableImpl(current));
             modelSaver.save(current);
 
 

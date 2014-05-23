@@ -36,7 +36,7 @@ public class DeepAutoEncoderExample {
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
                 .numberOfInputs(784)
-                .numberOfOutPuts(2)
+                .numberOfOutPuts(2).withDropOut(0.5)
                 .build();
 
         DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
