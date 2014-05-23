@@ -1,6 +1,6 @@
 package org.deeplearning4j.iterativereduce.actor.multilayer;
 
-import java.io.Serializable;
+import java.io.*;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
@@ -321,8 +322,13 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         if(stateTracker instanceof HazelCastStateTracker) {
             HazelCastStateTracker s = (HazelCastStateTracker) stateTracker;
             try {
-                s.run(new String[]{"server",new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()});
-
+                InputStream is = new ClassPathResource("dropwizard.yml").getInputStream();
+                File tmpConfig = new File("dropwizard.yml");
+                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
+                IOUtils.copy(is,bos);
+                bos.flush();
+                s.run(new String[]{"server",tmpConfig.getAbsolutePath()});
+                tmpConfig.deleteOnExit();
             } catch(Exception e) {
                 throw new RuntimeException(e);
             }
