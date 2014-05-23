@@ -35,6 +35,7 @@ public class MnistExampleMultiThreaded {
 		c.setLayerSizes(new int[]{1000, 500, 250, 30});
 		c.setnIn(784);
         c.setDropOut(5e-1);
+        c.setSplit(100);
         c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
@@ -42,7 +43,7 @@ public class MnistExampleMultiThreaded {
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
         c.setL2(2e-2);
-        c.setDeepLearningParams(new Object[]{1,1e-1,1000});
+        c.setDeepLearningParams(new Object[]{1,1e-1,10000});
 		ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example-deepautoencoder.ser")));
 		runner.setup(c);
