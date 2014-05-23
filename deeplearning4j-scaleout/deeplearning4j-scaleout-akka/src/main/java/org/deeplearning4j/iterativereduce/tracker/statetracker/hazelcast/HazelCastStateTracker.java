@@ -1,12 +1,26 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
+import java.io.File;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+
+import io.dropwizard.Application;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
+
+
 
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
@@ -16,6 +30,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
 import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
+import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +43,10 @@ import com.hazelcast.client.config.ClientConfig;
  * @author Adam Gibson
  *
  */
-public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
+
+@Path("/statetracker")
+@Produces(MediaType.APPLICATION_JSON)
+public class HazelCastStateTracker extends Application<HazelCastConf> implements StateTracker<UpdateableImpl> {
 
     /**
      *
@@ -98,7 +116,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
      */
     @Override
     public void removeWorkerData(String worker) {
-       workRetriever.clear(worker);
+        workRetriever.clear(worker);
     }
 
     /**
@@ -118,7 +136,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
      */
     @Override
     public void setWorkRetriever(WorkRetriever workRetriever) {
-          this.workRetriever = workRetriever;
+        this.workRetriever = workRetriever;
     }
 
     /**
@@ -140,7 +158,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
      */
     @Override
     public void saveWorker(String workerId, DataSet d) {
-         workRetriever.save(workerId,d);
+        workRetriever.save(workerId,d);
     }
 
     /**
@@ -833,7 +851,7 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
                 clearJob(worker);
 
             }catch(Exception e) {
-              log.warn("Unable to clear job for worker with id" + worker);
+                log.warn("Unable to clear job for worker with id" + worker);
             }
         }
     }
@@ -895,6 +913,11 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         }
     }
 
+
+
+
+
+
     @Override
     public void finish() {
         //reason being that isDone() may get called and throw errors
@@ -908,6 +931,31 @@ public class HazelCastStateTracker implements StateTracker<UpdateableImpl> {
         }
     }
 
+    @Override
+    public void initialize(Bootstrap<HazelCastConf> hazelCastConfBootstrap) {
+
+    }
+
+    @Override
+    public void run(HazelCastConf hazelCastConf, Environment environment) throws Exception {
+        environment.jersey().register(this);
+
+    }
+
+    @PUT
+    @Path("/save")
+    public Response saveModel() {
+        log.info("Saving model...");
+        try {
+            UpdateableImpl u = (UpdateableImpl) getCurrent();
+            SerializationUtils.saveObject(u.get(),new File("savedmodel.ser"));
+
+        }catch(Exception e) {
+            return Response.ok(Collections.singletonMap("status", e.getMessage())).build();
+
+        }
+        return Response.ok(Collections.singletonMap("status", "saved")).build();
+    }
 
 
 

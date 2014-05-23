@@ -27,6 +27,7 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.core.io.ClassPathResource;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
@@ -317,7 +318,15 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         }
 
         this.conf = conf;
+        if(stateTracker instanceof HazelCastStateTracker) {
+            HazelCastStateTracker s = (HazelCastStateTracker) stateTracker;
+            try {
+                s.run(new String[]{"server",new ClassPathResource("dropwizard.yml").getFile().getAbsolutePath()});
 
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 

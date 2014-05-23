@@ -230,6 +230,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         if(conf.getColumnStds() != null)
             network.setColumnStds(conf.getColumnStds());
 
+        network.initializeLayers(DoubleMatrix.zeros(1,conf.getnIn()));
+
         UpdateableImpl masterResults = new UpdateableImpl(network);
 
         /**
