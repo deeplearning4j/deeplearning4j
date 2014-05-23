@@ -4,10 +4,7 @@ import java.net.InetAddress;
 import java.util.*;
 
 
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -940,6 +937,45 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
     public void run(HazelCastConf hazelCastConf, Environment environment) throws Exception {
         environment.jersey().register(this);
 
+    }
+
+
+    @GET
+    @Path("/minibatch")
+    public Response currMiniBatchSize() {
+        return Response.ok(Collections.singletonMap("minibatch",miniBatchSize.get())).build();
+    }
+
+
+    @POST
+    @Path("/minibatch/{num}")
+    public Response setMiniBatchSizeRest(@PathParam("num") int num) {
+        this.miniBatchSize.set(num);
+        return Response.ok(Collections.singletonMap("status","set mini batch to " + num)).build();
+    }
+
+    @GET
+    @Path("/jobs")
+    public Response jobs() {
+        return Response.ok(jobIds()).build();
+    }
+
+    @GET
+    @Path("/phase")
+    public Response currentState() {
+        return Response.ok(Collections.singletonMap("phase",isPretrain() ? "pretrain" : "finetune")).build();
+    }
+
+    @GET
+    @Path("/workers")
+    public Response listWorkers() {
+        return Response.ok(new ArrayList<>(workers())).build();
+    }
+
+    @GET
+    @Path("/workers/num")
+    public Response listWorkersSize() {
+        return Response.ok(new ArrayList<>(workers()).size()).build();
     }
 
     @PUT
