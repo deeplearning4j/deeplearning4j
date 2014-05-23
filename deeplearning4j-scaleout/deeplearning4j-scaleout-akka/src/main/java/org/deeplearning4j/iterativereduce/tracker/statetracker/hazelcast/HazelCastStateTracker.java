@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.io.File;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
+
 import java.net.InetAddress;
 import java.util.*;
 
@@ -980,6 +979,11 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
         return Response.ok(new ArrayList<>(workers()).size()).build();
     }
 
+    @GET
+    @Path("/updates/num")
+    public Response listUpdatesSize() {
+        return Response.ok(updates.size()).build();
+    }
 
 
     @GET
