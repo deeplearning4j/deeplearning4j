@@ -408,8 +408,23 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 //workers to send job to
                 for(String worker : list) {
                     DataSet data = stateTracker.loadForWorker(worker);
-                    if(data == null)
-                        throw new IllegalStateException("Data was null!");
+                    int numRetries = 0;
+                    while(data == null && numRetries < 3) {
+                        data = stateTracker.loadForWorker(worker);
+                        numRetries++;
+                        if(data == null) {
+                            Thread.sleep(10000);
+                            log.info("Data still not found....sleeping for 10 seconds and trying again");
+                        }
+                    }
+
+
+                    if(data == null && numRetries >= 3) {
+                        log.info("No data found for worker..." + worker + " returning");
+                        return;
+                    }
+
+
                     Job j2 = new Job(worker, (Serializable) data.copy());
                     //replicate the job to hazelcast
                     stateTracker.addJobToCurrent(j2);
