@@ -1,5 +1,7 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
 import java.io.File;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.util.*;
 
@@ -976,6 +978,20 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
     @Path("/workers/num")
     public Response listWorkersSize() {
         return Response.ok(new ArrayList<>(workers()).size()).build();
+    }
+
+
+
+    @GET
+    @Path("/model.ser")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response getFile() throws Exception {
+        UpdateableImpl u = (UpdateableImpl) getCurrent();
+        File file = new File("savedmodel.ser");
+        SerializationUtils.saveObject(u.get(),file);
+        return Response.ok(file, MediaType.APPLICATION_OCTET_STREAM)
+                .header("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"" ) //optional
+                .build();
     }
 
     @PUT
