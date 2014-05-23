@@ -3,14 +3,12 @@ package org.deeplearning4j.iterativereduce.actor.multilayer;
 import java.io.*;
 import java.net.URI;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;
@@ -24,7 +22,6 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +40,7 @@ import akka.contrib.pattern.ClusterSingletonManager;
 import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.routing.RoundRobinPool;
+
 /**
  * Controller for coordinating model training for a neural network based
  * on parameters across a cluster for akka.
@@ -319,7 +317,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         }
 
         this.conf = conf;
-        if(stateTracker instanceof HazelCastStateTracker) {
+
+        //only start dropwizard on the master
+        if(stateTracker instanceof HazelCastStateTracker && type.equals("master")) {
             HazelCastStateTracker s = (HazelCastStateTracker) stateTracker;
             try {
                 InputStream is = new ClassPathResource("dropwizard.yml").getInputStream();
@@ -333,6 +333,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 throw new RuntimeException(e);
             }
         }
+
+        else if(stateTracker instanceof  HazelCastStateTracker)
+            log.info("Not starting drop wizard; worker state detected");
     }
 
 
@@ -354,7 +357,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
         try {
             String host = contactAddress.host().get();
-            log.info("Connecting hazelcast to host " + host);
+            log.info("Connecting  to host " + host);
             int workers = stateTracker.numWorkers();
             if(workers <= 1)
                 throw new IllegalStateException("Did not properly connect to cluster");

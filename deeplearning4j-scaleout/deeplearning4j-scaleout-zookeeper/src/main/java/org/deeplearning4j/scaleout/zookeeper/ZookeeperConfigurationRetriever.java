@@ -26,9 +26,6 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 	private String id;
 	private static Logger log = LoggerFactory.getLogger(ZookeeperConfigurationRetriever.class);
 
-	public ZookeeperConfigurationRetriever(String id) {
-		this("localhost",2181,id);
-	}
 
 
 	public ZookeeperConfigurationRetriever( String host,
@@ -41,14 +38,9 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 	}
 
 
-	public Conf retrieve(Conf conf) throws Exception {
-		Conf ret = retreive();
-		return ret;
-	}
 
-
-	public Conf retreive(String host) throws Exception {
-		Conf conf = new Conf();
+	public Conf retrieve(String host) throws Exception {
+		Conf conf;
 		String path = new ZookeeperPathBuilder().addPaths(Arrays.asList("tmp",id)).setHost(host).setPort(port).build();
 		Stat stat = keeper.exists(path, false);
 		if(stat == null) {
@@ -70,10 +62,12 @@ public class ZookeeperConfigurationRetriever implements Watcher {
 
 		for(int i = 0; i < hosts.length; i++) {
 			try {
-				log.info("Attempting to retreive conf from " + hosts[i]);
-				c = retreive(hosts[i]);
+				log.info("Attempting to retrieve conf from " + hosts[i]);
+				c = retrieve(hosts[i]);
+                if(c != null)
+                    break;
 			}catch(Exception e) {
-
+               log.warn("Trying next host " + hosts[i] + " failed");
 			}
 		}
 
