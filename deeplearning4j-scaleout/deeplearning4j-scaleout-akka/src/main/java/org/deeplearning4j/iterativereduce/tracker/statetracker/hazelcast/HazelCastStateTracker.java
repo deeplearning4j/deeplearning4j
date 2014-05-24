@@ -491,6 +491,9 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
     }
 
     public HazelCastStateTracker(String connectionString,String type,int stateTrackerPort) throws Exception {
+        log.info("Setting up hazelcast with type " + type + " connection string " + connectionString + " and port " + stateTrackerPort);
+
+
         if(type.equals("master") && !PortTaken.portTaken(stateTrackerPort)) {
             //sets up a proper connection string for reference wrt external actors needing a reference
             if(connectionString.equals("master")) {
@@ -768,7 +771,7 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
         UpdateableImpl u =  (UpdateableImpl) master.get();
         if(u == null)
             return null;
-        return u.clone();
+        return u;
     }
 
     @Override
@@ -778,7 +781,7 @@ public class HazelCastStateTracker extends Application<HazelCastConf> implements
             return;
         }
         else {
-            BaseMultiLayerNetwork n = (BaseMultiLayerNetwork) e.get();
+            BaseMultiLayerNetwork n =  e.get();
             if(n.getLayers() == null || n.getSigmoidLayers() == null) {
                 log.warn("Not setting a null layer neural net update");
                 return;

@@ -41,8 +41,8 @@ public class ModelSavingActor extends UntypedActor {
     private Cluster cluster = Cluster.get(context().system());
     private ModelSaver modelSaver = new DefaultModelSaver();
     private StateTracker<UpdateableImpl> stateTracker;
-    ClusterReceptionistExtension receptionist = ClusterReceptionistExtension.get (getContext().system());
-    private Cancellable saveCheck;
+
+
     public ModelSavingActor(String pathToSave,StateTracker<UpdateableImpl> stateTracker) {
         this.pathToSave = pathToSave;
         modelSaver = new DefaultModelSaver(new File(pathToSave));
@@ -68,8 +68,7 @@ public class ModelSavingActor extends UntypedActor {
     @Override
     public void postStop() throws Exception {
         super.postStop();
-        if(saveCheck != null)
-            saveCheck.cancel();
+
         log.info("Post stop on model saver");
         cluster.unsubscribe(getSelf());
     }
@@ -87,6 +86,7 @@ public class ModelSavingActor extends UntypedActor {
             BaseMultiLayerNetwork current = stateTracker.getCurrent().get();
             if(current.getLayers() == null || current.getSigmoidLayers() == null)
                 throw new IllegalStateException("Invalid model found when prompted to save..");
+            current.clearInput();
             stateTracker.setCurrent(new UpdateableImpl(current));
             modelSaver.save(current);
 

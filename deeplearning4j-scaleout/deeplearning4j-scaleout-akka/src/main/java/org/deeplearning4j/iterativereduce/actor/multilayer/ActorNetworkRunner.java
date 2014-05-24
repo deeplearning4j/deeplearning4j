@@ -281,6 +281,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
         else {
 
+            log.info("Starting worker node");
             Address a = AddressFromURIString.parse(conf.getMasterUrl());
 
             Conf c = conf.copy();
@@ -295,8 +296,9 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
 
 
                 String connectionString = conf.getStateTrackerConnectionString();
-
-                stateTracker = new HazelCastStateTracker(connectionString);
+                log.info("Creating state tracker with connection string "+  connectionString);
+                if(stateTracker == null)
+                    stateTracker = new HazelCastStateTracker(connectionString);
 
             } catch (Exception e1) {
                 Thread.currentThread().interrupt();
