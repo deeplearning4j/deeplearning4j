@@ -141,9 +141,9 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 		if(type != null && type.equals("worker"))  {
 			log.info("Initializing conf from zookeeper at " + host);
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
-			Conf conf = retriever.retreive();
+			Conf conf = retriever.retrieve();
 			String address = conf.getMasterUrl();
-
+            log.info("Creating hazel cast state tracker... " + conf.getStateTrackerConnectionString());
             HazelCastStateTracker stateTracker = new HazelCastStateTracker(conf.getStateTrackerConnectionString());
 
             log.info("Creating hazel cast via worker " + stateTracker.connectionString());
