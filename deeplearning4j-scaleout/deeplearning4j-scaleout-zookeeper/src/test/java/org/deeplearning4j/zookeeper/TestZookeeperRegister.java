@@ -57,7 +57,7 @@ public class TestZookeeperRegister {
 
 	@Test(expected=NoNodeException.class)
 	public void testZookeeperRegister() throws Exception {
-		retriever.retreive();
+		retriever.retrieve();
 	}
 
 	@Test
@@ -77,7 +77,7 @@ public class TestZookeeperRegister {
 
 		}, new Stat()));
 
-		Conf retrieve = retriever.retreive();
+		Conf retrieve = retriever.retrieve();
 		assumeNotNull(retrieve);
 
 		keeper.delete(path, -1);
