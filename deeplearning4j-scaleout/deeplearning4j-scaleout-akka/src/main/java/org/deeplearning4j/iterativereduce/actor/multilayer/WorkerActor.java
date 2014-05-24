@@ -180,7 +180,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
     }
 
     protected void checkJobAvailable() throws Exception {
-        Job j = null;
+        Job j;
 
         if((j = tracker.jobFor(id)) == null || !tracker.workerEnabled(id)) {
             //inconsistent state
@@ -348,8 +348,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 TrainingEvaluator eval = tracker.create(network);
 
             }
-            else
-                network.finetune(d.getSecond(), learningRate, fineTuneEpochs,null);
+
+            network.finetune(d.getSecond(), learningRate, fineTuneEpochs,null);
 
         }
 
