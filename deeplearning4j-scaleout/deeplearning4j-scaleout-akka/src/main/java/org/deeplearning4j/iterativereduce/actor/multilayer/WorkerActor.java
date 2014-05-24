@@ -35,7 +35,6 @@ import akka.dispatch.Futures;
  *
  */
 public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
-    protected BaseMultiLayerNetwork network;
     protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
     protected Cancellable heartbeat;
     protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
@@ -105,11 +104,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 if(tracker.needsReplicate(id)) {
                     try {
                         log.info("Updating worker " + id);
-                        if(tracker.getCurrent() == null || tracker.getCurrent().get() == null) {
+                        UpdateableImpl u = tracker.getCurrent();
+
+                        if(u == null || u.get() == null) {
                             return;
                         }
-                        setE(tracker.getCurrent());
-                        setNetwork(tracker.getCurrent().get());
+
+                        results = u;
                         tracker.doneReplicating(id);
                     }catch(Exception e) {
                         throw new RuntimeException(e);
@@ -165,7 +166,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
         else if(message instanceof BaseMultiLayerNetwork) {
-            setNetwork((BaseMultiLayerNetwork) message);
+            results.set((BaseMultiLayerNetwork) message);
             log.info("Set network");
         }
 
@@ -194,8 +195,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         if(tracker.needsReplicate(id)) {
             try {
                 log.info("Updating worker " + id);
-                setE(tracker.getCurrent());
-                setNetwork(tracker.getCurrent().get());
+                results = tracker.getCurrent();
                 tracker.doneReplicating(id);
             }catch(Exception e) {
                 throw new RuntimeException(e);
@@ -241,7 +241,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
                 if(tracker.needsReplicate(id)) {
                     log.info("Updating network for worker " + id);
-                    network = tracker.getCurrent().get();
+                    results = tracker.getCurrent();
                     tracker.doneReplicating(id);
                 }
 
@@ -288,13 +288,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         log.info("Training network on worker " + id);
 
-        BaseMultiLayerNetwork network = getNetwork();
+        BaseMultiLayerNetwork network = getResults().get();
         isWorking.set(true);
         while(network == null) {
             try {
                 //note that this always returns a copy
                 network = tracker.getCurrent().get();
-                this.network = network;
+                results.set(network);
                 log.info("Network is currently null");
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -391,22 +391,19 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
     @Override
     public  UpdateableImpl getResults() {
-        return e;
+        try {
+            if(results == null)
+                results = tracker.getCurrent();
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return results;
     }
 
     @Override
     public  void update(UpdateableImpl t) {
-        this.e = t;
-    }
-
-
-    public  synchronized BaseMultiLayerNetwork getNetwork() {
-        return network;
-    }
-
-
-    public  void setNetwork(BaseMultiLayerNetwork network) {
-        this.network = network;
+        this.results = t;
     }
 
 

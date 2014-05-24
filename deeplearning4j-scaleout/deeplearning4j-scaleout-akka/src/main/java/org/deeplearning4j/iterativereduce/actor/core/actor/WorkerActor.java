@@ -36,7 +36,6 @@ import akka.japi.Function;
 public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor implements DeepLearningConfigurable,ComputableWorker<E> {
 
 	protected ActorRef mediator;
-	protected E e;
 	protected E results;
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 	protected int fineTuneEpochs;
@@ -198,22 +197,10 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 	@Override
 	public void update(E t) {
-		this.e = t;
+		this.results = t;
 	}
 
 
-
-
-	public  E getE() {
-		return e;
-	}
-
-
-
-
-	public  void setE(E e) {
-		this.e = e;
-	}
 
 
 
