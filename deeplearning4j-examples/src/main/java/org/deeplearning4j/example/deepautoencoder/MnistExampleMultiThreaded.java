@@ -39,7 +39,7 @@ public class MnistExampleMultiThreaded {
         c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
-		c.setSplit(10);
+		c.setSplit(100);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
         c.setL2(2e-2);

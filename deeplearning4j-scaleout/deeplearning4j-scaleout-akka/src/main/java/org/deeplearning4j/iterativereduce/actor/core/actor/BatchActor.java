@@ -105,7 +105,7 @@ public class BatchActor extends UntypedActor {
 
 
                 int numWorkers = workers2.size();
-                int miniBatchSize = conf.getSplit();
+                int miniBatchSize = stateTracker.inputSplit();
 
                 if(numWorkers == 0)
                     numWorkers = Runtime.getRuntime().availableProcessors();

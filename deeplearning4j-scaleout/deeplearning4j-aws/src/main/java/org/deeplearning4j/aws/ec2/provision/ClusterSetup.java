@@ -57,7 +57,7 @@ public class ClusterSetup {
 
 	public void exec() {
 		//master + workers
-		Ec2BoxCreator boxCreator = new Ec2BoxCreator(ami,numWorkers + 1,size,securityGroupName,keyPairName);
+		Ec2BoxCreator boxCreator = new Ec2BoxCreator(ami,numWorkers,size,securityGroupName,keyPairName);
 		boxCreator.create();
 		boxCreator.blockTillAllRunning();
 		List<String> hosts = boxCreator.getHosts();
