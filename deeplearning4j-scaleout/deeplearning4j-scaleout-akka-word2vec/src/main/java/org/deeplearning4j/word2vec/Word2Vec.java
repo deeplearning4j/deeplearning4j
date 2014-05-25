@@ -17,13 +17,13 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.stopwords.StopWords;
+import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.word2vec.actor.SentenceActor;
 import org.deeplearning4j.word2vec.actor.VocabActor;
@@ -34,7 +34,7 @@ import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class Word2Vec implements Persistable {
     private Index wordIndex = new Index();
     private int sample = 1;
     //learning rate
-    private Double alpha = 0.025;
+    private float alpha = 0.025f;
     private int wordCount  = 0;
     public final static double MIN_ALPHA =  0.001;
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
@@ -82,15 +82,15 @@ public class Word2Vec implements Persistable {
     private int size = 0;
     private int words = 0;
     //input layer
-    private DoubleMatrix syn0,syn0Norm;
+    private FloatMatrix syn0;
     //hidden layer
-    private DoubleMatrix syn1;
+    private FloatMatrix syn1;
     private int allWordsCount = 0;
     private int numSentencesProcessed = 0;
     private static ActorSystem trainingSystem;
     private List<String> stopWords;
     /* out of vocab */
-    private double[] oob;
+    private float[] oob;
     private boolean shouldReset = true;
 
     public Word2Vec() {}
@@ -104,8 +104,8 @@ public class Word2Vec implements Persistable {
      *
      */
     public Word2Vec(SentenceIterator sentenceIter) {
-        oob = new double[layerSize];
-        Arrays.fill(oob,0.0);
+        oob = new float[layerSize];
+        Arrays.fill(oob,0.0f);
         readStopWords();
         this.sentenceIter = sentenceIter;
         buildVocab();
@@ -114,8 +114,8 @@ public class Word2Vec implements Persistable {
 
 
     public Word2Vec(SentenceIterator sentenceIter,int minWordFrequency) {
-        oob = new double[layerSize];
-        Arrays.fill(oob,0.0);
+        oob = new float[layerSize];
+        Arrays.fill(oob,0.0f);
         readStopWords();
         this.sentenceIter = sentenceIter;
         this.minWordFrequency = minWordFrequency;
@@ -171,8 +171,8 @@ public class Word2Vec implements Persistable {
         this.sentenceIter = new CollectionSentenceIterator(sentences);
 
         this.buildVocab();
-        oob = new double[layerSize];
-        Arrays.fill(oob,0.0);
+        oob = new float[layerSize];
+        Arrays.fill(oob,0.0f);
         readStopWords();
 
     }
@@ -184,18 +184,25 @@ public class Word2Vec implements Persistable {
     }
 
 
-    public double[] getWordVectorNormalized(String word) {
-        int i = this.wordIndex.indexOf(word);
-        if(i < 0) {
-            i = wordIndex.indexOf("STOP");
-            if(i < 0)
-                return oob;
+    /**
+     * Find all words with a similar characters
+     * in the vocab
+     * @param word the word to compare
+     * @param accuracy the accuracy: 0 to 1
+     * @return the list of words that are similar in the vocab
+     */
+    public List<String> similarWordsInVocabTo(String word,double accuracy) {
+        List<String> ret = new ArrayList<>();
+        for(int i = 0; i < wordIndex.size(); i++) {
+            if(MathUtils.stringSimilarity(word,wordIndex.get(i).toString()) >= accuracy)
+                ret.add(wordIndex.get(i).toString());
         }
-
-        return syn0Norm.getRow(i).toArray();
+        return ret;
     }
 
-    public double[] getWordVector(String word) {
+
+
+    public float[] getWordVector(String word) {
         int i = this.wordIndex.indexOf(word);
         if(i < 0) {
             i = wordIndex.indexOf("STOP");
@@ -210,18 +217,24 @@ public class Word2Vec implements Persistable {
         return wordIndex.indexOf(word);
     }
 
-    public DoubleMatrix getWordVectorMatrix(String word) {
+    public FloatMatrix getWordVectorMatrix(String word) {
         int i = this.wordIndex.indexOf(word);
+        if(oob == null)
+            oob = new float[layerSize];
+
         if(i < 0)
-            return new DoubleMatrix(oob);
+            return new FloatMatrix(oob);
         return syn0.getRow(i);
     }
 
-    public DoubleMatrix getWordVectorMatrixNormalized(String word) {
+    public FloatMatrix getWordVectorMatrixNormalized(String word) {
         int i = this.wordIndex.indexOf(word);
+       if(oob == null)
+           oob = new float[layerSize];
         if(i < 0)
-            return new DoubleMatrix(oob);
-        return syn0.getRow(i);
+            return FloatMatrix.zeros(syn0.getRow(0).columns);
+        FloatMatrix r =  syn0.getRow(i);
+        return r.div((SimpleBlas.nrm2(r)));
     }
 
 
@@ -235,7 +248,7 @@ public class Word2Vec implements Persistable {
 
 
     public Collection<String> wordsNearest(String word,int n) {
-        DoubleMatrix vec = this.getWordVectorMatrix(word);
+        FloatMatrix vec = this.getWordVectorMatrix(word);
         if(vec == null)
             return new ArrayList<String>();
         Counter<String> distances = new Counter<String>();
@@ -385,7 +398,7 @@ public class Word2Vec implements Persistable {
     public void processSentence(final String sentence,final Counter<String> totalWords) {
         trainSentence(sentence, totalWords);
         if(numSentencesProcessed % 10000 == 0) {
-            alpha = new Double(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
+            alpha = new Float(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
             log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed);
         }
     }
@@ -421,11 +434,11 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public Set<VocabWord> distance(String word) {
-        DoubleMatrix wordVector = getWordVectorMatrix(word);
+        FloatMatrix wordVector = getWordVectorMatrix(word);
         if (wordVector == null) {
             return null;
         }
-        DoubleMatrix tempVector = null;
+        FloatMatrix tempVector = null;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
         String name;
         for (int i = 0; i < syn0.rows; i++) {
@@ -447,17 +460,17 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public TreeSet<VocabWord> analogy(String word0, String word1, String word2) {
-        DoubleMatrix wv0 = getWordVectorMatrix(word0);
-        DoubleMatrix wv1 = getWordVectorMatrix(word1);
-        DoubleMatrix wv2 = getWordVectorMatrix(word2);
+        FloatMatrix wv0 = getWordVectorMatrix(word0);
+        FloatMatrix wv1 = getWordVectorMatrix(word1);
+        FloatMatrix wv2 = getWordVectorMatrix(word2);
 
 
-        DoubleMatrix wordVector = wv1.sub(wv0).add(wv2);
+        FloatMatrix wordVector = wv1.sub(wv0).add(wv2);
 
         if (wv1 == null || wv2 == null || wv0 == null)
             return null;
 
-        DoubleMatrix tempVector;
+        FloatMatrix tempVector;
         String name;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
         for (int i = 0; i < syn0.rows; i++) {
@@ -579,18 +592,18 @@ public class Word2Vec implements Persistable {
     }
 
     public void  iterate(VocabWord w1,VocabWord w2) {
-        DoubleMatrix l1 = syn0.getRow(w2.getIndex());
-        DoubleMatrix l2a = syn1.getRows(w1.getCodes());
-        DoubleMatrix fa = MatrixUtil.sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
+        FloatMatrix l1 = syn0.getRow(w2.getIndex());
+        FloatMatrix l2a = syn1.getRows(w1.getCodes());
+        FloatMatrix fa = MatrixUtil.sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        DoubleMatrix ga = DoubleMatrix.ones(fa.length).sub(MatrixUtil.toMatrix(w1.getCodes())).sub(fa).mul(alpha);
-        DoubleMatrix outer = ga.mmul(l1);
+        FloatMatrix ga = FloatMatrix.ones(fa.length).sub(MatrixUtil.toFloatMatrix(w1.getCodes())).sub(fa).mul(alpha);
+        FloatMatrix outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
-            DoubleMatrix toAdd = l2a.getRow(i).add(outer.getRow(i));
+            FloatMatrix toAdd = l2a.getRow(i).add(outer.getRow(i));
             syn1.putRow(w1.getPoints()[i],toAdd);
         }
 
-        DoubleMatrix updatedInput = l1.add(MatrixUtil.dot(ga, l2a));
+        FloatMatrix updatedInput = l1.add(MatrixUtil.dot(ga, l2a));
         syn0.putRow(w2.getIndex(),updatedInput);
     }
 
@@ -620,7 +633,7 @@ public class Word2Vec implements Persistable {
             i++;
         }
 
-        Triple<VocabWord,int[],int[]> triple = new Triple<VocabWord,int[],int[]>(heap.poll(),new int[]{},new int[]{});
+        Triple<VocabWord,int[],int[]> triple = new Triple<>(heap.poll(),new int[]{},new int[]{});
         Stack<Triple<VocabWord,int[],int[]>> stack = new Stack<>();
         stack.add(triple);
         while(!stack.isEmpty())  {
@@ -662,12 +675,12 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     private void resetWeights() {
-        syn1 = DoubleMatrix.zeros(vocab.size(), layerSize);
-        syn0 = DoubleMatrix.zeros(vocab.size(),layerSize);
+        syn1 = FloatMatrix.zeros(vocab.size(), layerSize);
+        syn0 = FloatMatrix.zeros(vocab.size(),layerSize);
         org.jblas.util.Random.seed(1);
         for(int i = 0; i < syn0.rows; i++)
             for(int j = 0; j < syn0.columns; j++) {
-                syn0.put(i,j,(org.jblas.util.Random.nextDouble() - 0.5) / layerSize);
+                syn0.put(i,j,(float) (org.jblas.util.Random.nextFloat() - 0.5) / layerSize);
             }
     }
 
@@ -681,15 +694,13 @@ public class Word2Vec implements Persistable {
     public double similarity(String word,String word2) {
         if(word.equals(word2))
             return 1.0;
-        if(syn0Norm == null)
-            this.syn0Norm = syn0.div(SimpleBlas.nrm2(syn0));
-        DoubleMatrix vector = getWordVectorMatrixNormalized(word);
-        DoubleMatrix vector2 = getWordVectorMatrixNormalized(word2);
+        FloatMatrix vector = getWordVectorMatrixNormalized(word);
+        FloatMatrix vector2 = getWordVectorMatrixNormalized(word2);
         if(vector == null || vector2 == null)
             return -1;
-        DoubleMatrix d1 = MatrixUtil.unitVec(vector);
-        DoubleMatrix d2 = MatrixUtil.unitVec(vector2);
-        double ret = d1.dot(d2);
+        FloatMatrix d1 = MatrixUtil.unitVec(vector);
+        FloatMatrix d2 = MatrixUtil.unitVec(vector2);
+        double ret = SimpleBlas.dot(d1,d2);
         if(ret <  0)
             return 0;
         return ret;
@@ -732,11 +743,11 @@ public class Word2Vec implements Persistable {
     }
 
 
-    public DoubleMatrix getSyn0() {
+    public FloatMatrix getSyn0() {
         return syn0;
     }
 
-    public DoubleMatrix getSyn1() {
+    public FloatMatrix getSyn1() {
         return syn1;
     }
 
@@ -785,7 +796,7 @@ public class Word2Vec implements Persistable {
         return size;
     }
 
-    public double[]	 getOob() {
+    public float[]	 getOob() {
         return oob;
     }
 
@@ -804,11 +815,11 @@ public class Word2Vec implements Persistable {
     }
 
 
-    public void setSyn0(DoubleMatrix syn0) {
+    public void setSyn0(FloatMatrix syn0) {
         this.syn0 = syn0;
     }
 
-    public void setSyn1(DoubleMatrix syn1) {
+    public void setSyn1(FloatMatrix syn1) {
         this.syn1 = syn1;
     }
 

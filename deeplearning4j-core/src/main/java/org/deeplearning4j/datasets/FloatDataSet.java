@@ -17,19 +17,16 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
-
 /**
  * A data set (example/outcome pairs)
  * The outcomes are specifically for neural network encoding such that
@@ -37,22 +34,22 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persistable,Iterable<DataSet> {
+public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Persistable,Iterable<FloatDataSet> {
 
     private static final long serialVersionUID = 1935520764586513365L;
     private static Logger log = LoggerFactory.getLogger(DataSet.class);
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
 
-    public DataSet() {
-        this(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
+    public FloatDataSet() {
+        this(FloatMatrix.zeros(1),FloatMatrix.zeros(1));
     }
 
-    public DataSet(Pair<DoubleMatrix,DoubleMatrix> pair) {
+    public FloatDataSet(Pair<FloatMatrix,FloatMatrix> pair) {
         this(pair.getFirst(),pair.getSecond());
     }
 
-    public DataSet(DoubleMatrix first, DoubleMatrix second) {
+    public FloatDataSet(FloatMatrix first, FloatMatrix second) {
         super(first, second);
         if(first.rows != second.rows)
             throw new IllegalStateException("Invalid data set; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
@@ -68,35 +65,36 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
     public DataSetIterator iterator(int batches) {
-        List<DataSet> list = this.dataSetBatches(batches);
-        return new ListDataSetIterator(list);
+      /*  List<FloatDataSet> list = this.dataSetBatches(batches);
+        return new ListDataSetIterator(list);*/
+        throw new UnsupportedOperationException();
     }
 
 
-    public DataSet copy() {
-        return new DataSet(getFirst(),getSecond());
+    public FloatDataSet copy() {
+        return new FloatDataSet(getFirst(),getSecond());
     }
 
 
 
 
-    public static DataSet empty() {
-        return new DataSet(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
+    public static FloatDataSet empty() {
+        return new FloatDataSet(FloatMatrix.zeros(1),FloatMatrix.zeros(1));
     }
 
-    public static DataSet merge(List<DataSet> data) {
+    public static FloatDataSet merge(List<FloatDataSet> data) {
         if(data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
-        DataSet first = data.get(0);
+        FloatDataSet first = data.get(0);
         int numExamples = totalExamples(data);
-        DoubleMatrix in = new DoubleMatrix(numExamples,first.getFirst().columns);
-        DoubleMatrix out = new DoubleMatrix(numExamples,first.getSecond().columns);
+        FloatMatrix in = new FloatMatrix(numExamples,first.getFirst().columns);
+        FloatMatrix out = new FloatMatrix(numExamples,first.getSecond().columns);
         int count = 0;
 
         for(int i = 0; i < data.size(); i++) {
-            DataSet d1 = data.get(i);
+            FloatDataSet d1 = data.get(i);
             for(int j = 0; j < d1.numExamples(); j++) {
-                DataSet example = d1.get(j);
+                FloatDataSet example = d1.get(j);
                 in.putRow(count,example.getFirst());
                 out.putRow(count,example.getSecond());
                 count++;
@@ -104,7 +102,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 
 
         }
-        return new DataSet(in,out);
+        return new FloatDataSet(in,out);
     }
 
     /**
@@ -113,8 +111,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param cols the column size
      * @return a copy of this data set with the input resized
      */
-    public DataSet reshape(int rows,int cols) {
-        DataSet ret = new DataSet(getFirst().reshape(rows,cols),getSecond());
+    public FloatDataSet reshape(int rows,int cols) {
+        FloatDataSet ret = new FloatDataSet(getFirst().reshape(rows,cols),getSecond());
         return ret;
 
     }
@@ -129,9 +127,9 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
     public void shuffle() {
-        List<DataSet> list = asList();
+        List<FloatDataSet> list = asList();
         Collections.shuffle(list);
-        DataSet ret = DataSet.merge(list);
+        FloatDataSet ret = FloatDataSet.merge(list);
         setFirst(ret.getFirst());
         setSecond(ret.getSecond());
     }
@@ -147,7 +145,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param min the min value to occur in the dataset
      * @param max the max value to ccur in the dataset
      */
-    public void squishToRange(double min,double max) {
+    public void squishToRange(float min,float max) {
         for(int i = 0;i  < getFirst().length; i++) {
             if(getFirst().get(i) < min)
                 getFirst().put(i,min);
@@ -167,8 +165,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * Adds a feature for each example on to the current feature vector
      * @param toAdd the feature vector to add
      */
-    public void addFeatureVector(DoubleMatrix toAdd) {
-        setFirst(DoubleMatrix.concatHorizontally(getFirst(), toAdd));
+    public void addFeatureVector(FloatMatrix toAdd) {
+        setFirst(FloatMatrix.concatHorizontally(getFirst(), toAdd));
     }
 
 
@@ -177,8 +175,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param feature the feature vector to add
      * @param example the number of the example to append to
      */
-    public void addFeatureVector(DoubleMatrix feature, int example) {
-        getFirst().putRow(example,DoubleMatrix.concatHorizontally(getFirst().getRow(example), feature));
+    public void addFeatureVector(FloatMatrix feature, int example) {
+        getFirst().putRow(example,FloatMatrix.concatHorizontally(getFirst().getRow(example), feature));
     }
 
     public void normalize() {
@@ -210,17 +208,17 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 
 
     public void normalizeZeroMeanZeroUnitVariance() {
-        DoubleMatrix columnMeans = getFirst().columnMeans();
-        DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(getFirst());
+        FloatMatrix columnMeans = getFirst().columnMeans();
+        FloatMatrix columnStds = MatrixUtil.columnStdDeviation(getFirst());
 
         setFirst(getFirst().subiRowVector(columnMeans));
-        columnStds.addi(1e-6);
+        columnStds.addi(1e-6f);
         setFirst(getFirst().diviRowVector(columnStds));
     }
 
-    private static int totalExamples(Collection<DataSet> coll) {
+    private static int totalExamples(Collection<FloatDataSet> coll) {
         int count = 0;
-        for(DataSet d : coll)
+        for(FloatDataSet d : coll)
             count += d.numExamples();
         return count;
     }
@@ -250,7 +248,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      */
     public void setNewNumberOfLabels(int labels) {
         int examples = numExamples();
-        DoubleMatrix newOutcomes = new DoubleMatrix(examples,labels);
+        FloatMatrix newOutcomes = new FloatMatrix(examples,labels);
         setSecond(newOutcomes);
     }
 
@@ -265,7 +263,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         if(label > numOutcomes() || label < 0)
             throw new IllegalArgumentException("Illegal label");
 
-        DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numOutcomes());
+        FloatMatrix outcome = MatrixUtil.toOutcomeVectorFloat(label, numOutcomes());
         getSecond().putRow(example,outcome);
     }
 
@@ -274,14 +272,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param i the example to get
      * @return the example at i (one example)
      */
-    public DataSet get(int i) {
+    public FloatDataSet get(int i) {
         if(i > numExamples() || i < 0)
             throw new IllegalArgumentException("invalid example number");
 
-        return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
+        return new FloatDataSet(getFirst().getRow(i),getSecond().getRow(i));
     }
 
-    public List<List<DataSet>> batchBy(int num) {
+    public List<List<FloatDataSet>> batchBy(int num) {
         return Lists.partition(asList(),num);
     }
 
@@ -291,7 +289,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @return the counts of each possible outcome
      */
     public Counter<Integer> outcomeCounts() {
-        List<DataSet> list = asList();
+        List<FloatDataSet> list = asList();
         Counter<Integer> ret = new Counter<>();
         for(int i = 0; i < list.size(); i++) {
             ret.incrementCount(list.get(i).outcome(),1.0);
@@ -304,19 +302,19 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param labels strips the data set of all but the passed in labels
      * @return the dataset with only the specified labels
      */
-    public DataSet filterBy(int[] labels) {
-        List<DataSet> list = asList();
-        List<DataSet> newList = new ArrayList<>();
+    public FloatDataSet filterBy(int[] labels) {
+        List<FloatDataSet> list = asList();
+        List<FloatDataSet> newList = new ArrayList<>();
         List<Integer> labelList = new ArrayList<>();
         for(int i : labels)
             labelList.add(i);
-        for(DataSet d : list) {
+        for(FloatDataSet d : list) {
             if(labelList.contains(d.getLabel(d))) {
                 newList.add(d);
             }
         }
 
-        return DataSet.merge(newList);
+        return FloatDataSet.merge(newList);
     }
 
 
@@ -326,7 +324,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param labels the labels to strip down to
      */
     public void filterAndStrip(int[] labels) {
-        DataSet filtered = filterBy(labels);
+        FloatDataSet filtered = filterBy(labels);
         List<Integer> newLabels = new ArrayList<>();
 
         //map new labels to index according to passed in labels
@@ -344,7 +342,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         }
 
 
-        DoubleMatrix newLabelMatrix = new DoubleMatrix(filtered.numExamples(),labels.length);
+        FloatMatrix newLabelMatrix = new FloatMatrix(filtered.numExamples(),labels.length);
 
         if(newLabelMatrix.rows != newLabels.size())
             throw new IllegalStateException("Inconsistent label sizes");
@@ -353,7 +351,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             Integer i2 = newLabels.get(i);
             if(i2 == null)
                 throw new IllegalStateException("Label not found on row " + i);
-            DoubleMatrix newRow = MatrixUtil.toOutcomeVector(i2, labels.length);
+            FloatMatrix newRow = MatrixUtil.toOutcomeVectorFloat(i2, labels.length);
             newLabelMatrix.putRow(i,newRow);
 
         }
@@ -370,11 +368,11 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param num the number to split by
      * @return the partitioned data set
      */
-    public List<DataSet> dataSetBatches(int num) {
-        List<List<DataSet>> list =  Lists.partition(asList(),num);
-        List<DataSet> ret = new ArrayList<>();
-        for(List<DataSet> l : list)
-            ret.add(DataSet.merge(l));
+    public List<FloatDataSet> dataSetBatches(int num) {
+        List<List<FloatDataSet>> list =  Lists.partition(asList(),num);
+        List<FloatDataSet> ret = new ArrayList<>();
+        for(List<FloatDataSet> l : list)
+            ret.add(FloatDataSet.merge(l));
         return ret;
 
     }
@@ -390,39 +388,39 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * x10  y = 10
      * @return a list of data sets partitioned by outcomes
      */
-    public List<List<DataSet>> sortAndBatchByNumLabels() {
+    public List<List<FloatDataSet>> sortAndBatchByNumLabels() {
         sortByLabel();
         return Lists.partition(asList(),numOutcomes());
     }
 
-    public List<List<DataSet>> batchByNumLabels() {
+    public List<List<FloatDataSet>> batchByNumLabels() {
         return Lists.partition(asList(),numOutcomes());
     }
 
 
-    public List<DataSet> asList() {
-        List<DataSet> list = new ArrayList<DataSet>(numExamples());
+    public List<FloatDataSet> asList() {
+        List<FloatDataSet> list = new ArrayList<>(numExamples());
         for(int i = 0; i < numExamples(); i++)  {
-            list.add(new DataSet(getFirst().getRow(i),getSecond().getRow(i)));
+            list.add(new FloatDataSet(getFirst().getRow(i),getSecond().getRow(i)));
         }
         return list;
     }
 
-    public Pair<DataSet,DataSet> splitTestAndTrain(int numHoldout) {
+    public Pair<FloatDataSet,FloatDataSet> splitTestAndTrain(int numHoldout) {
 
         if(numHoldout >= numExamples())
             throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
 
 
-        List<DataSet> list = asList();
+        List<FloatDataSet> list = asList();
 
         Collections.rotate(list, 3);
         Collections.shuffle(list);
-        List<List<DataSet>> partition = new ArrayList<List<DataSet>>();
+        List<List<FloatDataSet>> partition = new ArrayList<>();
         partition.add(list.subList(0, numHoldout));
         partition.add(list.subList(numHoldout, list.size()));
-        DataSet train = merge(partition.get(0));
-        DataSet test = merge(partition.get(1));
+        FloatDataSet train = merge(partition.get(0));
+        FloatDataSet test = merge(partition.get(1));
         return new Pair<>(train,test);
     }
 
@@ -431,15 +429,15 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * while still allowing efficient batching.
      */
     public void sortByLabel() {
-        Map<Integer,Queue<DataSet>> map = new HashMap<Integer,Queue<DataSet>>();
-        List<DataSet> data = asList();
+        Map<Integer,Queue<FloatDataSet>> map = new HashMap<>();
+        List<FloatDataSet> data = asList();
         int numLabels = numOutcomes();
         int examples = numExamples();
-        for(DataSet d : data) {
+        for(FloatDataSet d : data) {
             int label = getLabel(d);
-            Queue<DataSet> q = map.get(label);
+            Queue<FloatDataSet> q = map.get(label);
             if(q == null) {
-                q = new ArrayDeque<DataSet>();
+                q = new ArrayDeque<>();
                 map.put(label, q);
             }
             q.add(d);
@@ -455,8 +453,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         for(int i = 0; i < examples; i++) {
             if(optimal) {
                 for(int j = 0; j < numLabels; j++) {
-                    Queue<DataSet> q = map.get(j);
-                    DataSet next = q.poll();
+                    Queue<FloatDataSet> q = map.get(j);
+                    FloatDataSet next = q.poll();
                     //add a row; go to next
                     if(next != null) {
                         addRow(next,i);
@@ -469,8 +467,8 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
                 }
             }
             else {
-                DataSet add = null;
-                for(Queue<DataSet> q : map.values()) {
+                FloatDataSet add = null;
+                for(Queue<FloatDataSet> q : map.values()) {
                     if(!q.isEmpty()) {
                         add = q.poll();
                         break;
@@ -488,7 +486,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
-    public void addRow(DataSet d, int i) {
+    public void addRow(FloatDataSet d, int i) {
         if(i > numExamples() || d == null)
             throw new IllegalArgumentException("Invalid index for adding a row");
         getFirst().putRow(i, d.getFirst());
@@ -496,20 +494,20 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
-    private int getLabel(DataSet data) {
+    private int getLabel(FloatDataSet data) {
         return SimpleBlas.iamax(data.getSecond());
     }
 
 
-    public DoubleMatrix exampleSums() {
+    public FloatMatrix exampleSums() {
         return getFirst().columnSums();
     }
 
-    public DoubleMatrix exampleMaxs() {
+    public FloatMatrix exampleMaxs() {
         return getFirst().columnMaxs();
     }
 
-    public DoubleMatrix exampleMeans() {
+    public FloatMatrix exampleMeans() {
         return getFirst().columnMeans();
     }
 
@@ -543,14 +541,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
-    public static DataSet load(File path) throws IOException {
+    public static FloatDataSet load(File path) throws IOException {
         DataInputStream bis = new DataInputStream(new BufferedInputStream(new FileInputStream(path)));
-        DoubleMatrix x = new DoubleMatrix(1,1);
-        DoubleMatrix y = new DoubleMatrix(1,1);
+        FloatMatrix x = new FloatMatrix(1,1);
+        FloatMatrix y = new FloatMatrix(1,1);
         x.in(bis);
         y.in(bis);
         bis.close();
-        return new DataSet(x,y);
+        return new FloatDataSet(x,y);
     }
 
     /**
@@ -558,7 +556,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param numSamples the number of samples to get
      * @return a sample data set without replacement
      */
-    public DataSet sample(int numSamples) {
+    public FloatDataSet sample(int numSamples) {
         return sample(numSamples,new MersenneTwister(System.currentTimeMillis()));
     }
 
@@ -568,7 +566,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param rng the rng to use
      * @return the sampled dataset without replacement
      */
-    public DataSet sample(int numSamples,RandomGenerator rng) {
+    public FloatDataSet sample(int numSamples,RandomGenerator rng) {
         return sample(numSamples,rng,false);
     }
 
@@ -578,7 +576,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param withReplacement the rng to use
      * @return the sampled dataset without replacement
      */
-    public DataSet sample(int numSamples,boolean withReplacement) {
+    public FloatDataSet sample(int numSamples,boolean withReplacement) {
         return sample(numSamples,new MersenneTwister(System.currentTimeMillis()),withReplacement);
     }
 
@@ -589,12 +587,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * @param withReplacement whether to allow duplicates (only tracked by example row number)
      * @return the sample dataset
      */
-    public DataSet sample(int numSamples,RandomGenerator rng,boolean withReplacement) {
+    public FloatDataSet sample(int numSamples,RandomGenerator rng,boolean withReplacement) {
         if(numSamples >= numExamples())
             return this;
         else {
-            DoubleMatrix examples = new DoubleMatrix(numSamples,getFirst().columns);
-            DoubleMatrix outcomes = new DoubleMatrix(numSamples,numOutcomes());
+            FloatMatrix examples = new FloatMatrix(numSamples,getFirst().columns);
+            FloatMatrix outcomes = new FloatMatrix(numSamples,numOutcomes());
             Set<Integer> added = new HashSet<Integer>();
             for(int i = 0; i < numSamples; i++) {
                 int picked = rng.nextInt(numExamples());
@@ -607,14 +605,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
                 outcomes.putRow(i,get(picked).getSecond());
 
             }
-            return new DataSet(examples,outcomes);
+            return new FloatDataSet(examples,outcomes);
         }
     }
 
     public void roundToTheNearest(int roundTo) {
         for(int i = 0; i < getFirst().length; i++) {
-            double curr = getFirst().get(i);
-            getFirst().put(i,MathUtils.roundDouble(curr, roundTo));
+            float curr = getFirst().get(i);
+            getFirst().put(i,MathUtils.roundFloat(curr, roundTo));
         }
     }
 
@@ -637,15 +635,6 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
                 .append("\n=================OUTPUT==================\n")
                 .append(getSecond().toString().replaceAll(";","\n"));
         return builder.toString();
-    }
-
-    public static void main(String[] args) throws IOException {
-        MnistDataFetcher fetcher = new MnistDataFetcher();
-        fetcher.fetch(100);
-        DataSet write = new DataSet(fetcher.next());
-        write.saveTo(new File(args[0]), false);
-
-
     }
 
     @Override
@@ -714,7 +703,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
     @Override
-    public Iterator<DataSet> iterator() {
+    public Iterator<FloatDataSet> iterator() {
         return asList().iterator();
     }
 
