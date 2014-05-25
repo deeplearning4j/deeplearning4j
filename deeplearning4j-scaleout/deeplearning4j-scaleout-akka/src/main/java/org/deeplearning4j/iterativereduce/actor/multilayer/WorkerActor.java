@@ -35,11 +35,6 @@ import akka.dispatch.Futures;
  *
  */
 public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.actor.WorkerActor<UpdateableImpl> {
-    protected ActorRef mediator = DistributedPubSubExtension.get(getContext().system()).mediator();
-    protected Cancellable heartbeat;
-    protected static Logger log = LoggerFactory.getLogger(WorkerActor.class);
-    protected AtomicBoolean isWorking = new AtomicBoolean(false);
-    protected Job currentJob;
 
     public WorkerActor(Conf conf,StateTracker<UpdateableImpl> tracker) throws Exception {
         super(conf,tracker);
@@ -85,70 +80,13 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         return Props.create(WorkerActor.class,actor,conf,tracker);
     }
 
-    public static Props propsFor(Conf conf,HazelCastStateTracker stateTracker) {
+    public static Props propsFor(Conf conf,StateTracker<UpdateableImpl> stateTracker) {
         return Props.create(WorkerActor.class,conf,stateTracker);
     }
 
 
 
 
-    protected void heartbeat() throws Exception {
-        heartbeat = context().system().scheduler().schedule(Duration.apply(30, TimeUnit.SECONDS), Duration.apply(30, TimeUnit.SECONDS), new Runnable() {
-
-            @Override
-            public void run() {
-
-                tracker.addWorker(id);
-
-                if(tracker.needsReplicate(id)) {
-                    try {
-                        log.info("Updating worker " + id);
-                        UpdateableImpl u = tracker.getCurrent();
-
-                        if(u == null || u.get() == null) {
-                            return;
-                        }
-
-                        results = u;
-                        tracker.doneReplicating(id);
-                    }catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                //eventually consistent storage
-                try {
-                    checkJobAvailable();
-
-
-                    if(currentJob != null && !isWorking.get() && tracker.jobFor(id) != null) {
-                        log.info("Confirmation from " + currentJob.getWorkerId() + " on work");
-                        if(currentJob.getWork() == null)
-                            throw new IllegalStateException("Work for worker " + id + " was null");
-
-                        DataSet data = (DataSet) currentJob.getWork();
-                        processDataSet(data.asList());
-
-                    }
-
-                    else if(currentJob == null || !isWorking.get() && tracker.jobFor(id) != null) {
-                        if(tracker.jobFor(id) != null)
-                            tracker.clearJob(id);
-                        log.info("Clearing stale job... " + id);
-                    }
-
-
-                }catch(Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-
-
-            }
-
-        }, context().dispatcher());
-
-    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -165,7 +103,10 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
         else if(message instanceof BaseMultiLayerNetwork) {
-            results.set((BaseMultiLayerNetwork) message);
+            if(results == null)
+                results = new UpdateableImpl((BaseMultiLayerNetwork) message);
+            else
+                results.set((BaseMultiLayerNetwork) message);
             log.info("Set network");
         }
 
@@ -178,92 +119,8 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             unhandled(message);
     }
 
-    protected void checkJobAvailable() throws Exception {
-        Job j;
-
-        if((j = tracker.jobFor(id)) == null || !tracker.workerEnabled(id)) {
-            //inconsistent state
-            if(!isWorking.get() && j != null)  {
-                tracker.clearJob(id);
-                log.info("Clearing stale job " + id);
-            }
-
-            return;
-        }
-
-        if(tracker.needsReplicate(id)) {
-            try {
-                log.info("Updating worker " + id);
-                results = tracker.getCurrent();
-                tracker.doneReplicating(id);
-            }catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
 
 
-        if(j != null && currentJob == null) {
-            log.info("Assigning job for worker " + id);
-            currentJob = j;
-            //clear data, no point in keeping both in memory
-            tracker.updateJob(new Job(id,null));
-
-        }
-
-    }
-
-
-
-
-    /* Run compute on the data set */
-    protected  void processDataSet(final List<DataSet> list) {
-        if(list == null || list.isEmpty()) {
-            log.warn("Worker " + id + " was passed an empty or null list");
-            return;
-        }
-
-
-        Future<UpdateableImpl> f = Futures.future(new Callable<UpdateableImpl>() {
-
-            @Override
-            public UpdateableImpl call() throws Exception {
-
-                DoubleMatrix newInput = new DoubleMatrix(list.size(),list.get(0).getFirst().columns);
-                DoubleMatrix newOutput = new DoubleMatrix(list.size(),list.get(0).getSecond().columns);
-
-
-                for(int i = 0; i < list.size(); i++) {
-                    newInput.putRow(i,list.get(i).getFirst());
-                    newOutput.putRow(i,list.get(i).getSecond());
-                }
-
-
-                if(tracker.needsReplicate(id)) {
-                    log.info("Updating network for worker " + id);
-                    results = tracker.getCurrent();
-                    tracker.doneReplicating(id);
-                }
-
-                UpdateableImpl work = compute();
-
-                if(work != null) {
-                    log.info("Done working; adding update to mini batch on worker " + id);
-                    //update parameters in master param server
-                    tracker.addUpdate(id,work);
-                    //disable the worker till next batch
-                    tracker.disableWorker(id);
-                    log.info("Number of updates so far " + tracker.workerUpdates().size());
-                }
-
-
-
-                return work;
-            }
-
-        }, getContext().dispatcher());
-
-        ActorRefUtils.throwExceptionIfExists(f, context().dispatcher());
-    }
 
 
 
