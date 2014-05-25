@@ -9,6 +9,8 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.deeplearning4j.nn.FourDTensor;
+import org.deeplearning4j.nn.Tensor;
 import org.jblas.DoubleMatrix;
 /**
  * Image loader for taking images and converting them to matrices
@@ -33,6 +35,26 @@ public class ImageLoader {
 
     public DoubleMatrix asRowVector(File f) throws Exception {
         return MatrixUtil.toMatrix(flattenedImageFromFile(f));
+    }
+
+
+    /**
+     * Slices up an image in to a mini batch.
+     *
+     * @param f the file to load from
+     * @param numMiniBatches the number of images in a mini batch
+     * @param numRowsPerSlice the number of rows for each image
+     * @return a tensor respresenting one image as a mini batch
+     */
+    public Tensor asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
+        try {
+            DoubleMatrix d = asMatrix(f);
+            Tensor f2 = new Tensor(d,numRowsPerSlice,d.columns,numMiniBatches);
+            return f2;
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     public DoubleMatrix asMatrix(File f) throws IOException {
