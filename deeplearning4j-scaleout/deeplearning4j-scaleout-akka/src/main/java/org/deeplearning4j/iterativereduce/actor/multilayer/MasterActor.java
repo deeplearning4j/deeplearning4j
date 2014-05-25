@@ -20,6 +20,7 @@ import org.deeplearning4j.iterativereduce.actor.core.ResetMessage;
 import org.deeplearning4j.iterativereduce.actor.core.actor.BatchActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -48,7 +49,6 @@ import akka.routing.RoundRobinPool;
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
 
     protected BaseMultiLayerNetwork network;
-    protected AtomicLong oneDown;
 
     /**
      * Creates the master and the workers with this given conf
@@ -58,86 +58,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
     public MasterActor(Conf conf,ActorRef batchActor, final HazelCastStateTracker stateTracker) {
         super(conf,batchActor,stateTracker);
         setup(conf);
-		/*
-		 * Ensures there's no one off errors by forcing the next phase as well as ensures
-		 * that if the system is done it shuts down
-		 */
-        forceNextPhase =  context().system().scheduler()
-                .schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
-
-                    @Override
-                    public void run() {
-                        if(stateTracker.isDone())
-                            return;
-
-                        try {
-                            List<Job> currentJobs = stateTracker.currentJobs();
-                            log.info("Status check on next iteration");
-
-
-                            Collection<String> updates = stateTracker.workerUpdates();
-                            if(currentJobs.size() == 1 && oneDown != null) {
-                                long curr = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - oneDown.get());
-                                if(curr >= 5) {
-                                    stateTracker.currentJobs().clear();
-                                    oneDown = null;
-                                    log.info("Clearing out stale jobs");
-                                }
-                            }
-
-                            else if(currentJobs.size() == 1) {
-                                log.info("Marking start of stale jobs");
-                                oneDown = new AtomicLong(System.currentTimeMillis());
-                            }
-
-                            if(updates.size() >= stateTracker.workers().size() || currentJobs.isEmpty())
-                                nextBatch();
-
-                            else
-                                log.info("Still waiting on next batch, so far we have updates of size: " + updates.size()  + " out of " + stateTracker.workers().size());
-
-                            log.info("Current jobs left " + currentJobs);
-
-
-                        }catch(Exception e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-
-                }, context().dispatcher());
-
-        this.clearStateWorkers =  context().system().scheduler()
-                .schedule(Duration.create(1,TimeUnit.MINUTES), Duration.create(1,TimeUnit.MINUTES), new Runnable() {
-
-                    @Override
-                    public void run() {
-                        if(stateTracker.isDone())
-                            return;
-
-                        try {
-                            long now = System.currentTimeMillis();
-                            Map<String,Long> heartbeats = MasterActor.this.stateTracker.getHeartBeats();
-                            for(String key : heartbeats.keySet()) {
-                                long lastChecked = heartbeats.get(key);
-                                long diff = now - lastChecked;
-                                long seconds = TimeUnit.MILLISECONDS.toSeconds(diff);
-                                if(seconds >= 120) {
-                                    log.info("Removing stale worker " + key);
-                                    MasterActor.this.stateTracker.removeWorker(key);
-                                }
-
-                            }
-
-
-
-                        }catch(Exception e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-
-                }, context().dispatcher());
 
     }
 
@@ -202,7 +122,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         ActorSystem system = context().system();
         RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
         //start local workers
-        Props p = pool.props(WorkerActor.propsFor(conf,stateTracker));
+        Props p = pool.props(WorkerActor.propsFor(conf,(StateTracker<UpdateableImpl> ) stateTracker));
         p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
 
         system.actorOf(p, "worker");
@@ -253,116 +173,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
 
-
-
-
-    /**
-     * Checks if done
-     * @throws Exception
-     */
-    protected void nextBatch() throws Exception {
-        Collection<String> updates = stateTracker.workerUpdates();
-        //ensure there aren't any jobs still in progress
-        if(!updates.isEmpty() && stateTracker.currentJobs().isEmpty()) {
-            UpdateableImpl masterResults = compute();
-            log.info("Updating next batch");
-            stateTracker.setCurrent(masterResults);
-            for(String s : stateTracker.workers()) {
-                log.info("Replicating new network to " + s);
-                stateTracker.addReplicate(s);
-                stateTracker.enableWorker(s);
-
-            }
-            epochsComplete++;
-            stateTracker.workerUpdates().clear();
-            while(masterResults == null) {
-                log.info("On next batch master results was null, attempting to grab results again");
-                masterResults = getResults();
-            }
-
-
-
-            //tell the batch actor to send more work
-
-            Future<Void> f = Futures.future(new Callable<Void>() {
-                /**
-                 * Computes a result, or throws an exception if unable to do so.
-                 *
-                 * @return computed result
-                 * @throws Exception if unable to compute a result
-                 */
-                @Override
-                public Void call() throws Exception {
-                    mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                            MoreWorkMessage.getInstance() ), getSelf());
-
-                    log.info("Requesting more work...");
-                    return null;
-                }
-            },context().dispatcher());
-
-            ActorRefUtils.throwExceptionIfExists(f,context().dispatcher());
-
-        }
-
-
-
-    }
-
-    private void doDoneOrNextPhase() throws Exception {
-        UpdateableImpl masterResults = null;
-        Collection<String> updates = stateTracker.workerUpdates();
-
-        if(!updates.isEmpty()) {
-            masterResults = compute();
-
-            stateTracker.setCurrent(masterResults);
-
-
-            epochsComplete++;
-            stateTracker.workerUpdates().clear();
-
-        }
-
-        else
-            masterResults = getMasterResults();
-
-
-        while(!stateTracker.currentJobs().isEmpty()) {
-            log.info("Waiting fo jobs to finish up before next phase...");
-            Thread.sleep(30000);
-        }
-
-        if(stateTracker.isPretrain() && stateTracker.currentJobs().isEmpty()) {
-            log.info("Switching to finetune mode");
-            stateTracker.moveToFinetune();
-            SerializationUtils.saveObject(masterResults.get(), new File("pretrain-model.bin"));
-
-
-            while(masterResults == null) {
-                masterResults = getMasterResults();
-            }
-
-
-            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                    ResetMessage.getInstance() ), getSelf());
-            mediator.tell(new DistributedPubSubMediator.Publish(BatchActor.BATCH,
-                    MoreWorkMessage.getInstance() ), getSelf());
-
-
-
-            batchActor.tell(ResetMessage.getInstance(), getSelf());
-            batchActor.tell(MoreWorkMessage.getInstance(), getSelf());
-
-        }
-
-        else if(stateTracker.currentJobs().isEmpty()) {
-            isDone = true;
-            stateTracker.finish();
-            log.info("Done training!");
-        }
-
-    }
 
 
     @SuppressWarnings({ "unchecked" })
