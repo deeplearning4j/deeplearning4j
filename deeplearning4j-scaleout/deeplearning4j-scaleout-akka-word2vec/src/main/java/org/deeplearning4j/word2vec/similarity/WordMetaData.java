@@ -7,6 +7,7 @@ import java.util.StringTokenizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 
 public class WordMetaData {
@@ -22,8 +23,8 @@ public class WordMetaData {
 		wordList = new ArrayList<String>();
 	}
 
-	public DoubleMatrix getVectorForWord(String word) {
-		return vec.getWordVectorMatrix(word).mul(wordCounts.getCount(word));
+	public FloatMatrix getVectorForWord(String word) {
+		return vec.getWordVectorMatrix(word).mul((float) wordCounts.getCount(word));
 	}
 
 	private void addWords(String words) {

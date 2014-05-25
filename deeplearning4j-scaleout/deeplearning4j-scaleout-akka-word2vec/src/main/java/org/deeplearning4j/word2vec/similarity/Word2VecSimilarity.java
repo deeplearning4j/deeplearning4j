@@ -10,6 +10,7 @@ import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.util.Util;
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 
 /**
@@ -39,7 +40,7 @@ public class Word2VecSimilarity {
 	private Word2Vec vec;
 	private String words1;
 	private String words2;
-	private double distance;
+	private float distance;
 	
 	public Word2VecSimilarity(String words1,String words2,Word2Vec vec) {
 		this.words1 = words1;
@@ -74,31 +75,31 @@ public class Word2VecSimilarity {
 		List<String> wordList = new ArrayList<String>(vocab);
 
 		//the word embeddings (each row is a word)
-		DoubleMatrix a1Matrix = new DoubleMatrix(wordList.size(),vec.getLayerSize());
-		DoubleMatrix a2Matrix = new DoubleMatrix(wordList.size(),vec.getLayerSize());
+		FloatMatrix a1Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
+        FloatMatrix a2Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
 
 		for(int i = 0; i < wordList.size(); i++) {
 			if(d1.getWordCounts().getCount(wordList.get(i)) > 0) {
 				a1Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 			}
 			else 
-				a1Matrix.putRow(i, DoubleMatrix.zeros(vec.getLayerSize()));
+				a1Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
 
 			if(d2.getWordCounts().getCount(wordList.get(i)) > 0) {
 				a2Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 
 			}
 			else 
-				a2Matrix.putRow(i, DoubleMatrix.zeros(vec.getLayerSize()));
+				a2Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
 
 
 
 		}
 		
 		//percent of words that overlap
-		double wordSim = (double) inter.size() / (double) wordList.size();
+		float wordSim = (float) inter.size() / (float) wordList.size();
 		//cosine similarity of the word embeddings * percent of words that overlap (this is a weight to add a decision boundary)
-		double finalScore  = MatrixUtil.cosineSim(a1Matrix, a2Matrix) * wordSim;
+        float finalScore  = (float) MatrixUtil.cosineSim(a1Matrix, a2Matrix) * wordSim;
 		//threshold is >= 0.05 for any articles that are similar
 		distance = finalScore;
 	} 

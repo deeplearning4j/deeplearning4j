@@ -12,7 +12,7 @@ import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.loader.Word2VecLoader;
 import org.deeplearning4j.word2vec.util.Util;
-import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,22 +64,22 @@ public class Word2VecSimilarityTester {
 				
 				List<String> wordList = new ArrayList<String>(vocab);
 
-				DoubleMatrix a1Matrix = new DoubleMatrix(wordList.size(),vec.getLayerSize());
-				DoubleMatrix a2Matrix = new DoubleMatrix(wordList.size(),vec.getLayerSize());
+				FloatMatrix a1Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
+				FloatMatrix a2Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
 
 				for(int i = 0; i < wordList.size(); i++) {
 					if(d1.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a1Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 					}
 					else 
-						a1Matrix.putRow(i, DoubleMatrix.zeros(vec.getLayerSize()));
+						a1Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
 
 					if(d2.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a2Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 
 					}
 					else 
-						a2Matrix.putRow(i, DoubleMatrix.zeros(vec.getLayerSize()));
+						a2Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
 
 
 

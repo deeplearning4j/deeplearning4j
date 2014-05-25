@@ -11,6 +11,9 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.FloatDataSet;
+import org.deeplearning4j.nn.FloatFourDTensor;
+import org.deeplearning4j.nn.FloatTensor;
 import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.Tensor;
 import org.jblas.*;
@@ -1014,19 +1017,24 @@ public class MatrixUtil {
         return toMatrix(nums);
     }
 
-    public static DoubleMatrix toMatrix(int[][] arr) {
-        DoubleMatrix d = new DoubleMatrix(arr.length,arr[0].length);
+    public static FloatMatrix toOutcomeVectorFloat(int index,int numOutcomes) {
+        int[] nums = new int[numOutcomes];
+        nums[index] = 1;
+        return toFloatMatrix(nums);
+    }
+
+    public static FloatMatrix toFloatMatrix(int[] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length);
         for(int i = 0; i < arr.length; i++)
-            for(int j = 0; j < arr[i].length; j++)
-                d.put(i,j,arr[i][j]);
+                d.put(i,arr[i]);
         return d;
     }
 
-    public static DoubleMatrix toMatrix(int[] arr) {
-        DoubleMatrix d = new DoubleMatrix(arr.length);
+    public static FloatMatrix toFloatMatrix(int[][] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length,arr[0].length);
         for(int i = 0; i < arr.length; i++)
-            d.put(i,arr[i]);
-        d.reshape(1, d.length);
+            for(int j = 0; j < arr[i].length; j++)
+                d.put(i,j,arr[i][j]);
         return d;
     }
 
@@ -1307,6 +1315,8 @@ public class MatrixUtil {
     }
 
 
+
+
     /**
      * Column wise variance
      * @param input the input to get the variance for
@@ -1486,5 +1496,1437 @@ public class MatrixUtil {
         }
         return m;
     }
+
+
+    public static <E extends FloatMatrix> void complainAboutMissMatchedMatrices(E d1, E d2) {
+        if (d1 == null || d2 == null)
+            throw new IllegalArgumentException("No null matrices allowed");
+        if (d1.rows != d2.rows)
+            throw new IllegalArgumentException("Matrices must have same rows");
+
+    }
+
+
+    /**
+     * Cuts all numbers below a certain cut off
+     *
+     * @param minNumber the min number to check
+     * @param matrix    the matrix to max by
+     */
+    public static  <E extends FloatMatrix> void max(double minNumber, E matrix) {
+        for (int i = 0; i < matrix.length; i++)
+            matrix.put(i, Math.max(0, matrix.get(i)));
+
+    }
+
+    /**
+     * Divides each row by its max
+     *
+     * @param toScale the matrix to divide by its row maxes
+     */
+    public static void scaleByMax(FloatMatrix toScale) {
+        FloatMatrix scale = toScale.rowMaxs();
+        for (int i = 0; i < toScale.rows; i++) {
+            float scaleBy = scale.get(i, 0);
+            toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
+        }
+    }
+
+
+    /**
+     * Flips the dimensions of each slice of a tensor or 4d tensor
+     * slice wise
+     * @param input the input to flip
+     * @param <E>
+     * @return the flipped tensor
+     */
+    public static <E extends FloatMatrix> E flipDimMultiDim(E input) {
+        if(input instanceof FloatFourDTensor) {
+            FloatFourDTensor t = (FloatFourDTensor) input;
+            FloatMatrix ret = new FloatMatrix(input.rows,input.columns);
+            FloatFourDTensor flipped = createBasedOn(ret,t);
+            for(int i = 0; i < flipped.numTensors(); i++) {
+                for(int j = 0; j < flipped.getTensor(i).slices(); j++) {
+                    flipped.put(i,j,flipDim(t.getSliceOfTensor(i,j)));
+                }
+            }
+
+            return createBasedOn(flipped,input);
+        }
+        else if(input instanceof FloatTensor) {
+            FloatTensor t = (FloatTensor) input;
+            FloatMatrix ret = new FloatMatrix(input.rows,input.columns);
+            FloatTensor flipped = createBasedOn(ret,t);
+            for(int j = 0; j < flipped.slices(); j++) {
+                flipped.setSlice(j,flipDim(t.getSlice(j)));
+            }
+            return createBasedOn(ret,input);
+        }
+
+        else
+            return (E) flipDim(input);
+    }
+
+
+    /**
+     * Flips the dimensions of the given matrix.
+     * [1,2]       [3,4]
+     * [3,4] --->  [1,2]
+     * @param flip the matrix to flip
+     * @return the flipped matrix
+     */
+    public static FloatMatrix flipDim(FloatMatrix flip) {
+        FloatMatrix ret = new FloatMatrix(flip.rows,flip.columns);
+        CounterMap<Integer,Integer> dimsFlipped = new CounterMap<>();
+        for(int j = 0; j < flip.columns; j++) {
+            for(int i = 0; i < flip.rows;  i++) {
+                for(int k = flip.rows - 1; k >= 0; k--) {
+                    if(dimsFlipped.getCount(i,j) > 0 || dimsFlipped.getCount(k,j) > 0)
+                        continue;
+                    dimsFlipped.incrementCount(i,j,1.0);
+                    dimsFlipped.incrementCount(k,j,1.0);
+                    float first = flip.get(i,j);
+                    float second = flip.get(k,j);
+                    ret.put(k,j,first);
+                    ret.put(i,j,second);
+                }
+            }
+        }
+
+
+        return ret;
+
+    }
+
+
+
+    /**
+     * Cumulative sum
+     *
+     * @param sum the matrix to get the cumulative sum of
+     * @return a matrix of the same dimensions such that the at i,j
+     * is the cumulative sum of it + the predecessor elements in the column
+     */
+    public static  <E extends FloatMatrix> E cumsum(E sum) {
+        FloatMatrix ret = new FloatMatrix(sum.rows, sum.columns);
+        for (int i = 0; i < ret.columns; i++) {
+            for (int j = 0; j < ret.rows; j++) {
+                int[] indices = new int[j + 1];
+                for (int row = 0; row < indices.length; row++)
+                    indices[row] = row;
+                FloatMatrix toSum = sum.get(indices, new int[]{i});
+                float d = toSum.sum();
+                ret.put(j, i, d);
+            }
+        }
+        return (E) ret;
+    }
+
+
+    /**
+     * Truncates a matrix down to size rows x columns
+     *
+     * @param toTruncate the matrix to truncate
+     * @param rows       the rows to reduce to
+     * @param columns    the columns to reduce to
+     * @return a subset of the old matrix
+     * with the specified dimensions
+     */
+    public static FloatMatrix truncate(FloatMatrix toTruncate, int rows, int columns) {
+        if (rows >= toTruncate.rows && columns >= toTruncate.columns || rows < 1 || columns < 1)
+            return toTruncate;
+
+        FloatMatrix ret = new FloatMatrix(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                ret.put(i, j, toTruncate.get(i, j));
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Reshapes this matrix in to a 3d matrix
+     * @param input the input matrix
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param numSlices the number of slices in the tensor
+     * @return the reshaped matrix as a tensor
+     */
+    public static <E extends FloatMatrix> FloatTensor reshape(E input,int rows, int columns,int numSlices) {
+        FloatMatrix ret = input.reshape(rows * numSlices,columns);
+        FloatFourDTensor retTensor = new FloatFourDTensor(ret,false);
+        retTensor.setSlices(numSlices);
+        return retTensor;
+    }
+
+
+    /**
+     * Rotates a matrix by reversing its input
+     * If its  any kind of tensor each slice of each tensor
+     * will be reversed
+     * @param input the input to rotate
+     * @param <E>
+     * @return the rotated matrix or tensor
+     */
+    public static <E extends FloatMatrix> E rot(E input) {
+        if(input instanceof FloatFourDTensor) {
+            FloatFourDTensor t = (FloatFourDTensor) input;
+            FloatFourDTensor ret = new FloatFourDTensor(t);
+            for(int i = 0; i < ret.numTensors(); i++) {
+                FloatTensor t1 = ret.getTensor(i);
+                for(int j = 0; j < t1.slices(); j++) {
+                    ret.setSlice(j,reverse(t1.getSlice(j)));
+                }
+            }
+
+            return createBasedOn(ret,input);
+        }
+
+        else if(input instanceof FloatTensor) {
+            FloatTensor t = (FloatTensor) input;
+            FloatTensor ret = new FloatTensor(t);
+            for(int j = 0; j < t.slices(); j++) {
+                ret.setSlice(j,reverse(t.getSlice(j)));
+            }
+            return createBasedOn(ret,input);
+
+
+        }
+
+        else
+            return reverse(input);
+
+    }
+
+
+
+    /**
+     * Reshapes this matrix in to a 3d matrix
+     * @param input the input matrix
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param numSlices the number of slices in the tensor
+     * @return the reshaped matrix as a tensor
+     */
+    public static <E extends FloatMatrix> FloatFourDTensor reshape(E input,int rows, int columns,int numSlices,int numTensors) {
+        FloatMatrix ret = input.reshape(rows * numSlices,columns);
+        FloatFourDTensor retTensor = new FloatFourDTensor(ret,false);
+        retTensor.setSlices(numSlices);
+        retTensor.setNumTensor(numTensors);
+        return retTensor;
+    }
+
+    /**
+     * Binarizes the matrix such that any number greater than cutoff is 1 otherwise zero
+     * @param cutoff the cutoff point
+     */
+    public static void binarize(double cutoff,FloatMatrix input) {
+        for(int i = 0; i < input.length; i++)
+            if(input.get(i) > cutoff)
+                input.put(i,1);
+            else
+                input.put(i,0);
+    }
+
+
+    /**
+     * Generate a new matrix which has the given number of replications of this.
+     */
+    public static ComplexFloatMatrix repmat(ComplexFloatMatrix matrix, int rowMult, int columnMult) {
+        ComplexFloatMatrix result = new ComplexFloatMatrix(matrix.rows * rowMult, matrix.columns * columnMult);
+
+        for (int c = 0; c < columnMult; c++) {
+            for (int r = 0; r < rowMult; r++) {
+                for (int i = 0; i < matrix.rows; i++) {
+                    for (int j = 0; j < matrix.columns; j++) {
+                        result.put(r * matrix.rows + i, c * matrix.columns + j, matrix.get(i, j));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public static FloatMatrix shape(FloatMatrix d) {
+        return new FloatMatrix(new float[]{d.rows, d.columns});
+    }
+
+    public static FloatMatrix size(FloatMatrix d) {
+        return shape(d);
+    }
+
+
+    /**
+     * Down sample a signal
+     * @param data
+     * @param stride
+     * @param <E>
+     * @return
+     */
+    public static <E extends FloatMatrix> E downSample(E data, FloatMatrix stride) {
+        FloatMatrix d = FloatMatrix.ones((int) stride.get(0), (int) stride.get(1));
+        d.divi(prod(stride));
+        FloatMatrix ret = Convolution.conv2d(data, d, Convolution.Type.VALID);
+        ret = ret.get(RangeUtils.interval(0, (int) stride.get(0)), RangeUtils.interval(0, (int) stride.get(1)));
+        return createBasedOn(ret,data);
+    }
+
+    /**
+     * Takes the product of all the elements in the matrix
+     *
+     * @param product the matrix to get the product of elements of
+     * @return the product of all the elements in the matrix
+     */
+    public static <E extends FloatMatrix> float prod(E product) {
+        float ret = 1.0f;
+        for (int i = 0; i < product.length; i++)
+            ret *= product.get(i);
+        return ret;
+    }
+
+
+    /**
+     * Upsampling a signal
+     * @param d
+     * @param scale
+     * @param <E>
+     * @return
+     */
+    public static <E extends FloatMatrix> E upSample(E d, E scale) {
+        FloatMatrix shape = size(d);
+
+        FloatMatrix idx = new FloatMatrix(shape.length, 1);
+
+
+        for (int i = 0; i < shape.length; i++) {
+            FloatMatrix tmp = FloatMatrix.zeros((int) shape.get(i) * (int) scale.get(i), 1);
+            int[] indices = indicesCustomRange(0, (int) scale.get(i), (int) scale.get(i) * (int) shape.get(i));
+            tmp.put(indices, 1.0f);
+            idx.put(i, cumsum(tmp).sum());
+        }
+        return createBasedOn(idx,d);
+    }
+
+     public static FloatMatrix rangeVector(float begin, float end) {
+        int diff = (int) Math.abs(end - begin);
+        FloatMatrix ret = new FloatMatrix(1, diff);
+        for (int i = 0; i < ret.length; i++)
+            ret.put(i, i);
+        return ret;
+    }
+
+    public static ComplexFloatMatrix complexRangeVector(float begin, float end) {
+        int diff = (int) Math.abs(end - begin);
+        ComplexFloatMatrix ret = new ComplexFloatMatrix(1, diff);
+        for (int i = 0; i < ret.length; i++)
+            ret.put(i, i);
+        return ret.transpose();
+    }
+
+
+    public static double angle(ComplexFloat phase) {
+        Complex c = new Complex(phase.real(), phase.imag());
+        return c.atan().getReal();
+    }
+
+    /**
+     * Implements matlab's compare of complex numbers:
+     * compares the max(abs(d1),abs(d2))
+     * if they are equal, compares their angles
+     *
+     * @param d1 the first number
+     * @param d2 the second number
+     * @return standard comparator interface
+     */
+    private static int compare(ComplexFloat d1, ComplexFloat d2) {
+        if (d1.abs() > d2.abs())
+            return 1;
+        else if (d2.abs() > d1.abs())
+            return -1;
+        else {
+            if (angle(d1) > angle(d2))
+                return 1;
+            else if (angle(d1) < angle(d2))
+                return -1;
+            return 0;
+        }
+
+    }
+
+
+    public static ComplexFloat max(ComplexFloatMatrix matrix) {
+        ComplexFloat max = matrix.get(0);
+        for (int i = 1; i < matrix.length; i++)
+            if (compare(max, matrix.get(i)) > 0)
+                max = matrix.get(i);
+        return max;
+    }
+
+
+    /**
+     * Divides each row by its max
+     *
+     * @param toScale the matrix to divide by its row maxes
+     */
+    public static void scaleByMax(ComplexFloatMatrix toScale) {
+
+        for (int i = 0; i < toScale.rows; i++) {
+            ComplexFloat scaleBy = max(toScale.getRow(i));
+            toScale.putRow(i, toScale.getRow(i).divi(scaleBy));
+        }
+    }
+
+    public static <E extends FloatMatrix>  E variance(E input) {
+        FloatMatrix means = (E) input.columnMeans();
+        FloatMatrix diff = MatrixFunctions.pow(input.subRowVector(means), 2);
+        //avg of the squared differences from the mean
+        FloatMatrix variance =  diff.columnMeans().div(input.rows);
+        return createBasedOn(variance,input);
+
+    }
+
+
+    public static <E extends FloatMatrix> int[] toInts(E ints)  {
+        int[] ret = new int[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (int) ints.get(i);
+        return ret;
+    }
+
+
+    /**
+     * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
+     * @param toReverse the matrix to reverse
+     * @param <E>
+     * @return the reversed matrix
+     */
+    public static  <E extends FloatMatrix> E reverse(E toReverse) {
+        FloatMatrix ret = new FloatMatrix(toReverse.rows, toReverse.columns);
+        int reverseIndex = 0;
+        for (int i = toReverse.length - 1; i >= 0; i--) {
+            ret.put(reverseIndex++, toReverse.get(i));
+        }
+        return createBasedOn(ret,toReverse);
+    }
+
+    /**
+     * Utility method for creating a variety of matrices, useful for handling conversions.
+     *
+     * This method is always O(1) due to not needing to copy data.
+     *
+     * Note however, that this makes the assumption that the passed in matrix isn't being referenced
+     * by anything else as this being a safe operation
+     * @param result the result matrix to cast
+     * @param input the input it was based on
+     * @param <E> the type of matrix
+     * @return the casted matrix
+     */
+    public static <E extends FloatMatrix> E createBasedOn(FloatMatrix result,E input) {
+        if(input.getClass().equals(result.getClass()))
+            return (E) result;
+
+        else if(input instanceof FloatFourDTensor) {
+            FloatFourDTensor tensor = new FloatFourDTensor(result,false);
+            FloatFourDTensor casted = (FloatFourDTensor) input;
+            tensor.setSlices(casted.slices());
+            tensor.setPerMatrixRows(casted.rows());
+            tensor.setNumTensor(casted.getNumTensor());
+            return (E) tensor;
+        }
+
+        else if(input instanceof FloatTensor) {
+            FloatTensor ret = new FloatTensor(result,false);
+            FloatTensor casted = (FloatTensor) input;
+            ret.setPerMatrixRows(ret.rows());
+            ret.setSlices(casted.slices());
+            return (E) ret;
+        }
+        else
+            return (E) result;
+
+
+    }
+
+
+    /**
+     * Returns the maximum dimension of the passed in matrix
+     *
+     * @param d the max dimension of the passed in matrix
+     * @return the max dimension of the passed in matrix
+     */
+    public static float  length(ComplexFloatMatrix d) {
+        return (float) Math.max(d.rows, d.columns);
+
+
+    }
+
+    /**
+     * Floor function applied to the matrix
+     * @param input
+     * @param <E>
+     * @return
+     */
+    public static <E extends FloatMatrix> E floor(E input) {
+        return createBasedOn(MatrixFunctions.floor(input),input);
+    }
+
+
+
+
+    /**
+     * Returns the maximum dimension of the passed in matrix
+     *
+     * @param d the max dimension of the passed in matrix
+     * @return the max dimension of the passed in matrix
+     */
+    public static <E extends FloatMatrix> float length(E d) {
+        if (d instanceof FloatTensor) {
+            FloatTensor t = (FloatTensor) d;
+            return (float) MathUtils.max(new double[]{t.rows(), t.columns(), t.slices()});
+        } else
+            return Math.max(d.rows, d.columns);
+
+
+    }
+
+
+    public static FloatDataSet xorFloatData(int n) {
+
+        FloatMatrix x = FloatMatrix.rand(n, 2);
+        x = x.gti(0.5f);
+
+        FloatMatrix y = FloatMatrix.zeros(n, 2);
+        for (int i = 0; i < x.rows; i++) {
+            if (x.get(i, 0) == x.get(i, 1))
+                y.put(i, 0, 1);
+            else
+                y.put(i, 1, 1);
+        }
+
+        return new FloatDataSet(x, y);
+
+    }
+
+    public static FloatDataSet xorFloatData(int n, int columns) {
+
+        FloatMatrix x = FloatMatrix.rand(n, columns);
+        x = x.gti(0.5f);
+
+        FloatMatrix x2 = FloatMatrix.rand(n, columns);
+        x2 = x2.gti(0.5f);
+
+        FloatMatrix eq = x.eq(x2).eq(FloatMatrix.zeros(n, columns));
+
+
+        int median = columns / 2;
+
+        FloatMatrix outcomes = new FloatMatrix(n, 2);
+        for (int i = 0; i < outcomes.rows; i++) {
+            FloatMatrix left = eq.get(i, new org.jblas.ranges.IntervalRange(0, median));
+            FloatMatrix right = eq.get(i, new org.jblas.ranges.IntervalRange(median, columns));
+            if (left.sum() > right.sum())
+                outcomes.put(i, 0, 1);
+            else
+                outcomes.put(i, 1, 1);
+        }
+
+
+        return new FloatDataSet(eq, outcomes);
+
+    }
+
+    public static <E extends FloatMatrix>  double magnitude(E vec) {
+        double sum_mag = 0;
+        for (int i = 0; i < vec.length; i++)
+            sum_mag = sum_mag + vec.get(i) * vec.get(i);
+
+        return Math.sqrt(sum_mag);
+    }
+
+
+    /**
+     * Exp with more generic casting
+     * @param d the input
+     * @param <E>
+     * @return the exp of this matrix
+     */
+    public static <E extends FloatMatrix> E exp(E d) {
+        return createBasedOn(MatrixFunctions.exp(d),d);
+    }
+
+    /**
+     * Flattens the matrix
+     * @param d
+     * @param <E>
+     * @return
+     */
+    public static <E extends FloatMatrix> E unroll(E d) {
+        FloatMatrix ret = new FloatMatrix(1, d.length);
+        for (int i = 0; i < d.length; i++)
+            ret.put(i, d.get(i));
+        return createBasedOn(ret,d);
+    }
+
+
+    public static <E extends FloatMatrix> E outcomes(E d) {
+        FloatMatrix ret = new FloatMatrix(d.rows, 1);
+        for (int i = 0; i < d.rows; i++)
+            ret.put(i, SimpleBlas.iamax(d.getRow(i)));
+        return createBasedOn(ret,d);
+    }
+
+    /**
+     *
+     * @param d1
+     * @param d2
+     * @param <E>
+     * @return
+     */
+    public static <E extends FloatMatrix> double cosineSim(E d1, E d2) {
+        d1 = unitVec(d1);
+        d2 = unitVec(d2);
+        double ret = d1.dot(d2);
+        return ret;
+    }
+
+    /**
+     * Normalizes the matrix by subtracting the min,
+     * dividing by the max - min
+     * @param input the input to normalize
+     * @param <E>
+     * @return the normalized matrix
+     */
+    public static <E extends FloatMatrix> E normalize(E input) {
+        float min = input.min();
+        float max = input.max();
+        return createBasedOn(input.subi(min).divi(max - min),input);
+    }
+
+
+    public static <E extends FloatMatrix> double  cosine(E matrix) {
+        return 1 * Math.sqrt(MatrixFunctions.pow(matrix, 2).sum());
+    }
+
+
+    public static <E extends FloatMatrix> E unitVec(E toScale) {
+        float length = toScale.norm2();
+        if (length > 0)
+            return createBasedOn(SimpleBlas.scal(1.0f / length, toScale),toScale);
+        return toScale;
+    }
+
+    /**
+     * A uniform sample ranging from 0 to 1.
+     *
+     * @param rng     the rng to use
+     * @param rows    the number of rows of the matrix
+     * @param columns the number of columns of the matrix
+     * @return a uniform sample of the given shape and size
+     * with numbers between 0 and 1
+     */
+    public static FloatMatrix uniformFloat(RandomGenerator rng, int rows, int columns) {
+
+        UniformRealDistribution uDist = new UniformRealDistribution(rng, 0, 1);
+        FloatMatrix U = new FloatMatrix(rows, columns);
+        for (int i = 0; i < U.rows; i++)
+            for (int j = 0; j < U.columns; j++)
+                U.put(i, j, (float) uDist.sample());
+        return U;
+    }
+
+
+    /**
+     * A uniform sample ranging from 0 to sigma.
+     *
+     * @param rng   the rng to use
+     * @param mean, the matrix mean from which to generate values from
+     * @param sigma the standard deviation to use to generate the gaussian noise
+     * @return a uniform sample of the given shape and size
+     * <p/>
+     * with numbers between 0 and 1
+     */
+    public static <E extends FloatMatrix> E normal(RandomGenerator rng, E mean, double sigma) {
+        FloatMatrix U = new FloatMatrix(mean.rows, mean.columns);
+        for (int i = 0; i < U.rows; i++)
+            for (int j = 0; j < U.columns; j++) {
+                RealDistribution reals = new NormalDistribution(rng,mean.get(i, j), FastMath.sqrt(sigma),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+                U.put(i, j, (float) reals.sample());
+
+            }
+        return createBasedOn(U,mean);
+    }
+
+
+    /**
+     * A uniform sample ranging from 0 to sigma.
+     *
+     * @param rng      the rng to use
+     * @param mean,    the matrix mean from which to generate values from
+     * @param variance the variance matrix where each column is the variance
+     *                 for the respective columns of the matrix
+     * @return a uniform sample of the given shape and size
+     * <p/>
+     * with numbers between 0 and 1
+     */
+    public static <E extends FloatMatrix> E normal(RandomGenerator rng, E mean, E variance) {
+        FloatMatrix std =  sqrt(variance);
+        for (int i = 0; i < variance.length; i++)
+            if (variance.get(i) <= 0)
+                variance.put(i, (float) 1e-4);
+
+        FloatMatrix U = new FloatMatrix(mean.rows, mean.columns);
+        for (int i = 0; i < U.rows; i++)
+            for (int j = 0; j < U.columns; j++) {
+                RealDistribution reals = new NormalDistribution(rng,mean.get(i, j), std.get(j),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
+                U.put(i, j, (float) reals.sample());
+
+            }
+        return createBasedOn(U,mean);
+    }
+
+
+    /**
+     * Sample from a normal distribution given a mean of zero and a matrix of standard deviations.
+     *
+     * @param rng the rng to use
+     *            for the respective columns of the matrix
+     * @return a uniform sample of the given shape and size
+     */
+    public static FloatMatrix normal(RandomGenerator rng, FloatMatrix standardDeviations) {
+
+        FloatMatrix U = new FloatMatrix(standardDeviations.rows, standardDeviations.columns);
+        for (int i = 0; i < U.rows; i++)
+            for (int j = 0; j < U.columns; j++) {
+                RealDistribution reals = new NormalDistribution(0, standardDeviations.get(i, j));
+                U.put(i, j, (float) reals.sample());
+
+            }
+        return U;
+    }
+
+    public static <E extends FloatMatrix> boolean isValidOutcome(E out) {
+        boolean found = false;
+        for (int col = 0; col < out.length; col++) {
+            if (out.get(col) > 0) {
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+
+
+
+
+
+    public static ComplexFloatMatrix exp(ComplexFloatMatrix input) {
+        ComplexFloatMatrix ret = new ComplexFloatMatrix(input.rows, input.columns);
+        for (int i = 0; i < ret.length; i++) {
+            ret.put(i, ComplexUtil.exp(input.get(i)));
+        }
+        return ret;
+    }
+
+
+    public static ComplexFloatMatrix complexPadWithZeros(FloatMatrix toPad, int rows, int cols) {
+        ComplexFloatMatrix ret = ComplexFloatMatrix.zeros(rows, cols);
+        for (int i = 0; i < toPad.rows; i++) {
+            for (int j = 0; j < toPad.columns; j++) {
+                ret.put(i, j, toPad.get(i, j));
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Pads a matrix with zeros
+     *
+     * @param toPad the matrix to pad
+     * @param rows  the number of rows to pad the matrix to
+     * @param cols  the number of columns to pad the matrix to
+     * @return
+     */
+    public static ComplexFloatMatrix padWithZeros(ComplexFloatMatrix toPad, int rows, int cols) {
+        ComplexFloatMatrix ret = ComplexFloatMatrix.zeros(rows, cols);
+        for (int i = 0; i < toPad.rows; i++) {
+            for (int j = 0; j < toPad.columns; j++) {
+                ret.put(i, j, toPad.get(i, j));
+            }
+        }
+        return ret;
+    }
+
+
+    /**
+     * Assigns every element in the matrix to the given value
+     *
+     * @param toAssign the matrix to modify
+     * @param val      the value to assign
+     */
+    public static <E extends FloatMatrix> void assign(E toAssign, float val) {
+        for (int i = 0; i < toAssign.length; i++)
+            toAssign.put(i, val);
+    }
+
+    /**
+     * Rotate a matrix 90 degrees
+     *
+     * @param toRotate the matrix to rotate
+     */
+    public static <E extends FloatMatrix> void rot90(E toRotate) {
+        for (int i = 0; i < toRotate.rows; i++)
+            for (int j = 0; j < toRotate.columns; j++)
+                toRotate.put(i, j, toRotate.get(toRotate.columns - i - 1));
+
+    }
+
+    /**
+     * Pads the matrix with zeros to surround the passed in matrix
+     * with the given rows and columns
+     *
+     * @param toPad the matrix to pad
+     * @param rows  the rows of the destination matrix
+     * @param cols  the columns of the destination matrix
+     * @return a new matrix with the elements of toPad with zeros or
+     * a clone of toPad if the rows and columns are both greater in length than
+     * rows and cols
+     */
+    public  static <E extends FloatMatrix> E padWithZeros(E toPad, int rows, int cols) {
+        if (rows < 1)
+            throw new IllegalArgumentException("Illegal number of rows " + rows);
+        if (cols < 1)
+            throw new IllegalArgumentException("Illegal number of columns " + cols);
+        FloatMatrix ret = null;
+        //nothing to pad
+        if (toPad.rows >= rows) {
+            if (toPad.columns >= cols)
+                return createBasedOn(toPad.dup(),toPad);
+            else
+                ret = new FloatMatrix(toPad.rows, cols);
+
+
+        } else if (toPad.columns >= cols) {
+            if (toPad.rows >= rows)
+                return createBasedOn(toPad.dup(),toPad);
+            else
+                ret = new FloatMatrix(rows, toPad.columns);
+        } else
+            ret = new FloatMatrix(rows, cols);
+
+        for (int i = 0; i < toPad.rows; i++) {
+            for (int j = 0; j < toPad.columns; j++) {
+                float d = toPad.get(i, j);
+                ret.put(i, j, d);
+            }
+        }
+        return createBasedOn(ret,toPad);
+    }
+
+    public static ComplexFloatMatrix numDivideMatrix(ComplexFloat div, ComplexFloatMatrix toDiv) {
+        ComplexFloatMatrix ret = new ComplexFloatMatrix(toDiv.rows, toDiv.columns);
+
+        for (int i = 0; i < ret.length; i++) {
+            //prevent numerical underflow
+            ComplexFloat curr = toDiv.get(i).addi((float) 1e-6);
+            ret.put(i, div.div(curr));
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * div / matrix. This also does padding of the matrix
+     * so that no numbers are 0 by adding 1e-6 when dividing
+     *
+     * @param div   the number to divide by
+     * @param toDiv the matrix to divide
+     * @return the matrix such that each element i in the matrix
+     * is div / num
+     */
+    public static <E extends FloatMatrix> E numDivideMatrix(float div, E toDiv) {
+        FloatMatrix ret = new FloatMatrix(toDiv.rows, toDiv.columns);
+
+        for (int i = 0; i < ret.length; i++)
+            //prevent numerical underflow
+            ret.put(i, div / toDiv.get(i) + 1e-6f);
+        return createBasedOn(ret,toDiv);
+    }
+
+
+    public static <E extends FloatMatrix> boolean isInfinite(E test) {
+        FloatMatrix nan = test.isInfinite();
+        for (int i = 0; i < nan.length; i++) {
+            if (nan.get(i) > 0)
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean isNaN(FloatMatrix test) {
+        for (int i = 0; i < test.length; i++) {
+            if (Double.isNaN(test.get(i)))
+                return true;
+        }
+        return false;
+    }
+
+
+    public static void discretizeColumns(FloatMatrix toDiscretize, int numBins) {
+        FloatMatrix columnMaxes = toDiscretize.columnMaxs();
+        FloatMatrix columnMins = toDiscretize.columnMins();
+        for (int i = 0; i < toDiscretize.columns; i++) {
+            double min = columnMins.get(i);
+            double max = columnMaxes.get(i);
+            FloatMatrix col = toDiscretize.getColumn(i);
+            FloatMatrix newCol = new FloatMatrix(col.length);
+            for (int j = 0; j < col.length; j++) {
+                int bin = MathUtils.discretize(col.get(j), min, max, numBins);
+                newCol.put(j, bin);
+            }
+            toDiscretize.putColumn(i, newCol);
+
+        }
+    }
+
+    /**
+     * Rounds the matrix to the number of specified by decimal places
+     *
+     * @param d   the matrix to round
+     * @param num the number of decimal places to round to(example: pass 2 for the 10s place)
+     * @return the rounded matrix
+     */
+    public static <E extends FloatMatrix> E  roundToTheNearest(E d, int num) {
+        FloatMatrix ret = d.mul(num);
+        for (int i = 0; i < d.rows; i++)
+            for (int j = 0; j < d.columns; j++) {
+                float d2 = d.get(i, j);
+                float newNum = MathUtils.roundFloat(d2, num);
+                ret.put(i, j, newNum);
+            }
+        return createBasedOn(ret,d);
+    }
+
+
+    /**
+     * Rounds the matrix to the number of specified by decimal places
+     *
+     * @param d   the matrix to round
+     * @return the rounded matrix
+     */
+    public static <E extends FloatMatrix> E  round(E d) {
+        FloatMatrix ret = d;
+        for (int i = 0; i < d.rows; i++)
+            for (int j = 0; j < d.columns; j++) {
+                double d2 = d.get(i, j);
+                ret.put(i, j, FastMath.round(d2));
+            }
+        return createBasedOn(ret,d);
+    }
+
+    public static void columnNormalizeBySum(FloatMatrix x) {
+        for (int i = 0; i < x.columns; i++)
+            x.putColumn(i, x.getColumn(i).div(x.getColumn(i).sum()));
+    }
+
+
+    /**
+     * One dimensional filter on a signal
+     * @param b
+     * @param a
+     * @param x
+     * @return
+     */
+    public static FloatMatrix oneDimensionalDigitalFilter(FloatMatrix b, FloatMatrix a, FloatMatrix x) {
+        return new IirFilterFloat(x,a,b).filter();
+    }
+
+
+    //public static FloatMatrix oneDimensionalDigitalFilter()
+
+    public static FloatMatrix toOutcomeFloatVector(int index,int numOutcomes) {
+        int[] nums = new int[numOutcomes];
+        nums[index] = 1;
+        return toMatrixFloat(nums);
+    }
+
+
+    public static DoubleMatrix toMatrix(int[][] arr) {
+        DoubleMatrix d = new DoubleMatrix(arr.length,arr[0].length);
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                d.put(i,j,arr[i][j]);
+        return d;
+    }
+
+    public static FloatMatrix toMatrixFloat(int[][] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length,arr[0].length);
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                d.put(i,j,arr[i][j]);
+        return d;
+    }
+
+    public static DoubleMatrix toMatrix(int[] arr) {
+        DoubleMatrix d = new DoubleMatrix(arr.length);
+        for(int i = 0; i < arr.length; i++)
+            d.put(i,arr[i]);
+        d.reshape(1, d.length);
+        return d;
+    }
+    public static FloatMatrix toMatrixFloat(int[] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length);
+        for(int i = 0; i < arr.length; i++)
+            d.put(i,arr[i]);
+        d.reshape(1, d.length);
+        return d;
+    }
+
+    public static FloatMatrix add(FloatMatrix a,FloatMatrix b) {
+        return a.addi(b);
+    }
+
+    /**
+     * Soft max function
+     * row_maxes is a row vector (max for each row)
+     * row_maxes = rowmaxes(input)
+     * diff = exp(input - max) / diff.rowSums()
+     *
+     * @param input the input for the softmax
+     * @return the softmax output (a probability matrix) scaling each row to between
+     * 0 and 1
+     */
+    public static <E extends FloatMatrix> E softmax(E input) {
+        FloatMatrix max = input.rowMaxs();
+        FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+        diff.diviColumnVector(diff.rowSums());
+        return createBasedOn(diff,input);
+    }
+    public static FloatMatrix mean(FloatMatrix input,int axis) {
+        FloatMatrix ret = new FloatMatrix(input.rows,1);
+        //column wise
+        if(axis == 0) {
+            return input.columnMeans();
+        }
+        //row wise
+        else if(axis == 1) {
+            return ret.rowMeans();
+        }
+
+
+        return ret;
+    }
+
+
+    public static FloatMatrix sum(FloatMatrix input,int axis) {
+        FloatMatrix ret = new FloatMatrix(input.rows,1);
+        //column wise
+        if(axis == 0) {
+            for(int i = 0; i < input.columns; i++) {
+                ret.put(i,input.getColumn(i).sum());
+            }
+            return ret;
+        }
+        //row wise
+        else if(axis == 1) {
+            for(int i = 0; i < input.rows; i++) {
+                ret.put(i,input.getRow(i).sum());
+            }
+            return ret;
+        }
+
+        for(int i = 0; i < input.rows; i++)
+            ret.put(i,input.getRow(i).sum());
+        return ret;
+    }
+
+
+
+    /**
+     * Generate a binomial distribution based on the given rng,
+     * a matrix of p values, and a max number.
+     * @param p the p matrix to use
+     * @param n the n to use
+     * @param rng the rng to use
+     * @return a binomial distribution based on the one n, the passed in p values, and rng
+     */
+    public static <E extends FloatMatrix> E binomial(E p,int n,RandomGenerator rng) {
+        FloatMatrix ret = new FloatMatrix(p.rows,p.columns);
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i,MathUtils.binomial(rng, n, p.get(i)));
+        }
+        return createBasedOn(ret,p);
+    }
+
+
+
+    public static FloatMatrix rand(int rows, int columns,float min,float max,RandomGenerator rng) {
+        FloatMatrix ret = new FloatMatrix(rows,columns);
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i,MathUtils.randomNumberBetween(min,max,rng));
+        }
+        return ret;
+    }
+
+
+
+
+    public static FloatMatrix columnWiseMean(FloatMatrix x,int axis) {
+        FloatMatrix ret = FloatMatrix.zeros(x.columns);
+        for(int i = 0; i < x.columns; i++) {
+            ret.put(i,x.getColumn(axis).mean());
+        }
+        return ret;
+    }
+
+
+    public static FloatMatrix toFlattenedFloat(Collection<FloatMatrix> matrices) {
+        int length = 0;
+        for(FloatMatrix m : matrices)  length += m.length;
+        FloatMatrix ret = new FloatMatrix(1,length);
+        int linearIndex = 0;
+        for(FloatMatrix d : matrices) {
+            for(int i = 0; i < d.length; i++) {
+                ret.put(linearIndex++,d.get(i));
+            }
+        }
+
+        return ret;
+
+    }
+
+
+    public static FloatMatrix toFlattenedFloat(int length,Iterator<? extends FloatMatrix>...matrices) {
+
+        FloatMatrix ret = new FloatMatrix(1,length);
+        int linearIndex = 0;
+
+
+        for(Iterator<? extends FloatMatrix> iter : matrices) {
+            while(iter.hasNext()) {
+                FloatMatrix d = iter.next();
+                for(int i = 0; i < d.length; i++) {
+                    ret.put(linearIndex++,d.get(i));
+                }
+            }
+        }
+
+
+        return ret;
+    }
+
+
+    public static FloatMatrix toFlattened(FloatMatrix...matrices) {
+        int length = 0;
+        for(FloatMatrix m : matrices)  length += m.length;
+        FloatMatrix ret = new FloatMatrix(1,length);
+        int linearIndex = 0;
+        for(FloatMatrix d : matrices) {
+            for(int i = 0; i < d.length; i++) {
+                ret.put(linearIndex++,d.get(i));
+            }
+        }
+
+        return ret;
+    }
+
+    public static FloatMatrix avg(FloatMatrix...matrices) {
+        if(matrices == null)
+            return null;
+        if(matrices.length == 1)
+            return matrices[0];
+        else {
+            FloatMatrix ret = matrices[0];
+            for(int i = 1; i < matrices.length; i++)
+                ret = ret.add(matrices[i]);
+
+            ret = ret.div(matrices.length);
+            return ret;
+        }
+    }
+
+
+    public static int maxIndex(FloatMatrix matrix) {
+        double max = matrix.max();
+        for(int j = 0; j < matrix.length; j++) {
+            if(matrix.get(j) == max)
+                return j;
+        }
+        return -1;
+    }
+
+
+    /**
+     * Takes the sigmoid of a given matrix
+     * @param x the input
+     * @param <E>
+     * @return the input with the sigmoid function applied
+     */
+    public static <E extends FloatMatrix> E sqrt(E x) {
+        FloatMatrix ret = new FloatMatrix(x.rows,x.columns);
+        for(int i = 0; i < ret.length; i++)
+            ret.put(i, x.get(i) > 0 ? (float) FastMath.sqrt(x.get(i)) : 0.0f);
+
+        return createBasedOn(ret,x);
+    }
+
+
+    /**
+     * Takes the sigmoid of a given matrix
+     * @param x the input
+     * @param <E>
+     * @return the input with the sigmoid function applied
+     */
+    public static <E extends FloatMatrix> E sigmoid(E x) {
+        FloatMatrix ones = FloatMatrix.ones(x.rows, x.columns);
+        return createBasedOn(ones.div(ones.add(exp(x.neg()))),x);
+    }
+
+    public static FloatMatrix dot(FloatMatrix a,FloatMatrix b) {
+        boolean isScalar = a.isColumnVector() || a.isRowVector() && b.isColumnVector() || b.isRowVector();
+        if(isScalar) {
+            return FloatMatrix.scalar(a.dot(b));
+        }
+        else {
+            return  a.mmul(b);
+        }
+    }
+
+    /**
+     * Ensures numerical stability.
+     * Clips values of input such that
+     * exp(k * in) is within single numerical precision
+     * @param input the input to trim
+     * @param k the k (usually 1)
+     * @param <E>
+     * @return the stabilized input
+     */
+    public static <E extends FloatMatrix> E stabilizeInput(E input,float k) {
+        float realMin =  (float) 1.1755e-38;
+        float cutOff = (float) FastMath.log(realMin);
+        for(int i = 0; i < input.length; i++) {
+            if(input.get(i) * k > -cutOff)
+                input.put(i, (float) -cutOff / k);
+            else if(input.get(i) * k < cutOff)
+                input.put(i,(float) cutOff / k);
+        }
+
+        return input;
+
+    }
+
+
+    public static FloatMatrix out(FloatMatrix a,FloatMatrix b) {
+        return a.mmul(b);
+    }
+
+
+    public static FloatMatrix scalarMinus(float scalar,FloatMatrix ep) {
+        FloatMatrix d = new FloatMatrix(ep.rows,ep.columns);
+        d.addi(scalar);
+        return d.sub(ep);
+    }
+
+    public static <E extends FloatMatrix> E oneMinus(E ep) {
+        return createBasedOn(FloatMatrix.ones(ep.rows, ep.columns).sub(ep),ep);
+    }
+
+    public static <E extends FloatMatrix> E oneDiv(E ep) {
+        for(int i = 0; i < ep.rows; i++) {
+            for(int j = 0; j < ep.columns; j++) {
+                if(ep.get(i,j) == 0) {
+                    ep.put(i,j,0.01f);
+                }
+            }
+        }
+        return createBasedOn(FloatMatrix.ones(ep.rows, ep.columns).div(ep),ep);
+    }
+
+
+    /**
+     * Normalizes the passed in matrix by subtracting the mean
+     * and dividing by the standard deviation
+     * @param toNormalize the matrix to normalize
+     */
+    public static <E extends FloatMatrix> void normalizeZeroMeanAndUnitVariance(E toNormalize) {
+        FloatMatrix columnMeans = toNormalize.columnMeans();
+        FloatMatrix columnStds = columnStdDeviation(toNormalize);
+
+        toNormalize.subiRowVector(columnMeans);
+        columnStds.addi(1e-6f);
+        toNormalize.diviRowVector(columnStds);
+
+    }
+
+
+    /**
+     * Column wise variance
+     * @param input the input to get the variance for
+     * @return the column wise variance of the input
+     */
+    public static FloatMatrix columnVariance(FloatMatrix input) {
+        FloatMatrix columnMeans = input.columnMeans();
+        FloatMatrix ret = new FloatMatrix(1,columnMeans.columns);
+        for(int i = 0;i < ret.columns; i++) {
+            FloatMatrix column = input.getColumn(i);
+            float variance = (float) StatUtils.variance(fromFloatArr(column.toArray()),(double) columnMeans.get(i));
+            if(variance == 0)
+                variance = 1e-6f;
+            ret.put(i,variance);
+        }
+        return ret;
+    }
+
+    /**
+     * Calculates the column wise standard deviations
+     * of the matrix
+     * @param m the matrix to use
+     * @return the standard deviations of each column in the matrix
+     * as a row matrix
+     */
+    public static FloatMatrix columnStd(FloatMatrix m) {
+        FloatMatrix ret = new FloatMatrix(1,m.columns);
+        StandardDeviation std = new StandardDeviation();
+
+        for(int i = 0; i < m.columns; i++) {
+            float result = (float) std.evaluate(fromFloatArr(m.getColumn(i).data));
+            ret.put(i,result);
+        }
+
+        ret.divi(m.rows);
+
+        return ret;
+    }
+
+
+    private static float[] fromDoubleArr(double[] d) {
+        float[] ret = new float[d.length];
+        for(int i = 0; i < d.length; i++)
+            ret[i] = (float) d[i];
+        return ret;
+    }
+
+
+    private static double[] fromFloatArr(float[] d) {
+        double[] ret = new double[d.length];
+        for(int i = 0; i < d.length; i++)
+            ret[i] =  d[i];
+        return ret;
+    }
+
+    /**
+     * Calculates the column wise standard deviations
+     * of the matrix
+     * @param m the matrix to use
+     * @return the standard deviations of each column in the matrix
+     * as a row matrix
+     */
+    public static <E extends FloatMatrix> E rowStd(E m) {
+        StandardDeviation std = new StandardDeviation();
+
+        FloatMatrix ret = new FloatMatrix(1,m.columns);
+        for(int i = 0; i < m.rows; i++) {
+            float result = (float) std.evaluate(fromFloatArr(m.getRow(i).data));
+            ret.put(i,result);
+        }
+        return createBasedOn(ret,m);
+    }
+
+
+    /**
+     * A log impl that prevents numerical underflow
+     * Any number that's infinity or NaN is replaced by
+     * 1e-6.
+     * @param vals the vals to convert to log
+     * @return the log of the numbers or 1e-6 for anomalies
+     */
+    public static <E extends FloatMatrix> E log(E vals) {
+        FloatMatrix ret = new FloatMatrix(vals.rows,vals.columns);
+        for(int i = 0; i < vals.length; i++) {
+            float logVal = (float) Math.log(vals.get(i));
+            if(!Double.isNaN(logVal) && !Double.isInfinite(logVal))
+                ret.put(i,logVal);
+            else
+                ret.put(i,1e-6f);
+        }
+        return createBasedOn(ret,vals);
+    }
+
+
+    public static <E extends FloatMatrix> void normalizeMatrix(E toNormalize) {
+        FloatMatrix columnMeans = toNormalize.columnMeans();
+        toNormalize.subiRowVector(columnMeans);
+        FloatMatrix std = columnStd(toNormalize);
+        std.addi(1e-6f);
+        toNormalize.diviRowVector(std);
+    }
+
+
+    public static <E extends FloatMatrix> E normalizeByColumnSums(E m) {
+        FloatMatrix columnSums = m.columnSums();
+        for(int i = 0; i < m.columns; i++) {
+            m.putColumn(i,m.getColumn(i).div(columnSums.get(i)));
+
+        }
+        return m;
+    }
+
+
+    public static FloatMatrix columnStdDeviation(FloatMatrix m) {
+        FloatMatrix ret = new FloatMatrix(1,m.columns);
+
+        for(int i = 0; i < ret.length; i++) {
+            StandardDeviation dev = new StandardDeviation();
+            double[] vals = fromFloatArr(m.getColumn(i).toArray());
+            float std = (float) dev.evaluate(vals);
+            ret.put(i,std);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Divides the given matrix's columns
+     * by each column's respective standard deviations
+     * @param m the matrix to divide
+     * @return the column divided by the standard deviation
+     */
+    public static <E extends FloatMatrix> E divColumnsByStDeviation(E m) {
+        FloatMatrix std = columnStdDeviation(m);
+        for(int i = 0; i < m.columns; i++) {
+            m.putColumn(i,m.getColumn(i).div(std.get(i)));
+        }
+        return m;
+
+    }
+
+    /**
+     * Subtracts by column mean.
+     * This ensures a mean of zero.
+     * This is part of normalizing inputs
+     * for a neural net
+     * @param m the matrix to normalize
+     * @return the normalized matrix which each
+     * column subtracted by its mean
+     */
+    public static <E extends FloatMatrix> E normalizeByColumnMeans(E m) {
+        FloatMatrix columnMeans = m.columnMeans();
+        for(int i = 0; i < m.columns; i++) {
+            m.putColumn(i,m.getColumn(i).sub(columnMeans.get(i)));
+
+        }
+        return m;
+    }
+
+    public static <E extends FloatMatrix> E  normalizeByRowSums(E m) {
+        FloatMatrix rowSums = m.rowSums();
+        for(int i = 0; i < m.rows; i++) {
+            m.putRow(i,m.getRow(i).div(rowSums.get(i)));
+        }
+        return m;
+    }
+
+
 
 }
