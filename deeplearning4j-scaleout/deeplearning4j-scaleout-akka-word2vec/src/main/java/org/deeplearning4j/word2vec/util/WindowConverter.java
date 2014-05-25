@@ -39,7 +39,7 @@ public class WindowConverter {
 		int count = 0;
 		for(int i = 0; i < words.size(); i++) {
 			String word = new InputHomogenization(words.get(i)).transform();
-			double[] vec2 = vec.getWordVector(word);
+			float[] vec2 = vec.getWordVector(word);
 			if(vec2 == null)
 				vec2 = vec.getOob();
 			System.arraycopy(vec2, 0, example, count, length);

@@ -10,6 +10,7 @@ import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.util.Index;
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,22 +65,22 @@ public class Word2VecLoader {
 				rows = Integer.parseInt(split[0]);
 				vectorSize = Integer.parseInt(split[1]);
 				ret.setLayerSize(vectorSize);
-				ret.setSyn0(new DoubleMatrix(rows - 1,vectorSize));
+				ret.setSyn0(new FloatMatrix(rows - 1,vectorSize));
 				first = false;
 			}
 
 			else {
 				StringTokenizer tokenizer = new StringTokenizer(temp);
-				double[] vec = new double[ret.getLayerSize()];
+				float[] vec = new float[ret.getLayerSize()];
 				int count = 0;
 				String word = tokenizer.nextToken();
 				if(word.equals("</s>"))
 					continue;
 
 				while(tokenizer.hasMoreTokens()) {
-					vec[count++] = Double.parseDouble(tokenizer.nextToken());
+					vec[count++] = Float.parseFloat(tokenizer.nextToken());
 				}
-				ret.getSyn0().putRow(currRow, new DoubleMatrix(vec));
+				ret.getSyn0().putRow(currRow, new FloatMatrix(vec));
 				currRow++;
 
 			}
@@ -132,21 +133,22 @@ public class Word2VecLoader {
         float vector = 0;
         Word2Vec ret = new Word2Vec();
         Index wordIndex = new Index();
-        DoubleMatrix wordVectors = null;
+        FloatMatrix wordVectors = null;
         try {
             bis = new BufferedInputStream(path.endsWith(".gz") ? new GZIPInputStream(new FileInputStream(path)) : new FileInputStream(path));
             dis = new DataInputStream(bis);
-            Map<String,DoubleMatrix> wordMap = new HashMap<String,DoubleMatrix>();
+            Map<String,FloatMatrix> wordMap = new HashMap<>();
             //number of words
             int words = Integer.parseInt(readString(dis));
             //word vector size
             int size = Integer.parseInt(readString(dis));
-            wordVectors = new DoubleMatrix(words,size);
+            wordVectors = new FloatMatrix(words,size);
             String word;
-            double[] vectors = null;
+            float[] vectors = null;
             for (int i = 0; i < words; i++) {
                 word = readString(dis);
-                vectors = new double[size];
+                log.info("Loaded " + word);
+                vectors = new float[size];
                 len = 0;
                 for (int j = 0; j < size; j++) {
                     vector = readFloat(dis);
@@ -159,7 +161,7 @@ public class Word2VecLoader {
                     vectors[j] /= len;
                 }
                 wordIndex.add(word);
-                wordVectors.putRow(i,new DoubleMatrix(vectors));
+                wordVectors.putRow(i, new FloatMatrix(vectors));
                 dis.read();
             }
         } finally {
