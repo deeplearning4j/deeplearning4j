@@ -26,3 +26,4 @@ The above snippet creates a tokenizer capable of stemming.
 In Word2Vec, this is recommended a way of creating a vocabulary. This will avert various quirks in your vocabulary, such as plurals and singulars being counted as two different words.
 
 
+<script src="https://gist.github.com/chrisvnicholson/676b3fdf7fb2be8be912.js"></script>
