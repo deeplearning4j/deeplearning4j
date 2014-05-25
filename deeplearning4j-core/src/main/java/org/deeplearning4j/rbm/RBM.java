@@ -1,17 +1,6 @@
 package org.deeplearning4j.rbm;
 
 
-import static org.deeplearning4j.util.MatrixUtil.log;
-import static org.deeplearning4j.util.MatrixUtil.sqrt;
-import static org.deeplearning4j.util.MatrixUtil.exp;
-import static org.deeplearning4j.util.MatrixUtil.normal;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-import static org.deeplearning4j.util.MatrixUtil.mean;
-import static org.deeplearning4j.util.MatrixUtil.scalarMinus;
-import static org.deeplearning4j.util.MatrixUtil.binomial;
-import static org.deeplearning4j.util.MatrixUtil.normal;
-import static org.deeplearning4j.util.MatrixUtil.columnVariance;
-
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
@@ -22,6 +11,7 @@ import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 
+import static org.deeplearning4j.util.MatrixUtil.*;
 
 
 /**
@@ -43,11 +33,11 @@ import org.jblas.SimpleBlas;
 public class RBM extends BaseNeuralNetwork {
 
     public  static enum VisibleUnit {
-        BINARY,GAUSSIAN
+        BINARY,GAUSSIAN,SOFTMAX
     }
 
     public  static enum HiddenUnit {
-        RECTIFIED,BINARY,GAUSSIAN
+        RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
     /**
      *
@@ -65,9 +55,9 @@ public class RBM extends BaseNeuralNetwork {
 
 
 
-    protected RBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
+    protected RBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
                   DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
-        super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
+        super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn,dist);
 
     }
 
@@ -261,6 +251,14 @@ public class RBM extends BaseNeuralNetwork {
             return new Pair<>(h1Mean,h1Sample);
         }
 
+        else if(hiddenType == HiddenUnit.SOFTMAX) {
+            DoubleMatrix h1Mean = propUp(v);
+            DoubleMatrix h1Sample = softmax(h1Mean);
+            applyDropOutIfNecessary(h1Sample);
+            return new Pair<>(h1Mean,h1Sample);
+        }
+
+
 
         else if(hiddenType == HiddenUnit.BINARY) {
             DoubleMatrix h1Mean = propUp(v);
@@ -303,6 +301,13 @@ public class RBM extends BaseNeuralNetwork {
             return new Pair<>(v1Mean,v1Sample);
 
         }
+
+        else if(visibleType == VisibleUnit.SOFTMAX) {
+            DoubleMatrix v1Mean = propDown(h);
+            DoubleMatrix v1Sample = softmax(v1Mean);
+            return new Pair<>(v1Mean,v1Sample);
+        }
+
         else if(visibleType == VisibleUnit.BINARY) {
             DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
@@ -363,6 +368,12 @@ public class RBM extends BaseNeuralNetwork {
             DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
             return sigmoid(preSig);
         }
+
+        else if(visibleType == VisibleUnit.SOFTMAX) {
+            DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
+            return softmax(preSig);
+        }
+
 
         throw new IllegalStateException("Visible unit type should either be binary or gaussian");
 

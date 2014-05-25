@@ -42,12 +42,13 @@ import akka.routing.RoundRobinPool;
 
 
 /**
- * Handles a set of workers and acts as a parameter server for iterative reduce
+ * Handles a set of workers and acts as a
+ * parameter server for iterative reduce
  * @author Adam Gibson
  *
  */
 public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor<UpdateableImpl> {
-
+    //start with this network as a baseline
     protected BaseMultiLayerNetwork network;
 
     /**
@@ -60,11 +61,6 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         setup(conf);
 
     }
-
-
-
-
-
 
     /**
      * Creates the master and the workers with this given conf
@@ -132,7 +128,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
 
         log.info("Broadcasting initial master network");
-        BaseMultiLayerNetwork network = null;
+        BaseMultiLayerNetwork network;
         if(this.network == null) {
             network = conf.init();
 
@@ -235,7 +231,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                     }
 
 
-                    Job j2 = new Job(worker, (Serializable) data.copy());
+                    Job j2 = new Job(worker,data.copy());
                     //replicate the job to hazelcast
                     stateTracker.addJobToCurrent(j2);
                     //clear data immediately afterwards

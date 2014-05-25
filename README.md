@@ -57,14 +57,27 @@ Matrix-provider agnostic:
 A matrix-abstraction layer that sits atop various matrix providers which will allow for 
 distributed GPU deep learning via either AMD, NVIDIA or native with BLAS, as well as bindings for Colt for plain old Java abstraction layers used in tasks such as face detection, named-entity recognition and sentiment analysis.
 
+
+
 # Maven coordinates
+ It is highly reccommended  that you use development snapshots right now.
+ 
+ <repositories>
+       <repository>
+         <id>snapshots-repo</id>
+         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+         <releases><enabled>false</enabled></releases>
+         <snapshots><enabled>true</enabled></snapshots>
+       </repository>
+   </repositories>
+
 
 ## Singular neural nets
        
        <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-core</artifactId>
-         <version>0.0.3.1</version>
+         <version>0.0.3.2-SNAPSHOT</version>
       </dependency>
 
 
@@ -73,7 +86,7 @@ distributed GPU deep learning via either AMD, NVIDIA or native with BLAS, as wel
         <dependency>
          <groupId>org.deeplearning4j</groupId>
            <artifactId>deeplearning4j-scaleout-akka</artifactId>
-         <version>0.0.3.1</version>
+         <version>0.0.3.2-SNAPSHOT</version>
         </dependency>
 
 
@@ -83,7 +96,7 @@ distributed GPU deep learning via either AMD, NVIDIA or native with BLAS, as wel
          <dependency>
            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
-             <version>0.0.3.1</version>
+             <version>0.0.3.2-SNAPSHOT</version>
           </dependency>
 
 
