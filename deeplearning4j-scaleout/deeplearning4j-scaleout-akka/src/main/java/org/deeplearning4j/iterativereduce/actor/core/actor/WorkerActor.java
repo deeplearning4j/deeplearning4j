@@ -331,7 +331,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		return results;
 	}
 
-	@override
+	@Override
 	public void update(E t) {
 		this.results = t;
 	}
