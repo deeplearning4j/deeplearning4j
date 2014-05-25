@@ -1,11 +1,6 @@
 package org.deeplearning4j.iterativereduce.actor.core.actor;
-
-import java.io.Serializable;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.*;
@@ -124,6 +119,8 @@ public class BatchActor extends UntypedActor {
                 //partition the data and save it for access later.
                 //Avoid loading it in to memory all at once.
                 for(int i = 0; i < numWorkers; i++) {
+                    if(!iter.hasNext())
+                        break;
                     DataSet next = iter.next(miniBatchSize);
                     String worker = nextWorker();
                     log.info("Saving data for worker " + worker);

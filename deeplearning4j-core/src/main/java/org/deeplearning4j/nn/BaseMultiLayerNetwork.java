@@ -409,7 +409,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(getOutputLayer() != null) {
             getOutputLayer().setInput(activations.get(activations.size() - 1));
             if(getOutputLayer().getActivationFunction() == null)
-                outputLayer.setActivationFunction(outputActivationFunction);
+                if(outputActivationFunction != null)
+                    outputLayer.setActivationFunction(outputActivationFunction);
+            else
+                    outputLayer.setActivationFunction(Activations.sigmoid());
+
             activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
 
         }

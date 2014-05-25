@@ -158,7 +158,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 				//				if ((alam < alamin)) {
 				function.setParameters(oldParameters);
 				f = function.getValue();
-				logger.warn("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
+				logger.debug("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
 				return 0.0;
 			}
 
@@ -182,12 +182,12 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			// if value is infinite, i.e. we've
 			// jumped to unstable territory, then scale down jump
 			else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
-				logger.warn ("Value is infinite after jump " + oldAlam + ". f="+f+", f2="+f2+". Scaling back step size...");
+				logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
 				tmplam = .2 * alam;					
 				if(alam < alamin) { //convergence on delta x
 					function.setParameters(oldParameters);
 					f = function.getValue();
-					logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+f);
+					logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
 					return 0.0;
 				}
 			}

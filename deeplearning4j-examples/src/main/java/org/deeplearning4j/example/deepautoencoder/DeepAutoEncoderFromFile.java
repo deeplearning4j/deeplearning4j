@@ -10,7 +10,9 @@ import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.transformation.MatrixTransformations;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
@@ -28,19 +30,18 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,100);
+        DataSetIterator iter = new MnistDataSetIterator(10,60000);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
-        dbn.setRenderWeightsEveryNEpochs(1);
-        dbn.getSigmoidLayers()[dbn.getSigmoidLayers().length - 1].setActivationFunction(Activations.sigmoid());
+
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
 
         while(iter.hasNext()) {
             DataSet d = iter.next();
             dbn.setInput(d.getFirst());
             log.info("Training on " + d.numExamples());
-            encoder.finetune(d.getFirst(),1e-1,1000);
+            encoder.finetune(d.getFirst(),1e-1,100);
 
         }
 
