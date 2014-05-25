@@ -138,7 +138,6 @@ public class DeepAutoEncoder implements Serializable {
         List<DoubleMatrix> activations = encoder.feedForward(input);
         if(decoder == null)
             initDecoder();
-        RBM r = (RBM)  encoder.getLayers()[0];
         //round the input for the binary codes for input, this is only applicable for the forward layer.
         DoubleMatrix decoderInput = round(activations.get(activations.size() - 2));
         decoder.setInput(decoderInput);
