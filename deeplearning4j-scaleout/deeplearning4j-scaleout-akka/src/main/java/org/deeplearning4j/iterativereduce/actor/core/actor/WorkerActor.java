@@ -38,27 +38,13 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 	protected ActorRef mediator;
 	protected E results;
 	protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-	protected int fineTuneEpochs;
-	protected int preTrainEpochs;
-	protected int[] hiddenLayerSizes;
-	protected int numHidden;
-	protected int numVisible;
-	protected int numHiddenNeurons;
-	protected int renderWeightEpochs;
-	protected long seed;
-	protected double learningRate;
-	protected double corruptionLevel;
-	protected Object[] extraParams;
 	protected String id;
 	protected boolean useRegularization;
 	Cluster cluster = Cluster.get(getContext().system());
 	protected ActorRef clusterClient;
 	protected String masterPath;
 	protected StateTracker<E> tracker;
-    protected boolean isNormalizeZeroMeanAndUnitVariance;
-    protected boolean scale;
-    protected boolean active;
-
+    protected Conf conf;
 	public WorkerActor(Conf conf,StateTracker<E> tracker) {
 		this(conf,null,tracker);
 	}
@@ -119,13 +105,11 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 		}
 		log.info("Post stop on worker actor");
 		cluster.unsubscribe(getSelf());
-        active = false;
 	}
 
 	@Override
 	public void preStart() throws Exception {
 		super.preStart();
-        active = true;
 		cluster.subscribe(getSelf(), MemberEvent.class);
 		log.info("Pre start on worker");
 
@@ -148,20 +132,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
 	@Override
 	public void setup(Conf conf) {
-		hiddenLayerSizes = conf.getLayerSizes();
-		numHidden = conf.getnOut();
-		numVisible = conf.getnIn();
-		numHiddenNeurons = hiddenLayerSizes.length;
-		seed = conf.getSeed();
-		renderWeightEpochs = conf.getRenderWeightEpochs();
-		useRegularization = conf.isUseRegularization();
-		learningRate = conf.getPretrainLearningRate();
-		preTrainEpochs = conf.getPretrainEpochs();
-		fineTuneEpochs = conf.getFinetuneEpochs();
-		corruptionLevel = conf.getCorruptionLevel();
-		extraParams = conf.getDeepLearningParams();
-        scale = conf.isScale();
-        isNormalizeZeroMeanAndUnitVariance = conf.isNormalizeZeroMeanAndUnitVariance();
+		this.conf = conf;
 		String url = conf.getMasterUrl();
 		this.masterPath = conf.getMasterAbsPath();
 		Address a = AddressFromURIString.apply(url);

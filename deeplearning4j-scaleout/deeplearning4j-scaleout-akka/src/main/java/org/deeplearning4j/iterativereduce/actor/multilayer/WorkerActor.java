@@ -75,7 +75,6 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
         mediator.tell(new DistributedPubSubMediator.Subscribe(id, getSelf()), getSelf());
 
         heartbeat();
-        active = true;
 
 
     }
@@ -328,16 +327,16 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             throw new IllegalStateException("No job found for worker " + id);
         }
 
-        if(isNormalizeZeroMeanAndUnitVariance)
+        if(conf.isNormalizeZeroMeanAndUnitVariance())
             d.normalizeZeroMeanZeroUnitVariance();
-        if(scale)
+        if(conf.isScale())
             d.scale();
         if(d.getFirst() == null || d.getSecond() == null)
             throw new IllegalStateException("Input cant be null");
 
         if(tracker.isPretrain()) {
             log.info("Worker " + id + " pretraining");
-            network.pretrain(d.getFirst(), extraParams);
+            network.pretrain(d.getFirst(), conf.getDeepLearningParams());
         }
 
         else {
@@ -346,10 +345,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             log.info("Worker " + id + " finetune");
             if(tracker.testSet() != null) {
                 TrainingEvaluator eval = tracker.create(network);
+                network.finetune(d.getSecond(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),eval);
 
             }
-
-            network.finetune(d.getSecond(), learningRate, fineTuneEpochs,null);
+            else
+                network.finetune(d.getSecond(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),null);
 
         }
 
