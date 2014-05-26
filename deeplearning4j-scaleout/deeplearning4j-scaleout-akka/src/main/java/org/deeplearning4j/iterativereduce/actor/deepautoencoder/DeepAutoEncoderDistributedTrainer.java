@@ -19,6 +19,7 @@ import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderHazelCastStateTracker;
+import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.deepautoencoder.UpdateableEncoderImpl;
@@ -50,6 +51,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
     private Integer epochs;
     private ActorRef mediator;
     private DeepAutoEncoder startingNetwork;
+    private BaseMultiLayerNetwork encoder;
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderDistributedTrainer.class);
     private static String systemName = "ClusterSystem";
     private String type = "master";
@@ -75,24 +77,47 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
         this.startingNetwork = startingNetwork;
     }
 
+
+
     /**
      * Master constructor
-     * @param type the type (worker)
+     * @param type the type of this trainer
      * @param iter the dataset to use
      */
-    public DeepAutoEncoderDistributedTrainer(String type, DataSetIterator iter) {
-        this(type,iter,null);
+    public DeepAutoEncoderDistributedTrainer(String type,DataSetIterator iter) {
+        this.type = type;
+        this.iter = iter;
     }
-
-
     /**
      * Master constructor
      * @param iter the dataset to use
      */
     public DeepAutoEncoderDistributedTrainer(DataSetIterator iter) {
-        this("master",iter,null);
+        this.type = "master";
+        this.iter = iter;
     }
 
+
+    /**
+     * Master constructor
+     * @param iter the dataset to use
+     */
+    public DeepAutoEncoderDistributedTrainer(DataSetIterator iter, BaseMultiLayerNetwork startingNetwork) {
+        this("master",iter,startingNetwork);
+    }
+
+
+    /**
+     * Master constructor
+     * @param type the type (worker)
+     * @param iter the dataset to use
+     * @param startingNetwork a starting neural network
+     */
+    public DeepAutoEncoderDistributedTrainer(String type, DataSetIterator iter, BaseMultiLayerNetwork startingNetwork) {
+        this.type = type;
+        this.iter = iter;
+        this.encoder = startingNetwork;
+    }
 
     /**
      * Master constructor
@@ -101,6 +126,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
     public DeepAutoEncoderDistributedTrainer(DataSetIterator iter, DeepAutoEncoder startingNetwork) {
         this("master",iter,startingNetwork);
     }
+
 
     /**
      * The worker constructor
@@ -139,7 +165,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
 
         log.info("Started batch actor");
 
-        Props masterProps = startingNetwork != null ? Props.create(MasterActor.class,c,batchActor,startingNetwork,stateTracker) : Props.create(MasterActor.class,c,batchActor,stateTracker);
+        Props masterProps = startingNetwork != null ? Props.create(MasterActor.class,c,batchActor,startingNetwork,stateTracker) : encoder != null ? Props.create(MasterActor.class,c,batchActor,encoder,stateTracker) : Props.create(MasterActor.class,c,batchActor,stateTracker);
 
 		/*
 		 * Starts a master: in the active state with the poison pill upon failure with the role of master
@@ -217,9 +243,6 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
 
                 log.info("Started state tracker with connection string " + stateTracker.connectionString());
 
-
-                if(!stateTracker.isPretrain())
-                    throw new IllegalStateException("State tracker must start on pretrain");
 
                 if(finetune)
                     stateTracker.moveToFinetune();
