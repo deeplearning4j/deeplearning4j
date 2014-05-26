@@ -21,6 +21,8 @@ public class RBMUtil {
         visibleToHidden.put(RBM.VisibleUnit.GAUSSIAN,RBM.HiddenUnit.GAUSSIAN);
         hiddenToVisible.put(RBM.HiddenUnit.BINARY,RBM.VisibleUnit.BINARY);
         hiddenToVisible.put(RBM.HiddenUnit.GAUSSIAN,RBM.VisibleUnit.GAUSSIAN);
+        visibleToHidden.put(RBM.VisibleUnit.SOFTMAX,RBM.HiddenUnit.SOFTMAX);
+        hiddenToVisible.put(RBM.HiddenUnit.SOFTMAX,RBM.VisibleUnit.SOFTMAX);
     }
 
 
