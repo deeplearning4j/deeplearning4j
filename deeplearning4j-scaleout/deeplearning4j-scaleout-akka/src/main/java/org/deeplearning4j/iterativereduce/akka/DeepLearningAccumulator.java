@@ -1,7 +1,6 @@
 package org.deeplearning4j.iterativereduce.akka;
 
-import java.util.ArrayList;
-import java.util.List;
+
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
@@ -13,7 +12,6 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
  */
 public class DeepLearningAccumulator {
 
-	private List<BaseMultiLayerNetwork> workers = new ArrayList<BaseMultiLayerNetwork>();
     private BaseMultiLayerNetwork averaged = null;
     private int numWorkers;
 
