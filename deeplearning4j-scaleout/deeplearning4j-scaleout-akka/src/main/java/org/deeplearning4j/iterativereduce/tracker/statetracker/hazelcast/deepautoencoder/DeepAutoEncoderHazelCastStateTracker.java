@@ -767,7 +767,7 @@ public class DeepAutoEncoderHazelCastStateTracker extends Application<HazelCastC
 
     @Override
     public  UpdateableEncoderImpl getCurrent() throws Exception {
-        UpdateableEncoderImpl u =  (UpdateableEncoderImpl) master.get();
+        UpdateableEncoderImpl u =  master != null ? (UpdateableEncoderImpl)  master.get() : null;
         if(u == null)
             return null;
         return u;
@@ -779,15 +779,6 @@ public class DeepAutoEncoderHazelCastStateTracker extends Application<HazelCastC
             log.warn("Not setting a null update");
             return;
         }
-        else {
-            DeepAutoEncoder n =  e.get();
-            if(n.getDecoder() == null || n.getEncoder() == null) {
-                log.warn("Not setting a null layer neural net update");
-                return;
-            }
-        }
-
-
         this.master.set(e);
     }
 

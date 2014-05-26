@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import akka.actor.Cancellable;
+import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
@@ -23,6 +24,7 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import org.deeplearning4j.scaleout.iterativereduce.deepautoencoder.UpdateableEncoderImpl;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import scala.concurrent.duration.Duration;
 
@@ -40,16 +42,16 @@ public class ModelSavingActor extends UntypedActor {
     private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     private Cluster cluster = Cluster.get(context().system());
     private ModelSaver modelSaver = new DefaultModelSaver();
-    private StateTracker<UpdateableImpl> stateTracker;
+    private StateTracker<Updateable<?>> stateTracker;
 
 
-    public ModelSavingActor(String pathToSave,StateTracker<UpdateableImpl> stateTracker) {
+    public ModelSavingActor(String pathToSave,StateTracker<Updateable<?>> stateTracker) {
         this.pathToSave = pathToSave;
         modelSaver = new DefaultModelSaver(new File(pathToSave));
         this.stateTracker = stateTracker;
     }
 
-    public ModelSavingActor(ModelSaver saver,StateTracker<UpdateableImpl> stateTracker) {
+    public ModelSavingActor(ModelSaver saver,StateTracker<Updateable<?>> stateTracker) {
         this.modelSaver = saver;
         this.stateTracker = stateTracker;
 
@@ -83,12 +85,23 @@ public class ModelSavingActor extends UntypedActor {
     @SuppressWarnings("unchecked")
     public void onReceive(final Object message) throws Exception {
         if(message instanceof MoreWorkMessage) {
-            BaseMultiLayerNetwork current = stateTracker.getCurrent().get();
-            if(current.getLayers() == null || current.getSigmoidLayers() == null)
-                throw new IllegalStateException("Invalid model found when prompted to save..");
-            current.clearInput();
-            stateTracker.setCurrent(new UpdateableImpl(current));
-            modelSaver.save(current);
+            if(stateTracker.getCurrent().get().getClass().isAssignableFrom(BaseMultiLayerNetwork.class)) {
+                BaseMultiLayerNetwork current = (BaseMultiLayerNetwork) stateTracker.getCurrent().get();
+                if(current.getLayers() == null || current.getSigmoidLayers() == null)
+                    throw new IllegalStateException("Invalid model found when prompted to save..");
+                current.clearInput();
+                stateTracker.setCurrent(new UpdateableImpl(current));
+                modelSaver.save(current);
+            }
+            else if(stateTracker.getCurrent().get().getClass().isAssignableFrom(DeepAutoEncoder.class)) {
+                DeepAutoEncoder current = (DeepAutoEncoder) stateTracker.getCurrent().get();
+                current.getEncoder().clearInput();
+                if(current.getDecoder() != null)
+                    current.getDecoder().clearInput();
+                stateTracker.setCurrent(new UpdateableEncoderImpl(current));
+                modelSaver.save(current);
+            }
+
 
 
         }
