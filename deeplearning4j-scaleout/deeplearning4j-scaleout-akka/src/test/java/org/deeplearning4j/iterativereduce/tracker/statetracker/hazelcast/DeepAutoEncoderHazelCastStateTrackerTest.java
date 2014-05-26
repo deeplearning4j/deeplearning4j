@@ -18,7 +18,7 @@ import org.junit.Test;
 
 import com.hazelcast.core.Hazelcast;
 
-public class HazelCastStateTrackerTest  {
+public class DeepAutoEncoderHazelCastStateTrackerTest {
 
 
 
