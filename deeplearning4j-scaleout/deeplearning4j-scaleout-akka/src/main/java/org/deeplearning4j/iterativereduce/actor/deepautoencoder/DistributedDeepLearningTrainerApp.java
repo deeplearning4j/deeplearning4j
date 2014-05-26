@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderHazelCastStateTracker;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
@@ -61,8 +62,8 @@ import java.io.File;
  * @author Adam Gibson
  *
  */
-public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistributed {
-	protected static Logger log = LoggerFactory.getLogger(ActorNetworkRunnerApp.class);
+public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurableDistributed {
+	protected static Logger log = LoggerFactory.getLogger(DistributedDeepLearningTrainerApp.class);
 
 	@Option(name = "-a",usage="algorithm to use: sda (stacked denoising autoencoders),dbn (deep belief networks),cdbn (continuous deep belief networks)")
 	protected String algorithm;
@@ -110,7 +111,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	protected DataSetIterator iter;
 
 
-	public ActorNetworkRunnerApp(String[] args) {
+	public DistributedDeepLearningTrainerApp(String[] args) {
 		CmdLineParser parser = new CmdLineParser(this);
 		try {
 			parser.parseArgument(args);
@@ -144,7 +145,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			Conf conf = retriever.retrieve();
 			String address = conf.getMasterUrl();
             log.info("Creating hazel cast state tracker... " + conf.getStateTrackerConnectionString());
-            HazelCastStateTracker stateTracker = new HazelCastStateTracker(conf.getStateTrackerConnectionString());
+            DeepAutoEncoderHazelCastStateTracker stateTracker = new DeepAutoEncoderHazelCastStateTracker(conf.getStateTrackerConnectionString());
 
             log.info("Creating hazel cast via worker " + stateTracker.connectionString());
             runner = new DeepAutoEncoderDistributedTrainer(type,address);
@@ -260,7 +261,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		ActorNetworkRunnerApp app = new ActorNetworkRunnerApp(args);
+		DistributedDeepLearningTrainerApp app = new DistributedDeepLearningTrainerApp(args);
 		app.exec();
 		if(app.type.equals("master"))
 			app.train();

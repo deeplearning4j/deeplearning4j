@@ -17,7 +17,6 @@ import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepaut
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.deepautoencoder.UpdateableEncoderImpl;
-import org.jblas.DoubleMatrix;
 
 import java.io.DataOutputStream;
 import java.util.Collection;
@@ -124,10 +123,16 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         log.info("Broadcasting initial master network");
         DeepAutoEncoder network;
         if(this.network == null) {
-            if(encoder != null)
+            if(encoder != null) {
                 network = new DeepAutoEncoder(encoder);
-            else
+                this.network = network;
+
+            }
+            else {
                 network = new DeepAutoEncoder(conf.init());
+                this.network = network;
+
+            }
         }
 
 
@@ -144,7 +149,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         UpdateableEncoderImpl masterResults = new UpdateableEncoderImpl(network);
 
         /**
-         * Note that at this point we are storing an unitialized network.
+         * Note that at this point we are storing an uninitialized network.
          *
          *
          */
