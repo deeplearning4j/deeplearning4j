@@ -100,8 +100,8 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		alam2 = tmplam = 0.0; 
 		f2 = fold = function.getValue();
 		if (logger.isDebugEnabled()) {
-			logger.debug ("ENTERING BACKTRACK\n");
-			logger.debug("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
+			logger.trace ("ENTERING BACKTRACK\n");
+			logger.trace("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
 					+	line.norm1() + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
 		}
 		assert (!MatrixUtil.isNaN(g));
@@ -143,9 +143,9 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		for(iteration = 0; iteration < maxIterations; iteration++) {
 			// x = oldParameters + alam*line
 			// initially, alam = 1.0, i.e. take full Newton step
-			logger.debug("BackTrack loop iteration " + iteration +" : alam="+
+			logger.trace("BackTrack loop iteration " + iteration +" : alam="+
 					alam+" oldAlam="+oldAlam);
-			logger.debug ("before step, x.1norm: " + x.norm1() +
+			logger.trace ("before step, x.1norm: " + x.norm1() +
 					"\nalam: " + alam + "\noldAlam: " + oldAlam);
 			assert(alam != oldAlam) : "alam == oldAlam";
 			x.addi(line.mul(alam - oldAlam));  // step
@@ -158,7 +158,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 				//				if ((alam < alamin)) {
 				function.setParameters(oldParameters);
 				f = function.getValue();
-				logger.debug("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
+				logger.trace("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
 				return 0.0;
 			}
 

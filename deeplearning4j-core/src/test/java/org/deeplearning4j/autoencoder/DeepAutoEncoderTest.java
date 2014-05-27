@@ -1,13 +1,13 @@
 package org.deeplearning4j.autoencoder;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.random.MersenneTwister;
+
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
+
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.util.MatrixUtil;
+
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class DeepAutoEncoderTest {
     @Test
     public void testWithMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(200);
+        fetcher.fetch(20);
         DataSet data = fetcher.next();
         data.filterAndStrip(new int[]{0, 1});
         log.info("Training on " + data.numExamples());
@@ -35,11 +35,17 @@ public class DeepAutoEncoderTest {
                 .numberOfOutPuts(2)
                 .build();
 
-        dbn.pretrain(data.getFirst(),new Object[]{1,1e-1,10000});
+        dbn.pretrain(data.getFirst(),new Object[]{1,1e-1,1000});
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
         encoder.finetune(data.getFirst(),1e-3,1000);
+
+        assumeNotNull(encoder.getEncoder());
+        assumeNotNull(encoder.getDecoder());
+        assumeNotNull(encoder.getDecoder(),encoder.getEncoder(),encoder.getDecoder().getOutputLayer());
+
+
 
         DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
         for(int j = 0; j < data.numExamples(); j++) {

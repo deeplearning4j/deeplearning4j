@@ -91,7 +91,8 @@ public class ModelSavingActor extends UntypedActor {
                     throw new IllegalStateException("Invalid model found when prompted to save..");
                 current.clearInput();
                 stateTracker.setCurrent(new UpdateableImpl(current));
-                modelSaver.save(current);
+                if(stateTracker.hasBegun())
+                    modelSaver.save(current);
             }
             else if(stateTracker.getCurrent().get().getClass().isAssignableFrom(DeepAutoEncoder.class)) {
                 DeepAutoEncoder current = (DeepAutoEncoder) stateTracker.getCurrent().get();
@@ -99,7 +100,8 @@ public class ModelSavingActor extends UntypedActor {
                 if(current.getDecoder() != null)
                     current.getDecoder().clearInput();
                 stateTracker.setCurrent(new UpdateableEncoderImpl(current));
-                modelSaver.save(current);
+                if(stateTracker.hasBegun())
+                    modelSaver.save(current);
             }
 
 
