@@ -29,22 +29,20 @@ public class DistributedDeepAutoEncoderExample {
         DataSetIterator iter = new MnistDataSetIterator(80,60000);
 
         Conf c = new Conf();
-        c.setFinetuneEpochs(10000);
-        c.setPretrainEpochs(100);
+        c.setFinetuneEpochs(100);
+        c.setPretrainEpochs(15);
         c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-1);
         c.setLayerSizes(new int[]{1000, 500, 250, 30});
         c.setnIn(784);
-        c.setDropOut(5e-1);
         c.setSplit(100);
         c.setSparsity(1e-1);
         c.setUseAdaGrad(true);
         c.setnOut(10);
-        c.setSplit(100);
         c.setMultiLayerClazz(DBN.class);
-        c.setUseRegularization(true);
+        c.setUseRegularization(false);
         c.setL2(2e-2);
-        c.setDeepLearningParams(new Object[]{1,1e-1,100});
+        c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         DeepAutoEncoderHazelCastStateTracker tracker = new DeepAutoEncoderHazelCastStateTracker();
         tracker.moveToFinetune();
         DeepAutoEncoderDistributedTrainer runner = new DeepAutoEncoderDistributedTrainer("master",iter,d);

@@ -321,19 +321,8 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
         this.conf = conf;
 
         //only start dropwizard on the master
-        if(stateTracker instanceof HazelCastStateTracker && type.equals("master")) {
-            HazelCastStateTracker s = (HazelCastStateTracker) stateTracker;
-            try {
-                InputStream is = new ClassPathResource("dropwizard.yml").getInputStream();
-                File tmpConfig = new File("dropwizard.yml");
-                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpConfig));
-                IOUtils.copy(is,bos);
-                bos.flush();
-                s.run(new String[]{"server",tmpConfig.getAbsolutePath()});
-                tmpConfig.deleteOnExit();
-            } catch(Exception e) {
-                throw new RuntimeException(e);
-            }
+        if(type.equals("master")) {
+          stateTracker.startRestApi();
         }
 
         else if(stateTracker instanceof  HazelCastStateTracker)

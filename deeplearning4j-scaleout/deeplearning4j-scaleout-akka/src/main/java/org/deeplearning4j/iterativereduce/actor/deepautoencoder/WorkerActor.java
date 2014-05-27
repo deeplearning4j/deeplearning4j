@@ -182,15 +182,64 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             throw new IllegalStateException("Input cant be null");
 
         if(tracker.isPretrain()) {
-            log.info("Worker " + id + " pretraining");
-            network.getEncoder().pretrain(d.getFirst(),conf.getDeepLearningParams());
+            int numTries = 0;
+            boolean done = false;
+            while(!done && numTries < 3) {
+                try {
+                    log.info("Worker " + id + " pretraining");
+                    network.getEncoder().pretrain(d.getFirst(),conf.getDeepLearningParams());
+                    done = true;
+                }catch(Exception e) {
+                    //diagnose what happened
+                    if(d.getFirst() == null) {
+                        d = (DataSet) currentJob.getWork();
+                    }
+                    numTries++;
+                }
+            }
+
+            if(!done) {
+                log.warn("Worker " + id  + " failed! returning null");
+                try {
+                    if(!tracker.isDone())
+                        tracker.clearJob(id);
+
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                if(!tracker.isDone())
+                    isWorking.set(false);
+            }
+
+
         }
 
         else {
+            int numTries = 0;
+            boolean done = false;
+            while(!done && numTries < 3) {
+                try {
+                    network.finetune(d.getFirst(),conf.getFinetuneLearningRate(),conf.getFinetuneEpochs());
+                    log.info("Worker " + id + " finetune");
+                    done = true;
+                }catch(Exception e) {
+                    //diagnose what happened
+                    numTries++;
+                }
+            }
 
-            network.finetune(d.getFirst(),conf.getFinetuneLearningRate(),conf.getFinetuneEpochs());
-            log.info("Worker " + id + " finetune");
+            if(!done) {
+                log.warn("Worker " + id  + " failed! returning null");
+                try {
+                    if(!tracker.isDone())
+                        tracker.clearJob(id);
 
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                if(!tracker.isDone())
+                    isWorking.set(false);
+            }
         }
 
         //job is delegated, clear so as not to cause redundancy

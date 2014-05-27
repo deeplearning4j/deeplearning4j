@@ -88,7 +88,8 @@ public class DeepAutoEncoder implements Serializable {
             decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
                     .withOutputLossFunction(OutputLayer.LossFunction.XENT)
                     .activateForLayer(encoder.getActivationFunctionForLayer())
-                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1]).numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
+                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
+                    .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
                     .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad()).withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
@@ -124,6 +125,8 @@ public class DeepAutoEncoder implements Serializable {
 
         decoder.setSigmoidLayers(clonedHidden);
         decoder.setLayers(cloned);
+
+
 
 
         //weights on the first layer are n times bigger

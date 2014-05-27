@@ -257,6 +257,12 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
      */
     public void setServerPort(int port);
 
+
+    /**
+     * Starts the rest api
+     */
+    void startRestApi();
+
     /**
      * Gets the server port the state tracker is listening on (where applicable)
      * @return
@@ -266,14 +272,32 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	 * Sets done to true
 	 */
 	void finish();
-	
+
+    /**
+     * Current mini batch size
+     * @return
+     */
+    int miniBatchSize();
+
 	/**
 	 * Whether the cluster is done training
 	 * @return whether the cluster is done training
 	 */
 	boolean isDone();
-	
-	/**
+
+    /**
+     * Begin training
+     */
+    void beginTraining();
+
+    /**
+     * Whether the cluster has begun training
+     * @return whether the cluster  has begun training
+     */
+    boolean hasBegun();
+
+
+    /**
 	 * Increments the number of times pre train has run.
 	 */
 	void incrementNumTimesPreTrainRan();
