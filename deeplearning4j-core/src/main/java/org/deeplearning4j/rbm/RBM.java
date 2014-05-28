@@ -33,7 +33,9 @@ import static org.deeplearning4j.util.MatrixUtil.*;
 public class RBM extends BaseNeuralNetwork {
 
     public  static enum VisibleUnit {
-        BINARY,GAUSSIAN,SOFTMAX
+        BINARY,GAUSSIAN,SOFTMAX,LINEAR
+
+
     }
 
     public  static enum HiddenUnit {
@@ -245,7 +247,7 @@ public class RBM extends BaseNeuralNetwork {
             this.hiddenSigma = columnVariance(h1Mean);
 
             DoubleMatrix h1Sample =  h1Mean.addi(normal(getRng(),h1Mean,this.hiddenSigma));
-            ;
+
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
@@ -302,6 +304,12 @@ public class RBM extends BaseNeuralNetwork {
 
         }
 
+        else if(visibleType == VisibleUnit.LINEAR) {
+            DoubleMatrix v1Mean = propDown(h);
+            DoubleMatrix v1Sample = normal(getRng(),v1Mean,1);
+            return new Pair<>(v1Mean,v1Sample);
+        }
+
         else if(visibleType == VisibleUnit.SOFTMAX) {
             DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = softmax(v1Mean);
@@ -331,7 +339,8 @@ public class RBM extends BaseNeuralNetwork {
 
 
         if(hiddenType == HiddenUnit.RECTIFIED) {
-            DoubleMatrix preSig = v.divRowVector(sigma).mmul(W).addiRowVector(hBias);
+            DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
+            MatrixUtil.max(0,preSig);
             return preSig;
         }
 
@@ -361,6 +370,10 @@ public class RBM extends BaseNeuralNetwork {
     public DoubleMatrix propDown(DoubleMatrix h) {
         if(visibleType  == VisibleUnit.GAUSSIAN) {
             DoubleMatrix vMean = h.mmul(W.transpose()).mulRowVector(vBias.add(sigma));
+            return vMean;
+        }
+        else if(visibleType == VisibleUnit.LINEAR) {
+            DoubleMatrix vMean = normal(getRng(),h.mmul(W.transpose()).addRowVector(vBias),1);
             return vMean;
         }
 
