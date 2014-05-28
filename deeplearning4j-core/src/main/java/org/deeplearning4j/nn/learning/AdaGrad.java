@@ -87,7 +87,7 @@ public class AdaGrad implements Serializable {
             this.historicalGradient = DoubleMatrix.zeros(this.gradient.rows,this.gradient.columns);
         this.historicalGradient.addi(squaredGradient);
         numIterations++;
-        DoubleMatrix sqrtGradient = sqrt(squaredGradient).add(fudgeFactor);
+        DoubleMatrix sqrtGradient = sqrt(historicalGradient).add(fudgeFactor);
         DoubleMatrix div = abs(gradient).div(sqrtGradient);
 		this.adjustedGradient = div.mul(masterStepSize);
 		//ensure no zeros

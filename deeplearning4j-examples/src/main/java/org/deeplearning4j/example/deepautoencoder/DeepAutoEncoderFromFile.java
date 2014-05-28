@@ -8,19 +8,16 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.transformation.MatrixTransformations;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Read a DBN from a file and use that as the basis for the deep autoencoder
@@ -34,14 +31,30 @@ public class DeepAutoEncoderFromFile {
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
-
+        RBM r = (RBM) dbn.getLayers()[dbn.getnLayers() - 1];
+        r.setVisibleType(RBM.VisibleUnit.GAUSSIAN);
+        r.setHiddenType(RBM.HiddenUnit.BINARY);
+        dbn.setLayerLearningRates(Collections.singletonMap(dbn.getnLayers() - 1,1e-3));
+        dbn.getLayers()[3].setRenderEpochs(1);
+        dbn.getSigmoidLayers()[dbn.getnLayers() - 1].setActivationFunction(Activations.sigmoid());
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
 
+
+        encoder.setHiddenUnit(RBM.HiddenUnit.GAUSSIAN);
+        encoder.setVisibleUnit(RBM.VisibleUnit.BINARY);
+
+
         while(iter.hasNext()) {
-            DataSet d = iter.next();
-            dbn.setInput(d.getFirst());
-            log.info("Training on " + d.numExamples());
-            encoder.finetune(d.getFirst(),1e-1,100);
+            DataSet next = iter.next();
+            dbn.setInput(next.getFirst());
+            dbn.pretrain(next.getFirst(),1,1e-2,1000);
+            log.info("Training on " + next.numExamples());
+            List<DoubleMatrix> activations = dbn.feedForward();
+            log.info("Activation sum was " + activations.get(activations.size() - 2));
+            encoder.finetune(next.getFirst(),1e-1,1000);
+
+
+
 
         }
 

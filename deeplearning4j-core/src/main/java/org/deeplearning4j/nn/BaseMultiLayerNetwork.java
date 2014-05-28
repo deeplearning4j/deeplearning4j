@@ -155,6 +155,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Output activation function
      */
     protected ActivationFunction outputActivationFunction;
+    /**
+     * Layer specific learning rates
+     */
+    protected Map<Integer,Double> layerLearningRates = new HashMap<>();
+
 
 
     /* Reflection/factory constructor */
@@ -1043,6 +1048,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 }
         }
 
+        this.layerLearningRates = network.layerLearningRates;
         this.normalizeByInputRows = network.normalizeByInputRows;
         this.useAdaGrad = network.useAdaGrad;
         this.hiddenLayerSizes = network.hiddenLayerSizes;
@@ -1155,7 +1161,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     /**
      * Creates a hidden layer with the given parameters.
      * The default implementation is a binomial sampling
-     * hidden layer, but this can be overriden
+     * hidden layer, but this can be overridden
      * for other kinds of hidden units
      * @param nIn the number of inputs
      * @param nOut the number of outputs
@@ -1575,9 +1581,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.outputActivationFunction = outputActivationFunction;
     }
 
+    public Map<Integer, Double> getLayerLearningRates() {
+        return layerLearningRates;
+    }
+
+    public void setLayerLearningRates(Map<Integer, Double> layerLearningRates) {
+        this.layerLearningRates = layerLearningRates;
+    }
+
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
         private E ret;
+        private Map<Integer,Double> layerLearningRates = new HashMap<>();
         private int nIns;
         private int[] hiddenLayerSizes;
         private int nOuts;
@@ -1608,6 +1623,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
         private ActivationFunction outputActivationFunction = Activations.softmax();
+
+
+        public Builder learningRateForLayer(Map<Integer,Double> learningRates) {
+            this.layerLearningRates.putAll(learningRates);
+            return this;
+        }
 
         public Builder activateForLayer(Map<Integer,ActivationFunction> activationForLayer) {
             this.activationForLayer.putAll(activationForLayer);
@@ -1938,7 +1959,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.getWeightTransforms().putAll(weightTransforms);
                 ret.getVisibleBiasTransforms().putAll(visibleBiasTransforms);
                 ret.getHiddenBiasTransforms().putAll(hiddenBiasTransforms);
-
+                ret.getLayerLearningRates().putAll(layerLearningRates);
                 if(hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
 
