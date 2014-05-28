@@ -43,6 +43,8 @@ public class DeepAutoEncoder implements Serializable {
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
     private BaseMultiLayerNetwork decoder;
+    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.GAUSSIAN;
+    private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
@@ -63,36 +65,40 @@ public class DeepAutoEncoder implements Serializable {
 
         if (encoder.getClass().isAssignableFrom(DBN.class)) {
             DBN d = (DBN) encoder;
-            RBM finalRbm = (RBM) d.getLayers()[d.getLayers().length - 1];
-            //note the gaussian visible unit, we want a GBRBM here for the continuous inputs for the real value codes from the encoder
-            Map<Integer,RBM.HiddenUnit> m = Collections.singletonMap(0, RBMUtil.inverse(finalRbm.getHiddenType()));
-            Map<Integer,RBM.VisibleUnit> m2 = Collections.singletonMap(0, RBMUtil.inverse(finalRbm.getVisibleType()));
+            //note the gaussian visible unit, we want a GBRBM here for
+            //the continuous inputs for the real value codes from the encoder
+            Map<Integer,RBM.VisibleUnit> m = Collections.singletonMap(0, visibleUnit);
+            Map<Integer,RBM.HiddenUnit> m2 = Collections.singletonMap(0, hiddenUnit);
 
             decoder = new DBN.Builder()
-                    .withVisibleUnitsByLayer(m2)
-                    .withHiddenUnitsByLayer(m)
+                    .withVisibleUnitsByLayer(m)
+                    .withHiddenUnitsByLayer(m2)
                     .withHiddenUnits(d.getHiddenUnit()).withVisibleUnits(d.getVisibleUnit())
                     .withVisibleUnits(d.getVisibleUnit())
                     .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
-                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
+                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut())
+                    .withLossFunction(encoder.getLossFunction())
                     .withOutputActivationFunction(Activations.sigmoid())
-                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad()).withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
+                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad())
+                    .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
                     .build();
 
 
         }
         else {
             decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
-                    .withOutputLossFunction(OutputLayer.LossFunction.XENT)
+                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                     .activateForLayer(encoder.getActivationFunctionForLayer())
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
-                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut()).withLossFunction(encoder.getLossFunction())
-                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad()).withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
+                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut())
+                    .withLossFunction(encoder.getLossFunction())
+                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad())
+                    .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
                     .build();
 
 
@@ -119,17 +125,9 @@ public class DeepAutoEncoder implements Serializable {
         ArrayUtil.reverse(clonedHidden);
 
 
-
-
-
-
         decoder.setSigmoidLayers(clonedHidden);
         decoder.setLayers(cloned);
 
-
-
-
-        //weights on the first layer are n times bigger
 
     }
 
@@ -164,7 +162,21 @@ public class DeepAutoEncoder implements Serializable {
         return decoderActivations.get(decoderActivations.size() - 1);
     }
 
+    public RBM.VisibleUnit getVisibleUnit() {
+        return visibleUnit;
+    }
 
+    public void setVisibleUnit(RBM.VisibleUnit visibleUnit) {
+        this.visibleUnit = visibleUnit;
+    }
+
+    public RBM.HiddenUnit getHiddenUnit() {
+        return hiddenUnit;
+    }
+
+    public void setHiddenUnit(RBM.HiddenUnit hiddenUnit) {
+        this.hiddenUnit = hiddenUnit;
+    }
 
     public BaseMultiLayerNetwork getEncoder() {
         return encoder;

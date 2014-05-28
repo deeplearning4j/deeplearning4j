@@ -147,15 +147,17 @@ public class DBN extends BaseMultiLayerNetwork {
 
             }
             log.info("Training on layer " + (i + 1));
+            //override learning rate where present
+            double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
             if(isForceNumEpochs()) {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-                    getLayers()[i].train(layerInput, learningRate,new Object[]{k,learningRate});
+                    getLayers()[i].train(layerInput, realLearningRate,new Object[]{k,learningRate});
                     getLayers()[i].epochDone(epoch);
                 }
             }
             else
-                getLayers()[i].trainTillConvergence(layerInput, learningRate, new Object[]{k,learningRate,epochs});
+                getLayers()[i].trainTillConvergence(layerInput, realLearningRate, new Object[]{k,realLearningRate,epochs});
 
 
         }
