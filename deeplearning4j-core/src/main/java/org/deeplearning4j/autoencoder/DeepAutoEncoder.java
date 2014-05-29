@@ -157,7 +157,6 @@ public class DeepAutoEncoder implements Serializable {
         if(decoder == null)
             initDecoder();
         DoubleMatrix encode = encode(input);
-        //round the input for the binary codes for input, this is only applicable for the forward layer.
         DoubleMatrix decoderInput = sigmoid(encode);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
@@ -174,9 +173,7 @@ public class DeepAutoEncoder implements Serializable {
      */
     public DoubleMatrix reconstruct(DoubleMatrix input) {
         DoubleMatrix encode = encode(input);
-        //round the input for the binary codes for input, this is only applicable for the forward layer.
-        DoubleMatrix decoderInput = round(encode);
-        MatrixUtil.scaleByMax(decoderInput);
+        DoubleMatrix decoderInput = sigmoid(encode);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
     }
