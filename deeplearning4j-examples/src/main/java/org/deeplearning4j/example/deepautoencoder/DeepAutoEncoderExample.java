@@ -28,7 +28,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(10,80);
+        DataSetIterator iter = new MnistDataSetIterator(10,10);
 
         Map<Integer,Boolean> activationForLayer = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class DeepAutoEncoderExample {
                 .withHiddenUnitsByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN))
                 .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
-                .lossFunctionByLayer(Collections.singletonMap(3, NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD))
+                .lossFunctionByLayer(Collections.singletonMap(3, NeuralNetwork.LossFunction.SQUARED_LOSS))
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .sampleOrActivateByLayer(activationForLayer).activateForLayer(Collections.singletonMap(3,Activations.sigmoid()))
                 .learningRateForLayer(Collections.singletonMap(3, 1e-2)).withDropOut(0.5)
@@ -49,7 +49,7 @@ public class DeepAutoEncoderExample {
 
         while(iter.hasNext()) {
             DataSet data = iter.next();
-            dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 10000});
+            dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 100});
 
 
 

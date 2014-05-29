@@ -940,13 +940,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public double squaredLoss() {
-        DoubleMatrix reconstructed = reconstruct(input);
-        double loss = MatrixFunctions.powi(reconstructed.sub(input), 2).sum() / input.rows;
+        DoubleMatrix squaredDiff = pow(reconstruct(input).sub(input),2);
+        double loss = squaredDiff.columnSums().sum() / input.rows;
         if(this.useRegularization) {
             loss += 0.5 * l2 * MatrixFunctions.pow(W,2).sum();
         }
 
-        return -loss;
+        return loss;
     }
 
 
