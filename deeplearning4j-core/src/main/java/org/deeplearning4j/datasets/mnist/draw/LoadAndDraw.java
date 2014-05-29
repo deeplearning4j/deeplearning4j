@@ -33,10 +33,10 @@ public class LoadAndDraw {
 				DoubleMatrix reconstructed2 = reconstructed.getRow(i);
 				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
 
-				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+				DrawReconstruction d = new DrawReconstruction(draw1);
 				d.title = "REAL";
 				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,100,100);
+				DrawReconstruction d2 = new DrawReconstruction(draw2,100,100);
 				d2.title = "TEST";
 				d2.draw();
 				Thread.sleep(10000);

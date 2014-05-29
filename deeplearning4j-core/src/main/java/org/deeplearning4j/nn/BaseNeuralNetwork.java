@@ -3,6 +3,8 @@ package org.deeplearning4j.nn;
 import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
+import static org.deeplearning4j.util.MatrixUtil.sqrt;
+import static org.jblas.MatrixFunctions.pow;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -551,7 +553,18 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
 
+    /**
+     * RMSE for reconstruction entropy
+     *
+     * @return rmse for reconstruction entropy
+     */
+    @Override
+    public double mseRecon() {
+        return sqrt(pow(reconstruct(input).sub(input),2)).sum() / input.rows;
 
+
+
+    }
 
     @Override
     public LossFunction getLossFunction() {

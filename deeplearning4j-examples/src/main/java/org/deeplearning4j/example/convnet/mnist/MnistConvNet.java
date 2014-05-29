@@ -5,19 +5,13 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
-import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.Tensor;
 import org.deeplearning4j.plot.FilterRenderer;
-import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
-import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.util.DeepLearningIOUtil;
 import org.deeplearning4j.util.ImageLoader;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +74,7 @@ public class MnistConvNet {
     public static void drawSample(ConvolutionalRBM r,int rows, int cols,DoubleMatrix input) throws Exception {
 
         DoubleMatrix draw = input.dup();
-        DrawMnistGreyScale greyScale = new DrawMnistGreyScale(input);
+        DrawReconstruction greyScale = new DrawReconstruction(input);
         greyScale.readjustToData();
         greyScale.draw();
 

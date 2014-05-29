@@ -33,7 +33,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 *
 	 */
 	public static enum LossFunction {
-		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD,MSE
+		SQUARED_LOSS,RECONSTRUCTION_CROSSENTROPY,NEGATIVELOGLIKELIHOOD,MSE,RMSE_XENT
 	}
 
     /**
@@ -142,6 +142,12 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * of the network
      */
     public double mse();
+
+    /**
+     * RMSE for reconstruction entropy
+     * @return rmse for reconstruction entropy
+     */
+    public double mseRecon();
 
 	public double getMomentum();
 	public void setMomentum(double momentum);

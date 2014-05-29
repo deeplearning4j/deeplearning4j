@@ -6,7 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -42,10 +42,10 @@ public class DisplayFiltersDBN {
 				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
 				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
 
-				DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+				DrawReconstruction d = new DrawReconstruction(draw1);
 				d.title = "REAL";
 				d.draw();
-				DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
+				DrawReconstruction d2 = new DrawReconstruction(draw2,1000,1000);
 				d2.title = "TEST";
 				d2.draw();
 				Thread.sleep(10000);
