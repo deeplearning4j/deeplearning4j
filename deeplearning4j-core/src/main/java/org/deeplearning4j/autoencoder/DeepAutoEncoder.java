@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
+import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 
@@ -51,7 +52,7 @@ public class DeepAutoEncoder implements Serializable {
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
-   }
+    }
 
 
 
@@ -89,7 +90,7 @@ public class DeepAutoEncoder implements Serializable {
                     .withVisibleUnits(d.getVisibleUnit())
                     .withVisibleUnits(d.getVisibleUnit())
                     .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
-                     .learningRateForLayer(learningRateForLayerReversed)
+                    .learningRateForLayer(learningRateForLayerReversed)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
@@ -157,10 +158,9 @@ public class DeepAutoEncoder implements Serializable {
             initDecoder();
         DoubleMatrix encode = encode(input);
         //round the input for the binary codes for input, this is only applicable for the forward layer.
-        DoubleMatrix decoderInput = round(encode);
+        DoubleMatrix decoderInput = round(sigmoid(encode));
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
-        decoder.feedForward(decoderInput);
         decoder.finetune(input,lr,epochs);
 
     }
@@ -173,9 +173,10 @@ public class DeepAutoEncoder implements Serializable {
      * @return the reconstructed input from input ---> encode ---> decode
      */
     public DoubleMatrix reconstruct(DoubleMatrix input) {
-        List<DoubleMatrix> activations = encoder.feedForward(input);
-
-        DoubleMatrix decoderInput = activations.get(activations.size() - 2);
+        DoubleMatrix encode = encode(input);
+        //round the input for the binary codes for input, this is only applicable for the forward layer.
+        DoubleMatrix decoderInput = round(encode);
+        MatrixUtil.scaleByMax(decoderInput);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
     }

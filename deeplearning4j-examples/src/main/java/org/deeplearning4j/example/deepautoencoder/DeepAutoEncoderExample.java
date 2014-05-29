@@ -42,8 +42,8 @@ public class DeepAutoEncoderExample {
                 .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .sampleOrActivateByLayer(activationForLayer)
-                .learningRateForLayer(Collections.singletonMap(3, 1e-1))
+                .sampleOrActivateByLayer(activationForLayer).activateForLayer(Collections.singletonMap(3,Activations.linear()))
+                .learningRateForLayer(Collections.singletonMap(3, 1e-2))
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
