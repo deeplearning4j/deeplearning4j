@@ -1,19 +1,16 @@
 package org.deeplearning4j.autoencoder;
 
-import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.dbn.DBN;
 
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
 
 /**
  * Created by agibsonccc on 5/11/14.
@@ -54,10 +51,10 @@ public class DeepAutoEncoderTest {
             DoubleMatrix reconstructed2 = reconstruct.getRow(j);
             DoubleMatrix draw2 = reconstructed2.mul(255);
 
-            DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+            DrawReconstruction d = new DrawReconstruction(draw1);
             d.title = "REAL";
             d.draw();
-            DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2);
+            DrawReconstruction d2 = new DrawReconstruction(draw2);
             d2.title = "TEST";
             d2.draw();
             Thread.sleep(10000);

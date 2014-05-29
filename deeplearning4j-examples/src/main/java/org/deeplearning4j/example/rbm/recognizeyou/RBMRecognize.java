@@ -1,9 +1,7 @@
 package org.deeplearning4j.example.rbm.recognizeyou;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.util.ImageLoader;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -38,7 +36,7 @@ public class RBMRecognize {
 
         DoubleMatrix draw1 = r.reconstruct(d2).mul(255);
 
-        DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+        DrawReconstruction d = new DrawReconstruction(draw1);
         d.title = "REAL";
         d.draw();
 

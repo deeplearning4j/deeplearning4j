@@ -11,7 +11,7 @@ import javax.swing.*;
 
 import org.jblas.DoubleMatrix;
 
-public class DrawMnistGreyScale {
+public class DrawReconstruction {
 
 	public  JFrame frame;
 	BufferedImage img;
@@ -23,7 +23,7 @@ public class DrawMnistGreyScale {
 	private int widthOffset = 0;
 
 	
-	public DrawMnistGreyScale(DoubleMatrix data,int heightOffset,int widthOffset) {
+	public DrawReconstruction(DoubleMatrix data, int heightOffset, int widthOffset) {
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 	    this.data = data;
         this.heightOffset = heightOffset;
@@ -32,7 +32,7 @@ public class DrawMnistGreyScale {
 
 	}
 	
-	public DrawMnistGreyScale(DoubleMatrix data) {
+	public DrawReconstruction(DoubleMatrix data) {
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		this.data = data;
 

@@ -1,23 +1,22 @@
 package org.deeplearning4j.example.deepautoencoder;
 
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.transformation.MatrixTransformations;
-import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.util.SerializationUtils;
+import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Demonstrates a DeepAutoEncoder reconstructions with
@@ -29,21 +28,34 @@ public class DeepAutoEncoderExample {
 
     public static void main(String[] args) throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        fetcher.fetch(20);
+        fetcher.fetch(50);
         DataSet data = fetcher.next();
+        data.filterAndStrip(new int[]{0,1});
         log.info("Training on " + data.numExamples());
+        Map<Integer,Boolean> activationForLayer = new HashMap<>();
+
+       activationForLayer.put(3,true);
+
 
         DBN dbn = new DBN.Builder()
+                .withHiddenUnitsByLayer(Collections.singletonMap(3,RBM.HiddenUnit.GAUSSIAN))
+                .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
+                .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .sampleOrActivateByLayer(activationForLayer)
+                .learningRateForLayer(Collections.singletonMap(3, 1e-1))
                 .numberOfInputs(784)
-                .numberOfOutPuts(2).withDropOut(0.5)
+                .numberOfOutPuts(2)
                 .build();
 
-        DataSetIterator iter = new ListDataSetIterator(data.asList(),10);
-        while(iter.hasNext()) {
+        DataSetIterator iter = new ListDataSetIterator(data.asList(),data.numExamples());
+        while(iter.hasNext())
             dbn.pretrain(iter.next().getFirst(), new Object[]{1, 1e-1, 10000});
 
-        }
+
+
+
+
 
 
         iter.reset();
@@ -53,8 +65,13 @@ public class DeepAutoEncoderExample {
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-        while (iter.hasNext())
-            encoder.finetune(iter.next().getFirst(),1e-2,1000);
+        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
+        encoder.setHiddenUnit(RBM.HiddenUnit.BINARY);
+         while (iter.hasNext()) {
+             DataSet next = iter.next();
+             encoder.finetune(next.getFirst(),1e-2,1000);
+
+         }
 
         DoubleMatrix reconstruct = encoder.reconstruct(data.getFirst());
         for(int j = 0; j < data.numExamples(); j++) {
@@ -63,10 +80,10 @@ public class DeepAutoEncoderExample {
             DoubleMatrix reconstructed2 = reconstruct.getRow(j);
             DoubleMatrix draw2 = reconstructed2.mul(255);
 
-            DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+           DrawReconstruction d = new DrawReconstruction(draw1);
             d.title = "REAL";
             d.draw();
-            DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2);
+            DrawReconstruction d2 = new DrawReconstruction(draw2);
             d2.title = "TEST";
             d2.draw();
             Thread.sleep(10000);
