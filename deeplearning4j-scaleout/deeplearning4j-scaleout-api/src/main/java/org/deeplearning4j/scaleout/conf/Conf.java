@@ -69,9 +69,17 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
     private Map<Integer,Double> learningRateForLayer = new HashMap<>();
-
+    private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
     public Map<Integer, Double> getLearningRateForLayer() {
         return learningRateForLayer;
+    }
+
+    public Map<Integer, LossFunction> getLossFunctionByLayer() {
+        return lossFunctionByLayer;
+    }
+
+    public void setLossFunctionByLayer(Map<Integer, LossFunction> lossFunctionByLayer) {
+        this.lossFunctionByLayer = lossFunctionByLayer;
     }
 
     public void setLearningRateForLayer(Map<Integer, Double> learningRateForLayer) {
@@ -257,6 +265,7 @@ public class Conf implements Serializable,Cloneable {
     public void setFunction(ActivationFunction function) {
         this.function = function;
     }
+
     /**
      * Returns the hidden layer sizes
      * @return the hidden layer sizes set for this configuration
@@ -440,7 +449,7 @@ public class Conf implements Serializable,Cloneable {
                     .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs())
-                    .withOutputActivationFunction(outputActivationFunction)
+                    .withOutputActivationFunction(outputActivationFunction).lossFunctionByLayer(lossFunctionByLayer)
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .learningRateForLayer(getLearningRateForLayer())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
