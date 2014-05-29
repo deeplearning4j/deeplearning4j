@@ -89,7 +89,7 @@ public class DeepAutoEncoder implements Serializable {
                     .withHiddenUnits(d.getHiddenUnit())
                     .withVisibleUnits(d.getVisibleUnit())
                     .withVisibleUnits(d.getVisibleUnit())
-                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+                    .withOutputLossFunction(OutputLayer.LossFunction.MCXENT)
                     .learningRateForLayer(learningRateForLayerReversed)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
@@ -158,7 +158,7 @@ public class DeepAutoEncoder implements Serializable {
             initDecoder();
         DoubleMatrix encode = encode(input);
         //round the input for the binary codes for input, this is only applicable for the forward layer.
-        DoubleMatrix decoderInput = round(sigmoid(encode));
+        DoubleMatrix decoderInput = sigmoid(encode);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);

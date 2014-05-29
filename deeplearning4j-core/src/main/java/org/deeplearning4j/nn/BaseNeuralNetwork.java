@@ -955,7 +955,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         DoubleMatrix reconstructed = reconstruct(input);
         DoubleMatrix diff = reconstructed.sub(input);
         double sum = 0.5 * MatrixFunctions.pow(diff,2).columnSums().sum() / input.rows;
-        return -sum;
+        return sum;
     }
 
     @Override
