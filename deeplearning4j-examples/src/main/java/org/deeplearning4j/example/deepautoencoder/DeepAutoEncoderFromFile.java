@@ -1,12 +1,10 @@
 package org.deeplearning4j.example.deepautoencoder;
 
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.mnist.draw.DrawMnistGreyScale;
+import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
@@ -32,22 +30,22 @@ public class DeepAutoEncoderFromFile {
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
         RBM r = (RBM) dbn.getLayers()[dbn.getnLayers() - 1];
-        r.setVisibleType(RBM.VisibleUnit.GAUSSIAN);
-        r.setHiddenType(RBM.HiddenUnit.BINARY);
+        r.setVisibleType(RBM.VisibleUnit.BINARY);
+        r.setHiddenType(RBM.HiddenUnit.GAUSSIAN);
         dbn.setLayerLearningRates(Collections.singletonMap(dbn.getnLayers() - 1,1e-3));
-        dbn.getLayers()[3].setRenderEpochs(1);
         dbn.getSigmoidLayers()[dbn.getnLayers() - 1].setActivationFunction(Activations.sigmoid());
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
 
 
-        encoder.setHiddenUnit(RBM.HiddenUnit.GAUSSIAN);
-        encoder.setVisibleUnit(RBM.VisibleUnit.BINARY);
-
+        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
+        encoder.setHiddenUnit(RBM.HiddenUnit.BINARY);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
+            if(next == null)
+                break;
             dbn.setInput(next.getFirst());
-            dbn.pretrain(next.getFirst(),1,1e-2,1000);
+            dbn.pretrain(1,1e-2,1000);
             log.info("Training on " + next.numExamples());
             List<DoubleMatrix> activations = dbn.feedForward();
             log.info("Activation sum was " + activations.get(activations.size() - 2));
@@ -73,10 +71,10 @@ public class DeepAutoEncoderFromFile {
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
                 DoubleMatrix draw2 = reconstructed2.mul(255);
 
-                DrawMnistGreyScale d = new DrawMnistGreyScale(draw1);
+                DrawReconstruction d = new DrawReconstruction(draw1);
                 d.title = "REAL";
                 d.draw();
-                DrawMnistGreyScale d2 = new DrawMnistGreyScale(draw2,1000,1000);
+                DrawReconstruction d2 = new DrawReconstruction(draw2,1000,1000);
                 d2.title = "TEST";
                 d2.draw();
                 Thread.sleep(10000);

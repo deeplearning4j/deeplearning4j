@@ -140,7 +140,10 @@ public class DBN extends BaseMultiLayerNetwork {
             if(i == 0)
                 layerInput = getInput();
             else {
-                if(isUseHiddenActivationsForwardProp())
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : false;
+                if(activateOnly)
+                    layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
+                else if(isUseHiddenActivationsForwardProp())
                     layerInput = getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
                 else
                     layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
@@ -212,7 +215,7 @@ public class DBN extends BaseMultiLayerNetwork {
                 .withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist()).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withWeights(W).withDropOut(dropOut)
                 .withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
-                .withRandom(rng).renderWeights(getRenderWeightsEveryNEpochs())
+                .withRandom(rng).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs)
                 .fanIn(getFanIn()).build();
 
         return ret;
@@ -238,6 +241,30 @@ public class DBN extends BaseMultiLayerNetwork {
             this.clazz = DBN.class;
         }
 
+        /**
+         * Sample or activate by layer allows for deciding to sample or just pass straight activations
+         * for each layer
+         *
+         * @param sampleOrActivateByLayer
+         * @return
+         */
+        @Override
+        public Builder sampleOrActivateByLayer(Map<Integer, Boolean> sampleOrActivateByLayer) {
+            super.sampleOrActivateByLayer(sampleOrActivateByLayer);
+            return this;
+        }
+
+        @Override
+        public Builder renderByLayer(Map<Integer, Integer> renderByLayer) {
+            super.renderByLayer(renderByLayer);
+            return this;
+        }
+
+        @Override
+        public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
+            super.learningRateForLayer(learningRates);
+            return this;
+        }
 
         public Builder withVisibleUnitsByLayer(Map<Integer,RBM.VisibleUnit> visibleUnitByLayer) {
             this.visibleUnitByLayer.putAll(visibleUnitByLayer);

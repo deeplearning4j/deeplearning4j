@@ -159,8 +159,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Layer specific learning rates
      */
     protected Map<Integer,Double> layerLearningRates = new HashMap<>();
+    /**
+     * Render by layer
+     */
+    protected Map<Integer,Integer> renderByLayer = new HashMap<>();
 
-
+    /**
+     * Sample or activate by layer. Default value is true
+     */
+    protected Map<Integer,Boolean> sampleOrActivate = new HashMap<>();
 
     /* Reflection/factory constructor */
     protected BaseMultiLayerNetwork() {}
@@ -389,9 +396,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    public Map<Integer, Boolean> getSampleOrActivate() {
+        return sampleOrActivate;
+    }
 
-
-
+    public void setSampleOrActivate(Map<Integer, Boolean> sampleOrActivate) {
+        this.sampleOrActivate = sampleOrActivate;
+    }
 
     /**
      * Compute activations from input to output of the output layer
@@ -405,7 +416,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         for(int i = 0; i < getnLayers(); i++) {
             getLayers()[i].setInput(currInput);
             getSigmoidLayers()[i].setInput(input);
-            if(useHiddenActivationsForwardProp)
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
+                currInput = getSigmoidLayers()[i].activate(currInput);
+            else  if(useHiddenActivationsForwardProp)
                 currInput = getSigmoidLayers()[i].sampleHGivenV(currInput);
             else
                 currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
@@ -416,7 +429,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             if(getOutputLayer().getActivationFunction() == null)
                 if(outputActivationFunction != null)
                     outputLayer.setActivationFunction(outputActivationFunction);
-            else
+                else
                     outputLayer.setActivationFunction(Activations.sigmoid());
 
             activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
@@ -969,7 +982,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return predicted;
     }
 
-
+    /**
+     * Reconstructs the input.
+     * This is equivalent functionality to a
+     * deep autoencoder.
+     * @param x the input to reconstruct
+     * @param layerNum the layer to output for encoding
+     * @return a reconstructed matrix
+     * relative to the size of the last hidden layer.
+     * This is great for data compression and visualizing
+     * high dimensional data (or just doing dimensionality reduction).
+     *
+     * This is typically of the form:
+     * [0.5, 0.5] or some other probability distribution summing to one
+     */
+    public DoubleMatrix sampleHiddenGivenVisible(DoubleMatrix x,int layerNum) {
+        DoubleMatrix currInput = x;
+        List<DoubleMatrix> forward = feedForward(currInput);
+        return getLayers()[layerNum - 1].sampleHiddenGivenVisible(forward.get(layerNum - 1)).getSecond();
+    }
     /**
      * Reconstructs the input.
      * This is equivalent functionality to a
@@ -986,18 +1017,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public DoubleMatrix reconstruct(DoubleMatrix x,int layerNum) {
         DoubleMatrix currInput = x;
-
-        for(int i = 0; i < layerNum -1; i++) {
-            getLayers()[i].setInput(currInput);
-            getSigmoidLayers()[i].setInput(input);
-            if(useHiddenActivationsForwardProp)
-                currInput = getSigmoidLayers()[i].activate(currInput);
-            else
-                currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
-
-        }
-        return getLayers()[layerNum - 1].reconstruct(currInput);
-
+        List<DoubleMatrix> forward = feedForward(currInput);
+        return getLayers()[layerNum - 1].reconstruct(forward.get(layerNum - 1));
     }
 
     /**
@@ -1048,6 +1069,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 }
         }
 
+        this.sampleOrActivate = network.sampleOrActivate;
         this.layerLearningRates = network.layerLearningRates;
         this.normalizeByInputRows = network.normalizeByInputRows;
         this.useAdaGrad = network.useAdaGrad;
@@ -1058,6 +1080,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.nOuts = network.nOuts;
         this.rng = network.rng;
         this.dist = network.dist;
+        this.renderByLayer = network.renderByLayer;
         this.activation = network.activation;
         this.useRegularization = network.useRegularization;
         this.columnMeans = network.columnMeans;
@@ -1211,31 +1234,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
 
         getOutputLayer().merge(network.outputLayer, batchSize);
-    }
-
-    /**
-     * Transposes this network to turn it in to
-     * ad encoder for the given auto encoder network
-     * @param network the network to decode
-     */
-    public void encode(BaseMultiLayerNetwork network) {
-        this.createNetworkLayers(network.getnLayers());
-        this.layers = new NeuralNetwork[network.getnLayers()];
-        hiddenLayerSizes = new int[getnLayers()];
-
-        int count = 0;
-        for(int i = getnLayers() - 1; i > 0; i--) {
-            NeuralNetwork n = network.layers[i].clone();
-            //tied weights: must be updated at the same time
-            HiddenLayer l = network.sigmoidLayers[i].clone();
-            layers[count] = n;
-            sigmoidLayers[count] = l;
-            hiddenLayerSizes[count] = network.hiddenLayerSizes[i];
-            count++;
-        }
-
-        this.outputLayer = new OutputLayer(hiddenLayerSizes[getnLayers() - 1],network.input.columns);
-
     }
 
 
@@ -1551,6 +1549,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.layers = layers;
     }
 
+    public Map<Integer, Integer> getRenderByLayer() {
+        return renderByLayer;
+    }
+
+    public void setRenderByLayer(Map<Integer, Integer> renderByLayer) {
+        this.renderByLayer = renderByLayer;
+    }
+
     public void clearInput() {
         this.input = null;
         for(int i = 0; i < layers.length; i++)
@@ -1623,8 +1629,36 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
         private ActivationFunction outputActivationFunction = Activations.softmax();
+        private Map<Integer,Integer> renderByLayer = new HashMap<>();
+        private Map<Integer,Boolean> sampleOrActivateByLayer = new HashMap<>();
 
 
+        /**
+         * Sample or activate by layer allows for deciding to sample or just pass straight activations
+         * for each layer
+         * @param sampleOrActivateByLayer
+         * @return
+         */
+        public Builder sampleOrActivateByLayer( Map<Integer, Boolean> sampleOrActivateByLayer) {
+            this.sampleOrActivateByLayer = sampleOrActivateByLayer;
+            return this;
+        }
+
+        /**
+         * Override rendering for a given layer only
+         * @param renderByLayer
+         * @return
+         */
+        public Builder renderByLayer(Map<Integer,Integer> renderByLayer) {
+            this.renderByLayer = renderByLayer;
+            return this;
+        }
+
+        /**
+         * Override learning rate by layer only
+         * @param learningRates
+         * @return
+         */
         public Builder learningRateForLayer(Map<Integer,Double> learningRates) {
             this.layerLearningRates.putAll(learningRates);
             return this;
@@ -1924,6 +1958,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.setSampleOrActivate(sampleOrActivateByLayer);
+                ret.setRenderByLayer(renderByLayer);
                 ret.setNormalizeByInputRows(normalizeByInputRows);
                 ret.setInput(this.input);
                 ret.setnOuts(this.nOuts);

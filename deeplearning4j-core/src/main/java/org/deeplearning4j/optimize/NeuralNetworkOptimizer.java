@@ -231,6 +231,8 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
             return -network.negativeLogLikelihood();
         else if(lossFunction == LossFunction.MSE)
             return -network.mse();
+        else if(lossFunction == LossFunction.RMSE_XENT)
+            return -network.mseRecon();
 
 
         return network.getReConstructionCrossEntropy();
