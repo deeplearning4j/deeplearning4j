@@ -463,7 +463,7 @@ public class Conf implements Serializable,Cloneable {
             return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).withOutputActivationFunction(outputActivationFunction)
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
+                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction()).lossFunctionByLayer(lossFunctionByLayer)
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
 
