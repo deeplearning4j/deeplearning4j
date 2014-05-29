@@ -24,143 +24,144 @@ import java.util.Map;
  */
 public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
-	private static final long serialVersionUID = 1448581794985193009L;
-	private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
+    private static final long serialVersionUID = 1448581794985193009L;
+    private static Logger log = LoggerFactory.getLogger(StackedDenoisingAutoEncoder.class);
 
 
 
-	private StackedDenoisingAutoEncoder() {}
+    private StackedDenoisingAutoEncoder() {}
 
-	private StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
-			int nLayers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
-		super(n_ins, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
+    private StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
+                                        int nLayers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
+        super(n_ins, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
 
-	}
-
-
-	private StackedDenoisingAutoEncoder(int nIns, int[] hiddenLayerSizes, int nOuts,
-			int n_layers, RandomGenerator rng) {
-		super(nIns, hiddenLayerSizes, nOuts, n_layers, rng);
-	}
+    }
 
 
-	public void pretrain( double lr,  double corruptionLevel,  int epochs) {
-		pretrain(this.getInput(),lr,corruptionLevel,epochs);
-	}
-
-	
-	@Override
-	public void pretrain(DoubleMatrix input, Object[] otherParams) {
-		if(otherParams == null) {
-			otherParams = new Object[]{0.01,0.3,1000};
-		}
-		
-		Double lr = (Double) otherParams[0];
-		Double corruptionLevel = (Double) otherParams[1];
-		Integer epochs = (Integer) otherParams[2];
-
-		pretrain(input, lr, corruptionLevel, epochs);
-		
-	}
-	
-	/**
-	 * Unsupervised pretraining based on reconstructing the input
-	 * from a corrupted version
-	 * @param input the input to train on
-	 * @param lr the starting learning rate
-	 * @param corruptionLevel the corruption level (the smaller number of inputs; the higher the 
-	 * corruption level should be) the percent of inputs to corrupt
-	 * @param epochs the number of iterations to run
-	 */
-	public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
-		if(this.getInput() == null)
-			initializeLayers(input.dup());
-
-		DoubleMatrix layerInput = null;
-
-		for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise                        
-			//input layer
-			if(i == 0)
-				layerInput = input;
-			else
-				layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
-			if(isForceNumEpochs()) {
-				for(int epoch = 0; epoch < epochs; epoch++) {
-					getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
-					log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-					getLayers()[i].epochDone(epoch);
-
-				}
-			}
-			else
-				getLayers()[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
+    private StackedDenoisingAutoEncoder(int nIns, int[] hiddenLayerSizes, int nOuts,
+                                        int n_layers, RandomGenerator rng) {
+        super(nIns, hiddenLayerSizes, nOuts, n_layers, rng);
+    }
 
 
-		}	
-	}
-
-	/**
-	 * 
-	 * @param input input examples
-	 * @param labels output labels
-	 * @param otherParams
-	 * 
-	 * (double) learningRate
-	 * (double) corruptionLevel
-	 * (int) epochs
-	 * 
-	 * Optional:
-	 * (double) finetune lr
-	 * (int) finetune epochs
-	 * 
-	 */
-	@Override
-	public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
-			Object[] otherParams) {
-		if(otherParams == null) {
-			otherParams = new Object[]{0.01,0.3,1000};
-		}
-		
-		Double lr = (Double) otherParams[0];
-		Double corruptionLevel = (Double) otherParams[1];
-		Integer epochs = (Integer) otherParams[2];
-
-		pretrain(input, lr, corruptionLevel, epochs);
-		if(otherParams.length <= 3)
-			finetune(labels, lr, epochs);
-		else {
-			Double finetuneLr = (Double) otherParams[3];
-			Integer fineTuneEpochs = (Integer) otherParams[4];
-			finetune(labels,finetuneLr,fineTuneEpochs);
-		}
-	}
+    public void pretrain( double lr,  double corruptionLevel,  int epochs) {
+        pretrain(this.getInput(),lr,corruptionLevel,epochs);
+    }
 
 
+    @Override
+    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+        if(otherParams == null) {
+            otherParams = new Object[]{0.01,0.3,1000};
+        }
 
-	@Override
-	public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
-			int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-			DoubleMatrix vBias, RandomGenerator rng,int index) {
-		DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().withDropOut(dropOut)
-		.withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
-		.withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
-		.numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist()).withLossFunction(getLossFunction())
-		.withSparsity(getSparsity()).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs).fanIn(getFanIn())
-		.build();
-       return ret;
-	}
+        Double lr = (Double) otherParams[0];
+        Double corruptionLevel = (Double) otherParams[1];
+        Integer epochs = (Integer) otherParams[2];
+
+        pretrain(input, lr, corruptionLevel, epochs);
+
+    }
+
+    /**
+     * Unsupervised pretraining based on reconstructing the input
+     * from a corrupted version
+     * @param input the input to train on
+     * @param lr the starting learning rate
+     * @param corruptionLevel the corruption level (the smaller number of inputs; the higher the
+     * corruption level should be) the percent of inputs to corrupt
+     * @param epochs the number of iterations to run
+     */
+    public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
+        if(this.getInput() == null)
+            initializeLayers(input.dup());
+
+        DoubleMatrix layerInput = null;
+
+        for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise
+            //input layer
+            if(i == 0)
+                layerInput = input;
+            else
+                layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+            if(isForceNumEpochs()) {
+                for(int epoch = 0; epoch < epochs; epoch++) {
+                    getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
+                    log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                    getLayers()[i].epochDone(epoch);
+
+                }
+            }
+            else
+                getLayers()[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
 
 
-	@Override
-	public NeuralNetwork[] createNetworkLayers(int numLayers) {
-		return new DenoisingAutoEncoder[numLayers];
-	}
+        }
+    }
+
+    /**
+     *
+     * @param input input examples
+     * @param labels output labels
+     * @param otherParams
+     *
+     * (double) learningRate
+     * (double) corruptionLevel
+     * (int) epochs
+     *
+     * Optional:
+     * (double) finetune lr
+     * (int) finetune epochs
+     *
+     */
+    @Override
+    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
+                             Object[] otherParams) {
+        if(otherParams == null) {
+            otherParams = new Object[]{0.01,0.3,1000};
+        }
+
+        Double lr = (Double) otherParams[0];
+        Double corruptionLevel = (Double) otherParams[1];
+        Integer epochs = (Integer) otherParams[2];
+
+        pretrain(input, lr, corruptionLevel, epochs);
+        if(otherParams.length <= 3)
+            finetune(labels, lr, epochs);
+        else {
+            Double finetuneLr = (Double) otherParams[3];
+            Integer fineTuneEpochs = (Integer) otherParams[4];
+            finetune(labels,finetuneLr,fineTuneEpochs);
+        }
+    }
 
 
-	public static class Builder extends BaseMultiLayerNetwork.Builder<StackedDenoisingAutoEncoder> {
-		public Builder() {
-			this.clazz = StackedDenoisingAutoEncoder.class;
-		}
+
+    @Override
+    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
+                                     int nHidden, DoubleMatrix W, DoubleMatrix hbias,
+                                     DoubleMatrix vBias, RandomGenerator rng,int index) {
+        DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().withDropOut(dropOut)
+                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) :  getLossFunction())
+                .withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
+                .withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
+                .numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
+                .withSparsity(getSparsity()).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs).fanIn(getFanIn())
+                .build();
+        return ret;
+    }
+
+
+    @Override
+    public NeuralNetwork[] createNetworkLayers(int numLayers) {
+        return new DenoisingAutoEncoder[numLayers];
+    }
+
+
+    public static class Builder extends BaseMultiLayerNetwork.Builder<StackedDenoisingAutoEncoder> {
+        public Builder() {
+            this.clazz = StackedDenoisingAutoEncoder.class;
+        }
         /**
          * Sample or activate by layer allows for deciding to sample or just pass straight activations
          * for each layer
@@ -186,12 +187,25 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
+        /**
+         * Loss function by layer
+         *
+         * @param lossFunctionByLayer the loss function per layer
+         * @return builder pattern
+         */
+        @Override
+        public Builder lossFunctionByLayer(Map<Integer, NeuralNetwork.LossFunction> lossFunctionByLayer) {
+            super.lossFunctionByLayer(lossFunctionByLayer);
+            return this;
+        }
 
+        @Override
         public Builder activateForLayer(Map<Integer,ActivationFunction> activationForLayer) {
             super.activateForLayer(activationForLayer);
             return this;
         }
 
+        @Override
         public Builder activateForLayer(int layer,ActivationFunction function) {
             super.activateForLayer(layer,function);
             return this;
@@ -202,6 +216,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param outputActivationFunction the output activation function to use
          * @return builder pattern
          */
+        @Override
         public Builder withOutputActivationFunction(ActivationFunction outputActivationFunction) {
             super.withOutputActivationFunction(outputActivationFunction);
             return this;
@@ -213,6 +228,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param outputLossFunction the output loss function
          * @return
          */
+        @Override
         public Builder withOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
             super.withOutputLossFunction(outputLossFunction);
             return this;
@@ -224,6 +240,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * neural nets and logistic regression
          * @return builder pattern
          */
+        @Override
         public Builder withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
             super.withOptimizationAlgorithm(optimizationAlgo);
             return this;
@@ -444,10 +461,10 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
-	}
+    }
 
 
-	
+
 
 
 

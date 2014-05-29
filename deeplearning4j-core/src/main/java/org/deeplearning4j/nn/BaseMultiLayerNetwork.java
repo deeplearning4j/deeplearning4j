@@ -169,6 +169,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     protected Map<Integer,Boolean> sampleOrActivate = new HashMap<>();
 
+    /**
+     * Loss function by layer
+     */
+    protected Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
+
+
     /* Reflection/factory constructor */
     protected BaseMultiLayerNetwork() {}
 
@@ -1595,9 +1601,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.layerLearningRates = layerLearningRates;
     }
 
+    public Map<Integer, LossFunction> getLossFunctionByLayer() {
+        return lossFunctionByLayer;
+    }
+
+    public void setLossFunctionByLayer(Map<Integer, LossFunction> lossFunctionByLayer) {
+        this.lossFunctionByLayer = lossFunctionByLayer;
+    }
+
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
-        private E ret;
         private Map<Integer,Double> layerLearningRates = new HashMap<>();
         private int nIns;
         private int[] hiddenLayerSizes;
@@ -1631,6 +1644,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private ActivationFunction outputActivationFunction = Activations.softmax();
         private Map<Integer,Integer> renderByLayer = new HashMap<>();
         private Map<Integer,Boolean> sampleOrActivateByLayer = new HashMap<>();
+        private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
+
+
+        /**
+         * Loss function by layer
+         * @param lossFunctionByLayer the loss function per layer
+         * @return builder pattern
+         */
+        public Builder lossFunctionByLayer(Map<Integer,LossFunction> lossFunctionByLayer) {
+            this.lossFunctionByLayer = lossFunctionByLayer;
+            return this;
+        }
 
 
         /**
@@ -1958,6 +1983,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.setLossFunctionByLayer(lossFunctionByLayer);
                 ret.setSampleOrActivate(sampleOrActivateByLayer);
                 ret.setRenderByLayer(renderByLayer);
                 ret.setNormalizeByInputRows(normalizeByInputRows);

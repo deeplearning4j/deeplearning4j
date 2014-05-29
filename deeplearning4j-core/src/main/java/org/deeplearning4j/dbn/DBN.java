@@ -209,9 +209,11 @@ public class DBN extends BaseMultiLayerNetwork {
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
 
         RBM ret = new RBM.Builder()
-                .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit).withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
+                .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit)
+                .withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
-                .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows()).withLossFunction(getLossFunction())
+                .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows())
+                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) :  getLossFunction())
                 .withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist()).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withWeights(W).withDropOut(dropOut)
                 .withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
@@ -239,6 +241,18 @@ public class DBN extends BaseMultiLayerNetwork {
 
         public Builder() {
             this.clazz = DBN.class;
+        }
+
+        /**
+         * Loss function by layer
+         *
+         * @param lossFunctionByLayer the loss function per layer
+         * @return builder pattern
+         */
+        @Override
+        public Builder lossFunctionByLayer(Map<Integer, NeuralNetwork.LossFunction> lossFunctionByLayer) {
+            super.lossFunctionByLayer(lossFunctionByLayer);
+            return this;
         }
 
         /**
