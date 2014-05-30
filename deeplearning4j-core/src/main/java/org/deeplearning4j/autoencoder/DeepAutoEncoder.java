@@ -49,6 +49,7 @@ public class DeepAutoEncoder implements Serializable {
     private BaseMultiLayerNetwork decoder;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+    private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
@@ -89,7 +90,7 @@ public class DeepAutoEncoder implements Serializable {
                     .withHiddenUnits(d.getHiddenUnit())
                     .withVisibleUnits(d.getVisibleUnit())
                     .withVisibleUnits(d.getVisibleUnit())
-                    .withOutputLossFunction(OutputLayer.LossFunction.MCXENT)
+                    .withOutputLossFunction(outputLayerLossFunction)
                     .learningRateForLayer(learningRateForLayerReversed)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
@@ -101,11 +102,15 @@ public class DeepAutoEncoder implements Serializable {
                     .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
                     .build();
 
+            if(encoder.isForceNumEpochs())
+                decoder.setForceNumEpochs(true);
+
+
 
         }
         else {
             decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
-                    .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+                    .withOutputLossFunction(outputLayerLossFunction)
                     .activateForLayer(encoder.getActivationFunctionForLayer()).renderByLayer(encoder.getRenderByLayer())
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
@@ -176,6 +181,14 @@ public class DeepAutoEncoder implements Serializable {
         DoubleMatrix decoderInput = sigmoid(encode);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
+    }
+
+    public OutputLayer.LossFunction getOutputLayerLossFunction() {
+        return outputLayerLossFunction;
+    }
+
+    public void setOutputLayerLossFunction(OutputLayer.LossFunction outputLayerLossFunction) {
+        this.outputLayerLossFunction = outputLayerLossFunction;
     }
 
     public RBM.VisibleUnit getVisibleUnit() {
