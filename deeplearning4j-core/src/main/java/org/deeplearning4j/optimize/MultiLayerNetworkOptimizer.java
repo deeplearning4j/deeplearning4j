@@ -63,7 +63,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
     }
 	public void optimize(DoubleMatrix labels,double lr,int epochs) {
 		network.getOutputLayer().setLabels(labels);
-		DoubleMatrix train = sampleHiddenGivenVisible();
+		DoubleMatrix train = network.output(network.getInput());
 
 		if(!network.isForceNumEpochs()) {
 			network.getOutputLayer().trainTillConvergence(train,labels,lr,epochs);
@@ -77,6 +77,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 			log.info("Training for " + epochs + " epochs");
 			for(int i = 0; i < epochs; i++) {
 				network.getOutputLayer().train(train, labels,lr);
+                log.info("Error on epoch " + i + " is  " + network.getOutputLayer().score());
 			}
 
 
