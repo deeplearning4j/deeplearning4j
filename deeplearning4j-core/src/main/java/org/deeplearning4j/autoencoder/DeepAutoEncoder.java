@@ -157,7 +157,7 @@ public class DeepAutoEncoder implements Serializable {
         if(decoder == null)
             initDecoder();
         DoubleMatrix encode = encode(input);
-        DoubleMatrix decoderInput = sigmoid(encode);
+        DoubleMatrix decoderInput = round(sigmoid(encode));
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);

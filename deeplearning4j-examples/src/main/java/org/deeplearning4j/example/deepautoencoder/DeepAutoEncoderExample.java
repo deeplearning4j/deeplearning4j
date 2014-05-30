@@ -41,8 +41,6 @@ public class DeepAutoEncoderExample {
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28}).withMomentum(0.9)
                // .lossFunctionByLayer(Collections.singletonMap(3, NeuralNetwork.LossFunction.SQUARED_LOSS))
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .sampleOrActivateByLayer(activationForLayer).activateForLayer(Collections.singletonMap(3,Activations.sigmoid()))
-                .learningRateForLayer(Collections.singletonMap(3, 1e-1))
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
                 .build();
