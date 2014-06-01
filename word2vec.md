@@ -91,12 +91,12 @@ The general idea is that you train moving windows with Word2vec and classify ind
 
 Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
 
-    List<String> labels = ...;
-    Index labelIndex = new Index();
-		  for(int i = 0; i < labels.length; i++)
-			  labelIndex.add(labels[i]);
-		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
-		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
+        List<String> labels = ...;
+        Index labelIndex = new Index();
+    		  for(int i = 0; i < labels.length; i++)
+    			  labelIndex.add(labels[i]);
+    		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
+    		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
 
 This will intialize the baseline features and transitions for viterbi to optimize.
 
@@ -104,42 +104,43 @@ Let's say that you have a file containing lines with the given transition probab
 
         //read in the lines of a file
         List<String> lines = FileUtils.readLines(file);
-		for(String line : lines) {
-			if(line.isEmpty()) 
-				continue;
-			List<Window> windows = Windows.windows(line);
+        	for(String line : lines) {
+    			if(line.isEmpty()) 
+  				continue;
+			
+        List<Window> windows = Windows.windows(line);
 
-			for(int i = 1; i < windows.size(); i++) {
-				String firstLabel = windows.get(i - 1).getLabel();
-				String secondLabel = windows.get(i).getLabel();
-				int first = labelIndex.indexOf(firstLabel);
-				int second = labelIndex.indexOf(secondLabel);
+  			for(int i = 1; i < windows.size(); i++) {
+  				String firstLabel = windows.get(i - 1).getLabel();
+  				String secondLabel = windows.get(i).getLabel();
+  				int first = labelIndex.indexOf(firstLabel);
+  				int second = labelIndex.indexOf(secondLabel);
 
 
-				transitions.incrementCount(first,second,1.0);
-			}
+  				transitions.incrementCount(first,second,1.0);
+    			}
 
-		}
+    		}
 
 From there, each line will be handled something like this:
 
-          <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
+        <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
 
 Given a set of text, Windows.windows automatically infers labels from bracketed capitalized text.
 
 If you do this:
 
-             String label = window.getLabel();
+        String label = window.getLabel();
 
 on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
 
 The following code saves your Viterbi implementation for later use:
        
         DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
-		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
-		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(output));
-		viterbi.write(bos);
-		bos.flush();
-		bos.close();
+      		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
+      		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(output));
+      		viterbi.write(bos);
+      		bos.flush();
+      		bos.close();
 
 That's pretty much it. If you need help, [drop us a line](http://blix.io/contact.html). 
