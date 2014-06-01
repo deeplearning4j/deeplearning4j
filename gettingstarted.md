@@ -22,7 +22,6 @@ layout: default
         Windows
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-
 3. Install either from source or maven central, below are the source instructions, add the below dependency coordinates in to your pom otherwise.
 
          git clone https://github.com/agibsonccc/java-deeplearning
@@ -32,9 +31,6 @@ layout: default
          Use  maven: http://maven.apache.org/
 
          mvn clean install -DskipTests
-
-
-
 
 4. Use this repo in your pom:
 
@@ -55,8 +51,6 @@ layout: default
 			<version>0.0.3.2-SNAPSHOT</version>
 		</dependency>
 
-
-
 6. For multithreaded/clustering support, please use:
 
        <dependency>
@@ -71,11 +65,6 @@ layout: default
             <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
             <version>0.0.3.2-SNAPSHOT</version>
         </dependency>
-
-
-
-
-
 
 From here, you can check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
 

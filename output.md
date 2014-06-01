@@ -19,7 +19,6 @@ In machine learning, one metric used to determine how well a classifier performs
 DL4J has a class called [Evaluation](../doc/org/deeplearning4j/eval/Evaluation.html) that will output f1 scores for you.
 
 Here's one way to use it: 
-
          
          BaseMultiLayerNetwork network = ....;
 
@@ -36,8 +35,6 @@ Here's one way to use it:
 
          System.out.println(eval.stats());
 
-
-
 Imagine each label is a binary matrix of 1 row and, say, 10 columns, with each column representing a number from one to 10. (The number of columns will actually vary with the number of possible outcomes, or labels.) There can only be a single 1 in this matrix, and it is located in the column representing the number labeled. That is, [0 1 0 0 0 0 0 0 0 0] means two, and so forth. 
 
 Each label is then assigned a likelihood of how accurately it describes the input, according to the features recognized by your network. Those probabilities are the network's guesses. At the end of your test, you compare the highest-probability label with the actual number of the input. The aggregate of these comparisons is your accuracy rate, or f score. 
@@ -46,11 +43,7 @@ In fact, you can enter any number of inputs into the network simultaneously. Eac
 
 You can also create one evaluation class to track statitistics over time. Using a data set iterator, you could do something like this:
 
-
-
             DataSetIterator iter = ...;
-
-
 
             while(iter.hasNext()) {
               DataSet next = iter.next();
@@ -60,9 +53,6 @@ You can also create one evaluation class to track statitistics over time. Using 
 
             }
 
-
             System.out.println(eval.stats());
-
-
 
 This will allow you to iterate over a data set and cumulatively add to the results. The eval.stats() call will print the confusion matrices and f scores at the bottom. Those scores are good indicators of performance. 

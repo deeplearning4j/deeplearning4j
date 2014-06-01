@@ -4,21 +4,13 @@ layout: default
 ---
 
 
-###Model Saving
-
+###model saving
 
 In DL4J, you can save models via the [Persistable](../doc/org/deeplearning4j/nn/Persistable.html) interface.
 
-Each network, dataset, and other things implement this interface for saving data.
+Each network and dataset implement this interface for saving data. Which is useful, because when you're pretraining networks, you can resume where you left off in both your dataset and the pretraining.
 
-This is useful, because for pretraining networks you can resume from where you left off in both your dataset
-
-and the pretraining.
-
-For DataSets, you can preserialize them in an external process for later use. You can then use a [ListDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/impl/ListDataSetIterator.html) to iterate over the DataSet that you had already presaved.
-
-This makes it very easy to create your own custom data set iterator.
-
+For DataSets, you can preserialize them in an external process for later use. You can then use a [ListDataSetIterator](../doc/org/deeplearning4j/datasets/iterator/impl/ListDataSetIterator.html) to iterate over the DataSet that's been presaved. That makes it very easy to create your own custom data set iterator.
 
 A more complete example below:
 
@@ -26,17 +18,9 @@ A more complete example below:
               //batches of 10
               DataSetIterator iter = new ListDataSetIterator(d.asList(),10);
 
-
-
 In scaleout, you can also customize model saving with the following:
-
-
 
                  ActorNetworkRunner runner = ...;
                  runner.setModelSaver(...);
 
-
-The default behavior is to store each snapshot of the neural net at each batch, if this is not deisrable behavior, please override this
-
-with your own custom ModelSaver.
-
+The default behavior is to store each snapshot of the neural net at each batch, if this is not deisrable behavior, please override this with your own custom ModelSaver.
