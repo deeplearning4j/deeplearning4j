@@ -40,7 +40,7 @@ The UimaSentenceIterator is capable of tokenization, part-of-speech tagging and 
 
 The AnalysisEngine is the [UIMA](http://uima.apache.org/) concept of a text-processing pipeline. DeepLearning4j comes with standard analysis engines for all of these common tasks, allowing you to customize which text is being passed in and how you define sentences. The AnalysisEngines are thread-safe versions of the [opennlp](http://opennlp.apache.org/) pipelines. We also include [cleartk](http://cleartk.googlecode.com/)-based pipelines for handling common tasks.
 
-For those using UIMA or curious about it, this uses the cleartk type system for tokens, sentences, and other annotations within the type system.
+For those using UIMA or curious about it, this employs the cleartk type system for tokens, sentences, and other annotations within the type system.
 
 Here's how to create a UimaSentenceItrator.
 
@@ -50,4 +50,4 @@ You can also instantiate directly:
 
 			SentenceIterator iter = new UimaSentenceIterator(path,AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(TokenizerAnnotator.getDescription(), SentenceAnnotator.getDescription())));
 
-For those familiar with Uima, this uses Uimafit extensively to create analysis engines. You can also create custom sentence iterators by extending sentence iterator.
+For those familiar with Uima, this uses Uimafit extensively to create analysis engines. You can also create custom sentence iterators by extending SentenceIterator.

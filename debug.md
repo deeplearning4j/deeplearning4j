@@ -19,6 +19,4 @@ Activations should start out gray. If they become black and white quickly, the w
 
 For a more in-depth exploration of the topic, see [Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf), by Jason Yosinski and Hod Lipson.
 
-
-
-Another typical situation is to wonder what happens over time with neural net training. One trick with the filters is to use filters to ensure each neuron later on in training learns multiple features. At later parts of training neurons will activate on different parts of features.
+You may also wonder what happens with neural-net training over time; i.e. does training change as it progresses? You can use filters to ensure that each neuron learns multiple features later on in training. That is, at later phases of training, neurons will activate on different parts of certain features.
