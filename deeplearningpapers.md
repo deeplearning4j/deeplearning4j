@@ -107,9 +107,9 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 **[Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf)**; Jason Yosinski and Hod Lipson; Cornell University
 
 Personal pages of prominent deep-learning researchers:
-* [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
-* [Yann LeCun](http://yann.lecun.com/)
-* [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
-* [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
+- [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
+- [Yann LeCun](http://yann.lecun.com/)
+- [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
+- [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
 
 *These lists are by no means exhaustive.*
