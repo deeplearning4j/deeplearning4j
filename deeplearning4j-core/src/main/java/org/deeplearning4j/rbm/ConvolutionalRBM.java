@@ -419,7 +419,7 @@ public class ConvolutionalRBM extends RBM  {
             if(plotEpochs > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(numEpochs % plotEpochs == 0) {
-                    plotter.plotNetworkGradient(this,getGradient(extraParams));
+                    plotter.plotNetworkGradient(this,getGradient(extraParams),getW().slices());
                 }
             }
 

@@ -462,7 +462,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
         ActivationFunction derivative = getSigmoidLayers()[0].getActivationFunction();
-        ActivationFunction softMaxDerivative = Activations.softmax();
+        ActivationFunction softMaxDerivative = outputLayer.getActivationFunction();
         //- y - h
         DoubleMatrix delta = null;
         List<DoubleMatrix> activations = feedForward();
