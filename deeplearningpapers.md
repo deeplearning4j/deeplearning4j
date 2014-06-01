@@ -60,8 +60,21 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Learning meanings for sentences](http://cseweb.ucsd.edu/~elkan/250B/learningmeaning.pdf)**; Charles Elkan; University of California San Diego; 2013
 
-**[Lecture 17: Linear Gaussian Models](http://www.cs.ubc.ca/~murphyk/Teaching/CS532c_Fall04/Lectures/lec17x4.pdf)**; Kevin Murphy; 17 November 2004
+**[Lecture 17: Linear Gaussian Models](http://www.cs.ubc.ca/~murphyk/Teaching/CS532c_Fall04/Lectures/lec17x4.pdf)**; Kevin Murphy; University of British Columbia; 17 November 2004
 
-**Efficient Backprop**; 
+**[Efficient Backprop](http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf)**; Yann LeCun, Leon Bottou, Genevieve B. Orr and Klaus-Robert Mueller; various institutions.
+
+**[Deep Learning for NLP (without magic)](http://nlp.stanford.edu/courses/NAACL2013/)**; Richard Socher	and	Christopher	Manning; Stanford University
+
+**[Deep Neural Networks for Object Detection](http://papers.nips.cc/paper/5207-deep-neural-networks-for-object-detection.pdf)**; Christian Szegedy, Alexander Toshev and Dumitru Erhan; Google
+
+**[Deep Learning: Methods And Applications](https://research.microsoft.com/pubs/209355/NOW-Book-Revised-Feb2014-online.pdf)**; Li Deng and Dong Yu; Microsoft Research 
+
+**[Numerical Optimization](https://www.springer.com/mathematics/book/978-0-387-30303-1)**; Jorge Nocedal and Stephen J. Wright; Springer
+
+**[Neural Networks for Named-Entity Recognition](http://nlp.stanford.edu/~socherr/pa4_ner.pdf)**; Richard Socher; Programming Assignment 4, CS 224N; Dec. 5th, 2012
+
+
+
 
 *This list is by no means exhaustive of all deep-learning research.*
