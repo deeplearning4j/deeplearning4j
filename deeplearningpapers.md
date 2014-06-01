@@ -53,7 +53,7 @@ layout: default
 
 **[Iris Data Analysis Using Back Propagation Neural Networks](http://www.ivanescobar.com/IRISPaper.pdf)**; Sean Van Osselaer; Murdoch University, Western Australia 
 
-**[Distributed Training Strategies for the Structured Perceptron](http://aclweb.org/anthology//N/N10/N10-1069.pdf)**; Ryan McDonald Keith Hall Gideon Mann; Google
+**[Distributed Training Strategies for the Structured Perceptron](http://aclweb.org/anthology//N/N10/N10-1069.pdf)**; Ryan McDonald, Keith Hall and Gideon Mann; Google
 
 **[Large Scale Distributed Deep Networks](http://papers.nips.cc/paper/4687-large-scale-distributed-deep-networks.pdf)**; Jeffrey Dean, Greg S. Corrado, Rajat Monga, Kai Chen,
 Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, Paul Tucker, Ke Yang and Andrew Y. Ng; Google
@@ -62,5 +62,6 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Lecture 17: Linear Gaussian Models](http://www.cs.ubc.ca/~murphyk/Teaching/CS532c_Fall04/Lectures/lec17x4.pdf)**; Kevin Murphy; 17 November 2004
 
+**Efficient Backprop**; 
 
 *This list is by no means exhaustive of all deep-learning research.*
