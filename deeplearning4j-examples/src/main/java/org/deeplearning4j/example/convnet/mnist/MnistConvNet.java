@@ -109,7 +109,7 @@ public class MnistConvNet {
         DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
         draw.muli(255);
         FilterRenderer render = new FilterRenderer();
-        BufferedImage img = render.renderFilters(draw,"tmpfile.png",draw.rows,draw.columns);
+        BufferedImage img = render.renderFilters(draw,"tmpfile.png",draw.rows,draw.columns,W.slices());
         BufferedImage resizedImage = new BufferedImage(49, 49, img.getType());
         Graphics2D g = resizedImage.createGraphics();
         g.drawImage(img, 0, 0, 49, 49, null);

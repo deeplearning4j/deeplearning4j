@@ -373,7 +373,7 @@ public class FilterRenderer {
      * @throws Exception
      *
      */
-    public BufferedImage renderFilters( DoubleMatrix data, String filename, int patchWidth, int patchHeight ) throws Exception {
+    public BufferedImage renderFilters( DoubleMatrix data, String filename, int patchWidth, int patchHeight,int patchesPerRow) throws Exception {
 
         int[] equiv = new int[ data.length  ];
 
@@ -383,7 +383,6 @@ public class FilterRenderer {
 
 
 
-        int patchesPerRow = 10;
         double approx = (double) numberCols / (double) patchesPerRow;
         int numPatchRows = (int) Math.round(approx);
         if(numPatchRows < 1)
@@ -439,30 +438,25 @@ public class FilterRenderer {
             }
 
 
-            //log.debug( "activations size: Cols: " + activation_data.numCols() + ", Rows: " + activation_data.numRows()  );
 
             // now draw patch to raster image
-
-            //	log.debug("curX: " + equiv.length);
+            boolean outOfBounds = false;
             if(curX >= filterImgWidth) {
-                r.setPixels( filterImgWidth -1, curY, patchWidth, patchHeight, equiv );
+                curX = filterImgWidth - 1;
+                outOfBounds = true;
                 break outer;
 
             }
-            else if(curY >= filterImgHeight) {
-                r.setPixels( curX, filterImgHeight -1, patchWidth, patchHeight, equiv );
+            if(curY >= filterImgHeight) {
+                curY = filterImgHeight - 1;
+                outOfBounds = true;
                 break outer;
 
             }
 
-            else if(curX >= filterImgWidth && curY >= filterImgHeight) {
-                r.setPixels( filterImgWidth -1, filterImgHeight -1, patchWidth, patchHeight, equiv );
+            r.setPixels( curX, curY, patchWidth, patchHeight, equiv );
+            if(outOfBounds)
                 break outer;
-            }
-            else
-                r.setPixels( curX, curY, patchWidth, patchHeight, equiv );
-            //	r.setPixels( curX, curY, 10, 10, equiv );
-
 
 
         }

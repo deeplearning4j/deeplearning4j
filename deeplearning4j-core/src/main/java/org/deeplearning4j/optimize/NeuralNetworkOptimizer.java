@@ -90,7 +90,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         if(plotEpochs <= 0)
             return;
         if(epoch % plotEpochs == 0) {
-            plotter.plotNetworkGradient(network,network.getGradient(extraParams));
+            plotter.plotNetworkGradient(network,network.getGradient(extraParams),100);
         }
 
     }

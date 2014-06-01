@@ -364,7 +364,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(plotEpochs > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(numEpochs % plotEpochs == 0) {
-                    plotter.plotNetworkGradient(this,getGradient(extraParams));
+                    plotter.plotNetworkGradient(this,getGradient(extraParams),getInput().rows);
                 }
             }
 
@@ -970,7 +970,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return;
         if(epoch % plotEpochs == 0 || epoch == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}));
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows);
         }
     }
 

@@ -54,7 +54,7 @@ public class NeuralNetPlotter implements Serializable {
 
 
 
-    public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient) {
+    public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient,int patchesPerRow) {
         plotMatrices(
                 new String[]{"W","hbias","vbias","w-gradient","hbias-gradient","vbias-gradient"},
 
@@ -74,11 +74,11 @@ public class NeuralNetPlotter implements Serializable {
             if(network.getW() instanceof Tensor) {
                 Tensor w = (Tensor) network.getW().dup();
                 DoubleMatrix render2 = w.reshape(w.rows() * w.columns(),w.slices());
-                render.renderFilters(render2, "currimg.png", w.columns() , w.rows());
+                render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
 
             }
             else
-                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows));
+                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows),patchesPerRow);
 
 
         } catch (Exception e) {
@@ -137,26 +137,12 @@ public class NeuralNetPlotter implements Serializable {
         return filePath;
     }
 
-    public void plotWeights(NeuralNetwork network) {
-        try {
 
-            String filePath = writeMatrix(network.getW());
-            Process is = Runtime.getRuntime().exec("python /tmp/plot.py weights " + filePath);
-
-            log.info("Rendering weights " + filePath);
-            log.error(IOUtils.readLines(is.getErrorStream()).toString());
-            FilterRenderer render = new FilterRenderer();
-            int weights = (int) Math.sqrt(network.getW().columns);
-            render.renderFilters(network.getW(), filePath, weights , weights);
-        }catch(Exception e) {
-
-        }
-    }
 
     public void plotActivations(NeuralNetwork network) {
         try {
             if(network.getInput() == null)
-                throw new IllegalStateException("Unable to plot; missing input");;
+                throw new IllegalStateException("Unable to plot; missing input");
 
             DoubleMatrix hbiasMean = network.hBiasMean();
 
