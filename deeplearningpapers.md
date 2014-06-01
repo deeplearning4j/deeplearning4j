@@ -90,6 +90,26 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Opinion Mining and Sentiment Analysis](http://www.cs.cornell.edu/home/llee/omsa/omsa.pdf)**; Bo Pang and Lillian Lee; Yahoo Research; Foundations and Trends in Information Retrieval 
 
-**
+**[Sparse autoencoder: CS294A Lecture notes](http://www.stanford.edu/class/cs294a/sparseAutoencoder.pdf)**; Andrew Ng; Stanford University
 
-*This list is by no means exhaustive of all deep-learning research.*
+**[Deep Sparse Rectiﬁer Neural Networks](http://eprints.pascal-network.org/archive/00008596/01/glorot11a.pdf)**; Xavier Glorot, Antoine Bordes and Yoshua Bengio;  University of Montreal
+
+**[Stochastic Pooling for Regularization of Deep Convolutional Neural Networks](http://www.matthewzeiler.com/pubs/iclr2013/iclr2013.pdf)**; Matthew D. Zeiler and Rob Fergus; Courant Institute, New York University
+
+**[Symmetry breaking in non-monotonic neural nets](http://iopscience.iop.org/0305-4470/26/12/005)**; G. Boffetta, R. Monasson and R. Zecchina; Journal of Physics A: Mathematical and General
+
+**[Phone Recognition Using Restricted Boltzmann Machines](http://www.cs.toronto.edu/~asamir/papers/icassp10.pdf)**; Abdel-rahman Mohamed and Geoffrey Hinton; University of Toronto
+
+**[Why Does Unsupervised Pre-training Help Deep Learning?](http://machinelearning.wustl.edu/mlpapers/paper_files/AISTATS2010_ErhanCBV10.pdf)**; Dumitru Erhan, Yoshua Bengio, Aaron Courville, Pierre-Antoine Manzagol, Pascal Vincent and Samy Bengio; Université de Montréeal and Google Research
+
+**[Training Restricted Boltzmann Machines on Word Observations](http://arxiv.org/pdf/1202.5695.pdf)**; George E. Dahl, Ryan P. Adams and Hugo Larochelle; University of Toronto, Harvard University and Université de Sherbrooke
+
+**[Visually Debugging Restricted Boltzmann Machine Training with a 3D Example](http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf)**; Jason Yosinski and Hod Lipson; Cornell University
+
+Personal pages of prominent deep-learning researchers:
+*[Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
+*[Yann LeCun](http://yann.lecun.com/)
+*[Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
+*[Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
+
+*These lists are by no means exhaustive.*
