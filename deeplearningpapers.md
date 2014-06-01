@@ -112,5 +112,7 @@ Personal pages of prominent deep-learning researchers:
 -  [Yann LeCun](http://yann.lecun.com/)
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
+-  [Richard Socher](http://www.socher.org/)
+-  [Quoc Le](http://cs.stanford.edu/~quocle/)
 
 *These lists are by no means exhaustive.*
