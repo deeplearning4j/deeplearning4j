@@ -74,7 +74,22 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Neural Networks for Named-Entity Recognition](http://nlp.stanford.edu/~socherr/pa4_ner.pdf)**; Richard Socher; Programming Assignment 4, CS 224N; Dec. 5th, 2012
 
+**[Large Scale Deep Learning](http://www.slideshare.net/SessionsEvents/quoc-le-slides-m-lconf)**; Quoc V. Le; Google & Carnegie Mellon University; MLconf 2013
 
+**[Deep Learning Made Easier by Linear Transformations in Perceptrons](http://jmlr.org/proceedings/papers/v22/raiko12/raiko12.pdf)**; Tapani Raiko, Harri Valpola and Yann LeCun; Aalto University and New York University
 
+**[Training Restricted Boltzmann Machines on Word Observations](http://www.cs.toronto.edu/~gdahl/papers/wrrbm_icml2012.pdf)**; George E. Dahl, Ryan P. Adams and Hugo Larochelle; University of Toronto, Harvard University and Université de Sherbrooke
+
+**[Representational Power of Restricted Boltzmann Machines and Deep Belief Networks](https://research.microsoft.com/en-us/people/nicolasl/representational_power.pdf)**; Nicolas Le Roux and Yoshua Bengio; Université de Montréal
+
+**[Robust Boltzmann Machines for Recognition and Denoising](http://www.cs.toronto.edu/~rsalakhu/papers/robm.pdf)**; Yichuan Tang, Ruslan Salakhutdinov and Geoffrey Hinton; University of Toronto
+
+**[Semantic hashing](http://www.utstat.toronto.edu/~rsalakhu/papers/semantic_final.pdf)**; Ruslan Salakhutdinov and Geoffrey Hinton; Department of Computer Science, University of Toronto
+
+**[Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf)**; Richard Socher, Alex Perelygin, Jean Y. Wu, Jason Chuang, Christopher D. Manning, Andrew Y. Ng and Christopher Potts; Stanford University
+
+**[Opinion Mining and Sentiment Analysis](http://www.cs.cornell.edu/home/llee/omsa/omsa.pdf)**; Bo Pang and Lillian Lee; Yahoo Research; Foundations and Trends in Information Retrieval 
+
+**
 
 *This list is by no means exhaustive of all deep-learning research.*
