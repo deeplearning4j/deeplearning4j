@@ -32,7 +32,7 @@ public class DisplayFiltersDBN {
 		while(iter.hasNext()) {
 			DataSet first = iter.next();
 			
-			plotter.plotNetworkGradient(network.getLayers()[0], network.getLayers()[0].getGradient(Conf.getDefaultRbmParams()));
+			plotter.plotNetworkGradient(network.getLayers()[0], network.getLayers()[0].getGradient(Conf.getDefaultRbmParams()),10);
 
 			
 			DoubleMatrix reconstruct = network.reconstruct(first.getFirst(),0);

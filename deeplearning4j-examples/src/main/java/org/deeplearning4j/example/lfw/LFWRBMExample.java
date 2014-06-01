@@ -57,7 +57,7 @@ public class LFWRBMExample {
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {
-                    render.renderFilters(r.getW(), "currimg.png", (int)Math.sqrt(r.getW().rows) , (int) Math.sqrt( r.getW().rows));
+                    render.renderFilters(r.getW(), "currimg.png", (int)Math.sqrt(r.getW().rows) , (int) Math.sqrt( r.getW().rows),curr.numExamples());
                 } catch (Exception e) {
                     log.error("Unable to plot filter, continuing...",e);
                 }

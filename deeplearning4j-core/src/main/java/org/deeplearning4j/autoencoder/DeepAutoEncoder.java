@@ -5,6 +5,7 @@ import java.io.Serializable;
 import static org.deeplearning4j.util.MatrixUtil.binomial;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.deeplearning4j.util.MatrixUtil.round;
+import static org.jblas.MatrixFunctions.abs;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.HiddenLayer;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
+import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
@@ -47,9 +49,11 @@ public class DeepAutoEncoder implements Serializable {
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
     private BaseMultiLayerNetwork decoder;
-    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
+    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.GAUSSIAN;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
+    private ActivationFunction outputLayerActivation = Activations.sigmoid();
+    private boolean roundCodeLayerInput = false;
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
@@ -97,7 +101,7 @@ public class DeepAutoEncoder implements Serializable {
                     .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
                     .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut())
                     .withLossFunction(encoder.getLossFunction()).renderByLayer(encoder.getRenderByLayer())
-                    .withOutputActivationFunction(Activations.sigmoid())
+                    .withOutputActivationFunction(outputLayerActivation)
                     .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad())
                     .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
                     .build();
@@ -162,7 +166,7 @@ public class DeepAutoEncoder implements Serializable {
         if(decoder == null)
             initDecoder();
         DoubleMatrix encode = encode(input);
-        DoubleMatrix decoderInput = round(sigmoid(encode));
+        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
         decoder.finetune(input,lr,epochs);
@@ -178,7 +182,7 @@ public class DeepAutoEncoder implements Serializable {
      */
     public DoubleMatrix reconstruct(DoubleMatrix input) {
         DoubleMatrix encode = encode(input);
-        DoubleMatrix decoderInput = sigmoid(encode);
+        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
     }
@@ -231,6 +235,19 @@ public class DeepAutoEncoder implements Serializable {
         return decoder.output(input);
     }
 
+    public boolean isRoundCodeLayerInput() {
+        return roundCodeLayerInput;
+    }
 
+    public void setRoundCodeLayerInput(boolean roundCodeLayerInput) {
+        this.roundCodeLayerInput = roundCodeLayerInput;
+    }
 
+    public ActivationFunction getOutputLayerActivation() {
+        return outputLayerActivation;
+    }
+
+    public void setOutputLayerActivation(ActivationFunction outputLayerActivation) {
+        this.outputLayerActivation = outputLayerActivation;
+    }
 }

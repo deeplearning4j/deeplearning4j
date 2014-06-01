@@ -6,8 +6,10 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
+import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
@@ -26,22 +28,27 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(100,60000);
+        DataSetIterator iter = new MnistDataSetIterator(10,300);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
-
-
+        dbn.setRenderWeightsEveryNEpochs(10);
+        for(int i = 0; i < dbn.getnLayers(); i++)
+            dbn.getLayers()[i].setRenderEpochs(10);
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-
-
+        encoder.setRoundCodeLayerInput(true);
+        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
+        encoder.setOutputLayerActivation(Activations.sigmoid());
         while(iter.hasNext()) {
             DataSet next = iter.next();
             if(next == null)
                 break;
             log.info("Training on " + next.numExamples());
-            encoder.finetune(next.getFirst(),1e-1,1000);
-            DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(iter,encoder);
+            log.info("Coding layer is " + encoder.encode(next.getFirst()));
+            encoder.finetune(next.getFirst(),1e-2,1000);
+            FilterRenderer f = new FilterRenderer();
+            f.renderFilters(encoder.getDecoder().getOutputLayer().getW(),"outputlayer.png",28,28,next.numExamples());
+            DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(next.iterator(next.numExamples()),encoder);
             render.draw();
         }
 

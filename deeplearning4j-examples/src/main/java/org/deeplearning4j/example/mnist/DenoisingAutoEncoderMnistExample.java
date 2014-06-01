@@ -36,7 +36,7 @@ public class DenoisingAutoEncoderMnistExample {
 
 
         FilterRenderer render = new FilterRenderer();
-        render.renderFilters(autoEncoder.getW(), "example-render.jpg", 28, 28);
+        render.renderFilters(autoEncoder.getW(), "example-render.jpg", 28, 28,10);
 
 
 
