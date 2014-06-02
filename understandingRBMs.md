@@ -14,7 +14,7 @@ RBMs have two layers of “nodes,” a visible layer and a hidden one. The first
 
 To the RBM, each image is nothing more than a collection of pixels that it must classify. The only way to classify images is by their features, distinguishing characteristics of the pixels; i.e. dark hues and light lined up along edges, curves, corners, peaks and intersections — in short, the stuff that handwritten numerals and their backgrounds are made of, their constituent parts.
 
-As it iterates over MNIST, an RBM is fed one numeral-image at a time *without knowing what it is*.In a sense, the RBM is behind a veil of ignorance, and its entire purpose is to learn what numeral it is dealing with behind the veil by randomly sampling pixels from the numeral’s unseen image, and testing which ones lead it to correctly identify the number. (There is a benchmark dataset that knows the answers, and against which the RBM in training contrasts its own, provisional conclusions.)
+As it iterates over MNIST, an RBM is fed one numeral-image at a time *without knowing what it is*. In a sense, the RBM is behind a veil of ignorance, and its entire purpose is to learn what numeral it is dealing with behind the veil by randomly sampling pixels from the numeral’s unseen image, and testing which ones lead it to correctly identify the number. (There is a benchmark dataset that knows the answers, and against which the RBM in training contrasts its own, provisional conclusions.)
 
 Each time the RBM guesses wrong, it’s told to go back and try again, until it discovers the pixels that best indicate the numeral they’re a part of. 
 
@@ -39,9 +39,9 @@ The simple feature of being on Market St (which is on an early hidden layer of t
 
 But maybe you are not in San Francisco at all. The hidden nodes in subsequent layers of the DBN should allow for states (data conditions) that could only occur in other cities: e.g. the combination of Market and FDR Drive puts you with high probability in New York; the combination of Market with Shilshole avenue in Seattle. (Likewise, starting from a curve feature at the input node, you could end up with a vertical bar indicating 5 or another curve pointing you towards an 8 later on.)
 
-So maybe from your initial Market St data point, you would have a 50 percent chance of ending up with Van Ness; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from Market + Van Ness, you have a 99 percent chance of ending up classified as San Francisco, and the same goes for New York and Seattle, respectively. 
+So maybe from your initial Market St data point, you would have a 50 percent chance of ending up with Van Ness; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from Market + Van Ness, you have a 99 percent chance of ending up classified as San Francisco. The same goes for New York and Seattle, respectively. 
 
-Likewise, while many numeral-images — 1, 4, 5 and 7— contain more or less vertical bars, only three of also contain horizontal bars. And of those, only the 4 allows the two to cross forming four 90 degree angles. Thus, enlarging the groups of features identified at once also increases the likelihood of those increasingly rare features groups correlating with a single numeral-image.
+Likewise, while many numeral-images — 1, 4, 5 and 7— contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two to cross forming four 90 degree angles. Thus, enlarging the groups of features identified at once also increases the likelihood of those increasingly rare features groups correlating with a single numeral-image.
 
 ### markov chains
 
