@@ -58,8 +58,6 @@ So a home state is a fair indication of office state, and a poor indication of b
 
 Markov Chains are sequential. Their purpose is to give you a good idea, given one state, of what the next one will be. Instead of home, office and bowling alley, those states might be curve, line and numeral-image, or street, avenue and city. Markov Chains are also good for predicting which word is most likely to follow a given wordset (useful in natural-language processing), or which share price is likely to follow a given sequence of share prices (useful in making lots of money).
 
-Remember that RBMs are being tested for accuracy against a benchmark dataset, and they record the features that lead them to the correct conclusion. Their job is to adjust the probabilities between the feature-nodes in such a way that if the RBM receives a certain feature, which is a strong indicator of a 5, then the probabilities between nodes lead it to conclude it's in the presence of a 5. 
-
-They register which features, feature groups and numeral-images tend to light up together. 
+Remember that RBMs are being tested for accuracy against a benchmark dataset, and they record the features that lead them to the correct conclusion. Their job is to learn and adjust the probabilities between the feature-nodes in such a way that if the RBM receives a certain feature, which is a strong indicator of a 5, then the probabilities between nodes lead it to conclude it's in the presence of a 5. They register which features, feature groups and numeral-images tend to light up together. 
 
 Now, if you're ready, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html).
