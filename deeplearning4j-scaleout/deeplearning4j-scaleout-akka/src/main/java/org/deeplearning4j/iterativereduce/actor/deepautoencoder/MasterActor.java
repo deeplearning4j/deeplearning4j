@@ -127,6 +127,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
                 network = new DeepAutoEncoder(encoder);
                 this.network = network;
 
+
             }
             else {
                 network = new DeepAutoEncoder(conf.init());
@@ -142,7 +143,12 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             network = this.network;
 
 
-
+        network.setHiddenUnit(conf.getHiddenUnit());
+        network.setVisibleUnit(conf.getVisibleUnit());
+        network.setOutputLayerActivation(conf.getOutputActivationFunction());
+        network.setRoundCodeLayerInput(conf.isRoundCodeLayer());
+        network.setOutputLayerLossFunction(conf.getOutputLayerLossFunction());
+        network.setNormalizeCodeLayerOutput(conf.isNormalizeCodeLayer());
 
 
 

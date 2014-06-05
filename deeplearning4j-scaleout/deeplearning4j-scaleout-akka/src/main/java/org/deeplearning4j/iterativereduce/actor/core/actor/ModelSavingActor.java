@@ -85,7 +85,7 @@ public class ModelSavingActor extends UntypedActor {
     @SuppressWarnings("unchecked")
     public void onReceive(final Object message) throws Exception {
         if(message instanceof MoreWorkMessage) {
-            if(stateTracker.getCurrent().get().getClass().isAssignableFrom(BaseMultiLayerNetwork.class)) {
+            if(stateTracker.getCurrent() != null && stateTracker.getCurrent().getClass().isAssignableFrom(UpdateableImpl.class)) {
                 BaseMultiLayerNetwork current = (BaseMultiLayerNetwork) stateTracker.getCurrent().get();
                 if(current.getLayers() == null || current.getSigmoidLayers() == null)
                     throw new IllegalStateException("Invalid model found when prompted to save..");

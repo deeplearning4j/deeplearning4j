@@ -31,17 +31,17 @@ public class MnistExampleMultiThreaded {
 		DataSetIterator iter = new MnistDataSetIterator(80,48000);
 
 		Conf c = new Conf();
-		c.setFinetuneEpochs(1);
+		c.setFinetuneEpochs(1000);
 		c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-2);
-        c.setPretrainEpochs(1);
-		c.setLayerSizes(new int[]{1000, 500, 250, 30});
+        c.setPretrainEpochs(1000);
+		c.setLayerSizes(new int[]{600,400,200});
 		c.setnIn(784);
         c.setDropOut(5e-1);
         c.setSparsity(1e-1);
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
-		c.setSplit(10);
+		c.setSplit(100);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
         c.setL2(2e-2);
