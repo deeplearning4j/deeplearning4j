@@ -55,8 +55,8 @@ public class NeuralNetPlotter implements Serializable {
 
 
     public void plotNetworkGradient(NeuralNetwork network,NeuralNetworkGradient gradient,int patchesPerRow) {
-        plotMatrices(
-                new String[]{"W","hbias","vbias","w-gradient","hbias-gradient","vbias-gradient"},
+        histogram(
+                new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
 
                 new DoubleMatrix[]{
                         network.getW(),
@@ -86,7 +86,13 @@ public class NeuralNetPlotter implements Serializable {
         }
     }
 
-    public void plotMatrices(String[] titles,DoubleMatrix[] matrices) {
+    /**
+     * Histograms the given matrices. This is primarily used
+     * for debugging gradients. You don't necessarily use this directly
+     * @param titles the titles of the plots
+     * @param matrices the matrices to plot
+     */
+    public void histogram(String[] titles, DoubleMatrix[] matrices) {
         String[] path = new String[matrices.length * 2];
         try {
             if(titles.length != matrices.length)
@@ -101,7 +107,7 @@ public class NeuralNetPlotter implements Serializable {
 
             Process is = Runtime.getRuntime().exec("python /tmp/plot.py multi " + paths);
 
-            log.info("Rendering multiple matrices... ");
+            log.info("Rendering Matrix histograms... ");
             log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
             log.error(IOUtils.readLines(is.getErrorStream()).toString());
 

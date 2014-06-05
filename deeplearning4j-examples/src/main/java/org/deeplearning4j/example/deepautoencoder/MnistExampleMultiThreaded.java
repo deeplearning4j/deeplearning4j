@@ -33,12 +33,15 @@ public class MnistExampleMultiThreaded {
         c.setPretrainEpochs(100);
 		c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-1);
-		c.setLayerSizes(new int[]{1000, 500, 250, 28});
+		c.setLayerSizes(new int[]{1000, 500, 250,30});
 		c.setnIn(784);
         c.setDropOut(5e-1);
         c.setHiddenUnitByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN));
+        c.setActivationFunctionForLayer(Collections.singletonMap(3,Activations.linear()));
         c.setSplit(100);
+        c.setLearningRateForLayer(Collections.singletonMap(3,1e-3));
         c.setSparsity(1e-1);
+
 		c.setUseAdaGrad(true);
 		c.setnOut(10);
 		c.setMultiLayerClazz(DBN.class);
