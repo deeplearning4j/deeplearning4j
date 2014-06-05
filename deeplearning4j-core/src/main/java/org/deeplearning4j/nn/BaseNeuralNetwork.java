@@ -383,6 +383,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         return this.useRegularization;
     }
 
+    @Override
+    public void setUseRegularization(boolean useRegularization) {
+        this.useRegularization = useRegularization;
+    }
     /**
      * Applies sparsity to the passed in hbias gradient
      * @param hBiasGradient the hbias gradient to apply to

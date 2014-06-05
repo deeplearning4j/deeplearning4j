@@ -1,39 +1,13 @@
 package org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast;
-import java.io.File;
-
-import java.net.InetAddress;
-import java.util.*;
 
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
-
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
-
-
-
-import com.hazelcast.config.*;
-import com.hazelcast.core.*;
-
-import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.iterativereduce.actor.core.Job;
-import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
-import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.deeplearning4j.util.SerializationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
 
 /**
  * Tracks state of workers and jobs 

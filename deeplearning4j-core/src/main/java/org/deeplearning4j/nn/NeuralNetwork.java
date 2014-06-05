@@ -121,6 +121,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public void setAdaGrad(AdaGrad adaGrad);
 	
 
+    public void setUseRegularization(boolean useRegularization);
     public boolean isUseRegularization();
 
 	public AdaGrad gethBiasAdaGrad();

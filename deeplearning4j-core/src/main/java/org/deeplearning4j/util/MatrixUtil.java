@@ -1009,7 +1009,6 @@ public class MatrixUtil {
     }
 
 
-    //public static DoubleMatrix oneDimensionalDigitalFilter()
 
     public static DoubleMatrix toOutcomeVector(int index,int numOutcomes) {
         int[] nums = new int[numOutcomes];

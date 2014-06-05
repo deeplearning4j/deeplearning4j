@@ -30,17 +30,16 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(80,80);
+        DataSetIterator iter = new MnistDataSetIterator(1,80);
 
-        Map<Integer,Boolean> activationForLayer = new HashMap<>();
 
-        activationForLayer.put(3,true);
 
 
         DBN dbn = new DBN.Builder()
                 .withHiddenUnitsByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN))
-                .withLossFunction(NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 28}).withMomentum(0.9)
+                .learningRateForLayer(Collections.singletonMap(3,1e-3))
+                .withLossFunction(NeuralNetwork.LossFunction.RMSE_XENT)
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .numberOfInputs(784)
                 .numberOfOutPuts(2)
@@ -48,8 +47,7 @@ public class DeepAutoEncoderExample {
 
         while(iter.hasNext()) {
             DataSet data = iter.next();
-            data.filterAndStrip(new int[]{0,1});
-            dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 100});
+            dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 1000});
 
 
 
@@ -68,11 +66,11 @@ public class DeepAutoEncoderExample {
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
-        encoder.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
+
+        //encoder.setRoundCodeLayerInput(true);
+
         while (iter.hasNext()) {
             DataSet next = iter.next();
-            next.filterAndStrip(new int[]{0,1});
             log.info("Fine tune " + next.labelDistribution());
             encoder.finetune(next.getFirst(),1e-2,1000);
             FilterRenderer f = new FilterRenderer();

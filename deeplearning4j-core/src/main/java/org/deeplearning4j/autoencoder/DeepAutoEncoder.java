@@ -54,6 +54,7 @@ public class DeepAutoEncoder implements Serializable {
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
     private ActivationFunction outputLayerActivation = Activations.sigmoid();
     private boolean roundCodeLayerInput = false;
+    private boolean normalizeCodeLayerOutput = false;
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
@@ -165,14 +166,31 @@ public class DeepAutoEncoder implements Serializable {
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         if(decoder == null)
             initDecoder();
-        DoubleMatrix encode = encode(input);
-        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
+
+        DoubleMatrix decoderInput = encodeWithScaling(input);
         decoder.setInput(decoderInput);
         decoder.initializeLayers(decoderInput);
+        decoder.feedForward(decoderInput);
         decoder.finetune(input,lr,epochs);
 
     }
 
+    /**
+     * Encodes with rounding and sigmoid taken in to account
+     * @param input the input to encode
+     * @return the encoded input scaled and rounded relative to the configuration
+     * of the auto encoder
+     */
+    public DoubleMatrix encodeWithScaling(DoubleMatrix input) {
+        DoubleMatrix encode = encode(input);
+        //rounding would make these straight probabilities
+        if(!isRoundCodeLayerInput() && isNormalizeCodeLayerOutput())
+            MatrixUtil.normalizeZeroMeanAndUnitVariance(encode);
+
+
+        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
+        return decoderInput;
+    }
 
     /**
      * Reconstructs the given input by running the input
@@ -181,8 +199,8 @@ public class DeepAutoEncoder implements Serializable {
      * @return the reconstructed input from input ---> encode ---> decode
      */
     public DoubleMatrix reconstruct(DoubleMatrix input) {
-        DoubleMatrix encode = encode(input);
-        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
+        DoubleMatrix decoderInput = encodeWithScaling(input);
+
         List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
         return decoderActivations.get(decoderActivations.size() - 1);
     }
@@ -249,5 +267,13 @@ public class DeepAutoEncoder implements Serializable {
 
     public void setOutputLayerActivation(ActivationFunction outputLayerActivation) {
         this.outputLayerActivation = outputLayerActivation;
+    }
+
+    public boolean isNormalizeCodeLayerOutput() {
+        return normalizeCodeLayerOutput;
+    }
+
+    public void setNormalizeCodeLayerOutput(boolean normalizeCodeLayerOutput) {
+        this.normalizeCodeLayerOutput = normalizeCodeLayerOutput;
     }
 }

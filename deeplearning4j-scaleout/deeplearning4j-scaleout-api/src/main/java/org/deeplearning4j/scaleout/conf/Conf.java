@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
+import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
@@ -52,6 +53,7 @@ public class Conf implements Serializable,Cloneable {
     private double l2;
     private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
     private Map<Integer,ActivationFunction> activationFunctionForLayer = new HashMap<>();
+    private Map<Integer,Integer> renderEpochsByLayer = new HashMap<>();
     private int renderWeightEpochs = -1;
     private String masterAbsPath;
     private DoubleMatrix columnMeans;
@@ -70,6 +72,42 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
     private Map<Integer,Double> learningRateForLayer = new HashMap<>();
     private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
+    private boolean roundCodeLayer = false;
+    private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
+    private boolean normalizeCodeLayer = true;
+
+    public Map<Integer, Integer> getRenderEpochsByLayer() {
+        return renderEpochsByLayer;
+    }
+
+    public void setRenderEpochsByLayer(Map<Integer, Integer> renderEpochsByLayer) {
+        this.renderEpochsByLayer = renderEpochsByLayer;
+    }
+
+    public boolean isNormalizeCodeLayer() {
+        return normalizeCodeLayer;
+    }
+
+    public void setNormalizeCodeLayer(boolean normalizeCodeLayer) {
+        this.normalizeCodeLayer = normalizeCodeLayer;
+    }
+
+    public OutputLayer.LossFunction getOutputLayerLossFunction() {
+        return outputLayerLossFunction;
+    }
+
+    public void setOutputLayerLossFunction(OutputLayer.LossFunction outputLayerLossFunction) {
+        this.outputLayerLossFunction = outputLayerLossFunction;
+    }
+
+    public boolean isRoundCodeLayer() {
+        return roundCodeLayer;
+    }
+
+    public void setRoundCodeLayer(boolean roundCodeLayer) {
+        this.roundCodeLayer = roundCodeLayer;
+    }
+
     public Map<Integer, Double> getLearningRateForLayer() {
         return learningRateForLayer;
     }
@@ -444,11 +482,11 @@ public class Conf implements Serializable,Cloneable {
 
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit())
+            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(renderEpochsByLayer)
                     .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
                     .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs())
+                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(outputLayerLossFunction)
                     .withOutputActivationFunction(outputActivationFunction).lossFunctionByLayer(lossFunctionByLayer)
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .learningRateForLayer(getLearningRateForLayer())
@@ -461,9 +499,13 @@ public class Conf implements Serializable,Cloneable {
 
         else {
             return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
-                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).withOutputActivationFunction(outputActivationFunction)
+                    .withOutputLossFunction(outputLayerLossFunction)
+                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
+                    .withOutputActivationFunction(outputActivationFunction)
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction()).lossFunctionByLayer(lossFunctionByLayer)
+                    .renderByLayer(renderEpochsByLayer)
+                    .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
+                    .lossFunctionByLayer(lossFunctionByLayer)
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
 
