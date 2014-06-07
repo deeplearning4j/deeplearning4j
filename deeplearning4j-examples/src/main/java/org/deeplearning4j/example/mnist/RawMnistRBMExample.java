@@ -21,7 +21,7 @@ public class RawMnistRBMExample {
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder().withHidden(RBM.HiddenUnit.RECTIFIED).withVisible(RBM.VisibleUnit.GAUSSIAN)
 		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.3)
-		.numHidden(600).normalizeByInputRows(true).useRegularization(false)
+		.numHidden(600).useRegularization(false)
 		.build();
 
 

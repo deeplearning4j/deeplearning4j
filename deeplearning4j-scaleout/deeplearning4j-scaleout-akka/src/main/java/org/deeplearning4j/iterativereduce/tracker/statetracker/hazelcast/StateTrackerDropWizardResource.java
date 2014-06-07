@@ -51,6 +51,11 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf>  
         return Response.ok(Collections.singletonMap("minibatch", stateTracker.miniBatchSize())).build();
     }
 
+    @GET
+    @Path("/numbatchessofar")
+    public Response numBatches() {
+        return Response.ok(Collections.singletonMap("numbatches",stateTracker.numBatchesRan())).build();
+    }
 
     @POST
     @Path("/minibatch/{num}")

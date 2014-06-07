@@ -437,8 +437,19 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 	 * @throws Exception
 	 */
 	void setCurrent(E e) throws Exception;
-	
 
+    /**
+     * Number of batches ran so far
+     * @return the number of batches ran so far
+     */
+    int numBatchesRan();
+
+    /**
+     * Increments the number of batches ran.
+     * This is purely a count and does not necessarily mean progress.
+     * @param numBatchesRan the number of batches ran to increment by
+     */
+    void incrementBatchesRan(int numBatchesRan);
 	
 	/**
 	 * Shutsdown any connections on the cluster

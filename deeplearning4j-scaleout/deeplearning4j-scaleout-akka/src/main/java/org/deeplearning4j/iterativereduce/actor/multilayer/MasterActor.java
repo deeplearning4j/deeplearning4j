@@ -93,6 +93,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
             log.debug("Unable to accumulate results",e);
             return null;
         }
+
         UpdateableImpl masterResults = getResults();
         if(masterResults == null)
             masterResults = update.accumulated();
@@ -118,7 +119,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         ActorSystem system = context().system();
         RoundRobinPool pool = new RoundRobinPool(Runtime.getRuntime().availableProcessors());
         //start local workers
-        Props p = pool.props(WorkerActor.propsFor(conf,(StateTracker<UpdateableImpl> ) stateTracker));
+        Props p = pool.props(WorkerActor.propsFor(conf,stateTracker));
         p = ClusterSingletonManager.defaultProps(p, "master", PoisonPill.getInstance(), "master");
 
         system.actorOf(p, "worker");
@@ -129,10 +130,10 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         log.info("Broadcasting initial master network");
         BaseMultiLayerNetwork network;
-        if(this.network == null) {
+        if(this.network == null)
             network = conf.init();
 
-        }
+
 
         else
             network = this.network;
@@ -151,7 +152,8 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         UpdateableImpl masterResults = new UpdateableImpl(network);
 
         /**
-         * Note that at this point we are storing an unitialized network.
+         * Note that at this point we are
+         * storing an uninitialized network.
          *
          *
          */
@@ -208,37 +210,35 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
 
         //list of examples
         else if(message instanceof Collection) {
-
-            if(message instanceof Collection) {
-                Collection<String> list = (Collection<String>) message;
-                //workers to send job to
-                for(String worker : list) {
-                    DataSet data = stateTracker.loadForWorker(worker);
-                    int numRetries = 0;
-                    while(data == null && numRetries < 3) {
-                        data = stateTracker.loadForWorker(worker);
-                        numRetries++;
-                        if(data == null) {
-                            Thread.sleep(10000);
-                            log.info("Data still not found....sleeping for 10 seconds and trying again");
-                        }
+            Collection<String> list = (Collection<String>) message;
+            //workers to send job to
+            for(String worker : list) {
+                DataSet data = stateTracker.loadForWorker(worker);
+                int numRetries = 0;
+                while(data == null && numRetries < 3) {
+                    data = stateTracker.loadForWorker(worker);
+                    numRetries++;
+                    if(data == null) {
+                        Thread.sleep(10000);
+                        log.info("Data still not found....sleeping for 10 seconds and trying again");
                     }
-
-
-                    if(data == null && numRetries >= 3) {
-                        log.info("No data found for worker..." + worker + " returning");
-                        return;
-                    }
-
-
-                    Job j2 = new Job(worker,data.copy());
-                    //replicate the job to hazelcast
-                    stateTracker.addJobToCurrent(j2);
-                    //clear data immediately afterwards
-                    data = null;
-                    log.info("Job delegated for " + worker);
                 }
+
+
+                if(data == null && numRetries >= 3) {
+                    log.info("No data found for worker..." + worker + " returning");
+                    return;
+                }
+
+
+                Job j2 = new Job(worker,data.copy());
+                //replicate the job to state tracker
+                stateTracker.addJobToCurrent(j2);
+                //clear data immediately afterwards
+                data = null;
+                log.info("Job delegated for " + worker);
             }
+
 
 
         }

@@ -6,24 +6,30 @@ package org.deeplearning4j.nn.activation;
  */
 public class Activations {
 
+    private static ActivationFunction EXP = new Exp();
+    private static ActivationFunction LINEAR = new Linear();
+    private static ActivationFunction TANH = new Tanh();
+    private static ActivationFunction HARD_TANH = new HardTanh();
+    private static ActivationFunction SIGMOID = new Sigmoid();
+    private static ActivationFunction SOFTMAX = new SoftMax();
     /**
      * The e^x function
      * @return the e^x activation function
      */
-    public static ActivationFunction exp(){ return new Exp(); }
+    public static ActivationFunction exp(){ return EXP; }
 
     /**
      * Linear activation function, just returns the input as is
      * @return the linear activation function
      */
-    public static ActivationFunction linear(){ return new Linear(); }
+    public static ActivationFunction linear(){ return LINEAR; }
 
     /**
      * Tanh function
      * @return
      */
 	public static ActivationFunction tanh() {
-		return new Tanh();
+		return TANH;
 	}
 
     /**
@@ -31,7 +37,7 @@ public class Activations {
      * @return
      */
 	public static ActivationFunction sigmoid() {
-		return new Sigmoid();
+		return SIGMOID;
 	}
 
     /**
@@ -39,7 +45,7 @@ public class Activations {
      * @return the hard tanh function
      */
 	public static ActivationFunction hardTanh() {
-		return new HardTanh();
+		return HARD_TANH;
 	}
 
 
@@ -48,6 +54,6 @@ public class Activations {
      * @return
      */
 	public static ActivationFunction softmax() {
-		return new SoftMax();
+		return SOFTMAX;
 	}
 }
