@@ -19,7 +19,7 @@ Contribute code, report a bug, help us make DL4J more useful:
 
 ###learn
 
-Workshops offered through [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
+DL4J workshops are offered through [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
 
 ###call
 
