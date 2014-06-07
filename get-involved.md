@@ -22,7 +22,7 @@ Contribute code, report a bug, help us make DL4J more useful:
 Download, complete, sign, scan and email back to 1 at blix dot io. 
 
 *  [DL4J Individual Contributor License Agreement.pdf](../assets/cla.pdf)
-*  [DL4J LLC Individual Contributor License Agreement.doc](../assets/cla.doc)
+*  [DL4J Individual Contributor License Agreement.doc](../assets/cla.doc)
 
 ###learn
 
