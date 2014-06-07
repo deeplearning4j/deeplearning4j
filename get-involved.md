@@ -13,9 +13,9 @@ Here's where you can ask questions and contribute your knowledge:
 
 Contribute code; report a bug; help us make DL4J more useful:
 
-[Github Project](https://github.com/agibsonccc/java-deeplearning)
-[Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
-[Our Contributors](https://github.com/agibsonccc/java-deeplearning/graphs/contributors)
+*  [Github Project](https://github.com/agibsonccc/java-deeplearning)
+*  [Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
+*  [Our Contributors](https://github.com/agibsonccc/java-deeplearning/graphs/contributors)
 
 ###learn
 
