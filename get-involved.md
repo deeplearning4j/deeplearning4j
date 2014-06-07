@@ -21,8 +21,8 @@ Contribute code, report a bug, help us make DL4J more useful:
 
 Download, complete, sign, scan and email back to 1 at blix dot io. 
 
-[BLIX LLC Individual Contrbutor License Agreement.pdf](../assets/cla.pdf)
-[BLIX LLC Individual Contrbutor License Agreement.doc](../assets/cla.doc)
+*  [BLIX LLC Individual Contrbutor License Agreement.pdf](../assets/cla.pdf)
+*  [BLIX LLC Individual Contrbutor License Agreement.doc](../assets/cla.doc)
 
 ###learn
 
