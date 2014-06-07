@@ -11,7 +11,7 @@ Here's where you can ask questions and contribute your knowledge:
 
 ###contribute
 
-Contribute code; report a bug; help us make DL4J more useful:
+Contribute code, report a bug, help us make DL4J more useful:
 
 *  [Github Project](https://github.com/agibsonccc/java-deeplearning)
 *  [Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
@@ -21,7 +21,7 @@ Contribute code; report a bug; help us make DL4J more useful:
 
 DL4J is part of the core curriculum at [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
 
-###support?
+###call
 
 Get professional support from the core DL4J team.
 
