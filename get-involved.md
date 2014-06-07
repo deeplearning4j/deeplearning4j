@@ -2,12 +2,12 @@
 layout: default
 ---
 
-*to get started, go [here](../gettingstarted.html)*
+*to get started, go [here](../gettingstarted.html)*.
 #get involved
 
 Here's where you can ask questions and contribute your knowledge:
 
-[Google Group](https://groups.google.com/forum/#!forum/deeplearning4j)
+*  [Google Group](https://groups.google.com/forum/#!forum/deeplearning4j)
 
 ###contribute
 
