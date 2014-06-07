@@ -480,6 +480,10 @@ public class Conf implements Serializable,Cloneable {
     }
 
 
+    /**
+     * Returns a multi layer network based on the configuration
+     * @return the initialized network
+     */
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
             return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(renderEpochsByLayer)

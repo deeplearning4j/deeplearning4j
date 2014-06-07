@@ -100,7 +100,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
                 if(!tracker.isDone())
                     tracker.addWorker(id);
 
-                if(tracker.needsReplicate(id)) {
+                if(!tracker.isDone() && tracker.needsReplicate(id)) {
                     try {
                         log.info("Updating worker " + id);
                         E u = tracker.getCurrent();

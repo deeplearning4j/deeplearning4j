@@ -19,7 +19,7 @@ public class MnistReconstructions {
 
     public static void main(String[] args)  throws Exception {
         DBN d = SerializationUtils.readObject(new File(args[0]));
-        MultiLayerNetworkReconstructionRender r = new MultiLayerNetworkReconstructionRender(new MnistDataSetIterator(10,1000),d,1);
+        MultiLayerNetworkReconstructionRender r = new MultiLayerNetworkReconstructionRender(new MnistDataSetIterator(10,1000,false),d,1);
         r.draw();
 
     }

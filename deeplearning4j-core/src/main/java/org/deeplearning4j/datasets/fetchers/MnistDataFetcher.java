@@ -33,7 +33,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
     private boolean binarize = true;
 
 
-
+    /**
+     * Constructor telling whether to binarize the dataset or not
+     * @param binarize whether to binarize the dataset or not
+     * @throws IOException
+     */
     public MnistDataFetcher(boolean binarize) throws IOException {
         if(!new File(rootMnist).exists())
             new MnistFetcher().downloadAndUntar();

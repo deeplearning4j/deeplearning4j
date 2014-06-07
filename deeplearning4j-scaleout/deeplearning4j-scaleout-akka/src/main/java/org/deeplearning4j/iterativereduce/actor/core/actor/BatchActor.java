@@ -128,6 +128,8 @@ public class BatchActor extends UntypedActor {
 
                 }
 
+                stateTracker.incrementBatchesRan(workers2.size());
+
                 mediator.tell(new DistributedPubSubMediator.Publish(MasterActor.MASTER,
                         stateTracker.workerData()), mediator);
             }
