@@ -19,7 +19,7 @@ Contribute code, report a bug, help us make DL4J more useful:
 
 ###learn
 
-DL4J is part of the core curriculum at [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
+Workshops offered through [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
 
 ###call
 
