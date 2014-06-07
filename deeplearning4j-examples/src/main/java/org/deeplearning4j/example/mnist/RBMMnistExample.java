@@ -20,8 +20,8 @@ public class RBMMnistExample {
      */
     public static void main(String[] args) throws Exception {
         RBM r = new RBM.Builder()
-                .numberOfVisible(784).renderWeights(100)
-                .numHidden(600).useRegularization(false).withL2(2e-2)
+                .numberOfVisible(784)
+                .numHidden(600).useRegularization(true).withL2(2e-4)
                 .build();
 
         //batches of 10, 60000 examples total

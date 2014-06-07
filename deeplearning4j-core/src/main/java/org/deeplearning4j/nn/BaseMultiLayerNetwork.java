@@ -671,7 +671,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param eval the evaluator for stopping
      */
     public void backProp(double lr,int epochs,TrainingEvaluator eval) {
-
+        log.info("BEGIN BACKPROP WITH SCORE OF " + score());
         Double lastEntropy = this.score();
         //store a copy of the network for when binary cross entropy gets
         //worse after an iteration
@@ -740,6 +740,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param epochs  the number of epochs to iterate (this is already called in finetune)
      */
     public void backProp(double lr,int epochs) {
+        log.info("BEGIN BACKPROP WITH SCORE OF " + score());
 
         Double lastEntropy = this.score();
         //store a copy of the network for when binary cross entropy gets
@@ -786,7 +787,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 else if(entropy >= lastEntropy) {
                     train = false;
                     update(revert);
-
+                    log.info("Reverting to best score " + lastEntropy);
                 }
 
                 backPropIterations++;
@@ -1007,6 +1008,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         List<DoubleMatrix> forward = feedForward(currInput);
         return getLayers()[layerNum - 1].sampleHiddenGivenVisible(forward.get(layerNum - 1)).getSecond();
     }
+
     /**
      * Reconstructs the input.
      * This is equivalent functionality to a
@@ -1652,6 +1654,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
          * @param lossFunctionByLayer the loss function per layer
          * @return builder pattern
          */
+
         public Builder lossFunctionByLayer(Map<Integer,LossFunction> lossFunctionByLayer) {
             this.lossFunctionByLayer = lossFunctionByLayer;
             return this;

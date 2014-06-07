@@ -67,7 +67,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     public final static String PATIENCE = "patience";
     public final static String PATIENCE_INCREASE = "patienceincrease";
     public final static String BEGUN = "begun";
-
+    public final static String NUM_BATCHES_SO_FAR_RAN = "numbatches";
 
     private volatile transient IAtomicReference<Object> master;
     private volatile transient IList<Job> jobs;
@@ -75,6 +75,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     private volatile transient IAtomicReference<Integer> numTimesPretrainRan;
     private volatile transient IAtomicReference<Double> bestLoss;
     private volatile transient IAtomicReference<Double> improvementThreshold;
+    private volatile transient IAtomicReference<Integer> numBatches;
 
     private volatile transient IAtomicReference<Boolean> earlyStop;
 
@@ -106,6 +107,27 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     public BaseHazelCastStateTracker() throws Exception {
         this(DEFAULT_HAZELCAST_PORT);
 
+    }
+
+    /**
+     * Number of batches ran so far
+     *
+     * @return the number of batches ran so far
+     */
+    @Override
+    public int numBatchesRan() {
+        return numBatches.get();
+    }
+
+    /**
+     * Increments the number of batches ran.
+     * This is purely a count and does not necessarily mean progress.
+     *
+     * @param numBatchesRan the number of batches ran to increment by
+     */
+    @Override
+    public void incrementBatchesRan(int numBatchesRan) {
+        numBatches.set(numBatchesRan + numBatches.get());
     }
 
     /**
@@ -624,6 +646,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         earlyStop = h.getAtomicReference(EARLY_STOP);
         patience = h.getAtomicReference(PATIENCE);
         patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
+        numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
 
         //set defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
@@ -640,7 +663,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
             patienceIncrease.set(2.0);
             improvementThreshold.set(0.995);
             validationEpochs.set((int) Math.min(10,patience() / 2));
-
+            numBatches.set(0);
         }
 
 
