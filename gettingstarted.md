@@ -22,7 +22,7 @@ layout: default
         Windows
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-3. Install either from source or maven central, below are the source instructions, add the below dependency coordinates in to your pom otherwise.
+3. Install either from source or Maven central. Below are the source instructions. Add the below dependency coordinates in to your pom, otherwise.
 
          git clone https://github.com/agibsonccc/java-deeplearning
 
@@ -34,37 +34,38 @@ layout: default
 
 4. Use this repo in your pom:
 
-        <repositories>
-       <repository>
-         <id>snapshots-repo</id>
-         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-         <releases><enabled>false</enabled></releases>
-         <snapshots><enabled>true</enabled></snapshots>
-       </repository>
-     </repositories>
+         <repositories>
+             <repository>
+                 <id>snapshots-repo</id>
+                 <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                 <releases><enabled>false</enabled></releases>
+                 <snapshots><enabled>true</enabled></snapshots>
+             </repository>
+         </repositories>
 
-5. Use this as a dependency in your project.
+5. Use this as a dependency in your project:
 
-      <dependency>
+         <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
 			<version>0.0.3.2-SNAPSHOT</version>
-		</dependency>
+		 </dependency>
 
 6. For multithreaded/clustering support, please use:
 
-       <dependency>
+         <dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
 			<version>0.0.3.2-SNAPSHOT</version>
 		</dependency>
 
-7. for NLP, use
-             <dependency>
+7. For NLP, use:
+         
+         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-akka-word2vec</artifactId>
             <version>0.0.3.2-SNAPSHOT</version>
-        </dependency>
+         </dependency>
 
 From here, you can check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
 
