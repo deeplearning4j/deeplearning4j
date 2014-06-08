@@ -548,6 +548,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setDist(getDist());
             ret.setAdaGrad(wAdaGrad);
             ret.setLossFunction(lossFunction);
+
             ret.setOptimizationAlgorithm(optimizationAlgo);
             return ret;
         } catch (Exception e) {

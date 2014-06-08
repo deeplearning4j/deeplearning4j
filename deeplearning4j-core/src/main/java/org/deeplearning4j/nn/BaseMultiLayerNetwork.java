@@ -420,14 +420,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         List<DoubleMatrix> activations = new ArrayList<>();
         activations.add(currInput);
         for(int i = 0; i < getnLayers(); i++) {
-            getLayers()[i].setInput(currInput);
-            getSigmoidLayers()[i].setInput(input);
+            NeuralNetwork layer = getLayers()[i];
+            HiddenLayer l = getSigmoidLayers()[i];
+
+            layer.setInput(currInput);
+            l.setInput(input);
+
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
                 currInput = getSigmoidLayers()[i].activate(currInput);
             else  if(useHiddenActivationsForwardProp)
-                currInput = getSigmoidLayers()[i].sampleHGivenV(currInput);
+                currInput = l.sampleHGivenV(currInput);
             else
-                currInput = getLayers()[i].sampleHiddenGivenVisible(currInput).getSecond();
+                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
             activations.add(currInput);
         }
         if(getOutputLayer() != null) {
@@ -1111,6 +1115,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.dropOut = network.dropOut;
         this.optimizationAlgorithm = network.optimizationAlgorithm;
         this.lossFunction = network.lossFunction;
+        this.outputLayer = network.outputLayer;
+        this.outputActivationFunction = network.outputActivationFunction;
+        this.lossFunctionByLayer = network.lossFunctionByLayer;
+        this.outputLossFunction = network.outputLossFunction;
 
         if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
             this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];

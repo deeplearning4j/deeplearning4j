@@ -29,7 +29,7 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,60000,false);
+        DataSetIterator iter = new MnistDataSetIterator(100,60000,false);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
@@ -40,10 +40,8 @@ public class DeepAutoEncoderFromFile {
         encoder.setRoundCodeLayerInput(true);
         encoder.setNormalizeCodeLayerOutput(false);
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
-
-        encoder.setOutputLayerActivation(Activations.sigmoid());
         encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
-        encoder.setHiddenUnit(RBM.HiddenUnit.BINARY);
+        encoder.setOutputLayerActivation(Activations.sigmoid());
 
         int testSets = 0;
         int count = 0;
@@ -59,16 +57,17 @@ public class DeepAutoEncoderFromFile {
                 break;
             log.info("Labels " + labels);
             log.info("Training on " + next.numExamples());
-            log.info(("Coding layer is " + encoder.encodeWithScaling(next.getFirst())).replaceAll(";","\n"));
+            //log.info(("Coding layer is " + encoder.encodeWithScaling(next.getFirst())).replaceAll(";","\n"));
             encoder.finetune(next.getFirst(),1e-1,1000);
+
             if(true) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
-                encoder.getDecoder().feedForward(encoder.encodeWithScaling(next.getFirst()));
-                String[] layers = new String[encoder.getDecoder().getnLayers()];
+                encoder.feedForward(next.getFirst());
+                String[] layers = new String[encoder.getLayers().length];
                 DoubleMatrix[] weights = new DoubleMatrix[layers.length];
-                for(int i = 0; i < encoder.getDecoder().getnLayers(); i++) {
+                for(int i = 0; i < encoder.getLayers().length; i++) {
                     layers[i] = "" + i;
-                    weights[i] = encoder.getDecoder().getLayers()[i].getW();
+                    weights[i] = encoder.getLayers()[i].getW();
                 }
 
                 plotter.histogram(layers, weights);
