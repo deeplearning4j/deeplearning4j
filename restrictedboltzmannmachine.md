@@ -46,17 +46,7 @@ Now that you've instantiated the machine and created the training set, it's time
 
 The last snippet will construct a new training set and show the reconstructed input. Note that the example below only takes binary input, not a continuum of integers.
 
-		  rbm.trainTillConvergence(0.01,1,d);
-		
-          double[][] testData = new double[][]
-			  {
-			    {1, 1, 0, 0, 0, 0},
-				{0, 0, 0, 1, 1, 0}
-			  };
-
-		  DoubleMatrix v = new DoubleMatrix(testData);	
-
-          System.out.println(r.reconstruct(v).toString());
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=47:69"></script>
 
 ### continuous RBMs
 
