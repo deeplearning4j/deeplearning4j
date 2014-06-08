@@ -28,7 +28,7 @@ Here's how you set up a single-thread restricted Boltzmann machine:
 
 To create it, you simply instantiate an object of the [RBM class](../doc/org/deeplearning4j/rbm/RBM.html).
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:26"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:24"></script>
 
 The RBM uses the builder pattern to set up config; for example, this builder will handle the following parameters:
 
