@@ -12,7 +12,7 @@ Processing Mnist, a deep autoencoder will use binary transformations after each 
 
 Let’s define an example encoder:
     
-     784 (input) ----> 1000 ---> 500 ----> 250 ----> 30
+     784 (input) ----> 1000 ----> 500 ----> 250 ----> 30
 
 If, say, the input fed to the network is 784 pixels (the square of the 28x28 pixel images in the Mnist dataset), then the first layer of the deep autoencoder should have 1000 parameters -- slightly larger. 
 
@@ -26,7 +26,9 @@ The layers will be 1000, 500, 250, 100 nodes wide, respectively, until at the en
 
 Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the vector, which becomes the input.
 
-The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed. 
+The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed. (They are not initialized randomly.) 
+
+		784 (input) <---- 1000 <---- 500 <---- 250 <---- 30
 
 The decoding half of a deep autoencoder is the part that learns to reconstruct the image. It does so with a second feed-forward net which also conducts back propagation. The back propagation happens through reconstruction entropy.
 
@@ -61,3 +63,5 @@ The scaled word counts are then fed into a deep-belief network, a stack of restr
 Each document’s number set, or vector, is then introduced to the same vector space, and its distance from every other document-vector measured. Roughly speaking, nearby document-vectors fall under the same topic. 
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
+
+For a deeper dive, see our Github page on [deep autoencoders](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/deepautoencoder/DeepAutoEncoderExample.java).
