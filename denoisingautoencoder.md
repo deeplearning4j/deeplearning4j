@@ -32,7 +32,7 @@ This will train the specified denoising autoencoder with a corruption level of 0
 
 You can test your input with this snippet:
 
-        System.out.println(da.reconstruct(xor.getFirst()));
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/DenoisingAutoEncoderMnistExample.java?slice=44:65"></script>
 
 If you see percentages rather than zeros, that's a good indicator your autoencoder is learning the structure of the data.
 
