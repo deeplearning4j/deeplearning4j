@@ -30,25 +30,15 @@ This is a little more complicated than the singular input.
 
 It creates a deep-belief network with the specified hidden-layer sizes (three hidden layers at two hidden units each); the number of inputs being two; outputs also two; no regularization; the specified random number generator; and no momentum.
 
-Next, you create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much larger.)
+Next, you create a training set for the machine. 
 
-	        int n = 10;
-			DataSet d = MatrixUtil.xorData(n);
-			DoubleMatrix x = d.getFirst();
-			DoubleMatrix y = d.getSecond();
+An MNIST dataset is generated here with 784 columns. A data set is a pair of x,y matrices such that each matrix is one row.
 
-An xor dataset is generated here with 10 columns. A data set is a pair of x,y matrices such that each matrix is one row.
-
-	        dbn.pretrain(x,k, preTrainLr, preTrainEpochs);
-			dbn.finetune(y,fineTuneLr, fineTuneEpochs);
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=31:49"></script>
 
 Pretraining and finetuning steps train the network for use on unstructured data. You can test the trained network by feeding it unstructured data and checking the output. The output here will be a prediction of whether the specified input is true or false based on the rules of xor.
 
-			DoubleMatrix predict = dbn.predict(x);
-
-			Evaluation eval = new Evaluation();
-			eval.eval(y, predict);
-			System.out.println(eval.stats());
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=60:71"></script>
 
 This will print out the f1 score of the prediction.
 
