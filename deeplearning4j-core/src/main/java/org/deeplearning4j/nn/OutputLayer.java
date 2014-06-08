@@ -540,6 +540,14 @@ public class OutputLayer implements Serializable {
         this.activationFunction = activationFunction;
     }
 
+    public LossFunction getLossFunction() {
+        return lossFunction;
+    }
+
+    public void setLossFunction(LossFunction lossFunction) {
+        this.lossFunction = lossFunction;
+    }
+
     public static class Builder {
         private DoubleMatrix W;
         private OutputLayer ret;
