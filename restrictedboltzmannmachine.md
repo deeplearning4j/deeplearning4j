@@ -28,34 +28,19 @@ Here's how you set up a single-thread restricted Boltzmann machine:
 
 To create it, you simply instantiate an object of the [RBM class](../doc/org/deeplearning4j/rbm/RBM.html).
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:35"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:26"></script>
 
 The RBM uses the builder pattern to set up config; for example, this builder will handle the following parameters:
 
            Number of visible (input) units: 784
 
-           Number of hidden (output) units: 400 
+           Number of hidden (output) units: 600 
 
-           withRandom(specify an RNG)
-
-           useRegularization(use L2?)
-
-           Momentum: Use momentum or not?
+           useRegularization(use L2?)           
 
 Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much larger.)
 
-            double[][] data = new double[][]
-				{
-				{1,1,1,0,0,0},
-				{1,0,1,0,0,0},
-				{1,1,1,0,0,0},
-				{0,0,1,1,1,0},
-				{0,0,1,1,0,0},
-				{0,0,1,1,1,0},
-				{0,0,1,1,1,0}
-			};
-
-		    DoubleMatrix d = new DoubleMatrix(data);
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=26:35"></script>
 
 Now that you've instantiated the machine and created the training set, it's time to train the network. This will run contrastive divergence until convergence, with a learning rate of 0.01, a k of 1 and with the input specified above. 
 
