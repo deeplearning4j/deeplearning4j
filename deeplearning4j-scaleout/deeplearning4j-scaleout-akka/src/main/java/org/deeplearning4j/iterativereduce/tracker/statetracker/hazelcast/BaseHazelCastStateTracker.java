@@ -869,6 +869,8 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     public void moveToFinetune() {
         log.info("Moving to finetune");
         isPretrain.set(false);
+        //new phase: resets the counter
+        numBatches.set(0);
     }
 
     @Override

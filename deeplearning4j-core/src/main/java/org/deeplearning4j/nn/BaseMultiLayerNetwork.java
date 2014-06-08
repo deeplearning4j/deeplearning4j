@@ -280,8 +280,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.input = input.dup();
         if(!initCalled)
             init();
-        else
-            feedForward(input);
+
 
     }
 
@@ -614,44 +613,53 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     @Override
     public String toString() {
-        return "BaseMultiLayerNetwork{" +
-                "nIns=" + nIns +
-                ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
-                ", nOuts=" + nOuts +
-                ", sigmoidLayers=" + Arrays.toString(sigmoidLayers) +
-                ", outputLayer=" + outputLayer +
-                ", rng=" + rng +
-                ", dist=" + dist +
-                ", momentum=" + momentum +
-                ", input=" + input +
-                ", labels=" + labels +
-                ", optimizer=" + optimizer +
-                ", activation=" + activation +
-                ", l2=" + l2 +
-                ", shouldInit=" + shouldInit +
-                ", fanIn=" + fanIn +
-                ", renderWeightsEveryNEpochs=" + renderWeightsEveryNEpochs +
-                ", useRegularization=" + useRegularization +
-                ", weightTransforms=" + weightTransforms +
-                ", hiddenBiasTransforms=" + hiddenBiasTransforms +
-                ", visibleBiasTransforms=" + visibleBiasTransforms +
-                ", shouldBackProp=" + shouldBackProp +
-                ", forceNumEpochs=" + forceNumEpochs +
-                ", sparsity=" + sparsity +
-                ", columnSums=" + columnSums +
-                ", columnMeans=" + columnMeans +
-                ", columnStds=" + columnStds +
-                ", initCalled=" + initCalled +
-                ", useHiddenActivationsForwardProp=" + useHiddenActivationsForwardProp +
-                ", useAdaGrad=" + useAdaGrad +
-                ", learningRateUpdate=" + learningRateUpdate +
-                ", layers=" + Arrays.toString(layers) +
-                ", errorTolerance=" + errorTolerance +
-                ", dropOut=" + dropOut +
-                ", normalizeByInputRows=" + normalizeByInputRows +
-                ", optimizationAlgorithm=" + optimizationAlgorithm +
-                ", lossFunction=" + lossFunction +
-                '}';
+        final StringBuilder sb = new StringBuilder("BaseMultiLayerNetwork{");
+        sb.append("nIns=").append(nIns);
+        sb.append(", hiddenLayerSizes=").append(Arrays.toString(hiddenLayerSizes));
+        sb.append(", nOuts=").append(nOuts);
+        sb.append(", sigmoidLayers=").append(Arrays.toString(sigmoidLayers));
+        sb.append(", outputLayer=").append(outputLayer);
+        sb.append(", rng=").append(rng);
+        sb.append(", dist=").append(dist);
+        sb.append(", momentum=").append(momentum);
+        sb.append(", input=").append(input);
+        sb.append(", labels=").append(labels);
+        sb.append(", optimizer=").append(optimizer);
+        sb.append(", activation=").append(activation);
+        sb.append(", buildAutoEncoder=").append(buildAutoEncoder);
+        sb.append(", l2=").append(l2);
+        sb.append(", shouldInit=").append(shouldInit);
+        sb.append(", fanIn=").append(fanIn);
+        sb.append(", renderWeightsEveryNEpochs=").append(renderWeightsEveryNEpochs);
+        sb.append(", useRegularization=").append(useRegularization);
+        sb.append(", weightTransforms=").append(weightTransforms);
+        sb.append(", hiddenBiasTransforms=").append(hiddenBiasTransforms);
+        sb.append(", visibleBiasTransforms=").append(visibleBiasTransforms);
+        sb.append(", shouldBackProp=").append(shouldBackProp);
+        sb.append(", forceNumEpochs=").append(forceNumEpochs);
+        sb.append(", sparsity=").append(sparsity);
+        sb.append(", columnSums=").append(columnSums);
+        sb.append(", columnMeans=").append(columnMeans);
+        sb.append(", columnStds=").append(columnStds);
+        sb.append(", initCalled=").append(initCalled);
+        sb.append(", useHiddenActivationsForwardProp=").append(useHiddenActivationsForwardProp);
+        sb.append(", useAdaGrad=").append(useAdaGrad);
+        sb.append(", activationFunctionForLayer=").append(activationFunctionForLayer);
+        sb.append(", learningRateUpdate=").append(learningRateUpdate);
+        sb.append(", layers=").append(Arrays.toString(layers));
+        sb.append(", errorTolerance=").append(errorTolerance);
+        sb.append(", dropOut=").append(dropOut);
+        sb.append(", normalizeByInputRows=").append(normalizeByInputRows);
+        sb.append(", optimizationAlgorithm=").append(optimizationAlgorithm);
+        sb.append(", lossFunction=").append(lossFunction);
+        sb.append(", outputLossFunction=").append(outputLossFunction);
+        sb.append(", outputActivationFunction=").append(outputActivationFunction);
+        sb.append(", layerLearningRates=").append(layerLearningRates);
+        sb.append(", renderByLayer=").append(renderByLayer);
+        sb.append(", sampleOrActivate=").append(sampleOrActivate);
+        sb.append(", lossFunctionByLayer=").append(lossFunctionByLayer);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
@@ -1067,9 +1075,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param network the network to get parameters from
      */
     protected  void update(BaseMultiLayerNetwork network) {
+
         if(network.layers != null && network.getnLayers() > 0) {
-            this.setnLayers(network.getnLayers());
-            this.layers = new NeuralNetwork[network.getnLayers()];
+            this.setnLayers(network.getLayers().length);
+            this.layers = new NeuralNetwork[network.getLayers().length];
             for(int i = 0; i < layers.length; i++)
                 if((this.getnLayers()) > i && (network.getnLayers() > i)) {
                     if(network.getLayers()[i] == null) {
@@ -1080,7 +1089,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 }
         }
-
         this.sampleOrActivate = network.sampleOrActivate;
         this.layerLearningRates = network.layerLearningRates;
         this.normalizeByInputRows = network.normalizeByInputRows;
@@ -2035,7 +2043,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.getLayerLearningRates().putAll(layerLearningRates);
                 if(hiddenLayerSizes == null)
                     throw new IllegalStateException("Unable to build network, no hidden layer sizes defined");
-
                 return ret;
             } catch (Exception e) {
                 throw new RuntimeException(e);

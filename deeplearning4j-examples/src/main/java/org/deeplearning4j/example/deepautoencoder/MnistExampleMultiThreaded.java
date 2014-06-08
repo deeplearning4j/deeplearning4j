@@ -49,7 +49,6 @@ public class MnistExampleMultiThreaded {
         c.setHiddenUnitByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN));
         c.setActivationFunctionForLayer(Collections.singletonMap(codeLayer,Activations.sigmoid()));
         c.setSplit(100);
-        c.setRenderEpochsByLayer(Collections.singletonMap(0,10));
         c.setLearningRateForLayer(Collections.singletonMap(codeLayer,1e-1));
         c.setSparsity(0);
 

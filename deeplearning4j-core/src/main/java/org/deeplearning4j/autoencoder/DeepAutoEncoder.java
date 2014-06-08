@@ -1,16 +1,10 @@
 package org.deeplearning4j.autoencoder;
 
-import java.io.Serializable;
 
-import static org.deeplearning4j.util.MatrixUtil.binomial;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.deeplearning4j.util.MatrixUtil.round;
-import static org.jblas.MatrixFunctions.abs;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
@@ -23,8 +17,9 @@ import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
@@ -56,6 +51,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     private ActivationFunction outputLayerActivation = Activations.sigmoid();
     private boolean roundCodeLayerInput = false;
     private boolean normalizeCodeLayerOutput = false;
+    private static Logger log = LoggerFactory.getLogger(DeepAutoEncoder.class);
 
     public DeepAutoEncoder(){}
 
@@ -106,8 +102,71 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      */
     @Override
     public NeuralNetwork createLayer(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng, int index) {
-        return null;
+        throw new IllegalStateException("Not implemented");
     }
+
+
+    /**
+     * Compute activations from input to output of the output layer
+     * @return the list of activations for each layer
+     */
+    public  List<DoubleMatrix> feedForward() {
+        DoubleMatrix currInput = this.input;
+
+        List<DoubleMatrix> activations = new ArrayList<>();
+        activations.add(currInput);
+        NeuralNetwork[] layers = getLayers();
+        for(int i = 0; i < layers.length; i++) {
+            NeuralNetwork layer = getLayers()[i];
+            HiddenLayer l = getSigmoidLayers()[i];
+            if(layer == null) {
+                log.warn("Null layer found going to break");
+                break;
+            }
+            if(l == null) {
+                log.warn("Null sigmoid layer found going to break");
+                break;
+            }
+            layer.setInput(currInput);
+            l.setInput(currInput);
+
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i)) {
+                currInput = getSigmoidLayers()[i].activate(currInput);
+                if(roundCodeLayerInput && (layer instanceof  RBM)) {
+                    RBM r = (RBM)  layer;
+                    if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
+                        currInput = round(currInput);
+                    }
+                }
+            }
+            else  if(useHiddenActivationsForwardProp) {
+                currInput = l.sampleHGivenV(currInput);
+
+                if(roundCodeLayerInput && (layer instanceof  RBM)) {
+                    RBM r = (RBM)  layer;
+                    if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
+                        currInput = round(currInput);
+                    }
+                }
+            }
+            else
+                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+            activations.add(currInput);
+        }
+        if(getOutputLayer() != null) {
+            getOutputLayer().setInput(currInput);
+            if(getOutputLayer().getActivationFunction() == null)
+                if(outputActivationFunction != null)
+                    outputLayer.setActivationFunction(outputActivationFunction);
+                else
+                    outputLayer.setActivationFunction(Activations.sigmoid());
+
+            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
+
+        }
+        return activations;
+    }
+
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
@@ -187,11 +246,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
 
 
-        NeuralNetwork[] cloned = new NeuralNetwork[encoder.getnLayers()];
-        HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getnLayers()];
+        NeuralNetwork[] cloned = new NeuralNetwork[encoder.getLayers().length];
+        HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getLayers().length];
 
 
-        for(int i = 0; i < cloned.length; i++) {
+        for(int i = 0; i < cloned.length ; i++) {
             cloned[i] = encoder.getLayers()[i].transpose();
             //decoder
             if(i == cloned.length - 1) {
@@ -214,25 +273,65 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         ArrayUtil.reverse(cloned);
         ArrayUtil.reverse(clonedHidden);
 
+        NeuralNetwork[] decoderLayers = new NeuralNetwork[cloned.length - 1];
+        for(int i = 0 ; i < decoderLayers.length; i++)
+            decoderLayers[i] = cloned[i];
+        HiddenLayer[] decoderHiddenLayers = new HiddenLayer[clonedHidden.length - 1];
+        for(int i = 0; i < decoderHiddenLayers.length; i++)
+            decoderHiddenLayers[i] = clonedHidden[i];
 
-        decoder.setSigmoidLayers(clonedHidden);
-        decoder.setLayers(cloned);
+        decoder.setSigmoidLayers(decoderHiddenLayers);
+        decoder.setLayers(decoderLayers);
 
         DoubleMatrix encoded = encodeWithScaling(input);
         decoder.setInput(encoded);
         decoder.initializeLayers(encoded);
 
-        //copy the params
-        update(decoder);
+        this.sampleOrActivate = decoder.getSampleOrActivate();
+        this.layerLearningRates = decoder.getLayerLearningRates();
+        this.normalizeByInputRows = decoder.isNormalizeByInputRows();
+        this.useAdaGrad = decoder.isUseAdaGrad();
+        this.hiddenLayerSizes = decoder.getHiddenLayerSizes();
+        this.rng = decoder.getRng();
+        this.dist = decoder.getDist();
+        this.activation = decoder.getActivation();
+        this.useRegularization = decoder.isUseRegularization();
+        this.columnMeans = decoder.getColumnMeans();
+        this.columnStds = decoder.getColumnStds();
+        this.columnSums = decoder.getColumnSums();
+        this.errorTolerance = decoder.getErrorTolerance();
+        this.renderWeightsEveryNEpochs = decoder.getRenderWeightsEveryNEpochs();
+        this.forceNumEpochs = decoder.isForceNumEpochs();
+        this.l2 = decoder.getL2();
+        this.fanIn = decoder.getFanIn();
+        this.momentum = decoder.getMomentum();
+        this.learningRateUpdate = decoder.getLearningRateUpdate();
+        this.shouldBackProp = decoder.isShouldBackProp();
+        this.sparsity = decoder.getSparsity();
+        this.dropOut = decoder.getDropOut();
+        this.optimizationAlgorithm = decoder.getOptimizationAlgorithm();
+        this.lossFunction = decoder.getLossFunction();
+        this.outputActivationFunction = decoder.getOutputActivationFunction();
+        this.lossFunctionByLayer = decoder.getLossFunctionByLayer();
+        this.outputLossFunction = decoder.getOutputLossFunction();
 
 
 
         //set the combined hidden layers and associated sizes,...
         this.hiddenLayerSizes = ArrayUtil.combine(encoder.getHiddenLayerSizes(),decoder.getHiddenLayerSizes());
+        RBM r = (RBM) decoder.getLayers()[0];
+
+        r.setVisibleType(visibleUnit);
+        r.setHiddenType(hiddenUnit);
+
         this.layers = ArrayUtil.combine(encoder.getLayers(),decoder.getLayers());
         this.sigmoidLayers = ArrayUtil.combine(encoder.getSigmoidLayers(),decoder.getSigmoidLayers());
         this.outputLayer = decoder.getOutputLayer();
-
+        dimensionCheck();
+        
+        //done with encoder/decoder
+        this.encoder = null;
+        this.decoder = null;
 
     }
 
@@ -251,7 +350,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
 
         setInput(input);
-        setLabels(labels);
+        setLabels(input);
 
         super.finetune(input,lr,epochs);
 
@@ -272,19 +371,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
         return decoderInput;
-    }
-
-    /**
-     * Reconstructs the given input by running the input
-     * through the auto encoder followed by the decoder
-     * @param input the input to reconstruct
-     * @return the reconstructed input from input ---> encode ---> decode
-     */
-    public DoubleMatrix reconstruct(DoubleMatrix input) {
-        DoubleMatrix decoderInput = encodeWithScaling(input);
-
-        List<DoubleMatrix> decoderActivations =  decoder.feedForward(decoderInput);
-        return decoderActivations.get(decoderActivations.size() - 1);
     }
 
     public OutputLayer.LossFunction getOutputLayerLossFunction() {

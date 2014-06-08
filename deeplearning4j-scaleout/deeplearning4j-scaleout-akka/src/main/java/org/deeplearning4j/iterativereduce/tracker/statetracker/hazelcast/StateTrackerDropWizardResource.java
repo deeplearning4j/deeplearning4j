@@ -83,6 +83,14 @@ public class StateTrackerDropWizardResource extends Application<HazelCastConf>  
     }
 
     @GET
+    @Path("/printmodel")
+    public Response printModel() throws Exception {
+        return Response.ok(Collections.singletonMap("model",stateTracker.getCurrent().get().toString())).build();
+    }
+
+
+
+    @GET
     @Path("/workers/num")
     public Response listWorkersSize() {
         return Response.ok(new ArrayList<>(stateTracker.workers()).size()).build();

@@ -607,6 +607,39 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BaseNeuralNetwork{");
+        sb.append("nVisible=").append(nVisible);
+        sb.append(", nHidden=").append(nHidden);
+        sb.append(", rng=").append(rng);
+        sb.append(", sparsity=").append(sparsity);
+        sb.append(", momentum=").append(momentum);
+        sb.append(", dist=").append(dist);
+        sb.append(", l2=").append(l2);
+        sb.append(", optimizer=").append(optimizer);
+        sb.append(", renderWeightsEveryNumEpochs=").append(renderWeightsEveryNumEpochs);
+        sb.append(", fanIn=").append(fanIn);
+        sb.append(", useRegularization=").append(useRegularization);
+        sb.append(", useAdaGrad=").append(useAdaGrad);
+        sb.append(", firstTimeThrough=").append(firstTimeThrough);
+        sb.append(", normalizeByInputRows=").append(normalizeByInputRows);
+        sb.append(", applySparsity=").append(applySparsity);
+        sb.append(", dropOut=").append(dropOut);
+        sb.append(", doMask=").append(doMask);
+        sb.append(", optimizationAlgo=").append(optimizationAlgo);
+        sb.append(", lossFunction=").append(lossFunction);
+        sb.append(", cacheInput=").append(cacheInput);
+        sb.append(", wGradient=").append(wGradient);
+        sb.append(", vBiasGradient=").append(vBiasGradient);
+        sb.append(", hBiasGradient=").append(hBiasGradient);
+        sb.append(", lastMiniBatchSize=").append(lastMiniBatchSize);
+        sb.append(", wAdaGrad=").append(wAdaGrad);
+        sb.append(", hBiasAdaGrad=").append(hBiasAdaGrad);
+        sb.append(", vBiasAdaGrad=").append(vBiasAdaGrad);
+        sb.append('}');
+        return sb.toString();
+    }
 
     /**
      * Copies params from the passed in network
