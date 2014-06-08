@@ -10,7 +10,7 @@
     <name>deeplearning4j-scaleout-akka</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.3-M1</akka.version>
+        <akka.version>2.3.3</akka.version>
         <netty.version>3.6.6.Final</netty.version>
         <hazelcast.version>3.2-RC2</hazelcast.version>
         <spring.version>3.2.5.RELEASE</spring.version>

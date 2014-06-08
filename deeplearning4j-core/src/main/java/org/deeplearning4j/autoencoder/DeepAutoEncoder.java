@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.HiddenLayer;
@@ -41,7 +42,7 @@ import org.jblas.DoubleMatrix;
  *
  *
  */
-public class DeepAutoEncoder implements Serializable {
+public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     /**
      *
@@ -56,11 +57,62 @@ public class DeepAutoEncoder implements Serializable {
     private boolean roundCodeLayerInput = false;
     private boolean normalizeCodeLayerOutput = false;
 
+    public DeepAutoEncoder(){}
+
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
     }
 
+    /**
+     * Train the network running some unsupervised
+     * pretraining followed by SGD/finetune
+     *
+     * @param input       the input to train on
+     * @param labels      the labels for the training examples(a matrix of the following format:
+     *                    [0,1,0] where 0 represents the labels its not and 1 represents labels for the positive outcomes
+     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
+     */
+    @Override
+    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels, Object[] otherParams) {
+        throw new IllegalStateException("Not implemented");
+    }
 
+    /**
+     * Pretrain the network with the given parameters
+     *
+     * @param input       the input to train ons
+     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
+     */
+    @Override
+    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+        throw new IllegalStateException("Not implemented");
+
+    }
+
+    /**
+     * Creates a layer depending on the index.
+     * The main reason this matters is for continuous variations such as the {@link org.deeplearning4j.dbn.DBN}
+     * where the first layer needs to be an {@link org.deeplearning4j.rbm.RBM} for continuous inputs.
+     *
+     * @param input    the input to the layer
+     * @param nVisible the number of visible inputs
+     * @param nHidden  the number of hidden units
+     * @param W        the weight vector
+     * @param hbias    the hidden bias
+     * @param vBias    the visible bias
+     * @param rng      the rng to use (THiS IS IMPORTANT; YOU DO NOT WANT TO HAVE A MIS REFERENCED RNG OTHERWISE NUMBERS WILL BE MEANINGLESS)
+     * @param index    the index of the layer
+     * @return a neural network layer such as {@link org.deeplearning4j.rbm.RBM}
+     */
+    @Override
+    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng, int index) {
+        return null;
+    }
+
+    @Override
+    public NeuralNetwork[] createNetworkLayers(int numLayers) {
+        return new NeuralNetwork[0];
+    }
 
     private void initDecoder() {
         //encoder hasn't been pretrained yet
@@ -96,6 +148,9 @@ public class DeepAutoEncoder implements Serializable {
                     .withVisibleUnits(d.getVisibleUnit())
                     .withVisibleUnits(d.getVisibleUnit())
                     .withOutputLossFunction(outputLayerLossFunction)
+                    .sampleOrActivateByLayer(encoder.getSampleOrActivate())
+                    .withHiddenUnitsByLayer(((DBN) encoder).getHiddenUnitByLayer())
+                    .withVisibleUnitsByLayer(((DBN) encoder).getVisibleUnitByLayer())
                     .learningRateForLayer(learningRateForLayerReversed)
                     .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
                     .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
@@ -136,9 +191,19 @@ public class DeepAutoEncoder implements Serializable {
         HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getnLayers()];
 
 
-        for(int i = 0; i < cloned.length; i++)
+        for(int i = 0; i < cloned.length; i++) {
             cloned[i] = encoder.getLayers()[i].transpose();
+            //decoder
+            if(i == cloned.length - 1) {
+                if(cloned[i] instanceof  RBM) {
+                    RBM r = (RBM) cloned[i];
+                    r.setHiddenType(hiddenUnit);
+                    r.setVisibleType(visibleUnit);
+                    cloned[i] = r;
+                }
+            }
 
+        }
         for(int i = 0; i < cloned.length; i++) {
             clonedHidden[i] = encoder.getSigmoidLayers()[i].transpose();
             clonedHidden[i].setB(cloned[i].gethBias());
@@ -153,6 +218,21 @@ public class DeepAutoEncoder implements Serializable {
         decoder.setSigmoidLayers(clonedHidden);
         decoder.setLayers(cloned);
 
+        DoubleMatrix encoded = encodeWithScaling(input);
+        decoder.setInput(encoded);
+        decoder.initializeLayers(encoded);
+
+        //copy the params
+        update(decoder);
+
+
+
+        //set the combined hidden layers and associated sizes,...
+        this.hiddenLayerSizes = ArrayUtil.combine(encoder.getHiddenLayerSizes(),decoder.getHiddenLayerSizes());
+        this.layers = ArrayUtil.combine(encoder.getLayers(),decoder.getLayers());
+        this.sigmoidLayers = ArrayUtil.combine(encoder.getSigmoidLayers(),decoder.getSigmoidLayers());
+        this.outputLayer = decoder.getOutputLayer();
+
 
     }
 
@@ -164,14 +244,16 @@ public class DeepAutoEncoder implements Serializable {
      * @param input the given input to train on
      */
     public void finetune(DoubleMatrix input,double lr,int epochs) {
+        this.input = input;
+
         if(decoder == null)
             initDecoder();
 
-        DoubleMatrix decoderInput = encodeWithScaling(input);
-        decoder.setInput(decoderInput);
-        decoder.initializeLayers(decoderInput);
-        decoder.feedForward(decoderInput);
-        decoder.finetune(input,lr,epochs);
+
+        setInput(input);
+        setLabels(labels);
+
+        super.finetune(input,lr,epochs);
 
     }
 
@@ -276,4 +358,17 @@ public class DeepAutoEncoder implements Serializable {
     public void setNormalizeCodeLayerOutput(boolean normalizeCodeLayerOutput) {
         this.normalizeCodeLayerOutput = normalizeCodeLayerOutput;
     }
+
+
+    public static class Builder extends BaseMultiLayerNetwork.Builder<DeepAutoEncoder> {
+        public Builder() {
+            clazz = DeepAutoEncoder.class;
+        }
+
+
+
+
+    }
+
+
 }
