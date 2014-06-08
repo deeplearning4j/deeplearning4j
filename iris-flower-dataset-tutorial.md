@@ -17,3 +17,5 @@ While the dataset is small, which can present its own problems, the species virg
 DL4J's neural nets can classify the set within two minutes with an accuracy of greater than 90 percent. Once you've seen DL4J train a neural network on Iris, you may want to learn about [facial reconstruction](../facial-reconstruction-tutorial).
 
 ![Alt text](../img/iris_dataset.png)
+
+[For a deeper dive, see our Iris code on Github](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisExample.java)
