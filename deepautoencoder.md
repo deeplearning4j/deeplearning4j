@@ -8,7 +8,7 @@ layout: default
 
 Deep autoencoders are a special form of deep-belief net that typically have four or five layers to represent the encoder itself, which is just one half of the net. The layers are a series of RBMs, with several particularities that we'll discuss below. 
 
-Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real valued data which you would use Gaussian rectified RBMs. 
+Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real-valued data which you would use Gaussian rectified RBMs. 
 
 Let’s define an example encoder:
     
@@ -16,9 +16,9 @@ Let’s define an example encoder:
 
 If, say, the input fed to the network is 784 pixels (the square of the 28x28 pixel images in the Mnist dataset), then the first layer of the deep autoencoder should have 1000 parameters -- slightly larger. 
 
-This may seem counterintuitive, because having more parameters than input is a good way to overfit a network. In this case, expanding the parameters, and in a sense expanding the features of the input itself, will make the decoding of the autoencoded data possible. 
+This may seem counterintuitive, because having more parameters than input is a good way to overfit a network. In this case, expanding the parameters, and in a sense expanding the features of the input itself, will make the eventual decoding of the autoencoded data possible. 
 
-This is due to the representational capacity of sigmoid-belief units, a form of transformation used with each layer. Sigmoid belief units can’t represent as much as information and variance as real valued data. The expanded first layer is a way of compensating for that.
+This is due to the representational capacity of sigmoid-belief units, a form of transformation used with each layer. Sigmoid belief units can’t represent as much as information and variance as real-valued data. The expanded first layer is a way of compensating for that.
 
 The layers will be 1000, 500, 250, 100 nodes wide, respectively, until at the end, the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first, pretraining, half of the deep autoencoder, and it is the product of a normal RBM, rather than an output layer such as Softmax or logistic regression. 
 
@@ -46,7 +46,7 @@ As we mentioned above, deep autoencoders are capable of compressing images into 
 
 Vectors containing similar numbers will be returned for the search query, and translated into their appropriate image. 
 
-### topic modeling
+### topic modeling & information retrieval (ir)
 
 Deep autoencoders are highly useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
 
