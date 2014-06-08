@@ -10,31 +10,9 @@ Training a neural network is very time consuming without some kind of parallelis
 
 Here's a snippet for training a network:
 
-	        DataSetIterator iter = ...;
-			//run the network runner as master (worker is used for anything that is just a supporting role for more computing power)
-			ActorNetworkRunner runner = new ActorNetworkRunner("master", iter);
-			//you only need to create the conf for master.
-			Conf conf = new Conf();
-			conf.setFinetuneEpochs(1000);
-			conf.setPretrainLearningRate(0.01);
-			conf.setLayerSizes(new int[]{1000 ,500,250});
-			conf.setMomentum(0);
-			//pick the multi layer network to train: note that this is the MULTI layer
-			conf.setMultiLayerClazz(CDBN.class);
-			conf.setnOut(d1.getSecond().columns);
-			conf.setFunction(new HardTanh());
-			conf.setFinetuneLearningRate(0.01);
-			conf.setnIn(d1.getFirst().columns);
-			conf.setMomentum(0.9);
-			conf.setUseRegularization(false);
-			//always call setup
-			runner.setup(conf);
-			//train the network using the passed in data set iterator.
-			runner.train();
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/MnistExampleMultiThreaded.java?slice=30:53"></script>
 
 Note that runner.train() is not a blocking call.
-
-
 
 ### ZooKeeper
 
