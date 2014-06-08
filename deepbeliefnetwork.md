@@ -24,7 +24,7 @@ Here's how you set up a single-thread deep belief network:
 
 To create it, you instantiate an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=27:30"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=26:30"></script>
 
 This is a little more complicated than the singular input. 
 
