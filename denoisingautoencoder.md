@@ -26,11 +26,7 @@ That's how you set up a denoising autoencoder with one visible layer and one hid
 
 Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, the training sets are clearly much more substantial.)
 
-		DataSet xor = MatrixUtil.xorData(10);
-		DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(xor.getFirst().columns).numHidden(2).build();
-        
-        double lr = 0.1;
-	    da.trainTillConvergence(xor.getFirst(), lr, 0.3); 
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/DenoisingAutoEncoderMnistExample.java?slice=23:31"></script>
 
 This will train the specified denoising autoencoder with a corruption level of 0.3 and a learning rate of 0.1 on the x matrix in the dataset.
 
