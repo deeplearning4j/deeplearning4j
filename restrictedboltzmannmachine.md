@@ -30,11 +30,6 @@ To create it, you simply instantiate an object of the [RBM class](../doc/org/dee
 
 <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:35"></script>
 
-
-
-		   RBM rbm = new RBM.Builder().numberOfVisible(784).numHidden(400).withRandom(rand)
-				.useRegularization(false).withMomentum(0).build();
-
 The RBM uses the builder pattern to set up config; for example, this builder will handle the following parameters:
 
            Number of visible (input) units: 784
