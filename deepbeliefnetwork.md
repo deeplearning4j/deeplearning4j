@@ -24,20 +24,7 @@ Here's how you set up a single-thread deep belief network:
 
 To create it, you instantiate an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
 
-	        RandomGenerator rng = new MersenneTwister(123);
-
-			double preTrainLr = 0.001;
-			int preTrainEpochs = 1000;
-			int k = 1;
-			int nIns = 2,nOuts = 2;
-			int[] hiddenLayerSizes = new int[] {2,2,2};
-			double fineTuneLr = 0.001;
-			int fineTuneEpochs = 1000;
-
-	        DBN dbn = new DBN.Builder().hiddenLayerSizes(hiddenLayerSizes).numberOfInputs(nIns)
-			.useRegularization(false).withMomentum(0)
-			.numberOfOutPuts(nOuts).withRng(rng).build();
-
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=27:30"></script>
 
 This is a little more complicated than the singular input. 
 
