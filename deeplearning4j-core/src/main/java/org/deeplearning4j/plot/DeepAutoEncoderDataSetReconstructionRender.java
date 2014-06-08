@@ -21,7 +21,7 @@ public class DeepAutoEncoderDataSetReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct = encoder.reconstruct(first.getFirst());
+            DoubleMatrix reconstruct = encoder.output(first.getFirst());
             for(int j = 0; j < first.numExamples(); j++) {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);

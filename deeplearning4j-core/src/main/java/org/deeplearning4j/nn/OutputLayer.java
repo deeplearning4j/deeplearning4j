@@ -62,7 +62,7 @@ public class OutputLayer implements Serializable {
      *
      */
     public static enum LossFunction {
-        MSE,EXPLL,XENT,MCXENT,RMSE_XENT
+        MSE,EXPLL,XENT,MCXENT,RMSE_XENT,SQUARED_LOSS
     }
 
 
@@ -251,7 +251,8 @@ public class OutputLayer implements Serializable {
             case EXPLL:
                 DoubleMatrix expLLLogZ = log(z);
                 return -z.sub(labels.mul(expLLLogZ)).columnSums().sum() / labels.rows;
-
+             case SQUARED_LOSS:
+                 return pow(labels.sub(z),2).columnSums().sum() / labels.rows;
 
         }
 
@@ -384,6 +385,9 @@ public class OutputLayer implements Serializable {
                 return input.transpose().mmul(oneMinus(labels).div(z));
             case RMSE_XENT:
                 return input.transpose().mmul(sqrt(pow(labels.sub(z),2)));
+            case SQUARED_LOSS:
+                return input.transpose().mmul(pow(labels.sub(z),2));
+
 
 
         }

@@ -29,7 +29,7 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(100,60000,false);
+        DataSetIterator iter = new MnistDataSetIterator(1,60000,false);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
@@ -38,9 +38,10 @@ public class DeepAutoEncoderFromFile {
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
         encoder.setRoundCodeLayerInput(true);
-        encoder.setNormalizeCodeLayerOutput(false);
+        //encoder.setNormalizeCodeLayerOutput(false);
+        encoder.setUseHiddenActivationsForwardProp(false);
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
-        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
+        //encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         encoder.setOutputLayerActivation(Activations.sigmoid());
 
         int testSets = 0;
@@ -58,11 +59,11 @@ public class DeepAutoEncoderFromFile {
             log.info("Labels " + labels);
             log.info("Training on " + next.numExamples());
             //log.info(("Coding layer is " + encoder.encodeWithScaling(next.getFirst())).replaceAll(";","\n"));
-            encoder.finetune(next.getFirst(),1e-1,1000);
+            encoder.finetune(next.getFirst(),1e-3,1000);
 
             if(true) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
-                encoder.feedForward(next.getFirst());
+                List<DoubleMatrix> activations = encoder.feedForward(next.getFirst());
                 String[] layers = new String[encoder.getLayers().length];
                 DoubleMatrix[] weights = new DoubleMatrix[layers.length];
                 for(int i = 0; i < encoder.getLayers().length; i++) {
