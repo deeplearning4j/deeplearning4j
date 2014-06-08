@@ -20,8 +20,7 @@ Setting up a single-thread denoising autoencoder is easy.
 
 To create the machine, you simply instantiate an object of the class [DenoisingAutoEncoder](../doc/org/deeplearning4j/da/DenoisingAutoEncoder.html).
 
-    	DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(1).numHidden(1).build();
-
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/DenoisingAutoEncoderMnistExample.java?slice=18:22"></script>
 
 That's how you set up a denoising autoencoder with one visible layer and one hidden layer.
 
