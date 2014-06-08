@@ -24,3 +24,4 @@ Now that the neural nets know the features that compose faces, the next step wil
 
 For now, the next page in this guide discusses how to feed DL4J other [datasets](../data-sets-ml.html).
 
+(For a deeper dive into our LFW code, see this [Github page](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw).)
