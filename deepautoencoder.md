@@ -6,9 +6,9 @@ layout: default
 *previous* - [deep-belief network](../deepbeliefnetwork.html)
 # deep autoencoders
 
-Deep autoencoders are a special form of deep-belief net typically with four or five layers that represent the encoder itself, which is just one half of the net. They are a series of RBMs, with several particularities we'll discuss below. 
+Deep autoencoders are a special form of deep-belief net that typically have four or five layers to represent the encoder itself, which is just one half of the net. The layers are a series of RBMs, with several particularities that we'll discuss below. 
 
-Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real valued data which you would use  Gaussian rectified RBMs. 
+Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real valued data which you would use Gaussian rectified RBMs. 
 
 Let’s define an example encoder:
     
@@ -35,9 +35,6 @@ In other words, to train a deep autoencoder, pretrain a net a your choice. The p
 You then feed this pretrained net into a DeepAutoEncoder object that will produce the associated decoder, and from there you call "finetune." This type of fine-tuning doesn't use labels for classification. It's using the pretrained net's output as its input, in order to reconstruct. 
 
 If you don’t have a prebuilt net, just call "train" on a net that's been passed in, which will then have the decoder copied from the encoder’s architecture.
-<div>
-<script src="https://gist.github.com/agibsonccc/2405792db73191bfaaf5.js"></script>
-</div>
 
 ### training nuances
 
