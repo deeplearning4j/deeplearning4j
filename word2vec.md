@@ -58,7 +58,6 @@ This will select moving windows of five tokens from the text (each member of a w
 
 You also may want to use your own custom tokenizer like this:
 
-
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
 
       List<Window> windows = Windows.windows("text",tokenizerFactory);
@@ -81,36 +80,7 @@ The general idea is that you train moving windows with Word2vec and classify ind
 
 Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
 
-        List<String> labels = ...;
-        Index labelIndex = new Index();
-    		  for(int i = 0; i < labels.length; i++)
-    			  labelIndex.add(labels[i]);
-    		Index featureIndex = ViterbiUtil.featureIndexFromLabelIndex(labelIndex);
-    		CounterMap<Integer,Integer> transitions = new CounterMap<Integer,Integer>();
-
-This will intialize the baseline features and transitions for viterbi to optimize.
-
-Let's say that you have a file containing lines with the given transition probabilities:
-
-        //read in the lines of a file
-        List<String> lines = FileUtils.readLines(file);
-        	for(String line : lines) {
-    			if(line.isEmpty()) 
-  				continue;
-			
-        List<Window> windows = Windows.windows(line);
-
-  			for(int i = 1; i < windows.size(); i++) {
-  				String firstLabel = windows.get(i - 1).getLabel();
-  				String secondLabel = windows.get(i).getLabel();
-  				int first = labelIndex.indexOf(firstLabel);
-  				int second = labelIndex.indexOf(secondLabel);
-
-
-  				transitions.incrementCount(first,second,1.0);
-    			}
-
-    		}
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=112:121"></script>
 
 From there, each line will be handled something like this:
 
@@ -126,11 +96,6 @@ on anything containing that window, it will automatically contain that label. Th
 
 The following code saves your Viterbi implementation for later use:
        
-        DoubleMatrix transitionWeights = CounterUtil.convert(transitions);
-      		Viterbi viterbi = new Viterbi(labelIndex,featureIndex,transitionWeights);
-      		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(output));
-      		viterbi.write(bos);
-      		bos.flush();
-      		bos.close();
+        SerializationUtils.saveObject(viterbi, new File("mypath"));
 
-That's pretty much it. If you need help, [drop us a line](http://blix.io/contact.html). 
+That's pretty much it. If you need help, [drop us a line](http://www.skymind.io/contact.html). 
