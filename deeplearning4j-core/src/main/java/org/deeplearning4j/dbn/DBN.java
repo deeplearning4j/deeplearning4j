@@ -568,6 +568,7 @@ public class DBN extends BaseMultiLayerNetwork {
             ret.visibleUnit = visibleUnit;
             ret.visibleUnitByLayer.putAll(visibleUnitByLayer);
             ret.hiddenUnitByLayer.putAll(hiddenUnitByLayer);
+            ret.initializeLayers(DoubleMatrix.zeros(1,ret.getnIns()));
             return ret;
         }
     }

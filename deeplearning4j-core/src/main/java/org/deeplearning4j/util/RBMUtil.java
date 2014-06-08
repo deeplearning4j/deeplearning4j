@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.rbm.RBM;
 
 import java.util.EnumMap;
@@ -14,8 +15,38 @@ public class RBMUtil {
 
     private RBMUtil() {}
 
+    public static String architecure(RBM r) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(" " + r.getVisibleType() + " -> " + r.getHiddenType());
+        builder.append(" " + r.getnVisible() + " -> " + r.getnHidden());
+        builder.append("\n");
 
 
+        return builder.toString();
+    }
+
+    public static String architecure(RBM r,int i) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("LAYER " + (i+ 1));
+        builder.append(" " + r.getVisibleType() + " -> " + r.getHiddenType());
+        builder.append(" " + r.getnVisible() + " -> " + r.getnHidden());
+        builder.append("\n");
+
+
+        return builder.toString();
+    }
+
+
+    public static String architecure(DBN dbn) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n");
+        for(int i = 0; i < dbn.getLayers().length; i++) {
+          RBM r = (RBM) dbn.getLayers()[i];
+          builder.append(architecure(r,i));
+        }
+
+        return builder.toString();
+    }
 
 
     public static RBM.VisibleUnit inverse(RBM.HiddenUnit visible) {

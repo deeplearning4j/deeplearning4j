@@ -191,7 +191,12 @@ public class HiddenLayer implements Serializable {
 		return layer;
 	}
 
-
+    /**
+     * Returns a transposed version of this hidden layer.
+     * A transpose is just the bias and weights flipped
+     * + number of ins and outs flipped
+     * @return the transposed version of this hidden layer
+     */
 	public HiddenLayer transpose() {
 		HiddenLayer layer = new HiddenLayer();
 		layer.b = b.dup();

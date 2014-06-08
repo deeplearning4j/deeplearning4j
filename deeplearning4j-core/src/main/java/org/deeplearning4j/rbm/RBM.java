@@ -450,19 +450,13 @@ public class RBM extends BaseNeuralNetwork {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(" W dims " + W.rows + " x " + W.columns + "\n");
-        builder.append("Visible bias dims " + vBias.rows + " x "  + vBias.columns + "\n");
-        builder.append("Hidden bias dims "  + hBias.rows + " x " + hBias.columns + "\n");
-        builder.append("Conf: \n" + " Adagrad " + isUseAdaGrad() + " Regularization " + isUseRegularization() + "\n");
-        builder.append("Visible units " + visibleType.toString() + " Hidden units " + hiddenType.toString() + "\n");
-        builder.append("L2 " + l2 + " Momentum " + momentum + " Sparsity " + sparsity);
-        return builder.toString();
-
-
-
-
-
+        return "RBM{" +
+                "optimizer=" + optimizer +
+                ", visibleType=" + visibleType +
+                ", hiddenType=" + hiddenType +
+                ", sigma=" + sigma +
+                ", hiddenSigma=" + hiddenSigma +
+                "} " + super.toString();
     }
 
     public VisibleUnit getVisibleType() {
