@@ -52,6 +52,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     private boolean roundCodeLayerInput = false;
     private boolean normalizeCodeLayerOutput = false;
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoder.class);
+    private boolean alreadyInitialized = false;
 
     public DeepAutoEncoder(){}
 
@@ -170,7 +171,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
-        return new NeuralNetwork[0];
+       return new NeuralNetwork[numLayers];
     }
 
     private void initDecoder() {
@@ -326,12 +327,22 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         this.layers = ArrayUtil.combine(encoder.getLayers(),decoder.getLayers());
         this.sigmoidLayers = ArrayUtil.combine(encoder.getSigmoidLayers(),decoder.getSigmoidLayers());
+        //for the code layer everything should be linear
+        this.sigmoidLayers[encoder.getSigmoidLayers().length - 1].setActivationFunction(Activations.sigmoid());
         this.outputLayer = decoder.getOutputLayer();
+
+        //set the output layer weights to be the initial input weights
+        this.outputLayer.setW(encoder.getLayers()[0].getW().transpose());
+        this.outputLayer.setB(encoder.getLayers()[0].getvBias().dup());
+        this.outputLayer.setLossFunction(outputLossFunction);
+        this.outputLayer.setActivationFunction(outputActivationFunction);
+
         dimensionCheck();
-        
+
         //done with encoder/decoder
         this.encoder = null;
         this.decoder = null;
+        alreadyInitialized = true;
 
     }
 
@@ -345,7 +356,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         this.input = input;
 
-        if(decoder == null)
+        if(decoder == null && !alreadyInitialized)
             initDecoder();
 
 
@@ -379,6 +390,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     public void setOutputLayerLossFunction(OutputLayer.LossFunction outputLayerLossFunction) {
         this.outputLayerLossFunction = outputLayerLossFunction;
+        outputLayer.setLossFunction(outputLayerLossFunction);
     }
 
     public RBM.VisibleUnit getVisibleUnit() {

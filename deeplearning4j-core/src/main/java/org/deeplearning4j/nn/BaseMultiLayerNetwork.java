@@ -991,12 +991,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             }
         }
 
-
-        if(this.input == null) {
-            this.initializeLayers(x);
-        }
-
-        //second to last activation is input
+        //last activation is input
         DoubleMatrix predicted = activations.get(activations.size() - 1);
         return predicted;
     }

@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.plot.FilterRenderer;
+import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
@@ -32,7 +33,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(100,100,false);
+        DataSetIterator iter = new MnistDataSetIterator(10,10);
 
 
 
@@ -44,48 +45,51 @@ public class DeepAutoEncoderExample {
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 28})
                 .withHiddenUnitsByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN))
                 .withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-                .numberOfInputs(784).withMomentum(0.9).withDropOut(0.5).useRegularization(true).withL2(2e-4)
+                .numberOfInputs(784)
+                .withMomentum(0.9)
+                .withDropOut(0.5)
+                .useRegularization(true)
+                .withL2(2e-4)
                 .numberOfOutPuts(2)
                 .build();
 
         log.info("Training with layers of " + RBMUtil.architecure(dbn));
-        for(int i = 0; i < 5; i++) {
-            while(iter.hasNext()) {
-                DataSet data = iter.next();
-                data.scale();
-                dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 10});
+        while(iter.hasNext()) {
+            DataSet data = iter.next();
+            //data.scale();
+            dbn.pretrain(data.getFirst(), new Object[]{1, 1e-1, 1000});
 
-
-
-            }
-
-            iter.reset();
 
         }
+
+        iter.reset();
+
+
 
 
 
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-        encoder.setRoundCodeLayerInput(true);
+        encoder.setRoundCodeLayerInput(false);
+        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         //encoder.setNormalizeCodeLayerOutput(false);
         encoder.setUseHiddenActivationsForwardProp(false);
-        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.XENT);
 
         //encoder.setRoundCodeLayerInput(true);
-       for(int i = 0; i < 100 ; i++) {
-           while (iter.hasNext()) {
-               DataSet next = iter.next();
-               next.scale();
-               log.info("Fine tune " + next.labelDistribution());
-               encoder.finetune(next.getFirst(),1e-2,1000);
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
+            //next.scale();
+            log.info("Fine tune " + next.labelDistribution());
+            encoder.finetune(next.getFirst(),1e-1,1000);
+            DoubleMatrix output = encoder.output(next.getFirst());
+            log.info("Output " + output);
 
-           }
+        }
 
 
-           iter.reset();
-       }
+        iter.reset();
+
 
 
 
