@@ -28,17 +28,7 @@ Word2Vec trains on raw text. It then records the context, or usage, of each word
 
 Assuming a list of sentences, it's used for lemmatization like this:
 
-         List<String> mySentences = ...;
-          
-         //source for sentences for word2vec to train on
-         SentenceIterator iter = new CollectionSentenceIterator(mySentences);
-          
-         //tokenization with lemmatization,part of speech taggin,sentence segmentation
-         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-         //use the specified sentence iterator(data source), tokenizer(for vocab), and a min word frequency of 1.
-         //Word frequency should be set relative to the size of your dataset.
-         Word2Vec vec = new Word2Vec(tokenizerFactory,iter,1);
-         vec.train();
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=44:75"></script>
 
 From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll' want to save word2vec like this:
 
