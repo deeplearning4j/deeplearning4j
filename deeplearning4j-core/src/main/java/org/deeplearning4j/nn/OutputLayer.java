@@ -383,7 +383,7 @@ public class OutputLayer implements Serializable {
             case EXPLL:
                 return input.transpose().mmul(oneMinus(labels).div(z));
             case RMSE_XENT:
-                return input.transpose().mmul(labels.sub(z));
+                return input.transpose().mmul(sqrt(pow(labels.sub(z),2)));
 
 
         }

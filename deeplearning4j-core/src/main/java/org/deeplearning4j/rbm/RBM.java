@@ -5,6 +5,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.util.MatrixUtil;
@@ -202,6 +203,26 @@ public class RBM extends BaseNeuralNetwork {
         return ret;
     }
 
+
+    @Override
+    public NeuralNetwork transpose() {
+        RBM r = (RBM) super.transpose();
+        r.setHiddenType(hiddenType);
+        r.setVisibleType(visibleType);
+        r.sigma = sigma;
+        r.hiddenSigma = hiddenSigma;
+        return r;
+    }
+
+    @Override
+    public NeuralNetwork clone() {
+        RBM r = (RBM) super.clone();
+        r.setHiddenType(hiddenType);
+        r.setVisibleType(visibleType);
+        r.sigma = sigma;
+        r.hiddenSigma = hiddenSigma;
+        return r;
+    }
 
     /**
      * Free energy for an RBM
