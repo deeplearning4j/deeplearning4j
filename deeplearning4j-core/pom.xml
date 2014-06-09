@@ -10,9 +10,17 @@
 		<logback.version>1.0.6</logback.version>
         <spring.version>3.2.5.RELEASE</spring.version>
         <mallet.version>2.0.7</mallet.version>
+        <jblas.version>1.2.4-SNAPSHOT</jblas.version>
 	</properties>
 
-
+    <repositories>
+        <repository>
+            <id>snapshots-repo</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
 
 	<dependencies>
 		<dependency>
@@ -43,7 +51,7 @@
 		<dependency>
 			<groupId>org.jblas</groupId>
 			<artifactId>jblas</artifactId>
-			<version>1.2.3</version>
+			<version>${jblas.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>

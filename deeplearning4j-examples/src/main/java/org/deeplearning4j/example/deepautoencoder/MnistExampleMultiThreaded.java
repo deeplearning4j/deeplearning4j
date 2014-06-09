@@ -9,6 +9,7 @@ import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
+import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;
 import java.util.Collections;
@@ -55,7 +56,7 @@ public class MnistExampleMultiThreaded {
         c.setnOut(10);
         c.setMultiLayerClazz(DBN.class);
         c.setDeepLearningParams(new Object[]{1,1e-1,100});
-        ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
+        ActorNetworkRunner runner = args.length < 1 ? new ActorNetworkRunner("master",iter) : new ActorNetworkRunner("master",iter, (DBN) SerializationUtils.readObject(new File(args[0])));
         runner.setModelSaver(new DefaultModelSaver(new File("mnist-example-deepautoencoder.ser")));
         runner.setup(c);
         runner.train();

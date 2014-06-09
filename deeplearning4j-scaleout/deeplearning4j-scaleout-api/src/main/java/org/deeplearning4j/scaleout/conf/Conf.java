@@ -401,6 +401,11 @@ public class Conf implements Serializable,Cloneable {
     public void setnOut(int nOut) {
         this.nOut = nOut;
     }
+
+    /**
+     * Number of epochs to run
+     * @return the number of epochs to run
+     */
     public int getNumPasses() {
         return numPasses;
     }
@@ -486,12 +491,12 @@ public class Conf implements Serializable,Cloneable {
      */
     public BaseMultiLayerNetwork init() {
         if(getMultiLayerClazz().isAssignableFrom(DBN.class)) {
-            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(renderEpochsByLayer)
+            return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(getRenderEpochsByLayer())
                     .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
                     .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(outputLayerLossFunction)
-                    .withOutputActivationFunction(outputActivationFunction).lossFunctionByLayer(lossFunctionByLayer)
+                    .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
+                    .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .learningRateForLayer(getLearningRateForLayer())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
@@ -503,13 +508,13 @@ public class Conf implements Serializable,Cloneable {
 
         else {
             return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
-                    .withOutputLossFunction(outputLayerLossFunction)
+                    .withOutputLossFunction(getOutputLayerLossFunction())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .withOutputActivationFunction(outputActivationFunction)
+                    .withOutputActivationFunction(getOutputActivationFunction())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .renderByLayer(renderEpochsByLayer)
+                    .renderByLayer(getRenderEpochsByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
-                    .lossFunctionByLayer(lossFunctionByLayer)
+                    .lossFunctionByLayer(getLossFunctionByLayer())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
 
