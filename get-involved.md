@@ -13,7 +13,7 @@ Here's where you can ask questions and contribute your knowledge:
 
 We're looking for contributors to help on a number of fronts. 
 
-The deep autoencoder is in its final trial, and will soon have its own page here. Convolutional nets are 90 percent done -- we just need to build the front end to load the data in.  Recursive neural tensor networks will be the next stop, and we're hoping to add RNNs. 
+Convolutional nets are 90 percent done -- we just need to build the front end to load the data in.  Recursive neural tensor networks will be the next stop, and we're planning to add RNNs, although they're well implemented elsewhere. 
 
 The big project later this year will be integrating with GPUs. Some of these will be hard (but not impossible) nuts to crack and help is welcome. 
 
