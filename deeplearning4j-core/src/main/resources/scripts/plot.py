@@ -39,7 +39,7 @@ def plot_multiple_matrices(paths):
             title = paths[i + 1]
             print 'Loading matrix ' + path + '\n'
             matrix = from_file(path)
-            subplot(2,3,graph_count)
+            subplot(2,len(paths) / 3,graph_count)
             plot.tight_layout()
             hist_matrix(matrix,False,chart_title=title)
             graph_count+= 1

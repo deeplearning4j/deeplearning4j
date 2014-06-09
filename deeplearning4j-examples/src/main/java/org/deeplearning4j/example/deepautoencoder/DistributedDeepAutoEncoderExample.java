@@ -29,7 +29,7 @@ public class DistributedDeepAutoEncoderExample {
 
         DBN d = SerializationUtils.readObject(new File(args[0]));
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(80,60000);
+        DataSetIterator iter = new MnistDataSetIterator(80,60000,false);
 
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
@@ -46,9 +46,7 @@ public class DistributedDeepAutoEncoderExample {
 
         c.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
         c.setOutputActivationFunction(Activations.sigmoid());
-        c.setVisibleUnit(RBM.VisibleUnit.BINARY);
-        c.setHiddenUnit(RBM.HiddenUnit.BINARY);
-        DeepAutoEncoderHazelCastStateTracker tracker = new DeepAutoEncoderHazelCastStateTracker();
+         DeepAutoEncoderHazelCastStateTracker tracker = new DeepAutoEncoderHazelCastStateTracker();
         tracker.moveToFinetune();
 
 

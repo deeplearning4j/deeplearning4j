@@ -47,6 +47,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     private BaseMultiLayerNetwork decoder;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.GAUSSIAN;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+    private ActivationFunction codeLayerAct = Activations.linear();
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
     private ActivationFunction outputLayerActivation = Activations.sigmoid();
     private boolean roundCodeLayerInput = false;
@@ -171,7 +172,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
-       return new NeuralNetwork[numLayers];
+        return new NeuralNetwork[numLayers];
     }
 
     private void initDecoder() {
@@ -328,7 +329,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         this.layers = ArrayUtil.combine(encoder.getLayers(),decoder.getLayers());
         this.sigmoidLayers = ArrayUtil.combine(encoder.getSigmoidLayers(),decoder.getSigmoidLayers());
         //for the code layer everything should be linear
-        this.sigmoidLayers[encoder.getSigmoidLayers().length - 1].setActivationFunction(Activations.sigmoid());
+        this.sigmoidLayers[encoder.getSigmoidLayers().length - 1].setActivationFunction(codeLayerAct);
         this.outputLayer = decoder.getOutputLayer();
 
         //set the output layer weights to be the initial input weights
@@ -390,7 +391,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     public void setOutputLayerLossFunction(OutputLayer.LossFunction outputLayerLossFunction) {
         this.outputLayerLossFunction = outputLayerLossFunction;
-        outputLayer.setLossFunction(outputLayerLossFunction);
+        if(outputLayer != null)
+            outputLayer.setLossFunction(outputLayerLossFunction);
     }
 
     public RBM.VisibleUnit getVisibleUnit() {
@@ -457,6 +459,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         this.normalizeCodeLayerOutput = normalizeCodeLayerOutput;
     }
 
+
+    public void setCodeLayerActivationFunction(ActivationFunction act) {
+        this.codeLayerAct = act;
+    }
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DeepAutoEncoder> {
         public Builder() {
