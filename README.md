@@ -5,7 +5,7 @@ Deep learning is a form of state-of-the-art machine learning that can learn to r
 
 Unsupervised pattern recognition saves time during data analysis, trend discovery and labeling of certain types of data, such as images, text, sound and time series.
 
-[![Build Status](https://api.travis-ci.org/agibsonccc/java-deeplearning.png)](https://api.travis-ci.org/agibsonccc/java-deeplearning).
+Edit: Took Travis build out. It times out on the tests, we need to migrate to a better testing infrastructure.
 
 See [Deeplearning4j.org](http://deeplearning4j.org/) for applications, tutorials, definitions and other resources on the discipline.
 
