@@ -3,6 +3,11 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 
+/**
+ * A wrapper for a dataset to sample from.
+ * This will randomly sample from the given dataset.
+ * @author Adam GIbson
+ */
 public class SamplingDataSetIterator implements DataSetIterator {
 
 	/**
@@ -13,12 +18,15 @@ public class SamplingDataSetIterator implements DataSetIterator {
 	private int batchSize;
 	private int totalNumberSamples;
 	private int numTimesSampled;
-	
-	
-	
-	
-	
-	public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
+
+
+    /**
+     *
+     * @param sampleFrom the dataset to sample from
+     * @param batchSize the batch size to sample
+     * @param totalNumberSamples the sample size
+     */
+ 	public SamplingDataSetIterator(DataSet sampleFrom, int batchSize,
 			int totalNumberSamples) {
 		super();
 		this.sampleFrom = sampleFrom;
@@ -34,7 +42,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
 	@Override
 	public DataSet next() {
 		DataSet ret = sampleFrom.sample(batchSize);
-		numTimesSampled++;
+		numTimesSampled+= batchSize;
 		return ret;
 	}
 
