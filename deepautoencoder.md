@@ -28,7 +28,7 @@ Those 30 numbers are an encoded version of the 28x28 pixel image. The second hal
 
 The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed. (They are not initialized randomly.) 
 
-		784 (input) <---- 1000 <---- 500 <---- 250 <---- 30
+		784 (output) <---- 1000 <---- 500 <---- 250 <---- 30
 
 The decoding half of a deep autoencoder is the part that learns to reconstruct the image. It does so with a second feed-forward net which also conducts back propagation. The back propagation happens through reconstruction entropy.
 
