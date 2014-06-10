@@ -7,7 +7,7 @@ import org.jblas.DoubleMatrix;
  * Linear activation function
  * @author Adam Gibson
  */
-public class Linear implements ActivationFunction {
+public class Linear extends BaseActivationFunction {
     /**
      * Name of the function
      *

@@ -100,7 +100,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
 
                     }
-
+                 else
+                      in.divi(255);
 
 
                 DoubleMatrix out = createOutputVector(man.readLabel());

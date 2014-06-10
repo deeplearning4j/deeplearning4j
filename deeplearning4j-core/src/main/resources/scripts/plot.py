@@ -2,7 +2,7 @@ from numpy import tanh, fabs, mean, ones,loadtxt,fromfile,zeros,product
 import sys
 import math
 from PIL import Image
-from matplotlib.pyplot import hist, title, subplot
+from matplotlib.pyplot import hist, title, subplot,scatter
 import matplotlib.pyplot as plot
 def sigmoid(xx):
     return .5 * (1 + tanh(xx / 2.))
@@ -22,15 +22,41 @@ def hist_matrix(values,show = True,chart_title = ''):
     chart_title += ' ' + magnitude
     title(chart_title)
     
+def scatter_matrix(values,show = True,chart_title = ''):
+    if product(values.shape) < 2:
+      values = zeros((3,3))
+      chart_title += '-fake'
 
+    scatter(values)
+    magnitude = ' mm %g ' % mean(fabs(values))
+    chart_title += ' ' + magnitude
+    title(chart_title)
 
 def render_hbias(path):
     hMean = from_file(path)
     image = Image.fromarray(hMean * 256).show()
 
 
+
+def plot_multiple_scatters(paths):
+    graph_count = 1
+    print paths
+    for i  in xrange(len(paths) - 1):
+        if i % 2 == 0:
+            path = paths[i]
+            title = paths[i + 1]
+            print 'Loading matrix ' + path + '\n'
+            matrix = from_file(path)
+            subplot(2,len(paths) / 3,graph_count)
+            plot.tight_layout()
+            scatter_matrix(matrix,False,chart_title=title)
+            graph_count+= 1
+
+
+    plot.show()
+
+
 def plot_multiple_matrices(paths):
-    count = 231
     graph_count = 1
     print paths
     for i  in xrange(len(paths) - 1):
@@ -80,5 +106,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'multi':
         paths = sys.argv[2].split(',')
         plot_multiple_matrices(paths)
+    elif sys.argv[1] == 'scatter':
+        paths = sys.argv[2].split(',')
+        plot_multiple_matrices(paths)
+
         
         

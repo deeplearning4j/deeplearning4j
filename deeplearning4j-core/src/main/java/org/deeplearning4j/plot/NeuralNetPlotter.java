@@ -86,6 +86,40 @@ public class NeuralNetPlotter implements Serializable {
         }
     }
 
+
+
+    /**
+     * Histograms the given matrices. This is primarily used
+     * for debugging gradients. You don't necessarily use this directly
+     * @param titles the titles of the plots
+     * @param matrices the matrices to plot
+     */
+    public void scatter(String[] titles, DoubleMatrix[] matrices) {
+        String[] path = new String[matrices.length * 2];
+        try {
+            if(titles.length != matrices.length)
+                throw new IllegalArgumentException("Titles and matrix lengths must be equal");
+
+
+            for(int i = 0; i < path.length - 1; i+=2) {
+                path[i] = writeMatrix(MatrixUtil.unroll(matrices[i / 2]));
+                path[i + 1] = titles[i / 2];
+            }
+            String paths = StringUtils.join(path,",");
+
+            Process is = Runtime.getRuntime().exec("python /tmp/plot.py scatter " + paths);
+
+            log.info("Rendering Matrix histograms... ");
+            log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
+            log.error(IOUtils.readLines(is.getErrorStream()).toString());
+
+
+        }catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     /**
      * Histograms the given matrices. This is primarily used
      * for debugging gradients. You don't necessarily use this directly

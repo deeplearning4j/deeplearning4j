@@ -4,6 +4,8 @@ import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.transformation.MatrixTransform;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 
 /**
@@ -12,10 +14,22 @@ import org.jblas.DoubleMatrix;
 public class DeepAutoEncoderDataSetReconstructionRender {
     private DataSetIterator iter;
     private DeepAutoEncoder encoder;
+    private int rows,columns;
+    private MatrixTransform picDraw,reconDraw;
 
-    public DeepAutoEncoderDataSetReconstructionRender(DataSetIterator iter, DeepAutoEncoder encoder) {
+    /**
+     * Initialize with the given rows and columns, this will reshape the
+     * matrix in to the specified rows and columns
+     * @param iter
+     * @param encoder
+     * @param rows rows
+     * @param columns columns
+     */
+    public DeepAutoEncoderDataSetReconstructionRender(DataSetIterator iter, DeepAutoEncoder encoder,int rows, int columns) {
         this.iter = iter;
         this.encoder = encoder;
+        this.rows = rows;
+        this.columns = columns;
     }
 
     public void draw() throws InterruptedException {
@@ -25,13 +39,17 @@ public class DeepAutoEncoderDataSetReconstructionRender {
             for(int j = 0; j < first.numExamples(); j++) {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
+                if(picDraw != null)
+                    draw1 = picDraw.apply(draw1);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+                if(reconDraw != null)
+                    reconstructed2 = reconDraw.apply(reconstructed2);
                 DoubleMatrix draw2 = reconstructed2.mul(255);
 
-                DrawReconstruction d = new DrawReconstruction(draw1);
+                DrawReconstruction d = new DrawReconstruction(draw1.reshape(rows,columns));
                 d.title = "REAL";
                 d.draw();
-                DrawReconstruction d2 = new DrawReconstruction(draw2,1000,1000);
+                DrawReconstruction d2 = new DrawReconstruction(draw2.reshape(rows,columns),1000,1000);
                 d2.title = "TEST";
                 d2.draw();
                 Thread.sleep(10000);
@@ -43,4 +61,19 @@ public class DeepAutoEncoderDataSetReconstructionRender {
         }
     }
 
+    public MatrixTransform getPicDraw() {
+        return picDraw;
+    }
+
+    public void setPicDraw(MatrixTransform picDraw) {
+        this.picDraw = picDraw;
+    }
+
+    public MatrixTransform getReconDraw() {
+        return reconDraw;
+    }
+
+    public void setReconDraw(MatrixTransform reconDraw) {
+        this.reconDraw = reconDraw;
+    }
 }

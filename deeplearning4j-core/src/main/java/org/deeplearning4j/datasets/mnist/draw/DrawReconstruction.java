@@ -9,6 +9,7 @@ import java.awt.image.WritableRaster;
 
 import javax.swing.*;
 
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 
 public class DrawReconstruction {
@@ -34,7 +35,7 @@ public class DrawReconstruction {
 	
 	public DrawReconstruction(DoubleMatrix data) {
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		this.data = data;
+		this.data = MatrixUtil.round(data);
 
 
 	}
