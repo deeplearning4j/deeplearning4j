@@ -19,6 +19,14 @@ public abstract class BaseActivationFunction implements ActivationFunction {
         return o != null && o instanceof ActivationFunction && o.getClass().getName().equals(type());
     }
 
+    /**
+     * The type()
+     * @return
+     */
+    @Override
+    public String toString() {
+        return type();
+    }
 
 
 }

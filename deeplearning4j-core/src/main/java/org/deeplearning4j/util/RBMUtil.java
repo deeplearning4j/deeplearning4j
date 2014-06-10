@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.rbm.RBM;
 
@@ -36,6 +37,19 @@ public class RBMUtil {
         return builder.toString();
     }
 
+    public static String architecure(DeepAutoEncoder dbn) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n");
+        for(int i = 0; i < dbn.getLayers().length; i++) {
+            RBM r = (RBM) dbn.getLayers()[i];
+            builder.append(architecure(r,i));
+            builder.append(" activation -> " + dbn.getSigmoidLayers()[i].getActivationFunction() + "\n");
+
+        }
+
+        return builder.toString();
+    }
+
 
     public static String architecure(DBN dbn) {
         StringBuilder builder = new StringBuilder();
@@ -43,6 +57,7 @@ public class RBMUtil {
         for(int i = 0; i < dbn.getLayers().length; i++) {
           RBM r = (RBM) dbn.getLayers()[i];
           builder.append(architecure(r,i));
+          builder.append(" activation -> " + dbn.getSigmoidLayers()[i].getActivationFunction() + "\n");
         }
 
         return builder.toString();

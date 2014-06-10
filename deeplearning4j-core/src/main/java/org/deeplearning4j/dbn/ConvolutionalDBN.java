@@ -16,6 +16,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
@@ -95,6 +96,18 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      */
     @Override
     public void pretrain(DoubleMatrix input, Object[] otherParams) {
+
+    }
+
+    /**
+     * Pretrain with a data set iterator.
+     * This will run through each neural net at a time and train on the input.
+     *
+     * @param iter        the iterator to use
+     * @param otherParams
+     */
+    @Override
+    public void pretrain(DataSetIterator iter, Object[] otherParams) {
 
     }
 

@@ -69,11 +69,11 @@ public class DeepAutoEncoderFromFile {
                     weights[i] = encoder.getLayers()[i].getW();
                 }
 
-                plotter.histogram(layers, weights);
+                plotter.scatter(layers, weights);
 
                 FilterRenderer f = new FilterRenderer();
                 f.renderFilters(encoder.getOutputLayer().getW(), "outputlayer.png", 28, 28, next.numExamples());
-                DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(next.iterator(next.numExamples()),encoder);
+                DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(next.iterator(next.numExamples()),encoder,28,28);
                 render.draw();
             }
 
@@ -86,7 +86,7 @@ public class DeepAutoEncoderFromFile {
 
         iter.reset();
 
-        DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(iter,encoder);
+        DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(iter,encoder,28,28);
         render.draw();
 
     }
