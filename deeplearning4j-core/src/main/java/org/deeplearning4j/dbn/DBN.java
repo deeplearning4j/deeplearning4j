@@ -2,6 +2,8 @@ package org.deeplearning4j.dbn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.rbm.RBM;
@@ -105,12 +107,103 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
     @Override
+    public void pretrain(DataSetIterator iter, Object[] otherParams) {
+        int k = (Integer) otherParams[0];
+        double lr = (Double) otherParams[1];
+        int epochs = (Integer) otherParams[2];
+        pretrain(iter,k,lr,epochs);
+
+    }
+
+    @Override
     public void pretrain(DoubleMatrix input, Object[] otherParams) {
         int k = (Integer) otherParams[0];
         double lr = (Double) otherParams[1];
         int epochs = (Integer) otherParams[2];
         pretrain(input,k,lr,epochs);
 
+    }
+
+    /**
+     * This unsupervised learning method runs
+     * contrastive divergence on each RBM layer in the network.
+     * @param iter the input to train on
+     * @param k the k to use for running the RBM contrastive divergence.
+     * The typical tip is that the higher k is the closer to the model
+     * you will be approximating due to more sampling. K = 1
+     * usually gives very good results and is the default in quite a few situations.
+     * @param learningRate the learning rate to use
+     * @param epochs the number of epochs to train
+     */
+    public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
+        /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+        if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
+            setInput(input);
+            initializeLayers(input);
+        }
+        else
+            setInput(input);
+
+        DoubleMatrix layerInput = null;
+
+        for(int i = 0; i < getnLayers(); i++) {
+            if(i == 0) {
+                while(iter.hasNext()) {
+                    DataSet next = iter.next();
+                    this.input = next.getFirst();
+                    //override learning rate where present
+                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
+                    if(isForceNumEpochs()) {
+                        for(int epoch = 0; epoch < epochs; epoch++) {
+                            log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                            getLayers()[i].train(next.getFirst(), realLearningRate,new Object[]{k,learningRate});
+                            getLayers()[i].epochDone(epoch);
+                        }
+                    }
+                    else
+                        getLayers()[i].trainTillConvergence(next.getFirst(), realLearningRate, new Object[]{k,realLearningRate,epochs});
+
+                }
+
+                iter.reset();
+            }
+
+            else {
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !useHiddenActivationsForwardProp;
+                while (iter.hasNext()) {
+                    DataSet next = iter.next();
+                    layerInput = next.getFirst();
+                    for(int j = 1; j <= i; j++) {
+                        if(activateOnly)
+                            layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
+                        else if(isUseHiddenActivationsForwardProp())
+                            layerInput = getSigmoidLayers()[j - 1].sampleHGivenV(layerInput);
+                        else
+                            layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+
+                    }
+
+
+                    log.info("Training on layer " + (i + 1));
+                    //override learning rate where present
+                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
+                    if(isForceNumEpochs()) {
+                        for(int epoch = 0; epoch < epochs; epoch++) {
+                            log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                            getLayers()[i].train(layerInput, realLearningRate,new Object[]{k,learningRate});
+                            getLayers()[i].epochDone(epoch);
+                        }
+                    }
+                    else
+                        getLayers()[i].trainTillConvergence(layerInput, realLearningRate, new Object[]{k,realLearningRate,epochs});
+
+                }
+
+                iter.reset();
+
+
+            }
+        }
     }
 
 
@@ -140,7 +233,7 @@ public class DBN extends BaseMultiLayerNetwork {
             if(i == 0)
                 layerInput = getInput();
             else {
-                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : false;
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !useHiddenActivationsForwardProp;
                 if(activateOnly)
                     layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
                 else if(isUseHiddenActivationsForwardProp())

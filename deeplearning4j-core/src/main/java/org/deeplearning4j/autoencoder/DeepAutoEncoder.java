@@ -7,6 +7,7 @@ import static org.deeplearning4j.util.MatrixUtil.round;
 import java.util.*;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.HiddenLayer;
@@ -45,7 +46,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
     private BaseMultiLayerNetwork decoder;
-    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.GAUSSIAN;
+    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private ActivationFunction codeLayerAct = Activations.linear();
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
@@ -59,6 +60,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
         this.encoder = encoder;
+        this.initDecoder();
     }
 
     /**
@@ -132,8 +134,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             layer.setInput(currInput);
             l.setInput(currInput);
 
-            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i)) {
-                currInput = getSigmoidLayers()[i].activate(currInput);
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !useHiddenActivationsForwardProp) {
+                currInput = getSigmoidLayers()[i].activate(layer.reconstruct(currInput));
                 if(roundCodeLayerInput && (layer instanceof  RBM)) {
                     RBM r = (RBM)  layer;
                     if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
@@ -155,6 +157,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
             activations.add(currInput);
         }
+
+
         if(getOutputLayer() != null) {
             getOutputLayer().setInput(currInput);
             if(getOutputLayer().getActivationFunction() == null)
@@ -163,12 +167,23 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 else
                     outputLayer.setActivationFunction(Activations.sigmoid());
 
-            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
+            activations.add(getOutputLayer().output(currInput));
 
         }
         return activations;
     }
 
+    /**
+     * Pretrain with a data set iterator.
+     * This will run through each neural net at a time and train on the input.
+     *
+     * @param iter        the iterator to use
+     * @param otherParams
+     */
+    @Override
+    public void pretrain(DataSetIterator iter, Object[] otherParams) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     @Override
     public NeuralNetwork[] createNetworkLayers(int numLayers) {
@@ -179,6 +194,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         //encoder hasn't been pretrained yet
         if(encoder.getLayers() == null || encoder.getSigmoidLayers() == null)
             return;
+
+        //infer input from encoder
+        if(encoder.getInput() != null && input == null)
+              this.input = encoder.getInput();
 
         int[] hiddenLayerSizes = new int[encoder.getHiddenLayerSizes().length - 1];
         System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
@@ -288,6 +307,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         DoubleMatrix encoded = encodeWithScaling(input);
         decoder.setInput(encoded);
         decoder.initializeLayers(encoded);
+
 
         this.sampleOrActivate = decoder.getSampleOrActivate();
         this.layerLearningRates = decoder.getLayerLearningRates();
@@ -399,6 +419,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         return visibleUnit;
     }
 
+
     public void setVisibleUnit(RBM.VisibleUnit visibleUnit) {
         this.visibleUnit = visibleUnit;
     }
@@ -468,6 +489,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         public Builder() {
             clazz = DeepAutoEncoder.class;
         }
+
+
 
 
 

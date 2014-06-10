@@ -6,6 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
@@ -91,6 +92,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     //divide by the std deviation
     protected DoubleMatrix columnStds;
     protected boolean initCalled = false;
+    /* Sample if true, otherwise use the straight activation function */
     protected boolean useHiddenActivationsForwardProp = true;
     /*
      * Use adagrad or not
@@ -261,7 +263,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param input the input matrix for training
      */
     public void initializeLayers(DoubleMatrix input) {
-        log.info("Initializing layers with input of dims " + input.rows + " x " + input.columns);
         if(input == null)
             throw new IllegalArgumentException("Unable to initialize layers with empty input");
 
@@ -278,8 +279,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         this.input = input.dup();
-        if(!initCalled)
+        if(!initCalled) {
             init();
+            log.info("Initializing layers with input of dims " + input.rows + " x " + input.columns);
+
+        }
 
 
     }
@@ -426,7 +430,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             l.setInput(input);
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
-                currInput = getSigmoidLayers()[i].activate(currInput);
+                currInput = getSigmoidLayers()[i].activate(layer.reconstruct(currInput));
             else  if(useHiddenActivationsForwardProp)
                 currInput = l.sampleHGivenV(currInput);
             else
@@ -676,6 +680,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+
+
     /**
      * Backpropagation of errors for weights
      * @param lr the learning rate to use
@@ -692,6 +698,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(forceNumEpochs) {
             for(int i = 0; i < epochs; i++) {
                 backPropStep(revert,lr,i);
+                log.info("Iteration " + i + " error " + score());
             }
         }
 
@@ -762,6 +769,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(forceNumEpochs) {
             for(int i = 0; i < epochs; i++) {
                 backPropStep(revert,lr,i);
+                log.info("Iteration " + i + " error " + score());
+
             }
         }
 
@@ -923,6 +932,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             getOutputLayer().getB().subi(biasGradient.mean());
 
     }
+
+
+    public double layerWiseErrorSum() {
+        double ret = 0.0;
+        for(int i = 0; i < layers.length; i++)
+            ret += layers[i].getReConstructionCrossEntropy();
+         return ret;
+    }
+
+
 
 
     /**
@@ -1151,7 +1170,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
-
+    /**
+     * Pretrain with a data set iterator.
+     * This will run through each neural net at a time and train on the input.
+     * @param iter the iterator to use
+     * @param otherParams
+     */
+    public abstract  void pretrain(DataSetIterator iter, Object[] otherParams);
 
     /**
      * Pretrain the network with the given parameters
@@ -1217,7 +1242,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
         return new HiddenLayer.Builder()
                 .nIn(nIn).nOut(nOut)
-                .withActivation(activation)
+                .withActivation(activationFunctionForLayer.get(index) != null ? activationFunctionForLayer.get(index) : activation)
                 .withRng(rng).withInput(layerInput).dist(dist)
                 .build();
 
@@ -1484,8 +1509,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             boolean useHiddenActivationsForwardProp) {
         this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
     }
-
-
 
 
     public double getDropOut() {
