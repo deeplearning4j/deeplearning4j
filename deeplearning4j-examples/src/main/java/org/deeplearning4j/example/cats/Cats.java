@@ -23,10 +23,10 @@ public class Cats {
 
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new CatsDataSetIterator(new File(args[0]),10,10);
+        DataSetIterator iter = new CatsDataSetIterator(new File(args[0]),100,100);
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
-                .hiddenLayerSizes(new int[]{600})
+                .hiddenLayerSizes(new int[]{2000})
                 .numberOfInputs(iter.inputColumns()).numberOfOutPuts(10)
                 .build();
 

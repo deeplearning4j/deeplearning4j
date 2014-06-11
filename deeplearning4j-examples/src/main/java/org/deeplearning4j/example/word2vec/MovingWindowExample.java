@@ -42,9 +42,8 @@ public class MovingWindowExample {
 
         InputStream is = FileUtils.openInputStream(new File(args[0]));
 
-        List<String> labels = Arrays.asList("0","1");
 
-        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,",");
+        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,"\t");
         //get rid of @mentions
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
@@ -58,7 +57,7 @@ public class MovingWindowExample {
 
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         File vecModel = new File("tweet-wordvectors.ser");
-        Word2Vec vec = vecModel.exists() ? (Word2Vec) SerializationUtils.readObject(vecModel) : new Word2Vec(tokenizerFactory,iterator,1);
+        Word2Vec vec = vecModel.exists() ? (Word2Vec) SerializationUtils.readObject(vecModel) : new Word2Vec(tokenizerFactory,iterator,5);
         if(!vecModel.exists()) {
             vec.train();
 
@@ -99,7 +98,8 @@ public class MovingWindowExample {
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setMultiLayerClazz(DBN.class);
-        c.setUseRegularization(false);
+        c.setUseRegularization(true);
+        c.setL2(2e-4);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("word2vec-modelsaver.ser")));
@@ -115,6 +115,7 @@ public class MovingWindowExample {
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
+
             Pair<Double,DoubleMatrix> decoded = viterbi.decode(next.getSecond());
             log.info("Pair " + decoded.getSecond());
         }

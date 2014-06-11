@@ -1,9 +1,11 @@
 package org.deeplearning4j.optimize;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +38,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
     public void optimize(DoubleMatrix labels,double lr,int epochs,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
-        DoubleMatrix train = sampleHiddenGivenVisible();
 
         if(!network.isForceNumEpochs()) {
             network.getOutputLayer().trainTillConvergence(labels,lr,epochs,eval);
@@ -48,6 +49,9 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
         else {
             log.info("Training for " + epochs + " epochs");
+            List<DoubleMatrix> activations = network.feedForward();
+            DoubleMatrix train = activations.get(activations.size() - 1);
+
             for(int i = 0; i < epochs; i++) {
                 network.getOutputLayer().train(train, labels,lr);
             }
@@ -70,7 +74,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
      */
     public void optimize(DoubleMatrix labels,double lr,int epochs) {
         network.getOutputLayer().setLabels(labels);
-
         if(!network.isForceNumEpochs()) {
             network.getOutputLayer().trainTillConvergence(labels,lr,epochs,null);
 
@@ -98,12 +101,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 
-    private DoubleMatrix sampleHiddenGivenVisible() {
-        if(network.isUseHiddenActivationsForwardProp())
-            return network.getSigmoidLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible();
-        else
-            return network.getLayers()[network.getnLayers() - 1].sampleHiddenGivenVisible(network.getLayers()[network.getnLayers() - 1].getInput()).getSecond();
-    }
+
 
 
 
@@ -147,6 +145,8 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         for(int i = 0; i < network.getOutputLayer().getW().length; i++) {
             network.getOutputLayer().getW().put(i,params[idx++]);
         }
+
+
         for(int i = 0; i < network.getOutputLayer().getB().length; i++) {
             network.getOutputLayer().getB().put(i,params[idx++]);
         }

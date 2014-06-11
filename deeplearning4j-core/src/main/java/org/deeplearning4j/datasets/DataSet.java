@@ -281,6 +281,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         return new DataSet(getFirst().getRow(i),getSecond().getRow(i));
     }
 
+    /**
+     * Gets a copy of example i
+     * @param i the example to get
+     * @return the example at i (one example)
+     */
+    public DataSet get(int[] i) {
+        return new DataSet(getFirst().getRows(i),getSecond().getRows(i));
+    }
     public List<List<DataSet>> batchBy(int num) {
         return Lists.partition(asList(),num);
     }
@@ -431,7 +439,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
      * while still allowing efficient batching.
      */
     public void sortByLabel() {
-        Map<Integer,Queue<DataSet>> map = new HashMap<Integer,Queue<DataSet>>();
+        Map<Integer,Queue<DataSet>> map = new HashMap<>();
         List<DataSet> data = asList();
         int numLabels = numOutcomes();
         int examples = numExamples();
@@ -439,7 +447,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             int label = getLabel(d);
             Queue<DataSet> q = map.get(label);
             if(q == null) {
-                q = new ArrayDeque<DataSet>();
+                q = new ArrayDeque<>();
                 map.put(label, q);
             }
             q.add(d);
@@ -456,6 +464,10 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
             if(optimal) {
                 for(int j = 0; j < numLabels; j++) {
                     Queue<DataSet> q = map.get(j);
+                    if(q == null) {
+                        optimal = false;
+                        break;
+                    }
                     DataSet next = q.poll();
                     //add a row; go to next
                     if(next != null) {

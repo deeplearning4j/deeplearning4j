@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 
@@ -20,8 +21,21 @@ import static org.deeplearning4j.util.MatrixUtil.*;
  *
  * Markov chain with gibbs sampling.
  *
+ * Supports the following visible units:
  *
- * Based on Hinton et al.'s work 
+ *     binary
+ *     gaussian
+ *     softmax
+ *     linear
+ *
+ * Supports the following hidden units:
+ *     rectified
+ *     binary
+ *     gaussian
+ *     softmax
+ *     linear
+ *
+ * Based on Hinton et al.'s work
  *
  * Great reference:
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
@@ -127,6 +141,8 @@ public class RBM extends BaseNeuralNetwork {
 		 * Cost and updates dictionary.
 		 * This is the update rules for weights and biases
 		 */
+
+        //POSITIVE PHASE
         Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
 
 		/*
@@ -160,7 +176,7 @@ public class RBM extends BaseNeuralNetwork {
 
         for(int i = 0; i < k; i++) {
 
-
+            //NEGATIVE PHASE
             if(i == 0)
                 matrices = gibbhVh(chainStart);
             else
@@ -207,8 +223,15 @@ public class RBM extends BaseNeuralNetwork {
     @Override
     public NeuralNetwork transpose() {
         RBM r = (RBM) super.transpose();
-        r.setHiddenType(hiddenType);
-        r.setVisibleType(visibleType);
+        HiddenUnit h = RBMUtil.inverse(visibleType);
+        VisibleUnit v = RBMUtil.inverse(hiddenType);
+        if(h == null)
+            h = hiddenType;
+        if(v == null)
+            v = visibleType;
+
+        r.setHiddenType(h);
+        r.setVisibleType(v);
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
         return r;
@@ -263,6 +286,7 @@ public class RBM extends BaseNeuralNetwork {
             return new Pair<>(h1Mean,h1Sample);
 
         }
+
         else if(hiddenType == HiddenUnit.GAUSSIAN) {
             DoubleMatrix h1Mean = propUp(v);
             this.hiddenSigma = columnVariance(h1Mean);
@@ -304,8 +328,10 @@ public class RBM extends BaseNeuralNetwork {
      * and the new hidden input and expected values
      */
     public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
+
         Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = sampleVisibleGivenHidden(h);
         DoubleMatrix vSample = v1MeanAndSample.getSecond();
+
         Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
         return new Pair<>(v1MeanAndSample,h1MeanAndSample);
     }
@@ -313,38 +339,37 @@ public class RBM extends BaseNeuralNetwork {
 
     /**
      * Guess the visible values given the hidden
-     * @param h
-     * @return
+     * @param h the hidden units
+     * @return a visible mean and sample relative to the hidden states
+     * passed in
      */
     @Override
     public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
+        DoubleMatrix v1Mean = propDown(h);
+
         if(visibleType == VisibleUnit.GAUSSIAN) {
-            DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = normal(getRng(), v1Mean, 1).mulRowVector(sigma);
             return new Pair<>(v1Mean,v1Sample);
 
         }
 
         else if(visibleType == VisibleUnit.LINEAR) {
-            DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = normal(getRng(),v1Mean,1);
             return new Pair<>(v1Mean,v1Sample);
         }
 
         else if(visibleType == VisibleUnit.SOFTMAX) {
-            DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = softmax(v1Mean);
             return new Pair<>(v1Mean,v1Sample);
         }
 
         else if(visibleType == VisibleUnit.BINARY) {
-            DoubleMatrix v1Mean = propDown(h);
             DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
             return new Pair<>(v1Mean,v1Sample);
         }
 
 
-        throw new IllegalStateException("Visible type must either be binary or gaussian");
+        throw new IllegalStateException("Visible type must either be binary,gaussian, softmax, or linear");
 
     }
 
@@ -356,18 +381,17 @@ public class RBM extends BaseNeuralNetwork {
      */
     public DoubleMatrix propUp(DoubleMatrix v) {
         if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = columnVariance(input).divi(input.rows);
+            this.sigma = columnVariance(v).divi(input.rows);
+
+        DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
 
 
         if(hiddenType == HiddenUnit.RECTIFIED) {
-            DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
-            MatrixUtil.max(0,preSig);
+            max(0, preSig);
             return preSig;
         }
 
         else if(hiddenType == HiddenUnit.GAUSSIAN) {
-            DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
-
             this.hiddenSigma = columnVariance(preSig);
             DoubleMatrix add = normal(getRng(),preSig,this.hiddenSigma);
             preSig.addi(add);
@@ -375,10 +399,10 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(hiddenType == HiddenUnit.BINARY) {
-            DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
             return sigmoid(preSig);
         }
-        throw new IllegalStateException("Hidden unit type should either be binary or rectified linear");
+
+        throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
 
     }
 
@@ -390,7 +414,8 @@ public class RBM extends BaseNeuralNetwork {
      */
     public DoubleMatrix propDown(DoubleMatrix h) {
         if(visibleType  == VisibleUnit.GAUSSIAN) {
-            DoubleMatrix vMean = h.mmul(W.transpose()).mulRowVector(vBias.add(sigma));
+            DoubleMatrix vMean = h.mmul(W.transpose()).addRowVector(vBias);
+            vMean.addi(normal(rng,vMean,1.0));
             return vMean;
         }
         else if(visibleType == VisibleUnit.LINEAR) {

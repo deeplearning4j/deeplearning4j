@@ -74,7 +74,7 @@ public class ImageVectorizer implements Vectorizer {
 			DoubleMatrix d = loader.asMatrix(image);
 			DoubleMatrix label2 = MatrixUtil.toOutcomeVector(label, numLabels);
 			if(normalize) {
-				d = MatrixUtil.normalizeByRowSums(d);
+				d = d.div(255);
 			}
 			else if(binarize) {
 				for(int i = 0; i < d.length; i++) {

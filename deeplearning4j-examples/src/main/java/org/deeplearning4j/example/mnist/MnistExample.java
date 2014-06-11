@@ -26,40 +26,35 @@ public class MnistExample {
      */
     public static void main(String[] args) throws IOException {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,20);
+        DataSetIterator iter = new MnistDataSetIterator(100,100);
+        DataSet ne = iter.next();
+        ne.filterAndStrip(new int[]{0,1});
+        iter = ne.iterator(10);
+
         RandomGenerator rng = new MersenneTwister(123);
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{600, 500, 400}).withRng(rng)
-                .numberOfInputs(784).numberOfOutPuts(10)
+
+                .numberOfInputs(784).numberOfOutPuts(2).withMomentum(0.5)
                 .build();
-        DataSet test = null;
+
+       for(int i = 0; i < 10; i++) {
+           while(iter.hasNext()) {
+               DataSet next = iter.next();
+               dbn.setInput(next.getFirst());
+               dbn.pretrain(next.getFirst(),new Object[]{1,1e-1,1000});
+           }
+
+           iter.reset();
+
+       }
+
+
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            //held out test set
-            if(!iter.hasNext()) {
-                test = next;
-            }
-
-            dbn.pretrain(next.getFirst(), 1, 0.001, 10000);
-        }
-
-
-        OutputLayerTrainingEvaluator eval2 = new OutputLayerTrainingEvaluator.Builder()
-                .patienceIncrease(2).validationEpochs(100).withNetwork(dbn)
-                .testSet(test).improvementThreshold(0.995)
-                .bestLoss(Double.POSITIVE_INFINITY).build();
-
-
-
-        iter.reset();
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            if(!iter.hasNext())
-                break;
-
             dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 0.1, 10000,eval2);
+            dbn.finetune(next.getSecond(), 1e-1, 1000);
         }
 
 

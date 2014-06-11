@@ -10,7 +10,7 @@ import java.io.File;
 public class CatsDataSetIterator extends BaseDatasetIterator {
 
     public CatsDataSetIterator(File rootDir,int batch, int numExamples) {
-        super(batch, numExamples, new CatDataFetcher(rootDir,28,28));
+        super(batch, numExamples, new CatDataFetcher(rootDir,56,56));
     }
 
 

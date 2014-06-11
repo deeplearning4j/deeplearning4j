@@ -4,13 +4,17 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.zip.CheckedOutputStream;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ImageLoader;
 import org.deeplearning4j.util.MatrixUtil;
@@ -27,32 +31,44 @@ public class LFWExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new LFWDataSetIterator(10,10000,56,56);
-		
+		DataSetIterator iter = new LFWDataSetIterator(10,100,28,28);
+		DataSet load = iter.next(10);
+        load.filterAndStrip(new int[]{1,2});
+        load.normalizeZeroMeanZeroUnitVariance();
+        load.sortByLabel();
+        log.info("Data set " + load.numExamples());
+        iter = new SamplingDataSetIterator(load,6,16);
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
-        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
-		.hiddenLayerSizes(new int[]{500, 400, 250})
-		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(iter.totalOutcomes())
+        DBN dbn = new DBN.Builder()
+         .withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
+         .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).lineSearchBackProp(true)
+		.hiddenLayerSizes(new int[]{600, 500, 400}).useRegularization(true)
+          .useHiddenActivationsForwardProp(true).withL2(1e-4).withSparsity(1e-1)
+                .renderByLayer(Collections.singletonMap(0,10))
+        .withDropOut(0.5).withActivation(Activations.tanh()).withMomentum(0.5)
+		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(load.numOutcomes())
 		.build();
 
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            dbn.pretrain(next.getFirst(), new Object[]{1, 1e-2, 1000, 1});
+
+        }
 
 
 
-		
-		while(iter.hasNext()) {
-			DataSet next = iter.next();
-			dbn.pretrain(next.getFirst(), 1, 1e-3, 10000);
-		}
 		
 		iter.reset();
+
+
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFirst());
-			dbn.finetune(next.getSecond(), 1e-3, 10000);
+			dbn.finetune(next.getSecond(), 1e-3, 100);
 		}
 		
 		
-		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-dbn.bin"));
+		BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("lfw-dbn.bin"));
 		dbn.write(bos);
 		bos.flush();
 		bos.close();

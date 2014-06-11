@@ -287,7 +287,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @param epoch  the epoch to use
      * @return whether the training should converge or not
      */
-    @Override
+    //@Override
     protected void backPropStep(BaseMultiLayerNetwork revert, double lr, int epoch) {
         //feedforward to compute activations
         //initial error

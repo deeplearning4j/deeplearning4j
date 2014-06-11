@@ -7,6 +7,7 @@ import static org.deeplearning4j.util.MatrixUtil.round;
 import java.util.*;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -32,6 +33,23 @@ import org.slf4j.LoggerFactory;
  * For real valued data, this is a gaussian rectified linear layer.
  *
  * For binary, its binary/binary
+ *
+ * A few notes from the science 2006 paper:
+ * On decode, use straight activations
+ * On encode, use sampling from activations
+ *
+ * The decoder is the transpose of the output layer.
+ *
+ * Back prop happens twice. Once on the encoder,
+ * once on the decoder (globally)
+ *
+ * Both time should use a loss function that simulates reconstructions:
+ * that could be RMSE_XENT or SQUARED_LOSS
+ *
+ * The code layer should always be gaussian.
+ *
+ * If the goal is binary codes, the output layer's activation function should be sigmoid.
+ *
  *
  *
  * @author Adam Gibson
@@ -135,7 +153,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             l.setInput(currInput);
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !useHiddenActivationsForwardProp) {
-                currInput = getSigmoidLayers()[i].activate(layer.reconstruct(currInput));
+                currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
                 if(roundCodeLayerInput && (layer instanceof  RBM)) {
                     RBM r = (RBM)  layer;
                     if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
@@ -143,12 +161,13 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                     }
                 }
             }
+
             else  if(useHiddenActivationsForwardProp) {
-                currInput = l.sampleHGivenV(currInput);
+                currInput = l.activate(currInput);
 
                 if(roundCodeLayerInput && (layer instanceof  RBM)) {
                     RBM r = (RBM)  layer;
-                    if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
+                    if(r.getHiddenType() != RBM.HiddenUnit.GAUSSIAN) {
                         currInput = round(currInput);
                     }
                 }
@@ -197,7 +216,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         //infer input from encoder
         if(encoder.getInput() != null && input == null)
-              this.input = encoder.getInput();
+            this.input = encoder.getInput();
 
         int[] hiddenLayerSizes = new int[encoder.getHiddenLayerSizes().length - 1];
         System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
@@ -264,8 +283,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         }
 
-
-
+        //real valued activities on decoding setp
+        this.useHiddenActivationsForwardProp = false;
 
         NeuralNetwork[] cloned = new NeuralNetwork[encoder.getLayers().length];
         HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getLayers().length];
@@ -281,6 +300,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                     r.setVisibleType(visibleUnit);
                     cloned[i] = r;
                 }
+
+
             }
 
         }
@@ -387,6 +408,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         super.finetune(input,lr,epochs);
 
     }
+
 
     /**
      * Encodes with rounding and sigmoid taken in to account
