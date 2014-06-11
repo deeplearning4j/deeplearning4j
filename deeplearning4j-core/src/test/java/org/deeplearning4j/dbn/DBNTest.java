@@ -29,6 +29,43 @@ public class DBNTest {
     private static Logger log = LoggerFactory.getLogger(DBNTest.class);
 
     @Test
+    public void testParams() {
+        double preTrainLr = 0.01;
+        int preTrainEpochs = 10000;
+        int k = 1;
+        int nIns = 4,nOuts = 3;
+        int[] hiddenLayerSizes = new int[] {4,3,2};
+        double fineTuneLr = 0.01;
+        int fineTuneEpochs = 10000;
+
+
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
+                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
+                .hiddenLayerSizes(hiddenLayerSizes)
+                .build();
+
+        DoubleMatrix params = dbn.params();
+        assertEquals(1,params.rows);
+        assertEquals(params.columns,params.length);
+        dbn.setLabels(new DoubleMatrix(1,nOuts));
+
+        DoubleMatrix backPropGradient = dbn.getBackPropGradient();
+        assertEquals(1,backPropGradient.rows);
+        assertEquals(backPropGradient.columns,backPropGradient.length);
+
+        DoubleMatrix firstLayerWeights = dbn.getLayers()[1].getW();
+        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
+        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
+        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
+        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
+
+
+
+
+    }
+
+    @Test
     public void testDbnStructure() {
         RandomGenerator rng = new MersenneTwister(123);
 

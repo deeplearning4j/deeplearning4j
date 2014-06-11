@@ -244,7 +244,7 @@ public class OutputLayer implements Serializable {
                 DoubleMatrix xEntOneMinusLogOneMinusZ = oneMinus(log(z));
                 return -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
             case RMSE_XENT:
-                return Math.sqrt(pow(labels.sub(z),2).columnSums().sum()) / labels.rows;
+                return pow(labels.sub(z),2).columnSums().sum() / labels.rows;
             case MSE:
                 DoubleMatrix mseDelta = labels.sub(z);
                 return 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;
@@ -384,7 +384,7 @@ public class OutputLayer implements Serializable {
             case EXPLL:
                 return input.transpose().mmul(oneMinus(labels).div(z));
             case RMSE_XENT:
-                return input.transpose().mmul(sqrt(pow(labels.sub(z),2)));
+                return input.transpose().mmul(pow(labels.sub(z),2));
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
 

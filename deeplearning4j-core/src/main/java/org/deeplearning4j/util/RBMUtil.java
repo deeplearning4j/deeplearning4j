@@ -37,7 +37,7 @@ public class RBMUtil {
         return builder.toString();
     }
 
-    public static String architecure(DeepAutoEncoder dbn) {
+    public static String architecture(DeepAutoEncoder dbn) {
         StringBuilder builder = new StringBuilder();
         builder.append("\n");
         for(int i = 0; i < dbn.getLayers().length; i++) {
@@ -51,7 +51,7 @@ public class RBMUtil {
     }
 
 
-    public static String architecure(DBN dbn) {
+    public static String architecture(DBN dbn) {
         StringBuilder builder = new StringBuilder();
         builder.append("\n");
         for(int i = 0; i < dbn.getLayers().length; i++) {

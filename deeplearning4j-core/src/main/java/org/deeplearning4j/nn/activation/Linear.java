@@ -32,6 +32,6 @@ public class Linear extends BaseActivationFunction {
 
     @Override
     public DoubleMatrix apply(DoubleMatrix input) {
-        return stabilizeInput(input,1);
+        return input;
     }
 }

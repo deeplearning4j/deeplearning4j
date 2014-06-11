@@ -236,34 +236,6 @@ public class HiddenLayer implements Serializable {
 		return activate();
 	}
 
-	/**
-	 * Sample this hidden layer given the input
-	 * and initialize this layer with the given input
-	 * @param input the input to sample
-	 * @return the activation for this layer
-	 * given the input
-	 */
-	public DoubleMatrix sampleHGivenV(DoubleMatrix input) {
-        if(input != null)
-            this.input = stabilizeInput(input.dup(),1);
-
-        DoubleMatrix ret = binomial(activate(), 1, rng);
-		return ret;
-	}
-
-	/**
-	 * Sample this hidden layer given the last input.
-	 * @return the activation for this layer given 
-	 * the previous input
-	 */
-	public DoubleMatrix sampleHiddenGivenVisible() {
-		DoubleMatrix output = activate();
-		//reset the seed to ensure consistent generation of data
-		DoubleMatrix ret = MatrixUtil.binomial(output, 1, rng);
-		return ret;
-	}
-
-
 
 	public static class Builder {
 		protected int nIn;

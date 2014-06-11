@@ -95,7 +95,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             if(i == 0)
                 layerInput = input;
             else
-                layerInput = this.getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+                layerInput = this.getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
             if(isForceNumEpochs()) {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
@@ -174,6 +174,14 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         public Builder() {
             this.clazz = StackedDenoisingAutoEncoder.class;
         }
+
+
+        @Override
+        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
+             super.lineSearchBackProp(lineSearchBackProp);
+            return this;
+        }
+
         /**
          * Sample or activate by layer allows for deciding to sample or just pass straight activations
          * for each layer
