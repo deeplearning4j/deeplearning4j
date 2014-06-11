@@ -13,4 +13,6 @@ These algorithms are capable of unsupervised learning that removes the brunt of 
 
 There are a lot of knobs to turn when you're training a deep-learning network. We've done our best to explain them, so that DL4J can serve as a DIY tool. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact.html).
 
+To use Deeplearning4j in a Yarn container on Hadoop, go to [Metronome](https://github.com/jpatanooga/Metronome). 
+
 Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [Businessweek](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [Venturebeat](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/) and [The Wall Street Journal](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/).
