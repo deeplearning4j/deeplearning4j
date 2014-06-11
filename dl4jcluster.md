@@ -3,23 +3,21 @@ title:
 layout: default
 ---
 
-#setting up a deepLearning4j cluster
+#setting up a deeplearning4j cluster
 
 *Assumptions: AWS experience*
 
 For the moment, a DeepLearning4J cluster consists of one master node that is setup manually. (Mainly due to all of the possible configurations that are involved with getting a DataSetIterator and all the other scaffolding done!) This will be fixed in future releases when vectorization and dataset creation are a little more refined.
 
-First let's go through setting up a master node:
+Before you set up a master node, you need a [deeplearning4j distribution](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/).
 
-We will assume you have a [deeplearning4j distribution](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/).
-
-If not, download one of the zip, bz2 or tar files from the page linked to above.
+If you don't have one, download one of the zip, bz2 or tar files from the page linked to above.
 
 Next, let's tackle setup: We will be using the deeplearning4j-examples demonstration classes as the master nodes.
 
 ###master node
 
-A master node coordinates the running of all of the work and has the dataset iterator, which in turn has a handle on the dataset. This is the seed node for the Akka cluster. We will be setting this up using AWS.
+A master node coordinates the running of all of the work, and has the dataset iterator, which in turn has a handle on the dataset. This is the seed node for the Akka cluster. We will be setting this up using AWS.
 
 So first, create a node on AWS. We can then create a cluster based on this node.
 
