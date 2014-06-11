@@ -50,7 +50,12 @@ public class Viterbi implements Persistable {
         return decode(labels,true);
     }
 
-
+    /**
+     * Decodes a series of labels
+     * @param labels the labels to decode
+     * @param binaryLabelMatrix whether the label set is a binary label matrix
+     * @return the most likely sequence and the sequence labels
+     */
     public Pair<Double,DoubleMatrix> decode(DoubleMatrix labels,boolean binaryLabelMatrix) {
         DoubleMatrix outcomeSequence = labels.isColumnVector() || labels.isRowVector() || binaryLabelMatrix ? toOutcomesFromBinaryLabelMatrix(labels) : labels;
         int frames = outcomeSequence.length;

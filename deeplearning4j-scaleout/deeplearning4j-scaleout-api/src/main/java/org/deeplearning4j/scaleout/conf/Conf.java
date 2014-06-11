@@ -75,6 +75,15 @@ public class Conf implements Serializable,Cloneable {
     private boolean roundCodeLayer = false;
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
     private boolean normalizeCodeLayer = true;
+    private boolean lineSearchBackProp = false;
+
+    public boolean isLineSearchBackProp() {
+        return lineSearchBackProp;
+    }
+
+    public void setLineSearchBackProp(boolean lineSearchBackProp) {
+        this.lineSearchBackProp = lineSearchBackProp;
+    }
 
     public Map<Integer, Integer> getRenderEpochsByLayer() {
         return renderEpochsByLayer;
@@ -494,7 +503,7 @@ public class Conf implements Serializable,Cloneable {
             return new DBN.Builder().withHiddenUnits(getHiddenUnit()).withVisibleUnits(getVisibleUnit()).renderByLayer(getRenderEpochsByLayer())
                     .withVisibleUnitsByLayer(getVisibleUnitByLayer()).withHiddenUnitsByLayer(getHiddenUnitByLayer())
                     .activateForLayer(getActivationFunctionForLayer()).activateForLayer(getActivationFunctionForLayer())
-                    .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
+            .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
                     .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
@@ -512,7 +521,7 @@ public class Conf implements Serializable,Cloneable {
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
                     .withOutputActivationFunction(getOutputActivationFunction())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .renderByLayer(getRenderEpochsByLayer())
+                    .renderByLayer(getRenderEpochsByLayer()).lineSearchBackProp(isLineSearchBackProp())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .lossFunctionByLayer(getLossFunctionByLayer())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())

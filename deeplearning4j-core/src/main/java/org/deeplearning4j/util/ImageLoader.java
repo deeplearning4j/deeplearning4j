@@ -44,7 +44,7 @@ public class ImageLoader {
      * @param f the file to load from
      * @param numMiniBatches the number of images in a mini batch
      * @param numRowsPerSlice the number of rows for each image
-     * @return a tensor respresenting one image as a mini batch
+     * @return a tensor representing one image as a mini batch
      */
     public Tensor asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
         try {

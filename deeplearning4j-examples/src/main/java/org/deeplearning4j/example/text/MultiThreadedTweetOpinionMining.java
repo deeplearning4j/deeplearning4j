@@ -78,7 +78,8 @@ public class MultiThreadedTweetOpinionMining {
         c.setHiddenUnit(RBM.HiddenUnit.BINARY);
         c.setVisibleUnit(RBM.VisibleUnit.BINARY);
         c.setMultiLayerClazz(DBN.class);
-        c.setUseRegularization(false);
+        c.setUseRegularization(true);
+        c.setL2(2e-4);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setStateTracker(tracker);

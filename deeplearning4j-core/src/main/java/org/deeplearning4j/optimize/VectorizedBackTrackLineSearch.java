@@ -125,10 +125,14 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		// converge when (delta x) / x < REL_TOLX for all coordinates.
 		//  the largest step size that triggers this threshold is
 		//  precomputed and saved in alamin
-		DoubleMatrix maxOldParams = new DoubleMatrix(oldParameters.length);
-		for(int i = 0;i < oldParameters.length; i++)
-			maxOldParams.put(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
-		
+		DoubleMatrix maxOldParams = new DoubleMatrix(line.length);
+		for(int i = 0;i < line.length; i++) {
+            if(line.length >= oldParameters.length)
+                break;
+            maxOldParams.put(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
+
+        }
+
 		DoubleMatrix testMatrix = MatrixFunctions.abs(line).div(maxOldParams);
 		
 		test = testMatrix.max();
@@ -148,7 +152,10 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 			logger.trace ("before step, x.1norm: " + x.norm1() +
 					"\nalam: " + alam + "\noldAlam: " + oldAlam);
 			assert(alam != oldAlam) : "alam == oldAlam";
-			x.addi(line.mul(alam - oldAlam));  // step
+
+
+
+            x.addi(line.mul(alam - oldAlam));  // step
 
 			logger.debug ("after step, x.1norm: " + x.norm1());
 

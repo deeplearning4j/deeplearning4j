@@ -21,27 +21,29 @@ public class MultiThreadedLFW {
 	 */
 	public static void main(String[] args) throws Exception {
 		//batches of 10, 60000 examples total
-		DataSetIterator iter = new LFWDataSetIterator(80,13233,56,56);
+		DataSetIterator iter = new LFWDataSetIterator(80,13233,28,28);
 		
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(1e-6);
-		c.setLayerSizes(new int[]{500,400,250});
-		c.setnIn(56 * 56);
+		c.setFinetuneLearningRate(1e-2);
+		c.setLayerSizes(new int[]{700,500,250});
+		c.setnIn(28 * 28);
 		c.setMomentum(0.5);
         c.setDropOut(1e-1);
 		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
-		c.setSplit(10);
-		c.setNumPasses(3);
+		c.setSplit(100);
+		c.setNumPasses(1);
+        c.setScale(true);
+        c.setNormalizeZeroMeanAndUnitVariance(false);
 		c.setMultiLayerClazz(DBN.class);
-		c.setUseRegularization(false);
-        c.setL2(1e-3);
+		c.setUseRegularization(true);
+        c.setL2(2e-4);
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
-		c.setDeepLearningParams(new Object[]{1,1e-6,10000});
+		c.setDeepLearningParams(new Object[]{1,1e-2,10000});
         StateTracker<UpdateableImpl> stateTracker = new HazelCastStateTracker();
 
 		if(args.length < 1) {

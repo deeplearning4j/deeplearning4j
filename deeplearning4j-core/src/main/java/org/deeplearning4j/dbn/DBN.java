@@ -111,7 +111,9 @@ public class DBN extends BaseMultiLayerNetwork {
         int k = (Integer) otherParams[0];
         double lr = (Double) otherParams[1];
         int epochs = (Integer) otherParams[2];
-        pretrain(iter,k,lr,epochs);
+        int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
+        for(int i = 0; i < passes; i++)
+            pretrain(iter,k,lr,epochs);
 
     }
 
@@ -177,7 +179,7 @@ public class DBN extends BaseMultiLayerNetwork {
                         if(activateOnly)
                             layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
                         else if(isUseHiddenActivationsForwardProp())
-                            layerInput = getSigmoidLayers()[j - 1].sampleHGivenV(layerInput);
+                            layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(getSigmoidLayers()[j - 1].getActivationFunction().apply(layerInput)).getSecond();
                         else
                             layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
 
@@ -237,7 +239,7 @@ public class DBN extends BaseMultiLayerNetwork {
                 if(activateOnly)
                     layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
                 else if(isUseHiddenActivationsForwardProp())
-                    layerInput = getSigmoidLayers()[i - 1].sampleHGivenV(layerInput);
+                    layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(getSigmoidLayers()[i - 1].getActivationFunction().apply(layerInput)).getSecond();
                 else
                     layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
 
@@ -334,6 +336,12 @@ public class DBN extends BaseMultiLayerNetwork {
 
         public Builder() {
             this.clazz = DBN.class;
+        }
+
+        @Override
+        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
+            super.lineSearchBackProp(lineSearchBackProp);
+            return this;
         }
 
         /**
