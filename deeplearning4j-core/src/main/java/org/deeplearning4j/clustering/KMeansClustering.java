@@ -12,7 +12,6 @@ import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.cluster.KMeans;
 
 /**
  * Shamelessly based on:
@@ -93,7 +92,7 @@ public class KMeansClustering implements Serializable {
 
 
 	private double getDistance(DoubleMatrix m1,DoubleMatrix m2) {
-		DistanceFunction function = null;
+		DistanceFunction function;
 		try {
 			function = clazz.getConstructor(DoubleMatrix.class).newInstance(m1);
 		} catch (Exception e) {
@@ -149,7 +148,7 @@ public class KMeansClustering implements Serializable {
 	 */
 	protected void initCentroids() {
 		// Init counts
-		this.counts = new ArrayList<Long>(this.nbCluster);
+		this.counts = new ArrayList<>(this.nbCluster);
 		for (int i = 0; i < this.nbCluster; i++) {
 			this.counts.add(0L);
 		}
@@ -183,12 +182,7 @@ public class KMeansClustering implements Serializable {
 		this.initFeatures.clear();
 	}
 
-	/**
-	 * For each features in {@link KMeans#initFeatures}, compute D(x), the
-	 * distance between x and the nearest center that has already been chosen.
-	 * 
-	 * @return
-	 */
+
 	protected DoubleMatrix computeDxs() {
 		DoubleMatrix dxs = new DoubleMatrix(this.initFeatures.size(),this.initFeatures.get(0).columns);
 
@@ -196,6 +190,7 @@ public class KMeansClustering implements Serializable {
 		DoubleMatrix features;
 		int nearestCentroidIndex;
 		DoubleMatrix nearestCentroid;
+
 		for (int i = 0; i < this.initFeatures.size(); i++) {
 			features = this.initFeatures.get(i);
 			nearestCentroidIndex = this.nearestCentroid(features);
@@ -211,7 +206,7 @@ public class KMeansClustering implements Serializable {
 	public void reset() {
 		this.counts = null;
 		this.centroids = null;
-		this.initFeatures = new ArrayList<DoubleMatrix>();
+		this.initFeatures = new ArrayList<>();
 	}
 
 }

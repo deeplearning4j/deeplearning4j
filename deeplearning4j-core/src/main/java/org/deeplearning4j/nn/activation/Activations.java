@@ -12,6 +12,26 @@ public class Activations {
     private static ActivationFunction HARD_TANH = new HardTanh();
     private static ActivationFunction SIGMOID = new Sigmoid();
     private static ActivationFunction SOFTMAX = new SoftMax();
+    private static ActivationFunction ROUNDED_LINEAR = new RoundedLinear();
+    private static ActivationFunction RECTIFIEDLINEAR = new RoundedLinear();
+
+
+
+    /**
+     * Rectified linear, the output: rounded
+     * @return the rounded lienar activation function
+     */
+    public static ActivationFunction rectifiedLinear() {
+        return RECTIFIEDLINEAR;
+    }
+
+    /**
+     * Rounded linear, the output: rounded
+     * @return the rounded lienar activation function
+     */
+    public static ActivationFunction roundedLinear() {
+        return ROUNDED_LINEAR;
+    }
     /**
      * The e^x function
      * @return the e^x activation function
