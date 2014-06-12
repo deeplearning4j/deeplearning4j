@@ -94,7 +94,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected DoubleMatrix columnStds;
     protected boolean initCalled = false;
     /* Sample if true, otherwise use the straight activation function */
-    protected boolean useHiddenActivationsForwardProp = true;
+    protected boolean sampleFromHiddenActivations = true;
     /*
      * Use adagrad or not
      */
@@ -328,7 +328,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 }
                 else {
                     if(input != null) {
-                        if(this.useHiddenActivationsForwardProp)
+                        if(this.sampleFromHiddenActivations)
                             layerInput = layers[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
                         else
                             layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
@@ -442,7 +442,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
                 currInput = getSigmoidLayers()[i].activate(layer.reconstruct(currInput));
-            else  if(useHiddenActivationsForwardProp)
+            else  if(sampleFromHiddenActivations)
                 currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
@@ -583,7 +583,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if (shouldInit != that.shouldInit) return false;
         if (Double.compare(that.sparsity, sparsity) != 0) return false;
         if (useAdaGrad != that.useAdaGrad) return false;
-        if (useHiddenActivationsForwardProp != that.useHiddenActivationsForwardProp) return false;
+        if (sampleFromHiddenActivations != that.sampleFromHiddenActivations) return false;
         if (useRegularization != that.useRegularization) return false;
         if (activation != null ? !activation.equals(that.activation) : that.activation != null) return false;
         if (activationFunctionForLayer != null ? !activationFunctionForLayer.equals(that.activationFunctionForLayer) : that.activationFunctionForLayer != null)
@@ -646,7 +646,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         result = 31 * result + (columnMeans != null ? columnMeans.hashCode() : 0);
         result = 31 * result + (columnStds != null ? columnStds.hashCode() : 0);
         result = 31 * result + (initCalled ? 1 : 0);
-        result = 31 * result + (useHiddenActivationsForwardProp ? 1 : 0);
+        result = 31 * result + (sampleFromHiddenActivations ? 1 : 0);
         result = 31 * result + (useAdaGrad ? 1 : 0);
         result = 31 * result + (activationFunctionForLayer != null ? activationFunctionForLayer.hashCode() : 0);
         temp = Double.doubleToLongBits(learningRateUpdate);
@@ -694,7 +694,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         sb.append(", columnMeans=").append(columnMeans);
         sb.append(", columnStds=").append(columnStds);
         sb.append(", initCalled=").append(initCalled);
-        sb.append(", useHiddenActivationsForwardProp=").append(useHiddenActivationsForwardProp);
+        sb.append(", sampleFromHiddenActivations=").append(sampleFromHiddenActivations);
         sb.append(", useAdaGrad=").append(useAdaGrad);
         sb.append(", activationFunctionForLayer=").append(activationFunctionForLayer);
         sb.append(", learningRateUpdate=").append(learningRateUpdate);
@@ -1470,13 +1470,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    public boolean isUseHiddenActivationsForwardProp() {
-        return useHiddenActivationsForwardProp;
+    public boolean isSampleFromHiddenActivations() {
+        return sampleFromHiddenActivations;
     }
 
-    public void setUseHiddenActivationsForwardProp(
-            boolean useHiddenActivationsForwardProp) {
-        this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
+    public void setSampleFromHiddenActivations(
+            boolean sampleFromHiddenActivations) {
+        this.sampleFromHiddenActivations = sampleFromHiddenActivations;
     }
 
 
@@ -1774,7 +1774,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
          * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
          * @return builder pattern
          */
-        public Builder<E> useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
+        public Builder<E> sampleFromHiddenActivations(boolean useHiddenActivationsForwardProp) {
             this.useHiddenActivationsForwardProp = useHiddenActivationsForwardProp;
             return this;
         }
@@ -2012,7 +2012,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.setRng(this.rng);
                 ret.setShouldBackProp(this.backProp);
                 ret.setSigmoidLayers(new HiddenLayer[ret.getnLayers()]);
-                ret.setUseHiddenActivationsForwardProp(useHiddenActivationsForwardProp);
+                ret.setSampleFromHiddenActivations(useHiddenActivationsForwardProp);
                 ret.setInput(this.input);
                 ret.setLineSearchBackProp(lineSearchBackProp);
                 ret.setMomentum(momentum);
