@@ -16,7 +16,7 @@ public abstract class BaseActivationFunction implements ActivationFunction {
 
     @Override
     public boolean equals(Object o) {
-        return o != null && o instanceof ActivationFunction && o.getClass().getName().equals(type());
+        return o.getClass().getName().equals(type());
     }
 
     /**

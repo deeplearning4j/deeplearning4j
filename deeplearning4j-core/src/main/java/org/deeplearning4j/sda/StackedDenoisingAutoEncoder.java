@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -158,7 +157,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                 .withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
                 .withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
-                .withSparsity(getSparsity()).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs).fanIn(getFanIn())
+                .withSparsity(getSparsity()).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs)
+                .fanIn(getFanIn())
                 .build();
         return ret;
     }
@@ -293,8 +293,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
          * @return builder pattern
          */
-        public Builder useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
-            super.useHiddenActivationsForwardProp(useHiddenActivationsForwardProp);
+        public Builder sampleFromHiddenActivations(boolean useHiddenActivationsForwardProp) {
+            super.sampleFromHiddenActivations(useHiddenActivationsForwardProp);
             return this;
         }
 

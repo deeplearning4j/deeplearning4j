@@ -7,7 +7,6 @@ import static org.deeplearning4j.util.MatrixUtil.round;
 import java.util.*;
 
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -66,10 +65,14 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     private BaseMultiLayerNetwork decoder;
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
+    //linear code layer
     private ActivationFunction codeLayerAct = Activations.linear();
+    //reconstruction error
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
+    //learn binary codes
     private ActivationFunction outputLayerActivation = Activations.sigmoid();
     private boolean roundCodeLayerInput = false;
+    //could be useful for gaussian/rectified
     private boolean normalizeCodeLayerOutput = false;
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoder.class);
     private boolean alreadyInitialized = false;
@@ -152,8 +155,9 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             layer.setInput(currInput);
             l.setInput(currInput);
 
-            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !useHiddenActivationsForwardProp) {
-                currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
+                currInput = l.activate(currInput);
+
                 if(roundCodeLayerInput && (layer instanceof  RBM)) {
                     RBM r = (RBM)  layer;
                     if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
@@ -162,8 +166,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 }
             }
 
-            else  if(useHiddenActivationsForwardProp) {
-                currInput = l.activate(currInput);
+            else  if(sampleFromHiddenActivations) {
+                currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
 
                 if(roundCodeLayerInput && (layer instanceof  RBM)) {
                     RBM r = (RBM)  layer;
@@ -284,7 +288,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         }
 
         //real valued activities on decoding setp
-        this.useHiddenActivationsForwardProp = false;
+        this.sampleFromHiddenActivations = false;
 
         NeuralNetwork[] cloned = new NeuralNetwork[encoder.getLayers().length];
         HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getLayers().length];
@@ -305,15 +309,23 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             }
 
         }
+
+
         for(int i = 0; i < cloned.length; i++) {
             clonedHidden[i] = encoder.getSigmoidLayers()[i].transpose();
+            cloned[i].setW(cloned[i].getW());
             clonedHidden[i].setB(cloned[i].gethBias());
         }
 
-
+        ActivationFunction codeLayerActivation = encoder.getSigmoidLayers()[encoder.getSigmoidLayers().length - 1].getActivationFunction();
+        ActivationFunction firstActivation = encoder.getSigmoidLayers()[0].getActivationFunction();
 
         ArrayUtil.reverse(cloned);
         ArrayUtil.reverse(clonedHidden);
+
+        //reverse causes activation function to be out of line
+        clonedHidden[0].setActivationFunction(firstActivation);
+        clonedHidden[clonedHidden.length - 1].setActivationFunction(codeLayerActivation);
 
         NeuralNetwork[] decoderLayers = new NeuralNetwork[cloned.length - 1];
         for(int i = 0 ; i < decoderLayers.length; i++)
@@ -326,8 +338,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         decoder.setLayers(decoderLayers);
 
         DoubleMatrix encoded = encodeWithScaling(input);
-        decoder.setInput(encoded);
-        decoder.initializeLayers(encoded);
+        //decoder.setInput(encoded);
+        //decoder.initializeLayers(encoded);
 
 
         this.sampleOrActivate = decoder.getSampleOrActivate();

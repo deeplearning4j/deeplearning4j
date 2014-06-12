@@ -1,12 +1,8 @@
 package org.deeplearning4j.example.lfw;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.zip.CheckedOutputStream;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -16,8 +12,6 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.util.ImageLoader;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +37,7 @@ public class LFWExample {
          .withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
          .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).lineSearchBackProp(true)
 		.hiddenLayerSizes(new int[]{600, 500, 400}).useRegularization(true)
-          .useHiddenActivationsForwardProp(true).withL2(1e-4).withSparsity(1e-1)
+          .sampleFromHiddenActivations(true).withL2(1e-4).withSparsity(1e-1)
                 .renderByLayer(Collections.singletonMap(0,10))
         .withDropOut(0.5).withActivation(Activations.tanh()).withMomentum(0.5)
 		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(load.numOutcomes())

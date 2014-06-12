@@ -8,12 +8,10 @@ import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.util.Dl4jReflection;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -171,14 +169,14 @@ public class DBN extends BaseMultiLayerNetwork {
             }
 
             else {
-                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !useHiddenActivationsForwardProp;
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
                     layerInput = next.getFirst();
                     for(int j = 1; j <= i; j++) {
                         if(activateOnly)
                             layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
-                        else if(isUseHiddenActivationsForwardProp())
+                        else if(isSampleFromHiddenActivations())
                             layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(getSigmoidLayers()[j - 1].getActivationFunction().apply(layerInput)).getSecond();
                         else
                             layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
@@ -235,10 +233,10 @@ public class DBN extends BaseMultiLayerNetwork {
             if(i == 0)
                 layerInput = getInput();
             else {
-                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !useHiddenActivationsForwardProp;
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
                 if(activateOnly)
                     layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
-                else if(isUseHiddenActivationsForwardProp())
+                else if(isSampleFromHiddenActivations())
                     layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(getSigmoidLayers()[i - 1].getActivationFunction().apply(layerInput)).getSecond();
                 else
                     layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
@@ -473,8 +471,8 @@ public class DBN extends BaseMultiLayerNetwork {
          * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
          * @return builder pattern
          */
-        public Builder useHiddenActivationsForwardProp(boolean useHiddenActivationsForwardProp) {
-            super.useHiddenActivationsForwardProp(useHiddenActivationsForwardProp);
+        public Builder sampleFromHiddenActivations(boolean useHiddenActivationsForwardProp) {
+            super.sampleFromHiddenActivations(useHiddenActivationsForwardProp);
             return this;
         }
 
