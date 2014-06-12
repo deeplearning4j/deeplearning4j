@@ -28,7 +28,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(10,10,false);
+        DataSetIterator iter = new MnistDataSetIterator(1,2,false);
 
         int codeLayer = 3;
 
@@ -47,7 +47,7 @@ public class DeepAutoEncoderExample {
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer,RBM.HiddenUnit.GAUSSIAN))
                 .numberOfInputs(784).sampleFromHiddenActivations(true)
                 .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-                .lineSearchBackProp(true).useRegularization(true)
+                .lineSearchBackProp(false).useRegularization(true)
                 .withL2(1e-4)
                 .withOutputActivationFunction(Activations.sigmoid())
                 .numberOfOutPuts(784).withMomentum(0.9).withOutputLossFunction(OutputLayer.LossFunction.SQUARED_LOSS)
@@ -66,12 +66,7 @@ public class DeepAutoEncoderExample {
 
         iter.reset();
 
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.setInput(next.getFirst());
-            dbn.finetune(next.getFirst(),1e-1,100000);
 
-        }
 
 
 
@@ -88,7 +83,7 @@ public class DeepAutoEncoderExample {
 
 
             log.info("Fine tune " + data.labelDistribution());
-            encoder.finetune(data.getFirst(),1e-1,100000);
+            encoder.finetune(data.getFirst(),1e-1,1000);
 
             DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),encoder,28,28);
             r.setPicDraw(MatrixTransformations.multiplyScalar(255));
