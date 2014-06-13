@@ -22,6 +22,29 @@ public class Tree implements Serializable {
     private int goldLabel;
 
 
+    /**
+     * Returns all of the labels for this node and all of its children (recursively)
+     * @return all of the labels of this node and its children recursively
+     */
+    public List<String> yield() {
+        return yield(new ArrayList<String>());
+
+    }
+
+    /**
+     * Returns the list of labels for this node and
+     * all of its children recursively
+     * @param labels the labels to add to
+     * @return the list of labels for this node and
+     * all of its children recursively
+     */
+    private List<String> yield(List<String> labels) {
+        labels.add(label);
+        for(Tree t : children) {
+            labels.addAll(t.yield());
+        }
+        return labels;
+    }
 
 
     public void setGoldLabel(int goldLabel) {

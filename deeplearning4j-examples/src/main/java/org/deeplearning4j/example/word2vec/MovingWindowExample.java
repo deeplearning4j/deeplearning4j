@@ -9,6 +9,7 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
@@ -75,7 +76,7 @@ public class MovingWindowExample {
 
 
 
-        DataSetIterator iter = new Word2VecDataSetIterator(vec,iterator,Arrays.asList("0","1"));
+        DataSetIterator iter = new Word2VecDataSetIterator(vec,iterator,Arrays.asList("0","1","2"));
           /*
         Note that this is an example of how to train. The parameters are not optimally tuned here, but serve to demonstrate
         how to use bag of words classification
@@ -93,6 +94,7 @@ public class MovingWindowExample {
         c.setMomentum(0.3);
         //c.setRenderWeightEpochs(1000);
         c.setnOut(2);
+        c.setFunction(Activations.hardTanh());
         c.setSplit(10);
         c.setnIn(vec.getLayerSize() * vec.getWindow());
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
