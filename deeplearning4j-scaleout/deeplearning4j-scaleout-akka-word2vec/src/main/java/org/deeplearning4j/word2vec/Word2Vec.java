@@ -797,6 +797,8 @@ public class Word2Vec implements Persistable {
     }
 
     public float[]	 getOob() {
+        if(oob == null)
+            oob = new float[layerSize];
         return oob;
     }
 
