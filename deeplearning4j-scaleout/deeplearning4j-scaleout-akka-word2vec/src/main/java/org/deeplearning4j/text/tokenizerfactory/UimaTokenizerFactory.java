@@ -56,8 +56,8 @@ public class UimaTokenizerFactory implements TokenizerFactory {
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {
             return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
-                    TokenizerAnnotator.getDescription(),
                     SentenceAnnotator.getDescription(),
+                    TokenizerAnnotator.getDescription(),
                     DefaultSnowballStemmer.getDescription("English")));
         }catch(Exception e) {
             throw new RuntimeException(e);
