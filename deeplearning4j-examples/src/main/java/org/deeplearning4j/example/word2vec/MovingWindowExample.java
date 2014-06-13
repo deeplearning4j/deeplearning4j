@@ -72,6 +72,12 @@ public class MovingWindowExample {
         else
             vec.setTokenizerFactory(tokenizerFactory);
 
+
+
+
+
+
+
         iterator.reset();
 
 
@@ -82,16 +88,15 @@ public class MovingWindowExample {
         how to use bag of words classification
          */
         HazelCastStateTracker tracker = new HazelCastStateTracker(2200);
-        if(!tracker.isPretrain())
-            throw new IllegalStateException("Tracker should be on pretrain");
+
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
         c.setPretrainEpochs(10000);
-        c.setFinetuneLearningRate(1e-1);
-
+        c.setFinetuneLearningRate(1e-3);
+        c.setPretrainLearningRate(1e-3);
         c.setLayerSizes(new int[]{iter.inputColumns() / 4,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setUseAdaGrad(true);
-        c.setMomentum(0.3);
+        c.setMomentum(0.5);
         //c.setRenderWeightEpochs(1000);
         c.setnOut(2);
         c.setFunction(Activations.hardTanh());
@@ -100,7 +105,7 @@ public class MovingWindowExample {
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setMultiLayerClazz(DBN.class);
-        c.setUseRegularization(true);
+        c.setUseRegularization(false);
         c.setL2(2e-4);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);

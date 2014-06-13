@@ -836,20 +836,20 @@ public class Word2Vec implements Persistable {
         return stopWords;
     }
 
-    public synchronized SentenceIterator getSentenceIter() {
+    public  SentenceIterator getSentenceIter() {
         return sentenceIter;
     }
 
 
 
-    public synchronized TokenizerFactory getTokenizerFactory() {
+    public  TokenizerFactory getTokenizerFactory() {
         return tokenizerFactory;
     }
 
 
 
 
-    public synchronized void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
+    public  void setTokenizerFactory(TokenizerFactory tokenizerFactory) {
         this.tokenizerFactory = tokenizerFactory;
     }
 
