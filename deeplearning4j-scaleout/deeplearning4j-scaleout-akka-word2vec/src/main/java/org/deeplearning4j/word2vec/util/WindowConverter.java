@@ -42,8 +42,11 @@ public class WindowConverter {
 			float[] vec2 = vec.getWordVector(word);
 			if(vec2 == null)
 				vec2 = vec.getOob();
-			System.arraycopy(vec2, 0, example, count, length);
-			count += length;
+            for(int j = 0; j < vec2.length; j++) {
+                example[count++] = vec2[j];
+            }
+
+
 		}
 
 		return example;
