@@ -17,8 +17,11 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import akka.actor.Cancellable;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.Persistable;
@@ -46,6 +49,7 @@ import akka.actor.Props;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
+import scala.concurrent.duration.Duration;
 
 
 /**
@@ -68,7 +72,7 @@ public class Word2Vec implements Persistable {
     private Index wordIndex = new Index();
     private int sample = 1;
     //learning rate
-    private float alpha = 0.025f;
+    private AtomicDouble alpha = new AtomicDouble(0.025);
     private int wordCount  = 0;
     public final static double MIN_ALPHA =  0.001;
     //number of times the word must occur in the vocab to appear in the calculations, otherwise treat as unknown
@@ -78,6 +82,8 @@ public class Word2Vec implements Persistable {
     private int trainWordsCount = 0;
     //number of neurons per layer
     private int layerSize = 50;
+    private   Counter<String> totalWords = Util.parallelCounter();
+
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
     private int size = 0;
     private int words = 0;
@@ -86,8 +92,9 @@ public class Word2Vec implements Persistable {
     //hidden layer
     private FloatMatrix syn1;
     private int allWordsCount = 0;
-    private int numSentencesProcessed = 0;
+    private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
     private static ActorSystem trainingSystem;
+    private Cancellable sentenceReport;
     private List<String> stopWords;
     /* out of vocab */
     private float[] oob;
@@ -229,8 +236,8 @@ public class Word2Vec implements Persistable {
 
     public FloatMatrix getWordVectorMatrixNormalized(String word) {
         int i = this.wordIndex.indexOf(word);
-       if(oob == null)
-           oob = new float[layerSize];
+        if(oob == null)
+            oob = new float[layerSize];
         if(i < 0)
             return FloatMatrix.zeros(syn0.getRow(0).columns);
         FloatMatrix r =  syn0.getRow(i);
@@ -313,17 +320,24 @@ public class Word2Vec implements Persistable {
         return wordIndex.indexOf(word) >= 0;
     }
 
-    public void train() {
-        if(trainingSystem == null)
+    public void train(){
+        if(trainingSystem == null) {
             trainingSystem = ActorSystem.create();
+            sentenceReport = trainingSystem.scheduler().schedule(Duration.create(0,TimeUnit.SECONDS),Duration.create(30,TimeUnit.SECONDS),new Runnable() {
 
+
+                @Override
+                public void run() {
+                    log.info("Num sentences so far  " + totalWords.totalCount());
+                }
+            },trainingSystem.dispatcher());
+        }
         if(stopWords == null)
             readStopWords();
         log.info("Training word2vec multithreaded");
 
 
 
-        final Counter<String> totalWords = Util.parallelCounter();
 
         getSentenceIter().reset();
 
@@ -339,7 +353,7 @@ public class Word2Vec implements Persistable {
 
         while(getSentenceIter().hasNext()) {
             final String sentence = sentenceIter.nextSentence();
-            if(sentence != null) {
+            if(sentence != null && !sentence.isEmpty()) {
                 Future<Void> f = Futures.future(new Callable<Void>() {
 
                     @Override
@@ -356,7 +370,7 @@ public class Word2Vec implements Persistable {
                             throws Throwable {
                         if(arg0 != null)
                             throw arg0;
-                        numSentencesProcessed++;
+                        numSentencesProcessed.incrementAndGet();
                         changed.set(System.currentTimeMillis());
 
                     }
@@ -389,6 +403,8 @@ public class Word2Vec implements Persistable {
 
 
         log.info("Shutting down system; done training");
+        if(sentenceReport != null)
+            sentenceReport.cancel();
 
         if(trainingSystem != null)
             trainingSystem.shutdown();
@@ -397,8 +413,12 @@ public class Word2Vec implements Persistable {
 
     public void processSentence(final String sentence,final Counter<String> totalWords) {
         trainSentence(sentence, totalWords);
-        if(numSentencesProcessed % 10000 == 0) {
-            alpha = new Float(Math.max(MIN_ALPHA, alpha * (1 - 1.0 * totalWords.totalCount() / allWordsCount)));
+        if(numSentencesProcessed.get() % 10000 == 0) {
+            float newAlpha =  alpha.floatValue() * (1 -  (float) totalWords.totalCount() / allWordsCount);
+            float oldAlpha = alpha.floatValue();
+            if(Float.isNaN(newAlpha))
+                newAlpha = oldAlpha;
+            alpha.set(Math.max(MIN_ALPHA,newAlpha));
             log.info("Alpha updated " + alpha + " progress " + numSentencesProcessed);
         }
     }
@@ -408,7 +428,7 @@ public class Word2Vec implements Persistable {
 
     public List<VocabWord> trainSentence(String sentence,Counter<String> totalWords) {
         Tokenizer tokenizer = tokenizerFactory.create(sentence);
-        List<VocabWord> sentence2 = new ArrayList<VocabWord>();
+        List<VocabWord> sentence2 = new ArrayList<>();
         while(tokenizer.hasMoreTokens()) {
             String next = tokenizer.nextToken();
             if(stopWords.contains(next))
@@ -596,7 +616,7 @@ public class Word2Vec implements Persistable {
         FloatMatrix l2a = syn1.getRows(w1.getCodes());
         FloatMatrix fa = MatrixUtil.sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        FloatMatrix ga = FloatMatrix.ones(fa.length).sub(MatrixUtil.toFloatMatrix(w1.getCodes())).sub(fa).mul(alpha);
+        FloatMatrix ga = FloatMatrix.ones(fa.length).sub(MatrixUtil.toFloatMatrix(w1.getCodes())).sub(fa).mul(alpha.floatValue());
         FloatMatrix outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
             FloatMatrix toAdd = l2a.getRow(i).add(outer.getRow(i));
@@ -757,7 +777,7 @@ public class Word2Vec implements Persistable {
     }
 
     public double getAlpha() {
-        return alpha;
+        return alpha.floatValue();
     }
 
 
