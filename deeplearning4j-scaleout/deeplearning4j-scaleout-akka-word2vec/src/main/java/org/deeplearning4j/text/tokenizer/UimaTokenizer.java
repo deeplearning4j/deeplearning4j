@@ -1,6 +1,7 @@
 package org.deeplearning4j.text.tokenizer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
@@ -38,17 +39,18 @@ public class UimaTokenizer implements Tokenizer {
 
             cas.setDocumentText(tokens);
             this.engine.process(cas);
-            for(Sentence s : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-                for(Token t : JCasUtil.selectCovered(Token.class,s)) {
-                    if(valid(t.getCoveredText()))
-                        if(t.getLemma() != null)
-                            this.tokens.add(t.getLemma());
-                        else if(t.getStem() != null)
-                            this.tokens.add(t.getStem());
-                        else
-                            this.tokens.add(t.getCoveredText());
-                }
+            Collection<Token> tokenList = JCasUtil.select(cas.getJCas(),Token.class);
+
+            for(Token t : tokenList) {
+                if(valid(t.getCoveredText()))
+                    if(t.getLemma() != null)
+                        this.tokens.add(t.getLemma());
+                    else if(t.getStem() != null)
+                        this.tokens.add(t.getStem());
+                    else
+                        this.tokens.add(t.getCoveredText());
             }
+
 
             pool.releaseCas(cas);
 

@@ -37,10 +37,14 @@ public class Windows {
 	 */
 	public static List<Window> windows(String words,TokenizerFactory tokenizerFactory,int windowSize) {
 		Tokenizer tokenizer = tokenizerFactory.create(words);
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 		while(tokenizer.hasMoreTokens())
 			list.add(tokenizer.nextToken());
-		return windows(list,windowSize);
+
+        if(list.isEmpty())
+            throw new IllegalStateException("No tokens found for windows");
+
+        return windows(list,windowSize);
 	}
 	
 	

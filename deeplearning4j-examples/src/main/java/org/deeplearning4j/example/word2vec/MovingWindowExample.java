@@ -83,6 +83,9 @@ public class MovingWindowExample {
 
 
         DataSetIterator iter = new Word2VecDataSetIterator(vec,iterator,Arrays.asList("0","1","2"));
+        if(!iter.hasNext())
+            throw new IllegalStateException("No data found");
+
           /*
         Note that this is an example of how to train. The parameters are not optimally tuned here, but serve to demonstrate
         how to use bag of words classification

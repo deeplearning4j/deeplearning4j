@@ -121,7 +121,12 @@ public class BatchActor extends UntypedActor {
                 for(int i = 0; i < numWorkers; i++) {
                     if(!iter.hasNext())
                         break;
+
                     DataSet next = iter.next(miniBatchSize);
+                    if(next == null)
+                        break;
+
+
                     String worker = nextWorker();
                     log.info("Saving data for worker " + worker);
                     stateTracker.saveWorker(worker,next);
