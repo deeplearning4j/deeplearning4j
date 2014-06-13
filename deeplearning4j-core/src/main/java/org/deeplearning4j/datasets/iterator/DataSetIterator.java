@@ -40,19 +40,46 @@ public interface DataSetIterator extends Iterator<DataSet>,Serializable {
 	 * @return the next data set
 	 */
 	DataSet next(int num);
-	
+
+    /**
+     * Total examples in the iterator
+     * @return
+     */
 	int totalExamples();
-	
+
+    /**
+     * Input columns for the dataset
+     * @return
+     */
 	int inputColumns();
-	
+
+    /**
+     * The number of labels for the dataset
+     * @return
+     */
 	int totalOutcomes();
-	
+
+    /**
+     * Resets the iterator back to the beginning
+     */
 	void reset();
-	
+
+    /**
+     * Batch size
+     * @return
+     */
 	int batch();
-	
+
+    /**
+     * The current cursor if applicable
+     * @return
+     */
 	int cursor();
-	
+
+    /**
+     * Total number of examples in the dataset
+     * @return
+     */
 	int numExamples();
 	
 }

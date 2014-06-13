@@ -14,6 +14,7 @@ import org.jblas.DoubleMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Iterates over a sentence with moving window to produce a data set
@@ -29,6 +30,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     private boolean homogenization = true;
     private boolean addLabels = true;
     private int batch = 10;
+    private DataSet curr;
 
     /**
      * Allows for customization of all of the params of the iterator
@@ -44,7 +46,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         this.iter = iter;
         this.labels = labels;
         this.batch = batch;
-        cachedWindow = new ArrayList<>();
+        cachedWindow = new CopyOnWriteArrayList<>();
         this.addLabels = addLabels;
         this.homogenization = homogenization;
 
@@ -123,6 +125,8 @@ public class Word2VecDataSetIterator implements DataSetIterator {
                 if(sentence.isEmpty())
                     continue;
                 List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
+                if(windows.isEmpty() && !sentence.isEmpty())
+                    throw new IllegalStateException("Empty window on sentence");
                 for(Window w : windows)
                     w.setLabel(iter.currentLabel());
                 cachedWindow.addAll(windows);
@@ -134,10 +138,29 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     }
 
     private DataSet fromCached(int num) {
+        if(cachedWindow.isEmpty()) {
+            while(cachedWindow.size() < num && iter.hasNext()) {
+                String sentence = iter.nextSentence();
+                if(sentence.isEmpty())
+                    continue;
+                List<Window> windows = Windows.windows(sentence,vec.getTokenizerFactory(),vec.getWindow());
+                for(Window w : windows)
+                    w.setLabel(iter.currentLabel());
+                cachedWindow.addAll(windows);
+            }
+        }
+
+
         List<Window> windows = new ArrayList<>(num);
+
         for(int i = 0; i < num; i++) {
+            if(cachedWindow.isEmpty())
+                break;
             windows.add(cachedWindow.remove(0));
         }
+
+        if(windows.isEmpty())
+            return null;
 
         DoubleMatrix inputs = new DoubleMatrix(num,inputColumns());
         for(int i = 0; i < inputs.rows; i++) {
@@ -174,6 +197,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         iter.reset();
+        cachedWindow.clear();
     }
 
     @Override
@@ -200,7 +224,7 @@ public class Word2VecDataSetIterator implements DataSetIterator {
      */
     @Override
     public boolean hasNext() {
-        return iter.hasNext() || cachedWindow.isEmpty();
+        return iter.hasNext() || !cachedWindow.isEmpty();
     }
 
     /**

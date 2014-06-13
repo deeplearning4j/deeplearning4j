@@ -1,12 +1,10 @@
 package org.deeplearning4j.word2vec.sentenceiterator.labelaware;
 
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.util.StringGrid;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -17,11 +15,6 @@ import java.util.List;
  */
 public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterator {
 
-
-    private String delimiter;
-    private int labelPosition;
-    private int textPosition;
-    private List<String> lines;
     private int currPosition;
     private List<String> labels;
     private List<String> text;
@@ -37,9 +30,6 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @throws IOException
      */
     public LabelAwareListSentenceIterator(InputStream is,String delimiter,int labelPosition,int textPosition) throws IOException {
-        this.delimiter = delimiter;
-        this.labelPosition = labelPosition;
-        this.textPosition = textPosition;
         StringGrid grid = StringGrid.fromInput(is,delimiter);
         labels = grid.getColumn(labelPosition);
         text = grid.getColumn(textPosition);
