@@ -44,7 +44,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
 
     @Override
-    public Tokenizer create(String toTokenize) {
+    public  Tokenizer create(String toTokenize) {
         return new UimaTokenizer(toTokenize,tokenizer,pool);
     }
 
@@ -55,7 +55,10 @@ public class UimaTokenizerFactory implements TokenizerFactory {
      */
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {
-            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), DefaultSnowballStemmer.getDescription("English")));
+            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
+                    TokenizerAnnotator.getDescription(),
+                    SentenceAnnotator.getDescription(),
+                    DefaultSnowballStemmer.getDescription("English")));
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
