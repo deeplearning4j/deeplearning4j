@@ -76,6 +76,25 @@ public class Conf implements Serializable,Cloneable {
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
     private boolean normalizeCodeLayer = true;
     private boolean lineSearchBackProp = false;
+    private boolean sampleHiddenActivations = true;
+    private Map<Integer,Boolean> sampleHiddenActivationsByLayer = new HashMap<>();
+
+
+    public Map<Integer, Boolean> getSampleHiddenActivationsByLayer() {
+        return sampleHiddenActivationsByLayer;
+    }
+
+    public void setSampleHiddenActivationsByLayer(Map<Integer, Boolean> sampleHiddenActivationsByLayer) {
+        this.sampleHiddenActivationsByLayer = sampleHiddenActivationsByLayer;
+    }
+
+    public boolean isSampleHiddenActivations() {
+        return sampleHiddenActivations;
+    }
+
+    public void setSampleHiddenActivations(boolean sampleHiddenActivations) {
+        this.sampleHiddenActivations = sampleHiddenActivations;
+    }
 
     public boolean isLineSearchBackProp() {
         return lineSearchBackProp;
@@ -506,8 +525,9 @@ public class Conf implements Serializable,Cloneable {
             .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
                     .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
+                    .sampleOrActivateByLayer(getSampleHiddenActivationsByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
-                    .learningRateForLayer(getLearningRateForLayer())
+                    .learningRateForLayer(getLearningRateForLayer()).sampleFromHiddenActivations(isSampleHiddenActivations())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
 
@@ -521,7 +541,7 @@ public class Conf implements Serializable,Cloneable {
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
                     .withOutputActivationFunction(getOutputActivationFunction())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
-                    .renderByLayer(getRenderEpochsByLayer()).lineSearchBackProp(isLineSearchBackProp())
+                    .renderByLayer(getRenderEpochsByLayer()).lineSearchBackProp(isLineSearchBackProp()).sampleOrActivateByLayer(getSampleHiddenActivationsByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .lossFunctionByLayer(getLossFunctionByLayer())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
