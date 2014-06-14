@@ -26,8 +26,8 @@ DL4J contains the following built-in vectorization algorithms:
 * Moving-window for images
 * Moving-window for text 
 * Viterbi for sequential classification
-* Word2Vec
-* Bag-of-Words encoding for word count and TF-IDF
+* [Word2Vec](../word2vec.html)
+* [Bag-of-Words encoding for word count and TF-IDF](../bagofwords-tf-idf.html)
 
 *Coming soon*
 
@@ -36,7 +36,7 @@ DL4J contains the following built-in vectorization algorithms:
 DL4J supports two kinds of back propagation:
 
 * Normal stochastic gradient descent
-* Conjugate gradient line search (cf Hinton 2006)
+* Conjugate gradient line search (c.f. [Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf))
 
 ### knobs
 
@@ -50,7 +50,7 @@ DL4J supports two kinds of back propagation:
 * Reconstruction entropy
 * Squared loss
 * MC class cross entropy for classification
-* momentum
+* Momentum
 
 
 
