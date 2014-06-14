@@ -33,7 +33,7 @@ DL4J contains the following built-in vectorization algorithms:
 
 * Dependency parsing
 
-DL4J supports two kinds of back propagation:
+DL4J supports two kinds of back propagation (optimization algorithms):
 
 * Normal stochastic gradient descent
 * Conjugate gradient line search (c.f. [Hinton 2006](http://www.cs.toronto.edu/~hinton/science.pdf))
@@ -41,16 +41,29 @@ DL4J supports two kinds of back propagation:
 ### knobs
 
 * Dropout
-* Sparsity
-* Adagrad
+* Sparsity (force activations of sparse/rare inputs)
+* Adagrad (feature-specific learning-rate optimization)
 * L2 regularization
+* Normalization by input rows, or not
+* Weight transforms (useful for deep autoencoders)
+* Probability distribution manipulation for initial weight generation
 
 ### loss/objective functions
 
 * Reconstruction entropy
 * Squared loss
 * MC class cross entropy for classification
+* Negative log likelihood
 * Momentum
+
+### Activation functions 
+
+* Tanh
+* Sigmoid
+* HardTanh
+* Softmax
+
+
 
 
 
