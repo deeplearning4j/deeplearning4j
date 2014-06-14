@@ -63,7 +63,7 @@ public class Word2Vec implements Persistable {
 
 
     private static final long serialVersionUID = -2367495638286018038L;
-    private Map<String,VocabWord> vocab = new ConcurrentHashMap<String,VocabWord>();
+    private Map<String,VocabWord> vocab = new ConcurrentHashMap<>();
 
     private transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
     private transient SentenceIterator sentenceIter;

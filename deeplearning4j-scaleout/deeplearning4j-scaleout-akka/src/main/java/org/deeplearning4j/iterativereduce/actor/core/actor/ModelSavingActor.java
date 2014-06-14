@@ -96,9 +96,6 @@ public class ModelSavingActor extends UntypedActor {
             }
             else if(stateTracker.getCurrent().get().getClass().isAssignableFrom(DeepAutoEncoder.class)) {
                 DeepAutoEncoder current = (DeepAutoEncoder) stateTracker.getCurrent().get();
-                current.getEncoder().clearInput();
-                if(current.getDecoder() != null)
-                    current.getDecoder().clearInput();
                 stateTracker.setCurrent(new UpdateableEncoderImpl(current));
                 if(stateTracker.hasBegun())
                     modelSaver.save(current);

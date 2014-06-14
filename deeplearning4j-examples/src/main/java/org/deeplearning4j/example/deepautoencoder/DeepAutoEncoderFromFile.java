@@ -30,23 +30,21 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,60000,false);
+        DataSetIterator iter = new MnistDataSetIterator(1000,60000,false);
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
-        dbn.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT);
-
+        dbn.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT);
+        dbn.setMomentum(9e-1);
 
         DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        encoder.setSampleFromHiddenActivations(false);
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
-        encoder.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
-        encoder.setOutputLayerActivation(Activations.sigmoid());
+        encoder.setLineSearchBackProp(false);
 
-        int testSets = 0;
         int count = 0;
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            next.scale();
             List<Integer> labels = new ArrayList<>();
             for(int i = 0; i < next.numExamples(); i++)
                 labels.add(next.get(i).outcome());
@@ -56,12 +54,11 @@ public class DeepAutoEncoderFromFile {
             log.info("Labels " + labels);
             log.info("Training on " + next.numExamples());
             //log.info(("Coding layer is " + encoder.encodeWithScaling(next.getFirst())).replaceAll(";","\n"));
-            encoder.finetune(next.getFirst(),1e-1,1000);
+            encoder.finetune(next.getFirst(),1e-1,100000);
             DoubleMatrix recon =  encoder.output(next.getFirst());
 
-            if(true) {
+            if(count % 1 == 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
-                List<DoubleMatrix> activations = encoder.feedForward(next.getFirst());
                 String[] layers = new String[encoder.getLayers().length];
                 DoubleMatrix[] weights = new DoubleMatrix[layers.length];
                 for(int i = 0; i < encoder.getLayers().length; i++) {
