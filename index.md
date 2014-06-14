@@ -9,7 +9,7 @@ Deeplearning4j is most helpful in solving distinct problems (like identifying fa
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. 
 
-Deeplearning4j is **distributed**. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via [downpour stochastic gradient descent](../glossary.html#downpoursgd), which is asynchronous, producing very compact deep-learning models.
+Deeplearning4j is a **distributed deep learning framework** as well as a normal deep learning framework (you can run this on a single thread as well, and there are examples for both). Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via [iterative reduce](https://github.com/jpatanooga/KnittingBoar/wiki/Iterative-Reduce).
 
 It's made for data input and neural net training at scale, and its output should be highly accurate predictive models. Trained correctly, these neural nets are more than 95 percent accurate; i.e. equal to or better than human perception.
 
