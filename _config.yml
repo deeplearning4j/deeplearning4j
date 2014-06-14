@@ -2,3 +2,5 @@ name: deeplearning4j
 markdown: redcarpet
 pygments: true
 baseurl: "/"
+gems: 
+  - jekyll-sitemap
