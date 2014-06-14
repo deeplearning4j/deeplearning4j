@@ -231,9 +231,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
                     if(stateTrackerPort > 0)
                         stateTracker = new DeepAutoEncoderHazelCastStateTracker(stateTrackerPort);
                     else
-                        stateTracker = new DeepAutoEncoderHazelCastStateTracker
-
-                                ();
+                        stateTracker = new DeepAutoEncoderHazelCastStateTracker();
 
                 }
 

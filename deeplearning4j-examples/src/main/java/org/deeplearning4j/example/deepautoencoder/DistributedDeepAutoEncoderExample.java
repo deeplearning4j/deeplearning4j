@@ -28,6 +28,7 @@ public class DistributedDeepAutoEncoderExample {
     public static void main(String[] args) throws Exception {
 
         DBN d = SerializationUtils.readObject(new File(args[0]));
+        d.setOutputActivationFunction(Activations.sigmoid());
         //batches of 10, 60000 examples total
         DataSetIterator iter = new MnistDataSetIterator(80,60000,false);
 
@@ -36,17 +37,17 @@ public class DistributedDeepAutoEncoderExample {
         c.setFinetuneLearningRate(1e-2);
         c.setPretrainLearningRate(1e-1);
         c.setNormalizeCodeLayer(false);
-        c.setRoundCodeLayer(true);
+        c.setRoundCodeLayer(false);
         c.setSplit(100);
-        c.setSparsity(1e-1);
+        c.setSparsity(0);
         c.setMomentum(9e-1);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(true);
-        c.setL2(2e-2);
-
-        c.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
+        c.setL2(2e-4);
+        c.setSampleHiddenActivations(false);
+        c.setOutputLayerLossFunction(OutputLayer.LossFunction.SQUARED_LOSS);
         c.setOutputActivationFunction(Activations.sigmoid());
-         DeepAutoEncoderHazelCastStateTracker tracker = new DeepAutoEncoderHazelCastStateTracker();
+        DeepAutoEncoderHazelCastStateTracker tracker = new DeepAutoEncoderHazelCastStateTracker();
         tracker.moveToFinetune();
 
 

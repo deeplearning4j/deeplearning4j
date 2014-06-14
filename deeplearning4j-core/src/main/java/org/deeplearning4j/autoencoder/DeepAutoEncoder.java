@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -333,6 +334,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         HiddenLayer[] decoderHiddenLayers = new HiddenLayer[clonedHidden.length - 1];
         for(int i = 0; i < decoderHiddenLayers.length; i++)
             decoderHiddenLayers[i] = clonedHidden[i];
+
+
+        RBM decoderRBM = (RBM) decoder.getLayers()[0];
+        RBM finalEncoderRBM = (RBM) encoder.getLayers()[encoder.getLayers().length - 1];
+        decoderRBM.setVisibleType(RBMUtil.inverse(finalEncoderRBM.getHiddenType()));
 
         decoder.setSigmoidLayers(decoderHiddenLayers);
         decoder.setLayers(decoderLayers);
