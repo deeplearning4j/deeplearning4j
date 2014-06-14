@@ -15,6 +15,7 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 * [Deep autoencoders](../deepautoencoder.html)
 
 *Coming soon*
+
 * [Convolutional deep-belief networks](../convolutionalnets.html)
 * [Recursive neural tensor networks](http://nlp.stanford.edu/sentiment/)
 
