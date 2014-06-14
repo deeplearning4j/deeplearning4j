@@ -9,7 +9,7 @@ Here's a non-exhaustive list of Deeplearning4j's features. We'll be updating it 
 
 ### nets
 
-* [Restricted Boltzman machines](../restrictedboltzmannmachine.html)
+* [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Denoising and Stacked Denoising autoencoders](../denoisingautoencoder.html)
 * [Deep autoencoders](../deepautoencoder.html)
