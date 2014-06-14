@@ -40,7 +40,7 @@ DL4J supports two kinds of back propagation (optimization algorithms):
 
 ### knobs
 
-* Dropout
+* Dropout (random ommission of feature detectors to prevent overfitting)
 * Sparsity (force activations of sparse/rare inputs)
 * Adagrad (feature-specific learning-rate optimization)
 * L2 regularization
@@ -62,8 +62,3 @@ DL4J supports two kinds of back propagation (optimization algorithms):
 * Sigmoid
 * HardTanh
 * Softmax
-
-
-
-
-
