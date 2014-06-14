@@ -1,11 +1,7 @@
 Deep Learning for Java
 =====================================
 
-Leverages matrix operations built on top of 
-
-the BLAS linear algebra libraries for faster 
-
-performance over your standard java libraries.
+Leverages matrix operations built on top of the BLAS linear algebra libraries for faster performance over your standard java libraries.
 
 Includes the following algorithms:
 
@@ -76,13 +72,7 @@ Configuration is based on the constants specified in DeepLearningConfigurable.
 
 Training tips:
 
-      For classification: Due to heavy sampling leveraged in deep learning, try to have 
-      
-      training batches (each row in a training matrix is an individual part of a batch)
-      
-      It is reccomended to have one class of each label in each training batch to
-      
-      minimize sampling error (See Hinton's Practical Guide to RBMs)
+      For classification: Due to heavy sampling leveraged in deep learning, try to have training batches (each row in a training matrix is an individual part of a batch). It is reccomended to have one class of each label in each training batch to minimize sampling error (See Hinton's Practical Guide to RBMs).
 
 
 
