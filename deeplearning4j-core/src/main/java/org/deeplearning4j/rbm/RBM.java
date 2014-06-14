@@ -402,6 +402,9 @@ public class RBM extends BaseNeuralNetwork {
             return sigmoid(preSig);
         }
 
+        else if(hiddenType == HiddenUnit.SOFTMAX)
+            return softmax(preSig);
+
         throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
 
     }

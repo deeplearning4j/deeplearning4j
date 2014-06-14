@@ -81,6 +81,11 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
                         revert = network.clone();
                     }
 
+                    else if(count >= epochs) {
+                        log.info("Hit max number of epochs...breaking");
+                        train = false;
+                    }
+
                     else if(entropy >= lastEntropy) {
                         train = false;
                         network.update(revert);

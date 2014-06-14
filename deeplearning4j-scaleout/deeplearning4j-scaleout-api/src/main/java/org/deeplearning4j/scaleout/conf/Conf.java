@@ -74,9 +74,9 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
     private boolean roundCodeLayer = false;
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
-    private boolean normalizeCodeLayer = true;
+    private boolean normalizeCodeLayer = false;
     private boolean lineSearchBackProp = false;
-    private boolean sampleHiddenActivations = true;
+    private boolean sampleHiddenActivations = false;
     private Map<Integer,Boolean> sampleHiddenActivationsByLayer = new HashMap<>();
 
 
