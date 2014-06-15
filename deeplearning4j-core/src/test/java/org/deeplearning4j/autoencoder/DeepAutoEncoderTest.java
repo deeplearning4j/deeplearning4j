@@ -32,7 +32,7 @@ public class DeepAutoEncoderTest {
 
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 10})
-                .numberOfInputs(784)
+                .numberOfInputs(784).useRBMPropUpAsActivation(true)
                 .withHiddenUnitsByLayer(Collections.singletonMap(3, RBM.HiddenUnit.GAUSSIAN))
                 .numberOfOutPuts(2).sampleFromHiddenActivations(true)
                 .activateForLayer(Collections.singletonMap(3,Activations.linear()))
@@ -54,6 +54,8 @@ public class DeepAutoEncoderTest {
         assertEquals(7,encoder.getSigmoidLayers().length);
         encoder.finetune(data.getFirst(),1e-1,1000);
 
+        //output layer is transpose of first should be same length
+        assertEquals(encoder.getLayers()[0].getW().length,encoder.getOutputLayer().getW().length);
 
 
 
