@@ -1,10 +1,6 @@
 package org.deeplearning4j.autoencoder;
 
 
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-import static org.deeplearning4j.util.MatrixUtil.round;
-import static org.deeplearning4j.util.MatrixUtil.size;
-
 import java.util.*;
 
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -25,6 +21,9 @@ import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.deeplearning4j.util.MatrixUtil.*;
+import static org.deeplearning4j.util.MatrixUtil.normal;
 
 /**
  * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
@@ -156,6 +155,14 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             }
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+            //code layer gaussian noise
+
+            if(i == layers.length / 2) {
+                DoubleMatrix sigma = columnVariance(currInput);
+                DoubleMatrix add = normal(getRng(),currInput,sigma);
+                currInput.addi(add);
+            }
+
             activations.add(currInput);
         }
 
@@ -709,6 +716,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .withLossFunction(encoder.getLayers()[i].getLossFunction())
                             .withRandom(encoder.getLayers()[i].getRng())
                             .build();
+                    //code layer linear
+                   if(i == encoder.getLayers().length - 1) {
+                       a.act = Activations.linear();
+                   }
 
                     HiddenLayer h = encoder.getSigmoidLayers()[i].clone();
                     h.setActivationFunction(Activations.linear());
