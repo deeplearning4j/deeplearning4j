@@ -523,11 +523,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public void backPropStep(double lr) {
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient(fineTuneLearningRate);
         for(int i = 0; i < layers.length; i++) {
-             if(deltas.size() < layers.length) {
-                 layers[i].getW().subi(deltas.get(i).getFirst());
-                 layers[i].gethBias().subi(deltas.get(i).getSecond());
-                 sigmoidLayers[i].setW(layers[i].getW());
-             }
+            if(deltas.size() < layers.length) {
+                layers[i].getW().subi(deltas.get(i).getFirst());
+                layers[i].gethBias().subi(deltas.get(i).getSecond());
+                sigmoidLayers[i].setW(layers[i].getW());
+            }
 
         }
 
@@ -737,8 +737,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param eval the evaluator for stopping
      */
     public void backProp(double lr,int epochs,TrainingEvaluator eval) {
-      BackPropOptimizer opt = new BackPropOptimizer(this,lr,epochs);
-      opt.optimize(eval,epochs,lineSearchBackProp);
+        BackPropOptimizer opt = new BackPropOptimizer(this,lr,epochs);
+        opt.optimize(eval,epochs,lineSearchBackProp);
 
     }
 
@@ -1994,7 +1994,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         @SuppressWarnings("unchecked")
         public E build() {
             try {
-                E ret = null;
+                E ret;
                 Constructor<?> c = Dl4jReflection.getEmptyConstructor(clazz);
                 c.setAccessible(true);
 

@@ -3,6 +3,7 @@ package org.deeplearning4j.example.deepautoencoder;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -10,6 +11,7 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.plot.FilterRenderer;
+import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.util.MatrixUtil;
@@ -30,17 +32,19 @@ public class DeepAutoEncoderFromFile {
 
     public static void main(String[] args) throws Exception {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(1000,60000,false);
+        DataSetIterator iter = new MultipleEpochsIterator(10,new MnistDataSetIterator(1000,60000,false));
 
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
         dbn.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT);
         dbn.setMomentum(9e-1);
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setSampleFromHiddenActivations(false);
+        encoder.setOutputActivationFunction(Activations.linear());
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
         encoder.setLineSearchBackProp(false);
+        encoder.setRoundCodeLayerInput(false);
 
         int count = 0;
         while(iter.hasNext()) {
@@ -49,15 +53,20 @@ public class DeepAutoEncoderFromFile {
             for(int i = 0; i < next.numExamples(); i++)
                 labels.add(next.get(i).outcome());
 
+
             if(next == null)
                 break;
             log.info("Labels " + labels);
             log.info("Training on " + next.numExamples());
             //log.info(("Coding layer is " + encoder.encodeWithScaling(next.getFirst())).replaceAll(";","\n"));
-            encoder.finetune(next.getFirst(),1e-1,100000);
+
+            FilterRenderer f2 = new FilterRenderer();
+            f2.renderFilters(encoder.getOutputLayer().getW(), "outputlayer.png", 28, 28, next.numExamples());
             DoubleMatrix recon =  encoder.output(next.getFirst());
 
-            if(count % 1 == 0) {
+            encoder.finetune(next.getFirst(),1e-3,10);
+
+            if(count % 10 == 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 String[] layers = new String[encoder.getLayers().length];
                 DoubleMatrix[] weights = new DoubleMatrix[layers.length];

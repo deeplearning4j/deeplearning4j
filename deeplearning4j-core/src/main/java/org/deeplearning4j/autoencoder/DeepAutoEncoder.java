@@ -3,9 +3,11 @@ package org.deeplearning4j.autoencoder;
 
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.deeplearning4j.util.MatrixUtil.round;
+import static org.deeplearning4j.util.MatrixUtil.size;
 
 import java.util.*;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
@@ -16,6 +18,7 @@ import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
+import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
@@ -80,10 +83,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     public DeepAutoEncoder(){}
 
-    public DeepAutoEncoder(BaseMultiLayerNetwork encoder) {
-        this.encoder = encoder;
-        this.initDecoder();
-    }
 
     /**
      * Train the network running some unsupervised
@@ -143,7 +142,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         activations.add(currInput);
         NeuralNetwork[] layers = getLayers();
         for(int i = 0; i < layers.length; i++) {
-            NeuralNetwork layer = getLayers()[i];
+            AutoEncoder layer = (AutoEncoder) getLayers()[i];
             HiddenLayer l = getSigmoidLayers()[i];
             if(layer == null) {
                 log.warn("Null layer found going to break");
@@ -157,25 +156,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             l.setInput(currInput);
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
-                currInput = l.activate(currInput);
-
-                if(roundCodeLayerInput && (layer instanceof  RBM)) {
-                    RBM r = (RBM)  layer;
-                    if(r.getHiddenType() == RBM.HiddenUnit.GAUSSIAN) {
-                        currInput = round(currInput);
-                    }
-                }
+                currInput = layer.reconstruct(currInput);
             }
 
             else  if(sampleFromHiddenActivations) {
                 currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
-
-                if(roundCodeLayerInput && (layer instanceof  RBM)) {
-                    RBM r = (RBM)  layer;
-                    if(r.getHiddenType() != RBM.HiddenUnit.GAUSSIAN) {
-                        currInput = round(currInput);
-                    }
-                }
             }
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
@@ -214,199 +199,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         return new NeuralNetwork[numLayers];
     }
 
-    private void initDecoder() {
-        //encoder hasn't been pretrained yet
-        if(encoder.getLayers() == null || encoder.getSigmoidLayers() == null)
-            return;
-
-        //infer input from encoder
-        if(encoder.getInput() != null && input == null)
-            this.input = encoder.getInput();
-
-        int[] hiddenLayerSizes = new int[encoder.getHiddenLayerSizes().length - 1];
-        System.arraycopy(encoder.getHiddenLayerSizes(),0,hiddenLayerSizes,0,hiddenLayerSizes.length);
-        ArrayUtil.reverse(hiddenLayerSizes);
-
-
-
-        if (encoder.getClass().isAssignableFrom(DBN.class)) {
-            DBN d = (DBN) encoder;
-            //note the gaussian visible unit, we want a GBRBM here for
-            //the continuous inputs for the real value codes from the encoder
-            Map<Integer,RBM.VisibleUnit> m = Collections.singletonMap(0, visibleUnit);
-            Map<Integer,RBM.HiddenUnit> m2 = Collections.singletonMap(0, hiddenUnit);
-
-            Map<Integer,Double> learningRateForLayerReversed = new HashMap<>();
-            int count = 0;
-            for(int i = encoder.getnLayers() - 1; i >= 0; i--) {
-                if(encoder.getLayerLearningRates().get(count) != null) {
-                    learningRateForLayerReversed.put(i,encoder.getLayerLearningRates().get(count));
-                }
-                count++;
-            }
-
-            decoder = new DBN.Builder()
-                    .withVisibleUnitsByLayer(m)
-                    .withHiddenUnitsByLayer(m2)
-                    .withHiddenUnits(d.getHiddenUnit())
-                    .withVisibleUnits(d.getVisibleUnit())
-                    .withVisibleUnits(d.getVisibleUnit())
-                    .withOutputLossFunction(outputLayerLossFunction)
-                    .sampleOrActivateByLayer(encoder.getSampleOrActivate())
-                    .withHiddenUnitsByLayer(((DBN) encoder).getHiddenUnitByLayer())
-                    .withVisibleUnitsByLayer(((DBN) encoder).getVisibleUnitByLayer())
-                    .learningRateForLayer(learningRateForLayerReversed)
-                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
-                    .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
-                    .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
-                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut())
-                    .withLossFunction(encoder.getLossFunction()).renderByLayer(encoder.getRenderByLayer())
-                    .withOutputActivationFunction(outputLayerActivation)
-                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad())
-                    .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
-                    .build();
-
-            if(encoder.isForceNumEpochs())
-                decoder.setForceNumEpochs(true);
-
-
-
-        }
-        else {
-            decoder = new BaseMultiLayerNetwork.Builder().withClazz(encoder.getClass())
-                    .withOutputLossFunction(outputLayerLossFunction)
-                    .activateForLayer(encoder.getActivationFunctionForLayer()).renderByLayer(encoder.getRenderByLayer())
-                    .numberOfInputs(encoder.getHiddenLayerSizes()[encoder.getHiddenLayerSizes().length - 1])
-                    .numberOfOutPuts(encoder.getnIns()).withClazz(encoder.getClass())
-                    .hiddenLayerSizes(hiddenLayerSizes).renderWeights(encoder.getRenderWeightsEveryNEpochs())
-                    .useRegularization(encoder.isUseRegularization()).withDropOut(encoder.getDropOut())
-                    .withLossFunction(encoder.getLossFunction())
-                    .withSparsity(encoder.getSparsity()).useAdaGrad(encoder.isUseAdaGrad())
-                    .withOptimizationAlgorithm(encoder.getOptimizationAlgorithm())
-                    .build();
-
-
-        }
-
-        //real valued activities on decoding setp
-        this.sampleFromHiddenActivations = false;
-
-        NeuralNetwork[] cloned = new NeuralNetwork[encoder.getLayers().length];
-        HiddenLayer[] clonedHidden = new HiddenLayer[encoder.getLayers().length];
-
-
-        for(int i = 0; i < cloned.length ; i++) {
-            cloned[i] = encoder.getLayers()[i].transpose();
-            //decoder
-            if(i == cloned.length - 1) {
-                if(cloned[i] instanceof  RBM) {
-                    RBM r = (RBM) cloned[i];
-                    r.setHiddenType(hiddenUnit);
-                    r.setVisibleType(visibleUnit);
-                    cloned[i] = r;
-                }
-
-
-            }
-
-        }
-
-
-        for(int i = 0; i < cloned.length; i++) {
-            clonedHidden[i] = encoder.getSigmoidLayers()[i].transpose();
-            cloned[i].setW(cloned[i].getW());
-            clonedHidden[i].setB(cloned[i].gethBias());
-        }
-
-        ActivationFunction codeLayerActivation = encoder.getSigmoidLayers()[encoder.getSigmoidLayers().length - 1].getActivationFunction();
-        ActivationFunction firstActivation = encoder.getSigmoidLayers()[0].getActivationFunction();
-
-        ArrayUtil.reverse(cloned);
-        ArrayUtil.reverse(clonedHidden);
-
-        //reverse causes activation function to be out of line
-        clonedHidden[0].setActivationFunction(firstActivation);
-        clonedHidden[clonedHidden.length - 1].setActivationFunction(codeLayerActivation);
-
-        NeuralNetwork[] decoderLayers = new NeuralNetwork[cloned.length - 1];
-        for(int i = 0 ; i < decoderLayers.length; i++)
-            decoderLayers[i] = cloned[i];
-        HiddenLayer[] decoderHiddenLayers = new HiddenLayer[clonedHidden.length - 1];
-        for(int i = 0; i < decoderHiddenLayers.length; i++)
-            decoderHiddenLayers[i] = clonedHidden[i];
-
-
-        RBM decoderRBM = (RBM) decoder.getLayers()[0];
-        RBM finalEncoderRBM = (RBM) encoder.getLayers()[encoder.getLayers().length - 1];
-        decoderRBM.setVisibleType(RBMUtil.inverse(finalEncoderRBM.getHiddenType()));
-
-        decoder.setSigmoidLayers(decoderHiddenLayers);
-        decoder.setLayers(decoderLayers);
-
-        DoubleMatrix encoded = encodeWithScaling(input);
-        //decoder.setInput(encoded);
-        //decoder.initializeLayers(encoded);
-
-
-        this.sampleOrActivate = decoder.getSampleOrActivate();
-        this.layerLearningRates = decoder.getLayerLearningRates();
-        this.normalizeByInputRows = decoder.isNormalizeByInputRows();
-        this.useAdaGrad = decoder.isUseAdaGrad();
-        this.hiddenLayerSizes = decoder.getHiddenLayerSizes();
-        this.rng = decoder.getRng();
-        this.dist = decoder.getDist();
-        this.activation = decoder.getActivation();
-        this.useRegularization = decoder.isUseRegularization();
-        this.columnMeans = decoder.getColumnMeans();
-        this.columnStds = decoder.getColumnStds();
-        this.columnSums = decoder.getColumnSums();
-        this.errorTolerance = decoder.getErrorTolerance();
-        this.renderWeightsEveryNEpochs = decoder.getRenderWeightsEveryNEpochs();
-        this.forceNumEpochs = decoder.isForceNumEpochs();
-        this.l2 = decoder.getL2();
-        this.fanIn = decoder.getFanIn();
-        this.momentum = decoder.getMomentum();
-        this.learningRateUpdate = decoder.getLearningRateUpdate();
-        this.shouldBackProp = decoder.isShouldBackProp();
-        this.sparsity = decoder.getSparsity();
-        this.dropOut = decoder.getDropOut();
-        this.optimizationAlgorithm = decoder.getOptimizationAlgorithm();
-        this.lossFunction = decoder.getLossFunction();
-        this.outputActivationFunction = decoder.getOutputActivationFunction();
-        this.lossFunctionByLayer = decoder.getLossFunctionByLayer();
-        this.outputLossFunction = decoder.getOutputLossFunction();
-
-
-
-        //set the combined hidden layers and associated sizes,...
-        this.hiddenLayerSizes = ArrayUtil.combine(encoder.getHiddenLayerSizes(),decoder.getHiddenLayerSizes());
-        RBM r = (RBM) decoder.getLayers()[0];
-
-        r.setVisibleType(visibleUnit);
-        r.setHiddenType(hiddenUnit);
-
-        this.layers = ArrayUtil.combine(encoder.getLayers(),decoder.getLayers());
-        this.sigmoidLayers = ArrayUtil.combine(encoder.getSigmoidLayers(),decoder.getSigmoidLayers());
-        //for the code layer everything should be linear
-        this.sigmoidLayers[encoder.getSigmoidLayers().length - 1].setActivationFunction(codeLayerAct);
-        this.outputLayer = decoder.getOutputLayer();
-
-        //set the output layer weights to be the initial input weights
-        this.outputLayer.setW(encoder.getLayers()[0].getW().transpose());
-        this.outputLayer.setB(encoder.getLayers()[0].getvBias().dup());
-        this.outputLayer.setLossFunction(outputLossFunction);
-        this.outputLayer.setActivationFunction(outputActivationFunction);
-
-        dimensionCheck();
-
-        //done with encoder/decoder
-        this.encoder = null;
-        this.decoder = null;
-        alreadyInitialized = true;
-
-    }
-
-
 
 
     /**
@@ -415,9 +207,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      */
     public void finetune(DoubleMatrix input,double lr,int epochs) {
         this.input = input;
-
-        if(decoder == null && !alreadyInitialized)
-            initDecoder();
 
 
         setInput(input);
@@ -526,12 +315,481 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DeepAutoEncoder> {
+        private  BaseMultiLayerNetwork encoder;
+
         public Builder() {
             clazz = DeepAutoEncoder.class;
         }
 
+        public Builder withEncoder(BaseMultiLayerNetwork encoder) {
+            this.encoder = encoder;
+            return this;
+        }
 
 
+        @Override
+        public Builder lineSearchBackProp(boolean lineSearchBackProp) {
+            super.lineSearchBackProp(lineSearchBackProp);
+            return this;
+        }
+
+        /**
+         * Loss function by layer
+         *
+         * @param lossFunctionByLayer the loss function per layer
+         * @return builder pattern
+         */
+        @Override
+        public Builder lossFunctionByLayer(Map<Integer, NeuralNetwork.LossFunction> lossFunctionByLayer) {
+            super.lossFunctionByLayer(lossFunctionByLayer);
+            return this;
+        }
+
+        /**
+         * Sample or activate by layer allows for deciding to sample or just pass straight activations
+         * for each layer
+         *
+         * @param sampleOrActivateByLayer
+         * @return
+         */
+        @Override
+        public Builder sampleOrActivateByLayer(Map<Integer, Boolean> sampleOrActivateByLayer) {
+            super.sampleOrActivateByLayer(sampleOrActivateByLayer);
+            return this;
+        }
+
+        /**
+         * Override rendering for a given layer only
+         *
+         * @param renderByLayer
+         * @return
+         */
+        @Override
+        public Builder renderByLayer(Map<Integer, Integer> renderByLayer) {
+            super.renderByLayer(renderByLayer);
+            return this;
+        }
+
+        /**
+         * Override learning rate by layer only
+         *
+         * @param learningRates
+         * @return
+         */
+        @Override
+        public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
+             super.learningRateForLayer(learningRates);
+            return this;
+        }
+
+        @Override
+        public Builder activateForLayer(Map<Integer, ActivationFunction> activationForLayer) {
+            super.activateForLayer(activationForLayer);
+            return this;
+            
+        }
+
+        @Override
+        public Builder activateForLayer(int layer, ActivationFunction function) {
+            super.activateForLayer(layer, function);
+            return this;
+        }
+
+        /**
+         * Activation function for output layer
+         *
+         * @param outputActivationFunction the output activation function to use
+         * @return builder pattern
+         */
+        @Override
+        public Builder withOutputActivationFunction(ActivationFunction outputActivationFunction) {
+            super.withOutputActivationFunction(outputActivationFunction);
+            return this;
+        }
+
+        /**
+         * Output loss function
+         *
+         * @param outputLossFunction the output loss function
+         * @return
+         */
+        @Override
+        public Builder withOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
+            super.withOutputLossFunction(outputLossFunction);
+            return this;
+        }
+
+        /**
+         * Which optimization algorithm to use with neural nets and Logistic regression
+         *
+         * @param optimizationAlgo which optimization algorithm to use with
+         *                         neural nets and logistic regression
+         * @return builder pattern
+         */
+        @Override
+        public Builder withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm optimizationAlgo) {
+            super.withOptimizationAlgorithm(optimizationAlgo);
+            return this;
+        }
+
+        /**
+         * Loss function to use with neural networks
+         *
+         * @param lossFunction loss function to use with neural networks
+         * @return builder pattern
+         */
+        @Override
+        public Builder withLossFunction(NeuralNetwork.LossFunction lossFunction) {
+            super.withLossFunction(lossFunction);
+            return this;
+        }
+
+        /**
+         * Whether to use drop out on the neural networks or not:
+         * random zero out of examples
+         *
+         * @param dropOut the dropout to use
+         * @return builder pattern
+         */
+        @Override
+        public Builder withDropOut(double dropOut) {
+            super.withDropOut(dropOut);
+            return this;
+        }
+
+        /**
+         * Whether to use hidden layer activations or neural network sampling
+         * on feed forward pass
+         *
+         * @param useHiddenActivationsForwardProp true if use hidden activations, false otherwise
+         * @return builder pattern
+         */
+        @Override
+        public Builder sampleFromHiddenActivations(boolean useHiddenActivationsForwardProp) {
+            super.sampleFromHiddenActivations(useHiddenActivationsForwardProp);
+            return this;
+        }
+
+        /**
+         * Turn this off for full dataset training
+         *
+         * @param normalizeByInputRows whether to normalize the changes
+         *                             by the number of input rows
+         * @return builder pattern
+         */
+        @Override
+        public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+            super.normalizeByInputRows(normalizeByInputRows);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder withSparsity(double sparsity) {
+            super.withSparsity(sparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withVisibleBiasTransforms(Map<Integer, MatrixTransform> visibleBiasTransforms) {
+            super.withVisibleBiasTransforms(visibleBiasTransforms);
+            return this;
+        }
+
+        @Override
+        public Builder withHiddenBiasTransforms(Map<Integer, MatrixTransform> hiddenBiasTransforms) {
+            super.withHiddenBiasTransforms(hiddenBiasTransforms);
+            return this;
+        }
+
+        /**
+         * Forces use of number of epochs for training
+         * SGD style rather than conjugate gradient
+         *
+         * @return
+         */
+        @Override
+        public Builder forceEpochs() {
+            super.forceEpochs();
+            return this;
+        }
+
+        /**
+         * Disables back propagation
+         *
+         * @return
+         */
+        @Override
+        public Builder disableBackProp() {
+            super.disableBackProp();
+            return this;
+        }
+
+        /**
+         * Transform the weights at the given layer
+         *
+         * @param layer     the layer to transform
+         * @param transform the function used for transformation
+         * @return
+         */
+        @Override
+        public Builder transformWeightsAt(int layer, MatrixTransform transform) {
+            super.transformWeightsAt(layer, transform);
+            return this;
+        }
+
+        /**
+         * A map of transformations for transforming
+         * the given layers
+         *
+         * @param transforms
+         * @return
+         */
+        @Override
+        public Builder transformWeightsAt(Map<Integer, MatrixTransform> transforms) {
+            super.transformWeightsAt(transforms);
+            return this;
+        }
+
+        /**
+         * Probability distribution for generating weights
+         *
+         * @param dist
+         * @return
+         */
+        @Override
+        public Builder withDist(RealDistribution dist) {
+            super.withDist(dist);
+            return this;
+        }
+
+        /**
+         * Specify momentum
+         *
+         * @param momentum
+         * @return
+         */
+        @Override
+        public Builder withMomentum(double momentum) {
+            super.withMomentum(momentum);
+            return this;
+        }
+
+        /**
+         * Use l2 reg
+         *
+         * @param useRegularization
+         * @return
+         */
+        @Override
+        public Builder useRegularization(boolean useRegularization) {
+            super.useRegularization(useRegularization);
+            return this;
+        }
+
+        /**
+         * L2 coefficient
+         *
+         * @param l2
+         * @return
+         */
+        @Override
+        public Builder withL2(double l2) {
+            super.withL2(l2);
+            return this;
+        }
+
+        /**
+         * Whether to plot weights or not
+         *
+         * @param everyN
+         * @return
+         */
+        @Override
+        public Builder renderWeights(int everyN) {
+            super.renderWeights(everyN);
+            return this;
+        }
+
+        @Override
+        public Builder withFanIn(Double fanIn) {
+            super.withFanIn(fanIn);
+            return this;
+        }
+
+        /**
+         * Pick an activation function, default is sigmoid
+         *
+         * @param activation
+         * @return
+         */
+        @Override
+        public Builder withActivation(ActivationFunction activation) {
+            super.withActivation(activation);
+            return this;
+        }
+
+        @Override
+        public Builder numberOfInputs(int nIns) {
+            super.numberOfInputs(nIns);
+            return this;
+        }
+
+
+
+        @Override
+        public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
+            super.hiddenLayerSizes(hiddenLayerSizes);
+            return this;
+        }
+
+        @Override
+        public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
+            super.hiddenLayerSizes(hiddenLayerSizes);
+            return this;
+        }
+
+        @Override
+        public Builder numberOfOutPuts(int nOuts) {
+            super.numberOfOutPuts(nOuts);
+            return this;
+        }
+
+        @Override
+        public Builder withRng(RandomGenerator gen) {
+            super.withRng(gen);
+            return this;
+        }
+
+        @Override
+        public Builder withInput(DoubleMatrix input) {
+            super.withInput(input);
+            return this;
+        }
+
+        @Override
+        public Builder withLabels(DoubleMatrix labels) {
+            super.withLabels(labels);
+            return this;
+        }
+
+        @Override
+        public Builder withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
+            super.withClazz(clazz);
+            return this;
+        }
+
+        @Override
+        public DeepAutoEncoder buildEmpty() {
+          return  super.buildEmpty();
+
+        }
+
+        @Override
+        public DeepAutoEncoder build() {
+
+
+            //everything but output layer
+            int inverseCount = encoder.getLayers().length - 1;
+            NeuralNetwork[] autoEncoders = new NeuralNetwork[encoder.getLayers().length * 2 - 1];
+            HiddenLayer[] hiddenLayers = new HiddenLayer[encoder.getLayers().length * 2 - 1];
+            for(int i = 0; i < autoEncoders.length; i++) {
+                if(i < encoder.getLayers().length) {
+                    AutoEncoder a = new AutoEncoder.Builder().withActivation(i < encoder.getLayers().length - 1 ? Activations.sigmoid() : Activations.linear())
+                            .numberOfVisible(encoder.getLayers()[i].getnVisible())
+                            .numHidden(encoder.getLayers()[i].getnHidden())
+                            .withWeights(encoder.getLayers()[i].getW().dup())
+                           .applySparsity(encoder.getLayers()[i].isApplySparsity())
+                            .normalizeByInputRows(encoder.getLayers()[i].normalizeByInputRows())
+                            .withDropOut(encoder.getLayers()[i].dropOut())
+                            .useRegularization(encoder.getLayers()[i].isUseRegularization())
+                            .useAdaGrad(encoder.getLayers()[i].isUseAdaGrad())
+                            .withVisibleBias(encoder.getLayers()[i].getvBias().dup())
+                            .withHBias(encoder.getLayers()[i].gethBias().dup())
+                            .withDistribution(encoder.getLayers()[i].getDist())
+                            .renderWeights(encoder.getLayers()[i].getRenderEpochs())
+                            .withL2(encoder.getLayers()[i].getL2()).withMomentum(encoder.getLayers()[i].getMomentum())
+                            .withLossFunction(encoder.getLayers()[i].getLossFunction())
+                            .withRandom(encoder.getLayers()[i].getRng())
+                            .build();
+
+                    HiddenLayer h = encoder.getSigmoidLayers()[i].clone();
+                    h.setActivationFunction(Activations.linear());
+                    hiddenLayers[i] = h;
+                    autoEncoders[i] = a;
+
+                }
+                else {
+                    AutoEncoder a = new AutoEncoder.Builder()
+                            .numberOfVisible(encoder.getLayers()[inverseCount].getnHidden())
+                            .numHidden(encoder.getLayers()[inverseCount].getnVisible())
+                            .withWeights(encoder.getLayers()[inverseCount].getW().transpose())
+                            .applySparsity(encoder.getLayers()[inverseCount].isApplySparsity())
+                            .normalizeByInputRows(encoder.getLayers()[inverseCount].normalizeByInputRows())
+                            .withDropOut(encoder.getLayers()[inverseCount].dropOut())
+                            .useRegularization(encoder.getLayers()[inverseCount].isUseRegularization())
+                            .useAdaGrad(encoder.getLayers()[inverseCount].isUseAdaGrad())
+                            .withVisibleBias(encoder.getLayers()[inverseCount].gethBias().dup())
+                            .withHBias(encoder.getLayers()[inverseCount].getvBias().dup())
+                            .withDistribution(encoder.getLayers()[inverseCount].getDist())
+                            .renderWeights(encoder.getLayers()[inverseCount].getRenderEpochs())
+                            .withL2(encoder.getLayers()[inverseCount].getL2()).withMomentum(encoder.getLayers()[inverseCount].getMomentum())
+                            .withLossFunction(encoder.getLayers()[inverseCount].getLossFunction())
+                            .withRandom(encoder.getLayers()[inverseCount].getRng())
+                            .build();
+
+                    autoEncoders[i] = a;
+                    hiddenLayers[i] = encoder.getSigmoidLayers()[inverseCount].transpose();
+                    hiddenLayers[i].setActivationFunction(Activations.linear());
+                    inverseCount--;
+                }
+            }
+
+            OutputLayer o = new OutputLayer.Builder().normalizeByInputRows(encoder.getLayers()[0].normalizeByInputRows())
+                    .numberOfInputs(encoder.getLayers()[0].getnHidden()).numberOfOutputs(encoder.getnIns())
+                    .useAdaGrad(encoder.getLayers()[0].isUseAdaGrad()).useRegularization(encoder.getLayers()[0].isUseRegularization())
+                    .withBias(encoder.getLayers()[0].getvBias()).withActivationFunction(encoder.getOutputActivationFunction())
+                    .withL2(encoder.getLayers()[0].getL2()).withWeights(encoder.getLayers()[0].getW().transpose())
+                    .build();
+
+            DeepAutoEncoder e = new DeepAutoEncoder();
+            e.setLayers(autoEncoders);
+            e.setSigmoidLayers(hiddenLayers);
+            e.setOutputLayer(o);
+            e.setLossFunctionByLayer(encoder.getLossFunctionByLayer());
+            e.setSampleOrActivate(encoder.getSampleOrActivate());
+            e.setRenderByLayer(encoder.getRenderByLayer());
+            e.setNormalizeByInputRows(encoder.isNormalizeByInputRows());
+            e.setnOuts(encoder.getnIns());
+            e.setnIns(encoder.getnIns());
+            e.setRng(encoder.getRng());
+            e.setShouldBackProp(this.backProp);
+            e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
+            e.setLineSearchBackProp(encoder.isLineSearchBackProp());
+            e.setMomentum(encoder.getMomentum());
+            e.activationFunctionForLayer.putAll(encoder.getActivationFunctionForLayer());
+            e.setSparsity(encoder.getSparsity());
+            e.setRenderWeightsEveryNEpochs(encoder.getRenderWeightsEveryNEpochs());
+            e.setL2(encoder.getL2());
+            e.setForceNumEpochs(shouldForceEpochs);
+            e.setUseRegularization(encoder.isUseRegularization());
+            e.setUseAdaGrad(encoder.isUseAdaGrad());
+            e.setDropOut(encoder.getDropOut());
+            e.setOptimizationAlgorithm(encoder.getOptimizationAlgorithm());
+            e.setLossFunction(encoder.getLossFunction());
+            e.setOutputActivationFunction(encoder.getOutputActivationFunction());
+            e.setOutputLossFunction(encoder.getOutputLossFunction());
+
+
+
+            return e;
+
+        }
 
 
 

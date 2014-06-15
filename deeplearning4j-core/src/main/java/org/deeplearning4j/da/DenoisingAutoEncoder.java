@@ -28,10 +28,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     private static final long serialVersionUID = -6445530486350763837L;
 
-    public DenoisingAutoEncoder() {}
+    private DenoisingAutoEncoder() {}
 
 
-    public DenoisingAutoEncoder(DoubleMatrix input, int nVisible, int nHidden,
+    private DenoisingAutoEncoder(DoubleMatrix input, int nVisible, int nHidden,
                                 DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
                                 RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, nHidden, W, hbias, vbias, rng,fanIn,dist);
@@ -156,7 +156,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     @Override
     public void train(DoubleMatrix input,double lr,Object[] params) {
-        double corruptionLevel = (double) params[0];
+       double corruptionLevel = (double) params[0];
        if(input != null && cacheInput)
         this.input = input;
         this.lastMiniBatchSize = input.rows;

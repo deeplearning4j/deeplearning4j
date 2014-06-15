@@ -5,6 +5,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.OutputLayer;
@@ -28,7 +29,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(1,2,false);
+        DataSetIterator iter = new MultipleEpochsIterator(2,new MnistDataSetIterator(2,2,false));
 
         int codeLayer = 3;
 
@@ -45,12 +46,13 @@ public class DeepAutoEncoderExample {
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3,Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer,RBM.HiddenUnit.GAUSSIAN))
-                .numberOfInputs(784).sampleFromHiddenActivations(true)
+                .numberOfInputs(784).sampleFromHiddenActivations(false)
                 .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-                .lineSearchBackProp(false).useRegularization(true)
-                .withL2(1e-4)
+                .lineSearchBackProp(true).useRegularization(true)
+                .withL2(2e-4)
                 .withOutputActivationFunction(Activations.sigmoid())
-                .numberOfOutPuts(784).withMomentum(0.9).withOutputLossFunction(OutputLayer.LossFunction.SQUARED_LOSS)
+                .numberOfOutPuts(784).withMomentum(0.9)
+                .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
 
         log.info("Training with layers of " + RBMUtil.architecture(dbn));
@@ -70,10 +72,11 @@ public class DeepAutoEncoderExample {
 
 
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setSampleFromHiddenActivations(false);
-        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.SQUARED_LOSS);
-        log.info("Arch " + RBMUtil.architecture(encoder));
+        encoder.setLineSearchBackProp(true);
+        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
+        //log.info("Arch " + RBMUtil.architecture(encoder));
 
 
         iter.reset();

@@ -299,9 +299,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Scale the input and reconstrution to see the relative difference in absolute space
              */
             DoubleMatrix scaledInput = input.dup();
-            MatrixUtil.normalizeZeroMeanAndUnitVariance(scaledInput);
             DoubleMatrix z = reconstruct(input);
-            MatrixUtil.normalizeZeroMeanAndUnitVariance(z);
             DoubleMatrix outputDiff = z.sub(scaledInput);
             //changes in error relative to neurons
             DoubleMatrix delta = hiddenSample.mmul(outputDiff).transpose();
@@ -370,6 +368,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         }
 
+    }
+
+    /**
+     * Whether to apply sparsity or not
+     *
+     * @return
+     */
+    @Override
+    public boolean isApplySparsity() {
+        return applySparsity;
     }
 
     @Override
@@ -503,10 +511,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
-            ret.setHbiasAdaGrad(vBiasAdaGrad);
             ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
-            ret.setvBias(hBias.dup());
+            ret.setvBias(DoubleMatrix.zeros(hBias.rows,hBias.columns));
             ret.setnHidden(getnVisible());
             ret.setnVisible(getnHidden());
             ret.setW(W.transpose());
