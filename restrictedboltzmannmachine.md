@@ -4,17 +4,17 @@ layout: default
 ---
 
 *previous* - [a neural nets overview](../index.html)
-# restricted Boltzmann machine
+# restricted Boltzmann machine (rbm)
 
-To quote Hinton, a [Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine) is "a network of symmetrically connected, neuron-like units that make [stochastic](http://www.merriam-webster.com/dictionary/stochastic) decisions about whether to be on or off." 
+To quote Geoff Hinton, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](http://www.merriam-webster.com/dictionary/stochastic) decisions about whether to be on or off." 
 
-A [restricted Boltzmann machine](http://www.scholarpedia.org/article/Boltzmann_machine#Restricted_Boltzmann_machines) "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a symmetrical [bipartite graph](https://en.wikipedia.org/wiki/Bipartite_graph): 
+A restricted Boltzmann machine "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a symmetrical bipartite graph: 
 
 ![Alt text](../img/bipartite_graph.png)
 
-A trained RBM will learn the structure of the data fed into it via the visible layer; it does so through the very act of reconstructing the data again and again, with its reconstructions increasing their similarity to the benchmark, original image. The ever decreasing difference between reconstruction and benchmark is measured with a loss function. The network takes each step closer to the original using algorithms like stochastic gradient descent. 
+A trained restricted Boltzmann machine will learn the structure of the data fed into it via the visible layer; it does so through the very act of reconstructing the data again and again, with its reconstructions increasing their similarity to the benchmark, original image. The RBM's ever decreasing difference between reconstruction and benchmark is measured with a loss function. The restricted Boltzmann machine takes each step closer to the original using algorithms like stochastic gradient descent. 
 
-[RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, they're the first neural network we'll tackle.
+[RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
 
 ### parameters & k
 
@@ -50,22 +50,22 @@ The last snippet will construct a new training set and show the reconstructed in
 
 ### continuous RBMs
 
-A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows it to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
+A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows the CRBM to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
 
 It should be noted that every layer of a deep-learning net consists of four elements: the input, the coefficients, the bias and the transformation. 
 
 The input is the numeric data, a vector, fed to it from the previous layer (or as the initial data). The coefficients are the weights given to various features passing through each node layer. The bias ensures that some nodes in a layer will be activated no matter what. The transformation is an additional algorithm that processes the data after it passes through each layer. 
 
-Those additional algorithms and their combinations layer by layer can vary. The most effective CRBM we've found employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). For RBMs handling binary data, simply make both transformations binary ones. 
+Those additional algorithms and their combinations can vary layer by layer. The most effective continuous restricted Boltzmann machine we've found employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit tranformation on the hidden layer. We've found this particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). For RBMs handling binary data, simply make both transformations binary ones. 
 
-*A brief aside: Hinton has noted and we can confirm that Gaussian transformations do not work well on hidden layers, which are where the reconstructions happen; i.e. those are the layers that matter. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
+*A brief aside: Hinton has noted and we can confirm that Gaussian transformations do not work well on RBMs' hidden layers, which are where the reconstructions happen; i.e. those are the layers that matter. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
 
 ### conclusions
 
-Once built, you can test your trained network by feeding it unstructured data and checking the output.
+Once built, you can test your trained restricted Boltzmann machine by feeding it unstructured data and checking the output.
 
-You can intrepret the output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the network learned the input. We'll have a better example later in the tutorials. 
+You can intrepret the output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the RBM learned the input. We'll have a better example later in the tutorials. 
 
 To explore the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html).
 
-Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many RBMs strung together.
+Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines strung together.
