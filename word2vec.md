@@ -100,7 +100,7 @@ The following code saves your Viterbi implementation for later use:
         
 ###training
 
-Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to pretrain data to be fed into a deep-belief network:
+Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to finetune a deep-belief network:
 
 <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowSingleThreaded.java?slice=96:110"></script>
 
