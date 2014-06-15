@@ -29,6 +29,7 @@ public class FourDTensor extends Tensor {
     public FourDTensor(int rows, int columns, int slices,int numTensor) {
         super(rows, columns, slices * numTensor);
         this.numTensor = numTensor;
+
     }
 
     /**
@@ -154,7 +155,8 @@ public class FourDTensor extends Tensor {
      * @return
      */
     public double get(int tensor,int slice,int row,int column) {
-        return getSliceOfTensor(tensor,slice).get(row,column);
+        int tensorIndex = tensor *  slices();
+        return super.get(tensorIndex  + slice  + row, column);
     }
 
     /**
@@ -195,9 +197,12 @@ public class FourDTensor extends Tensor {
      */
     public DoubleMatrix getSliceOfTensor(int tensor, int slice) {
         int tensorIndex = tensor *  slices();
-        int end = tensorIndex + slices();
-        DoubleMatrix ret = get(RangeUtils.interval(tensorIndex,end),RangeUtils.interval(0,columns()));
-        return new Tensor(ret,slices(),rows()).getSlice(slice);
+        //row of the tensor
+        int row = tensorIndex * slice;
+        Range rows = RangeUtils.interval(row,row + perMatrixRows);
+        Range columns = RangeUtils.interval(0,columns());
+        DoubleMatrix ret = get(rows,columns);
+        return ret;
     }
 
     /**

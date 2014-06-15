@@ -495,6 +495,7 @@ public class MatrixUtil {
             Tensor ret = new Tensor(result,false);
             Tensor casted = (Tensor) input;
             ret.setPerMatrixRows(ret.rows());
+            ret.columns = input.columns;
             ret.setSlices(casted.slices());
             return (E) ret;
         }

@@ -18,6 +18,7 @@ import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransformations;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
+import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MultipleEpochsIterator(10,new MnistDataSetIterator(10,10,false));
+        DataSetIterator iter = new MnistDataSetIterator(10,30,false);
 
         int codeLayer = 3;
 
@@ -40,7 +41,7 @@ public class DeepAutoEncoderExample {
           Reduction of dimensionality with neural nets Hinton 2006
          */
         Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-1);
+        layerLearningRates.put(codeLayer,1e-2);
         RandomGenerator rng = new MersenneTwister(123);
 
 
@@ -53,7 +54,7 @@ public class DeepAutoEncoderExample {
                 .numberOfInputs(784)
                 .sampleFromHiddenActivations(true)
                 .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-                .lineSearchBackProp(true).useRegularization(true).withL2(1e-3)
+                .lineSearchBackProp(false).useRegularization(true).withL2(2e-4)
                 .withOutputActivationFunction(Activations.sigmoid())
                 .numberOfOutPuts(784).withMomentum(0.5)
                 .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
@@ -63,41 +64,46 @@ public class DeepAutoEncoderExample {
         log.info("Begin training ");
 
 
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), new Object[]{1, 1e-1, 1});
+        for(int i = 0; i < 10; i++) {
+            while(iter.hasNext()) {
+                DataSet next = iter.next();
+                dbn.pretrain(next.getFirst(), new Object[]{1, 1e-1, 100});
+            }
+
+
+            iter.reset();
         }
-
-
-        iter.reset();
-
-
-
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setRoundCodeLayerInput(false);
         encoder.setSampleFromHiddenActivations(false);
         encoder.setLineSearchBackProp(false);
-        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
+        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.SQUARED_LOSS);
         //log.info("Arch " + RBMUtil.architecture(encoder));
 
 
         iter.reset();
 
+        for(int i = 0; i < 10; i++) {
+            double error = 0;
+
+            while (iter.hasNext()) {
+                DataSet data = iter.next();
 
 
-        while (iter.hasNext()) {
-            DataSet data = iter.next();
+                log.info("Fine tune " + data.labelDistribution());
+                encoder.finetune(data.getFirst(),1e-2,1000);
 
+                error += encoder.score();
+            }
+            log.info("Error " + error);
 
-            log.info("Fine tune " + data.labelDistribution());
-            encoder.finetune(data.getFirst(),1e-1,1000);
-            FilterRenderer r = new FilterRenderer();
-            r.renderFilters(encoder.getOutputLayer().getW(),"output.png",28,28,10);
+            iter.reset();
         }
 
-        iter.reset();
+
+
 
         while (iter.hasNext()) {
             DataSet data = iter.next();
