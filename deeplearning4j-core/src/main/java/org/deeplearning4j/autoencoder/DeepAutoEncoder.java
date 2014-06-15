@@ -26,8 +26,35 @@ import static org.deeplearning4j.util.MatrixUtil.*;
 import static org.deeplearning4j.util.MatrixUtil.normal;
 
 /**
- * Encapsulates a deep auto encoder and decoder (the transpose of an encoder)
+ * Encapsulates a deep auto encoder and decoder (the transpose of an encoder).
  *
+ * The idea here will be to train a DBN first using pretrain. This creates the weights
+ * for the autoencoder. Here is an example configuration for training a DBN for binary images.
+ *
+ *
+
+
+        Map<Integer,Double> layerLearningRates = new HashMap<>();
+        layerLearningRates.put(codeLayer,1e-1);
+        RandomGenerator rng = new MersenneTwister(123);
+
+
+        DBN dbn = new DBN.Builder()
+        .learningRateForLayer(layerLearningRates)
+        .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+        .useRBMPropUpAsActivation(true)
+        .activateForLayer(Collections.singletonMap(3, Activations.linear()))
+        .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
+        .numberOfInputs(784)
+        .sampleFromHiddenActivations(true)
+        .sampleOrActivateByLayer(Collections.singletonMap(3,false))
+        .lineSearchBackProp(true).useRegularization(true).withL2(1e-3)
+        .withOutputActivationFunction(Activations.sigmoid())
+        .numberOfOutPuts(784).withMomentum(0.5)
+        .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+ *       .build();
+ *
+ * Reduction of dimensionality with neural nets Hinton 2006
  * The focus of a deep auto encoder is the code layer.
  * This code layer is the end of the encoder
  * and the input to the decoder.
@@ -42,8 +69,7 @@ import static org.deeplearning4j.util.MatrixUtil.normal;
  *
  * The decoder is the transpose of the output layer.
  *
- * Back prop happens twice. Once on the encoder,
- * once on the decoder (globally)
+
  *
  * Both time should use a loss function that simulates reconstructions:
  * that could be RMSE_XENT or SQUARED_LOSS
@@ -146,8 +172,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
                 currInput = layer.reconstruct(currInput);
-                if(roundCodeLayerInput)
-                    currInput = round(currInput);
+
             }
 
             else  if(sampleFromHiddenActivations) {
@@ -157,11 +182,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
             //code layer gaussian noise
 
-            if(i == layers.length / 2) {
-                DoubleMatrix sigma = columnVariance(currInput);
-                DoubleMatrix add = normal(getRng(),currInput,sigma);
-                currInput.addi(add);
-            }
 
             activations.add(currInput);
         }
@@ -216,22 +236,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
-    /**
-     * Encodes with rounding and sigmoid taken in to account
-     * @param input the input to encode
-     * @return the encoded input scaled and rounded relative to the configuration
-     * of the auto encoder
-     */
-    public DoubleMatrix encodeWithScaling(DoubleMatrix input) {
-        DoubleMatrix encode = encode(input);
-        //rounding would make these straight probabilities
-        if(!isRoundCodeLayerInput() && isNormalizeCodeLayerOutput())
-            MatrixUtil.normalizeZeroMeanAndUnitVariance(encode);
-
-
-        DoubleMatrix decoderInput = isRoundCodeLayerInput() ? round(sigmoid(encode)) :  sigmoid(encode);
-        return decoderInput;
-    }
 
     public OutputLayer.LossFunction getOutputLayerLossFunction() {
         return outputLayerLossFunction;
@@ -272,17 +276,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         return decoder;
     }
 
-    public void setDecoder(BaseMultiLayerNetwork decoder) {
-        this.decoder = decoder;
-    }
 
-    public DoubleMatrix encode(DoubleMatrix input) {
-        return encoder.sampleHiddenGivenVisible(input,encoder.getLayers().length);
-    }
-
-    public DoubleMatrix decode(DoubleMatrix input) {
-        return decoder.output(input);
-    }
 
     public boolean isRoundCodeLayerInput() {
         return roundCodeLayerInput;

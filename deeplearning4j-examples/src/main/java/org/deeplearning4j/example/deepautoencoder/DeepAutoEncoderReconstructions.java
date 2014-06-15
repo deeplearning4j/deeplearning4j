@@ -30,7 +30,6 @@ public class DeepAutoEncoderReconstructions {
         //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            log.info("Encoded "  + encoder.encode(first.getFirst()));
             DoubleMatrix reconstruct = encoder.reconstruct(first.getFirst());
             for(int j = 0; j < first.numExamples(); j++) {
 
