@@ -62,7 +62,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      */
     @Override
     public DoubleMatrix reconstruct(DoubleMatrix x) {
-        return act.apply(x.mmul(W).addRowVector(hBias));
+        return act.apply(x.mmul(W).addRowVector(DoubleMatrix.ones(hBias.rows,hBias.columns)));
     }
 
     /**
@@ -113,7 +113,10 @@ public class AutoEncoder extends BaseNeuralNetwork {
         DoubleMatrix hBiasGradient = wGradient.columnMeans();
         DoubleMatrix vBiasGradient = DoubleMatrix.zeros(vBias.rows,vBias.columns);
 
-        return new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
+        NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
+        updateGradientAccordingToParams(ret, lr);
+         return ret;
+
     }
 
     /**

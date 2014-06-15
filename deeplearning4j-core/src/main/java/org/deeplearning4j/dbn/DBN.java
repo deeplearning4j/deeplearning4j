@@ -6,13 +6,16 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -33,7 +36,7 @@ public class DBN extends BaseMultiLayerNetwork {
     private RBM.HiddenUnit hiddenUnit;
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
-
+    private boolean useRBMPropUpAsActivations = false;
 
     public DBN() {}
 
@@ -83,6 +86,50 @@ public class DBN extends BaseMultiLayerNetwork {
     }
 
 
+
+    /**
+     * Compute activations from input to output of the output layer
+     * @return the list of activations for each layer
+     */
+    public List<DoubleMatrix> feedForward() {
+        DoubleMatrix currInput = this.input;
+        if(this.input.columns != nIns)
+            throw new IllegalStateException("Illegal input length");
+        List<DoubleMatrix> activations = new ArrayList<>();
+        activations.add(currInput);
+        for(int i = 0; i < getnLayers(); i++) {
+            NeuralNetwork layer = getLayers()[i];
+            HiddenLayer l = getSigmoidLayers()[i];
+
+            layer.setInput(currInput);
+            l.setInput(currInput);
+
+            if(useRBMPropUpAsActivations) {
+                RBM r = (RBM) layer;
+                currInput = r.propUp(currInput);
+            }
+
+            else if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
+                currInput = getSigmoidLayers()[i].activate(layer.reconstruct(currInput));
+            else  if(sampleFromHiddenActivations)
+                currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
+            else
+                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+            activations.add(currInput);
+        }
+        if(getOutputLayer() != null) {
+            getOutputLayer().setInput(activations.get(activations.size() - 1));
+            if(getOutputLayer().getActivationFunction() == null)
+                if(outputActivationFunction != null)
+                    outputLayer.setActivationFunction(outputActivationFunction);
+                else
+                    outputLayer.setActivationFunction(Activations.sigmoid());
+
+            activations.add(getOutputLayer().output(activations.get(activations.size() - 1)));
+
+        }
+        return activations;
+    }
 
     /**
      * Creates a hidden layer with the given parameters.
@@ -330,10 +377,15 @@ public class DBN extends BaseMultiLayerNetwork {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
         private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
-
+        private boolean useRBMPropUpAsActivation = false;
 
         public Builder() {
             this.clazz = DBN.class;
+        }
+
+        public Builder useRBMPropUpAsActivation(boolean useRBMPropUpAsActivation) {
+            this.useRBMPropUpAsActivation = useRBMPropUpAsActivation;
+            return this;
         }
 
         @Override
@@ -618,42 +670,49 @@ public class DBN extends BaseMultiLayerNetwork {
         }
 
 
+        @Override
         public Builder numberOfInputs(int nIns) {
             super.numberOfInputs(nIns);
             return this;
         }
 
-
+        @Override
         public Builder hiddenLayerSizes(Integer[] hiddenLayerSizes) {
             super.hiddenLayerSizes(hiddenLayerSizes);
             return this;
         }
 
+        @Override
         public Builder hiddenLayerSizes(int[] hiddenLayerSizes) {
             super.hiddenLayerSizes(hiddenLayerSizes);
             return this;
         }
 
+        @Override
         public Builder numberOfOutPuts(int nOuts) {
             super.numberOfOutPuts(nOuts);
             return this;
         }
 
+        @Override
         public Builder withRng(RandomGenerator gen) {
             super.withRng(gen);
             return this;
         }
 
+        @Override
         public Builder withInput(DoubleMatrix input) {
             super.withInput(input);
             return this;
         }
 
+        @Override
         public Builder withLabels(DoubleMatrix labels) {
             super.withLabels(labels);
             return this;
         }
 
+        @Override
         public Builder withClazz(Class<? extends BaseMultiLayerNetwork> clazz) {
             this.clazz =  clazz;
             return this;
@@ -661,8 +720,10 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
 
+        @Override
         public DBN build() {
             DBN ret = super.build();
+            ret.useRBMPropUpAsActivations = useRBMPropUpAsActivation;
             ret.hiddenUnit = hiddenUnit;
             ret.visibleUnit = visibleUnit;
             ret.visibleUnitByLayer.putAll(visibleUnitByLayer);

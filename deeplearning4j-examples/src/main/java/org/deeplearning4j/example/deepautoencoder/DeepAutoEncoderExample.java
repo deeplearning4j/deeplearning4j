@@ -29,7 +29,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MultipleEpochsIterator(2,new MnistDataSetIterator(2,2,false));
+        DataSetIterator iter = new MultipleEpochsIterator(10,new MnistDataSetIterator(10,10,false));
 
         int codeLayer = 3;
 
@@ -37,13 +37,13 @@ public class DeepAutoEncoderExample {
           Reduction of dimensionality with neural nets Hinton 2006
          */
         Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-2);
+        layerLearningRates.put(codeLayer,1e-1);
         RandomGenerator rng = new MersenneTwister(123);
 
 
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+                .hiddenLayerSizes(new int[]{500, 500, 30}).withRng(rng).useRBMPropUpAsActivation(true)
                 .activateForLayer(Collections.singletonMap(3,Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer,RBM.HiddenUnit.GAUSSIAN))
                 .numberOfInputs(784).sampleFromHiddenActivations(false)
@@ -74,7 +74,8 @@ public class DeepAutoEncoderExample {
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setSampleFromHiddenActivations(false);
-        encoder.setLineSearchBackProp(true);
+        encoder.setLineSearchBackProp(false);
+        encoder.setRoundCodeLayerInput(false);
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
         //log.info("Arch " + RBMUtil.architecture(encoder));
 
@@ -86,13 +87,20 @@ public class DeepAutoEncoderExample {
 
 
             log.info("Fine tune " + data.labelDistribution());
-            encoder.finetune(data.getFirst(),1e-1,1000);
+            encoder.finetune(data.getFirst(),1e-1,100);
+        }
+
+        iter.reset();
+
+        while (iter.hasNext()) {
+            DataSet data = iter.next();
+
+
 
             DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),encoder,28,28);
             r.setPicDraw(MatrixTransformations.multiplyScalar(255));
             r.draw();
         }
-
 
 
 
