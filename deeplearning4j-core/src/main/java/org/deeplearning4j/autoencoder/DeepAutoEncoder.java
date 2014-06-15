@@ -143,24 +143,16 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         NeuralNetwork[] layers = getLayers();
         for(int i = 0; i < layers.length; i++) {
             AutoEncoder layer = (AutoEncoder) getLayers()[i];
-            HiddenLayer l = getSigmoidLayers()[i];
-            if(layer == null) {
-                log.warn("Null layer found going to break");
-                break;
-            }
-            if(l == null) {
-                log.warn("Null sigmoid layer found going to break");
-                break;
-            }
             layer.setInput(currInput);
-            l.setInput(currInput);
 
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
                 currInput = layer.reconstruct(currInput);
+                if(roundCodeLayerInput)
+                    currInput = round(currInput);
             }
 
             else  if(sampleFromHiddenActivations) {
-                currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
+                currInput = layer.sampleHiddenGivenVisible(layer.reconstruct(currInput)).getSecond();
             }
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();

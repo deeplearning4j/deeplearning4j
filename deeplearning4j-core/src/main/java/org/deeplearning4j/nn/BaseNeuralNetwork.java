@@ -283,7 +283,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public void backProp(double lr,int epochs,Object[] extraParams) {
-        double currRecon = getReConstructionCrossEntropy();
+        double currRecon = squaredLoss();
         boolean train = true;
         NeuralNetwork revert = clone();
         int numEpochs = 0;
@@ -292,48 +292,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 break;
 
             NeuralNetworkGradient gradient = getGradient(extraParams);
-            DoubleMatrix wLearningRates = getAdaGrad().getLearningRates(gradient.getwGradient());
-            Pair<DoubleMatrix,DoubleMatrix> sample = sampleHiddenGivenVisible(input);
-            DoubleMatrix hiddenSample = sample.getSecond().transpose();
-            /*
-            Scale the input and reconstrution to see the relative difference in absolute space
-             */
-            DoubleMatrix scaledInput = input.dup();
-            DoubleMatrix z = reconstruct(input);
-            DoubleMatrix outputDiff = z.sub(scaledInput);
-            //changes in error relative to neurons
-            DoubleMatrix delta = hiddenSample.mmul(outputDiff).transpose();
-            //hidden activations
-            DoubleMatrix hBiasMean = sample.getFirst().columnSums().transpose();
+            updateGradientAccordingToParams(gradient,lr);
 
-            if(isUseAdaGrad())
-                delta.muli(wLearningRates);
-            else
-                delta.muli(lr);
-
-            if(momentum != 0)
-                delta.muli(momentum).add(delta.mul(1 - momentum));
-
-            if(normalizeByInputRows)
-                delta.divi(input.rows);
-
-
-            getW().addi(W.sub(delta));
-
-            if(isUseAdaGrad())
-                hBiasMean.muli(gethBiasAdaGrad().getLearningRates(gradient.gethBiasGradient()));
-            else
-                hBiasMean.muli(lr);
-
-            if(momentum != 0)
-                hBiasMean.muli(momentum).add(hBiasMean.mul(1 - momentum));
-
-            if(normalizeByInputRows)
-                hBiasMean.divi(input.rows);
-
-            gethBias().addi(gethBias().sub(hBiasMean));
-
-            double newRecon = this.getReConstructionCrossEntropy();
+            double newRecon = this.squaredLoss();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
