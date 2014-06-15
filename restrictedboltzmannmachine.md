@@ -38,7 +38,7 @@ The RBM uses the builder pattern to set up config; for example, this builder wil
 
            useRegularization(use L2?)           
 
-Next, create a training set for the machine. For the sake of visual brevity, a toy, two-dimensional data set is included in the code below. (With large-scale projects, training sets are clearly much larger.)
+Next, create a training set for the machine. 
 
 <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=26:35"></script>
 
