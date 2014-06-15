@@ -162,7 +162,6 @@ public class Word2VecLoader {
                 }
                 wordIndex.add(word);
                 wordVectors.putRow(i, new FloatMatrix(vectors));
-                dis.read();
             }
         } finally {
             bis.close();
