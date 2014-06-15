@@ -9,6 +9,10 @@ Here's where you can ask questions and contribute your knowledge:
 
 *  [Google Group](https://groups.google.com/forum/#!forum/deeplearning4j)
 
+### license
+
+Deeplearning4j is distributed under an Apache 2.0 license, the most permissive license we're aware of. 
+
 ###roadmap
 
 We're looking for contributors to help on a number of fronts. 
