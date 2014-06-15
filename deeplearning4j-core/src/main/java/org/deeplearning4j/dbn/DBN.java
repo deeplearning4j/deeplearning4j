@@ -107,6 +107,8 @@ public class DBN extends BaseMultiLayerNetwork {
             if(useRBMPropUpAsActivations) {
                 RBM r = (RBM) layer;
                 currInput = r.propUp(currInput);
+                if(sampleFromHiddenActivations)
+                    currInput = layer.sampleVisibleGivenHidden(currInput).getSecond();
             }
 
             else if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))

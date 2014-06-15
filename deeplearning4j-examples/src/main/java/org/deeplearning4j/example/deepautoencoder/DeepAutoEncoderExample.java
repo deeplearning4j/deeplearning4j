@@ -1,5 +1,6 @@
 package org.deeplearning4j.example.deepautoencoder;
 
+import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
@@ -11,9 +12,11 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
+import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransformations;
+import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,15 +46,16 @@ public class DeepAutoEncoderExample {
 
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{1000,500, 250, 30}).withRng(rng).useRBMPropUpAsActivation(true)
-                .activateForLayer(Collections.singletonMap(3,Activations.linear()))
-                .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer,RBM.HiddenUnit.GAUSSIAN))
-                .numberOfInputs(784).sampleFromHiddenActivations(false)
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+                .useRBMPropUpAsActivation(true)
+                .activateForLayer(Collections.singletonMap(3, Activations.linear()))
+                .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
+                .numberOfInputs(784)
+                .sampleFromHiddenActivations(true)
                 .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-                .lineSearchBackProp(true).useRegularization(true)
-                .withL2(2e-4)
+                .lineSearchBackProp(true).useRegularization(true).withL2(1e-3)
                 .withOutputActivationFunction(Activations.sigmoid())
-                .numberOfOutPuts(784).withMomentum(0.9)
+                .numberOfOutPuts(784).withMomentum(0.5)
                 .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
 
@@ -61,8 +65,7 @@ public class DeepAutoEncoderExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),new Object[]{1,1e-1,100});
-
+            dbn.pretrain(next.getFirst(), new Object[]{1, 1e-1, 1});
         }
 
 
@@ -73,21 +76,25 @@ public class DeepAutoEncoderExample {
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
+        encoder.setRoundCodeLayerInput(false);
         encoder.setSampleFromHiddenActivations(false);
         encoder.setLineSearchBackProp(false);
-        encoder.setRoundCodeLayerInput(false);
         encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
         //log.info("Arch " + RBMUtil.architecture(encoder));
 
 
         iter.reset();
 
+
+
         while (iter.hasNext()) {
             DataSet data = iter.next();
 
 
             log.info("Fine tune " + data.labelDistribution());
-            encoder.finetune(data.getFirst(),1e-3,100);
+            encoder.finetune(data.getFirst(),1e-1,1000);
+            FilterRenderer r = new FilterRenderer();
+            r.renderFilters(encoder.getOutputLayer().getW(),"output.png",28,28,10);
         }
 
         iter.reset();
