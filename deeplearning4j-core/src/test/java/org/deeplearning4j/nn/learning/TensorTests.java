@@ -99,6 +99,7 @@ public class TensorTests {
     public void testCreate() {
         Tensor t = Tensor.rand(2,3,3,4.0,6.0);
         DoubleMatrix matrix = t.toMatrix();
+        assertEquals(t.length,matrix.length);
         assertEquals(t,Tensor.create(matrix,3));
     }
 

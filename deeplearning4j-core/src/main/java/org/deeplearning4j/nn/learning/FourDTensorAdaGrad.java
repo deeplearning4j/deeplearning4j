@@ -63,12 +63,14 @@ public class FourDTensorAdaGrad extends TensorAdaGrad {
 
     @Override
     protected void createHistoricalGradient() {
-       this.historicalGradient = new FourDTensor(rows,cols,slices,tensors);
+        if(rows > 0 && cols > 0 && slices > 0 && tensors > 0)
+            this.historicalGradient = new FourDTensor(rows,cols,slices,tensors);
     }
 
     @Override
     protected void createAdjustedGradient() {
-        this.adjustedGradient = new FourDTensor(rows,cols,slices,tensors);
+        if(rows > 0 && cols > 0 && slices > 0 && tensors > 0)
+            this.adjustedGradient = new FourDTensor(rows,cols,slices,tensors);
 
     }
 }

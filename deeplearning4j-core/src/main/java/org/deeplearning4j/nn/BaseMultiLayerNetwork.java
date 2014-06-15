@@ -841,32 +841,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix logLayerGradient = deltas.get(getnLayers()).getFirst();
         DoubleMatrix biasGradient = deltas.get(getnLayers() + 1).getSecond().columnSums();
 
-        if(momentum != 0)
-            logLayerGradient.muli(momentum);
-
-
-        if(useAdaGrad)
-            logLayerGradient.muli(outputLayer.getAdaGrad().getLearningRates(logLayerGradient));
-
-
-        else
-            logLayerGradient.muli(lr);
-
-        if(isNormalizeByInputRows())
-            logLayerGradient.divi(input.rows);
-
-
-
-        if(momentum != 0)
-            biasGradient.muli(momentum);
-
-        if(useAdaGrad)
-            biasGradient.muli(outputLayer.getBiasAdaGrad().getLearningRates(biasGradient));
-        else
-            biasGradient.muli(lr);
-
-        if(isNormalizeByInputRows())
-            biasGradient.divi(input.rows);
 
 
         if(getOutputLayer().getB().length != biasGradient.length) {

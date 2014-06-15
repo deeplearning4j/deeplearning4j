@@ -118,6 +118,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
         }
         else
             this.data = t.data;
+        this.length = this.rows * this.columns;
     }
     /**
      * Initializes this tensor with 1 slice
@@ -154,6 +155,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
             this.perMatrixRows = rows;
             this.data = t.data;
         }
+
+        this.length = t.length;
+
     }
 
     /**

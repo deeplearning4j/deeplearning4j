@@ -176,11 +176,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             }
 
             else  if(sampleFromHiddenActivations) {
-                currInput = layer.sampleHiddenGivenVisible(layer.reconstruct(currInput)).getSecond();
+                currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
             }
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-            //code layer gaussian noise
 
 
             activations.add(currInput);
