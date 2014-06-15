@@ -97,5 +97,13 @@ on anything containing that window, it will automatically contain that label. Th
 The following code saves your Viterbi implementation for later use:
        
         SerializationUtils.saveObject(viterbi, new File("mypath"));
+        
+###training
+
+Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to pretrain data to be fed into a deep-belief network:
+
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowSingleThreaded.java?slice=96:110"></script>
+
+There are three parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after getWindow. The second is the number of nodes contained in the layer, which you'll enter after getLayerSize. Those two numbers will be multiplied to obtain the number of inputs. Finally, remember to make your activation algorithm *hardtanh*. 
 
 That's pretty much it. If you need help, [drop us a line](http://www.skymind.io/contact.html). 
