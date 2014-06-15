@@ -6,7 +6,7 @@ layout: default
 *previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
 # deep-belief networks
 
-For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both its previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
+For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
 With the exception of the first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes that come before it, and as the input (or visible) layer to the lower nodes that come after. It is a network of single-layer networks. 
 
@@ -20,7 +20,7 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 ### initiating a deep-belief network
 
-Here's how you set up a single-thread deep belief network: 
+Here's how you set up a single-thread deep-belief network: 
 
 To create it, you instantiate an object of the class [DBN](../doc/org/deeplearning4j/dbn/DBN.html).
 
@@ -46,6 +46,6 @@ The f1 score will be a percentage. It's basically the probability that your gues
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
 
-Click [here](../continuousdeepbeliefnetwork.html) to learn how to set up continuous deep-belief networks. (CDBNs accept a continuum of integers rather than binary data.)
+Click [here](../continuousdeepbeliefnetwork.html) to learn how to set up continuous deep-belief networks. (CDBNs accept a continuum of decimals rather than binary data.)
 
 Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly.
