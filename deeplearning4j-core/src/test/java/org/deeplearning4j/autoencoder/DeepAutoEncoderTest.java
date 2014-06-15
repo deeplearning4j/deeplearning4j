@@ -1,6 +1,7 @@
 package org.deeplearning4j.autoencoder;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
@@ -40,18 +41,15 @@ public class DeepAutoEncoderTest {
         dbn.pretrain(data.getFirst(),new Object[]{1,1e-1,1000});
 
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
-
+        DeepAutoEncoder encoder = new DeepAutoEncoder.Builder()
+                .withEncoder(dbn).build();
+        assertEquals(7,encoder.getLayers().length);
+        assertEquals(7,encoder.getSigmoidLayers().length);
         assertEquals(encoder.getLayers()[0].getW().length,encoder.getOutputLayer().getW().length);
+        for(int i = 0; i < encoder.getLayers().length;i++)
+            assumeNotNull("Layer " + i + " was null",encoder.getLayers()[i]);
         assertEquals(encoder.getLayers()[1].getW().length,encoder.getLayers()[encoder.getLayers().length - 1].getW().length);
         assertEquals(encoder.getLayers()[2].getW().length,encoder.getLayers()[encoder.getLayers().length - 2].getW().length);
-        assertEquals(encoder.getSigmoidLayers()[0].getActivationFunction(), Activations.sigmoid());
-        assertEquals(encoder.getSigmoidLayers()[1].getActivationFunction(),Activations.sigmoid());
-        assertEquals(encoder.getSigmoidLayers()[2].getActivationFunction(),Activations.sigmoid());
-        assertEquals(encoder.getSigmoidLayers()[3].getActivationFunction().type(),Activations.linear().type());
-        assertEquals(encoder.getSigmoidLayers()[4].getActivationFunction(),Activations.sigmoid());
-        assertEquals(encoder.getSigmoidLayers()[5].getActivationFunction(),Activations.sigmoid());
-        assertEquals(encoder.getSigmoidLayers()[6].getActivationFunction(),Activations.sigmoid());
         //7 activations + 1 output
         assertEquals(7,encoder.getSigmoidLayers().length);
         encoder.finetune(data.getFirst(),1e-1,1000);

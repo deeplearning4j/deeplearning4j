@@ -82,7 +82,7 @@ public class DeepAutoEncoderSDA {
 
 
 
-        DeepAutoEncoder encoder = new DeepAutoEncoder(dbn);
+        DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setRoundCodeLayerInput(true);
         encoder.setSampleFromHiddenActivations(true);
         encoder.setVisibleUnit(RBM.VisibleUnit.BINARY);

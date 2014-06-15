@@ -221,8 +221,12 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 * to average by
 	 */
 	void merge(NeuralNetwork network,int batchSize);
-	
-	
+
+    /**
+     * Whether to apply sparsity or not
+     * @return
+     */
+    boolean isApplySparsity();
 	
 
 

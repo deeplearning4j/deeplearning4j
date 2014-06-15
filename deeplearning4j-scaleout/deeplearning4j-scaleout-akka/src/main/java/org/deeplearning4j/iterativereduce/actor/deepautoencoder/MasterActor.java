@@ -124,13 +124,13 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         DeepAutoEncoder network;
         if(this.network == null) {
             if(encoder != null) {
-                network = new DeepAutoEncoder(encoder);
+                network = new DeepAutoEncoder.Builder().withEncoder(this.network).build();
                 this.network = network;
 
 
             }
             else {
-                network = new DeepAutoEncoder(conf.init());
+                network = new DeepAutoEncoder.Builder().withEncoder(conf.init()).build();
                 this.network = network;
 
             }
