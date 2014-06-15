@@ -10,7 +10,7 @@
 		<logback.version>1.0.6</logback.version>
         <spring.version>3.2.5.RELEASE</spring.version>
         <mallet.version>2.0.7</mallet.version>
-        <jblas.version>1.2.4-SNAPSHOT</jblas.version>
+        <jblas.version>1.2.3</jblas.version>
 	</properties>
 
     <repositories>
