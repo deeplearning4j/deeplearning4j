@@ -27,7 +27,7 @@ Adam is prototyping up-to-date tutorials in the [Deeplearning4j examples subproj
 
 ###contribute
 
-Contribute code, report a bug, help us make DL4J more useful:
+Contribute code, report a bug, help us make DL4J more useful.
 
 *  [Github Project](https://github.com/agibsonccc/java-deeplearning)
 *  [Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
@@ -35,7 +35,7 @@ Contribute code, report a bug, help us make DL4J more useful:
 
 ###contributor agreement form
 
-Download, complete, sign, scan and email back to 1 at blix dot io. 
+Download, complete, sign, scan and email back to chris at skymind dot io. 
 
 *  [DL4J Individual Contributor License Agreement.pdf](../assets/cla.pdf)
 *  [DL4J Individual Contributor License Agreement.doc](../assets/cla.doc)
@@ -48,4 +48,4 @@ DL4J workshops are offered through [Zipfian Academy](http://www.zipfianacademy.c
 
 Get professional support from the core DL4J team.
 
-Learn more at [www.skymind.io](www.skymind.io)
+Learn more at [www.skymind.io](www.skymind.io).
