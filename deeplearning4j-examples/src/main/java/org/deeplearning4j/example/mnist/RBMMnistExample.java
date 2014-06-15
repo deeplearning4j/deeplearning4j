@@ -34,16 +34,7 @@ public class RBMMnistExample {
 
         }
 
-
-
-
-
-
         iter.reset();
-
-
-
-
 
         //Iterate over the dataset after you're done training and show the two side by side (you have to drag the test image to the right)
         while(iter.hasNext()) {
