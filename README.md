@@ -84,14 +84,14 @@ Installation
 # Maven coordinates
  It is highly reccommended  that you use development snapshots right now.
  
- <repositories>
-       <repository>
-         <id>snapshots-repo</id>
-         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-         <releases><enabled>false</enabled></releases>
-         <snapshots><enabled>true</enabled></snapshots>
-       </repository>
-   </repositories>
+      <repositories>
+            <repository>
+             <id>snapshots-repo</id>
+              <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+              <releases><enabled>false</enabled></releases>
+              <snapshots><enabled>true</enabled></snapshots>
+            </repository>
+       </repositories>
 
 
 ## Singular neural nets
