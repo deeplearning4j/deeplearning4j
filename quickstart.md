@@ -3,9 +3,16 @@ title:
 layout: default
 ---
 
+# Pre reqs
+
+We assume you have already gone through the [setup](http://deeplearning4j.org/gettingstarted.html) This assumes you have setup maven, blas (native matrices)
+
+
 # quickstart
 
-1. Download these [DL4J examples](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j).
+
+
+1. Download these [DL4J examples](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/).
 
 2. Unzip file.
 
