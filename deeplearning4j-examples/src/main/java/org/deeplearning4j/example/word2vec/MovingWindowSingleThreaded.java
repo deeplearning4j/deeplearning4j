@@ -1,8 +1,10 @@
 package org.deeplearning4j.example.word2vec;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.activation.Activations;
@@ -20,7 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by agibsonccc on 6/13/14.
@@ -72,28 +76,44 @@ public class MovingWindowSingleThreaded {
 
 
         DataSetIterator iter = new Word2VecDataSetIterator(vec,iterator, Arrays.asList("0", "1", "2"));
+        List<DataSet> allData = new ArrayList<>();
+        while(iter.hasNext()) {
+            allData.add(iter.next());
+        }
+
+        DataSet all = DataSet.merge(allData);
+        all.shuffle();
+
+        int twentyPercent = (int) Math.round(0.2 * all.numExamples());
+        Pair<DataSet,DataSet> trainTest = all.splitTestAndTrain(twentyPercent);
+        iter = new ListDataSetIterator(trainTest.getFirst().asList(),1000);
+
+        DataSetIterator testIter = trainTest.getSecond().iterator(1000);
+
         log.info("Training on num columns " + iter.inputColumns());
         if(!iter.hasNext())
             throw new IllegalStateException("No data found");
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
-                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withL2(2e-4).useRegularization(true)
+                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withL2(2e-4)
+                .useRegularization(true).withSparsity(0.1).withMomentum(0.9)
                 .numberOfInputs(vec.getWindow() * vec.getLayerSize())
-                .hiddenLayerSizes(new int[]{200})
+                .hiddenLayerSizes(new int[]{200,150,125})
                 .numberOfOutPuts(3).withActivation(Activations.hardTanh())
                 .build();
+
         while(iter.hasNext()) {
             DataSet d = iter.next();
             dbn.setInput(d.getFirst());
-            dbn.finetune(d.getSecond(),1e-2,1000);
+            dbn.finetune(d.getSecond(),1e-6,10000);
         }
 
         iter.reset();
 
         Evaluation eval = new Evaluation();
 
-        while(iter.hasNext()) {
-            DataSet d = iter.next();
+        while(testIter.hasNext()) {
+            DataSet d = testIter.next();
             eval.eval(d.getSecond(),dbn.output(d.getFirst()));
         }
 

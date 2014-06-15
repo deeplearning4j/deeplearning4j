@@ -426,7 +426,7 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
 
         Collections.rotate(list, 3);
         Collections.shuffle(list);
-        List<List<DataSet>> partition = new ArrayList<List<DataSet>>();
+        List<List<DataSet>> partition = new ArrayList<>();
         partition.add(list.subList(0, numHoldout));
         partition.add(list.subList(numHoldout, list.size()));
         DataSet train = merge(partition.get(0));
