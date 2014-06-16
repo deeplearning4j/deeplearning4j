@@ -14,4 +14,7 @@ public interface OptimizableByGradientValueMatrix {
 
 	public DoubleMatrix getValueGradient (int iteration);
 	public double getValue ();
+
+
+    void setCurrentIteration(int value);
 }

@@ -529,7 +529,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
-    public void backPropStep(double lr) {
+    public void backPropStep() {
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient();
         for(int i = 0; i < layers.length; i++) {
             if(deltas.size() < layers.length) {

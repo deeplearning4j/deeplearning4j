@@ -25,6 +25,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     private double lr  = 1e-1;
     private int epochs = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropOptimizer.class);
+    private int currentIteration = -1;
 
     public BackPropOptimizer(BaseMultiLayerNetwork network,double lr,int epochs) {
         this.network = network;
@@ -32,6 +33,10 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
         this.epochs = epochs;
     }
 
+    @Override
+    public void setCurrentIteration(int value) {
+        this.currentIteration = value;
+    }
 
     public void optimize(TrainingEvaluator eval,int numEpochs,boolean lineSearch) {
         if(!lineSearch) {
@@ -44,7 +49,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
             //sgd style; only train a certain number of epochs
             if(network.isForceNumEpochs()) {
                 for(int i = 0; i < epochs; i++) {
-                    network.backPropStep(lr);
+                    network.backPropStep();
                     log.info("Iteration " + i + " error " + network.score());
 
                 }
@@ -64,9 +69,9 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
                     }
                     count++;
-                    network.backPropStep(lr);
+                    network.backPropStep();
                 /* Trains logistic regression post weight updates */
-                    network.getOutputLayer().trainTillConvergence(lr, epochs);
+                    //network.getOutputLayer().trainTillConvergence(lr, epochs);
 
                     Double entropy = network.score();
                     if(lastEntropy == null || entropy < lastEntropy) {

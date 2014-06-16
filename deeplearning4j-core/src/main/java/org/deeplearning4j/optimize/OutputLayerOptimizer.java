@@ -24,7 +24,12 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 		this.lr = lr;
 	}
 
-	@Override
+    @Override
+    public void setCurrentIteration(int value) {
+        this.currIteration = value;
+    }
+
+    @Override
 	public int getNumParameters() {
 		return logReg.getW().length + logReg.getB().length;
 		
