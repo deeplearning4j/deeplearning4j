@@ -127,13 +127,14 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = "+step+", gradient infty-norm = "+ xi.normmax());
             boolean calledEpochDone = false;
             // Ensure step not too large
+            optimizable.setCurrentIteration(iterations);
             double sum = xi.norm2();
             if (sum > stpmax) {
-                logger.info ("*** Step 2-norm "+sum+" greater than max "+stpmax+"  Scaling...");
+                logger.info ("*** Step 2-norm "+sum+" greater than max " + stpmax + "  Scaling...");
                 xi.muli(stpmax / sum);
             }
             try {
-                step = lineMaximizer.optimize (xi, step);
+                step = lineMaximizer.optimize (xi,iterations, step);
 
             }catch(Exception e) {
                 logger.warn("Error during computation",e);

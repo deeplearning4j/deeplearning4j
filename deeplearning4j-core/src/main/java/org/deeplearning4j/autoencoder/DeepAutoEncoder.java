@@ -785,6 +785,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                     .withBias(encoder.getLayers()[0].getvBias()).withActivationFunction(encoder.getOutputActivationFunction())
                     .withL2(encoder.getLayers()[0].getL2()).withWeights(encoder.getLayers()[0].getW().transpose())
                     .build();
+            o.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT);
 
             DeepAutoEncoder e = new DeepAutoEncoder();
             e.setLayers(autoEncoders);

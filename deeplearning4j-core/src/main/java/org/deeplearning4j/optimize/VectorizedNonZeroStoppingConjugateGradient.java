@@ -133,8 +133,9 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
 					+ (curr - last));
 			last = curr;
+            optimizable.setCurrentIteration(iterationCount);
 			try {
-				step = lineMaximizer.optimize(xi, step);
+				step = lineMaximizer.optimize(xi, iterationCount,step);
 			} catch (Throwable e) {
 				logger.warn("Error during computation",e);
 			}
