@@ -429,8 +429,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
         //change up momentum after so many iterations if specified
-        double momentum = momentumAfter.get(iteration) != null ? momentumAfter.get(iteration) : this.momentum;
+        double momentum = this.momentum;
+        if(momentumAfter != null && !momentumAfter.isEmpty()) {
+            int key = momentumAfter.keySet().iterator().next();
+            if(iteration >= key) {
+                momentum = momentumAfter.get(key);
+            }
+        }
 
+        log.info("Using momentum " + momentum);
 
         if (useAdaGrad)
             wGradient.muli(wLearningRates);
