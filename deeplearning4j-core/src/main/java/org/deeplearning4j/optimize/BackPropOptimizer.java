@@ -190,7 +190,8 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     }
 
     @Override
-    public DoubleMatrix getValueGradient() {
+    public DoubleMatrix getValueGradient(int iteration) {
+
         return network.getBackPropGradient();
     }
 

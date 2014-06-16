@@ -10,6 +10,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
@@ -130,6 +131,142 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         public Builder()  {
             this.clazz = DenoisingAutoEncoder.class;
         }
+
+        @Override
+        public Builder  cacheInput(boolean cacheInput) {
+            super.cacheInput(cacheInput);
+            return this;
+        }
+
+        @Override
+        public Builder applySparsity(boolean applySparsity) {
+            super.applySparsity(applySparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
+            super.withOptmizationAlgo(optimizationAlgo);
+            return this;
+        }
+
+        @Override
+        public Builder withLossFunction(LossFunction lossFunction) {
+            super.withLossFunction(lossFunction);
+            return this;
+        }
+
+        @Override
+        public Builder withDropOut(double dropOut) {
+            super.withDropOut(dropOut);
+            return this;
+        }
+
+        @Override
+        public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+            super.normalizeByInputRows(normalizeByInputRows);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+            super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder withDistribution(RealDistribution dist) {
+            super.withDistribution(dist);
+            return this;
+        }
+
+        @Override
+        public Builder useRegularization(boolean useRegularization) {
+            super.useRegularization(useRegularization);
+            return this;
+        }
+
+        @Override
+        public Builder fanIn(double fanIn) {
+            super.fanIn(fanIn);
+            return this;
+        }
+
+        @Override
+        public Builder withL2(double l2) {
+            super.withL2(l2);
+            return this;
+        }
+
+        @Override
+        public Builder renderWeights(int numEpochs) {
+            super.renderWeights(numEpochs);
+            return this;
+        }
+
+
+        @Override
+        public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
+            super.withClazz(clazz);
+            return this;
+        }
+
+        @Override
+        public Builder withSparsity(double sparsity) {
+            super.withSparsity(sparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withMomentum(double momentum) {
+            super.withMomentum(momentum);
+            return this;
+        }
+
+        @Override
+        public Builder withInput(DoubleMatrix input) {
+            super.withInput(input);
+            return this;
+        }
+
+
+
+        @Override
+        public Builder withWeights(DoubleMatrix W) {
+            super.withWeights(W);
+            return this;
+        }
+
+        @Override
+        public Builder withVisibleBias(DoubleMatrix vBias) {
+            super.withVisibleBias(vBias);
+            return this;
+        }
+
+        @Override
+        public Builder withHBias(DoubleMatrix hBias) {
+            super.withHBias(hBias);
+            return this;
+        }
+
+        @Override
+        public Builder numberOfVisible(int numVisible) {
+            super.numberOfVisible(numVisible);
+            return this;
+        }
+
+        @Override
+        public Builder numHidden(int numHidden) {
+            super.numHidden(numHidden);
+            return this;
+        }
+
+        @Override
+        public Builder withRandom(RandomGenerator gen) {
+            super.withRandom(gen);
+            return this;
+        }
+
     }
 
 
@@ -175,6 +312,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
         double corruptionLevel = (double) params[0];
         double lr = (double) params[1];
+        int iteration = (int) params[2];
 
         if(wAdaGrad != null)
             this.wAdaGrad.setMasterStepSize(lr);
@@ -201,7 +339,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         DoubleMatrix vBiasGradient = L_vbias.columnMeans();
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        updateGradientAccordingToParams(gradient, lr);
+        updateGradientAccordingToParams(gradient,iteration, lr);
 
         return gradient;
     }

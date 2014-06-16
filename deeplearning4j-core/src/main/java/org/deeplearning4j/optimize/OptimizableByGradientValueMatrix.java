@@ -12,6 +12,6 @@ public interface OptimizableByGradientValueMatrix {
 	public void setParameters (DoubleMatrix params);
 	public void setParameter (int index, double value);
 
-	public DoubleMatrix getValueGradient ();
+	public DoubleMatrix getValueGradient (int iteration);
 	public double getValue ();
 }

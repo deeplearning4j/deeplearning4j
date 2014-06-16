@@ -121,7 +121,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		long last = System.currentTimeMillis();
 		if (xi == null) {
 			fp = optimizable.getValue();
-			xi = optimizable.getValueGradient();
+			xi = optimizable.getValueGradient(0);
 			g = xi.dup();
 			h = xi.dup();
 			iterations = 0;
@@ -140,7 +140,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			}
 			
 			fret = optimizable.getValue();
-			xi = optimizable.getValueGradient();
+			xi = optimizable.getValueGradient(iterationCount);
 
 			// This termination provided by "Numeric Recipes in C".
 			if ((0 < tolerance) && (2.0 * Math.abs(fret - fp) <= tolerance * (Math.abs(fret) + Math.abs(fp) + eps))) {
@@ -158,7 +158,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 						+ gradientTolerance);
 				converged = true;
                 if(listener != null) {
-                    listener.epochDone(iterationCount);
+                    listener.iterationDone(iterationCount);
                 }
 				return true;
 			}
@@ -196,7 +196,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 				logger.info("Passed max number of iterations");
 				converged = true;
                 if(listener != null) {
-                    listener.epochDone(iterationCount);
+                    listener.iterationDone(iterationCount);
                 }
 				return true;
 			}
@@ -204,7 +204,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 			
 
 			if(listener != null) {
-				listener.epochDone(iterationCount);
+				listener.iterationDone(iterationCount);
 			}
 
             if(eval != null && eval.shouldStop(iterations)) {

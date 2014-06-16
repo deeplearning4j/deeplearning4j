@@ -92,7 +92,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 		double slope, test, alamin, alam, alam2, tmplam;
 		double rhs1, rhs2, a, b, disc, oldAlam;
 		double f, fold, f2;
-		g = function.getValueGradient(); // gradient
+		g = function.getValueGradient(0); // gradient
 		x = function.getParameters(); // parameters
 		oldParameters = x.dup();
 

@@ -47,7 +47,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 		
 		k = this.k;
 		
-		NeuralNetworkGradient gradient = network.getGradient(new Object[]{k,lr});
+		NeuralNetworkGradient gradient = network.getGradient(new Object[]{k,lr,currIteration});
 	
 		DoubleMatrix wAdd = gradient.getwGradient();
 		DoubleMatrix vBiasAdd = gradient.getvBiasGradient();

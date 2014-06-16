@@ -12,19 +12,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
-import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
@@ -99,6 +99,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
 
     protected int lastMiniBatchSize = 1;
+
+    //momentum after n iterations
+    protected Map<Integer,Double> momentumAfter = new HashMap<>();
+    //reset adagrad historical gradient after n iterations
+    protected int resetAdaGradIterations = -1;
+
 
     protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
 
@@ -262,7 +268,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     }
     @Override
-    public int getRenderEpochs() {
+    public int getRenderIterations() {
         return renderWeightsEveryNumEpochs;
     }
 
@@ -282,17 +288,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int epochs,Object[] extraParams) {
+    public void backProp(double lr,int iterations,Object[] extraParams) {
         double currRecon = squaredLoss();
         boolean train = true;
         NeuralNetwork revert = clone();
-        int numEpochs = 0;
         while(train) {
-            if(numEpochs > epochs)
+            if(iterations > iterations)
                 break;
 
-            NeuralNetworkGradient gradient = getGradient(extraParams);
-            updateGradientAccordingToParams(gradient,lr);
 
             double newRecon = this.squaredLoss();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
@@ -317,18 +320,35 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 log.info("Recon went down " + currRecon);
             }
 
-            numEpochs++;
+            iterations++;
 
-            int plotEpochs = getRenderEpochs();
-            if(plotEpochs > 0) {
+            int plotIterations = getRenderIterations();
+            if(plotIterations > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
-                if(numEpochs % plotEpochs == 0) {
+                if(iterations % plotIterations == 0) {
                     plotter.plotNetworkGradient(this,getGradient(extraParams),getInput().rows);
                 }
             }
 
         }
 
+    }
+
+    public int getResetAdaGradIterations() {
+        return resetAdaGradIterations;
+    }
+
+    public void setResetAdaGradIterations(int resetAdaGradIterations) {
+        this.resetAdaGradIterations = resetAdaGradIterations;
+    }
+
+    public Map<Integer, Double> getMomentumAfter() {
+
+        return momentumAfter;
+    }
+
+    public void setMomentumAfter(Map<Integer, Double> momentumAfter) {
+        this.momentumAfter = momentumAfter;
     }
 
     /**
@@ -380,14 +400,27 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     /**
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
+     * @param iteration the current iteration
      * @param learningRate the learning rate for the current iteratiaon
      */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
         DoubleMatrix wGradient = gradient.getwGradient();
 
         DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
         DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
+
+        //reset adagrad history
+        if(resetAdaGradIterations == iteration) {
+            wAdaGrad.historicalGradient = null;
+            hBiasAdaGrad.historicalGradient = null;
+            vBiasAdaGrad.historicalGradient = null;
+        }
+
         DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
+        //change up momentum after so many iterations if specified
+        double momentum = momentumAfter.get(iteration) != null ? momentumAfter.get(iteration) : this.momentum;
+
+
         if (useAdaGrad)
             wGradient.muli(wLearningRates);
         else
@@ -409,6 +442,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         //only do this with binary hidden layers
         if (applySparsity && this.hBiasGradient != null)
             applySparsity(hBiasGradient, learningRate);
+
 
         if (momentum != 0 && this.wGradient != null)
             wGradient.addi(this.wGradient.mul(momentum).add(wGradient.mul(1 - momentum)));
@@ -472,6 +506,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
+            ret.setMomentumAfter(momentumAfter);
+            ret.setResetAdaGradIterations(resetAdaGradIterations);
             ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
             ret.setvBias(DoubleMatrix.zeros(hBias.rows,hBias.columns));
@@ -480,7 +516,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setW(W.transpose());
             ret.setL2(l2);
             ret.setMomentum(momentum);
-            ret.setRenderEpochs(getRenderEpochs());
+            ret.setRenderEpochs(getRenderIterations());
             ret.setSparsity(sparsity);
             ret.setRng(getRng());
             ret.setDist(getDist());
@@ -501,6 +537,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             Constructor<?> c =  Dl4jReflection.getEmptyConstructor(getClass());
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
+            ret.setMomentumAfter(momentumAfter);
+            ret.setResetAdaGradIterations(resetAdaGradIterations);
             ret.setHbiasAdaGrad(hBiasAdaGrad);
             ret.setVBiasAdaGrad(vBiasAdaGrad);
             ret.sethBias(hBias.dup());
@@ -510,7 +548,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setW(W.dup());
             ret.setL2(l2);
             ret.setMomentum(momentum);
-            ret.setRenderEpochs(getRenderEpochs());
+            ret.setRenderEpochs(getRenderIterations());
             ret.setSparsity(sparsity);
             ret.setRng(getRng());
             ret.setDist(getDist());
@@ -970,8 +1008,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         return hbiasMean;
     }
     @Override
-    public void epochDone(int epoch) {
-        int plotEpochs = getRenderEpochs();
+    public void iterationDone(int epoch) {
+        int plotEpochs = getRenderIterations();
         if(plotEpochs <= 0)
             return;
         if(epoch % plotEpochs == 0 || epoch == 0) {
@@ -1006,6 +1044,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean cacheInput = true;
+        //momentum after n iterations
+        protected Map<Integer,Double> momentumAfter = new HashMap<>();
+        //reset adagrad historical gradient after n iterations
+        protected int resetAdaGradIterations = -1;
+
+
+        public Builder<E> resetAdaGradIterations(int resetAdaGradIterations) {
+            this.resetAdaGradIterations = resetAdaGradIterations;
+            return this;
+        }
+
+        public Builder<E> momentumAfter(Map<Integer,Double> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
 
         public Builder<E> cacheInput(boolean cacheInput) {
             this.cacheInput = cacheInput;

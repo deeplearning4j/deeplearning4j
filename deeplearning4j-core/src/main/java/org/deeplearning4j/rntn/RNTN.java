@@ -276,7 +276,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
      */
     public void train(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;
-         getValueGradient();
+         getValueGradient(0);
     }
 
 
@@ -655,7 +655,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     }
 
     @Override
-    public DoubleMatrix getValueGradient() {
+    public DoubleMatrix getValueGradient(int iterations) {
 
 
         // We use TreeMap for each of these so that they stay in a

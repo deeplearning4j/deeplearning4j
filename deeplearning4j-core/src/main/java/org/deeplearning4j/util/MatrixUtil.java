@@ -693,6 +693,28 @@ public class MatrixUtil {
     }
 
 
+
+
+
+    /**
+     * A uniform sample ranging from 0 to sigma.
+     *
+     * @param rng   the rng to use
+     * @return a uniform sample of the given shape and size
+     * <p/>
+     * with numbers between 0 and 1
+     */
+    public static DoubleMatrix randn(RandomGenerator rng,int rows,int columns) {
+        DoubleMatrix U = new DoubleMatrix(rows, columns);
+        for (int i = 0; i < U.rows; i++)
+            for (int j = 0; j < U.columns; j++) {
+                U.put(i, j, rng.nextGaussian());
+
+            }
+        return U;
+    }
+
+
     /**
      * A uniform sample ranging from 0 to sigma.
      *
