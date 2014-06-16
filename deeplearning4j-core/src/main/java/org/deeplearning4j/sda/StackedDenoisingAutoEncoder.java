@@ -17,8 +17,8 @@ import java.util.Map;
 
 
 /**
- * A JBlas implementation of 
- * stacked denoising auto encoders.
+ *  Stacked Denoising AutoEncoders are merely denoising autoencoders
+ *  who's inputs feed in to the next one.
  * @author Adam Gibson
  *
  */
@@ -99,7 +99,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-                    getLayers()[i].epochDone(epoch);
+                    getLayers()[i].iterationDone(epoch);
 
                 }
             }
@@ -110,55 +110,20 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         }
     }
 
-    /**
-     *
-     * @param input input examples
-     * @param labels output labels
-     * @param otherParams
-     *
-     * (double) learningRate
-     * (double) corruptionLevel
-     * (int) epochs
-     *
-     * Optional:
-     * (double) finetune lr
-     * (int) finetune epochs
-     *
-     */
-    @Override
-    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
-                             Object[] otherParams) {
-        if(otherParams == null) {
-            otherParams = new Object[]{0.01,0.3,1000};
-        }
-
-        Double lr = (Double) otherParams[0];
-        Double corruptionLevel = (Double) otherParams[1];
-        Integer epochs = (Integer) otherParams[2];
-
-        pretrain(input, lr, corruptionLevel, epochs);
-        if(otherParams.length <= 3)
-            finetune(labels, lr, epochs);
-        else {
-            Double finetuneLr = (Double) otherParams[3];
-            Integer fineTuneEpochs = (Integer) otherParams[4];
-            finetune(labels,finetuneLr,fineTuneEpochs);
-        }
-    }
-
-
 
     @Override
     public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
                                      int nHidden, DoubleMatrix W, DoubleMatrix hbias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
-        DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder().withDropOut(dropOut)
+        DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
+                .withDropOut(dropOut)
                 .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) :  getLossFunction())
                 .withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
                 .withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
+                .momentumAfter(momentumAfterByLayer.get(index) != null ? momentumAfterByLayer.get(index) : momentumAfter)
+                .resetAdaGradIterations(resetAdaGradIterationsByLayer.get(index) != null ? resetAdaGradIterationsByLayer.get(index) : resetAdaGradIterations)
                 .withSparsity(getSparsity()).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs)
-                .fanIn(getFanIn())
                 .build();
         return ret;
     }
@@ -424,10 +389,6 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
-        public Builder withFanIn(Double fanIn) {
-            super.withFanIn(fanIn);
-            return this;
-        }
 
         /**
          * Pick an activation function, default is sigmoid
@@ -468,6 +429,55 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
         public Builder withInput(DoubleMatrix input) {
             super.withInput(input);
+            return this;
+        }
+
+
+        /**
+         * Reset the adagrad epochs  after n iterations
+         *
+         * @param resetAdaGradIterations the number of iterations to reset adagrad after
+         * @return
+         */
+        @Override
+        public  Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            super.resetAdaGradIterations(resetAdaGradIterations);
+            return this;
+        }
+
+        /**
+         * Reset map for adagrad historical gradient by layer
+         *
+         * @param resetAdaGradEpochsByLayer
+         * @return
+         */
+        @Override
+        public Builder resetAdaGradEpochsByLayer(Map<Integer, Integer> resetAdaGradEpochsByLayer) {
+            super.resetAdaGradEpochsByLayer(resetAdaGradEpochsByLayer);
+            return this;
+        }
+
+        /**
+         * Sets the momentum to the specified value for a given layer after a specified number of iterations
+         *
+         * @param momentumAfterByLayer the by layer momentum changes
+         * @return
+         */
+        @Override
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+            super.momentumAfterByLayer(momentumAfterByLayer);
+            return this;
+        }
+
+        /**
+         * Set the momentum to the value after the desired number of iterations
+         *
+         * @param momentumAfter the momentum after n iterations
+         * @return
+         */
+        @Override
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            super.momentumAfter(momentumAfter);
             return this;
         }
 

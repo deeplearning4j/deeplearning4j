@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
+import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,36 +55,6 @@ public class DBN extends BaseMultiLayerNetwork {
     }
 
 
-    /**
-     *
-     * @param input input examples
-     * @param labels output labels
-     * @param otherParams
-     *
-     * (int)    k
-     * (double) learningRate
-     * (int) epochs
-     *
-     * Optional:
-     * (double) finetune lr
-     * (int) finetune epochs
-     *
-     */
-    @Override
-    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels,
-                             Object[] otherParams) {
-        int k = (Integer) otherParams[0];
-        double lr = (Double) otherParams[1];
-        int epochs = (Integer) otherParams[2];
-        pretrain(input,k,lr,epochs);
-        if(otherParams.length < 3)
-            finetune(labels, lr, epochs);
-        else {
-            double finetuneLr = otherParams.length > 3 ? (double) otherParams[3] : lr;
-            int finetuneEpochs = otherParams.length > 4 ? (int) otherParams[4] : epochs;
-            finetune(labels,finetuneLr,finetuneEpochs);
-        }
-    }
 
 
 
@@ -206,7 +177,7 @@ public class DBN extends BaseMultiLayerNetwork {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
                             getLayers()[i].train(next.getFirst(), realLearningRate,new Object[]{k,learningRate});
-                            getLayers()[i].epochDone(epoch);
+                            getLayers()[i].iterationDone(epoch);
                         }
                     }
                     else
@@ -223,7 +194,11 @@ public class DBN extends BaseMultiLayerNetwork {
                     DataSet next = iter.next();
                     layerInput = next.getFirst();
                     for(int j = 1; j <= i; j++) {
-                        if(activateOnly)
+                        if(useRBMPropUpAsActivations) {
+                            RBM r = (RBM) layers[i];
+                            layerInput = r.propUp(layerInput);
+                        }
+                        else if(activateOnly)
                             layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
                         else if(isSampleFromHiddenActivations())
                             layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(getSigmoidLayers()[j - 1].getActivationFunction().apply(layerInput)).getSecond();
@@ -240,7 +215,7 @@ public class DBN extends BaseMultiLayerNetwork {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
                             getLayers()[i].train(layerInput, realLearningRate,new Object[]{k,learningRate});
-                            getLayers()[i].epochDone(epoch);
+                            getLayers()[i].iterationDone(epoch);
                         }
                     }
                     else
@@ -283,7 +258,13 @@ public class DBN extends BaseMultiLayerNetwork {
                 layerInput = getInput();
             else {
                 boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
-                if(activateOnly)
+                if(useRBMPropUpAsActivations) {
+                    RBM r = (RBM) layers[i - 1];
+                    layerInput = r.propUp(layerInput);
+                    if(sampleFromHiddenActivations)
+                        layerInput = MatrixUtil.binomial(layerInput,1,getRng());
+                }
+                else if(activateOnly)
                     layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
                 else if(isSampleFromHiddenActivations())
                     layerInput = getLayers()[i - 1].sampleHiddenGivenVisible(getSigmoidLayers()[i - 1].getActivationFunction().apply(layerInput)).getSecond();
@@ -298,7 +279,7 @@ public class DBN extends BaseMultiLayerNetwork {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
                     getLayers()[i].train(layerInput, realLearningRate,new Object[]{k,learningRate});
-                    getLayers()[i].epochDone(epoch);
+                    getLayers()[i].iterationDone(epoch);
                 }
             }
             else
@@ -355,12 +336,14 @@ public class DBN extends BaseMultiLayerNetwork {
                 .withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
                 .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows())
-                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) :  getLossFunction())
+                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) : getLossFunction())
                 .withMomentum(getMomentum()).withSparsity(getSparsity()).withDistribution(getDist()).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withWeights(W).withDropOut(dropOut)
+                .momentumAfter(momentumAfterByLayer.get(index) != null ? momentumAfterByLayer.get(index) : momentumAfter)
+                .resetAdaGradIterations(resetAdaGradIterationsByLayer.get(index) != null ? resetAdaGradIterationsByLayer.get(index) : resetAdaGradIterations)
                 .withInput(input).withVisibleBias(vBias).withHBias(hBias).withDistribution(getDist())
                 .withRandom(rng).renderWeights(renderByLayer.get(index) != null ? renderByLayer.get(index) : renderWeightsEveryNEpochs)
-                .fanIn(getFanIn()).build();
+                .build();
 
         return ret;
     }
@@ -383,6 +366,55 @@ public class DBN extends BaseMultiLayerNetwork {
 
         public Builder() {
             this.clazz = DBN.class;
+        }
+
+
+        /**
+         * Reset the adagrad epochs  after n iterations
+         *
+         * @param resetAdaGradIterations the number of iterations to reset adagrad after
+         * @return
+         */
+        @Override
+        public  Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            super.resetAdaGradIterations(resetAdaGradIterations);
+            return this;
+        }
+
+        /**
+         * Reset map for adagrad historical gradient by layer
+         *
+         * @param resetAdaGradEpochsByLayer
+         * @return
+         */
+        @Override
+        public Builder resetAdaGradEpochsByLayer(Map<Integer, Integer> resetAdaGradEpochsByLayer) {
+             super.resetAdaGradEpochsByLayer(resetAdaGradEpochsByLayer);
+            return this;
+        }
+
+        /**
+         * Sets the momentum to the specified value for a given layer after a specified number of iterations
+         *
+         * @param momentumAfterByLayer the by layer momentum changes
+         * @return
+         */
+        @Override
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+             super.momentumAfterByLayer(momentumAfterByLayer);
+            return this;
+        }
+
+        /**
+         * Set the momentum to the value after the desired number of iterations
+         *
+         * @param momentumAfter the momentum after n iterations
+         * @return
+         */
+        @Override
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+             super.momentumAfter(momentumAfter);
+            return this;
         }
 
         public Builder useRBMPropUpAsActivation(boolean useRBMPropUpAsActivation) {
@@ -656,10 +688,6 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        public Builder withFanIn(Double fanIn) {
-            super.withFanIn(fanIn);
-            return this;
-        }
 
         /**
          * Pick an activation function, default is sigmoid

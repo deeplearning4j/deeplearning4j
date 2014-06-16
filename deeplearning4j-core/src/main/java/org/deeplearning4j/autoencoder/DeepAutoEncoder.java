@@ -6,7 +6,6 @@ import java.util.*;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.HiddenLayer;
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -15,14 +14,10 @@ import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.util.ArrayUtil;
-import org.deeplearning4j.util.MatrixUtil;
-import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.deeplearning4j.util.MatrixUtil.*;
 import static org.deeplearning4j.util.MatrixUtil.normal;
 
 /**
@@ -109,19 +104,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     public DeepAutoEncoder(){}
 
 
-    /**
-     * Train the network running some unsupervised
-     * pretraining followed by SGD/finetune
-     *
-     * @param input       the input to train on
-     * @param labels      the labels for the training examples(a matrix of the following format:
-     *                    [0,1,0] where 0 represents the labels its not and 1 represents labels for the positive outcomes
-     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
-     */
-    @Override
-    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels, Object[] otherParams) {
-        throw new IllegalStateException("Not implemented");
-    }
+
 
     /**
      * Pretrain the network with the given parameters
@@ -223,14 +206,14 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to train on
      */
-    public void finetune(DoubleMatrix input,double lr,int epochs) {
+    public void finetune(DoubleMatrix input,double lr,int iteations) {
         this.input = input;
 
 
         setInput(input);
         setLabels(input);
 
-        super.finetune(input,lr,epochs);
+        super.finetune(input,lr, iteations);
 
     }
 
@@ -481,6 +464,56 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             return this;
         }
 
+
+
+        /**
+         * Reset the adagrad epochs  after n iterations
+         *
+         * @param resetAdaGradIterations the number of iterations to reset adagrad after
+         * @return
+         */
+        @Override
+        public  Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            super.resetAdaGradIterations(resetAdaGradIterations);
+            return this;
+        }
+
+        /**
+         * Reset map for adagrad historical gradient by layer
+         *
+         * @param resetAdaGradEpochsByLayer
+         * @return
+         */
+        @Override
+        public Builder resetAdaGradEpochsByLayer(Map<Integer, Integer> resetAdaGradEpochsByLayer) {
+            super.resetAdaGradEpochsByLayer(resetAdaGradEpochsByLayer);
+            return this;
+        }
+
+        /**
+         * Sets the momentum to the specified value for a given layer after a specified number of iterations
+         *
+         * @param momentumAfterByLayer the by layer momentum changes
+         * @return
+         */
+        @Override
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+            super.momentumAfterByLayer(momentumAfterByLayer);
+            return this;
+        }
+
+        /**
+         * Set the momentum to the value after the desired number of iterations
+         *
+         * @param momentumAfter the momentum after n iterations
+         * @return
+         */
+        @Override
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            super.momentumAfter(momentumAfter);
+            return this;
+        }
+
         @Override
         public Builder withSparsity(double sparsity) {
             super.withSparsity(sparsity);
@@ -608,11 +641,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             return this;
         }
 
-        @Override
-        public Builder withFanIn(Double fanIn) {
-            super.withFanIn(fanIn);
-            return this;
-        }
 
         /**
          * Pick an activation function, default is sigmoid
@@ -699,17 +727,20 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                            .applySparsity(encoder.getLayers()[i].isApplySparsity())
                             .normalizeByInputRows(encoder.getLayers()[i].normalizeByInputRows())
                             .withDropOut(encoder.getLayers()[i].dropOut())
+                            .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
+                            .resetAdaGradIterations(encoder.getLayers()[inverseCount].getResetAdaGradIterations())
                             .useRegularization(encoder.getLayers()[i].isUseRegularization())
                             .useAdaGrad(encoder.getLayers()[i].isUseAdaGrad())
                             .withVisibleBias(encoder.getLayers()[i].getvBias().dup())
                             .withHBias(encoder.getLayers()[i].gethBias().dup())
                             .withDistribution(encoder.getLayers()[i].getDist())
-                            .renderWeights(encoder.getLayers()[i].getRenderEpochs())
+                            .renderWeights(encoder.getLayers()[i].getRenderIterations())
                             .withL2(encoder.getLayers()[i].getL2()).withMomentum(encoder.getLayers()[i].getMomentum())
                             .withLossFunction(encoder.getLayers()[i].getLossFunction())
                             .withRandom(encoder.getLayers()[i].getRng())
                             .build();
-                    //code layer linear
+
+                   //code layer linear
                    if(i == encoder.getLayers().length - 1) {
                        a.act = Activations.linear();
                    }
@@ -724,6 +755,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                     AutoEncoder a = new AutoEncoder.Builder()
                             .numberOfVisible(encoder.getLayers()[inverseCount].getnHidden())
                             .numHidden(encoder.getLayers()[inverseCount].getnVisible())
+                            .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
+                            .resetAdaGradIterations(encoder.getLayers()[inverseCount].getResetAdaGradIterations())
                             .withWeights(encoder.getLayers()[inverseCount].getW().transpose())
                             .applySparsity(encoder.getLayers()[inverseCount].isApplySparsity())
                             .normalizeByInputRows(encoder.getLayers()[inverseCount].normalizeByInputRows())
@@ -733,7 +766,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .withVisibleBias(encoder.getLayers()[inverseCount].gethBias().dup())
                             .withHBias(encoder.getLayers()[inverseCount].getvBias().dup())
                             .withDistribution(encoder.getLayers()[inverseCount].getDist())
-                            .renderWeights(encoder.getLayers()[inverseCount].getRenderEpochs())
+                            .renderWeights(encoder.getLayers()[inverseCount].getRenderIterations())
                             .withL2(encoder.getLayers()[inverseCount].getL2()).withMomentum(encoder.getLayers()[inverseCount].getMomentum())
                             .withLossFunction(encoder.getLayers()[inverseCount].getLossFunction())
                             .withRandom(encoder.getLayers()[inverseCount].getRng())
@@ -772,6 +805,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             e.setSparsity(encoder.getSparsity());
             e.setRenderWeightsEveryNEpochs(encoder.getRenderWeightsEveryNEpochs());
             e.setL2(encoder.getL2());
+            e.setResetAdaGradIterations(encoder.getResetAdaGradIterations());
+            encoder.setMomentumAfterByLayer(encoder.getMomentumAfterByLayer());
             e.setForceNumEpochs(shouldForceEpochs);
             e.setUseRegularization(encoder.isUseRegularization());
             e.setUseAdaGrad(encoder.isUseAdaGrad());

@@ -94,13 +94,8 @@ public class AutoEncoder extends BaseNeuralNetwork {
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
         double lr = (double) params[0];
+        int iterations = (int) params[1];
 
-        if(wAdaGrad != null)
-            this.wAdaGrad.setMasterStepSize(lr);
-        if(hBiasAdaGrad != null )
-            this.hBiasAdaGrad.setMasterStepSize(lr);
-        if(vBiasAdaGrad != null)
-            vBiasAdaGrad.setMasterStepSize(lr);
 
         //feed forward
         DoubleMatrix out = reconstruct(input);
@@ -114,7 +109,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
         DoubleMatrix vBiasGradient = DoubleMatrix.zeros(vBias.rows,vBias.columns);
 
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
-        updateGradientAccordingToParams(ret, lr);
+        updateGradientAccordingToParams(ret, iterations,lr);
          return ret;
 
     }

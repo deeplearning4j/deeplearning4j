@@ -74,19 +74,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         super(nIn, hiddenLayerSizes, nOuts, nLayers, rng, input, labels);
     }
 
-    /**
-     * Train the network running some unsupervised
-     * pretraining followed by SGD/finetune
-     *
-     * @param input       the input to train on
-     * @param labels      the labels for the training examples(a matrix of the following format:
-     *                    [0,1,0] where 0 represents the labels its not and 1 represents labels for the positive outcomes
-     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
-     */
-    @Override
-    public void trainNetwork(DoubleMatrix input, DoubleMatrix labels, Object[] otherParams) {
 
-    }
 
     /**
      * Pretrain the network with the given parameters

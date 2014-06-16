@@ -11,6 +11,6 @@ public interface NeuralNetEpochListener  {
 	 * Event listener for each iteration
 	 * @param epoch
 	 */
-	void epochDone(int epoch);
+	void iterationDone(int epoch);
 	
 }

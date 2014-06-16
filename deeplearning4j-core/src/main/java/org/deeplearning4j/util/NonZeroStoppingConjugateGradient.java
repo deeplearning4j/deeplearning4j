@@ -146,7 +146,7 @@ public class NonZeroStoppingConjugateGradient implements Optimizer {
 		for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 			curr = System.currentTimeMillis();
 			if(listener != null)
-				listener.epochDone(iterationCount);
+				listener.iterationDone(iterationCount);
 			logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
 					+ (curr - last));
 			last = curr;
@@ -217,7 +217,7 @@ public class NonZeroStoppingConjugateGradient implements Optimizer {
 			}
 
 			if(listener != null) {
-				listener.epochDone(iterationCount);
+				listener.iterationDone(iterationCount);
 			}
 		}
 		return false;

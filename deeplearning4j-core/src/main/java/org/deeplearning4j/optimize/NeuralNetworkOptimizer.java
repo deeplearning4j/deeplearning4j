@@ -41,6 +41,7 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     protected  NeuralNetPlotter plotter = new NeuralNetPlotter();
     protected double maxStep = -1;
     protected int numParams = -1;
+    protected int currIteration = -1;
     /**
      *
      * @param network
@@ -85,11 +86,11 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     }
 
     @Override
-    public void epochDone(int epoch) {
-        int plotEpochs = network.getRenderEpochs();
+    public void iterationDone(int iterationDone) {
+        int plotEpochs = network.getRenderIterations();
         if(plotEpochs <= 0)
             return;
-        if(epoch % plotEpochs == 0) {
+        if(iterationDone % plotEpochs == 0) {
             plotter.plotNetworkGradient(network,network.getGradient(extraParams),100);
         }
 
@@ -211,8 +212,9 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         setParameters(params.toArray());
     }
     @Override
-    public DoubleMatrix getValueGradient() {
+    public DoubleMatrix getValueGradient(int currIteration) {
         double[] d = new double[getNumParameters()];
+        this.currIteration = currIteration;
         getValueGradient(d);
         return new DoubleMatrix(d);
     }
@@ -251,5 +253,13 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
     public void setMaxStep(double maxStep) {
         this.maxStep = maxStep;
+    }
+
+    public int getCurrIteration() {
+        return currIteration;
+    }
+
+    public void setCurrIteration(int currIteration) {
+        this.currIteration = currIteration;
     }
 }
