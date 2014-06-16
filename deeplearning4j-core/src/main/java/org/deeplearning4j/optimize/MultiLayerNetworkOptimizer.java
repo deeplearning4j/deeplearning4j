@@ -29,12 +29,17 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
     private static Logger log = LoggerFactory.getLogger(MultiLayerNetworkOptimizer.class);
     private double lr;
+    private int currentIteration;
 
     public MultiLayerNetworkOptimizer(BaseMultiLayerNetwork network,double lr) {
         this.network = network;
         this.lr = lr;
     }
 
+    @Override
+    public void setCurrentIteration(int value) {
+        this.currentIteration = value;
+    }
 
     public void optimize(DoubleMatrix labels,double lr,int epochs,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
@@ -75,7 +80,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
     public void optimize(DoubleMatrix labels,double lr,int epochs) {
         network.getOutputLayer().setLabels(labels);
         if(!network.isForceNumEpochs()) {
-            network.getOutputLayer().trainTillConvergence(labels,lr,epochs,null);
+            //network.getOutputLayer().trainTillConvergence(labels,lr,epochs,null);
 
             if(network.isShouldBackProp())
                 network.backProp(lr, epochs);

@@ -156,7 +156,7 @@ public class RBM extends BaseNeuralNetwork {
 
         int k = (int) params[0];
         double learningRate = (double) params[1];
-        int iteration = (int) params[2];
+        int iteration = params[params.length - 1] == null ? 0 : (int) params[params.length - 1];
 
         if(wAdaGrad != null)
             wAdaGrad.setMasterStepSize(learningRate);
@@ -183,7 +183,7 @@ public class RBM extends BaseNeuralNetwork {
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
-        Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices = null;
+        Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices;
         //negative visible means or expected values
         DoubleMatrix nvMeans = null;
         //negative value samples
@@ -226,7 +226,7 @@ public class RBM extends BaseNeuralNetwork {
 
 
 
-        DoubleMatrix hBiasGradient = null;
+        DoubleMatrix hBiasGradient;
 
         if(sparsity != 0)
             //all hidden units must stay around this number

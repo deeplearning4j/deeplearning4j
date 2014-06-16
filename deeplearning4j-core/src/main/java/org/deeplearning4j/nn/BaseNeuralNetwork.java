@@ -401,7 +401,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      * @param iteration the current iteration
-     * @param learningRate the learning rate for the current iteratiaon
+     * @param learningRate the learning rate for the current iteration
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
         DoubleMatrix wGradient = gradient.getwGradient();
@@ -410,10 +410,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
 
         //reset adagrad history
-        if(resetAdaGradIterations == iteration) {
+        if(iteration != 0 && resetAdaGradIterations > 0 &&  iteration % resetAdaGradIterations == 0) {
             wAdaGrad.historicalGradient = null;
             hBiasAdaGrad.historicalGradient = null;
             vBiasAdaGrad.historicalGradient = null;
+            if(this.W != null && this.wAdaGrad == null)
+                this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+
+            if(this.vBias != null && this.vBiasAdaGrad == null)
+                this.vBiasAdaGrad = new AdaGrad(this.vBias.rows,this.vBias.columns);
+
+
+            if(this.hBias != null && this.hBiasAdaGrad == null)
+                this.hBiasAdaGrad = new AdaGrad(this.hBias.rows,this.hBias.columns);
+
+            log.info("Resetting adagrad");
         }
 
         DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
@@ -427,15 +438,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             wGradient.muli(learningRate);
 
         if (useAdaGrad)
-            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient)).add(hBiasGradient.mul(momentum));
+            hBiasGradient = hBiasGradient.mul(hBiasAdaGrad.getLearningRates(hBiasGradient));
         else
-            hBiasGradient = hBiasGradient.mul(learningRate).add(hBiasGradient.mul(momentum));
+            hBiasGradient = hBiasGradient.mul(learningRate);
 
 
         if (useAdaGrad)
-            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient)).add(vBiasGradient.mul(momentum));
+            vBiasGradient = vBiasGradient.mul(vBiasAdaGrad.getLearningRates(vBiasGradient));
         else
-            vBiasGradient = vBiasGradient.mul(learningRate).add(vBiasGradient.mul(momentum));
+            vBiasGradient = vBiasGradient.mul(learningRate);
 
 
 
@@ -464,8 +475,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
-        if(useRegularization && l2 > 0)
-            wGradient.subi(wGradient.mul(l2).mul(wLearningRates));
+        if(useRegularization && l2 > 0) {
+            if(useAdaGrad)
+                wGradient.subi(W.mul(l2).mul(wLearningRates));
+
+            else
+                wGradient.subi(W.mul(l2 * learningRate));
+
+        }
 
         this.wGradient = wGradient;
         this.vBiasGradient = vBiasGradient;
@@ -1207,6 +1224,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
                         ret.cacheInput = cacheInput;
                         ret.sparsity = this.sparsity;
+                        ret.resetAdaGradIterations = resetAdaGradIterations;
+                        ret.momentumAfter = momentumAfter;
                         ret.applySparsity = this.applySparsity;
                         ret.normalizeByInputRows = this.normalizeByInputRows;
                         ret.renderWeightsEveryNumEpochs = this.renderWeightsEveryNumEpochs;

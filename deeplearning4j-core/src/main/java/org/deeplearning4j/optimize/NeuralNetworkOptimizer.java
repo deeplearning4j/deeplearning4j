@@ -7,7 +7,9 @@ import java.util.List;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
+import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
+import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -20,7 +22,7 @@ import cc.mallet.optimize.Optimizable;
  * @author Adam Gibson
  *
  */
-public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix,Serializable,NeuralNetEpochListener {
+public abstract class NeuralNetworkOptimizer implements OptimizableByGradientValueMatrix,Serializable,NeuralNetEpochListener {
 
 
 
@@ -51,7 +53,9 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     public NeuralNetworkOptimizer(NeuralNetwork network,double lr,Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
         this.network = network;
         this.lr = lr;
-        this.extraParams = trainingParams;
+        //add current iteration as an extra parameter
+        this.extraParams = new Object[trainingParams.length + 1];
+        System.arraycopy(trainingParams,0,extraParams,0,trainingParams.length);
         this.optimizationAlgorithm = optimizationAlgorithm;
         this.lossFunction = lossFunction;
     }
@@ -69,6 +73,11 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         }
     }
 
+
+    @Override
+    public DoubleMatrix getParameters() {
+        return new DoubleMatrix(ArrayUtil.combine(network.getW().data,network.getvBias().data,network.gethBias().data));
+    }
 
     public void train(DoubleMatrix x) {
         if(opt == null) {
@@ -96,9 +105,6 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
     }
 
-    public List<Double> getErrors() {
-        return errors;
-    }
 
 
     @Override
@@ -112,19 +118,6 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     }
 
 
-    @Override
-    public void getParameters(double[] buffer) {
-		/*
-		 * If we think of the parameters of the model (W,vB,hB)
-		 * as a solid line for the optimizer, we get the following:
-		 * 
-		 */
-
-
-
-        for(int i = 0; i < buffer.length; i++)
-            buffer[i] = getParameter(i);
-    }
 
 
     @Override
@@ -149,17 +142,10 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
 
 
     @Override
-    public void setParameters(double[] params) {
-		/*
-		 * If we think of the parameters of the model (W,vB,hB)
-		 * as a solid line for the optimizer, we get the following:
-		 * 
-		 */
+    public void setParameters(DoubleMatrix params) {
         for(int i = 0; i < params.length; i++)
-            setParameter(i,params[i]);
-
+            setParameter(i, params.get(i));
     }
-
 
     @Override
     public void setParameter(int index, double value) {
@@ -199,27 +185,31 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
     }
 
 
+    @Override
+    public DoubleMatrix getValueGradient(int iteration) {
+        if(iteration >= 1)
+            extraParams[extraParams.length - 1] = iteration;
+        NeuralNetworkGradient g = network.getGradient(extraParams);
+        double[] buffer = new double[getNumParameters()];
+        /*
+		 * Treat params as linear index. Always:
+		 * W
+		 * Visible Bias
+		 * Hidden Bias
+		 */
+        int idx = 0;
+        for (int i = 0; i < g.getwGradient().length; i++) {
+            buffer[idx++] = g.getwGradient().get(i);
+        }
+        for (int i = 0; i < g.getvBiasGradient().length; i++) {
+            buffer[idx++] = g.getvBiasGradient().get(i);
+        }
+        for (int i = 0; i < g.gethBiasGradient().length; i++) {
+            buffer[idx++] = g.gethBiasGradient().get(i);
+        }
 
-
-    @Override
-    public DoubleMatrix getParameters() {
-        double[] params = new double[getNumParameters()];
-        getParameters(params);
-        return new DoubleMatrix(params);
+        return new DoubleMatrix(buffer);
     }
-    @Override
-    public void setParameters(DoubleMatrix params) {
-        setParameters(params.toArray());
-    }
-    @Override
-    public DoubleMatrix getValueGradient(int currIteration) {
-        double[] d = new double[getNumParameters()];
-        this.currIteration = currIteration;
-        getValueGradient(d);
-        return new DoubleMatrix(d);
-    }
-    @Override
-    public abstract void getValueGradient(double[] buffer);
 
 
     @Override
@@ -240,6 +230,17 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         return network.getReConstructionCrossEntropy();
 
     }
+
+    @Override
+    public void setCurrentIteration(int value) {
+        if(value < 1) {
+            log.info("Not setting iteration with value " + value);
+            return;
+        }
+
+        this.currIteration = value;
+    }
+
     public  double getTolerance() {
         return tolerance;
     }
@@ -259,7 +260,5 @@ public abstract class NeuralNetworkOptimizer implements Optimizable.ByGradientVa
         return currIteration;
     }
 
-    public void setCurrIteration(int currIteration) {
-        this.currIteration = currIteration;
-    }
+
 }

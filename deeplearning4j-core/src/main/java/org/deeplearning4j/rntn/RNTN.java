@@ -48,6 +48,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.hardTanh();
     protected AdaGrad paramAdaGrad;
+    private int currIteration = -1;
 
     /** Regularization cost for the transform matrix  */
     private double regTransformMatrix = 0.001;
@@ -205,6 +206,10 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     }
 
 
+    @Override
+    public void setCurrentIteration(int value) {
+          this.currIteration = currIteration;
+    }
 
     void initRandomWordVectors(List<Tree> trainingTrees) {
         if (numHidden == 0) {

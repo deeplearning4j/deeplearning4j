@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
 
 /**
@@ -101,8 +102,8 @@ public class AutoEncoder extends BaseNeuralNetwork {
         DoubleMatrix out = reconstruct(input);
 
         DoubleMatrix diff = input.sub(out);
-
-        DoubleMatrix backWard = diff.mul(input).mul(out).mul(out.neg().addi(1));
+        //-( y - h) .* f'(z^l) where l is the output layer
+        DoubleMatrix backWard = diff.mul(input).neg().mul(act.applyDerivative(out));
 
         DoubleMatrix wGradient = backWard.transpose().mmul(W);
         DoubleMatrix hBiasGradient = wGradient.columnMeans();
@@ -110,8 +111,23 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(ret, iterations,lr);
-         return ret;
+        return ret;
 
+    }
+
+
+
+
+    /**
+     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     *
+     * @param gradient     the gradient to modify
+     * @param iteration    the current iteration
+     * @param learningRate the learning rate for the current iteratiaon
+     */
+    @Override
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient, int iteration, double learningRate) {
+        super.updateGradientAccordingToParams(gradient, iteration, learningRate);
     }
 
     /**
