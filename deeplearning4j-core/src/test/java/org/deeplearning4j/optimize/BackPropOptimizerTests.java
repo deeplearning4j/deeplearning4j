@@ -68,8 +68,8 @@ public class BackPropOptimizerTests {
         assertEquals(true,secondWeightForParam == secondWeightInNetwork);
 
         assertEquals(op.getNumParameters(),op.getParameters().length);
-        assertEquals(op.getNumParameters(),op.getValueGradient().length);
-        assertEquals(op.getParameters().length,op.getValueGradient().length);
+        assertEquals(op.getNumParameters(),op.getValueGradient(0).length);
+        assertEquals(op.getParameters().length,op.getValueGradient(0).length);
 
 
         assertEquals(dbn.getLayers()[1].gethBias().length,Math.abs(r2.getBiasStart() - r2.getBiasEnd()));

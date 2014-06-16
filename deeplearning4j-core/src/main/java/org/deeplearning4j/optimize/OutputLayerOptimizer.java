@@ -6,10 +6,15 @@ import org.jblas.DoubleMatrix;
 
 import cc.mallet.optimize.Optimizable;
 
+/**
+ * Output layer optimizer
+ * @author Adam Gibson
+ */
 public class OutputLayerOptimizer implements Optimizable.ByGradientValue,OptimizableByGradientValueMatrix {
 
 	private OutputLayer logReg;
 	private double lr;
+    private int currIteration = -1;
 	
 	
 	
@@ -90,7 +95,8 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 	}
 
 	@Override
-	public DoubleMatrix getValueGradient() {
+	public DoubleMatrix getValueGradient(int currIteration) {
+        this.currIteration = currIteration;
 		OutputLayerGradient grad = logReg.getGradient(lr);
 		DoubleMatrix ret = new DoubleMatrix(getNumParameters());
         if(logReg.getW().length != grad.getwGradient().length)

@@ -81,6 +81,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     //visible bias transforms for initialization
     protected Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
+    //momentum after n iterations
+    protected Map<Integer,Double> momentumAfter = new HashMap<>();
+    //momentum after n iterations by layer
+    protected Map<Integer,Map<Integer,Double>> momentumAfterByLayer = new HashMap<>();
+    //reset adagrad historical gradient after n iterations
+    protected Map<Integer,Integer> resetAdaGradIterationsByLayer = new HashMap<>();
+    //reset adagrad historical gradient after n iterations
+    protected int resetAdaGradIterations = -1;
+
     protected boolean shouldBackProp = true;
     //whether to only train a certain number of epochs
     protected boolean forceNumEpochs = false;
@@ -521,7 +530,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     public void backPropStep(double lr) {
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient(fineTuneLearningRate);
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient();
         for(int i = 0; i < layers.length; i++) {
             if(deltas.size() < layers.length) {
                 layers[i].getW().subi(deltas.get(i).getFirst());
@@ -541,7 +550,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public DoubleMatrix getBackPropGradient() {
         double[][] list = new double[layers.length * 2 + 2][];
         int length = 0;
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient(fineTuneLearningRate);
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient();
 
         int deltaCount = 0;
 
@@ -806,10 +815,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * This involves computing the activations, tracking the last layers weights
      * to revert to in case of convergence, the learning rate being used to train
      * and the current epoch
-     * @param lr the learning rate to use for training
      * @return whether the training should converge or not
      */
-    protected List<Pair<DoubleMatrix,DoubleMatrix>> backPropGradient(double lr) {
+    protected List<Pair<DoubleMatrix,DoubleMatrix>> backPropGradient() {
         //feedforward to compute activations
         //initial error
         //log.info("Back prop step " + epoch);
@@ -856,12 +864,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
-    public double layerWiseErrorSum() {
-        double ret = 0.0;
-        for(int i = 0; i < layers.length; i++)
-            ret += layers[i].getReConstructionCrossEntropy();
-        return ret;
-    }
+
 
 
 
@@ -870,16 +873,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Run SGD based on the given labels
      * @param labels the labels to use
      * @param lr the learning rate during training
-     * @param epochs the number of times to iterate
+     * @param iteations the number of times to iterate
      */
-    public void finetune(DoubleMatrix labels,double lr, int epochs) {
+    public void finetune(DoubleMatrix labels,double lr, int iteations) {
         feedForward();
         MatrixUtil.complainAboutMissMatchedMatrices(labels,outputLayer.getInput());
         if(labels != null)
             this.labels = labels;
         this.fineTuneLearningRate = lr;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
-        optimizer.optimize(this.labels, lr,epochs);
+        optimizer.optimize(this.labels, lr,iteations);
 
     }
 
@@ -887,16 +890,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Run training algorithm based on the given labels
      * @param labels the labels to use
      * @param lr the learning rate during training
-     * @param epochs the number of times to iterate
+     * @param iterations the number of times to iterate
      */
-    public void finetune(DoubleMatrix labels,double lr, int epochs,TrainingEvaluator eval) {
+    public void finetune(DoubleMatrix labels,double lr, int iterations,TrainingEvaluator eval) {
         feedForward();
         if(labels != null)
             this.labels = labels;
 
         this.fineTuneLearningRate = lr;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
-        optimizer.optimize(this.labels, lr,epochs,eval);
+        optimizer.optimize(this.labels, lr,iterations,eval);
     }
 
 
@@ -1087,15 +1090,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return outputLayer.score();
     }
 
-    /**
-     * Train the network running some unsupervised
-     * pretraining followed by SGD/finetune
-     * @param input the input to train on
-     * @param labels the labels for the training examples(a matrix of the following format:
-     * [0,1,0] where 0 represents the labels its not and 1 represents labels for the positive outcomes
-     * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
-     */
-    public abstract void trainNetwork(DoubleMatrix input,DoubleMatrix labels,Object[] otherParams);
 
     /**
      * Pretrain with a data set iterator.
@@ -1320,23 +1314,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.activation = activation;
     }
 
-
-
-    public  boolean isShouldInit() {
-        return shouldInit;
-    }
-
-    public  void setShouldInit(boolean shouldInit) {
-        this.shouldInit = shouldInit;
-    }
-
-    public  double getFanIn() {
-        return fanIn;
-    }
-
-    public  void setFanIn(double fanIn) {
-        this.fanIn = fanIn;
-    }
 
     public  int getRenderWeightsEveryNEpochs() {
         return renderWeightsEveryNEpochs;
@@ -1568,6 +1545,38 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.lossFunctionByLayer = lossFunctionByLayer;
     }
 
+    public int getResetAdaGradIterations() {
+        return resetAdaGradIterations;
+    }
+
+    public void setResetAdaGradIterations(int resetAdaGradIterations) {
+        this.resetAdaGradIterations = resetAdaGradIterations;
+    }
+
+    public Map<Integer, Integer> getResetAdaGradIterationsByLayer() {
+        return resetAdaGradIterationsByLayer;
+    }
+
+    public void setResetAdaGradIterationsByLayer(Map<Integer, Integer> resetAdaGradIterationsByLayer) {
+        this.resetAdaGradIterationsByLayer = resetAdaGradIterationsByLayer;
+    }
+
+    public Map<Integer, Map<Integer, Double>> getMomentumAfterByLayer() {
+        return momentumAfterByLayer;
+    }
+
+    public void setMomentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+        this.momentumAfterByLayer = momentumAfterByLayer;
+    }
+
+    public Map<Integer, Double> getMomentumAfter() {
+        return momentumAfter;
+    }
+
+    public void setMomentumAfter(Map<Integer, Double> momentumAfter) {
+        this.momentumAfter = momentumAfter;
+    }
+
     public boolean isLineSearchBackProp() {
         return lineSearchBackProp;
     }
@@ -1586,8 +1595,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private RandomGenerator rng = new MersenneTwister(1234);
         private DoubleMatrix input,labels;
         private ActivationFunction activation;
-        private boolean decode = false;
-        private double fanIn = -1;
         private int renderWeithsEveryNEpochs = -1;
         private double l2 = 0.01;
         private boolean useRegularization = false;
@@ -1604,7 +1611,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private boolean useHiddenActivationsForwardProp = true;
         private double dropOut = 0;
         private Map<Integer,ActivationFunction> activationForLayer = new HashMap<>();
-        private boolean buildAutoEncoder = false;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
@@ -1613,7 +1619,61 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private Map<Integer,Boolean> sampleOrActivateByLayer = new HashMap<>();
         private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
         private boolean lineSearchBackProp = false;
+        //momentum after n iterations
+        private Map<Integer,Double> momentumAfter = new HashMap<>();
+        //momentum after n iterations by layer
+        private Map<Integer,Map<Integer,Double>> momentumAfterByLayer = new HashMap<>();
+        //reset adagrad historical gradient after n iterations
+        private Map<Integer,Integer> resetAdaGradIterationsByLayer = new HashMap<>();
+        //reset adagrad historical gradient after n iterations
+        private int resetAdaGradIterations = -1;
 
+
+        /**
+         * Reset the adagrad epochs  after n iterations
+         * @param resetAdaGradIterations the number of iterations to reset adagrad after
+         * @return
+         */
+        public Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            this.resetAdaGradIterations = resetAdaGradIterations;
+            return this;
+        }
+
+        /**
+         * Reset map for adagrad historical gradient by layer
+         * @param resetAdaGradEpochsByLayer
+         * @return
+         */
+        public Builder resetAdaGradEpochsByLayer(Map<Integer,Integer> resetAdaGradEpochsByLayer) {
+            this.resetAdaGradIterationsByLayer = resetAdaGradEpochsByLayer;
+            return this;
+        }
+
+        /**
+         * Sets the momentum to the specified value for a given layer after a specified number of iterations
+         * @param momentumAfterByLayer the by layer momentum changes
+         * @return
+         */
+        public Builder momentumAfterByLayer(Map<Integer,Map<Integer,Double>> momentumAfterByLayer) {
+            this.momentumAfterByLayer = momentumAfterByLayer;
+            return this;
+        }
+
+        /**
+         * Set the momentum to the value after the desired number of iterations
+         * @param momentumAfter the momentum after n iterations
+         * @return
+         */
+        public Builder momentumAfter(Map<Integer,Double> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
+
+        /**
+         * Whether to use line search back prop instead of SGD
+         * @param lineSearchBackProp
+         * @return
+         */
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {
             this.lineSearchBackProp = lineSearchBackProp;
             return this;
@@ -1863,10 +1923,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             return this;
         }
 
-        public Builder<E> withFanIn(Double fanIn) {
-            this.fanIn = fanIn;
-            return this;
-        }
 
         /**
          * Pick an activation function, default is sigmoid
@@ -1884,15 +1940,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             return this;
         }
 
-        /**
-         * Whether the network is a decoder for an auto encoder
-         * @param decode
-         * @return
-         */
-        public Builder<E> decodeNetwork(boolean decode) {
-            this.decode = decode;
-            return this;
-        }
+
 
         public Builder<E> hiddenLayerSizes(Integer[] hiddenLayerSizes) {
             this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
@@ -1957,6 +2005,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.setResetAdaGradIterations(resetAdaGradIterations);
+                ret.setResetAdaGradIterationsByLayer(resetAdaGradIterationsByLayer);
+                ret.setMomentumAfter(momentumAfter);
+                ret.setMomentumAfterByLayer(momentumAfterByLayer);
                 ret.setLossFunctionByLayer(lossFunctionByLayer);
                 ret.setSampleOrActivate(sampleOrActivateByLayer);
                 ret.setRenderByLayer(renderByLayer);
@@ -1975,7 +2027,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.setLineSearchBackProp(lineSearchBackProp);
                 ret.setMomentum(momentum);
                 ret.setLabels(labels);
-                ret.setFanIn(fanIn);
                 ret.activationFunctionForLayer.putAll(activationForLayer);
                 ret.setSparsity(sparsity);
                 ret.setRenderWeightsEveryNEpochs(renderWeithsEveryNEpochs);

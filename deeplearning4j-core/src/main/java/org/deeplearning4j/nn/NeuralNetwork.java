@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn;
 
 import java.io.Serializable;
+import java.util.Map;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -154,7 +155,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public void setMomentum(double momentum);
 	
 	public void setRenderEpochs(int renderEpochs);
-	public int getRenderEpochs();
+	public int getRenderIterations();
 
 	public NeuralNetwork transpose();
 	public  NeuralNetwork clone();
@@ -185,7 +186,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	void resetAdaGrad(double lr);
 	
-	void epochDone(int epoch);
+	void iterationDone(int epoch);
 	
 	public double l2RegularizedCoefficient();
 
@@ -227,7 +228,29 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @return
      */
     boolean isApplySparsity();
-	
 
+    /**
+     * Reset ada grad after n iterations
+     * @return
+     */
+    public int getResetAdaGradIterations();
+
+    /**
+     * Reset adagrad after n iterations
+     * @param resetAdaGradEpochs
+     */
+    public void setResetAdaGradIterations(int resetAdaGradEpochs);
+
+    /**
+     * Getter for momentum after n iterations
+     * @return
+     */
+    public Map<Integer, Double> getMomentumAfter();
+
+    /**
+     * Setter for momentum after n iterations
+     * @param momentumAfter
+     */
+    public void setMomentumAfter(Map<Integer, Double> momentumAfter);
 
 }

@@ -351,7 +351,7 @@ public class ConvolutionalRBM extends RBM  {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int epochs,Object[] extraParams) {
+    public void backProp(double lr,int iterations,Object[] extraParams) {
         boolean train = false;
 
         double currRecon = this.getReConstructionCrossEntropy();
@@ -359,7 +359,7 @@ public class ConvolutionalRBM extends RBM  {
         NeuralNetwork revert = clone();
         int numEpochs = 0;
         while(train) {
-            if(numEpochs > epochs)
+            if(numEpochs > iterations)
                 break;
 
             NeuralNetworkGradient gradient = getGradient(extraParams);
@@ -415,7 +415,7 @@ public class ConvolutionalRBM extends RBM  {
 
             numEpochs++;
 
-            int plotEpochs = getRenderEpochs();
+            int plotEpochs = getRenderIterations();
             if(plotEpochs > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(numEpochs % plotEpochs == 0) {

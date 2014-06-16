@@ -94,6 +94,7 @@ public class RBM extends BaseNeuralNetwork {
         optimizer.train(input);
     }
 
+
     /**
      * Contrastive divergence revolves around the idea
      * of approximating the log likelihood around x1(input) with repeated sampling.
@@ -113,7 +114,34 @@ public class RBM extends BaseNeuralNetwork {
         if(input != null && cacheInput)
             this.input = input;
         this.lastMiniBatchSize = input.rows;
-        NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate});
+        NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,-1});
+        getW().addi(gradient.getwGradient());
+        gethBias().addi(gradient.gethBiasGradient());
+        getvBias().addi(gradient.getvBiasGradient());
+
+    }
+
+    /**
+     * Contrastive divergence revolves around the idea
+     * of approximating the log likelihood around x1(input) with repeated sampling.
+     * Given is an energy based model: the higher k is (the more we sample the model)
+     * the more we lower the energy (increase the likelihood of the model)
+     *
+     * and lower the likelihood (increase the energy) of the hidden samples.
+     *
+     * Other insights:
+     *    CD - k involves keeping the first k samples of a gibbs sampling of the model.
+     *
+     * @param learningRate the learning rate to scale by
+     * @param k the number of iterations to do
+     * @param input the input to sample from
+     * @param iteration  the iteration to use
+     */
+    public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input,int iteration) {
+        if(input != null && cacheInput)
+            this.input = input;
+        this.lastMiniBatchSize = input.rows;
+        NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,iteration});
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
         getvBias().addi(gradient.getvBiasGradient());
@@ -128,7 +156,7 @@ public class RBM extends BaseNeuralNetwork {
 
         int k = (int) params[0];
         double learningRate = (double) params[1];
-
+        int iteration = (int) params[2];
 
         if(wAdaGrad != null)
             wAdaGrad.setMasterStepSize(learningRate);
@@ -214,7 +242,7 @@ public class RBM extends BaseNeuralNetwork {
         DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
-        updateGradientAccordingToParams(ret, learningRate);
+        updateGradientAccordingToParams(ret, iteration,learningRate);
 
         return ret;
     }
@@ -348,7 +376,7 @@ public class RBM extends BaseNeuralNetwork {
         DoubleMatrix v1Mean = propDown(h);
 
         if(visibleType == VisibleUnit.GAUSSIAN) {
-            DoubleMatrix v1Sample = normal(getRng(), v1Mean, 1).mulRowVector(sigma);
+            DoubleMatrix v1Sample = v1Mean.add(MatrixUtil.randn(rng,v1Mean.rows,v1Mean.columns));
             return new Pair<>(v1Mean,v1Sample);
 
         }
@@ -392,8 +420,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(hiddenType == HiddenUnit.GAUSSIAN) {
-            this.hiddenSigma = columnVariance(preSig);
-            DoubleMatrix add = normal(getRng(),preSig,this.hiddenSigma);
+            DoubleMatrix add =  preSig.add(MatrixUtil.randn(rng, preSig.rows, preSig.columns));
             preSig.addi(add);
             return preSig;
         }
@@ -524,6 +551,150 @@ public class RBM extends BaseNeuralNetwork {
 
         public Builder() {
             clazz =  RBM.class;
+        }
+
+
+        @Override
+        public Builder  cacheInput(boolean cacheInput) {
+             super.cacheInput(cacheInput);
+            return this;
+        }
+
+        @Override
+        public Builder applySparsity(boolean applySparsity) {
+             super.applySparsity(applySparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
+             super.withOptmizationAlgo(optimizationAlgo);
+            return this;
+        }
+
+        @Override
+        public Builder withLossFunction(LossFunction lossFunction) {
+            super.withLossFunction(lossFunction);
+            return this;
+        }
+
+        @Override
+        public Builder withDropOut(double dropOut) {
+             super.withDropOut(dropOut);
+            return this;
+        }
+
+        @Override
+        public Builder normalizeByInputRows(boolean normalizeByInputRows) {
+             super.normalizeByInputRows(normalizeByInputRows);
+            return this;
+        }
+
+        @Override
+        public Builder useAdaGrad(boolean useAdaGrad) {
+             super.useAdaGrad(useAdaGrad);
+            return this;
+        }
+
+        @Override
+        public Builder withDistribution(RealDistribution dist) {
+             super.withDistribution(dist);
+            return this;
+        }
+
+        @Override
+        public Builder useRegularization(boolean useRegularization) {
+             super.useRegularization(useRegularization);
+            return this;
+        }
+
+        @Override
+        public Builder fanIn(double fanIn) {
+             super.fanIn(fanIn);
+            return this;
+        }
+
+        @Override
+        public Builder withL2(double l2) {
+             super.withL2(l2);
+            return this;
+        }
+
+        @Override
+        public Builder renderWeights(int numEpochs) {
+             super.renderWeights(numEpochs);
+            return this;
+        }
+
+        @Override
+        public RBM buildEmpty() {
+            return super.buildEmpty();
+        }
+
+        @Override
+        public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
+             super.withClazz(clazz);
+            return this;
+        }
+
+        @Override
+        public Builder withSparsity(double sparsity) {
+             super.withSparsity(sparsity);
+            return this;
+        }
+
+        @Override
+        public Builder withMomentum(double momentum) {
+             super.withMomentum(momentum);
+            return this;
+        }
+
+        @Override
+        public Builder withInput(DoubleMatrix input) {
+             super.withInput(input);
+            return this;
+        }
+
+        @Override
+        public Builder asType(Class<RBM> clazz) {
+             super.asType(clazz);
+            return this;
+        }
+
+        @Override
+        public Builder withWeights(DoubleMatrix W) {
+             super.withWeights(W);
+            return this;
+        }
+
+        @Override
+        public Builder withVisibleBias(DoubleMatrix vBias) {
+             super.withVisibleBias(vBias);
+            return this;
+        }
+
+        @Override
+        public Builder withHBias(DoubleMatrix hBias) {
+             super.withHBias(hBias);
+            return this;
+        }
+
+        @Override
+        public Builder numberOfVisible(int numVisible) {
+             super.numberOfVisible(numVisible);
+            return this;
+        }
+
+        @Override
+        public Builder numHidden(int numHidden) {
+             super.numHidden(numHidden);
+            return this;
+        }
+
+        @Override
+        public Builder withRandom(RandomGenerator gen) {
+             super.withRandom(gen);
+            return this;
         }
 
         public Builder withVisible(VisibleUnit visible) {

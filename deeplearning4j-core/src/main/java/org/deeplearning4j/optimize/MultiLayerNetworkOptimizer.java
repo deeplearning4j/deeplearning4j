@@ -208,7 +208,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
     @Override
-    public DoubleMatrix getValueGradient() {
+    public DoubleMatrix getValueGradient(int iteration) {
         double[] buffer = new double[getNumParameters()];
         getValueGradient(buffer);
         return new DoubleMatrix(buffer);
