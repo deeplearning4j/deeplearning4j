@@ -32,7 +32,7 @@ public class DeepAutoEncoderExample {
         DataSetIterator iter =  new MnistDataSetIterator(10,10,false);
 
 
-        int codeLayer = 3;
+        int codeLayer = 7;
 
         /*
           Reduction of dimensionality with neural nets Hinton 2006
@@ -44,56 +44,48 @@ public class DeepAutoEncoderExample {
 
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+                .hiddenLayerSizes(new int[]{1000, 500, 250,125,100,50,10}).withRng(rng)
                 .useRBMPropUpAsActivation(true).withDist(Distributions.normal(rng,0.1))
                 .activateForLayer(Collections.singletonMap(3, Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
-                .numberOfInputs(784)
+                .numberOfInputs(784).lossFunctionByLayer(Collections.singletonMap(codeLayer, NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY))
                 .sampleFromHiddenActivations(true)
-                .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-                .lineSearchBackProp(true).useRegularization(true).withL2(2e-3)
-                .withOutputActivationFunction(Activations.sigmoid())
+                .useRegularization(true).withL2(2e-3)
                 .numberOfOutPuts(784).withMomentum(0.5)
                 .momentumAfter(Collections.singletonMap(10,0.9))
-                .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
 
         log.info("Training with layers of " + RBMUtil.architecture(dbn));
         log.info("Begin training ");
 
+
+
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), new Object[]{1, 1e-1, 100});
+            dbn.pretrain(next.getFirst(),1,1e-1,1000);
         }
-
-
-        iter.reset();
-
-
 
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
-        encoder.setRoundCodeLayerInput(false);
-        encoder.setSampleFromHiddenActivations(false);
-        encoder.setLineSearchBackProp(false);
-        encoder.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT);
-        encoder.setOutputLayerLossFunction(OutputLayer.LossFunction.RMSE_XENT);
         //log.info("Arch " + RBMUtil.architecture(encoder));
 
 
         iter.reset();
 
+
+
+
         while (iter.hasNext()) {
             DataSet data = iter.next();
-
-
-            log.info("Fine tune " + data.getFirst());
-            encoder.finetune(data.getFirst(),1e-1,1000);
+            for(int i = 0; i < 10; i++)
+                encoder.finetune(data.getFirst(),1e-2,1000);
 
         }
 
         iter.reset();
+
+
 
 
 

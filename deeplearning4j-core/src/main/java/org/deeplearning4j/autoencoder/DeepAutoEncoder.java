@@ -86,11 +86,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      */
     private static final long serialVersionUID = -3571832097247806784L;
     private BaseMultiLayerNetwork encoder;
-    private BaseMultiLayerNetwork decoder;
-    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-    private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
-    //linear code layer
-    private ActivationFunction codeLayerAct = Activations.linear();
     //reconstruction error
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.RMSE_XENT;
     //learn binary codes
@@ -99,7 +94,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     //could be useful for gaussian/rectified
     private boolean normalizeCodeLayerOutput = false;
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoder.class);
-    private boolean alreadyInitialized = false;
 
     public DeepAutoEncoder(){}
 
@@ -229,22 +223,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             outputLayer.setLossFunction(outputLayerLossFunction);
     }
 
-    public RBM.VisibleUnit getVisibleUnit() {
-        return visibleUnit;
-    }
 
-
-    public void setVisibleUnit(RBM.VisibleUnit visibleUnit) {
-        this.visibleUnit = visibleUnit;
-    }
-
-    public RBM.HiddenUnit getHiddenUnit() {
-        return hiddenUnit;
-    }
-
-    public void setHiddenUnit(RBM.HiddenUnit hiddenUnit) {
-        this.hiddenUnit = hiddenUnit;
-    }
 
     public BaseMultiLayerNetwork getEncoder() {
         return encoder;
@@ -254,15 +233,9 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         this.encoder = encoder;
     }
 
-    public BaseMultiLayerNetwork getDecoder() {
-        return decoder;
-    }
 
 
 
-    public boolean isRoundCodeLayerInput() {
-        return roundCodeLayerInput;
-    }
 
     public void setRoundCodeLayerInput(boolean roundCodeLayerInput) {
         this.roundCodeLayerInput = roundCodeLayerInput;
@@ -285,9 +258,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
-    public void setCodeLayerActivationFunction(ActivationFunction act) {
-        this.codeLayerAct = act;
-    }
 
     public static class Builder extends BaseMultiLayerNetwork.Builder<DeepAutoEncoder> {
         private  BaseMultiLayerNetwork encoder;
@@ -798,7 +768,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             e.setnOuts(encoder.getnIns());
             e.setnIns(encoder.getnIns());
             e.setRng(encoder.getRng());
-            e.setShouldBackProp(this.backProp);
             e.setSampleFromHiddenActivations(encoder.isSampleFromHiddenActivations());
             e.setLineSearchBackProp(encoder.isLineSearchBackProp());
             e.setMomentum(encoder.getMomentum());
@@ -813,9 +782,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             e.setUseAdaGrad(encoder.isUseAdaGrad());
             e.setDropOut(encoder.getDropOut());
             e.setOptimizationAlgorithm(encoder.getOptimizationAlgorithm());
-            e.setLossFunction(encoder.getLossFunction());
-            e.setOutputActivationFunction(encoder.getOutputActivationFunction());
-            e.setOutputLossFunction(encoder.getOutputLossFunction());
+
+
+            e.setOutputActivationFunction(Activations.sigmoid());
+            e.setOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT);
 
 
 

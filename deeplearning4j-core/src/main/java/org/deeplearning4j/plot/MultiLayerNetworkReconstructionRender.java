@@ -26,17 +26,21 @@ public class MultiLayerNetworkReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct = reconLayer < 0 ? network.reconstruct(first.getFirst()) : reconLayer >= network.getLayers().length ? network.output(first.getFirst()) : network.reconstruct(first.getFirst(),reconLayer);
+            DoubleMatrix reconstruct = null;
+            if(reconLayer < 0)
+                reconstruct = network.output(first.getFirst());
+             else
+                  reconstruct = network.reconstruct(first.getFirst(),reconLayer);
             for(int j = 0; j < first.numExamples(); j++) {
 
                 DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
                 DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = reconstructed2.mul(255);
+                DoubleMatrix draw2 = reconstructed2.mul(255 * 255);
 
                 DrawReconstruction d = new DrawReconstruction(draw1);
                 d.title = "REAL";
                 d.draw();
-                DrawReconstruction d2 = new DrawReconstruction(draw2,1000,1000);
+                DrawReconstruction d2 = new DrawReconstruction(draw2);
                 d2.title = "TEST";
                 d2.draw();
                 Thread.sleep(10000);

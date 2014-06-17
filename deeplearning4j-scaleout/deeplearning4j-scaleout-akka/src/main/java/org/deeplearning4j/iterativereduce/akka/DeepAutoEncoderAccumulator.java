@@ -22,8 +22,7 @@ public class DeepAutoEncoderAccumulator {
         if(averaged == null)
             this.averaged = deepAutoEncoder;
         else {
-            averaged.getDecoder().merge(deepAutoEncoder.getDecoder(),numWorkers);
-            averaged.getEncoder().merge(deepAutoEncoder.getEncoder(),numWorkers);
+            averaged.getEncoder().merge(deepAutoEncoder,numWorkers);
         }
     }
 
