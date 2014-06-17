@@ -234,7 +234,6 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     @Override
     public void setCurrentIteration(int value) {
         if(value < 1) {
-            log.info("Not setting iteration with value " + value);
             return;
         }
 

@@ -12,6 +12,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
 import org.jblas.DoubleMatrix;
 
@@ -297,7 +298,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
        if(input != null && cacheInput)
         this.input = input;
         this.lastMiniBatchSize = input.rows;
-        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr});
+        NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr,0});
 
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
@@ -306,6 +307,16 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
 
+    @Override
+    public void iterationDone(int epoch) {
+        int plotEpochs = getRenderIterations();
+        if(plotEpochs <= 0)
+            return;
+        if(epoch % plotEpochs == 0 || epoch == 0) {
+            NeuralNetPlotter plotter = new NeuralNetPlotter();
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{0.3,0.001,1000}),getInput().rows);
+        }
+    }
 
     @Override
     public  NeuralNetworkGradient getGradient(Object[] params) {

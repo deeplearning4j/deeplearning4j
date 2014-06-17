@@ -437,7 +437,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             }
         }
 
-        log.info("Using momentum " + momentum);
 
         if (useAdaGrad)
             wGradient.muli(wLearningRates);
@@ -1031,6 +1030,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         DoubleMatrix hbiasMean = getInput().mmul(getW()).addRowVector(gethBias());
         return hbiasMean;
     }
+
+
     @Override
     public void iterationDone(int epoch) {
         int plotEpochs = getRenderIterations();
@@ -1041,9 +1042,6 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows);
         }
     }
-
-
-
     public static class Builder<E extends BaseNeuralNetwork> {
         private E ret = null;
         private DoubleMatrix W;
