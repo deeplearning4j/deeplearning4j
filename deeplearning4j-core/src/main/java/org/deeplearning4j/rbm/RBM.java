@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
+import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
@@ -338,7 +339,6 @@ public class RBM extends BaseNeuralNetwork {
         else if(hiddenType == HiddenUnit.BINARY) {
             DoubleMatrix h1Mean = propUp(v);
             DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
-            //apply dropout
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -434,6 +434,18 @@ public class RBM extends BaseNeuralNetwork {
 
         throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
 
+    }
+
+
+    @Override
+    public void iterationDone(int epoch) {
+        int plotEpochs = getRenderIterations();
+        if(plotEpochs <= 0)
+            return;
+        if(epoch % plotEpochs == 0 || epoch == 0) {
+            NeuralNetPlotter plotter = new NeuralNetPlotter();
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows);
+        }
     }
 
     /**

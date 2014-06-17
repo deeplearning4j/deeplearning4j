@@ -982,7 +982,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public DoubleMatrix reconstruct(DoubleMatrix x,int layerNum) {
         DoubleMatrix currInput = x;
         List<DoubleMatrix> forward = feedForward(currInput);
-        return getLayers()[layerNum - 1].reconstruct(forward.get(layerNum - 1));
+        return forward.get(layerNum - 1);
     }
 
     /**
@@ -1519,6 +1519,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     public void setOutputLossFunction(OutputLayer.LossFunction outputLossFunction) {
         this.outputLossFunction = outputLossFunction;
+        if(outputLayer != null)
+            outputLayer.setLossFunction(outputLossFunction);
     }
 
     public ActivationFunction getOutputActivationFunction() {
@@ -1527,6 +1529,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     public void setOutputActivationFunction(ActivationFunction outputActivationFunction) {
         this.outputActivationFunction = outputActivationFunction;
+        if(outputLayer != null)
+            outputLayer.setActivationFunction(outputActivationFunction);
     }
 
     public Map<Integer, Double> getLayerLearningRates() {

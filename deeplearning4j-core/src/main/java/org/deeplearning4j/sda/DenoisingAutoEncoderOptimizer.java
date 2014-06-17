@@ -26,7 +26,7 @@ public class DenoisingAutoEncoderOptimizer extends NeuralNetworkOptimizer {
     @Override
     public DoubleMatrix getParameters() {
         double corruptionLevel = (double) extraParams[0];
-        NeuralNetworkGradient gradient = network.getGradient(new Object[]{corruptionLevel,lr});
+        NeuralNetworkGradient gradient = network.getGradient(new Object[]{corruptionLevel,lr,currIteration});
         DoubleMatrix L_W = gradient.getwGradient();
         DoubleMatrix L_vbias_mean = gradient.getvBiasGradient();
         DoubleMatrix L_hbias_mean = gradient.gethBiasGradient();

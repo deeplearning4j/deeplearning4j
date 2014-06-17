@@ -9,15 +9,20 @@ import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DenoisingAutoEncoderMnistExample {
+
+
+    private static Logger log = LoggerFactory.getLogger(DenoisingAutoEncoderMnistExample.class);
 
     /**
      * @param args
      */
     public static void main(String[] args) throws Exception {
         DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-                .withSparsity(1e-1).renderWeights(1)
+                .withSparsity(1e-1)
                 .numberOfVisible(784).numHidden(600).build();
 
 
@@ -26,7 +31,10 @@ public class DenoisingAutoEncoderMnistExample {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             //train with k = 1 0.01 learning rate and 1000 epochs
-            autoEncoder.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
+            for(int i = 0; i < 100; i++) {
+                autoEncoder.train(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
+                log.info("Error " + autoEncoder.getReConstructionCrossEntropy());
+            }
 
 
         }
