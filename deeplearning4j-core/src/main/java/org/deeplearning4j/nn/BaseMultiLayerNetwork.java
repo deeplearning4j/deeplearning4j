@@ -196,6 +196,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected boolean lineSearchBackProp = false;
 
 
+    /*
+
+      TODO: Use drop out to create mask
+      if self.dropout[1] > 0 and len(self.layers) > 1:
+                    self.obj_dropmask = np.random.rand(gradbatchX.shape[0], self.layers[-2]) > self.dropout[1]
+                    self.GV_dropmask = self.obj_dropmask[np.mod(count, numbatches)::numbatches]
+
+     */
+
+
     /* Reflection/factory constructor */
     protected BaseMultiLayerNetwork() {}
 
