@@ -8,7 +8,7 @@ layout: default
 
 To quote Geoff Hinton, a Boltzmann machine is "a network of symmetrically connected, neuron-like units that make [stochastic](http://www.merriam-webster.com/dictionary/stochastic) decisions about whether to be on or off." 
 
-A restricted Boltzmann machine "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a symmetrical bipartite graph: 
+A restricted Boltzmann machine "consists of a layer of visible units and a layer of hidden units with no visible-visible or hidden-hidden connections." That is, its nodes must form a symmetrical bipartite graph where data passes through the visible layer (v0-v3) at the bottom to the hidden layer (h0-h2) at the top: 
 
 ![Alt text](../img/bipartite_graph.png)
 
