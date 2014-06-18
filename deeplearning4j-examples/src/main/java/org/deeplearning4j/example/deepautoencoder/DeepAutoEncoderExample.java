@@ -44,9 +44,9 @@ public class DeepAutoEncoderExample {
 
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{1000, 500, 250,125,100,50,10}).withRng(rng)
+                .hiddenLayerSizes(new int[]{500, 250,100,50,25,10}).withRng(rng)
                 .useRBMPropUpAsActivation(true).withDist(Distributions.normal(rng,0.1))
-                .activateForLayer(Collections.singletonMap(3, Activations.linear()))
+                .activateForLayer(Collections.singletonMap(3, Activations.sigmoid()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
                 .numberOfInputs(784).lossFunctionByLayer(Collections.singletonMap(codeLayer, NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY))
                 .sampleFromHiddenActivations(true)
@@ -62,7 +62,7 @@ public class DeepAutoEncoderExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),1,1e-1,1000);
+            dbn.pretrain(next.getFirst(),1,1e-1,150);
         }
 
 
@@ -79,7 +79,7 @@ public class DeepAutoEncoderExample {
         while (iter.hasNext()) {
             DataSet data = iter.next();
             for(int i = 0; i < 10; i++)
-                encoder.finetune(data.getFirst(),1e-2,1000);
+                encoder.finetune(data.getFirst(),1e-2,100);
 
         }
 
