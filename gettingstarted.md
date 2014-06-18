@@ -10,7 +10,6 @@ layout: default
 2. Due to our heavy reliance on Jblas, native bindings for Blas are required.
 
         Fedora/RHEL
-
         yum -y install blas
 
         Ubuntu
