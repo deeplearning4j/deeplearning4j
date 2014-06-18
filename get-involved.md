@@ -33,13 +33,6 @@ Contribute code, report a bug, help us make DL4J more useful.
 *  [Issue Tracker](https://github.com/agibsonccc/java-deeplearning/issues)
 *  [Our Contributors](https://github.com/agibsonccc/java-deeplearning/graphs/contributors)
 
-###contributor agreement form
-
-Download, complete, sign, scan and email back to chris at skymind dot io. 
-
-*  [DL4J Individual Contributor License Agreement.pdf](../assets/cla.pdf)
-*  [DL4J Individual Contributor License Agreement.doc](../assets/cla.doc)
-
 ###learn
 
 DL4J workshops are offered through [Zipfian Academy](http://www.zipfianacademy.com/) in San Francisco.
