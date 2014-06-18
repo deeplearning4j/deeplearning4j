@@ -46,7 +46,7 @@ Now that you've instantiated the machine and created the training set, it's time
 
 The last snippet will construct a new training set and show the reconstructed input. Note that the example below only takes binary input, not a continuum of integers.
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=47:63"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=47:56"></script>
 
 ### continuous RBMs
 
