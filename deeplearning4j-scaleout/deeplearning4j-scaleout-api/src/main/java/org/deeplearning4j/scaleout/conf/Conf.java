@@ -544,7 +544,7 @@ public class Conf implements Serializable,Cloneable {
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
                     .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
                     .sampleOrActivateByLayer(getSampleHiddenActivationsByLayer()).outputLayerDropout(getOutputLayerDropOut())
-                    .useDropConnection(isUseDropConnect())
+                    .useDropConnection(isUseDropConnect()).withMomentum(getMomentum())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .learningRateForLayer(getLearningRateForLayer()).sampleFromHiddenActivations(isSampleHiddenActivations())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
@@ -556,7 +556,7 @@ public class Conf implements Serializable,Cloneable {
 
         else {
             return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
-                    .withOutputLossFunction(getOutputLayerLossFunction())
+                    .withOutputLossFunction(getOutputLayerLossFunction()).withMomentum(getMomentum())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
                     .withOutputActivationFunction(getOutputActivationFunction()).outputLayerDropout(getOutputLayerDropOut())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
