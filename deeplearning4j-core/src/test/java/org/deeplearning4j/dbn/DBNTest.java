@@ -254,6 +254,24 @@ public class DBNTest {
         log.info(eval.stats());
     }
 
+    @Test
+    public void testROPerator() throws Exception {
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        fetcher.fetch(100);
+        DataSet d = fetcher.next();
+
+        DBN dbn = new DBN.Builder()
+                .withActivation(Activations.sigmoid())
+                .hiddenLayerSizes(new int[]{500,250,100})
+                .withMomentum(0.5).normalizeByInputRows(true)
+                .numberOfInputs(784).useAdaGrad(true)
+                .numberOfOutPuts(2)
+                .build();
+
+        dbn.setInput(d.getFirst());
+        List<DoubleMatrix> activations = dbn.feedForwardROperator();
+    }
+
 
 
 }

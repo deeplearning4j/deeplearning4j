@@ -68,8 +68,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected double l2 = 2e-4;
     //whether to initialize layers
     protected boolean shouldInit = true;
-    //fan in for uniform distributions
-    protected double fanIn = -1;
     //whether to render weights or not; anything <=0 will not render the weights
     protected int renderWeightsEveryNEpochs = -1;
     protected boolean useRegularization = false;
@@ -143,7 +141,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Drop out: randomly zero examples
      */
     protected double dropOut = 0;
-
+    /*
+     * Output layer drop out
+     */
+    protected double outputLayerDropout = 0;
     /*
      * Normalize by input rows with gradients or not
      */
@@ -369,7 +370,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         // layer for output using OutputLayer
-        this.outputLayer = new OutputLayer.Builder()
+        this.outputLayer = new OutputLayer.Builder().withDropout(outputLayerDropout)
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
                 .normalizeByInputRows(normalizeByInputRows).withLossFunction(outputLossFunction)
                 .useRegularization(useRegularization).withActivationFunction(outputActivationFunction)
@@ -377,7 +378,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 .numberOfOutputs(nOuts).withL2(l2).build();
 
         synchonrizeRng();
-
         dimensionCheck();
         applyTransforms();
         initCalled = true;
@@ -498,7 +498,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
         DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
-        ActivationFunction derivative = getSigmoidLayers()[0].getActivationFunction();
+        ActivationFunction derivative;
         ActivationFunction outputDerivative = outputLayer.getActivationFunction();
         //- y - h
         DoubleMatrix delta;
@@ -508,9 +508,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
         List<DoubleMatrix> weights = new ArrayList<>();
-        for(int j = 0; j < getLayers().length; j++)
+        List<ActivationFunction> activationFunctions = new ArrayList<>();
+        for(int j = 0; j < getLayers().length; j++) {
             weights.add(getLayers()[j].getW());
+            activationFunctions.add(getSigmoidLayers()[j].getActivationFunction());
+        }
         weights.add(getOutputLayer().getW());
+        activationFunctions.add(outputLayer.getActivationFunction());
 
 
 
@@ -524,11 +528,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
             }
             else {
+                derivative = activationFunctions.get(i);
+
                 //W^t * error^l + 1
                 deltas[i] =  deltas[i + 1].mmul(weights.get(i).transpose()).muli(derivative.applyDerivative(activations.get(i)));
 
                 //calculate gradient for layer
-                DoubleMatrix newGradient = deltas[i + 1].transpose().mmul(activations.get(i));
+                DoubleMatrix newGradient = deltas[i + 1].transpose().mmul((derivative.applyDerivative(activations.get(i))));
                 gradients[i] = newGradient;
             }
 
@@ -546,6 +552,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 layers[i].getW().subi(deltas.get(i).getFirst());
                 layers[i].gethBias().subi(deltas.get(i).getSecond());
                 sigmoidLayers[i].setW(layers[i].getW());
+                sigmoidLayers[i].setB(layers[i].gethBias());
             }
 
         }
@@ -588,7 +595,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         if (Double.compare(that.dropOut, dropOut) != 0) return false;
         if (Double.compare(that.errorTolerance, errorTolerance) != 0) return false;
-        if (Double.compare(that.fanIn, fanIn) != 0) return false;
         if (forceNumEpochs != that.forceNumEpochs) return false;
         if (initCalled != that.initCalled) return false;
         if (Double.compare(that.l2, l2) != 0) return false;
@@ -650,7 +656,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         temp = Double.doubleToLongBits(l2);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (shouldInit ? 1 : 0);
-        temp = Double.doubleToLongBits(fanIn);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + renderWeightsEveryNEpochs;
         result = 31 * result + (useRegularization ? 1 : 0);
@@ -700,7 +705,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         sb.append(", activation=").append(activation);
         sb.append(", l2=").append(l2);
         sb.append(", shouldInit=").append(shouldInit);
-        sb.append(", fanIn=").append(fanIn);
         sb.append(", renderWeightsEveryNEpochs=").append(renderWeightsEveryNEpochs);
         sb.append(", useRegularization=").append(useRegularization);
         sb.append(", weightTransforms=").append(weightTransforms);
@@ -744,7 +748,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+    public List<DoubleMatrix> feedForwardROperator() {
+        List<DoubleMatrix> R = new ArrayList<>();
+        List<DoubleMatrix> acts = feedForward();
+        R.add(DoubleMatrix.zeros(input.rows,input.columns));
+        List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = new ArrayList<>();
+        for(int i = 0; i < layers.length; i++) {
+            vWvB.add(new Pair<>(layers[i].getW(),layers[i].gethBias()));
+        }
 
+        vWvB.add(new Pair<>(outputLayer.getW(),outputLayer.getB()));
+
+        for(int i = 0; i < layers.length; i++) {
+            DoubleMatrix bz = DoubleMatrix.zeros(layers[i].gethBias().rows,layers[i].gethBias().columns);
+            DoubleMatrix activation = R.get(i).mmul(layers[i].getW().addRowVector(bz)).add(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond())));
+            R.add(getSigmoidLayers()[i].getActivationFunction().apply(activation));
+        }
+
+        return R;
+    }
 
 
 
@@ -863,9 +885,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         if(getOutputLayer().getB().length != biasGradient.length) {
             DoubleMatrix add = DoubleMatrix.ones(getOutputLayer().getB().rows, getOutputLayer().getB().columns);
-            add.addi(biasGradient.mean());
+            add.addi(biasGradient.sum());
             biasGradient = add;
         }
+
+
 
         list.add(new Pair<>(logLayerGradient,biasGradient));
 
@@ -1047,6 +1071,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.layerLearningRates = network.layerLearningRates;
         this.normalizeByInputRows = network.normalizeByInputRows;
         this.useAdaGrad = network.useAdaGrad;
+        this.outputLayerDropout = network.outputLayerDropout;
         this.hiddenLayerSizes = network.hiddenLayerSizes;
         if(network.outputLayer != null)
             this.outputLayer = network.outputLayer.clone();
@@ -1065,7 +1090,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.forceNumEpochs = network.forceNumEpochs;
         this.input = network.input;
         this.l2 = network.l2;
-        this.fanIn = network.fanIn;
         this.labels =  network.labels;
         this.momentum = network.momentum;
         this.learningRateUpdate = network.learningRateUpdate;
@@ -1413,7 +1437,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.normalizeByInputRows = normalizeByInputRows;
     }
 
+    public double getOutputLayerDropout() {
+        return outputLayerDropout;
+    }
 
+    public void setOutputLayerDropout(double outputLayerDropout) {
+        this.outputLayerDropout = outputLayerDropout;
+    }
 
     public boolean isSampleFromHiddenActivations() {
         return sampleFromHiddenActivations;
@@ -1641,6 +1671,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private Map<Integer,Integer> resetAdaGradIterationsByLayer = new HashMap<>();
         //reset adagrad historical gradient after n iterations
         private int resetAdaGradIterations = -1;
+        private double outputLayerDropout = 0.0;
+
+        /**
+         * Output layer drop out
+         * @param outputLayerDropout
+         * @return
+         */
+        public Builder outputLayerDropout(double outputLayerDropout) {
+            this.outputLayerDropout = outputLayerDropout;
+            return this;
+        }
 
 
         /**
@@ -2019,6 +2060,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.setOutputLayerDropout(outputLayerDropout);
                 ret.setResetAdaGradIterations(resetAdaGradIterations);
                 ret.setResetAdaGradIterationsByLayer(resetAdaGradIterationsByLayer);
                 ret.setMomentumAfter(momentumAfter);

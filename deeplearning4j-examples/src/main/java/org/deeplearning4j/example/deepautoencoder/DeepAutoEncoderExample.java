@@ -7,9 +7,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
@@ -32,25 +30,25 @@ public class DeepAutoEncoderExample {
         DataSetIterator iter =  new MnistDataSetIterator(10,10,false);
 
 
-        int codeLayer = 7;
+        int codeLayer = 3;
 
         /*
           Reduction of dimensionality with neural nets Hinton 2006
          */
         Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-2);
+        layerLearningRates.put(codeLayer,1e-1);
         RandomGenerator rng = new MersenneTwister(123);
 
 
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{500, 250,100,50,25,10}).withRng(rng)
-                .useRBMPropUpAsActivation(true).withDist(Distributions.normal(rng,0.1))
-                .activateForLayer(Collections.singletonMap(3, Activations.sigmoid()))
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+                .useRBMPropUpAsActivation(true)
+                .activateForLayer(Collections.singletonMap(3, Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
-                .numberOfInputs(784).lossFunctionByLayer(Collections.singletonMap(codeLayer, NeuralNetwork.LossFunction.RECONSTRUCTION_CROSSENTROPY))
-                .sampleFromHiddenActivations(true)
-                .useRegularization(true).withL2(2e-3)
+                .numberOfInputs(784).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .sampleFromHiddenActivations(true).forceEpochs()
+                .useRegularization(true).withL2(2e-5).resetAdaGradIterations(10)
                 .numberOfOutPuts(784).withMomentum(0.5)
                 .momentumAfter(Collections.singletonMap(10,0.9))
                 .build();
@@ -62,24 +60,20 @@ public class DeepAutoEncoderExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),1,1e-1,150);
+            dbn.pretrain(next.getFirst(),1,1e-1,30);
         }
 
 
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
-        //log.info("Arch " + RBMUtil.architecture(encoder));
-
-
         iter.reset();
 
 
-
+        encoder.setForceNumEpochs(true);
 
         while (iter.hasNext()) {
             DataSet data = iter.next();
-            for(int i = 0; i < 10; i++)
-                encoder.finetune(data.getFirst(),1e-2,100);
+            encoder.finetune(data.getFirst(),1e-5,5000);
 
         }
 
