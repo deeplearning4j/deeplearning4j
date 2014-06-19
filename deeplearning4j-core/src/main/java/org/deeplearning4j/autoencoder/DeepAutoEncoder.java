@@ -200,14 +200,14 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to train on
      */
-    public void finetune(DoubleMatrix input,double lr,int iteations) {
+    public void finetune(DoubleMatrix input,double lr,int iterations) {
         this.input = input;
 
 
         setInput(input);
         setLabels(input);
 
-        super.finetune(input,lr, iteations);
+        super.finetune(input,lr, iterations);
 
     }
 

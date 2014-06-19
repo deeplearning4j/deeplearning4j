@@ -77,9 +77,11 @@ public class DBN extends BaseMultiLayerNetwork {
 
             if(useRBMPropUpAsActivations) {
                 RBM r = (RBM) layer;
-                currInput = r.propUp(currInput);
                 if(sampleFromHiddenActivations)
-                    currInput = layer.sampleVisibleGivenHidden(currInput).getSecond();
+                    currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+
+                else
+                    currInput = r.propUp(currInput);
             }
 
             else if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i))
@@ -164,7 +166,7 @@ public class DBN extends BaseMultiLayerNetwork {
         else
             setInput(input);
 
-        DoubleMatrix layerInput = null;
+        DoubleMatrix layerInput;
 
         for(int i = 0; i < getnLayers(); i++) {
             if(i == 0) {
@@ -368,6 +370,17 @@ public class DBN extends BaseMultiLayerNetwork {
             this.clazz = DBN.class;
         }
 
+        /**
+         * Output layer drop out
+         *
+         * @param outputLayerDropout
+         * @return
+         */
+        @Override
+        public Builder outputLayerDropout(double outputLayerDropout) {
+             super.outputLayerDropout(outputLayerDropout);
+            return this;
+        }
 
         /**
          * Reset the adagrad epochs  after n iterations
@@ -389,7 +402,7 @@ public class DBN extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder resetAdaGradEpochsByLayer(Map<Integer, Integer> resetAdaGradEpochsByLayer) {
-             super.resetAdaGradEpochsByLayer(resetAdaGradEpochsByLayer);
+            super.resetAdaGradEpochsByLayer(resetAdaGradEpochsByLayer);
             return this;
         }
 
@@ -401,7 +414,7 @@ public class DBN extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
-             super.momentumAfterByLayer(momentumAfterByLayer);
+            super.momentumAfterByLayer(momentumAfterByLayer);
             return this;
         }
 
@@ -413,7 +426,7 @@ public class DBN extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-             super.momentumAfter(momentumAfter);
+            super.momentumAfter(momentumAfter);
             return this;
         }
 

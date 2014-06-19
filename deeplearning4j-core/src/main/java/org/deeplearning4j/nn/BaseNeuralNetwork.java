@@ -90,6 +90,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected boolean applySparsity = false;
     protected double dropOut = 0;
     protected DoubleMatrix doMask;
+    protected DoubleMatrix gvMask;
     protected OptimizationAlgorithm optimizationAlgo;
     protected LossFunction lossFunction;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
@@ -107,6 +108,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
+
+
 
 
     protected BaseNeuralNetwork() {}
@@ -989,11 +992,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     protected void applyDropOutIfNecessary(DoubleMatrix input) {
-        if(dropOut > 0)
+        if(dropOut > 0) {
             this.doMask = DoubleMatrix.rand(input.rows, this.nHidden).gt(dropOut);
+        }
 
         else
             this.doMask = DoubleMatrix.ones(input.rows,this.nHidden);
+
+        //actually apply drop out
+        input.muli(doMask);
+
     }
 
     /**

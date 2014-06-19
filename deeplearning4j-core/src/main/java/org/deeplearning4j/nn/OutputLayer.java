@@ -4,7 +4,6 @@ import static org.deeplearning4j.util.MatrixUtil.log;
 import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 import static org.jblas.MatrixFunctions.pow;
-import static org.jblas.MatrixFunctions.sqrt;
 
 import java.io.Serializable;
 
@@ -19,6 +18,7 @@ import org.deeplearning4j.optimize.VectorizedDeepLearningGradientAscent;
 import org.deeplearning4j.optimize.VectorizedNonZeroStoppingConjugateGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 /**
  * Logistic regression implementation with jblas.
@@ -47,7 +47,8 @@ public class OutputLayer implements Serializable {
     private OptimizationAlgorithm optimizationAlgorithm;
     private LossFunction lossFunction;
     private ActivationFunction activationFunction;
-
+    private double dropOut;
+    private DoubleMatrix dropoutMask;
 
 
     private OutputLayer() {}
@@ -234,32 +235,56 @@ public class OutputLayer implements Serializable {
     public  double score() {
         MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
         DoubleMatrix z = output(input);
+        double ret = 0;
+        double reg = 0.5 * l2 * MatrixFunctions.pow(this.W,2).sum();
+
+
         switch (lossFunction) {
             case MCXENT:
                 DoubleMatrix mcXEntLogZ = log(z);
-                return - labels.mul(mcXEntLogZ).columnSums().sum() / labels.rows;
+                ret = - labels.mul(mcXEntLogZ).columnSums().sum() / labels.rows;
+                break;
             case XENT:
                 DoubleMatrix xEntLogZ = log(z);
                 DoubleMatrix xEntOneMinusLabelsOut = oneMinus(labels);
                 DoubleMatrix xEntOneMinusLogOneMinusZ = oneMinus(log(z));
-                return -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
+                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
+                break;
             case RMSE_XENT:
-                return pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                break;
             case MSE:
                 DoubleMatrix mseDelta = labels.sub(z);
-                return 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;
+                ret = 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;
+                break;
             case EXPLL:
                 DoubleMatrix expLLLogZ = log(z);
-                return -z.sub(labels.mul(expLLLogZ)).columnSums().sum() / labels.rows;
-             case SQUARED_LOSS:
-                 return pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = -z.sub(labels.mul(expLLLogZ)).columnSums().sum() / labels.rows;
+                break;
+            case SQUARED_LOSS:
+                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+
 
         }
 
-        throw new IllegalStateException("No loss function found");
+        if(useRegularization && l2 > 0)
+            ret += reg;
+        return ret;
 
 
+    }
 
+
+    protected void applyDropOutIfNecessary(DoubleMatrix input) {
+        if(dropOut > 0) {
+            this.dropoutMask = DoubleMatrix.rand(input.rows, this.nOut).gt(dropOut);
+        }
+
+        else
+            this.dropoutMask = DoubleMatrix.ones(input.rows,this.nOut);
+
+        //actually apply drop out
+        input.muli(dropoutMask);
 
     }
 
@@ -327,10 +352,6 @@ public class OutputLayer implements Serializable {
         MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
 
 
-        if(adaGrad.historicalGradient.rows != W.rows || adaGrad.historicalGradient.columns != W.columns)
-            adaGrad = new AdaGrad(W.rows,W.columns);
-        if(biasAdaGrad.historicalGradient.rows != b.rows || biasAdaGrad.historicalGradient.columns != b.columns)
-            biasAdaGrad = new AdaGrad(b.rows,b.columns);
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
@@ -367,6 +388,7 @@ public class OutputLayer implements Serializable {
 
     private DoubleMatrix getWeightGradient() {
         DoubleMatrix z = output(input);
+
         switch (lossFunction) {
             case MCXENT:
                 //input activation
@@ -412,12 +434,10 @@ public class OutputLayer implements Serializable {
 
         this.input = x;
 
-        try {
-            return activationFunction.apply(this.input.mmul(W).addRowVector(b));
+        DoubleMatrix ret = activationFunction.apply(this.input.mmul(W).addRowVector(b));
+        applyDropOutIfNecessary(ret);
+        return ret;
 
-        }catch(Exception e) {
-            throw new IllegalStateException(e);
-        }
 
     }
 
@@ -498,17 +518,27 @@ public class OutputLayer implements Serializable {
 
 
 
-    public synchronized boolean isNormalizeByInputRows() {
+    public  boolean isNormalizeByInputRows() {
         return normalizeByInputRows;
     }
 
 
 
-    public synchronized void setNormalizeByInputRows(boolean normalizeByInputRows) {
+    public  void setNormalizeByInputRows(boolean normalizeByInputRows) {
         this.normalizeByInputRows = normalizeByInputRows;
     }
 
+    public void setUseAdaGrad(boolean useAdaGrad) {
+        this.useAdaGrad = useAdaGrad;
+    }
 
+    public double getDropOut() {
+        return dropOut;
+    }
+
+    public void setDropOut(double dropOut) {
+        this.dropOut = dropOut;
+    }
 
     public boolean isUseAdaGrad() {
         return useAdaGrad;
@@ -562,7 +592,13 @@ public class OutputLayer implements Serializable {
         private boolean normalizeByInputRows = true;
         private OptimizationAlgorithm optimizationAlgorithm;
         private LossFunction lossFunction = LossFunction.MCXENT;
+        private double dropOut = 0;
 
+
+        public Builder withDropout(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
 
         public Builder withActivationFunction(ActivationFunction activationFunction) {
             this.activationFunction = activationFunction;
@@ -626,6 +662,7 @@ public class OutputLayer implements Serializable {
                 ret.W = W;
             if(b != null)
                 ret.b = b;
+            ret.dropOut = dropOut;
             ret.optimizationAlgorithm = optimizationAlgorithm;
             ret.normalizeByInputRows = normalizeByInputRows;
             ret.useRegularization = useRegualarization;

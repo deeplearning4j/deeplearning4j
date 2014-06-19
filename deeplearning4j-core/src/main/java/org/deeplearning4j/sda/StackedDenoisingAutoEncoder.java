@@ -141,6 +141,19 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         }
 
 
+
+        /**
+         * Output layer drop out
+         *
+         * @param outputLayerDropout
+         * @return
+         */
+        @Override
+        public Builder outputLayerDropout(double outputLayerDropout) {
+            super.outputLayerDropout(outputLayerDropout);
+            return this;
+        }
+
         @Override
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {
              super.lineSearchBackProp(lineSearchBackProp);
