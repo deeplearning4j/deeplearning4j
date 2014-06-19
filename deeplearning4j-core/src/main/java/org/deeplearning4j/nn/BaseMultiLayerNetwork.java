@@ -497,6 +497,21 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     /**
+     * Compute activations from input to output of the output layer
+     * with the R operator
+     * @return the list of activations for each layer
+     */
+    public  List<DoubleMatrix> feedForwardR(DoubleMatrix input) {
+        if(input == null)
+            throw new IllegalStateException("Unable to perform feed forward; no input found");
+
+        else
+            this.input = input;
+        return feedForwardR();
+    }
+
+
+    /**
      * Applies drop connect relative to connections.
      * This should be used on the activation of a neural net. (Post sigmoid layer)
      * @param input the input to apply drop connect to
@@ -521,7 +536,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //- y - h
         DoubleMatrix delta;
         List<DoubleMatrix> activations = feedForward();
-        List<DoubleMatrix> rActivations = feedForwardROperator();
+        List<DoubleMatrix> rActivations = feedForwardR();
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -662,6 +677,35 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+    /**
+     * Gets the back prop gradient with the r operator (gauss vector)
+     * @return the back prop with r gradient
+     */
+    public DoubleMatrix getBackPropRGradient() {
+        double[][] list = new double[layers.length * 2 + 2][];
+        int length = 0;
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient();
+
+        int deltaCount = 0;
+
+        for(int i = 0; i < list.length - 1; i+= 2) {
+            list[i] = deltas.get(deltaCount).getFirst().reshape(1,deltas.get(deltaCount).getFirst().length).data;
+            list[i + 1] = deltas.get(deltaCount).getSecond().reshape(1,deltas.get(deltaCount).getSecond().length).data;
+            length +=  deltas.get(deltaCount).getFirst().length;
+            length += list[i + 1].length;
+            deltaCount++;
+        }
+
+
+        double[] data = ArrayUtil.combine(list);
+        return new DoubleMatrix(data).reshape(1,length);
+    }
+
+
+    /**
+     * Gets the back prop gradient
+     * @return the back prop gradient
+     */
     public DoubleMatrix getBackPropGradient() {
         double[][] list = new double[layers.length * 2 + 2][];
         int length = 0;
@@ -846,7 +890,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    public List<DoubleMatrix> feedForwardROperator() {
+    public List<DoubleMatrix> feedForwardR() {
         List<DoubleMatrix> R = new ArrayList<>();
         List<DoubleMatrix> acts = feedForward();
         R.add(DoubleMatrix.zeros(input.rows,input.columns));
