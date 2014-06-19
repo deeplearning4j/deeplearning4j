@@ -693,8 +693,18 @@ public class MatrixUtil {
     }
 
 
-
-
+    /**
+     * Creates a matrix of row x columns with the assigned value
+     * @param value the value to assign
+     * @param rows the number of rows in the matrix
+     * @param columns the number of columns of the matrix
+     * @return the value matrix with the specified dimensions
+     */
+    public static DoubleMatrix valueMatrixOf(double value,int rows,int columns) {
+        DoubleMatrix ret = new DoubleMatrix(rows,columns);
+        assign(ret,value);
+        return ret;
+    }
 
     /**
      * A uniform sample ranging from 0 to sigma.

@@ -196,15 +196,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     protected boolean lineSearchBackProp = false;
 
+    /*
+      Binary drop connect mask
+     */
+    protected DoubleMatrix mask;
 
     /*
-
-      TODO: Use drop out to create mask
-      if self.dropout[1] > 0 and len(self.layers) > 1:
-                    self.obj_dropmask = np.random.rand(gradbatchX.shape[0], self.layers[-2]) > self.dropout[1]
-                    self.GV_dropmask = self.obj_dropmask[np.mod(count, numbatches)::numbatches]
-
+      Use drop connect knob
      */
+    protected boolean useDropConnect = false;
 
 
     /* Reflection/factory constructor */
@@ -465,6 +465,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 currInput = layer.sampleHiddenGivenVisible(l.getActivationFunction().apply(currInput)).getSecond();
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
+            //applies drop connect to the activation
+            applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
         if(getOutputLayer() != null) {
@@ -494,6 +496,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         return feedForward();
     }
 
+    /**
+     * Applies drop connect relative to connections.
+     * This should be used on the activation of a neural net. (Post sigmoid layer)
+     * @param input the input to apply drop connect to
+     */
+    protected void applyDropConnectIfNecessary(DoubleMatrix input) {
+        if(useDropConnect) {
+            DoubleMatrix mask = MatrixUtil.binomial(MatrixUtil.valueMatrixOf(0.5,input.rows,input.columns),1,rng);
+            input.muli(mask);
+        }
+    }
+
+
+
     /* delta computation for back prop */
     protected  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
         DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
@@ -513,6 +529,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             weights.add(getLayers()[j].getW());
             activationFunctions.add(getSigmoidLayers()[j].getActivationFunction());
         }
+
         weights.add(getOutputLayer().getW());
         activationFunctions.add(outputLayer.getActivationFunction());
 
@@ -804,6 +821,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.activationFunctionForLayer = activationFunctionForLayer;
     }
 
+    public boolean isUseDropConnect() {
+        return useDropConnect;
+    }
+
+    public void setUseDropConnect(boolean useDropConnect) {
+        this.useDropConnect = useDropConnect;
+    }
 
     /**
      * Returns a 1 x m vector where the vector is composed of
@@ -1105,6 +1129,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.outputActivationFunction = network.outputActivationFunction;
         this.lossFunctionByLayer = network.lossFunctionByLayer;
         this.outputLossFunction = network.outputLossFunction;
+        this.useDropConnect = network.useDropConnect;
 
         if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
             this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
@@ -1672,6 +1697,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //reset adagrad historical gradient after n iterations
         private int resetAdaGradIterations = -1;
         private double outputLayerDropout = 0.0;
+        private boolean useDropConnect = false;
+
+
+        /**
+         * Use drop connect on activations or not
+         * @param useDropConnect use drop connect or not
+         * @return builder pattern
+         */
+        public Builder<E> useDropConnection(boolean useDropConnect) {
+            this.useDropConnect = useDropConnect;
+            return this;
+        }
+
 
         /**
          * Output layer drop out
@@ -2060,6 +2098,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.setUseDropConnect(useDropConnect);
                 ret.setOutputLayerDropout(outputLayerDropout);
                 ret.setResetAdaGradIterations(resetAdaGradIterations);
                 ret.setResetAdaGradIterationsByLayer(resetAdaGradIterationsByLayer);
