@@ -58,7 +58,10 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
             DoubleMatrix train = activations.get(activations.size() - 1);
 
             for(int i = 0; i < epochs; i++) {
+                if(i % network.getResetAdaGradIterations() == 0)
+                    network.getOutputLayer().getAdaGrad().historicalGradient = null;
                 network.getOutputLayer().train(train, labels,lr);
+
             }
 
 
@@ -86,13 +89,17 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
                 network.backProp(lr, epochs);
 
 
+
+
         }
 
         else {
             log.info("Training for " + epochs + " epochs");
             for(int i = 0; i < epochs; i++) {
                 network.getOutputLayer().train(lr);
-                log.info("Error on epoch " + i + " is  " + network.getOutputLayer().score());
+                if(i % network.getResetAdaGradIterations() == 0)
+                    network.getOutputLayer().getAdaGrad().historicalGradient = null;
+                log.info("Error on iteration " + i + " is  " + network.score());
             }
 
 

@@ -49,6 +49,8 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
             //sgd style; only train a certain number of epochs
             if(network.isForceNumEpochs()) {
                 for(int i = 0; i < epochs; i++) {
+                    if(i % network.getResetAdaGradIterations() == 0)
+                        network.getOutputLayer().getAdaGrad().historicalGradient = null;
                     network.backPropStep();
                     log.info("Iteration " + i + " error " + network.score());
 
@@ -71,7 +73,6 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
                     count++;
                     network.backPropStep();
                 /* Trains logistic regression post weight updates */
-                    //network.getOutputLayer().trainTillConvergence(lr, epochs);
 
                     Double entropy = network.score();
                     if(lastEntropy == null || entropy < lastEntropy) {
@@ -109,7 +110,6 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
             NeuralNetwork.OptimizationAlgorithm optimizationAlgorithm = network.getOptimizationAlgorithm();
             if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT) {
                 VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(this);
-                g.setTolerance(1e-3);
                 g.setTrainingEvaluator(eval);
                 g.setMaxIterations(numEpochs);
                 g.optimize(numEpochs);
@@ -118,7 +118,6 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
             else {
                 VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
-                g.setTolerance(1e-3);
                 g.setTrainingEvaluator(eval);
                 g.optimize(numEpochs);
 
@@ -130,7 +129,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
     @Override
     public void getValueGradient(double[] buffer) {
-        System.arraycopy(network.params().data,0,buffer,0,buffer.length);
+        System.arraycopy(network.getBackPropGradient().data,0,buffer,0,buffer.length);
     }
 
     @Override
