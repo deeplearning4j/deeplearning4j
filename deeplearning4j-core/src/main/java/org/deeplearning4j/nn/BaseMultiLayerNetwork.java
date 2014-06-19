@@ -505,6 +505,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(useDropConnect) {
             DoubleMatrix mask = MatrixUtil.binomial(MatrixUtil.valueMatrixOf(0.5,input.rows,input.columns),1,rng);
             input.muli(mask);
+            //apply l2 for drop connect
+            if(l2 > 0)
+                input.muli(l2);
         }
     }
 
@@ -543,6 +546,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //note the one difference here, back prop the error from the gauss newton vector R operation rather than the normal output
                 delta = rActivations.get(rActivations.size() - 1).mul(outputDerivative.applyDerivative(rActivations.get(rActivations.size() - 1)));
                 deltas[i] = delta;
+                applyDropConnectIfNecessary(deltas[i]);
+
 
             }
             else {
@@ -550,7 +555,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 //W^t * error^l + 1
                 deltas[i] =  deltas[i + 1].mmul(weights.get(i).transpose()).muli(derivative.applyDerivative(activations.get(i)));
-
+                applyDropConnectIfNecessary(deltas[i]);
                 //calculate gradient for layer
                 DoubleMatrix newGradient = deltas[i + 1].transpose().mmul((derivative.applyDerivative(activations.get(i))));
                 gradients[i] = newGradient;
@@ -603,7 +608,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 //W^t * error^l + 1
                 deltas[i] =  deltas[i + 1].mmul(weights.get(i).transpose()).muli(derivative.applyDerivative(activations.get(i)));
-
+                applyDropConnectIfNecessary(deltas[i]);
                 //calculate gradient for layer
                 DoubleMatrix newGradient = deltas[i + 1].transpose().mmul((derivative.applyDerivative(activations.get(i))));
                 gradients[i] = newGradient;
@@ -616,6 +621,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+    /**
+     * One step of back prop
+     */
     public void backPropStep() {
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradient();
         for(int i = 0; i < layers.length; i++) {
@@ -634,6 +642,25 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    /**
+     * One step of back prop with the R operator
+     */
+    public void backPropStepR() {
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradientR();
+        for(int i = 0; i < layers.length; i++) {
+            if(deltas.size() < layers.length) {
+                layers[i].getW().subi(deltas.get(i).getFirst());
+                layers[i].gethBias().subi(deltas.get(i).getSecond());
+                sigmoidLayers[i].setW(layers[i].getW());
+                sigmoidLayers[i].setB(layers[i].gethBias());
+            }
+
+        }
+
+        outputLayer.getW().subi(deltas.get(deltas.size() - 1).getFirst());
+        outputLayer.getB().subi(deltas.get(deltas.size() - 1).getSecond());
+
+    }
 
     public DoubleMatrix getBackPropGradient() {
         double[][] list = new double[layers.length * 2 + 2][];
@@ -977,6 +1004,61 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+    /**
+     * Do a back prop iteration.
+     * This involves computing the activations, tracking the last layers weights
+     * to revert to in case of convergence, the learning rate being used to train
+     * and the current epoch
+     * @return whether the training should converge or not
+     */
+    protected List<Pair<DoubleMatrix,DoubleMatrix>> backPropGradientR() {
+        //feedforward to compute activations
+        //initial error
+        //log.info("Back prop step " + epoch);
+
+        //precompute deltas
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+        //compute derivatives and gradients given activations
+        computeDeltasR(deltas);
+
+
+        List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
+
+        for(int l = 0; l < getnLayers(); l++) {
+            DoubleMatrix gradientChange = deltas.get(l).getFirst();
+            if(gradientChange.length != getLayers()[l].getW().length)
+                throw new IllegalStateException("Gradient change not equal to weight change");
+
+
+            //update hidden bias
+            DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+
+
+
+            list.add(new Pair<>(gradientChange,deltaColumnSums));
+
+
+        }
+
+        DoubleMatrix logLayerGradient = deltas.get(getnLayers()).getFirst();
+        DoubleMatrix biasGradient = deltas.get(getnLayers() + 1).getSecond().columnSums();
+
+
+
+        if(getOutputLayer().getB().length != biasGradient.length) {
+            DoubleMatrix add = DoubleMatrix.ones(getOutputLayer().getB().rows, getOutputLayer().getB().columns);
+            add.addi(biasGradient.sum());
+            biasGradient = add;
+        }
+
+
+
+        list.add(new Pair<>(logLayerGradient,biasGradient));
+
+        return list;
+
+    }
+
 
 
 
@@ -985,16 +1067,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * Run SGD based on the given labels
      * @param labels the labels to use
      * @param lr the learning rate during training
-     * @param iteations the number of times to iterate
+     * @param iterations the number of times to iterate
      */
-    public void finetune(DoubleMatrix labels,double lr, int iteations) {
+    public void finetune(DoubleMatrix labels,double lr, int iterations) {
         feedForward();
         MatrixUtil.complainAboutMissMatchedMatrices(labels,outputLayer.getInput());
         if(labels != null)
             this.labels = labels;
         this.fineTuneLearningRate = lr;
         optimizer = new MultiLayerNetworkOptimizer(this,lr);
-        optimizer.optimize(this.labels, lr,iteations);
+        optimizer.optimize(this.labels, lr,iterations);
 
     }
 
