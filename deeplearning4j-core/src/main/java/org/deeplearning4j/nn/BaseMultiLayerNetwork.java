@@ -509,6 +509,60 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    /* delta computation for back prop with the R operator */
+    protected  void computeDeltasR(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
+        DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
+        DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
+        ActivationFunction derivative;
+        ActivationFunction outputDerivative = outputLayer.getActivationFunction();
+        //- y - h
+        DoubleMatrix delta;
+        List<DoubleMatrix> activations = feedForward();
+        List<DoubleMatrix> rActivations = feedForwardROperator();
+
+		/*
+		 * Precompute activations and z's (pre activation network outputs)
+		 */
+        List<DoubleMatrix> weights = new ArrayList<>();
+        List<ActivationFunction> activationFunctions = new ArrayList<>();
+        for(int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            activationFunctions.add(getSigmoidLayers()[j].getActivationFunction());
+        }
+
+        weights.add(getOutputLayer().getW());
+        activationFunctions.add(outputLayer.getActivationFunction());
+
+
+
+        //errors
+        for(int i = getnLayers() + 1; i >= 0; i--) {
+            //output layer
+            if(i >= getnLayers() + 1) {
+                //-( y - h) .* f'(z^l) where l is the output layer
+                //note the one difference here, back prop the error from the gauss newton vector R operation rather than the normal output
+                delta = rActivations.get(rActivations.size() - 1).mul(outputDerivative.applyDerivative(rActivations.get(rActivations.size() - 1)));
+                deltas[i] = delta;
+
+            }
+            else {
+                derivative = activationFunctions.get(i);
+
+                //W^t * error^l + 1
+                deltas[i] =  deltas[i + 1].mmul(weights.get(i).transpose()).muli(derivative.applyDerivative(activations.get(i)));
+
+                //calculate gradient for layer
+                DoubleMatrix newGradient = deltas[i + 1].transpose().mmul((derivative.applyDerivative(activations.get(i))));
+                gradients[i] = newGradient;
+            }
+
+        }
+
+        for(int i = 0; i < gradients.length; i++)
+            deltaRet.add(new Pair<>(gradients[i],deltas[i]));
+
+    }
+
 
     /* delta computation for back prop */
     protected  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
