@@ -269,6 +269,8 @@ public class OutputLayer implements Serializable {
 
         if(useRegularization && l2 > 0)
             ret += reg;
+
+
         return ret;
 
 

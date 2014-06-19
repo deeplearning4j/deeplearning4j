@@ -141,6 +141,17 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         }
 
 
+        /**
+         * Use drop connect on activations or not
+         *
+         * @param useDropConnect use drop connect or not
+         * @return builder pattern
+         */
+        @Override
+        public  Builder useDropConnection(boolean useDropConnect) {
+             super.useDropConnection(useDropConnect);
+            return this;
+        }
 
         /**
          * Output layer drop out

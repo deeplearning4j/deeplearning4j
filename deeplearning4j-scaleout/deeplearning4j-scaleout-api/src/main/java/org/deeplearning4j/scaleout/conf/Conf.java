@@ -78,7 +78,25 @@ public class Conf implements Serializable,Cloneable {
     private boolean lineSearchBackProp = false;
     private boolean sampleHiddenActivations = false;
     private Map<Integer,Boolean> sampleHiddenActivationsByLayer = new HashMap<>();
+    private boolean useDropConnect = false;
+    private double outputLayerDropOut = 0.0;
 
+
+    public boolean isUseDropConnect() {
+        return useDropConnect;
+    }
+
+    public void setUseDropConnect(boolean useDropConnect) {
+        this.useDropConnect = useDropConnect;
+    }
+
+    public double getOutputLayerDropOut() {
+        return outputLayerDropOut;
+    }
+
+    public void setOutputLayerDropOut(double outputLayerDropOut) {
+        this.outputLayerDropOut = outputLayerDropOut;
+    }
 
     public Map<Integer, Boolean> getSampleHiddenActivationsByLayer() {
         return sampleHiddenActivationsByLayer;
@@ -525,7 +543,8 @@ public class Conf implements Serializable,Cloneable {
             .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz()).lineSearchBackProp(isLineSearchBackProp())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).withOutputLossFunction(getOutputLayerLossFunction())
                     .withOutputActivationFunction(getOutputActivationFunction()).lossFunctionByLayer(getLossFunctionByLayer())
-                    .sampleOrActivateByLayer(getSampleHiddenActivationsByLayer())
+                    .sampleOrActivateByLayer(getSampleHiddenActivationsByLayer()).outputLayerDropout(getOutputLayerDropOut())
+                    .useDropConnection(isUseDropConnect())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
                     .learningRateForLayer(getLearningRateForLayer()).sampleFromHiddenActivations(isSampleHiddenActivations())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
@@ -539,11 +558,11 @@ public class Conf implements Serializable,Cloneable {
             return  new BaseMultiLayerNetwork.Builder<>().learningRateForLayer(getLearningRateForLayer())
                     .withOutputLossFunction(getOutputLayerLossFunction())
                     .numberOfInputs(getnIn()).numberOfOutPuts(getnOut()).withClazz(getMultiLayerClazz())
-                    .withOutputActivationFunction(getOutputActivationFunction())
+                    .withOutputActivationFunction(getOutputActivationFunction()).outputLayerDropout(getOutputLayerDropOut())
                     .hiddenLayerSizes(getLayerSizes()).renderWeights(getRenderWeightEpochs()).activateForLayer(getActivationFunctionForLayer())
                     .renderByLayer(getRenderEpochsByLayer()).lineSearchBackProp(isLineSearchBackProp()).sampleOrActivateByLayer(getSampleHiddenActivationsByLayer())
                     .useRegularization(isUseRegularization()).withDropOut(getDropOut()).withLossFunction(getLossFunction())
-                    .lossFunctionByLayer(getLossFunctionByLayer())
+                    .lossFunctionByLayer(getLossFunctionByLayer()).useDropConnection(isUseDropConnect())
                     .withSparsity(getSparsity()).useAdaGrad(isUseAdaGrad()).withOptimizationAlgorithm(getOptimizationAlgorithm())
                     .build();
 
