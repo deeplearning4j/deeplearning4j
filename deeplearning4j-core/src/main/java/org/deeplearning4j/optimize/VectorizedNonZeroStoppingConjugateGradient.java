@@ -150,6 +150,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 				converged = true;
 				return true;
 			}
+
 			fp = fret;
 
 			// This termination provided by McCallum
