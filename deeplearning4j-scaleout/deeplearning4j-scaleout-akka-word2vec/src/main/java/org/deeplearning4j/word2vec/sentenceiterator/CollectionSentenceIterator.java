@@ -21,7 +21,7 @@ public class CollectionSentenceIterator extends BaseSentenceIterator {
 	public String nextSentence() {
 		String ret = iter.next();
 		if(this.getPreProcessor() != null)
-			ret =this.getPreProcessor().preProcess(ret);
+			ret = this.getPreProcessor().preProcess(ret);
 		return ret;
 	}
 
