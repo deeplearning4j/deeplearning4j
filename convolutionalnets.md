@@ -4,7 +4,7 @@ layout: default
 ---
 
 *previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
-# convolutional nets
+# convolutional restricted boltzmann machine
 
 [Convolutional RBMs](http://www.cs.toronto.edu/~norouzi/research/papers/masters_thesis.pdf) data, because they are able to handle many dimensions in data at once. 
 
