@@ -206,6 +206,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     protected boolean useDropConnect = false;
 
+    /*
+       Damping factor for gradient
+     */
+    protected double dampingFactor = 10;
 
     /* Reflection/factory constructor */
     protected BaseMultiLayerNetwork() {}
@@ -584,6 +588,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    //damping update after line search
+    protected void dampingUpdate(double rho,double boost,double decrease) {
+        if(rho < 0.25 || Double.isNaN(rho)) {
+             this.dampingFactor *= boost;
+        }
+        else if(rho > 0.75)
+            this.dampingFactor *= decrease;
+
+
+    }
+
+    /* p and gradient are same length */
+    protected double reductionRatio(DoubleMatrix p,double currScore,double score,DoubleMatrix input,List<DoubleMatrix> activations,DoubleMatrix gradient) {
+        double denom = getBackPropRGradient().mul(0.5).mul(p).columnSums().sum() - gradient.mul(p).columnSums().sum();
+        double rho = (currScore - score) / denom;
+        if(score - currScore > 0)
+            return Double.NEGATIVE_INFINITY;
+        return rho;
+    }
+
+
     /* delta computation for back prop */
     protected  void computeDeltas(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
         DoubleMatrix[] gradients = new DoubleMatrix[getnLayers() + 2];
@@ -679,6 +704,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
+     * This is also called computeGV
      * @return the back prop with r gradient
      */
     public DoubleMatrix getBackPropRGradient() {

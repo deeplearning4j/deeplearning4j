@@ -103,6 +103,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
             logger.trace("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
                     +	line.norm1() + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
         }
+
         assert (!MatrixUtil.isNaN(g));
         double sum = line.norm2();
         if(sum > stpmax) {
@@ -110,6 +111,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                     ", stpmax= "+ stpmax);
             line.muli(stpmax / sum);
         }
+
         //dot product
         slope = SimpleBlas.dot(g, line);
         logger.debug("slope = " + slope);
@@ -148,7 +150,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
             // x = oldParameters + alam*line
             // initially, alam = 1.0, i.e. take full Newton step
             logger.trace("BackTrack loop iteration " + iteration +" : alam="+
-                    alam+" oldAlam="+oldAlam);
+                    alam+" oldAlam=" + oldAlam);
             logger.trace ("before step, x.1norm: " + x.norm1() +
                     "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
@@ -186,6 +188,8 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                                     " < " + fold + "=fold");
                 return alam;
             }
+
+
             // if value is infinite, i.e. we've
             // jumped to unstable territory, then scale down jump
             else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
