@@ -3,11 +3,13 @@ package org.deeplearning4j.sda;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.da.DenoisingAutoEncoder;
+import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -57,7 +59,99 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      */
     @Override
     public void pretrain(DataSetIterator iter, Object[] otherParams) {
-          throw new UnsupportedOperationException("Not yet implemented");
+        double corruptionLevel = (double) otherParams[0];
+        double lr = (Double) otherParams[1];
+        int epochs = (Integer) otherParams[2];
+        int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
+        for(int i = 0; i < passes; i++)
+            pretrain(iter,corruptionLevel,lr,epochs);
+
+    }
+
+
+    /**
+     * This unsupervised learning method runs
+     * contrastive divergence on each RBM layer in the network.
+     * @param iter the input to train on
+     * @param corruptionLevel the corruption level to use for running the denoising autoencoder training.
+     * The typical tip is that the higher k is the closer to the model
+     * you will be approximating due to more sampling. K = 1
+     * usually gives very good results and is the default in quite a few situations.
+     * @param lr the learning rate to use
+     * @param iterations the number of epochs to train
+     */
+    public void pretrain(DataSetIterator iter,double corruptionLevel,double lr,int iterations) {
+
+        DoubleMatrix layerInput;
+
+        for (int i = 0; i < getnLayers(); i++) {
+            if (i == 0) {
+                while (iter.hasNext()) {
+                    DataSet next = iter.next();
+                    this.input = next.getFirst();
+                      /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+                    if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
+                        setInput(input);
+                        initializeLayers(input);
+                    }
+                    else
+                        setInput(input);
+                    //override learning rate where present
+                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
+                    if (isForceNumEpochs()) {
+                        for (int iteration = 0; iteration < iterations; iteration++) {
+                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                            getLayers()[i].train(next.getFirst(), realLearningRate, new Object[]{corruptionLevel, lr});
+                            getLayers()[i].iterationDone(iteration);
+                        }
+                    } else
+                        getLayers()[i].trainTillConvergence(next.getFirst(), realLearningRate, new Object[]{corruptionLevel, realLearningRate, iterations});
+
+                }
+
+                iter.reset();
+            }
+
+
+
+            else {
+                boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
+                while (iter.hasNext()) {
+                    DataSet next = iter.next();
+                    layerInput = next.getFirst();
+                    for(int j = 1; j <= i; j++) {
+                        if(activateOnly)
+                            layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
+                        else if(isSampleFromHiddenActivations())
+                            layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(getSigmoidLayers()[j - 1].getActivationFunction().apply(layerInput)).getSecond();
+                        else
+                            layerInput = getLayers()[j - 1].sampleHiddenGivenVisible(layerInput).getSecond();
+
+                    }
+
+
+                    log.info("Training on layer " + (i + 1));
+                    //override learning rate where present
+                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
+                    if(isForceNumEpochs()) {
+                        for(int iteration = 0; iteration < iterations; iteration++) {
+                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                            getLayers()[i].train(layerInput, realLearningRate,new Object[]{corruptionLevel,lr});
+                            getLayers()[i].iterationDone(iteration);
+                        }
+                    }
+                    else
+                        getLayers()[i].trainTillConvergence(layerInput, realLearningRate, new Object[]{corruptionLevel,realLearningRate,iterations});
+
+
+
+                }
+
+                iter.reset();
+
+            }
+        }
+
     }
 
     @Override
@@ -120,7 +214,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
         DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
                 .withDropOut(dropOut).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
-                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) :  getLossFunction())
+                .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) : getLossFunction())
                 .withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
                 .withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
                 .numberOfVisible(nVisible).numHidden(nHidden).withDistribution(getDist())
@@ -167,7 +261,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
          */
         @Override
         public  Builder useDropConnection(boolean useDropConnect) {
-             super.useDropConnection(useDropConnect);
+            super.useDropConnection(useDropConnect);
             return this;
         }
 
@@ -185,7 +279,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
         @Override
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {
-             super.lineSearchBackProp(lineSearchBackProp);
+            super.lineSearchBackProp(lineSearchBackProp);
             return this;
         }
 
