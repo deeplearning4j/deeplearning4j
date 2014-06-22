@@ -241,4 +241,76 @@ public boolean optimize() {
 	public void setMaxIterations(int maxIterations) {
 		this.maxIterations = maxIterations;
 	}
+
+    public DoubleMatrix getH() {
+        return h;
+    }
+
+    public void setH(DoubleMatrix h) {
+        this.h = h;
+    }
+
+    public DoubleMatrix getG() {
+        return g;
+    }
+
+    public void setG(DoubleMatrix g) {
+        this.g = g;
+    }
+
+    public DoubleMatrix getXi() {
+        return xi;
+    }
+
+    public void setXi(DoubleMatrix xi) {
+        this.xi = xi;
+    }
+
+    public double getFret() {
+        return fret;
+    }
+
+    public void setFret(double fret) {
+        this.fret = fret;
+    }
+
+    public double getStep() {
+        return step;
+    }
+
+    public void setStep(double step) {
+        this.step = step;
+    }
+
+    public double getDgg() {
+        return dgg;
+    }
+
+    public void setDgg(double dgg) {
+        this.dgg = dgg;
+    }
+
+    public double getGam() {
+        return gam;
+    }
+
+    public void setGam(double gam) {
+        this.gam = gam;
+    }
+
+    public double getGg() {
+        return gg;
+    }
+
+    public void setGg(double gg) {
+        this.gg = gg;
+    }
+
+    public double getFp() {
+        return fp;
+    }
+
+    public void setFp(double fp) {
+        this.fp = fp;
+    }
 }

@@ -501,6 +501,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         }
 
+        if(constrainGradientToUnitNorm) {
+            wGradient.divi(wGradient.norm2());
+            vBiasGradient.divi(vBiasGradient.norm2());
+            hBiasGradient.divi(hBiasGradient.norm2());
+        }
+
+
         this.wGradient = wGradient;
         this.vBiasGradient = vBiasGradient;
         this.hBiasGradient = hBiasGradient;

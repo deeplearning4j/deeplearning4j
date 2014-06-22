@@ -143,6 +143,15 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             this.clazz = StackedDenoisingAutoEncoder.class;
         }
 
+        /**
+         * Whether to constrain gradient to unit norm or not
+         * @param constrainGradientToUnitNorm
+         * @return
+         */
+        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            super.constrainGradientToUnitNorm(constrainGradientToUnitNorm);
+            return this;
+        }
 
         public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
             super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);

@@ -5,6 +5,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -27,7 +29,7 @@ public class DeepAutoEncoderExample {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter =  new MnistDataSetIterator(10,10,false);
+        DataSetIterator iter =  new MultipleEpochsIterator(50,new ReconstructionDataSetIterator(new MnistDataSetIterator(10,10,false)));
 
 
         int codeLayer = 3;
@@ -43,10 +45,10 @@ public class DeepAutoEncoderExample {
         DBN dbn = new DBN.Builder()
                 .learningRateForLayer(layerLearningRates)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
-                .useRBMPropUpAsActivation(true)
+                .useRBMPropUpAsActivation(true).constrainGradientToUnitNorm(true)
                 .activateForLayer(Collections.singletonMap(3, Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
-                .numberOfInputs(784).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .numberOfInputs(784).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
                 .sampleFromHiddenActivations(true)
                 .useRegularization(true).withL2(2e-5).resetAdaGradIterations(10)
                 .numberOfOutPuts(784).withMomentum(0.5)
@@ -58,28 +60,14 @@ public class DeepAutoEncoderExample {
 
 
 
-
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),1,1e-1,1000);
-        }
-
-
-        iter.reset();
-
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
-        encoder.setUseGaussNewtonVectorProductBackProp(false);
+        encoder.setUseGaussNewtonVectorProductBackProp(true);
         iter.reset();
 
 
         encoder.setForceNumEpochs(false);
-        encoder.setLineSearchBackProp(false);
-        while (iter.hasNext()) {
-            DataSet data = iter.next();
-            encoder.finetune(data.getFirst(),1e-3,1000);
-
-        }
-
+        encoder.setLineSearchBackProp(true);
+        encoder.finetune(iter,1e-2,1000);
         iter.reset();
 
 
