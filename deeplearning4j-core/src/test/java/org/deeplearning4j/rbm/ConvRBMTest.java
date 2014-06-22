@@ -3,6 +3,7 @@ package org.deeplearning4j.rbm;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.jblas.DoubleMatrix;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ public class ConvRBMTest {
     private static Logger log = LoggerFactory.getLogger(ConvRBMTest.class);
 
     @Test
+    @Ignore
     public void testConvNet() throws Exception {
         ConvolutionalRBM rbm = new ConvolutionalRBM
                 .Builder().withFilterSize(new int[]{7,7})

@@ -636,7 +636,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation));
+                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);;
 
 
             }
@@ -713,7 +713,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation));
+                    ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
 
             }
 
