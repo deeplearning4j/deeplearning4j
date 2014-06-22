@@ -271,6 +271,15 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             return this;
         }
 
+        /**
+         * Whether to constrain gradient to unit norm or not
+         * @param constrainGradientToUnitNorm
+         * @return
+         */
+        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            super.constrainGradientToUnitNorm(constrainGradientToUnitNorm);
+            return this;
+        }
 
         @Override
         public Builder lineSearchBackProp(boolean lineSearchBackProp) {
@@ -692,7 +701,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 if(i < encoder.getLayers().length) {
                     AutoEncoder a = new AutoEncoder.Builder().withActivation(i < encoder.getLayers().length - 1 ? Activations.sigmoid() : Activations.linear())
                             .numberOfVisible(encoder.getLayers()[i].getnVisible())
-                            .numHidden(encoder.getLayers()[i].getnHidden())
+                            .numHidden(encoder.getLayers()[i].getnHidden()).constrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm())
                             .withWeights(encoder.getLayers()[i].getW().dup())
                            .applySparsity(encoder.getLayers()[i].isApplySparsity())
                             .normalizeByInputRows(encoder.getLayers()[i].normalizeByInputRows())
@@ -724,7 +733,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                 else {
                     AutoEncoder a = new AutoEncoder.Builder()
                             .numberOfVisible(encoder.getLayers()[inverseCount].getnHidden())
-                            .numHidden(encoder.getLayers()[inverseCount].getnVisible())
+                            .numHidden(encoder.getLayers()[inverseCount].getnVisible()).constrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm())
                             .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
                             .resetAdaGradIterations(encoder.getLayers()[inverseCount].getResetAdaGradIterations())
                             .withWeights(encoder.getLayers()[inverseCount].getW().transpose())
@@ -784,7 +793,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             e.setUseAdaGrad(encoder.isUseAdaGrad());
             e.setDropOut(encoder.getDropOut());
             e.setOptimizationAlgorithm(encoder.getOptimizationAlgorithm());
-
+            e.setConstrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm());
 
             e.setOutputActivationFunction(Activations.sigmoid());
             e.setOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT);

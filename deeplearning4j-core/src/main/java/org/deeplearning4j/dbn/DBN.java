@@ -375,7 +375,15 @@ public class DBN extends BaseMultiLayerNetwork {
             this.clazz = DBN.class;
         }
 
-
+        /**
+         * Whether to constrain gradient to unit norm or not
+         * @param constrainGradientToUnitNorm
+         * @return
+         */
+        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            super.constrainGradientToUnitNorm(constrainGradientToUnitNorm);
+            return this;
+        }
         public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
             return this;
