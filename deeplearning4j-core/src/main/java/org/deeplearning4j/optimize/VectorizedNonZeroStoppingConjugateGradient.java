@@ -47,7 +47,15 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 	private String myName = "";
 	private NeuralNetEpochListener listener;
 
-	// "eps" is a small number to recitify the special case of converging
+    // The state of a conjugate gradient search
+    double fp, gg, gam, dgg, step, fret;
+    DoubleMatrix xi, g, h;
+    int j, iterations;
+
+
+
+
+    // "eps" is a small number to recitify the special case of converging
 	// to exactly zero function value
 	final double eps = 1.0e-10;
 
@@ -101,12 +109,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 		return step;
 	}
 
-	// The state of a conjugate gradient search
-	double fp, gg, gam, dgg, step, fret;
-	DoubleMatrix xi, g, h;
-	int j, iterations;
-
-	public boolean optimize() {
+public boolean optimize() {
 		return optimize(maxIterations);
 	}
 

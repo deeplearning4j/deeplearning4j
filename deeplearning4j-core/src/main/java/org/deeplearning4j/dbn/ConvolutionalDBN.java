@@ -155,7 +155,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
     }
 
     @Override
-    protected void computeDeltas(List<Pair<DoubleMatrix, DoubleMatrix>> deltaRet) {
+    protected void computeDeltas(List<DoubleMatrix> deltaRet) {
         ActivationFunction a = getSigmoidLayers()[0].getActivationFunction();
         ActivationFunction softMaxDerivative = Activations.softmax();
         List<DoubleMatrix> activations = feedForward();
@@ -256,11 +256,11 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
         for(int i = 0; i < biasGradients.length; i++) {
-            deltaRet.add(new Pair<>(errorSignals[i],biasGradients[i]));
+            deltaRet.add(errorSignals[i]);
         }
 
         //output layer gradients
-        deltaRet.add(new Pair<>(errorSignals[errorSignals.length - 1].mmul(outputLayer.getInput()),errorSignals[errorSignals.length - 1].columnMeans()));
+        deltaRet.add(errorSignals[errorSignals.length - 1].mmul(outputLayer.getInput()));
 
     }
 
@@ -282,7 +282,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
         //precompute deltas
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
+        List<DoubleMatrix> deltas = new ArrayList<>();
         //compute derivatives and gradients given activations
         computeDeltas(deltas);
 
@@ -291,8 +291,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[l];
             ConvolutionalRBM prevR = (ConvolutionalRBM) getLayers()[l - 1];
 
-            FourDTensor wGradient =  (FourDTensor) deltas.get(l).getFirst();
-            DoubleMatrix biasGradient =  deltas.get(l).getSecond();
+            FourDTensor wGradient =  (FourDTensor) deltas.get(l);
+            DoubleMatrix biasGradient =  deltas.get(l).columnMeans();
             FourDTensorAdaGrad wAdaGrad = (FourDTensorAdaGrad) r.getAdaGrad();
             DoubleMatrix biasLearningRates = null;
             if(useAdaGrad)
@@ -329,7 +329,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             }
 
 
-            DoubleMatrix gradientChange = deltas.get(l).getFirst();
+            DoubleMatrix gradientChange = deltas.get(l);
             //get the gradient
             if(isUseAdaGrad())
                 gradientChange.muli(getLayers()[l].getAdaGrad().getLearningRates(gradientChange));
@@ -353,7 +353,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l + 1).getSecond().columnSums();
+            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans();
 
             if(sparsity != 0)
                 deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
@@ -374,8 +374,8 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
         }
 
-        DoubleMatrix logLayerGradient = deltas.get(getnLayers()).getFirst();
-        DoubleMatrix biasGradient = deltas.get(getnLayers()).getSecond().columnSums();
+        DoubleMatrix logLayerGradient = deltas.get(getnLayers());
+        DoubleMatrix biasGradient = deltas.get(getnLayers()).columnMeans();
 
         if(momentum != 0)
             logLayerGradient.muli(momentum);

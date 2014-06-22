@@ -48,7 +48,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
                 for(int i = 0; i < epochs; i++) {
                     if(i % network.getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                    network.backPropStep();
+                    network.backPropStepR();
                     log.info("Iteration " + i + " error " + network.score());
 
                 }
@@ -89,7 +89,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
                         train = false;
                     }
 
-                    else if(entropy >= lastEntropy) {
+                    else if(entropy >= lastEntropy || Double.isNaN(entropy) || Double.isInfinite(entropy)) {
                         train = false;
                         network.update(revert);
                         log.info("Reverting to best score " + lastEntropy);

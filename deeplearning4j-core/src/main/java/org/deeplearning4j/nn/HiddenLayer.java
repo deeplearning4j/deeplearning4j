@@ -31,7 +31,7 @@ public class HiddenLayer implements Serializable {
 	protected DoubleMatrix input;
 	protected ActivationFunction activationFunction = new Sigmoid();
 	protected RealDistribution dist;
-
+    protected boolean concatBiases = false;
 
 	protected HiddenLayer() {}
 
@@ -118,64 +118,72 @@ public class HiddenLayer implements Serializable {
 		else 
 			this.b = b;
 	}
-	public synchronized int getnIn() {
+	public  int getnIn() {
 		return nIn;
 	}
 
-	public synchronized void setnIn(int nIn) {
+	public  void setnIn(int nIn) {
 		this.nIn = nIn;
 	}
 
-	public synchronized int getnOut() {
+	public  int getnOut() {
 		return nOut;
 	}
 
-	public synchronized void setnOut(int nOut) {
+	public  void setnOut(int nOut) {
 		this.nOut = nOut;
 	}
 
-	public synchronized DoubleMatrix getW() {
+	public  DoubleMatrix getW() {
 		return W;
 	}
 
-	public synchronized void setW(DoubleMatrix w) {
+	public  void setW(DoubleMatrix w) {
 		W = w;
 	}
 
-	public synchronized DoubleMatrix getB() {
+	public  DoubleMatrix getB() {
 		return b;
 	}
 
-	public synchronized void setB(DoubleMatrix b) {
+	public  void setB(DoubleMatrix b) {
 		this.b = b;
 	}
 
-	public synchronized RandomGenerator getRng() {
+	public  RandomGenerator getRng() {
 		return rng;
 	}
 
-	public synchronized void setRng(RandomGenerator rng) {
+	public  void setRng(RandomGenerator rng) {
 		this.rng = rng;
 	}
 
-	public synchronized DoubleMatrix getInput() {
+	public  DoubleMatrix getInput() {
 		return input;
 	}
 
-	public synchronized void setInput(DoubleMatrix input) {
+	public  void setInput(DoubleMatrix input) {
 		this.input = input;
 	}
 
-	public synchronized ActivationFunction getActivationFunction() {
+	public  ActivationFunction getActivationFunction() {
 		return activationFunction;
 	}
 
-	public synchronized void setActivationFunction(
+	public  void setActivationFunction(
 			ActivationFunction activationFunction) {
 		this.activationFunction = activationFunction;
 	}
 
-	@Override
+    public boolean isConcatBiases() {
+        return concatBiases;
+    }
+
+    public void setConcatBiases(boolean concatBiases) {
+        this.concatBiases = concatBiases;
+    }
+
+    @Override
 	public HiddenLayer clone() {
 		HiddenLayer layer = new HiddenLayer();
 		layer.b = b.dup();
@@ -208,6 +216,7 @@ public class HiddenLayer implements Serializable {
 		layer.activationFunction = activationFunction;
 		layer.nOut = nIn;
 		layer.nIn = nOut;
+        layer.concatBiases = concatBiases;
 		layer.rng = rng;
 		return layer;
 	}
@@ -230,7 +239,7 @@ public class HiddenLayer implements Serializable {
 	 * @param input the input to use
 	 * @return
 	 */
-	public synchronized DoubleMatrix activate(DoubleMatrix input) {
+	public  DoubleMatrix activate(DoubleMatrix input) {
 		if(input != null)
 			this.input = stabilizeInput(input.dup(),1);
 		return activate();
@@ -246,7 +255,14 @@ public class HiddenLayer implements Serializable {
 		protected DoubleMatrix input;
 		protected ActivationFunction activationFunction = new Sigmoid();
 		protected RealDistribution dist;
-		
+		protected boolean concatBiases = false;
+
+
+        public Builder concatBiases(boolean concatBiases) {
+            this.concatBiases = concatBiases;
+            return this;
+        }
+
 		public Builder dist(RealDistribution dist) {
 			this.dist = dist;
 			return this;
@@ -290,6 +306,7 @@ public class HiddenLayer implements Serializable {
 		public HiddenLayer build() {
 			HiddenLayer ret =  new HiddenLayer(nIn,nOut,W,b,rng,input); 
 			ret.activationFunction = activationFunction;
+            ret.concatBiases = concatBiases;
 			ret.dist = dist;
 			return ret;
 		}

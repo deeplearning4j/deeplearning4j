@@ -82,9 +82,8 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
      */
     public void optimize(DoubleMatrix labels,double lr,int epochs) {
         network.getOutputLayer().setLabels(labels);
+        network.feedForward();
         if(!network.isForceNumEpochs()) {
-            network.getOutputLayer().trainTillConvergence(labels,lr,epochs,null);
-
             if(network.isShouldBackProp())
                 network.backProp(lr, epochs);
 

@@ -128,8 +128,6 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         //  precomputed and saved in alamin
         DoubleMatrix maxOldParams = new DoubleMatrix(line.length);
         for(int i = 0;i < line.length; i++) {
-            if(line.length >= oldParameters.length)
-                break;
             maxOldParams.put(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
 
         }

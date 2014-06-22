@@ -8,9 +8,11 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -26,36 +28,25 @@ public class MnistExample {
      */
     public static void main(String[] args) throws IOException {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(100,100);
+        DataSetIterator iter = new MultipleEpochsIterator(50,new MnistDataSetIterator(10,10));
         DataSet ne = iter.next();
-        ne.filterAndStrip(new int[]{0,1});
-        iter = ne.iterator(10);
 
         RandomGenerator rng = new MersenneTwister(123);
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{600, 500, 400}).withRng(rng)
-
-                .numberOfInputs(784).numberOfOutPuts(2).withMomentum(0.5)
+                .useRegularization(true).withL2(2e-5)
+                .numberOfInputs(784).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
-       for(int i = 0; i < 10; i++) {
-           while(iter.hasNext()) {
-               DataSet next = iter.next();
-               dbn.setInput(next.getFirst());
-               dbn.pretrain(next.getFirst(),new Object[]{1,1e-1,1000});
-           }
-
-           iter.reset();
-
-       }
+        dbn.pretrain(iter,1,1e-1,1);
 
 
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-1, 1000);
-        }
+        iter.reset();
+
+        dbn.finetune(iter,1e-1,1);
+
+
 
 
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-dbn.bin"));

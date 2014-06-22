@@ -190,6 +190,11 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	public double l2RegularizedCoefficient();
 
+
+
+    public void setConcatBiases(boolean concatBiases);
+    boolean isConcatBiases();
+
     /**
      * Error on reconstruction
      * @return the error on reconstruction
