@@ -134,7 +134,18 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	
 	public NeuralNetworkGradient getGradient(Object[] params);
-	
+
+
+    public void setConstrainGradientToUnitNorm(boolean constrainGradientToUnitNorm);
+    /**
+     * Whether to constrain the gradient to unit norm or not
+     */
+    public boolean isConstrainGradientToUnitNorm();
+
+    /**
+     * L2 regularization coefficient
+     * @return
+     */
 	public double getL2();
 	public void setL2(double l2);
 

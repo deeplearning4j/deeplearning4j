@@ -574,6 +574,18 @@ public class RBM extends BaseNeuralNetwork {
             clazz =  RBM.class;
         }
 
+        /**
+         * Constrains gradient to unit norm when updating parameters
+         *
+         * @param constrainGradientToUnitNorm whether to constrain the gradient to unit norm or not
+         * @return
+         */
+        @Override
+        public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+             super.constrainGradientToUnitNorm(constrainGradientToUnitNorm);
+            return this;
+        }
+
         @Override
         public Builder concatBiases(boolean concatBiases) {
             super.concatBiases(concatBiases);

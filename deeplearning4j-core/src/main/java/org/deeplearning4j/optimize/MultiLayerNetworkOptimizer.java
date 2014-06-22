@@ -78,14 +78,14 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
      *
      * @param labels
      * @param lr
-     * @param epochs
+     * @param iteration
      */
-    public void optimize(DoubleMatrix labels,double lr,int epochs) {
+    public void optimize(DoubleMatrix labels,double lr,int iteration) {
         network.getOutputLayer().setLabels(labels);
         network.feedForward();
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
-                network.backProp(lr, epochs);
+                network.backProp(lr, iteration);
 
 
 
@@ -93,8 +93,8 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         }
 
         else {
-            log.info("Training for " + epochs + " epochs");
-            for(int i = 0; i < epochs; i++) {
+            log.info("Training for " + iteration + " iteration");
+            for(int i = 0; i < iteration; i++) {
                 network.getOutputLayer().train(lr);
                 if(i % network.getResetAdaGradIterations() == 0)
                     network.getOutputLayer().getAdaGrad().historicalGradient = null;
@@ -103,7 +103,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
             if(network.isShouldBackProp())
-                network.backProp(lr, epochs);
+                network.backProp(lr, iteration);
 
         }
 
