@@ -5,6 +5,8 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
@@ -31,7 +33,7 @@ public class DeepAutoEncoderSDA {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MnistDataSetIterator(10,10,false);
+        DataSetIterator iter = new MultipleEpochsIterator(50,new ReconstructionDataSetIterator(new MnistDataSetIterator(100,100,false)));
 
         int codeLayer = 3;
 
@@ -45,7 +47,7 @@ public class DeepAutoEncoderSDA {
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
                 .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(true)
-                .hiddenLayerSizes(new int[]{1000,500, 250,30}).withRng(rng)
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3, Activations.sigmoid()))
                 .numberOfInputs(784).sampleFromHiddenActivations(false)
                 .lineSearchBackProp(false).useRegularization(true).forceEpochs()
@@ -58,26 +60,13 @@ public class DeepAutoEncoderSDA {
         //log.info("Begin training ");
 
 
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),new Object[]{0.6,1e-1,1000});
-
-        }
-
+        dbn.pretrain(iter,new Object[]{0.3,1e-1,10});
 
         DeepAutoEncoder a = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
 
-
+        a.finetune(iter,1e-2,10);
 
         iter.reset();
-
-
-         while(iter.hasNext()) {
-             DataSet next = iter.next();
-             a.finetune(next.getFirst(),1e-1,1000);
-         }
-
-         iter.reset();
 
         while (iter.hasNext()) {
             DataSet data = iter.next();
