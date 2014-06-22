@@ -158,13 +158,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param epochs the number of epochs to train
      */
     public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
-        /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
-        if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
-            setInput(input);
-            initializeLayers(input);
-        }
-        else
-            setInput(input);
+
 
         DoubleMatrix layerInput;
 
@@ -173,6 +167,13 @@ public class DBN extends BaseMultiLayerNetwork {
                 while(iter.hasNext()) {
                     DataSet next = iter.next();
                     this.input = next.getFirst();
+                      /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
+                    if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
+                        setInput(input);
+                        initializeLayers(input);
+                    }
+                    else
+                        setInput(input);
                     //override learning rate where present
                     double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
                     if(isForceNumEpochs()) {

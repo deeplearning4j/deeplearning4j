@@ -1,14 +1,18 @@
 package org.deeplearning4j.datasets.iterator;
 
 import org.deeplearning4j.datasets.DataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A dataset iterator for doing multiple passes over a dataset
  */
 public class MultipleEpochsIterator implements DataSetIterator {
     private int numPasses;
+    private int batch = 0;
     private DataSetIterator iter;
     private int passes = 0;
+    private static Logger log = LoggerFactory.getLogger(MultipleEpochsIterator.class);
 
     public MultipleEpochsIterator(int numPasses,DataSetIterator iter) {
         this.numPasses = numPasses;
@@ -63,6 +67,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public void reset() {
         passes = 0;
+        batch = 0;
         iter.reset();
     }
 
@@ -112,17 +117,19 @@ public class MultipleEpochsIterator implements DataSetIterator {
      * Returns the next element in the iteration.
      *
      * @return the next element in the iteration
-     * @throws NoSuchElementException if the iteration has no more elements
      */
     @Override
     public DataSet next() {
         if(!iter.hasNext()) {
             if(passes < numPasses) {
                 passes++;
+                batch = 0;
+                log.info("Epoch " + passes + " batch " + batch);
                 iter.reset();
 
             }
         }
+        batch++;
 
         return iter.next();
     }
