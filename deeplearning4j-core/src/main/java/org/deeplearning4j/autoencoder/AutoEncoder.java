@@ -102,10 +102,8 @@ public class AutoEncoder extends BaseNeuralNetwork {
         DoubleMatrix out = reconstruct(input);
 
         DoubleMatrix diff = input.sub(out);
-        //-( y - h) .* f'(z^l) where l is the output layer
-        DoubleMatrix backWard = diff.mul(input).neg().mul(act.applyDerivative(out));
 
-        DoubleMatrix wGradient = backWard.transpose().mmul(W);
+        DoubleMatrix wGradient = diff.transpose().mmul(W);
         DoubleMatrix hBiasGradient = wGradient.columnMeans();
         DoubleMatrix vBiasGradient = DoubleMatrix.zeros(vBias.rows,vBias.columns);
 
@@ -115,20 +113,15 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
     }
 
-
-
-
-    /**
-     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
-     *
-     * @param gradient     the gradient to modify
-     * @param iteration    the current iteration
-     * @param learningRate the learning rate for the current iteratiaon
-     */
-    @Override
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient, int iteration, double learningRate) {
-        super.updateGradientAccordingToParams(gradient, iteration, learningRate);
+    public ActivationFunction getAct() {
+        return act;
     }
+
+    public void setAct(ActivationFunction act) {
+        this.act = act;
+    }
+
+
 
     /**
      * Sample hidden mean and sample

@@ -701,6 +701,12 @@ public class ConvolutionalRBM extends RBM  {
 
         }
 
+        @Override
+        public Builder concatBiases(boolean concatBiases) {
+            super.concatBiases(concatBiases);
+            return this;
+        }
+
         public Builder withFmSize(int[] fmSize) {
             this.fmSize = fmSize;
             return this;

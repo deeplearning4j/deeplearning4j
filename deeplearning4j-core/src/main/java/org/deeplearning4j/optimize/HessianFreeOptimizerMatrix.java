@@ -27,6 +27,25 @@ public class HessianFreeOptimizerMatrix implements OptimizerMatrix {
     private String myName = "";
     private NeuralNetEpochListener listener;
 
+
+    // The state of a conjugate gradient search
+    /*
+       fp is the current objective score
+       gg is the gradient squared
+       fret is the best score
+     */
+    double fp, gg, gam, dgg, step, fret;
+    /*
+
+     xi is the current step
+     g is the gradient
+     h is direction by which to minimize
+     */
+    DoubleMatrix xi, g, h;
+    int iterations;
+
+
+
     // "eps" is a small number to recitify the special case of converging
     // to exactly zero function value
     final double eps = 1.0e-10;
@@ -81,10 +100,7 @@ public class HessianFreeOptimizerMatrix implements OptimizerMatrix {
         return step;
     }
 
-    // The state of a conjugate gradient search
-    double fp, gg, gam, dgg, step, fret;
-    DoubleMatrix xi, g, h;
-    int j, iterations;
+
 
     public boolean optimize() {
         return optimize(maxIterations);
@@ -100,23 +116,7 @@ public class HessianFreeOptimizerMatrix implements OptimizerMatrix {
             return true;
         long last = System.currentTimeMillis();
 
-       /*
-       TODO: Keep main loop
-        feedforward()
-        acts = self.forward(self.theta, gpu.garray(gradbatchX), batchtype='obj')
-                actsbatch = self.forward(self.theta, gpu.garray(batchX), batchtype='GV')
-                obj_PREV = self.objective(self.theta, gradbatchY, acts)
-                //computeDeltas
-                (grad, precon) = self.backward(gradbatchY, acts)
-                grad = -grad
-                ch = ch * self.p_i
-                (p, chs, ch) = run_conjgrad(ch, batchX, grad, actsbatch, precon)
-                (p, obj) = conjgrad_backtrack(p, chs, gradbatchX, gradbatchY)
-                rho = reduction_ratio(p, obj, obj_PREV, batchX, actsbatch, grad)
-                rate = linesearch(obj, obj_PREV, grad, gradbatchX, gradbatchY)
-                damping_update(rho, boost, decrease)
-                network_update(f, rate, p)
-        */
+
         if (xi == null) {
             fp = optimizable.getValue();
             xi = optimizable.getValueGradient(0);
@@ -148,6 +148,8 @@ public class HessianFreeOptimizerMatrix implements OptimizerMatrix {
                 converged = true;
                 return true;
             }
+
+            //update current best
             fp = fret;
 
             // This termination provided by McCallum
@@ -162,14 +164,16 @@ public class HessianFreeOptimizerMatrix implements OptimizerMatrix {
                 return true;
             }
 
+
             dgg = gg = 0.0;
             gg = MatrixFunctions.pow(g, 2).sum();
             dgg = xi.mul(xi.sub(g)).sum();
             gam = dgg / gg;
 
-
+            //current gradient
             g = xi.dup();
-            h = xi.dup().add(h.mul(gam));
+            //points on which to minimize
+            h = xi.add(h.mul(gam));
 
 
             assert (!MatrixUtil.isNaN(h));

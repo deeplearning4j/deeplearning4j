@@ -14,6 +14,8 @@ import org.deeplearning4j.util.RBMUtil;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 
+import java.util.Map;
+
 import static org.deeplearning4j.util.MatrixUtil.*;
 
 
@@ -411,7 +413,11 @@ public class RBM extends BaseNeuralNetwork {
         if(visibleType == VisibleUnit.GAUSSIAN)
             this.sigma = columnVariance(v).divi(input.rows);
 
-        DoubleMatrix preSig = v.mmul(W).addiRowVector(hBias);
+        DoubleMatrix preSig = v.mmul(W);
+        if(concatBiases)
+            preSig = DoubleMatrix.concatHorizontally(preSig,hBias);
+        else
+            preSig.addiRowVector(hBias);
 
 
         if(hiddenType == HiddenUnit.RECTIFIED) {
@@ -455,24 +461,27 @@ public class RBM extends BaseNeuralNetwork {
      * @return the approximated output of the hidden layer
      */
     public DoubleMatrix propDown(DoubleMatrix h) {
+        DoubleMatrix vMean = h.mmul(W.transpose());
+        if(concatBiases)
+            vMean = DoubleMatrix.concatHorizontally(vMean,vBias);
+        else
+            vMean.addiRowVector(vBias);
+
         if(visibleType  == VisibleUnit.GAUSSIAN) {
-            DoubleMatrix vMean = h.mmul(W.transpose()).addRowVector(vBias);
             vMean.addi(normal(rng,vMean,1.0));
             return vMean;
         }
         else if(visibleType == VisibleUnit.LINEAR) {
-            DoubleMatrix vMean = normal(getRng(),h.mmul(W.transpose()).addRowVector(vBias),1);
+             vMean = normal(getRng(),vMean,1);
             return vMean;
         }
 
         else if(visibleType == VisibleUnit.BINARY) {
-            DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
-            return sigmoid(preSig);
+            return sigmoid(vMean);
         }
 
         else if(visibleType == VisibleUnit.SOFTMAX) {
-            DoubleMatrix preSig = h.mmul(W.transpose()).addRowVector(vBias);
-            return softmax(preSig);
+            return softmax(vMean);
         }
 
 
@@ -565,22 +574,39 @@ public class RBM extends BaseNeuralNetwork {
             clazz =  RBM.class;
         }
 
+        @Override
+        public Builder concatBiases(boolean concatBiases) {
+            super.concatBiases(concatBiases);
+            return this;
+        }
+
+        @Override
+        public Builder resetAdaGradIterations(int resetAdaGradIterations) {
+            super.resetAdaGradIterations(resetAdaGradIterations);
+            return this;
+        }
+
+        @Override
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            super.momentumAfter(momentumAfter);
+            return this;
+        }
 
         @Override
         public Builder  cacheInput(boolean cacheInput) {
-             super.cacheInput(cacheInput);
+            super.cacheInput(cacheInput);
             return this;
         }
 
         @Override
         public Builder applySparsity(boolean applySparsity) {
-             super.applySparsity(applySparsity);
+            super.applySparsity(applySparsity);
             return this;
         }
 
         @Override
         public Builder withOptmizationAlgo(OptimizationAlgorithm optimizationAlgo) {
-             super.withOptmizationAlgo(optimizationAlgo);
+            super.withOptmizationAlgo(optimizationAlgo);
             return this;
         }
 
@@ -592,49 +618,49 @@ public class RBM extends BaseNeuralNetwork {
 
         @Override
         public Builder withDropOut(double dropOut) {
-             super.withDropOut(dropOut);
+            super.withDropOut(dropOut);
             return this;
         }
 
         @Override
         public Builder normalizeByInputRows(boolean normalizeByInputRows) {
-             super.normalizeByInputRows(normalizeByInputRows);
+            super.normalizeByInputRows(normalizeByInputRows);
             return this;
         }
 
         @Override
         public Builder useAdaGrad(boolean useAdaGrad) {
-             super.useAdaGrad(useAdaGrad);
+            super.useAdaGrad(useAdaGrad);
             return this;
         }
 
         @Override
         public Builder withDistribution(RealDistribution dist) {
-             super.withDistribution(dist);
+            super.withDistribution(dist);
             return this;
         }
 
         @Override
         public Builder useRegularization(boolean useRegularization) {
-             super.useRegularization(useRegularization);
+            super.useRegularization(useRegularization);
             return this;
         }
 
         @Override
         public Builder fanIn(double fanIn) {
-             super.fanIn(fanIn);
+            super.fanIn(fanIn);
             return this;
         }
 
         @Override
         public Builder withL2(double l2) {
-             super.withL2(l2);
+            super.withL2(l2);
             return this;
         }
 
         @Override
         public Builder renderWeights(int numEpochs) {
-             super.renderWeights(numEpochs);
+            super.renderWeights(numEpochs);
             return this;
         }
 
@@ -645,67 +671,67 @@ public class RBM extends BaseNeuralNetwork {
 
         @Override
         public Builder withClazz(Class<? extends BaseNeuralNetwork> clazz) {
-             super.withClazz(clazz);
+            super.withClazz(clazz);
             return this;
         }
 
         @Override
         public Builder withSparsity(double sparsity) {
-             super.withSparsity(sparsity);
+            super.withSparsity(sparsity);
             return this;
         }
 
         @Override
         public Builder withMomentum(double momentum) {
-             super.withMomentum(momentum);
+            super.withMomentum(momentum);
             return this;
         }
 
         @Override
         public Builder withInput(DoubleMatrix input) {
-             super.withInput(input);
+            super.withInput(input);
             return this;
         }
 
         @Override
         public Builder asType(Class<RBM> clazz) {
-             super.asType(clazz);
+            super.asType(clazz);
             return this;
         }
 
         @Override
         public Builder withWeights(DoubleMatrix W) {
-             super.withWeights(W);
+            super.withWeights(W);
             return this;
         }
 
         @Override
         public Builder withVisibleBias(DoubleMatrix vBias) {
-             super.withVisibleBias(vBias);
+            super.withVisibleBias(vBias);
             return this;
         }
 
         @Override
         public Builder withHBias(DoubleMatrix hBias) {
-             super.withHBias(hBias);
+            super.withHBias(hBias);
             return this;
         }
 
         @Override
         public Builder numberOfVisible(int numVisible) {
-             super.numberOfVisible(numVisible);
+            super.numberOfVisible(numVisible);
             return this;
         }
 
         @Override
         public Builder numHidden(int numHidden) {
-             super.numHidden(numHidden);
+            super.numHidden(numHidden);
             return this;
         }
 
         @Override
         public Builder withRandom(RandomGenerator gen) {
-             super.withRandom(gen);
+            super.withRandom(gen);
             return this;
         }
 

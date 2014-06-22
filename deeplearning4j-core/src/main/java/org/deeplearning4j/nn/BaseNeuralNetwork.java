@@ -108,8 +108,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
-
-
+    //whether to concat hidden bias or add it
+    protected  boolean concatBiases = false;
 
 
     protected BaseNeuralNetwork() {}
@@ -397,8 +397,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
     }
 
+    @Override
+    public boolean isConcatBiases() {
+        return concatBiases;
+    }
 
-
+    @Override
+    public void setConcatBiases(boolean concatBiases) {
+       this.concatBiases = concatBiases;
+    }
 
     /**
      * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
@@ -533,6 +540,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             c.setAccessible(true);
             NeuralNetwork ret = (NeuralNetwork) c.newInstance();
             ret.setMomentumAfter(momentumAfter);
+            ret.setConcatBiases(concatBiases);
             ret.setResetAdaGradIterations(resetAdaGradIterations);
             ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
@@ -993,11 +1001,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     protected void applyDropOutIfNecessary(DoubleMatrix input) {
         if(dropOut > 0) {
-            this.doMask = DoubleMatrix.rand(input.rows, this.nHidden).gt(dropOut);
+            this.doMask = DoubleMatrix.rand(input.rows, input.columns).gt(dropOut);
         }
 
         else
-            this.doMask = DoubleMatrix.ones(input.rows,this.nHidden);
+        this.doMask = DoubleMatrix.ones(input.rows,input.columns);
 
         //actually apply drop out
         input.muli(doMask);
@@ -1039,6 +1047,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         return hbiasMean;
     }
 
+    //align input so it can be used in training
+    protected DoubleMatrix preProcessInput(DoubleMatrix input) {
+        if(concatBiases)
+            return DoubleMatrix.concatHorizontally(input,DoubleMatrix.ones(input.rows,1));
+         return input;
+    }
 
     @Override
     public void iterationDone(int epoch) {
@@ -1078,7 +1092,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         protected Map<Integer,Double> momentumAfter = new HashMap<>();
         //reset adagrad historical gradient after n iterations
         protected int resetAdaGradIterations = -1;
+        protected boolean concatBiases = false;
 
+        /**
+         * Whether to concat biases or add them on the neural net
+         * @param concatBiases
+         * @return
+         */
+        public Builder<E> concatBiases(boolean concatBiases) {
+            this.concatBiases = concatBiases;
+            return this;
+        }
 
         public Builder<E> resetAdaGradIterations(int resetAdaGradIterations) {
             this.resetAdaGradIterations = resetAdaGradIterations;
@@ -1236,6 +1260,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                     try {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
                         ret.cacheInput = cacheInput;
+                        ret.concatBiases = concatBiases;
                         ret.sparsity = this.sparsity;
                         ret.resetAdaGradIterations = resetAdaGradIterations;
                         ret.momentumAfter = momentumAfter;
