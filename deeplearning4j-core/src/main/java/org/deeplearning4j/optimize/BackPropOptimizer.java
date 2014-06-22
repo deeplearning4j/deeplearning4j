@@ -72,6 +72,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
                     }
                     count++;
                     network.backPropStep();
+
                 /* Trains logistic regression post weight updates */
 
                     Double entropy = network.score();
@@ -124,6 +125,9 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
             }
 
         }
+
+        network.getOutputLayer().trainTillConvergence(lr,numEpochs,eval);
+
 
     }
 

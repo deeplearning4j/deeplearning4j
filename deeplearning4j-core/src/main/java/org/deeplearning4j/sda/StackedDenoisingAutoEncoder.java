@@ -87,6 +87,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         if(this.getInput() == null)
             initializeLayers(input.dup());
 
+        if(isUseGaussNewtonVectorProductBackProp())
+            log.warn("Warning; using gauss newton vector back prop with pretrain is known to cause issues with obscenely large activations.");
+
         DoubleMatrix layerInput = null;
 
         for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise
@@ -138,6 +141,12 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
     public static class Builder extends BaseMultiLayerNetwork.Builder<StackedDenoisingAutoEncoder> {
         public Builder() {
             this.clazz = StackedDenoisingAutoEncoder.class;
+        }
+
+
+        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
+            return this;
         }
 
 

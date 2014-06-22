@@ -245,6 +245,11 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param epochs the number of epochs to train
      */
     public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
+        if(isUseGaussNewtonVectorProductBackProp()) {
+            log.warn("WARNING; Gauss newton back vector back propagation is primarily used for hessian free which does not involve pretrain; just finetune. Use this at your own risk");
+        }
+
+
         /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
         if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
             setInput(input);
@@ -370,6 +375,11 @@ public class DBN extends BaseMultiLayerNetwork {
             this.clazz = DBN.class;
         }
 
+
+        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+           super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
+            return this;
+        }
 
         /**
          * Use drop connect on activations or not

@@ -21,7 +21,8 @@ import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
 /**
- * Logistic regression implementation with jblas.
+ * Output layer with different objective functions for different objectives.
+ * This includes classification as well as prediction
  * @author Adam Gibson
  *
  */
@@ -49,7 +50,7 @@ public class OutputLayer implements Serializable {
     private ActivationFunction activationFunction;
     private double dropOut;
     private DoubleMatrix dropoutMask;
-
+    private boolean concatBiases = false;
 
     private OutputLayer() {}
 
@@ -236,7 +237,7 @@ public class OutputLayer implements Serializable {
         MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
         DoubleMatrix z = output(input);
         double ret = 0;
-        double reg = 0.5 * l2 * MatrixFunctions.pow(this.W,2).sum();
+        double reg = 0.5 * l2;
 
 
         switch (lossFunction) {
@@ -300,6 +301,7 @@ public class OutputLayer implements Serializable {
      * @param lr the learning rate
      */
     public  void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
@@ -340,6 +342,7 @@ public class OutputLayer implements Serializable {
         reg.useAdaGrad = this.useAdaGrad;
         reg.setOptimizationAlgorithm(this.getOptimizationAlgorithm());
         reg.lossFunction = this.lossFunction;
+        reg.concatBiases = this.concatBiases;
         if(this.input != null)
             reg.input = this.input.dup();
         return reg;
@@ -422,6 +425,32 @@ public class OutputLayer implements Serializable {
 
 
 
+
+    /**
+     * Classify input
+     * @param x the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  DoubleMatrix preOutput(DoubleMatrix x) {
+        if(x == null)
+            throw new IllegalArgumentException("No null input allowed");
+
+        this.input = x;
+
+        DoubleMatrix ret = this.input.mmul(W);
+        if(concatBiases)
+            ret = DoubleMatrix.concatHorizontally(ret,b);
+        else
+            ret.addiRowVector(b);
+        return ret;
+
+
+    }
+
+
     /**
      * Classify input
      * @param x the input (can either be a matrix or vector)
@@ -435,15 +464,21 @@ public class OutputLayer implements Serializable {
             throw new IllegalArgumentException("No null input allowed");
 
         this.input = x;
-
-        DoubleMatrix ret = activationFunction.apply(this.input.mmul(W).addRowVector(b));
+        DoubleMatrix preOutput = preOutput(x);
+        DoubleMatrix ret = activationFunction.apply(preOutput);
         applyDropOutIfNecessary(ret);
         return ret;
 
 
     }
 
+    public boolean isConcatBiases() {
+        return concatBiases;
+    }
 
+    public void setConcatBiases(boolean concatBiases) {
+        this.concatBiases = concatBiases;
+    }
 
     public  int getnIn() {
         return nIn;
@@ -595,6 +630,12 @@ public class OutputLayer implements Serializable {
         private OptimizationAlgorithm optimizationAlgorithm;
         private LossFunction lossFunction = LossFunction.MCXENT;
         private double dropOut = 0;
+        private boolean concatBiases = false;
+
+        public Builder concatBiases(boolean concatBiases) {
+            this.concatBiases = concatBiases;
+            return this;
+        }
 
 
         public Builder withDropout(double dropOut) {
@@ -672,7 +713,7 @@ public class OutputLayer implements Serializable {
             ret.useAdaGrad = useAdaGrad;
             ret.lossFunction = lossFunction;
             ret.activationFunction = activationFunction;
-
+            ret.concatBiases = concatBiases;
             return ret;
         }
 

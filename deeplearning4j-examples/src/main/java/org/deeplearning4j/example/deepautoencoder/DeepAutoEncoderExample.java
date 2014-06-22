@@ -47,7 +47,7 @@ public class DeepAutoEncoderExample {
                 .activateForLayer(Collections.singletonMap(3, Activations.linear()))
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
                 .numberOfInputs(784).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .sampleFromHiddenActivations(true).forceEpochs()
+                .sampleFromHiddenActivations(true)
                 .useRegularization(true).withL2(2e-5).resetAdaGradIterations(10)
                 .numberOfOutPuts(784).withMomentum(0.5)
                 .momentumAfter(Collections.singletonMap(10,0.9))
@@ -58,22 +58,25 @@ public class DeepAutoEncoderExample {
 
 
 
+
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),1,1e-1,30);
+            dbn.pretrain(next.getFirst(),1,1e-1,1000);
         }
 
 
+        iter.reset();
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
+        encoder.setUseGaussNewtonVectorProductBackProp(false);
         iter.reset();
 
 
-        encoder.setForceNumEpochs(true);
-
+        encoder.setForceNumEpochs(false);
+        encoder.setLineSearchBackProp(false);
         while (iter.hasNext()) {
             DataSet data = iter.next();
-            encoder.finetune(data.getFirst(),1e-5,5000);
+            encoder.finetune(data.getFirst(),1e-3,1000);
 
         }
 

@@ -51,7 +51,7 @@ public class DeepAutoEncoderSDA {
                 .lineSearchBackProp(false).useRegularization(true).forceEpochs()
                 .withL2(2e-4)
                 .withOutputActivationFunction(Activations.sigmoid())
-                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.XENT)
+                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
 
         //log.info("Training with layers of " + RBMUtil.architecture(dbn));

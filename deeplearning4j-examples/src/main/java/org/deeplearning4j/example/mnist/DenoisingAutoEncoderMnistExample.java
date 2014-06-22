@@ -4,8 +4,10 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.da.DenoisingAutoEncoder;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -22,19 +24,15 @@ public class DenoisingAutoEncoderMnistExample {
      */
     public static void main(String[] args) throws Exception {
         DenoisingAutoEncoder autoEncoder = new DenoisingAutoEncoder.Builder()
-                .withSparsity(1e-1)
+                .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
                 .numberOfVisible(784).numHidden(600).build();
 
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,30);
+        DataSetIterator iter = new MultipleEpochsIterator(50,new MnistDataSetIterator(10,30));
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            //train with k = 1 0.01 learning rate and 1000 epochs
-            for(int i = 0; i < 100; i++) {
-                autoEncoder.train(next.getFirst(), 1e-1, new Object[]{0.6,1e-1,1000});
-                log.info("Error " + autoEncoder.getReConstructionCrossEntropy());
-            }
+            autoEncoder.train(next.getFirst(),1e-1,0.3,10);
 
 
         }

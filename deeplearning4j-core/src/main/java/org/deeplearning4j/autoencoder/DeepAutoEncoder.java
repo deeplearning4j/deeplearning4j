@@ -761,6 +761,8 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             e.setLayers(autoEncoders);
             e.setSigmoidLayers(hiddenLayers);
             e.setOutputLayer(o);
+            e.setUseDropConnect(encoder.isUseDropConnect());
+            e.setUseGaussNewtonVectorProductBackProp(encoder.isUseGaussNewtonVectorProductBackProp());
             e.setLossFunctionByLayer(encoder.getLossFunctionByLayer());
             e.setSampleOrActivate(encoder.getSampleOrActivate());
             e.setRenderByLayer(encoder.getRenderByLayer());
