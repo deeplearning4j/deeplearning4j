@@ -106,11 +106,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
 
-
+    //adaptive learning rate for each of the biases and weights
     protected AdaGrad wAdaGrad,hBiasAdaGrad,vBiasAdaGrad;
     //whether to concat hidden bias or add it
     protected  boolean concatBiases = false;
-
+    //whether to constrain the gradient to unit norm or not
+    protected boolean constrainGradientToUnitNorm = false;
 
     protected BaseNeuralNetwork() {}
     /**
@@ -533,6 +534,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.wAdaGrad = adaGrad;
     }
 
+
+    @Override
+    public void setConstrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+           this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+    }
+
+
+
+    /**
+     * Whether to constrain the gradient to unit norm or not
+     */
+    @Override
+    public boolean isConstrainGradientToUnitNorm() {
+        return constrainGradientToUnitNorm;
+    }
+
     @Override
     public NeuralNetwork transpose() {
         try {
@@ -557,6 +574,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setAdaGrad(wAdaGrad);
             ret.setLossFunction(lossFunction);
             ret.setOptimizationAlgorithm(optimizationAlgo);
+            ret.setConstrainGradientToUnitNorm(constrainGradientToUnitNorm);
             return ret;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -588,7 +606,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setDist(getDist());
             ret.setAdaGrad(wAdaGrad);
             ret.setLossFunction(lossFunction);
-
+            ret.setConstrainGradientToUnitNorm(constrainGradientToUnitNorm);
             ret.setOptimizationAlgorithm(optimizationAlgo);
             return ret;
         } catch (Exception e) {
@@ -692,6 +710,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.hBias = n.hBias;
         this.vBias = n.vBias;
         this.l2 = n.l2;
+        this.dropOut = n.dropOut;
+        this.applySparsity = n.applySparsity;
+        this.momentumAfter = n.momentumAfter;
         this.useRegularization = n.useRegularization;
         this.momentum = n.momentum;
         this.nHidden = n.nHidden;
@@ -704,6 +725,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.optimizationAlgo = n.optimizationAlgo;
         this.lossFunction = n.lossFunction;
         this.cacheInput = n.cacheInput;
+        this.constrainGradientToUnitNorm = n.constrainGradientToUnitNorm;
     }
 
     /**
@@ -1093,6 +1115,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         //reset adagrad historical gradient after n iterations
         protected int resetAdaGradIterations = -1;
         protected boolean concatBiases = false;
+        private boolean constrainGradientToUnitNorm = false;
+
+        /**
+         * Constrains gradient to unit norm when updating parameters
+         * @param constrainGradientToUnitNorm whether to constrain the gradient to unit norm or not
+         * @return
+         */
+        public Builder<E> constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            return this;
+        }
 
         /**
          * Whether to concat biases or add them on the neural net

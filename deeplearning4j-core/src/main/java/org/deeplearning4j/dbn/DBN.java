@@ -338,7 +338,7 @@ public class DBN extends BaseMultiLayerNetwork {
                                      int nHidden, DoubleMatrix W, DoubleMatrix hBias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
 
-        RBM ret = new RBM.Builder()
+        RBM ret = new RBM.Builder().constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                 .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit)
                 .withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
