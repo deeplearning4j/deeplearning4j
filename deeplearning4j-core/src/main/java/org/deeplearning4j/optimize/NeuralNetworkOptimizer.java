@@ -63,11 +63,11 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     private void createOptimizationAlgorithm() {
         if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
-            ((VectorizedNonZeroStoppingConjugateGradient) opt).setTolerance(tolerance);
+            opt.setTolerance(tolerance);
         }
         else {
             opt = new VectorizedDeepLearningGradientAscent(this,this);
-            ((VectorizedDeepLearningGradientAscent) opt).setTolerance(tolerance);
+            opt.setTolerance(tolerance);
             if(maxStep > 0)
                 ((VectorizedDeepLearningGradientAscent) opt).setMaxStepSize(maxStep);
         }
@@ -143,6 +143,8 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
     @Override
     public void setParameters(DoubleMatrix params) {
+        if(network.isConstrainGradientToUnitNorm())
+            params.divi(params.normmax());
         for(int i = 0; i < params.length; i++)
             setParameter(i, params.get(i));
     }

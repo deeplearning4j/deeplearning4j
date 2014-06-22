@@ -12,7 +12,6 @@ import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.activation.Linear;
 import org.deeplearning4j.nn.activation.Sigmoid;
 import org.deeplearning4j.optimize.BackPropOptimizer;
 import org.deeplearning4j.optimize.BackPropROptimizer;
@@ -25,7 +24,6 @@ import org.deeplearning4j.util.Dl4jReflection;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,6 +223,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
        Concat the biases vs adding them
      */
     protected boolean concatBiases = false;
+
+    /*
+        Constrains the gradient to unit norm
+     */
+    protected boolean constrainGradientToUnitNorm = false;
 
 
     /* Reflection/factory constructor */
@@ -1129,13 +1132,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
 
         for(int l = 0; l < getnLayers(); l++) {
-            DoubleMatrix gradientChange = deltas.get(l);
+            DoubleMatrix gradientChange = deltas.get(l).div(input.rows);
             if(gradientChange.length != getLayers()[l].getW().length)
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans();
+            DoubleMatrix deltaColumnSums = deltas.get(l).columnSums().div(input.rows);
 
 
 
@@ -1149,11 +1152,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-        if(getOutputLayer().getB().length != biasGradient.length) {
-            DoubleMatrix add = DoubleMatrix.ones(getOutputLayer().getB().rows, getOutputLayer().getB().columns);
-            add.addi(biasGradient.sum());
-            biasGradient = add;
-        }
+
 
 
 
@@ -1484,7 +1483,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.outputLossFunction = network.outputLossFunction;
         this.useDropConnect = network.useDropConnect;
         this.useGaussNewtonVectorProductBackProp = network.useGaussNewtonVectorProductBackProp;
-
+        this.constrainGradientToUnitNorm = network.constrainGradientToUnitNorm;
 
         if(network.sigmoidLayers != null && network.sigmoidLayers.length > 0) {
             this.sigmoidLayers = new HiddenLayer[network.sigmoidLayers.length];
@@ -1955,6 +1954,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.concatBiases = concatBiases;
     }
 
+    public boolean isConstrainGradientToUnitNorm() {
+        return constrainGradientToUnitNorm;
+    }
+
+    public void setConstrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+    }
+
     /**
      * Clears the input from all of the layers
      */
@@ -2087,6 +2094,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private double outputLayerDropout = 0.0;
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
+        private boolean constrainGradientToUnitNorm = false;
+
+
+        /**
+         * Whether to constrain gradient to unit norm or not
+         * @param constrainGradientToUnitNorm
+         * @return
+         */
+        public Builder<E> constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
+            this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            return this;
+        }
 
         /**
          * Whether to concate biases or add them
@@ -2437,14 +2456,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             return this;
         }
 
-
+        /**
+         * Number of inputs: aka number of columns in your feature matrix
+         * @param nIns
+         * @return
+         */
         public Builder<E> numberOfInputs(int nIns) {
             this.nIns = nIns;
             return this;
         }
 
 
-
+        /**
+         * Size of the hidden layers
+         * @param hiddenLayerSizes
+         * @return
+         */
         public Builder<E> hiddenLayerSizes(Integer[] hiddenLayerSizes) {
             this.hiddenLayerSizes = new int[hiddenLayerSizes.length];
             this.nLayers = hiddenLayerSizes.length;
@@ -2459,6 +2486,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             return this;
         }
 
+        /**
+         * Number of outputs, this can be labels,
+         * or one if you're doing regression.
+         * @param nOuts
+         * @return
+         */
         public Builder<E> numberOfOutPuts(int nOuts) {
             this.nOuts = nOuts;
             return this;
@@ -2508,6 +2541,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 c.setAccessible(true);
 
                 ret = (E) c.newInstance();
+                ret.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
                 ret.concatBiases = concatBiases;
                 ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
                 ret.setUseDropConnect(useDropConnect);

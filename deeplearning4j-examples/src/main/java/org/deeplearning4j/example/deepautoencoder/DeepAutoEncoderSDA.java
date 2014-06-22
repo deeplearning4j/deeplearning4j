@@ -39,19 +39,19 @@ public class DeepAutoEncoderSDA {
           Reduction of dimensionality with neural nets Hinton 2006
          */
         Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-3);
+        layerLearningRates.put(codeLayer,1e-1);
         RandomGenerator rng = new MersenneTwister(123);
 
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
-                .learningRateForLayer(layerLearningRates)
-                .hiddenLayerSizes(new int[]{500, 250,100,50,25,10}).withRng(rng)
+                .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(true)
+                .hiddenLayerSizes(new int[]{1000,500, 250,30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3, Activations.sigmoid()))
-                .numberOfInputs(784).sampleFromHiddenActivations(true)
+                .numberOfInputs(784).sampleFromHiddenActivations(false)
                 .lineSearchBackProp(false).useRegularization(true).forceEpochs()
-                .withL2(2e-4)
+                .withL2(2e-5).resetAdaGradIterations(10)
                 .withOutputActivationFunction(Activations.sigmoid())
-                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.SQUARED_LOSS)
                 .build();
 
         //log.info("Training with layers of " + RBMUtil.architecture(dbn));
@@ -60,7 +60,7 @@ public class DeepAutoEncoderSDA {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),new Object[]{0.3,1e-1,1000});
+            dbn.pretrain(next.getFirst(),new Object[]{0.6,1e-1,1000});
 
         }
 

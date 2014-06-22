@@ -51,7 +51,7 @@ public class OutputLayer implements Serializable {
     private double dropOut;
     private DoubleMatrix dropoutMask;
     private boolean concatBiases = false;
-
+    private boolean constrainGradientToUniNorm = false;
     private OutputLayer() {}
 
     /**
@@ -331,6 +331,7 @@ public class OutputLayer implements Serializable {
         reg.b = b.dup();
         reg.W = W.dup();
         reg.l2 = this.l2;
+        reg.constrainGradientToUniNorm = this.constrainGradientToUniNorm;
         if(this.labels != null)
             reg.labels = this.labels.dup();
         reg.nIn = this.nIn;
@@ -615,6 +616,15 @@ public class OutputLayer implements Serializable {
         this.lossFunction = lossFunction;
     }
 
+
+    public boolean isConstrainGradientToUniNorm() {
+        return constrainGradientToUniNorm;
+    }
+
+    public void setConstrainGradientToUniNorm(boolean constrainGradientToUniNorm) {
+        this.constrainGradientToUniNorm = constrainGradientToUniNorm;
+    }
+
     public static class Builder {
         private DoubleMatrix W;
         private OutputLayer ret;
@@ -631,6 +641,12 @@ public class OutputLayer implements Serializable {
         private LossFunction lossFunction = LossFunction.MCXENT;
         private double dropOut = 0;
         private boolean concatBiases = false;
+        private boolean constrainGradientToUniNorm = false;
+
+        public Builder constrainGradientToUniNorm(boolean constrainGradientToUniNorm) {
+            this.constrainGradientToUniNorm = constrainGradientToUniNorm;
+            return this;
+        }
 
         public Builder concatBiases(boolean concatBiases) {
             this.concatBiases = concatBiases;
