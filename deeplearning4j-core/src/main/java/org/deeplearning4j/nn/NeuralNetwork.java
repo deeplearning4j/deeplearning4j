@@ -26,7 +26,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 *
 	 */
 	public static enum OptimizationAlgorithm {
-		GRADIENT_DESCENT,CONJUGATE_GRADIENT
+		GRADIENT_DESCENT,CONJUGATE_GRADIENT,HESSIAN_FREE
 	}
 	/**
 	 * Which loss function to use

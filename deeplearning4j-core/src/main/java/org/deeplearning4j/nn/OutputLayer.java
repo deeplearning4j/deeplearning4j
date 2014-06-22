@@ -12,13 +12,9 @@ import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
-import org.deeplearning4j.optimize.OutputLayerOptimizer;
-import org.deeplearning4j.optimize.TrainingEvaluator;
-import org.deeplearning4j.optimize.VectorizedDeepLearningGradientAscent;
-import org.deeplearning4j.optimize.VectorizedNonZeroStoppingConjugateGradient;
+import org.deeplearning4j.optimize.*;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
 
 /**
  * Output layer with different objective functions for different objectives.
@@ -154,6 +150,12 @@ public class OutputLayer implements Serializable {
             g.setMaxIterations(numEpochs);
             g.optimize(numEpochs);
 
+        }
+        else if(optimizationAlgorithm == OptimizationAlgorithm.HESSIAN_FREE) {
+            StochasticHessianFree o = new StochasticHessianFree(opt,null);
+            o.setTolerance(1e-3);
+            o.setTrainingEvaluator(eval);
+            o.optimize(numEpochs);
         }
 
         else {
@@ -386,6 +388,12 @@ public class OutputLayer implements Serializable {
 
 
         DoubleMatrix bGradient = dy;
+        if(constrainGradientToUniNorm) {
+            wGradient.divi(wGradient.norm2());
+            bGradient.divi(bGradient.norm2());
+        }
+
+
         return new OutputLayerGradient(wGradient,bGradient);
 
 

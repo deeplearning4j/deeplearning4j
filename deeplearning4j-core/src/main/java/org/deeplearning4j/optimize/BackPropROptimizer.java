@@ -113,6 +113,12 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
             }
 
+            else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
+                StochasticHessianFree h = new StochasticHessianFree(this,network);
+                h.setTrainingEvaluator(eval);
+                h.optimize(numEpochs);
+            }
+
             else {
                 VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(this);
                 g.setTrainingEvaluator(eval);

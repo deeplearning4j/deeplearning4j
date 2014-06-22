@@ -643,9 +643,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         }
 
-        for(int i = 0; i < deltas.length; i++)
-            deltaRet.add(deltas[i]);
+        for(int i = 0; i < deltas.length; i++) {
+         if(constrainGradientToUnitNorm)
+             deltaRet.add(deltas[i].divi(deltas[i].normmax()));
 
+         else
+             deltaRet.add(deltas[i]);
+        }
 
     }
 
@@ -662,7 +666,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
     /* p and gradient are same length */
-    protected double reductionRatio(DoubleMatrix p,double currScore,double score,DoubleMatrix input,List<DoubleMatrix> activations,DoubleMatrix gradient) {
+    public double reductionRatio(DoubleMatrix p,double currScore,double score,DoubleMatrix gradient) {
         double denom = getBackPropRGradient().mul(0.5).mul(p).columnSums().sum() - gradient.mul(p).columnSums().sum();
         double rho = (currScore - score) / denom;
         if(score - currScore > 0)
@@ -719,8 +723,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         }
 
-        for(int i = 0; i < deltas.length; i++)
-            deltaRet.add(deltas[i]);
+        for(int i = 0; i < deltas.length; i++) {
+            if(constrainGradientToUnitNorm)
+                deltaRet.add(deltas[i].divi(deltas[i].norm2()));
+
+            else
+                deltaRet.add(deltas[i]);
+        }
 
     }
 
@@ -1233,8 +1242,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             DataSet data = iter.next();
             if(data.getFirst() == null || data.getSecond() == null)
                 break;
+
             setInput(data.getFirst());
             setLabels(data.getSecond());
+            feedForward();
             this.fineTuneLearningRate = lr;
             optimizer = new MultiLayerNetworkOptimizer(this,lr);
             optimizer.optimize(data.getSecond(), lr,iterations);
