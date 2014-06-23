@@ -33,7 +33,7 @@ public class DeepAutoEncoderSDA {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MultipleEpochsIterator(50,new ReconstructionDataSetIterator(new MnistDataSetIterator(100,100,false)));
+        DataSetIterator iter = new MultipleEpochsIterator(1,new ReconstructionDataSetIterator(new MnistDataSetIterator(100,100,false)));
 
         int codeLayer = 3;
 
@@ -46,25 +46,34 @@ public class DeepAutoEncoderSDA {
 
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
-                .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(true)
+                .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(false)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3, Activations.sigmoid()))
-                .numberOfInputs(784).sampleFromHiddenActivations(false)
+                .numberOfInputs(784).sampleFromHiddenActivations(true)
                 .lineSearchBackProp(false).useRegularization(true).forceEpochs()
-                .withL2(2e-5).resetAdaGradIterations(10)
+                .withL2(2e-5)
                 .withOutputActivationFunction(Activations.sigmoid())
-                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.SQUARED_LOSS)
+                .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
 
         //log.info("Training with layers of " + RBMUtil.architecture(dbn));
         //log.info("Begin training ");
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            dbn.pretrain(next.getFirst(),new Object[]{0.3,1e-1,50});
+        }
 
-
-        dbn.pretrain(iter,new Object[]{0.3,1e-1,10});
+        iter.reset();
 
         DeepAutoEncoder a = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
+        a.setForceNumEpochs(true);
 
-        a.finetune(iter,1e-2,10);
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            a.setInput(next.getFirst());
+            a.finetune(next.getFirst(),1e-1,1000);
+        }
+
 
         iter.reset();
 

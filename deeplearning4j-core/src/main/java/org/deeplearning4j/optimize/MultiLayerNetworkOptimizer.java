@@ -89,13 +89,6 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
         else {
             log.info("Training for " + iteration + " iteration");
-            for(int i = 0; i < iteration; i++) {
-                network.getOutputLayer().train(lr);
-                if(i % network.getResetAdaGradIterations() == 0)
-                    network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                log.info("Error on iteration " + i + " is  " + network.score());
-            }
-
 
             if(network.isShouldBackProp())
                 network.backProp(lr, iteration);
