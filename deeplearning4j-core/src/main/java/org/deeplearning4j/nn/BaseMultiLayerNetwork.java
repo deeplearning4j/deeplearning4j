@@ -739,7 +739,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
     //damping update after line search
-    protected void dampingUpdate(double rho,double boost,double decrease) {
+    public void dampingUpdate(double rho,double boost,double decrease) {
         if(rho < 0.25 || Double.isNaN(rho)) {
             this.dampingFactor *= boost;
         }
@@ -1803,6 +1803,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public  double score() {
         return outputLayer.score();
+    }
+    /**
+     * Score of the model (relative to the objective function)
+     * @param param the current parameters
+     * @return the score of the model (relative to the objective function)
+     */
+    public  double score(DoubleMatrix param) {
+        double ret =  outputLayer.score();
+        double regCost = 0.5 * l2 * MatrixFunctions.pow(mask.mul(param),2).sum();
+        return ret + regCost;
     }
 
 

@@ -1,6 +1,8 @@
 package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
+
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
@@ -125,13 +127,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
         tolerance = t;
     }
 
-    public boolean optimize(int numIterations) {
-        myName = Thread.currentThread().getName();
-        if (converged)
-            return true;
-        long last = System.currentTimeMillis();
 
-        List<DoubleMatrix> is = new ArrayList<>();
+    private Pair<List<Integer>,List<DoubleMatrix>> conjGradient(int numIterations) {
+        List<Integer> is = new ArrayList<>();
         List<DoubleMatrix> xs = new ArrayList<>();
 
         xi = optimizable.getValueGradient(0);
@@ -140,48 +138,89 @@ public class StochasticHessianFree implements OptimizerMatrix {
         DoubleMatrix gradient = backward.getFirst().neg();
         DoubleMatrix precon = backward.getSecond();
 
-        DoubleMatrix r = multiLayerNetwork.getBackPropRGradient().sub(xi);
+        DoubleMatrix r = multiLayerNetwork.getBackPropRGradient(ch).sub(xi);
+        DoubleMatrix y = r.div(precon);
+        DoubleMatrix p = y.neg();
+        DoubleMatrix x = xi;
+        double deltaNew = r.mul(y).sum();
 
         long curr = 0;
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
+            DoubleMatrix Ap = network.getBackPropRGradient(p);
+            double pAp = p.mul(Ap).sum();
+            if (pAp < 0)
+                throw new IllegalStateException("Negative curature!");
+
+            double alpha = deltaNew / pAp;
+
+            x.addi(p.mul(alpha));
+
+            //conjugate gradient
+            DoubleMatrix rNew = r.add(alpha).mul(Ap);
+            DoubleMatrix yNew = rNew.div(precon);
+            double deltaOld = deltaNew;
+            deltaNew = rNew.mul(yNew).sum();
+            double beta = deltaNew / deltaOld;
+            p = yNew.neg().add(beta).mul(p);
+            r = rNew;
+            y = yNew;
+            is.add(iterationCount);
+            xs.add(x);
+
+
             curr = System.currentTimeMillis();
-            logger.info(myName + " ConjugateGradient: At iteration " + iterations + ", cost = " + fp + " -"
-                    + (curr - last));
-            last = curr;
-            double oldScore = network.score();
-
-            VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(optimizable,listener);
-            g.optimize(numIterations);
-            if(network != null) {
-                double rho = network.reductionRatio(g.getH(),network.score(),oldScore,g.getG());
-                VectorizedBackTrackLineSearch search = new VectorizedBackTrackLineSearch(optimizable);
-                double newPoint = search.optimize(g.getXi(),1000,network.score());
-                this.fp = newPoint;
 
 
-            }
-            iterations++;
-            if (iterations > maxIterations) {
-                logger.info("Passed max number of iterations");
-                converged = true;
-                if(listener != null) {
-                    listener.iterationDone(iterationCount);
-                }
-                return true;
-            }
-
-
-
-            if(listener != null) {
+            if (listener != null) {
                 listener.iterationDone(iterationCount);
             }
 
-            if(eval != null && eval.shouldStop(iterations)) {
-                return true;
+        }
+
+        return new Pair<>(is,xs);
+    }
+
+    //setup baseline conjugate gradietn and run it for n iterations
+    private Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix> runConjugateGradient(int numIterations) {
+        Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(numIterations);
+        DoubleMatrix ch = cg.getSecond().get(cg.getSecond().size() - 1);
+        DoubleMatrix p = ch;
+
+        return new Triple<>(p,cg.getSecond(),ch);
+    }
+
+
+
+    public Pair<DoubleMatrix,Double> cgBackTrack(DoubleMatrix p,List<DoubleMatrix> chs,DoubleMatrix x,DoubleMatrix y) {
+        double score = network.score(p.add(xi));
+        int i = chs.size() - 2;
+        for(; i >= 0; i--) {
+            double score2 = network.score(xi.add(chs.get(i)));
+            if(score2 < score) {
+                i++;
+                break;
             }
+            score = score2;
 
         }
-        return false;
+
+        return new Pair<>(chs.get(i),score);
+    }
+
+
+
+    public boolean optimize(int numIterations) {
+        myName = Thread.currentThread().getName();
+        if (converged)
+            return true;
+        Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix>  cg = runConjugateGradient(numIterations);
+        Pair<DoubleMatrix,Double> cgBackTrack = cgBackTrack(cg.getFirst(),cg.getSecond(),network.getInput(),network.getLabels());
+        double rho = network.reductionRatio(cgBackTrack.getFirst(),network.score(),cgBackTrack.getSecond(),xi);
+        VectorizedBackTrackLineSearch l = new VectorizedBackTrackLineSearch(optimizable);
+        double step = l.optimize(cg.getFirst(),numIterations,rho);
+        network.dampingUpdate(rho,boost,decrease);
+        xi.addi(cgBackTrack.getFirst().mul(step * network.getLearningRateUpdate()));
+        return true;
     }
 
     /**
