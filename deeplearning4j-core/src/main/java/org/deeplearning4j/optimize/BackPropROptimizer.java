@@ -23,6 +23,8 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
     private int epochs = 1000;
     private static Logger log = LoggerFactory.getLogger(BackPropROptimizer.class);
     private int currentIteration = -1;
+    private StochasticHessianFree h;
+
 
     public BackPropROptimizer(BaseMultiLayerNetwork network, double lr, int epochs) {
         this.network = network;
@@ -114,7 +116,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
             }
 
             else if(optimizationAlgorithm == NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE) {
-                StochasticHessianFree h = new StochasticHessianFree(this,network);
+                h = new StochasticHessianFree(this,network);
                 h.setTrainingEvaluator(eval);
                 h.optimize(numEpochs);
             }
@@ -132,7 +134,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public void getValueGradient(double[] buffer) {
-        System.arraycopy(network.getBackPropRGradient().data,0,buffer,0,buffer.length);
+        System.arraycopy(network.getBackPropRGradient(h.xi).data,0,buffer,0,buffer.length);
     }
 
     @Override
@@ -198,8 +200,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public DoubleMatrix getValueGradient(int iteration) {
-
-        return network.getBackPropRGradient();
+        return network.getBackPropRGradient(h.xi);
     }
 
 
