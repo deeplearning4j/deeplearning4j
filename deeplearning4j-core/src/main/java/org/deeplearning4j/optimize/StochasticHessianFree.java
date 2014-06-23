@@ -134,7 +134,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
         xi = optimizable.getValueGradient(0);
 
-        Pair<DoubleMatrix,DoubleMatrix> backward = multiLayerNetwork.getBackPropRGradient2();
+        Pair<DoubleMatrix,DoubleMatrix> backward = multiLayerNetwork.getBackPropRGradient2(xi);
         DoubleMatrix gradient = backward.getFirst().neg();
         DoubleMatrix precon = backward.getSecond();
 
