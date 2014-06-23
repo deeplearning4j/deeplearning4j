@@ -731,12 +731,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-    /* delta computation for back prop with the R operator */
-    protected  void computeDeltasR2(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet) {
-        computeDeltasR2(deltaRet,null);
-    }
-
-
 
     //damping update after line search
     public void dampingUpdate(double rho,double boost,double decrease) {
@@ -898,12 +892,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * This is also called computeGV
      * @return the back prop with r gradient
      */
-    public Pair<DoubleMatrix,DoubleMatrix> getBackPropRGradient2() {
+    public Pair<DoubleMatrix,DoubleMatrix> getBackPropRGradient2(DoubleMatrix v) {
         double[][] list = new double[layers.length * 2 + 2][];
         double[][] list2 = new double[layers.length * 2 + 2][];
 
         int length = 0;
-        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradientR2();
+        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradientR2(v);
 
         int deltaCount = 0;
 
@@ -1402,7 +1396,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * and the current epoch
      * @return whether the training should converge or not
      */
-    protected List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> backPropGradientR2() {
+    protected List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> backPropGradientR2(DoubleMatrix v) {
         //feedforward to compute activations
         //initial error
         //log.info("Back prop step " + epoch);
@@ -1410,7 +1404,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //precompute deltas
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = new ArrayList<>();
         //compute derivatives and gradients given activations
-        computeDeltasR2(deltas);
+        computeDeltasR2(deltas,v);
 
         List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = new ArrayList<>();
         for(int i = 0; i < layers.length; i++) {
