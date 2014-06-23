@@ -135,7 +135,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                     double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : lr;
                     if(isForceNumEpochs()) {
                         for(int iteration = 0; iteration < iterations; iteration++) {
-                            log.info("Error on epoch " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                            log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
                             getLayers()[i].train(layerInput, realLearningRate,new Object[]{corruptionLevel,lr});
                             getLayers()[i].iterationDone(iteration);
                         }
@@ -162,9 +162,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
         Double lr = (Double) otherParams[0];
         Double corruptionLevel = (Double) otherParams[1];
-        Integer epochs = (Integer) otherParams[2];
+        Integer iterations = (Integer) otherParams[2];
 
-        pretrain(input, lr, corruptionLevel, epochs);
+        pretrain(input, lr, corruptionLevel, iterations);
 
     }
 
@@ -175,9 +175,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      * @param lr the starting learning rate
      * @param corruptionLevel the corruption level (the smaller number of inputs; the higher the
      * corruption level should be) the percent of inputs to corrupt
-     * @param epochs the number of iterations to run
+     * @param iterations the number of iterations to run
      */
-    public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int epochs) {
+    public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int iterations) {
         if(this.getInput() == null)
             initializeLayers(input.dup());
 
@@ -193,15 +193,15 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             else
                 layerInput = this.getLayers()[i - 1].sampleHiddenGivenVisible(layerInput).getSecond();
             if(isForceNumEpochs()) {
-                for(int epoch = 0; epoch < epochs; epoch++) {
+                for(int iteration = 0; iteration < iterations; iteration++) {
                     getLayers()[i].train(layerInput, lr,  new Object[]{corruptionLevel,lr});
-                    log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-                    getLayers()[i].iterationDone(epoch);
+                    log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
+                    getLayers()[i].iterationDone(iteration);
 
                 }
             }
             else
-                getLayers()[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,epochs});
+                getLayers()[i].trainTillConvergence(layerInput, lr, new Object[]{corruptionLevel,lr,iterations});
 
 
         }

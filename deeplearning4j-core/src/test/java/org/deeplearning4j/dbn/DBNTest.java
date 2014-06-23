@@ -2,6 +2,8 @@ package org.deeplearning4j.dbn;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
@@ -64,6 +66,29 @@ public class DBNTest {
 
 
     }
+
+    @Test
+    public void testParamLength() {
+        double preTrainLr = 0.01;
+        int preTrainEpochs = 10000;
+        int k = 1;
+        int nIns = 4,nOuts = 3;
+        int[] hiddenLayerSizes = new int[] {4,3,2};
+        double fineTuneLr = 0.01;
+        int fineTuneEpochs = 10000;
+
+        DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
+                .numberOfInputs(nIns).numberOfOutPuts(nOuts).withActivation(Activations.tanh())
+                .hiddenLayerSizes(hiddenLayerSizes)
+                .build();
+
+
+        DoubleMatrix params = dbn.params();
+        List<Pair<DoubleMatrix,DoubleMatrix>> unpacked = dbn.unPack(params);
+
+
+    }
+
 
     @Test
     public void testDbnStructure() {

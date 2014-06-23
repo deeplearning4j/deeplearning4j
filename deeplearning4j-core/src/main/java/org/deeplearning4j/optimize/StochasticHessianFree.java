@@ -1,10 +1,14 @@
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Hessian Free Optimization
@@ -24,8 +28,13 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private BaseMultiLayerNetwork network;
     int maxIterations = 10000;
     private String myName = "";
+    //conjugate gradient decay
+    private DoubleMatrix ch;
     private NeuralNetEpochListener listener;
     private BaseMultiLayerNetwork multiLayerNetwork;
+    private double pi = 0.5;
+    private double decrease = 0.99;
+    private double boost = 1.0 / decrease;
 
     // The state of a conjugate gradient search
     /*
@@ -79,6 +88,11 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
 
+    void setup() {
+        ch = DoubleMatrix.zeros(1,optimizable.getNumParameters());
+    }
+
+
     public boolean isConverged() {
         return converged;
     }
@@ -117,6 +131,16 @@ public class StochasticHessianFree implements OptimizerMatrix {
             return true;
         long last = System.currentTimeMillis();
 
+        List<DoubleMatrix> is = new ArrayList<>();
+        List<DoubleMatrix> xs = new ArrayList<>();
+
+        xi = optimizable.getValueGradient(0);
+
+        Pair<DoubleMatrix,DoubleMatrix> backward = multiLayerNetwork.getBackPropRGradient2();
+        DoubleMatrix gradient = backward.getFirst().neg();
+        DoubleMatrix precon = backward.getSecond();
+
+        DoubleMatrix r = multiLayerNetwork.getBackPropRGradient().sub(xi);
 
         long curr = 0;
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
@@ -128,14 +152,14 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(optimizable,listener);
             g.optimize(numIterations);
-           if(network != null) {
-               double rho = network.reductionRatio(g.getH(),network.score(),oldScore,g.getG());
-               VectorizedBackTrackLineSearch search = new VectorizedBackTrackLineSearch(optimizable);
-               double newPoint = search.optimize(g.getXi(),1000,network.score());
-               this.fp = newPoint;
+            if(network != null) {
+                double rho = network.reductionRatio(g.getH(),network.score(),oldScore,g.getG());
+                VectorizedBackTrackLineSearch search = new VectorizedBackTrackLineSearch(optimizable);
+                double newPoint = search.optimize(g.getXi(),1000,network.score());
+                this.fp = newPoint;
 
 
-           }
+            }
             iterations++;
             if (iterations > maxIterations) {
                 logger.info("Passed max number of iterations");
