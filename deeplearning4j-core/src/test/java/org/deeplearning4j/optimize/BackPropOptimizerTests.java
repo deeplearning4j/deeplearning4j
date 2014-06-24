@@ -18,6 +18,12 @@ public class BackPropOptimizerTests {
 
     private static Logger log = LoggerFactory.getLogger(BackPropOptimizerTests.class);
 
+
+    @Test
+    public void testHessianFree() {
+
+    }
+
     @Test
     public void testBackPropOptimizerIndices() {
 
