@@ -63,7 +63,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      */
     @Override
     public DoubleMatrix reconstruct(DoubleMatrix x) {
-        return act.apply(x.mmul(W).addRowVector(hBias));
+        return act.apply(x.mmul(W).addiRowVector(hBias));
     }
 
     /**

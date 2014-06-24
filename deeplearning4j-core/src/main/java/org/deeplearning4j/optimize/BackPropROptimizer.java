@@ -193,7 +193,6 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
         network.getOutputLayer().setW(w.reshape(rows, columns));
         network.getOutputLayer().setB(bias.reshape(network.getOutputLayer().getB().rows, network.getOutputLayer().getB().columns));
 
-        network.getOutputLayer().trainTillConvergence(lr,epochs);
 
 
     }

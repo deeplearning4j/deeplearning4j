@@ -33,7 +33,7 @@ public class DeepAutoEncoderSDA {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter = new MultipleEpochsIterator(1,new ReconstructionDataSetIterator(new MnistDataSetIterator(10,10,false)));
+        DataSetIterator iter  = new ReconstructionDataSetIterator(new MnistDataSetIterator(10,10,false));
 
         int codeLayer = 3;
 
@@ -47,9 +47,9 @@ public class DeepAutoEncoderSDA {
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
                 .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(false)
-                .hiddenLayerSizes(new int[]{1000, 500, 250, 30,250,500,1000}).withRng(rng)
+                .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3, Activations.sigmoid())).useGaussNewtonVectorProductBackProp(true)
-                .numberOfInputs(784).sampleFromHiddenActivations(true).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
+                .numberOfInputs(784).sampleFromHiddenActivations(false).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
                 .lineSearchBackProp(false).useRegularization(true).forceEpochs()
                 .withL2(2e-5).lineSearchBackProp(true)
                 .withOutputActivationFunction(Activations.sigmoid())
@@ -58,21 +58,6 @@ public class DeepAutoEncoderSDA {
 
         //log.info("Training with layers of " + RBMUtil.architecture(dbn));
         //log.info("Begin training ");
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),new Object[]{0.3,1e-1,50});
-        }
-        iter.reset();
-
-        while(iter.hasNext()) {
-            DataSet next = iter.next();
-            dbn.setInput(next.getFirst());
-            dbn.finetune(next.getFirst(),1e-1,10);
-        }
-
-
-        iter.reset();
-
 
 
 
@@ -81,7 +66,7 @@ public class DeepAutoEncoderSDA {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             a.setInput(next.getFirst());
-            a.finetune(next.getFirst(),1e-1,10);
+            a.finetune(next.getFirst(),1e-1,25);
         }
 
 

@@ -29,24 +29,24 @@ import static org.deeplearning4j.util.MatrixUtil.normal;
  *
 
 
-        Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-1);
-        RandomGenerator rng = new MersenneTwister(123);
+ Map<Integer,Double> layerLearningRates = new HashMap<>();
+ layerLearningRates.put(codeLayer,1e-1);
+ RandomGenerator rng = new MersenneTwister(123);
 
 
-        DBN dbn = new DBN.Builder()
-        .learningRateForLayer(layerLearningRates)
-        .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
-        .useRBMPropUpAsActivation(true)
-        .activateForLayer(Collections.singletonMap(3, Activations.linear()))
-        .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
-        .numberOfInputs(784)
-        .sampleFromHiddenActivations(true)
-        .sampleOrActivateByLayer(Collections.singletonMap(3,false))
-        .lineSearchBackProp(true).useRegularization(true).withL2(1e-3)
-        .withOutputActivationFunction(Activations.sigmoid())
-        .numberOfOutPuts(784).withMomentum(0.5)
-        .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
+ DBN dbn = new DBN.Builder()
+ .learningRateForLayer(layerLearningRates)
+ .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
+ .useRBMPropUpAsActivation(true)
+ .activateForLayer(Collections.singletonMap(3, Activations.linear()))
+ .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
+ .numberOfInputs(784)
+ .sampleFromHiddenActivations(true)
+ .sampleOrActivateByLayer(Collections.singletonMap(3,false))
+ .lineSearchBackProp(true).useRegularization(true).withL2(1e-3)
+ .withOutputActivationFunction(Activations.sigmoid())
+ .numberOfOutPuts(784).withMomentum(0.5)
+ .withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
  *       .build();
  *
  * Reduction of dimensionality with neural nets Hinton 2006
@@ -137,6 +137,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * Compute activations from input to output of the output layer
      * @return the list of activations for each layer
      */
+    @Override
     public  List<DoubleMatrix> feedForward() {
         DoubleMatrix currInput = this.input;
 
@@ -147,10 +148,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             AutoEncoder layer = (AutoEncoder) getLayers()[i];
             layer.setInput(currInput);
 
-            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations)
                 currInput = layer.reconstruct(currInput);
 
-            }
+
 
             else  if(sampleFromHiddenActivations) {
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
@@ -332,7 +333,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
-             super.learningRateForLayer(learningRates);
+            super.learningRateForLayer(learningRates);
             return this;
         }
 
@@ -340,7 +341,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         public Builder activateForLayer(Map<Integer, ActivationFunction> activationForLayer) {
             super.activateForLayer(activationForLayer);
             return this;
-            
+
         }
 
         @Override
@@ -685,7 +686,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         @Override
         public DeepAutoEncoder buildEmpty() {
-          return  super.buildEmpty();
+            return  super.buildEmpty();
 
         }
 
@@ -703,7 +704,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .numberOfVisible(encoder.getLayers()[i].getnVisible())
                             .numHidden(encoder.getLayers()[i].getnHidden()).constrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm())
                             .withWeights(encoder.getLayers()[i].getW().dup())
-                           .applySparsity(encoder.getLayers()[i].isApplySparsity())
+                            .applySparsity(encoder.getLayers()[i].isApplySparsity())
                             .normalizeByInputRows(encoder.getLayers()[i].normalizeByInputRows())
                             .withDropOut(encoder.getLayers()[i].dropOut())
                             .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
@@ -719,10 +720,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .withRandom(encoder.getLayers()[i].getRng())
                             .build();
 
-                   //code layer linear
-                   if(i == encoder.getLayers().length - 1) {
-                       a.act = Activations.linear();
-                   }
+                    //code layer linear
+                    if(i == encoder.getLayers().length - 1) {
+                        a.act = Activations.linear();
+                    }
 
                     HiddenLayer h = encoder.getSigmoidLayers()[i].clone();
                     h.setActivationFunction(Activations.linear());
