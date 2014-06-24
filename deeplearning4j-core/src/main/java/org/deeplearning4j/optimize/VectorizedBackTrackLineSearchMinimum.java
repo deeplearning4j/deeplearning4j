@@ -107,11 +107,11 @@ public class VectorizedBackTrackLineSearchMinimum
 
         assert (!MatrixUtil.isNaN(g));
         double sum = line.norm2();
-        if(sum > stpmax) {
-            logger.warn("attempted step too big. scaling: sum= " + sum +
-                    ", stpmax= "+ stpmax);
-            line.muli(stpmax / sum);
-        }
+//        if(sum > stpmax) {
+//            logger.warn("attempted step too big. scaling: sum= " + sum +
+//                    ", stpmax= "+ stpmax);
+//            line.muli(stpmax / sum);
+//        }
 
         //dot product
         slope = SimpleBlas.dot(g, line);
@@ -199,7 +199,7 @@ public class VectorizedBackTrackLineSearchMinimum
                 if(alam == 1.0) // first time through
                     tmplam = -slope / (2.0 * ( f - fold - slope ));
                 else {
-                    rhs1 = f - fold- alam * slope;
+                    rhs1 = f - fold - alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
                     assert((alam - alam2) != 0): "FAILURE: dividing by alam-alam2. alam="+alam;
                     a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 / ( FastMath.pow(alam2, 2) )) / (alam-alam2);
