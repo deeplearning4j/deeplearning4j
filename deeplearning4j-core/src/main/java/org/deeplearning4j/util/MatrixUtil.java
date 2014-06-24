@@ -953,7 +953,11 @@ public class MatrixUtil {
         return createBasedOn(ret,toDiv);
     }
 
-
+    /**
+     * Returns true if any element in the matrix is Infinite
+     * @param test the matrix to test
+     * @return whether any element in the matrix is Infinite
+     */
     public static <E extends DoubleMatrix> boolean isInfinite(E test) {
         DoubleMatrix nan = test.isInfinite();
         for (int i = 0; i < nan.length; i++) {
@@ -963,6 +967,12 @@ public class MatrixUtil {
         return false;
     }
 
+
+    /**
+     * Returns true if any element in the matrix is NaN
+     * @param test the matrix to test
+     * @return whether any element in the matrix is NaN
+     */
     public static boolean isNaN(DoubleMatrix test) {
         for (int i = 0; i < test.length; i++) {
             if (Double.isNaN(test.get(i)))
@@ -970,6 +980,22 @@ public class MatrixUtil {
         }
         return false;
     }
+
+
+    public static void assertNaN(Collection<DoubleMatrix> matrices) {
+        int count = 0;
+        for(DoubleMatrix d : matrices) {
+            assert isNaN(d) : " The matrix " + count + " was NaN";
+            count++;
+
+        }
+    }
+
+    public static void assertNaN(DoubleMatrix...matrices) {
+        for(int i = 0; i < matrices.length; i++)
+            assert isNaN(matrices[i]) : " The matrix " + i + " was NaN";
+    }
+
 
 
     public static void discretizeColumns(DoubleMatrix toDiscretize, int numBins) {

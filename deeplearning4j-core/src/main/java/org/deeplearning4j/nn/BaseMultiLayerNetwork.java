@@ -1,12 +1,21 @@
 package org.deeplearning4j.nn;
 
+import static org.jblas.MatrixFunctions.powi;
+import static org.jblas.MatrixFunctions.pow;
+
+import static org.deeplearning4j.util.MatrixUtil.binomial;
+import static org.deeplearning4j.util.MatrixUtil.assertNaN;
+import static org.deeplearning4j.util.MatrixUtil.valueMatrixOf;
+import static org.deeplearning4j.util.MatrixUtil.complainAboutMissMatchedMatrices;
+import static org.deeplearning4j.util.MatrixUtil.isNaN;
+
+
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.AutoEncoder;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
@@ -19,10 +28,9 @@ import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.Dl4jReflection;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
+
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -518,8 +526,10 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix currInput = this.input;
         if(this.input.columns != nIns)
             throw new IllegalStateException("Illegal input length");
+
         List<DoubleMatrix> activations = new ArrayList<>();
         activations.add(currInput);
+
         for(int i = 0; i < getnLayers(); i++) {
             NeuralNetwork layer = getLayers()[i];
             HiddenLayer l = getSigmoidLayers()[i];
@@ -537,6 +547,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
+
         if(getOutputLayer() != null) {
             getOutputLayer().setInput(activations.get(activations.size() - 1));
             if(getOutputLayer().getActivationFunction() == null)
@@ -586,7 +597,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     protected void applyDropConnectIfNecessary(DoubleMatrix input) {
         if(useDropConnect) {
-            DoubleMatrix mask = MatrixUtil.binomial(MatrixUtil.valueMatrixOf(0.5,input.rows,input.columns),1,rng);
+            DoubleMatrix mask = binomial(valueMatrixOf(0.5,input.rows,input.columns),1,rng);
             input.muli(mask);
             //apply l2 for drop connect
             if(l2 > 0)
@@ -598,10 +609,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     /* delta computation for back prop with the R operator */
     protected  void computeDeltasR(List<DoubleMatrix> deltaRet,DoubleMatrix v) {
+        assertNaN(v);
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
         List<DoubleMatrix> activations = feedForward();
         List<DoubleMatrix> rActivations = feedForwardR(v);
-
+        assertNaN(activations);
+        assertNaN(rActivations);
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
@@ -618,7 +631,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         biases.add(getOutputLayer().getB());
         activationFunctions.add(outputLayer.getActivationFunction());
         DoubleMatrix rix = rActivations.get(rActivations.size() - 1).div(input.rows);
-
+       assertNaN(rix);
         //errors
         for(int i = getnLayers() + 1; i >= 0; i--) {
             //output layer
@@ -627,6 +640,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //note the one difference here, back prop the error from the gauss newton vector R operation rather than the normal output
                 deltas[i] = rix;
                 applyDropConnectIfNecessary(deltas[i]);
+                assertNaN(deltas[i]);
 
             }
             else {
@@ -637,10 +651,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //calculate gradient for layer
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
+                assertNaN(deltas[i],activation,weightsPlusBias);
+
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);;
+                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).divi(input.rows);;
 
-
+                assertNaN(rix);
             }
 
         }
@@ -650,7 +666,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
-                deltaRet.add(deltas[i].divi(deltas[i].norm2()));
+                deltaRet.add(deltas[i].div(deltas[i].norm2()));
 
             else
                 deltaRet.add(deltas[i]);
@@ -733,6 +749,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         List<DoubleMatrix> weights = new ArrayList<>();
         List<DoubleMatrix> biases = new ArrayList<>();
         List<ActivationFunction> activationFunctions = new ArrayList<>();
+
         for(int j = 0; j < getLayers().length; j++) {
             weights.add(getLayers()[j].getW());
             biases.add(getLayers()[j].gethBias());
@@ -751,8 +768,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //-( y - h) .* f'(z^l) where l is the output layer
                 //note the one difference here, back prop the error from the gauss newton vector R operation rather than the normal output
                 deltas[i] = rix;
-                preCons[i] = MatrixFunctions.pow(rix,2);
-                preCons[i].addi(MatrixFunctions.pow(DoubleMatrix.ones(1,preCons[i].length).mul(dampingFactor).add(DoubleMatrix.ones(1,preCons[i].length).mul(l2)),3.0 / 4.0));
+                preCons[i] = pow(rix,2);
+                preCons[i].addi(powi(DoubleMatrix.ones(1,preCons[i].length).muli(dampingFactor).add(DoubleMatrix.ones(1,preCons[i].length).muli(l2 > 0 ? l2 : 1)),3.0 / 4.0));
                 applyDropConnectIfNecessary(deltas[i]);
 
             }
@@ -760,15 +777,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 //W^t * error^l + 1
                 deltas[i] =  activations.get(i).transpose().mmul(rix);
-                preCons[i] = MatrixFunctions.pow(activations.get(i).transpose(),2).mmul(MatrixFunctions.pow(rix,2));
-                preCons[i].addi(MatrixFunctions.pow(DoubleMatrix.ones(1,preCons[i].length).mul(dampingFactor).add(DoubleMatrix.ones(1,preCons[i].length).mul(l2)),3.0 / 4.0));
+                preCons[i] = powi(activations.get(i).transpose(),2).mmul(pow(rix,2));
+                preCons[i].addi(pow(DoubleMatrix.ones(1,preCons[i].length).muli(dampingFactor).addi(DoubleMatrix.ones(1,preCons[i].length).mul(l2 > 0 ? l2 : 1)),3.0 / 4.0));
 
                 applyDropConnectIfNecessary(deltas[i]);
                 //calculate gradient for layer
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
+                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).divi(input.rows);
 
 
             }
@@ -780,7 +797,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
-                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].normmax()),preCons[i]));
+                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2()),preCons[i]));
 
             else
                 deltaRet.add(new Pair<>(deltas[i],preCons[i]));
@@ -831,7 +848,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         //- y - h
-        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels);
+        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(input.rows);
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
@@ -854,7 +871,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //errors
         for(int i = weights.size() - 1; i != -1; i--) {
             DoubleMatrix delta = activations.get(i).transpose().mmul(ix);
-            DoubleMatrix delta2 = MatrixFunctions.pow(activations.get(i).transpose(),2).mmul(MatrixFunctions.pow(ix,2)).mul(input.rows);
+            DoubleMatrix delta2 = powi(activations.get(i).transpose(),2).mmul(pow(ix,2)).mul(input.rows);
 
             deltas[i] = delta;
             preCons[i] = delta2;
@@ -863,9 +880,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
             DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
-            DoubleMatrix activation = activations.get(i);
+
             if(i > 0)
-                ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
+                ix = ix.mmul(weightsPlusBias).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
 
 
 
@@ -990,26 +1007,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
      * This is also called computeGV
+     * @param v the v in gaussian newton vector g * v
      * @return the back prop with r gradient
      */
     public DoubleMatrix getBackPropRGradient(DoubleMatrix v) {
-        double[][] list = new double[layers.length * 2 + 2][];
-        int length = 0;
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = backPropGradientR(v);
-
-        int deltaCount = 0;
-
-        for(int i = 0; i < list.length - 1; i+= 2) {
-            list[i] = deltas.get(deltaCount).getFirst().reshape(1,deltas.get(deltaCount).getFirst().length).data;
-            list[i + 1] = deltas.get(deltaCount).getSecond().reshape(1,deltas.get(deltaCount).getSecond().length).data;
-            length +=  deltas.get(deltaCount).getFirst().length;
-            length += list[i + 1].length;
-            deltaCount++;
-        }
-
-
-        double[] data = ArrayUtil.combine(list);
-        return new DoubleMatrix(data).reshape(1,length);
+        return pack(backPropGradientR(v));
     }
 
 
@@ -1020,29 +1022,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @return the back prop with r gradient
      */
     public Pair<DoubleMatrix,DoubleMatrix> getBackPropGradient2() {
-        double[][] list = new double[layers.length * 2 + 2][];
-        double[][] list2 = new double[layers.length * 2 + 2][];
-
-        int length = 0;
         List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradient2();
-
-        int deltaCount = 0;
-
-        for(int i = 0; i < list.length - 1; i+= 2) {
-            list[i] = deltas.get(deltaCount).getFirst().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
-            list[i + 1] = deltas.get(deltaCount).getFirst().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
-            list2[i] = deltas.get(deltaCount).getSecond().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
-            list2[i + 1] = deltas.get(deltaCount).getSecond().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
-
-            length +=  deltas.get(deltaCount).getFirst().getFirst().length;
-            length += list[i + 1].length;
-            deltaCount++;
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltaNormal = new ArrayList<>();
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltasPreCon = new ArrayList<>();
+        for(int i = 0; i < deltas.size(); i++) {
+            deltaNormal.add(deltas.get(i).getFirst());
+            deltasPreCon.add(deltas.get(i).getSecond());
         }
 
 
-        double[] data = ArrayUtil.combine(list);
-        double[] data2 = ArrayUtil.combine(list2);
-        return new Pair<>(new DoubleMatrix(data).reshape(1,length),new DoubleMatrix(data2).reshape(1,length));
+        return new Pair<>(pack(deltaNormal),pack(deltasPreCon));
     }
 
 
@@ -1290,6 +1279,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             DoubleMatrix activation = currR.add(secondFigure);
             activation.muli((derivative.applyDerivative(nextAct)));
             R.add(activation);
+            assertNaN(currR,nextAct,currAct,secondFigure,activation);
         }
 
 
@@ -1301,6 +1291,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix activation = currR.add(secondFigure);
         activation.muli((outputLayer.getActivationFunction().applyDerivative(nextAct)));
         R.add(activation);
+        assertNaN(currR,nextAct,currAct,secondFigure,activation);
         return R;
     }
 
@@ -1590,7 +1581,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //precompute deltas
         List<Pair<DoubleMatrix,DoubleMatrix>> deltas = computeDeltas2();
 
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltas2 = computeDeltas2();
 
         List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> list = new ArrayList<>();
         List<Pair<DoubleMatrix,DoubleMatrix>> grad = new ArrayList<>();
@@ -1628,18 +1618,18 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix con = pack(preCon);
         DoubleMatrix theta = params();
         if(mask == null)
-          initMask();
+            initMask();
 
-        g.addi(theta.mul(l2).mul(mask));
-        con.addi(MatrixFunctions.powi(mask.mul(l2).add(DoubleMatrix.ones(g.rows,g.columns).mul(dampingFactor)),3.0 / 4.0));
+        g.addi(theta.muli(l2 > 0 ? l2 : 1.0).muli(mask));
+        con.addi(powi(mask.mul(l2 > 0 ? l2 : 1.0).add(valueMatrixOf(dampingFactor,g.rows,g.columns)),3.0 / 4.0));
 
         List<Pair<DoubleMatrix,DoubleMatrix>> gUnpacked = unPack(g);
 
         List<Pair<DoubleMatrix,DoubleMatrix>> conUnpacked = unPack(con);
 
-        for(int i = 0; i < gUnpacked.size(); i++) {
+        for(int i = 0; i < gUnpacked.size(); i++)
             list.add(new Pair<>(gUnpacked.get(i),conUnpacked.get(i)));
-        }
+
 
 
         return list;
@@ -1725,6 +1715,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         for(int l = 0; l < getnLayers(); l++) {
             DoubleMatrix gradientChange = deltas.get(l);
+            if(isNaN(gradientChange))
+                throw new IllegalStateException("Gradient change was NaN");
 
             if(gradientChange.length != getLayers()[l].getW().length)
                 throw new IllegalStateException("Gradient change not equal to weight change");
@@ -1743,28 +1735,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
 
         DoubleMatrix logLayerGradient = deltas.get(getnLayers());
-        DoubleMatrix biasGradient = deltas.get(getnLayers() + 1).columnSums();
+        DoubleMatrix biasGradient = deltas.get(getnLayers()).columnSums();
 
         list.add(new Pair<>(logLayerGradient,biasGradient));
 
         DoubleMatrix pack = pack(list);
-        pack.addi(mask.mul(v).mul(l2));
+        if(l2 > 0)
+            pack.addi(mask.mul(v).mul(l2));
+        else
+            pack.addi(mask.mul(v));
         pack.addi(v.mul(dampingFactor));
         return unPack(pack);
 
     }
 
-    /**
-     * Do a back prop iteration.
-     * This involves computing the activations, tracking the last layers weights
-     * to revert to in case of convergence, the learning rate being used to train
-     * and the current epoch
-     * @return whether the training should converge or not
-     */
-    protected List<Pair<DoubleMatrix,DoubleMatrix>> backPropGradientR() {
-        return backPropGradientR(null);
-
-    }
 
 
 
@@ -1836,7 +1820,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public void finetune(DoubleMatrix labels,double lr, int iterations) {
         this.labels = labels;
         feedForward();
-        MatrixUtil.complainAboutMissMatchedMatrices(labels,outputLayer.getInput());
+        complainAboutMissMatchedMatrices(labels,outputLayer.getInput());
         if(labels != null)
             this.labels = labels;
         this.fineTuneLearningRate = lr;
@@ -2045,6 +2029,34 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+
+    /**
+     * Sets the input and labels and returns a score for the prediction
+     * wrt true labels
+     * @param input the input to score
+     * @param labels the true labels
+     * @return the score for the given input,label pairs
+     */
+    public double score(DoubleMatrix input,DoubleMatrix labels) {
+        feedForward(input);
+        setLabels(labels);
+        return score();
+    }
+
+
+    /**
+     * Sets the input and labels and returns a score for the prediction
+     * wrt true labels
+     * @param data the data to score
+     * @return the score for the given input,label pairs
+     */
+    public double score(DataSet data) {
+        feedForward(data.getFirst());
+        setLabels(data.getSecond());
+        return score();
+    }
+
+
     /**
      * Score of the model (relative to the objective function)
      * @return the score of the model (relative to the objective function)
@@ -2059,7 +2071,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public  double score(DoubleMatrix param) {
         double ret =  outputLayer.score();
-        double regCost = 0.5 * l2 * MatrixFunctions.pow(mask.mul(param),2).sum();
+        double regCost = 0.5 * l2 * powi(mask.mul(param),2).sum();
         return ret + regCost;
     }
 
