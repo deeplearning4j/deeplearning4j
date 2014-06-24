@@ -50,7 +50,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
                 for(int i = 0; i < epochs; i++) {
                     if(i % network.getResetAdaGradIterations() == 0)
                         network.getOutputLayer().getAdaGrad().historicalGradient = null;
-                    network.backPropStepR();
+                    network.backPropStepR(null);
                     log.info("Iteration " + i + " error " + network.score());
 
                 }
@@ -70,7 +70,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
                     }
                     count++;
-                    network.backPropStepR();
+                    network.backPropStepR(null);
                 /* Trains logistic regression post weight updates */
 
                     Double entropy = network.score();

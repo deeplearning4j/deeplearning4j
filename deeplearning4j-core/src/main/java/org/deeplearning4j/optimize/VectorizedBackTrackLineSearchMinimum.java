@@ -39,13 +39,13 @@ import org.slf4j.LoggerFactory;
 
 //"Line Searches and Backtracking", p385, "Numeric Recipes in C"
 
-public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
+public class VectorizedBackTrackLineSearchMinimum
 {
-    private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearch.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(VectorizedBackTrackLineSearchMinimum.class.getName());
 
     OptimizableByGradientValueMatrix function;
 
-    public VectorizedBackTrackLineSearch (OptimizableByGradientValueMatrix optimizable) {
+    public VectorizedBackTrackLineSearchMinimum(OptimizableByGradientValueMatrix optimizable) {
         this.function = optimizable;
     }
 
@@ -88,22 +88,20 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (DoubleMatrix line, int lineSearchIteration,double initialStep)
+    public double optimize (DoubleMatrix line, int lineSearchIteration,DoubleMatrix g,DoubleMatrix params)
     {
-        DoubleMatrix g, x, oldParameters;
+        DoubleMatrix x, oldParameters;
         double slope, test, alamin, alam, alam2, tmplam;
         double rhs1, rhs2, a, b, disc, oldAlam;
         double f, fold, f2;
-        g = function.getValueGradient(lineSearchIteration); // gradient
-        x = function.getParameters(); // parameters
-        oldParameters = x.dup();
+        oldParameters = params.dup();
 
 
         alam2 = tmplam = 0.0;
         f2 = fold = function.getValue();
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
-            logger.trace("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
+            logger.trace("Entering BackTrackLnSrch, value=" + fold +",\ndirection.oneNorm:"
                     +	line.norm1() + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
         }
 
@@ -118,12 +116,6 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         //dot product
         slope = SimpleBlas.dot(g, line);
         logger.debug("slope = " + slope);
-
-        if (slope < 0) {
-            throw new IllegalStateException("Slope = " + slope + " is negative");
-        }
-        if (slope == 0)
-            throw new IllegalStateException ("Slope = " + slope + " is zero");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -152,27 +144,27 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
             // initially, alam = 1.0, i.e. take full Newton step
             logger.trace("BackTrack loop iteration " + iteration +" : alam="+
                     alam+" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + x.norm1() +
+            logger.trace ("before step, x.1norm: " + params.norm1() +
                     "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
 
 
-            x.addi(line.mul(alam - oldAlam));  // step
+            params.addi(line.mul(alam - oldAlam));  // step
 
-            logger.debug ("after step, x.1norm: " + x.norm1());
+            logger.debug ("after step, x.1norm: " + params.norm1());
 
             // check for convergence
             //convergence on delta x
-            if ((alam < alamin) || smallAbsDiff (oldParameters, x)) {
+            if ((alam < alamin) || smallAbsDiff (oldParameters, params)) {
                 //				if ((alam < alamin)) {
                 function.setParameters(oldParameters);
                 f = function.getValue();
-                logger.trace("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
+                logger.trace("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value=" + f);
                 return 0.0;
             }
 
-            function.setParameters(x);
+            function.setParameters(params);
             oldAlam = alam;
             f = function.getValue();
 

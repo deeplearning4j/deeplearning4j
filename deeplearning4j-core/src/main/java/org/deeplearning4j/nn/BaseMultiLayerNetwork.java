@@ -14,10 +14,7 @@ import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.activation.Sigmoid;
-import org.deeplearning4j.optimize.BackPropOptimizer;
-import org.deeplearning4j.optimize.BackPropROptimizer;
-import org.deeplearning4j.optimize.MultiLayerNetworkOptimizer;
-import org.deeplearning4j.optimize.TrainingEvaluator;
+import org.deeplearning4j.optimize.*;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.deeplearning4j.util.ArrayUtil;
@@ -407,6 +404,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         dimensionCheck();
         applyTransforms();
         initCalled = true;
+        initMask();
 
     }
 
@@ -602,7 +600,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected  void computeDeltasR(List<DoubleMatrix> deltaRet,DoubleMatrix v) {
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
         List<DoubleMatrix> activations = feedForward();
-        List<DoubleMatrix> rActivations = feedForwardR();
+        List<DoubleMatrix> rActivations = feedForwardR(v);
 
 		/*
 		 * Precompute activations and z's (pre activation network outputs)
@@ -647,9 +645,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         }
 
+
+
+
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
-                deltaRet.add(deltas[i].divi(deltas[i].normmax()));
+                deltaRet.add(deltas[i].divi(deltas[i].norm2()));
 
             else
                 deltaRet.add(deltas[i]);
@@ -657,10 +658,70 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+    /**
+     * Unpack in a condensed form (weight,bias as one matrix) with
+     * the param vector as flattened in each element in the list
+     * @param param the param vector to convert
+     * @return an unpacked list in a condensed form (weight/bias merged)
+     */
+    public List<DoubleMatrix> unPackCondensed(DoubleMatrix param) {
+        //more sanity checks!
+        int numParams = numParams();
+        if(param.length != numParams)
+            throw new IllegalArgumentException("Parameter vector not equal of length to " + numParams);
+
+        List<DoubleMatrix> ret = new ArrayList<>();
+        int curr = 0;
+        for(int i = 0; i < layers.length; i++) {
+            int layerLength = layers[i].getW().length + layers[i].gethBias().length;
+            DoubleMatrix subMatrix = param.get(RangeUtils.all(),RangeUtils.interval(curr,curr + layerLength));
+            DoubleMatrix weightPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(0,layers[i].getW().length));
+
+            int beginHBias = layers[i].getW().length;
+            int endHbias = subMatrix.length;
+            DoubleMatrix hBiasPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(beginHBias,endHbias));
+            int layerLengthSum = weightPortion.length + hBiasPortion.length;
+            if(layerLengthSum != layerLength) {
+                if(hBiasPortion.length != layers[i].gethBias().length)
+                    throw new IllegalStateException("Hidden bias on layer " + i + " was off");
+                if(weightPortion.length != layers[i].getW().length)
+                    throw new IllegalStateException("Weight portion on layer " + i + " was off");
+
+            }
+
+            DoubleMatrix d = new DoubleMatrix(1,weightPortion.length + hBiasPortion.length);
+            d.put(RangeUtils.all(),RangeUtils.interval(0,weightPortion.length),weightPortion);
+            d.put(RangeUtils.all(),RangeUtils.interval(weightPortion.length,d.length),hBiasPortion);
+
+            ret.add(d);
+            curr += layerLength;
+        }
+
+        int outputLayerWeightLength = outputLayer.getW().length;
+        int biasLength = outputLayer.getB().length;
+        int layerLength = outputLayerWeightLength + biasLength;
+
+        DoubleMatrix subMatrix = param.get(RangeUtils.all(),RangeUtils.interval(curr,curr + layerLength));
+        DoubleMatrix weightPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(0,outputLayer.getW().length));
+        DoubleMatrix hBiasPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(weightPortion.length,subMatrix.length));
+        DoubleMatrix d = new DoubleMatrix(1,weightPortion.length + hBiasPortion.length);
+        d.put(RangeUtils.all(),RangeUtils.interval(0,weightPortion.length),weightPortion);
+        d.put(RangeUtils.all(),RangeUtils.interval(weightPortion.length,d.length),hBiasPortion);
+
+        ret.add(d);
+
+
+
+
+
+        return ret;
+    }
 
 
     /* delta computation for back prop with the R operator */
     protected  void computeDeltasR2(List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet,DoubleMatrix v) {
+        if(mask == null)
+            initMask();
         DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 2];
         DoubleMatrix[] preCons = new DoubleMatrix[getnLayers() + 2];
         List<DoubleMatrix> activations = feedForward();
@@ -691,6 +752,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //note the one difference here, back prop the error from the gauss newton vector R operation rather than the normal output
                 deltas[i] = rix;
                 preCons[i] = MatrixFunctions.pow(rix,2);
+                preCons[i].addi(MatrixFunctions.pow(DoubleMatrix.ones(1,preCons[i].length).mul(dampingFactor).add(DoubleMatrix.ones(1,preCons[i].length).mul(l2)),3.0 / 4.0));
                 applyDropConnectIfNecessary(deltas[i]);
 
             }
@@ -699,17 +761,22 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //W^t * error^l + 1
                 deltas[i] =  activations.get(i).transpose().mmul(rix);
                 preCons[i] = MatrixFunctions.pow(activations.get(i).transpose(),2).mmul(MatrixFunctions.pow(rix,2));
+                preCons[i].addi(MatrixFunctions.pow(DoubleMatrix.ones(1,preCons[i].length).mul(dampingFactor).add(DoubleMatrix.ones(1,preCons[i].length).mul(l2)),3.0 / 4.0));
+
                 applyDropConnectIfNecessary(deltas[i]);
                 //calculate gradient for layer
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);;
+                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
 
 
             }
 
         }
+
+
+
 
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
@@ -723,12 +790,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
-
-    /* delta computation for back prop with the R operator */
-    protected  void computeDeltasR(List<DoubleMatrix> deltaRet) {
-        computeDeltasR(deltaRet,null);
+    private DoubleMatrix compress(DoubleMatrix[] matrices) {
+        double[][] data = new double[matrices.length][];
+        for(int i = 0; i < data.length; i++)
+            data[i] = matrices[i].data;
+        DoubleMatrix ret =  new DoubleMatrix(ArrayUtil.combine(data));
+        return ret.reshape(1,ret.length);
     }
-
 
 
 
@@ -750,6 +818,70 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(score - currScore > 0)
             return Double.NEGATIVE_INFINITY;
         return rho;
+    }
+
+
+
+    /* delta computation for back prop with precon for SFH */
+    protected  List<Pair<DoubleMatrix,DoubleMatrix>>  computeDeltas2() {
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet = new ArrayList<>();
+        List<DoubleMatrix> activations = feedForward();
+        DoubleMatrix[] deltas = new DoubleMatrix[activations.size() - 1];
+        DoubleMatrix[] preCons = new DoubleMatrix[activations.size() - 1];
+
+
+        //- y - h
+        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels);
+       	/*
+		 * Precompute activations and z's (pre activation network outputs)
+		 */
+        List<DoubleMatrix> weights = new ArrayList<>();
+        List<DoubleMatrix> biases = new ArrayList<>();
+
+        List<ActivationFunction> activationFunctions = new ArrayList<>();
+        for(int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            biases.add(getLayers()[j].gethBias());
+            activationFunctions.add(getSigmoidLayers()[j].getActivationFunction());
+        }
+
+        biases.add(getOutputLayer().getB());
+        weights.add(getOutputLayer().getW());
+        activationFunctions.add(outputLayer.getActivationFunction());
+
+
+
+        //errors
+        for(int i = weights.size() - 1; i != -1; i--) {
+            DoubleMatrix delta = activations.get(i).transpose().mmul(ix);
+            DoubleMatrix delta2 = MatrixFunctions.pow(activations.get(i).transpose(),2).mmul(MatrixFunctions.pow(ix,2)).mul(input.rows);
+
+            deltas[i] = delta;
+            preCons[i] = delta2;
+            applyDropConnectIfNecessary(deltas[i]);
+
+
+
+            DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
+            DoubleMatrix activation = activations.get(i);
+            if(i > 0)
+                ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
+
+
+
+
+        }
+
+        for(int i = 0; i < deltas.length; i++) {
+            if(constrainGradientToUnitNorm)
+                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2()),preCons[i]));
+
+            else
+                deltaRet.add(new Pair<>(deltas[i],preCons[i]));
+
+        }
+
+        return deltaRet;
     }
 
 
@@ -852,12 +984,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         outputLayer.getB().subi(deltas.get(deltas.size() - 1).getSecond());
 
     }
-    /**
-     * One step of back prop with the R operator
-     */
-    public void backPropStepR() {
-        backPropStepR(null);
-    }
+
+
 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
@@ -885,6 +1013,38 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    /**
+     * Gets the back prop gradient with the r operator (gauss vector)
+     * and the associated precon matrix
+     * This is also called computeGV
+     * @return the back prop with r gradient
+     */
+    public Pair<DoubleMatrix,DoubleMatrix> getBackPropGradient2() {
+        double[][] list = new double[layers.length * 2 + 2][];
+        double[][] list2 = new double[layers.length * 2 + 2][];
+
+        int length = 0;
+        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradient2();
+
+        int deltaCount = 0;
+
+        for(int i = 0; i < list.length - 1; i+= 2) {
+            list[i] = deltas.get(deltaCount).getFirst().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
+            list[i + 1] = deltas.get(deltaCount).getFirst().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
+            list2[i] = deltas.get(deltaCount).getSecond().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
+            list2[i + 1] = deltas.get(deltaCount).getSecond().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
+
+            length +=  deltas.get(deltaCount).getFirst().getFirst().length;
+            length += list[i + 1].length;
+            deltaCount++;
+        }
+
+
+        double[] data = ArrayUtil.combine(list);
+        double[] data2 = ArrayUtil.combine(list2);
+        return new Pair<>(new DoubleMatrix(data).reshape(1,length),new DoubleMatrix(data2).reshape(1,length));
+    }
+
 
     /**
      * Gets the back prop gradient with the r operator (gauss vector)
@@ -897,7 +1057,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         double[][] list2 = new double[layers.length * 2 + 2][];
 
         int length = 0;
-        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradientR2(v);
+        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradient2();
 
         int deltaCount = 0;
 
@@ -905,7 +1065,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             list[i] = deltas.get(deltaCount).getFirst().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
             list[i + 1] = deltas.get(deltaCount).getFirst().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
             list2[i] = deltas.get(deltaCount).getSecond().getFirst().reshape(1,deltas.get(deltaCount).getFirst().getFirst().length).data;
-            list[i + 1] = deltas.get(deltaCount).getSecond().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
+            list2[i + 1] = deltas.get(deltaCount).getSecond().getSecond().reshape(1,deltas.get(deltaCount).getFirst().getSecond().length).data;
 
             length +=  deltas.get(deltaCount).getFirst().getFirst().length;
             length += list[i + 1].length;
@@ -1107,7 +1267,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     /**
      * Feed forward with the r operator
      * @param v the v for the r operator
-     * @return
+     * @return the activations based on the r operator
      */
     public List<DoubleMatrix> feedForwardR(DoubleMatrix v) {
         List<DoubleMatrix> R = new ArrayList<>();
@@ -1123,7 +1283,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 derivative = a.getAct();
             }
 
-            DoubleMatrix currR = R.get(i).mmul(layers[i].getW());
+            DoubleMatrix currR = R.get(i).mmul(vWvB.get(i).getFirst());
             DoubleMatrix nextAct = acts.get(i + 1);
             DoubleMatrix currAct = acts.get(i);
             DoubleMatrix secondFigure = currAct.mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()));
@@ -1145,14 +1305,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
-    /**
-     * Feed forward for R operator, no v
-     * @return a feed forward pass leveraging
-     * the R operator
-     */
-    public List<DoubleMatrix> feedForwardR() {
-        return feedForwardR(null);
-    }
 
 
 
@@ -1260,7 +1412,23 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
     }
 
+    /**
+     * Packs a set of matrices in to one vector,
+     * where the matrices in this case are the w,hbias at each layer
+     * and the output layer w,bias
+     * @return a singular matrix of all of the layers packed in to one matrix
+     */
+    public  DoubleMatrix pack() {
+        List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = new ArrayList<>();
+        for(int i = 0; i < layers.length; i++) {
+            vWvB.add(new Pair<>(layers[i].getW(),layers[i].gethBias()));
+        }
 
+        vWvB.add(new Pair<>(outputLayer.getW(), outputLayer.getB()));
+
+        return pack(vWvB);
+
+    }
 
     /**
      * Packs a set of matrices in to one vector
@@ -1268,16 +1436,35 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @return a singular matrix of all of the layers packed in to one matrix
      */
     public  DoubleMatrix pack(List<Pair<DoubleMatrix,DoubleMatrix>> layers) {
+        if(layers.size() != this.layers.length + 1)
+            throw new IllegalArgumentException("Illegal number of layers passed in. Was " + layers.size() + " when should have been " + (this.layers.length + 1));
 
-        double[][] allMatrices = new double[layers.size() * 2][];
+
+        double[][] allMatrices = new double[(this.layers.length + 1) * 2][];
 
         int count = 0;
-        for(int i = 0; i < layers.size(); i++) {
+        for(int i = 0; i < this.layers.length; i++) {
             allMatrices[count++] = layers.get(i).getFirst().data;
+            if(allMatrices[count - 1].length != getLayers()[i].getW().length)
+                throw new IllegalArgumentException("Unable to convert the given matrix to the given length. not of same length as W. Length is " +allMatrices[count].length + " when should be " + getLayers()[i].getW().length);
             allMatrices[count++] = layers.get(i).getSecond().data;
+            if(allMatrices[count - 1].length != getLayers()[i].gethBias().length)
+                throw new IllegalArgumentException("Unable to convert the given matrix to the given length. not of same length as W. Length is " +allMatrices[count].length + " when should be " + getLayers()[i].gethBias().length);
+
         }
 
+        allMatrices[count++] = layers.get(layers.size() - 1).getFirst().data;
+        allMatrices[count++] = layers.get(layers.size() - 1).getSecond().data;
+
+
+
         DoubleMatrix ret =  new DoubleMatrix(ArrayUtil.combine(allMatrices));
+        int params = numParams();
+
+        if(ret.length != params)
+            throw new IllegalStateException("Returning an invalid matrix of length " + ret.length + " when should have been " + params);
+
+
         return ret.reshape(1,ret.length);
     }
 
@@ -1313,7 +1500,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                     throw new IllegalStateException("Weight portion on layer " + i + " was off");
 
             }
-            ret.add(new Pair<>(weightPortion,hBiasPortion));
+            ret.add(new Pair<>(weightPortion.reshape(layers[i].getW().rows,layers[i].getW().columns),hBiasPortion.reshape(layers[i].gethBias().rows,layers[i].gethBias().columns)));
             curr += layerLength;
         }
 
@@ -1324,7 +1511,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix subMatrix = param.get(RangeUtils.all(),RangeUtils.interval(curr,curr + layerLength));
         DoubleMatrix weightPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(0,outputLayer.getW().length));
         DoubleMatrix hBiasPortion = subMatrix.get(RangeUtils.all(),RangeUtils.interval(weightPortion.length,subMatrix.length));
-        ret.add(new Pair<>(weightPortion,hBiasPortion));
+        ret.add(new Pair<>(weightPortion.reshape(outputLayer.getW().rows,outputLayer.getW().columns),hBiasPortion.reshape(outputLayer.getB().rows,outputLayer.getB().columns)));
 
 
         return ret;
@@ -1388,6 +1575,78 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     }
 
 
+    /**
+     * Do a back prop iteration.
+     * This involves computing the activations, tracking the last layers weights
+     * to revert to in case of convergence, the learning rate being used to train
+     * and the current epoch
+     * @return whether the training should converge or not
+     */
+    protected List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> backPropGradient2() {
+        //feedforward to compute activations
+        //initial error
+        //log.info("Back prop step " + epoch);
+
+        //precompute deltas
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas = computeDeltas2();
+
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltas2 = computeDeltas2();
+
+        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> list = new ArrayList<>();
+        List<Pair<DoubleMatrix,DoubleMatrix>> grad = new ArrayList<>();
+        List<Pair<DoubleMatrix,DoubleMatrix>> preCon = new ArrayList<>();
+
+        for(int l = 0; l < deltas.size(); l++) {
+            DoubleMatrix gradientChange = deltas.get(l).getFirst();
+            DoubleMatrix preConGradientChange = deltas.get(l).getSecond();
+
+
+            if(l < getLayers().length && gradientChange.length != getLayers()[l].getW().length)
+                throw new IllegalStateException("Gradient change not equal to weight change");
+            else if(l == getLayers().length && gradientChange.length != outputLayer.getW().length)
+                throw new IllegalStateException("Gradient change not equal to weight change");
+
+
+            //update hidden bias
+            DoubleMatrix deltaColumnSums = deltas.get(l).getFirst().columnSums();
+            DoubleMatrix preConColumnSums = deltas.get(l).getSecond().columnSums();
+
+            grad.add(new Pair<>(gradientChange,deltaColumnSums));
+            preCon.add(new Pair<>(preConGradientChange,preConColumnSums));
+            if(l < getLayers().length && deltaColumnSums.length != layers[l].gethBias().length)
+                throw new IllegalStateException("Bias change not equal to weight change");
+            else if(l == getLayers().length && deltaColumnSums.length != outputLayer.getB().length)
+                throw new IllegalStateException("Bias change not equal to weight change");
+
+
+
+
+
+        }
+
+        DoubleMatrix g = pack(grad);
+        DoubleMatrix con = pack(preCon);
+        DoubleMatrix theta = params();
+        if(mask == null)
+          initMask();
+
+        g.addi(theta.mul(l2).mul(mask));
+        con.addi(MatrixFunctions.powi(mask.mul(l2).add(DoubleMatrix.ones(g.rows,g.columns).mul(dampingFactor)),3.0 / 4.0));
+
+        List<Pair<DoubleMatrix,DoubleMatrix>> gUnpacked = unPack(g);
+
+        List<Pair<DoubleMatrix,DoubleMatrix>> conUnpacked = unPack(con);
+
+        for(int i = 0; i < gUnpacked.size(); i++) {
+            list.add(new Pair<>(gUnpacked.get(i),conUnpacked.get(i)));
+        }
+
+
+        return list;
+
+    }
+
+
 
     /**
      * Do a back prop iteration.
@@ -1406,14 +1665,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //compute derivatives and gradients given activations
         computeDeltasR2(deltas,v);
 
-        List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = new ArrayList<>();
-        for(int i = 0; i < layers.length; i++) {
-            vWvB.add(new Pair<>(layers[i].getW(),layers[i].gethBias()));
-        }
-
-        vWvB.add(new Pair<>(outputLayer.getW(),outputLayer.getB()));
 
         List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> list = new ArrayList<>();
+
 
         for(int l = 0; l < getnLayers(); l++) {
             DoubleMatrix gradientChange = deltas.get(l).getFirst();
@@ -1580,7 +1834,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @param iterations the number of times to iterate
      */
     public void finetune(DoubleMatrix labels,double lr, int iterations) {
-
+        this.labels = labels;
         feedForward();
         MatrixUtil.complainAboutMissMatchedMatrices(labels,outputLayer.getInput());
         if(labels != null)
@@ -1940,6 +2194,15 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(input != null && this.layers == null)
             this.initializeLayers(input);
         this.input = input;
+
+    }
+
+    private void initMask() {
+        setMask(DoubleMatrix.ones(1,pack().length));
+        List<Pair<DoubleMatrix,DoubleMatrix>> mask = unPack(getMask());
+        for(int i = 0; i < mask.size(); i++)
+            mask.get(i).setSecond(DoubleMatrix.zeros(mask.get(i).getSecond().rows,mask.get(i).getSecond().columns));
+        setMask(pack(mask));
 
     }
 
@@ -2886,6 +3149,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 ret.setLossFunction(lossFunction);
                 ret.setOutputActivationFunction(outputActivationFunction);
                 ret.setOutputLossFunction(outputLossFunction);
+                ret.initializeLayers(DoubleMatrix.zeros(1,nIns));
                 if(activation != null)
                     ret.setActivation(activation);
                 if(dist != null)

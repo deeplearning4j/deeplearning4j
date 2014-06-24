@@ -294,7 +294,8 @@ public class DBNTest {
                 .build();
 
         dbn.setInput(d.getFirst());
-        List<DoubleMatrix> activations = dbn.feedForwardR();
+        DoubleMatrix params = dbn.params();
+        List<DoubleMatrix> activations = dbn.feedForwardR(params);
         List<DoubleMatrix> activationsNorm = dbn.feedForward();
         assertEquals(activations.size(),activationsNorm.size());
     }
