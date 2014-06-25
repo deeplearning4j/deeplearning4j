@@ -33,8 +33,8 @@ public class DBN extends BaseMultiLayerNetwork {
 
     private static final long serialVersionUID = -9068772752220902983L;
     private static Logger log = LoggerFactory.getLogger(DBN.class);
-    private RBM.VisibleUnit visibleUnit;
-    private RBM.HiddenUnit hiddenUnit;
+    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
+    private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
     private boolean useRBMPropUpAsActivations = false;
