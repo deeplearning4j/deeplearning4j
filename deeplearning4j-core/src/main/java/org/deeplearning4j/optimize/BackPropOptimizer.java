@@ -1,18 +1,14 @@
 package org.deeplearning4j.optimize;
 
 import cc.mallet.optimize.Optimizable;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.OutputLayer;
 import org.jblas.DoubleMatrix;
-import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Optimizes via back prop gradients
@@ -185,23 +181,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
     @Override
     public void setParameters(DoubleMatrix params) {
-        for(int i = 0; i < network.getLayers().length; i++) {
-            ParamRange range = startIndexForLayer(i);
-            DoubleMatrix w = params.get(RangeUtils.all(),RangeUtils.interval(range.getwStart(),range.getwEnd()));
-            DoubleMatrix bias = params.get(RangeUtils.all(),RangeUtils.interval(range.getBiasStart(),range.getBiasEnd()));
-            int rows = network.getLayers()[i].getW().rows,columns = network.getLayers()[i].getW().columns;
-            network.getLayers()[i].setW(w.reshape(rows,columns));
-            network.getLayers()[i].sethBias(bias.reshape(network.getLayers()[i].gethBias().rows,network.getLayers()[i].gethBias().columns));
-        }
-
-
-        ParamRange range = startIndexForLayer(network.getLayers().length);
-        DoubleMatrix w = params.get(RangeUtils.all(),RangeUtils.interval(range.getwStart(),range.getwEnd()));
-        DoubleMatrix bias = params.get(RangeUtils.all(),RangeUtils.interval(range.getBiasStart(),range.getBiasEnd()));
-        int rows = network.getOutputLayer().getW().rows,columns = network.getOutputLayer().getW().columns;
-        network.getOutputLayer().setW(w.reshape(rows, columns));
-        network.getOutputLayer().setB(bias.reshape(network.getOutputLayer().getB().rows, network.getOutputLayer().getB().columns));
-
+        network.setParameters(params);
         network.getOutputLayer().trainTillConvergence(lr,epochs);
 
 
@@ -214,69 +194,6 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     }
 
 
-    public ParamRange startIndexForLayer(int layer) {
-        int start = 0;
-        for(int i = 0; i < layer; i++) {
-            start += network.getLayers()[i].getW().length;
-            start += network.getLayers()[i].gethBias().length;
-        }
-        if(layer < network.getLayers().length) {
-            int wEnd = start + network.getLayers()[layer].getW().length;
-            return new ParamRange(start,wEnd,wEnd,wEnd + network.getLayers()[layer].gethBias().length);
-
-        }
-
-        else {
-            int wEnd = start + network.getOutputLayer().getW().length;
-            return new ParamRange(start,wEnd,wEnd,wEnd + network.getOutputLayer().getB().length);
-
-        }
-
-
-    }
-
-    public static class ParamRange implements  Serializable {
-        private int wStart,wEnd,biasStart,biasEnd;
-
-        private ParamRange(int wStart, int wEnd, int biasStart, int biasEnd) {
-            this.wStart = wStart;
-            this.wEnd = wEnd;
-            this.biasStart = biasStart;
-            this.biasEnd = biasEnd;
-        }
-
-        public int getwStart() {
-            return wStart;
-        }
-
-        public void setwStart(int wStart) {
-            this.wStart = wStart;
-        }
-
-        public int getwEnd() {
-            return wEnd;
-        }
-
-        public void setwEnd(int wEnd) {
-            this.wEnd = wEnd;
-        }
-
-        public int getBiasStart() {
-            return biasStart;
-        }
-
-        public void setBiasStart(int biasStart) {
-            this.biasStart = biasStart;
-        }
-
-        public int getBiasEnd() {
-            return biasEnd;
-        }
-
-        public void setBiasEnd(int biasEnd) {
-            this.biasEnd = biasEnd;
-        }
-    }
 
 
 }
