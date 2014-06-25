@@ -143,12 +143,8 @@ public class StochasticHessianFree implements OptimizerMatrix {
         DoubleMatrix x = ch.dup();
         double deltaNew = r.mul(y).sum();
 
-        long curr = 0;
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
-            if(MatrixUtil.isNaN(p)) {
-                log.warn("Bad p NaN breaking");
-                break;
-            }
+
 
             DoubleMatrix Ap = network.getBackPropRGradient(p);
 
@@ -163,10 +159,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
             log.info("Iteration " + iterationCount);
             double alpha = deltaNew / pAp;
-            if(Double.isNaN(alpha) || Double.isInfinite(alpha)) {
-                log.warn("bad alpha breaking");
-                break;
-            }
+
 
             x.addi(p.mul(alpha));
 
@@ -177,14 +170,10 @@ public class StochasticHessianFree implements OptimizerMatrix {
             deltaNew = rNew.mul(yNew).sum();
             double beta = deltaNew / deltaOld;
             p = yNew.neg().add(p.mul(beta));
-c            r = rNew;
+            r = rNew;
             y = yNew;
             is.add(iterationCount);
-            xs.add(x.dup());
-
-
-            curr = System.currentTimeMillis();
-
+            xs.add(x);
 
             if (listener != null) {
                 listener.iterationDone(iterationCount);
@@ -200,7 +189,7 @@ c            r = rNew;
         Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(numIterations,grad,preCon);
         if(!cg.getSecond().isEmpty())
             ch = cg.getSecond().get(cg.getSecond().size() - 1);
-        DoubleMatrix p = ch.dup();
+            p = ch.dup();
 
         return new Triple<>(p,cg.getSecond(),ch);
     }
@@ -274,7 +263,7 @@ c            r = rNew;
                 score = network.score();
                 xi = params.dup();
                 revert = network.clone();
-                optimizable.setParameters(params);
+                network.setParameters(params);
                 log.info("New score " + score);
 
             }
