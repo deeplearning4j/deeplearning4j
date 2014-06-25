@@ -135,7 +135,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public void getValueGradient(double[] buffer) {
-        System.arraycopy(network.getBackPropRGradient(h.xi).data,0,buffer,0,buffer.length);
+        System.arraycopy(network.getBackPropRGradient(network.params()).data,0,buffer,0,buffer.length);
     }
 
     @Override
@@ -184,7 +184,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public DoubleMatrix getValueGradient(int iteration) {
-        return network.getBackPropRGradient(h.xi);
+        return network.getBackPropRGradient(network.params());
     }
 
 
