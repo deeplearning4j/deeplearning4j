@@ -631,7 +631,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         biases.add(getOutputLayer().getB());
         activationFunctions.add(outputLayer.getActivationFunction());
         DoubleMatrix rix = rActivations.get(rActivations.size() - 1).div(input.rows);
-       assertNaN(rix);
+        assertNaN(rix);
         //errors
         for(int i = getnLayers() + 1; i >= 0; i--) {
             //output layer
@@ -1046,7 +1046,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         double[][] list2 = new double[layers.length * 2 + 2][];
 
         int length = 0;
-        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradient2();
+        List<Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>>> deltas = backPropGradientR2(v);
 
         int deltaCount = 0;
 
@@ -1741,9 +1741,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
         DoubleMatrix pack = pack(list);
         if(l2 > 0)
-            pack.addi(mask.mul(v).mul(l2));
-        else
-            pack.addi(mask.mul(v));
+            pack.addi(mask.mul(v).mul(l2 > 0 ? l2 : 1.0));
         pack.addi(v.mul(dampingFactor));
         return unPack(pack);
 
@@ -2070,8 +2068,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      * @return the score of the model (relative to the objective function)
      */
     public  double score(DoubleMatrix param) {
+        DoubleMatrix params = params();
+        setParameters(param);
         double ret =  outputLayer.score();
         double regCost = 0.5 * l2 * powi(mask.mul(param),2).sum();
+        setParameters(params);
         return ret + regCost;
     }
 
@@ -2628,6 +2629,112 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public void setLineSearchBackProp(boolean lineSearchBackProp) {
         this.lineSearchBackProp = lineSearchBackProp;
     }
+
+
+    /**
+     * Sets parameters for the model.
+     * This is used to manipulate the weights and biases across
+     * all layers (including the output layer)
+     * @param params a parameter vector equal 1,numParameters
+     */
+    public void setParameters(DoubleMatrix params) {
+        for(int i = 0; i < getLayers().length; i++) {
+            ParamRange range = startIndexForLayer(i);
+            DoubleMatrix w = params.get(RangeUtils.all(),RangeUtils.interval(range.getwStart(),range.getwEnd()));
+            DoubleMatrix bias = params.get(RangeUtils.all(),RangeUtils.interval(range.getBiasStart(),range.getBiasEnd()));
+            int rows = getLayers()[i].getW().rows,columns = getLayers()[i].getW().columns;
+            getLayers()[i].setW(w.reshape(rows,columns));
+            getLayers()[i].sethBias(bias.reshape(getLayers()[i].gethBias().rows,getLayers()[i].gethBias().columns));
+        }
+
+
+        ParamRange range = startIndexForLayer(getLayers().length);
+        DoubleMatrix w = params.get(RangeUtils.all(),RangeUtils.interval(range.getwStart(),range.getwEnd()));
+        DoubleMatrix bias = params.get(RangeUtils.all(),RangeUtils.interval(range.getBiasStart(),range.getBiasEnd()));
+        int rows = getOutputLayer().getW().rows,columns =  getOutputLayer().getW().columns;
+        getOutputLayer().setW(w.reshape(rows, columns));
+        getOutputLayer().setB(bias.reshape(getOutputLayer().getB().rows, getOutputLayer().getB().columns));
+
+
+
+    }
+
+
+    /**
+     * Returns a start index for a given layer (neural net or outputlayer)
+     * @param layer the layer to get the index for
+     * @return the index for the layer
+     */
+    public ParamRange startIndexForLayer(int layer) {
+        int start = 0;
+        for(int i = 0; i < layer; i++) {
+            start += getLayers()[i].getW().length;
+            start += getLayers()[i].gethBias().length;
+        }
+        if(layer < getLayers().length) {
+            int wEnd = start + getLayers()[layer].getW().length;
+            return new ParamRange(start,wEnd,wEnd,wEnd + getLayers()[layer].gethBias().length);
+
+        }
+
+        else {
+            int wEnd = start + getOutputLayer().getW().length;
+            return new ParamRange(start,wEnd,wEnd,wEnd + getOutputLayer().getB().length);
+
+        }
+
+
+    }
+
+    public static class ParamRange implements  Serializable {
+        private int wStart,wEnd,biasStart,biasEnd;
+
+        private ParamRange(int wStart, int wEnd, int biasStart, int biasEnd) {
+            this.wStart = wStart;
+            this.wEnd = wEnd;
+            this.biasStart = biasStart;
+            this.biasEnd = biasEnd;
+        }
+
+        public int getwStart() {
+            return wStart;
+        }
+
+        public void setwStart(int wStart) {
+            this.wStart = wStart;
+        }
+
+        public int getwEnd() {
+            return wEnd;
+        }
+
+        public void setwEnd(int wEnd) {
+            this.wEnd = wEnd;
+        }
+
+        public int getBiasStart() {
+            return biasStart;
+        }
+
+        public void setBiasStart(int biasStart) {
+            this.biasStart = biasStart;
+        }
+
+        public int getBiasEnd() {
+            return biasEnd;
+        }
+
+        public void setBiasEnd(int biasEnd) {
+            this.biasEnd = biasEnd;
+        }
+    }
+
+
+
+
+
+
+
 
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;

@@ -1,5 +1,7 @@
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
+
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
@@ -54,7 +56,7 @@ public class BackPropOptimizerTests {
         BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1,1000);
         DoubleMatrix layerParams = op.getParameters();
 
-        BackPropOptimizer.ParamRange r = op.startIndexForLayer(0);
+        ParamRange r = dbn.startIndexForLayer(0);
         double firstWeightForParam = layerParams.get(r.getwStart() + 1);
         double firstWeightInNetwork = dbn.getLayers()[0].getW().get(1);
         assertEquals(0,r.getwStart());
@@ -62,7 +64,7 @@ public class BackPropOptimizerTests {
         assertEquals(len,r.getwEnd());
         assertEquals(dbn.getLayers()[0].gethBias().length,Math.abs(r.getBiasStart() - r.getBiasEnd()));
 
-        BackPropOptimizer.ParamRange r2 = op.startIndexForLayer(1);
+        ParamRange r2 = dbn.startIndexForLayer(1);
         assertEquals(dbn.getLayers()[0].getW().length + dbn.getLayers()[0].gethBias().length,r2.getwStart());
 
 
