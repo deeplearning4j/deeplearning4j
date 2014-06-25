@@ -2070,6 +2070,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     public  double score(DoubleMatrix param) {
         DoubleMatrix params = params();
         setParameters(param);
+        feedForward();
         double ret =  outputLayer.score();
         double regCost = 0.5 * l2 * powi(mask.mul(param),2).sum();
         setParameters(params);
