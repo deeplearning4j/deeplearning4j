@@ -339,7 +339,7 @@ public class DBN extends BaseMultiLayerNetwork {
                                      int nHidden, DoubleMatrix W, DoubleMatrix hBias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
 
-        RBM ret = new RBM.Builder().constrainGradientToUnitNorm(constrainGradientToUnitNorm)
+        RBM ret = new RBM.Builder().constrainGradientToUnitNorm(constrainGradientToUnitNorm).weightInit(weightInitByLayer.get(index) != null ? weightInitByLayer.get(index) : weightInit)
                 .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit)
                 .withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
@@ -375,6 +375,44 @@ public class DBN extends BaseMultiLayerNetwork {
         public Builder() {
             this.clazz = DBN.class;
         }
+
+
+        /**
+         * Output layer weight initialization
+         *
+         * @param outputLayerWeightInit
+         * @return
+         */
+        @Override
+        public Builder outputLayerWeightInit(WeightInit outputLayerWeightInit) {
+            super.outputLayerWeightInit(outputLayerWeightInit);
+            return this;
+        }
+
+        /**
+         * Layer specific weight init
+         *
+         * @param weightInitByLayer
+         * @return
+         */
+        @Override
+        public Builder weightInitByLayer(Map<Integer, WeightInit> weightInitByLayer) {
+            super.weightInitByLayer(weightInitByLayer);
+            return this;
+        }
+
+        /**
+         * Default weight init scheme
+         *
+         * @param weightInit
+         * @return
+         */
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            super.weightInit(weightInit);
+            return this;
+        }
+
 
         /**
          * Whether to constrain gradient to unit norm or not

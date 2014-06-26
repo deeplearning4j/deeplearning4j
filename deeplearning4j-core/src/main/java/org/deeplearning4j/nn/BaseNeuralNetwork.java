@@ -112,6 +112,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected  boolean concatBiases = false;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
+    //weight init scheme, this can either be a distribution or a set scheme
+    protected WeightInit weightInit;
+
 
     protected BaseNeuralNetwork() {}
     /**
@@ -405,7 +408,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public void setConcatBiases(boolean concatBiases) {
-       this.concatBiases = concatBiases;
+        this.concatBiases = concatBiases;
     }
 
     /**
@@ -544,7 +547,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public void setConstrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
-           this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
     }
 
 
@@ -972,8 +975,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
+    @Override
+    public void setWeightInit(WeightInit weightInit) {
+        this.weightInit = weightInit;
+    }
 
-
+    @Override
+    public WeightInit getWeightInit() {
+        return weightInit;
+    }
 
     @Override
     public AdaGrad gethBiasAdaGrad() {
@@ -1034,7 +1044,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
         else
-        this.doMask = DoubleMatrix.ones(input.rows,input.columns);
+            this.doMask = DoubleMatrix.ones(input.rows,input.columns);
 
         //actually apply drop out
         input.muli(doMask);
@@ -1080,7 +1090,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected DoubleMatrix preProcessInput(DoubleMatrix input) {
         if(concatBiases)
             return DoubleMatrix.concatHorizontally(input,DoubleMatrix.ones(input.rows,1));
-         return input;
+        return input;
     }
 
     @Override
@@ -1123,6 +1133,18 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         protected int resetAdaGradIterations = -1;
         protected boolean concatBiases = false;
         private boolean constrainGradientToUnitNorm = false;
+        //private init scheme, this can either be a distribution or a set scheme
+        protected WeightInit weightInit;
+
+        /**
+         * Weight initialization scheme
+         * @param weightInit the weight initialization scheme
+         * @return
+         */
+        public Builder<E> weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
 
         /**
          * Constrains gradient to unit norm when updating parameters
@@ -1300,6 +1322,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                     try {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
                         ret.cacheInput = cacheInput;
+                        ret.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+                        ret.weightInit = weightInit;
                         ret.concatBiases = concatBiases;
                         ret.sparsity = this.sparsity;
                         ret.resetAdaGradIterations = resetAdaGradIterations;

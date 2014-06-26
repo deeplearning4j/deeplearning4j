@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
     int maxIterations = 10000;
     private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
-    /* decay, current gradient/direction/current point in vector space,preCon,current parameters */
+    /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
     private DoubleMatrix ch,gradient,p,preCon,xi;
     private NeuralNetEpochListener listener;
     private double pi = 0.5;
@@ -94,31 +95,44 @@ public class StochasticHessianFree implements OptimizerMatrix {
         List<Integer> is = new ArrayList<>();
         List<DoubleMatrix> xs = new ArrayList<>();
 
-
-        DoubleMatrix r = network.getBackPropRGradient(ch).sub(gradient);
+        //in the pseudo code the gradient is b
+        //x0 is ch
+        DoubleMatrix r = network.getBackPropRGradient(ch).subi(gradient);
         DoubleMatrix y = r.div(preCon);
-
-
+        log.info("Precon mean " + preCon.mean());
+        log.info("R  mean " + r.mean());
+        log.info("Y mean " + y.mean());
+        log.info("Gradient mean " + gradient.mean());
         p = y.neg();
+        double mean = p.mean();
+
         //initial x
-        DoubleMatrix x = ch.dup();
+        DoubleMatrix x = ch;
         double deltaNew = r.mul(y).sum();
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 
 
             DoubleMatrix Ap = network.getBackPropRGradient(p);
+
+            log.info("P mean for iteration " + iterationCount + " is " + p.mean());
+
+
             //think Ax + b, this is the curvature
             double pAp = Ap.mul(p).sum();
+            log.info("pAp for iteration " + iterationCount +   " is " + pAp);
             if(pAp < 0)
                 log.warn("Negative curve!");
 
-            log.info("Iteration " + iterationCount);
+
+            double val = 0.5 * SimpleBlas.dot(ch.neg().addi(r).transpose(), x);
+
+            log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
 
             //step size
             double alpha = deltaNew / pAp;
 
-           //step
+            //step
             x.addi(p.mul(alpha));
 
             //conjugate gradient
@@ -127,9 +141,12 @@ public class StochasticHessianFree implements OptimizerMatrix {
             double deltaOld = deltaNew;
             deltaNew = rNew.mul(yNew).sum();
             double beta = deltaNew / deltaOld;
+            log.info("Beta for iteration " + iterationCount + " is " + beta);
             p = yNew.neg().add(p.mul(beta));
             r = rNew;
-          //append to the steps taken
+            val = 0.5 * SimpleBlas.dot(ch.neg().addi(r).transpose(), x);
+            log.info("Value for " + iterationCount + " is " + val);
+            //append to the steps taken
             is.add(iterationCount);
             xs.add(x);
 
@@ -143,11 +160,10 @@ public class StochasticHessianFree implements OptimizerMatrix {
     //setup baseline conjugate gradient and run it for n iterations
     private Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix> runConjugateGradient(int numIterations) {
         Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(numIterations);
-        if(!cg.getSecond().isEmpty())
-            ch = cg.getSecond().get(cg.getSecond().size() - 1);
+        ch = cg.getSecond().get(cg.getSecond().size() - 1);
         p = ch.dup();
 
-        return new Triple<>(p,cg.getSecond(),ch);
+        return new Triple<>(ch,cg.getSecond(),ch);
     }
 
 
@@ -163,9 +179,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
         int j = 0;
 
         while(j < 60) {
-           //converged
-           if(newScore <= gradient.mul(p).mul(score + c * rate).sum())
-               break;
+            //converged
+            if(newScore <= gradient.mul(p).mul(score + c * rate).sum())
+                break;
             else
                 rate *= 0.8;
             //explore in this direction and obtain a score
@@ -222,15 +238,18 @@ public class StochasticHessianFree implements OptimizerMatrix {
         xi = optimizable.getParameters();
         BaseMultiLayerNetwork revert = network.clone();
 
-        for(int i = 0; i < 1000; i++) {
+        for(int i = 0; i < numIterations; i++) {
             //investigate way params are being referenced/saved, this is probably the root of the erotic behavior below
 
 
-            //grad,precon
+            //initial gradient, precon/conjugate gradient conditioner
             Pair<DoubleMatrix,DoubleMatrix> backPropGradient = network.getBackPropGradient2();
 
             gradient = backPropGradient.getFirst().neg();
+            log.info("Gradient mean " + gradient.mean());
             preCon = backPropGradient.getSecond();
+            log.info("precon mean " + preCon.mean());
+
             if(ch == null)
                 setup();
 
