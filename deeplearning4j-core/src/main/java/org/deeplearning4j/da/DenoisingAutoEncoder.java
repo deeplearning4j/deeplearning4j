@@ -10,6 +10,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
@@ -151,6 +152,17 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     public static class Builder extends BaseNeuralNetwork.Builder<DenoisingAutoEncoder> {
         public Builder()  {
             this.clazz = DenoisingAutoEncoder.class;
+        }
+
+
+        /**
+         * Weight initialization scheme
+         * @param weightInit the weight initialization scheme
+         * @return
+         */
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
         }
 
         /**

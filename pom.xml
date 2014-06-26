@@ -110,7 +110,7 @@
 		<module>deeplearning4j-examples</module>
 		<module>deeplearning4j-hadoop</module>
         <module>deeplearning4j-distribution</module>
-		<module>deeplearning4j-instrumentation</module>
+		
 	</modules>
 
 	<licenses>

@@ -112,6 +112,13 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
     protected boolean initCalled = false;
     /* Sample if true, otherwise use the straight activation function */
     protected boolean sampleFromHiddenActivations = true;
+    /* weight initialization scheme, this is either a probability distribution or a weighting scheme for initialization */
+    protected WeightInit weightInit = null;
+    /* weight init for layers */
+    protected Map<Integer,WeightInit> weightInitByLayer = new HashMap<>();
+    /* output layer weight intialization */
+    protected WeightInit outputLayerWeightInit = null;
+
     /*
      * Use adagrad or not
      */
@@ -401,7 +408,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         // layer for output using OutputLayer
-        this.outputLayer = new OutputLayer.Builder().withDropout(outputLayerDropout)
+        this.outputLayer = new OutputLayer.Builder()
+                .withDropout(outputLayerDropout).weightInit(outputLayerWeightInit)
                 .useAdaGrad(useAdaGrad).optimizeBy(getOptimizationAlgorithm())
                 .normalizeByInputRows(normalizeByInputRows).withLossFunction(outputLossFunction)
                 .useRegularization(useRegularization).withActivationFunction(outputActivationFunction)
@@ -630,7 +638,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         weights.add(getOutputLayer().getW());
         biases.add(getOutputLayer().getB());
         activationFunctions.add(outputLayer.getActivationFunction());
-        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).div(input.rows);
+        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).divi(input.rows);
         assertNaN(rix);
         //errors
         for(int i = getnLayers() + 1; i >= 0; i--) {
@@ -651,12 +659,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 //calculate gradient for layer
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
-                assertNaN(deltas[i],activation,weightsPlusBias);
 
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).divi(input.rows);;
+                    rix = rix.mmul(weightsPlusBias).muli(activationFunctions.get(i - 1).applyDerivative(activation)).divi(input.rows);;
 
-                assertNaN(rix);
+
             }
 
         }
@@ -848,7 +855,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         //- y - h
-        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(input.rows);
+        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
+        log.info("Ix mean " + ix.sum());
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
@@ -871,7 +879,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //errors
         for(int i = weights.size() - 1; i != -1; i--) {
             DoubleMatrix delta = activations.get(i).transpose().mmul(ix);
-            DoubleMatrix delta2 = powi(activations.get(i).transpose(),2).mmul(pow(ix,2)).mul(input.rows);
+            DoubleMatrix actSquared = powi(activations.get(i).transpose(),2);
+            DoubleMatrix ixSquared = powi(ix,2);
+            DoubleMatrix delta2 = actSquared.mmul(ixSquared).muli(labels.rows);
+            log.info("Activation mean " + activations.get(i).transpose().sum());
+
+            log.info("Activation squared " + actSquared.sum());
+            log.info("ixSquared mean " + ixSquared.sum());
+
+            log.info("Delta mean " + delta.sum());
+            log.info("Delta2 mean " + delta2.sum());
 
             deltas[i] = delta;
             preCons[i] = delta2;
@@ -944,7 +961,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).div(input.rows);
+                    ix = ix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation));
 
             }
 
@@ -1276,10 +1293,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             DoubleMatrix nextAct = acts.get(i + 1);
             DoubleMatrix currAct = acts.get(i);
             DoubleMatrix secondFigure = currAct.mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()));
-            DoubleMatrix activation = currR.add(secondFigure);
+            DoubleMatrix activation = currR.addi(secondFigure);
             activation.muli((derivative.applyDerivative(nextAct)));
             R.add(activation);
-            assertNaN(currR,nextAct,currAct,secondFigure,activation);
         }
 
 
@@ -1599,7 +1615,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
             //update hidden bias
             DoubleMatrix deltaColumnSums = deltas.get(l).getFirst().columnSums();
-            DoubleMatrix preConColumnSums = deltas.get(l).getSecond().columnSums();
+            DoubleMatrix preConColumnSums = deltas.get(l).getSecond().columnSums().div(input.rows);
 
             grad.add(new Pair<>(gradientChange,deltaColumnSums));
             preCon.add(new Pair<>(preConGradientChange,preConColumnSums));
@@ -1735,13 +1751,12 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         }
 
         DoubleMatrix logLayerGradient = deltas.get(getnLayers());
-        DoubleMatrix biasGradient = deltas.get(getnLayers()).columnSums();
+        DoubleMatrix biasGradient = deltas.get(getnLayers()).columnMeans();
 
         list.add(new Pair<>(logLayerGradient,biasGradient));
 
         DoubleMatrix pack = pack(list);
-        if(l2 > 0)
-            pack.addi(mask.mul(v).mul(l2 > 0 ? l2 : 1.0));
+        pack.addi(mask.mul(v).mul(l2 > 0 ? l2 : 1.0));
         pack.addi(v.mul(dampingFactor));
         return unPack(pack);
 
@@ -2149,7 +2164,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
      */
     public  HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
         return new HiddenLayer.Builder()
-                .nIn(nIn).nOut(nOut).concatBiases(concatBiases)
+                .nIn(nIn).nOut(nOut).concatBiases(concatBiases).weightInit(weightInitByLayer.get(index) != null ?weightInitByLayer.get(index) : weightInit)
                 .withActivation(activationFunctionForLayer.get(index) != null ? activationFunctionForLayer.get(index) : activation)
                 .withRng(rng).withInput(layerInput).dist(dist)
                 .build();
@@ -2379,7 +2394,37 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         this.columnStds = columnStds;
     }
 
+    public WeightInit getWeightInit() {
+        return weightInit;
+    }
 
+    public void setWeightInit(WeightInit weightInit) {
+        this.weightInit = weightInit;
+    }
+
+    public Map<Integer, WeightInit> getWeightInitByLayer() {
+        return weightInitByLayer;
+    }
+
+    public void setWeightInitByLayer(Map<Integer, WeightInit> weightInitByLayer) {
+        this.weightInitByLayer = weightInitByLayer;
+    }
+
+    public WeightInit getOutputLayerWeightInit() {
+        return outputLayerWeightInit;
+    }
+
+    public void setOutputLayerWeightInit(WeightInit outputLayerWeightInit) {
+        this.outputLayerWeightInit = outputLayerWeightInit;
+    }
+
+    public double getFineTuneLearningRate() {
+        return fineTuneLearningRate;
+    }
+
+    public void setFineTuneLearningRate(double fineTuneLearningRate) {
+        this.fineTuneLearningRate = fineTuneLearningRate;
+    }
 
     public  boolean isUseAdaGrad() {
         return useAdaGrad;
@@ -2784,6 +2829,43 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         private boolean constrainGradientToUnitNorm = false;
+        /* weight initialization scheme, this is either a probability distribution or a weighting scheme for initialization */
+        private WeightInit weightInit = null;
+        /* weight init for layers */
+        private Map<Integer,WeightInit> weightInitByLayer = new HashMap<>();
+        /* output layer weight intialization */
+        private WeightInit outputLayerWeightInit = null;
+
+
+        /**
+         * Output layer weight initialization
+         * @param outputLayerWeightInit
+         * @return
+         */
+        public Builder<E> outputLayerWeightInit(WeightInit outputLayerWeightInit) {
+            this.outputLayerWeightInit = outputLayerWeightInit;
+            return this;
+        }
+
+        /**
+         * Layer specific weight init
+         * @param weightInitByLayer
+         * @return
+         */
+        public Builder<E> weightInitByLayer(Map<Integer,WeightInit> weightInitByLayer) {
+            this.weightInitByLayer = weightInitByLayer;
+            return this;
+        }
+
+        /**
+         * Default weight init scheme
+         * @param weightInit
+         * @return
+         */
+        public Builder<E> weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
 
 
         /**
@@ -3231,6 +3313,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
                 ret = (E) c.newInstance();
                 ret.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+                ret.weightInit = weightInit;
+                ret.weightInitByLayer = weightInitByLayer;
+                ret.outputLayerWeightInit = outputLayerWeightInit;
                 ret.concatBiases = concatBiases;
                 ret.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
                 ret.setUseDropConnect(useDropConnect);

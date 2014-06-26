@@ -101,7 +101,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 
 	public  void setInput(DoubleMatrix input);
 	
-	
+	public WeightInit getWeightInit();
+    public void setWeightInit(WeightInit weightInit);
 	public double squaredLoss();
 	
 	public double negativeLogLikelihood();
