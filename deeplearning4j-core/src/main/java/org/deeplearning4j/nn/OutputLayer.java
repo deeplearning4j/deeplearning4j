@@ -48,6 +48,8 @@ public class OutputLayer implements Serializable {
     private DoubleMatrix dropoutMask;
     private boolean concatBiases = false;
     private boolean constrainGradientToUniNorm = false;
+    private WeightInit weightinit;
+
     private OutputLayer() {}
 
     /**
@@ -63,14 +65,21 @@ public class OutputLayer implements Serializable {
         MSE,EXPLL,XENT,MCXENT,RMSE_XENT,SQUARED_LOSS
     }
 
-
-
     public OutputLayer(DoubleMatrix input, DoubleMatrix labels, int nIn, int nOut) {
+        this(input,labels,nIn,nOut,null);
+    }
+
+    public OutputLayer(DoubleMatrix input, DoubleMatrix labels, int nIn, int nOut,WeightInit weightInit) {
         this.input = input;
         this.labels = labels;
         this.nIn = nIn;
         this.nOut = nOut;
-        W = DoubleMatrix.zeros(nIn,nOut);
+        this.weightinit = weightInit;
+        if(weightInit != null) {
+            W = WeightInitUtil.initWeights(nIn,nOut,weightInit,activationFunction);
+        }
+        else
+            W = DoubleMatrix.zeros(nIn,nOut);
         adaGrad = new AdaGrad(nIn,nOut);
         b = DoubleMatrix.zeros(1,nOut);
         biasAdaGrad = new AdaGrad(b.rows,b.columns);
@@ -346,6 +355,7 @@ public class OutputLayer implements Serializable {
         reg.setOptimizationAlgorithm(this.getOptimizationAlgorithm());
         reg.lossFunction = this.lossFunction;
         reg.concatBiases = this.concatBiases;
+        reg.weightinit = weightinit;
         if(this.input != null)
             reg.input = this.input.dup();
         return reg;
@@ -641,6 +651,7 @@ public class OutputLayer implements Serializable {
         private int nIn;
         private int nOut;
         private DoubleMatrix input;
+        private DoubleMatrix labels;
         private boolean useRegualarization;
         private ActivationFunction activationFunction = Activations.softmax();
         private boolean useAdaGrad = true;
@@ -650,6 +661,23 @@ public class OutputLayer implements Serializable {
         private double dropOut = 0;
         private boolean concatBiases = false;
         private boolean constrainGradientToUniNorm = false;
+        private WeightInit weightInit;
+
+
+        public Builder withLabels(DoubleMatrix labels)  {
+            this.labels = labels;
+            return this;
+        }
+
+        /**
+         * Weight initialization scheme
+         * @param weightInit the weight initialization scheme
+         * @return
+         */
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
 
         public Builder constrainGradientToUniNorm(boolean constrainGradientToUniNorm) {
             this.constrainGradientToUniNorm = constrainGradientToUniNorm;
@@ -724,11 +752,13 @@ public class OutputLayer implements Serializable {
         }
 
         public OutputLayer build() {
-            ret = new OutputLayer(input, nIn, nOut);
+            ret = new OutputLayer(input, labels,nIn, nOut,weightInit);
             if(W != null)
                 ret.W = W;
             if(b != null)
                 ret.b = b;
+            ret.weightinit = weightInit;
+            ret.constrainGradientToUniNorm = constrainGradientToUniNorm;
             ret.dropOut = dropOut;
             ret.optimizationAlgorithm = optimizationAlgorithm;
             ret.normalizeByInputRows = normalizeByInputRows;

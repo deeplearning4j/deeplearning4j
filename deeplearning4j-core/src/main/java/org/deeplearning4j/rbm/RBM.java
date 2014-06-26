@@ -6,6 +6,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
@@ -572,6 +573,16 @@ public class RBM extends BaseNeuralNetwork {
 
         public Builder() {
             clazz =  RBM.class;
+        }
+
+        /**
+         * Weight initialization scheme
+         * @param weightInit the weight initialization scheme
+         * @return
+         */
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
         }
 
         /**

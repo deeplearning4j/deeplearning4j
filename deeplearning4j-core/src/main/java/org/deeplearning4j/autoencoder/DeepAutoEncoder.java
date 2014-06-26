@@ -6,10 +6,7 @@ import java.util.*;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.HiddenLayer;
-import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.OutputLayer;
+import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
@@ -18,7 +15,6 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.deeplearning4j.util.MatrixUtil.normal;
 
 /**
  * Encapsulates a deep auto encoder and decoder (the transpose of an encoder).
@@ -269,6 +265,92 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         public Builder withEncoder(BaseMultiLayerNetwork encoder) {
             this.encoder = encoder;
+            return this;
+        }
+
+
+        /**
+         * Output layer weight initialization
+         *
+         * @param outputLayerWeightInit
+         * @return
+         */
+        @Override
+        public Builder outputLayerWeightInit(WeightInit outputLayerWeightInit) {
+             super.outputLayerWeightInit(outputLayerWeightInit);
+            return this;
+        }
+
+        /**
+         * Layer specific weight init
+         *
+         * @param weightInitByLayer
+         * @return
+         */
+        @Override
+        public Builder weightInitByLayer(Map<Integer, WeightInit> weightInitByLayer) {
+             super.weightInitByLayer(weightInitByLayer);
+            return this;
+        }
+
+        /**
+         * Default weight init scheme
+         *
+         * @param weightInit
+         * @return
+         */
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+             super.weightInit(weightInit);
+            return this;
+        }
+
+        /**
+         * Whether to concate biases or add them
+         *
+         * @param concatBiases true if concatneating biases,
+         *                     false add them
+         * @return
+         */
+        @Override
+        public Builder concatBiases(boolean concatBiases) {
+             super.concatBiases(concatBiases);
+            return this;
+        }
+
+        /**
+         * Use gauss newton back prop - this is for hessian free
+         *
+         * @param useGaussNewtonVectorProductBackProp whether to use gauss newton vector backprop
+         * @return
+         */
+        @Override
+        public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
+             super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
+            return this;
+        }
+
+        /**
+         * Use drop connect on activations or not
+         *
+         * @param useDropConnect use drop connect or not
+         * @return builder pattern
+         */
+        @Override
+        public Builder useDropConnection(boolean useDropConnect) {
+             super.useDropConnection(useDropConnect);
+            return this;
+        }
+
+        /**
+         * Output layer drop out
+         *
+         * @param outputLayerDropout
+         * @return
+         */
+        @Override
+        public Builder outputLayerDropout(double outputLayerDropout) {
+             super.outputLayerDropout(outputLayerDropout);
             return this;
         }
 
@@ -710,7 +792,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
                             .resetAdaGradIterations(encoder.getLayers()[inverseCount].getResetAdaGradIterations())
                             .useRegularization(encoder.getLayers()[i].isUseRegularization())
-                            .useAdaGrad(encoder.getLayers()[i].isUseAdaGrad())
+                            .useAdaGrad(encoder.getLayers()[i].isUseAdaGrad()).weightInit(encoder.getLayers()[inverseCount].getWeightInit())
                             .withVisibleBias(encoder.getLayers()[i].getvBias().dup())
                             .withHBias(encoder.getLayers()[i].gethBias().dup())
                             .withDistribution(encoder.getLayers()[i].getDist())
@@ -740,7 +822,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .withWeights(encoder.getLayers()[inverseCount].getW().transpose())
                             .applySparsity(encoder.getLayers()[inverseCount].isApplySparsity())
                             .normalizeByInputRows(encoder.getLayers()[inverseCount].normalizeByInputRows())
-                            .withDropOut(encoder.getLayers()[inverseCount].dropOut())
+                            .withDropOut(encoder.getLayers()[inverseCount].dropOut()).weightInit(encoder.getLayers()[inverseCount].getWeightInit())
                             .useRegularization(encoder.getLayers()[inverseCount].isUseRegularization())
                             .useAdaGrad(encoder.getLayers()[inverseCount].isUseAdaGrad())
                             .withVisibleBias(encoder.getLayers()[inverseCount].gethBias().dup())
@@ -760,11 +842,14 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             }
 
             OutputLayer o = new OutputLayer.Builder().normalizeByInputRows(encoder.getLayers()[0].normalizeByInputRows())
-                    .numberOfInputs(encoder.getLayers()[0].getnHidden()).numberOfOutputs(encoder.getnIns())
+                    .numberOfInputs(encoder.getLayers()[0].getnHidden()).numberOfOutputs(encoder.getnIns()).weightInit(encoder.getOutputLayerWeightInit())
                     .useAdaGrad(encoder.getLayers()[0].isUseAdaGrad()).useRegularization(encoder.getLayers()[0].isUseRegularization())
                     .withBias(encoder.getLayers()[0].getvBias()).withActivationFunction(encoder.getOutputActivationFunction())
                     .withL2(encoder.getLayers()[0].getL2()).withWeights(encoder.getLayers()[0].getW().transpose())
                     .build();
+
+
+
             o.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT);
 
             DeepAutoEncoder e = new DeepAutoEncoder();

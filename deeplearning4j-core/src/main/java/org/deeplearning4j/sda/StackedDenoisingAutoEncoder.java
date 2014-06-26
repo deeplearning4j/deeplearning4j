@@ -8,8 +8,8 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
@@ -213,7 +213,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                                      int nHidden, DoubleMatrix W, DoubleMatrix hbias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
         DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
-                .withDropOut(dropOut).constrainGradientToUnitNorm(constrainGradientToUnitNorm)
+                .withDropOut(dropOut).constrainGradientToUnitNorm(constrainGradientToUnitNorm).weightInit(weightInitByLayer.get(index) != null ? weightInitByLayer.get(index) : weightInit)
                 .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) : getLossFunction())
                 .withHBias(hbias).withInput(input).withWeights(W).withDistribution(getDist()).withOptmizationAlgo(getOptimizationAlgorithm())
                 .withRandom(rng).withMomentum(getMomentum()).withVisibleBias(vBias).normalizeByInputRows(normalizeByInputRows)
@@ -236,6 +236,45 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         public Builder() {
             this.clazz = StackedDenoisingAutoEncoder.class;
         }
+
+
+        /**
+         * Output layer weight initialization
+         *
+         * @param outputLayerWeightInit
+         * @return
+         */
+        @Override
+        public Builder outputLayerWeightInit(WeightInit outputLayerWeightInit) {
+            super.outputLayerWeightInit(outputLayerWeightInit);
+            return this;
+        }
+
+        /**
+         * Layer specific weight init
+         *
+         * @param weightInitByLayer
+         * @return
+         */
+        @Override
+        public Builder weightInitByLayer(Map<Integer, WeightInit> weightInitByLayer) {
+            super.weightInitByLayer(weightInitByLayer);
+            return this;
+        }
+
+        /**
+         * Default weight init scheme
+         *
+         * @param weightInit
+         * @return
+         */
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            super.weightInit(weightInit);
+            return this;
+        }
+
+
 
         /**
          * Whether to constrain gradient to unit norm or not

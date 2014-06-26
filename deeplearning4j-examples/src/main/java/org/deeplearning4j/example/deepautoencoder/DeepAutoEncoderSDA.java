@@ -8,8 +8,10 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
+import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
@@ -33,7 +35,7 @@ public class DeepAutoEncoderSDA {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-        DataSetIterator iter  = new ReconstructionDataSetIterator(new MnistDataSetIterator(10,10,false));
+        DataSetIterator iter  = new ReconstructionDataSetIterator(new MnistDataSetIterator(10,10));
 
         int codeLayer = 3;
 
@@ -46,12 +48,12 @@ public class DeepAutoEncoderSDA {
 
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
-                .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(false)
+                .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(true)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
                 .activateForLayer(Collections.singletonMap(3, Activations.sigmoid())).useGaussNewtonVectorProductBackProp(true)
                 .numberOfInputs(784).sampleFromHiddenActivations(false).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
-                .lineSearchBackProp(false).useRegularization(true).forceEpochs()
-                .withL2(2e-5).lineSearchBackProp(true)
+                .lineSearchBackProp(false).useRegularization(true).forceEpochs().weightInit(WeightInit.SI).outputLayerWeightInit(WeightInit.SI)
+                .withL2(2e-5).lineSearchBackProp(true).outputLayerWeightInit(WeightInit.SI)
                 .withOutputActivationFunction(Activations.sigmoid())
                 .numberOfOutPuts(784).withOutputLossFunction(OutputLayer.LossFunction.RMSE_XENT)
                 .build();
@@ -66,7 +68,7 @@ public class DeepAutoEncoderSDA {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             a.setInput(next.getFirst());
-            a.finetune(next.getFirst(),1e-1,25);
+            a.finetune(next.getFirst(),1e-1,50);
         }
 
 
