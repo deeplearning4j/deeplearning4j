@@ -19,7 +19,7 @@ Each time the RBM guesses wrong, it is told to go back and try again, until it d
 
 ### invisible cities
 
-Since it's stretch to even imagine an entity that cannot identify numbers, one way to explain how RBMs work is through analogy.
+Since it's a stretch to even imagine an entity that cannot identify numbers, one way to explain how RBMs work is through analogy.
 
 Imagine each numeral-image like an invisible city, one of nine whose names you know: San Francisco, New York, New Orleans, Seattle… An RBM starts reaching into the invisible city, touching various points on its streets and crossings. If it brought back a “Washington St.,” one of the most common street names in America, it would know little about the city it sought to identify. This would be akin to sampling an image and bringing back pixels from its black background, rather than an edge that formed one of the numeral’s lines or kinks. The backdrop tells you almost nothing useful of the data structure you must classify. They are Washington Street.
 
