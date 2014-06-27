@@ -106,4 +106,4 @@ Now that you have a basic idea of how to set up Word2Vec, here's one example of 
 
 There are three parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after getWindow. The second is the number of nodes contained in the layer, which you'll enter after getLayerSize. Those two numbers will be multiplied to obtain the number of inputs. Finally, remember to make your activation algorithm *hardtanh*. 
 
-That's pretty much it. If you need help, [drop us a line](http://www.skymind.io/contact.html). 
+Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html).
