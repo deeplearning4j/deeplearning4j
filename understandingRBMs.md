@@ -23,7 +23,7 @@ Since it's a stretch to even imagine an entity that cannot identify numbers, one
 
 Imagine each numeral-image like an invisible city, one of nine whose names you know: San Francisco, New York, New Orleans, Seattle… An RBM starts reaching into the invisible city, touching various points on its streets and crossings. If it brought back a “Washington St.,” one of the most common street names in America, it would know little about the city it sought to identify. This would be akin to sampling an image and bringing back pixels from its black background, rather than an edge that formed one of the numeral’s lines or kinks. The backdrop tells you almost nothing useful of the data structure you must classify. Those indistinguishable pixels are Washington Street.
 
-Let's take Market St instead… New York, New Orleans, Seattle and San Francisco all have Market Streets of different lengths and orientations. An invisible city that returns many samples labeled Market Street is more likely to be San Francisco or Seattle, which have longer Market Sts, than New York or New Orleans.
+Let's take Market St instead… New York, New Orleans, Seattle and San Francisco all have Market Streets of different lengths and orientations. An invisible city that returns many samples labeled Market Street is more likely to be San Francisco or Seattle, which have longer Market Streets, than New York or New Orleans.
 
 In the same manner, 2s, 3s, 5s, 6s, 8s and 9s all have curves, But an unknown numeral-image with a curve as a feature is less likely to be a 1, 4 or 7. So an RBM, with time, will learn that curves are decent indicators of some numbers and not others. They will learn to weight the path connecting the curve node to a 2 or 3 label more heavily than the path extending toward a 1 or 4. 
 
@@ -35,17 +35,21 @@ Now let’s imagine both the numeral-images and invisible cities as maps whose p
 
 Likewise, if you start from Market in San Francisco, even if you don’t know you are in San Francisco, you have a high probability of crossing Van Ness at some point, given that the two streets bisect the city and cross each other at the center.
 
-The simple feature of being on Market St (which is on an early hidden layer of the deep-belief net) leads to the feature, both more complex and more rare, of being on Market and Van Ness, which would be represented on a later node layer aggregating the two features.
+The simple feature of hitting Market St (which is on an early hidden layer of the deep-belief net) leads to another feature, both more complex and more rare, of hitting both Market and Van Ness, which would be represented on a later node layer aggregating the two features.
 
-But maybe you are not in San Francisco at all. The hidden nodes in subsequent layers of the DBN should allow for states (data conditions) that could only occur in other cities: e.g. the combination of Market and FDR Drive puts you with high probability in New York; the combination of Market with Shilshole avenue in Seattle. (Likewise, starting from a curve feature at the input node, you could end up with a vertical bar indicating 5 or another curve pointing you towards an 8 later on.)
+But maybe you are not in San Francisco at all. Market and Van Ness is not the only node as you move deeper in. 
 
-So maybe from your initial Market St data point, you would have a 50 percent chance of ending up with Van Ness; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from Market + Van Ness, you have a 99 percent chance of ending up classified as San Francisco. The same goes for New York and Seattle, respectively. 
+The hidden nodes in subsequent layers of the DBN should allow for states (data conditions) that could only occur in other cities: e.g. the combination of Market and FDR Drive puts you with high probability in New York; the combination of Market with Shilshole avenue in Seattle. (Likewise, starting from a curve feature at the input node, you could end up with a vertical bar indicating 5 or another curve pointing you toward an 8.)
 
-Likewise, while many numeral-images — 1, 4, 5 and 7— contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two to cross forming four 90 degree angles. Thus, enlarging the groups of features identified at once also increases the likelihood of those increasingly rare features groups correlating with a single numeral-image.
+So maybe from your initial Market Street data point, you would have a 50 percent chance of ending up with Van Ness as well; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from the deeper node of Market + Van Ness, you have a *99 percent chance* of ending up classified as San Francisco. The same goes for New York and Seattle, respectively. 
+
+Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two bars to cross forming four 90 degree angles. Thus, enlarging the groups of features identified at once also increases the likelihood that those increasingly rare feature-groups correlate with a single numeral-image. 
 
 ### markov chains
 
 RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov chains are essentially logical circuits that connect two or more states via probabilities. 
+
+Let's explore that idea with another absurdly long analogy. 
 
 Let's imagine a universe where you have three possible locations, or states, which we'll call home, office and bowling alley. Those three states are linked by probabilities, which represent the likelihood that you'll move from one to the other. 
 
