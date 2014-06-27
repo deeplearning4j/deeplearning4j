@@ -5,8 +5,7 @@ layout: default
 
 **prerequisites**
 
-*we assume below that you've already gone through the [setup](../gettingstarted.html) and set up Maven and Blas (native matrices).*
-
+*you've gone through [these steps](../gettingstarted.html) and set up Maven and Blas (native matrices).*
 
 #quickstart
 
