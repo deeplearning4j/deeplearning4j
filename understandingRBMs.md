@@ -51,7 +51,7 @@ RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov 
 
 Let's explore this idea with another absurdly long analogy. 
 
-Let's imagine a universe where you have three possible locations, or states, which we'll call home, office and bowling alley. Those three states are linked by probabilities, which represent the likelihood that you'll move from one to the other. 
+We'll imagine a universe where you have three possible locations, or states, which we'll call home, office and bowling alley. Those three states are linked by probabilities, which represent the likelihood that you'll move from one to the other. 
 
 At any given moment when you're home, there is a low probability of you going to the bowling alley, let's say 10%, a midsize one of going to the office, 40%, and a high one of you remaining where you are, let's say 50%. The probabilities exiting any one state should always add up to 100%.
 
