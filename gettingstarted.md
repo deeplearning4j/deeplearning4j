@@ -21,7 +21,7 @@ layout: default
         Windows
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-3. Install DL4J either from source or from Maven central. Below are the source instructions. Add the below dependency coordinates in to your Project Object Model (POM).
+3. Install DL4J either from source or from Maven central. Below are the source instructions. Add the below dependency coordinates to your Project Object Model (POM).
 
          git clone https://github.com/agibsonccc/java-deeplearning
 
