@@ -43,7 +43,7 @@ The hidden nodes in subsequent layers of the DBN should allow for states (data c
 
 So maybe from your initial Market Street data point, you would have a 50 percent chance of ending up with Van Ness as well; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from the deeper node of Market + Van Ness, you have a *99 percent chance* of ending up classified as San Francisco. The same goes for New York and Seattle, respectively. 
 
-Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two bars to cross forming four 90 degree angles. Thus, enlarging the groups of features identified at once also increases the likelihood that those increasingly rare feature-groups correlate with a single numeral-image. 
+Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two bars to cross forming four 90 degree angles. Thus, enlarging the groups of features per node as you move deeper also raises the likelihood that those increasingly rare feature-groups correlate with a single numeral-image. 
 
 ### markov chains
 
