@@ -47,9 +47,9 @@ Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less v
 
 ### markov chains
 
-RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov chains are essentially logical circuits that connect two or more states via probabilities. 
+RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov Chains are essentially logical circuits that connect two or more states via probabilities. A sequence of coin flips, a series of die rolls, [Rozencrantz and Guildenstern marching toward their fate](https://en.wikipedia.org/wiki/Rosencrantz_and_Guildenstern_Are_Dead). 
 
-Let's explore that idea with another absurdly long analogy. 
+Let's explore this idea with another absurdly long analogy. 
 
 Let's imagine a universe where you have three possible locations, or states, which we'll call home, office and bowling alley. Those three states are linked by probabilities, which represent the likelihood that you'll move from one to the other. 
 
