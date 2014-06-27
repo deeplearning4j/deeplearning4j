@@ -21,7 +21,7 @@ layout: default
         Windows
         See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-3. Install either from source or Maven central. Below are the source instructions. Add the below dependency coordinates in to your pom, otherwise.
+3. Install DL4J either from source or from Maven central. Below are the source instructions. Add the below dependency coordinates in to your Project Object Model (POM).
 
          git clone https://github.com/agibsonccc/java-deeplearning
 
@@ -31,7 +31,7 @@ layout: default
 
          mvn clean install -DskipTests
 
-4. Use this repo in your pom:
+4. Use this repo in your POM:
 
          <repositories>
              <repository>
@@ -58,7 +58,7 @@ layout: default
 			<version>0.0.3.2-SNAPSHOT</version>
 		</dependency>
 
-7. For NLP, use:
+7. For natural-language processing (NLP), use:
          
          <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -66,6 +66,6 @@ layout: default
             <version>0.0.3.2-SNAPSHOT</version>
          </dependency>
 
-From here, you can check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
+From here, you may be interested in exploring our [Github repo](https://github.com/agibsonccc/java-deeplearning) or accessing the core through [Maven](http://maven.apache.org/download.cgi).
 
-If you're exploring deep learning, we recommend following our [MNIST tutorial](../rbm-mnist-tutorial.html). If you have a clear idea of how deep learning works and what you want it to do, you can go straight to our section on [custom data sets](../customdatasets.html).
+If you're starting to explore deep learning, we recommend following our [MNIST tutorial](../rbm-mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
