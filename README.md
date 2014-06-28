@@ -5,13 +5,13 @@ DL4J leverages matrix operations built on top of the BLAS linear algebra librari
 
 Includes the following algorithms:
 
-RBM - Restricted Boltzmann Machines
-CRBM - Continuous Restricted Boltzmann Machines
-DBN - Deep belief networks; restricted boltzmann machines stacked as layers
-CDBN - Continuous Deep Belief Networks; continuous layer at the front
-DenoisingAutoEncoders
-SDA- Stacked Denoising AutoEncoders
-Deep Autoencoders
+* RBM - Restricted Boltzmann Machines
+* CRBM - Continuous Restricted Boltzmann Machines
+* DBN - Deep belief networks; restricted boltzmann machines stacked as layers
+* CDBN - Continuous Deep Belief Networks; continuous layer at the front
+* DenoisingAutoEncoders
+* SDA- Stacked Denoising AutoEncoders
+* Deep Autoencoders
 
 Typically building a network will look something like this.
 
@@ -23,7 +23,9 @@ Typically building a network will look something like this.
 
 Configuration is based on the constants specified in DeepLearningConfigurable.
 
-  Usage for the command line app: com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor.ActorNetworkRunnerApp
+Usage for the command line app: 
+
+        com.ccc.sendalyzeit.textanalytics.algorithms.deeplearning.sda.matrix.jblas.iterativereduce.actor.ActorNetworkRunnerApp
  
    Options:
        
