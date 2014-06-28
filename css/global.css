@@ -14,7 +14,7 @@ body {
 
 #navigation {
   display: block;
-  position: fixed;
+  position: relative;
   z-index: 1;
   display: inline-block;
   width: 100%;
