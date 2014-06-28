@@ -4,7 +4,7 @@ layout: default
 
 # what is deeplearning4j?
 
-Deeplearning4j is the first commercial-grade deep-learning library written in Java. It is meant to be used in business environments, rather than as a research tool for extensive data exploration. Deeplearning4j is most helpful in solving distinct problems, like identifying faces, voices, spam or e-commerce fraud. 
+Deeplearning4j is the first commercial-grade deep-learning library written in Java. It is meant to be used in business environments, rather than as a research tool for extensive data exploration. Deeplearning4j is most helpful in solving distinct problems, like identifying [faces](../facial-reconstruction-tutorial.html), voices, spam or e-commerce fraud. 
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. This Java deep-learning library has a domain-specific language (DSL) for neural networks, to turn their multiple knobs. 
 
