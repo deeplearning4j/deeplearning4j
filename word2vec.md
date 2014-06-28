@@ -6,7 +6,7 @@ layout: default
 *previous* - [bag of words - tf-idf](../bagofwords-tf-idf.html)
 # word2vec
 
-*to see our Word2vec code, skip to the [training section](../word2vec.html#/training1)*
+*to see our Word2vec code, skip to the [training section](../word2vec.html#training1)*
 
 One of deep learning's chief applications is in textual analysis, and at the heart of text analysis is [Word2vec](https://code.google.com/p/word2vec/). Word2vec is an algorithm that does not implement deep learning, but is crucial to getting input in a numerical form that deep-learning nets can ingest -- the [vector](https://www.khanacademy.org/math/linear-algebra/vectors_and_spaces/vectors/v/vector-introduction-linear-algebra). 
 
