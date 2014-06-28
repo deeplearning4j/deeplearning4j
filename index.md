@@ -8,7 +8,7 @@ Deeplearning4j is the first commercial-grade deep learning library written in Ja
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration. By following its conventions, you get an infinitely scalable deep-learning architecture. The framework has a domain-specific language (DSL) for neural networks, to turn their multiple knobs. 
 
-Deeplearning4j includes a **distributed deep-learning framework** and a normal deep-learning framework; i.e. it runs on a single thread as well. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via [iterative reduce](https://github.com/jpatanooga/KnittingBoar/wiki/Iterative-Reduce).
+Deeplearning4j includes a **distributed deep-learning framework** and a normal deep-learning framework; i.e. it runs on a single thread as well. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce.
 
 The distributed framework is made for data input and neural net training at scale, and its output should be highly accurate predictive models. 
 
