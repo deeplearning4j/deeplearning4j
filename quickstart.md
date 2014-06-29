@@ -9,7 +9,7 @@ layout: default
 
 #quickstart
 
-If you don't have Java installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
+If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
 
 	Mac OS X x64 185.94 MB -  jdk-7u60-macosx-x64.dmg
 
@@ -64,4 +64,6 @@ can be entered into the command line as
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
 
-By now, you should have trained your first neural net. Congratulations. It's time to start thinking about how to train it on other data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
+By this point, you should have trained your first neural net. Congratulations. (If you haven't, please [let us know](groups.google.com/forum/#!forum/deeplearning4j)!)
+
+Now it's time to start thinking about how to train it on other data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
