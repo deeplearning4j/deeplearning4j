@@ -232,9 +232,9 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             AutoEncoder layer = (AutoEncoder) getLayers()[i];
             layer.setInput(currInput);
 
-            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations)
+            if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations) {
                 currInput = layer.reconstruct(currInput);
-
+            }
             else  if(sampleFromHiddenActivations)
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
 
@@ -302,11 +302,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         List<DoubleMatrix> activations = feedForward();
         DoubleMatrix[] deltas = new DoubleMatrix[activations.size() - 1];
         DoubleMatrix[] preCons = new DoubleMatrix[activations.size() - 1];
-
+        log.info("Activation sum " + activations.get(activations.size() - 1).sum());
 
         //- y - h
         DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
-
+        log.info("Ix sum " + ix.sum());
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
