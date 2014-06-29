@@ -104,7 +104,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
         DoubleMatrix diff = input.sub(out);
 
         DoubleMatrix wGradient = diff.transpose().mmul(W);
-        DoubleMatrix hBiasGradient = wGradient.columnMeans();
+        DoubleMatrix hBiasGradient = wGradient.columnSums();
         DoubleMatrix vBiasGradient = DoubleMatrix.zeros(vBias.rows,vBias.columns);
 
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);

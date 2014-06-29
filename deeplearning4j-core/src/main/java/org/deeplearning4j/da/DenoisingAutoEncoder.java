@@ -387,16 +387,14 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         DoubleMatrix y = getHiddenValues(corruptedX);
 
         DoubleMatrix z = getReconstructedInput(y);
-        DoubleMatrix L_h2 =  input.sub(z);
-        DoubleMatrix L_h1 = sparsity == 0 ? L_h2.mmul(W).mul(y).mul(oneMinus(y)) : L_h2.mmul(W).mul(y).mul(y.add(- sparsity));
+        DoubleMatrix visibleLoss =  input.sub(z);
+        DoubleMatrix hiddenLoss = sparsity == 0 ? visibleLoss.mmul(W).mul(y).mul(oneMinus(y)) : visibleLoss.mmul(W).mul(y).mul(y.add(- sparsity));
 
-        DoubleMatrix L_vbias = L_h2;
-        DoubleMatrix L_hbias = L_h1;
 
-        DoubleMatrix wGradient = corruptedX.transpose().mmul(L_h1).add(L_h2.transpose().mmul(y));
+        DoubleMatrix wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
 
-        DoubleMatrix hBiasGradient = L_hbias.columnMeans();
-        DoubleMatrix vBiasGradient = L_vbias.columnMeans();
+        DoubleMatrix hBiasGradient = hiddenLoss.columnMeans();
+        DoubleMatrix vBiasGradient = visibleLoss.columnMeans();
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(gradient,iteration, lr);

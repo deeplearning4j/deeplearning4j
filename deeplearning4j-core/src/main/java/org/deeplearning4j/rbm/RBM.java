@@ -287,7 +287,7 @@ public class RBM extends BaseNeuralNetwork {
      * @return the free energy for this sample
      */
     public double freeEnergy(DoubleMatrix visibleSample) {
-        DoubleMatrix wxB = visibleSample.mmul(W).addRowVector(hBias);
+        DoubleMatrix wxB = visibleSample.mmul(W).addiRowVector(hBias);
         double vBiasTerm = SimpleBlas.dot(visibleSample, vBias);
         double hBiasTerm = log(exp(wxB).add(1)).sum();
         return -hBiasTerm - vBiasTerm;

@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
@@ -14,6 +15,10 @@ import org.deeplearning4j.transformation.MatrixTransform;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.deeplearning4j.util.MatrixUtil.assertNaN;
+import static org.jblas.MatrixFunctions.pow;
+import static org.jblas.MatrixFunctions.powi;
 
 
 /**
@@ -129,6 +134,89 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
 
+    /* delta computation for back prop with the R operator */
+    @Override
+    public  List<DoubleMatrix> computeDeltasR(DoubleMatrix v) {
+        List<DoubleMatrix> deltaRet = new ArrayList<>();
+        DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 1];
+        List<DoubleMatrix> activations = feedForward();
+        List<DoubleMatrix> rActivations = feedForwardR(activations,v);
+      /*
+		 * Precompute activations and z's (pre activation network outputs)
+		 */
+        List<DoubleMatrix> weights = new ArrayList<>();
+        List<DoubleMatrix> biases = new ArrayList<>();
+        List<ActivationFunction> activationFunctions = new ArrayList<>();
+
+
+        for(int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            biases.add(getLayers()[j].gethBias());
+            AutoEncoder a = (AutoEncoder) getLayers()[j];
+            activationFunctions.add(a.getAct());
+        }
+
+        weights.add(getOutputLayer().getW());
+        biases.add(getOutputLayer().getB());
+        activationFunctions.add(outputLayer.getActivationFunction());
+
+        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).divi(input.rows);
+
+        //errors
+        for(int i = getnLayers(); i >= 0; i--) {
+            //W^t * error^l + 1
+            deltas[i] =  activations.get(i).transpose().mmul(rix);
+            applyDropConnectIfNecessary(deltas[i]);
+
+            if(i > 0)
+                rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
+
+
+
+
+        }
+
+        for(int i = 0; i < deltas.length; i++) {
+            if(constrainGradientToUnitNorm)
+                deltaRet.add(deltas[i].div(deltas[i].norm2()));
+
+            else
+                deltaRet.add(deltas[i]);
+        }
+
+        return deltaRet;
+    }
+
+
+    /**
+     * Feed forward with the r operator
+     * @param v the v for the r operator
+     * @return the activations based on the r operator
+     */
+    @Override
+    public List<DoubleMatrix> feedForwardR(List<DoubleMatrix> acts,DoubleMatrix v) {
+        List<DoubleMatrix> R = new ArrayList<>();
+        R.add(DoubleMatrix.zeros(input.rows,input.columns));
+        List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = unPack(v);
+        List<DoubleMatrix> W = weightMatrices();
+
+        for(int i = 0; i < layers.length; i++) {
+            ActivationFunction derivative = getSigmoidLayers()[i].getActivationFunction();
+            if(getLayers()[i] instanceof AutoEncoder) {
+                AutoEncoder a = (AutoEncoder) getLayers()[i];
+                derivative = a.getAct();
+            }
+
+            //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
+            R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
+        }
+
+        //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
+        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).addi(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).muli((outputLayer.getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
+
+        return R;
+    }
+
     /**
      * Compute activations from input to output of the output layer
      * @return the list of activations for each layer
@@ -147,16 +235,16 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             if(getSampleOrActivate() != null && getSampleOrActivate().get(i) != null && getSampleOrActivate().get(i) || !sampleFromHiddenActivations)
                 currInput = layer.reconstruct(currInput);
 
-
-
-            else  if(sampleFromHiddenActivations) {
+            else  if(sampleFromHiddenActivations)
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
-            }
+
             else
                 currInput = layer.sampleHiddenGivenVisible(currInput).getSecond();
 
 
             activations.add(currInput);
+
+
         }
 
 
@@ -208,7 +296,60 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
     }
 
+    /* delta computation for back prop with precon for SFH */
+    public  List<Pair<DoubleMatrix,DoubleMatrix>>  computeDeltas2() {
+        List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet = new ArrayList<>();
+        List<DoubleMatrix> activations = feedForward();
+        DoubleMatrix[] deltas = new DoubleMatrix[activations.size() - 1];
+        DoubleMatrix[] preCons = new DoubleMatrix[activations.size() - 1];
 
+
+        //- y - h
+        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
+
+       	/*
+		 * Precompute activations and z's (pre activation network outputs)
+		 */
+        List<DoubleMatrix> weights = new ArrayList<>();
+        List<DoubleMatrix> biases = new ArrayList<>();
+
+        List<ActivationFunction> activationFunctions = new ArrayList<>();
+        for(int j = 0; j < getLayers().length; j++) {
+            weights.add(getLayers()[j].getW());
+            biases.add(getLayers()[j].gethBias());
+            AutoEncoder a = (AutoEncoder) getLayers()[j];
+            activationFunctions.add(a.getAct());
+        }
+
+        biases.add(getOutputLayer().getB());
+        weights.add(getOutputLayer().getW());
+        activationFunctions.add(outputLayer.getActivationFunction());
+
+
+
+        //errors
+        for(int i = weights.size() - 1; i >= 0; i--) {
+            deltas[i] = activations.get(i).transpose().mmul(ix);
+            preCons[i] = powi(activations.get(i).transpose(),2).mmul(pow(ix, 2)).muli(labels.rows);
+            applyDropConnectIfNecessary(deltas[i]);
+
+            if(i > 0) {
+                //W[i] + b[i] * f'(z[i - 1])
+                ix = ix.mmul(weights.get(i).transpose()).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
+            }
+        }
+
+        for(int i = 0; i < deltas.length; i++) {
+            if(constrainGradientToUnitNorm)
+                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2()),preCons[i]));
+
+            else
+                deltaRet.add(new Pair<>(deltas[i],preCons[i]));
+
+        }
+
+        return deltaRet;
+    }
 
     public OutputLayer.LossFunction getOutputLayerLossFunction() {
         return outputLayerLossFunction;
@@ -277,7 +418,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder outputLayerWeightInit(WeightInit outputLayerWeightInit) {
-             super.outputLayerWeightInit(outputLayerWeightInit);
+            super.outputLayerWeightInit(outputLayerWeightInit);
             return this;
         }
 
@@ -289,7 +430,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder weightInitByLayer(Map<Integer, WeightInit> weightInitByLayer) {
-             super.weightInitByLayer(weightInitByLayer);
+            super.weightInitByLayer(weightInitByLayer);
             return this;
         }
 
@@ -301,7 +442,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder weightInit(WeightInit weightInit) {
-             super.weightInit(weightInit);
+            super.weightInit(weightInit);
             return this;
         }
 
@@ -314,7 +455,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder concatBiases(boolean concatBiases) {
-             super.concatBiases(concatBiases);
+            super.concatBiases(concatBiases);
             return this;
         }
 
@@ -326,7 +467,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder useGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-             super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
+            super.useGaussNewtonVectorProductBackProp(useGaussNewtonVectorProductBackProp);
             return this;
         }
 
@@ -338,7 +479,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder useDropConnection(boolean useDropConnect) {
-             super.useDropConnection(useDropConnect);
+            super.useDropConnection(useDropConnect);
             return this;
         }
 
@@ -350,7 +491,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
          */
         @Override
         public Builder outputLayerDropout(double outputLayerDropout) {
-             super.outputLayerDropout(outputLayerDropout);
+            super.outputLayerDropout(outputLayerDropout);
             return this;
         }
 
@@ -782,7 +923,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
             HiddenLayer[] hiddenLayers = new HiddenLayer[encoder.getLayers().length * 2 - 1];
             for(int i = 0; i < autoEncoders.length; i++) {
                 if(i < encoder.getLayers().length) {
-                    AutoEncoder a = new AutoEncoder.Builder().withActivation(i < encoder.getLayers().length - 1 ? Activations.sigmoid() : Activations.linear())
+                    AutoEncoder a = new AutoEncoder.Builder().withActivation(encoder.getSigmoidLayers()[i].getActivationFunction())
                             .numberOfVisible(encoder.getLayers()[i].getnVisible())
                             .numHidden(encoder.getLayers()[i].getnHidden()).constrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm())
                             .withWeights(encoder.getLayers()[i].getW().dup())
@@ -802,19 +943,17 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
                             .withRandom(encoder.getLayers()[i].getRng())
                             .build();
 
-                    //code layer linear
-                    if(i == encoder.getLayers().length - 1) {
-                        a.act = Activations.linear();
-                    }
+
 
                     HiddenLayer h = encoder.getSigmoidLayers()[i].clone();
-                    h.setActivationFunction(Activations.linear());
                     hiddenLayers[i] = h;
                     autoEncoders[i] = a;
+                    if(i == encoder.getLayers().length - 1)
+                        a.setAct(Activations.linear());
 
                 }
                 else {
-                    AutoEncoder a = new AutoEncoder.Builder()
+                    AutoEncoder a = new AutoEncoder.Builder().withActivation(encoder.getSigmoidLayers()[inverseCount].getActivationFunction())
                             .numberOfVisible(encoder.getLayers()[inverseCount].getnHidden())
                             .numHidden(encoder.getLayers()[inverseCount].getnVisible()).constrainGradientToUnitNorm(encoder.isConstrainGradientToUnitNorm())
                             .momentumAfter(encoder.getLayers()[inverseCount].getMomentumAfter())
@@ -836,7 +975,6 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
                     autoEncoders[i] = a;
                     hiddenLayers[i] = encoder.getSigmoidLayers()[inverseCount].transpose();
-                    hiddenLayers[i].setActivationFunction(Activations.linear());
                     inverseCount--;
                 }
             }
