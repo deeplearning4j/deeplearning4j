@@ -33,7 +33,9 @@ But let's stick with the city and take just two features together. If an urban d
 
 Now let’s imagine both the numeral-images and invisible cities as maps whose points are connected to each other as probabilities. If you start from a curve on an 8 (even if you don’t know it’s an 8), the probability of landing on another curve at some point is nearly 100%; if you are on a five, that probability is lower. 
 
-Likewise, if you start from Market in San Francisco, even if you don’t know you are in San Francisco, you have a high probability of crossing Van Ness at some point, given that the two streets bisect the city and cross each other at the center.
+Likewise, if you start from Market in San Francisco, even if you don’t know you are in San Francisco, you have a high probability of hitting Van Ness at some point, given that the two streets bisect the city and cross each other at the center.
+
+![Alt text](../img/oldSF.png)
 
 The simple feature of hitting Market St (which is on an early hidden layer of the deep-belief net) leads to another feature, both more complex and more rare, of hitting both Market and Van Ness, which would be represented on a later node layer aggregating the two features.
 
