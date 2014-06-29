@@ -6,6 +6,7 @@ import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
+import org.deeplearning4j.util.SummaryStatistics;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
-    private DoubleMatrix ch,gradient,p,preCon,xi;
+    private DoubleMatrix ch,gradient,p,xi;
     private NeuralNetEpochListener listener;
     private double pi = 0.5;
     private double decrease = 0.99;
@@ -91,41 +92,32 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     /* run conjugate gradient for numIterations */
-    private Pair<List<Integer>,List<DoubleMatrix>> conjGradient(int numIterations) {
+    private Pair<List<Integer>,List<DoubleMatrix>> conjGradient(DoubleMatrix b,DoubleMatrix x0,DoubleMatrix preCon,int numIterations) {
         List<Integer> is = new ArrayList<>();
         List<DoubleMatrix> xs = new ArrayList<>();
 
         //in the pseudo code the gradient is b
         //x0 is ch
-        DoubleMatrix r = network.getBackPropRGradient(ch).subi(gradient);
+        DoubleMatrix r = network.getBackPropRGradient(x0).subi(b);
         DoubleMatrix y = r.div(preCon);
-        log.info("Precon mean " + preCon.mean());
-        log.info("R  mean " + r.mean());
-        log.info("Y mean " + y.mean());
-        log.info("Gradient mean " + gradient.mean());
-        p = y.neg();
-        double mean = p.mean();
-
-        //initial x
-        DoubleMatrix x = ch;
         double deltaNew = r.mul(y).sum();
+        p = y.neg();
+        //initial x
+        DoubleMatrix x = x0;
+
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
 
 
             DoubleMatrix Ap = network.getBackPropRGradient(p);
 
-            log.info("P mean for iteration " + iterationCount + " is " + p.mean());
-
-
             //think Ax + b, this is the curvature
             double pAp = Ap.mul(p).sum();
-            log.info("pAp for iteration " + iterationCount +   " is " + pAp);
             if(pAp < 0)
                 log.warn("Negative curve!");
 
 
-            double val = 0.5 * SimpleBlas.dot(ch.neg().addi(r).transpose(), x);
+            double val = 0.5 * SimpleBlas.dot(b.neg().add(r).transpose(), x);
 
             log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
 
@@ -136,19 +128,16 @@ public class StochasticHessianFree implements OptimizerMatrix {
             x.addi(p.mul(alpha));
 
             //conjugate gradient
-            DoubleMatrix rNew = r.add(Ap.mul(alpha));
-            DoubleMatrix yNew = rNew.div(preCon);
+            DoubleMatrix rNew = r.add(Ap.muli(alpha));
+            DoubleMatrix yNew = rNew.divi(preCon);
             double deltaOld = deltaNew;
             deltaNew = rNew.mul(yNew).sum();
             double beta = deltaNew / deltaOld;
-            log.info("Beta for iteration " + iterationCount + " is " + beta);
             p = yNew.neg().add(p.mul(beta));
             r = rNew;
-            val = 0.5 * SimpleBlas.dot(ch.neg().addi(r).transpose(), x);
-            log.info("Value for " + iterationCount + " is " + val);
             //append to the steps taken
             is.add(iterationCount);
-            xs.add(x);
+            xs.add(x.dup());
 
 
 
@@ -158,10 +147,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
     //setup baseline conjugate gradient and run it for n iterations
-    private Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix> runConjugateGradient(int numIterations) {
-        Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(numIterations);
+    private Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix> runConjugateGradient(DoubleMatrix preCon,int numIterations) {
+        Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(gradient.dup(),ch.dup(),preCon,numIterations);
         ch = cg.getSecond().get(cg.getSecond().size() - 1);
-        p = ch.dup();
 
         return new Triple<>(ch,cg.getSecond(),ch);
     }
@@ -175,22 +163,27 @@ public class StochasticHessianFree implements OptimizerMatrix {
      */
     public double lineSearch(double newScore,DoubleMatrix params) {
         double rate = 1.0;
-        double c = 1e-2;
+        double c = Math.pow(1,-2);
         int j = 0;
-
-        while(j < 60) {
+        int numSearches = 60;
+        while(j < numSearches) {
             //converged
-            if(newScore <= gradient.mul(p).mul(score + c * rate).sum())
+            if(newScore <= gradient.mul(p).mul(score + c * rate).columnSums().sum()) {
                 break;
-            else
+            }
+            else {
                 rate *= 0.8;
+                j++;
+            }
+
             //explore in this direction and obtain a score
             newScore = network.score(params.add(p.mul(rate)));
         }
 
-        if(j == 60)
+        if(j == numSearches) {
             rate = 0.0;
-
+            log.info("Went too far...reverting rate to 0");
+        }
 
 
         return rate;
@@ -203,29 +196,30 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * Iterate through the current set of gradients
      * and backtrack upon an optimal step
      * that improves the current score
-     * @param p the point to start at
      * @param chs the proposed changes
      * @return the new changed path and score for that path
      */
-    public Pair<DoubleMatrix,Double> cgBackTrack(DoubleMatrix p,List<DoubleMatrix> chs) {
+    public Pair<DoubleMatrix,Double> cgBackTrack(List<DoubleMatrix> chs) {
         DoubleMatrix params = network.params();
         double score = network.score(p.add(params));
+        double currMin = network.score();
         int i = chs.size() - 2;
+
         for(; i > 0; i--) {
             double score2 = network.score(params.add(chs.get(i)));
             if(score2 < score) {
                 i++;
+                score = score2;
+                log.info("Breaking on new score " + score2 + " with iteration " + i + " with current minimum of " + currMin);
                 break;
             }
-            score = score2;
+
+            log.info("Trial " + i + " with trial score of " + score);
 
         }
 
-        if(chs.isEmpty()) {
-            log.warn("No chs; exiting with old ch value");
-        }
-        DoubleMatrix ret = !chs.isEmpty() && i >= 0 ? chs.get(i) : ch;
-        return new Pair<>(ret,score);
+
+        return new Pair<>(chs.get(i),score);
     }
 
 
@@ -235,64 +229,42 @@ public class StochasticHessianFree implements OptimizerMatrix {
         if (converged)
             return true;
         score = network.score();
-        xi = optimizable.getParameters();
-        BaseMultiLayerNetwork revert = network.clone();
 
-        for(int i = 0; i < numIterations; i++) {
-            //investigate way params are being referenced/saved, this is probably the root of the erotic behavior below
+        xi = network.params();
 
 
-            //initial gradient, precon/conjugate gradient conditioner
-            Pair<DoubleMatrix,DoubleMatrix> backPropGradient = network.getBackPropGradient2();
-
-            gradient = backPropGradient.getFirst().neg();
-            log.info("Gradient mean " + gradient.mean());
-            preCon = backPropGradient.getSecond();
-            log.info("precon mean " + preCon.mean());
-
-            if(ch == null)
-                setup();
-
-            ch.muli(pi);
-
-            Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix>  cg = runConjugateGradient(numIterations);
-
-            p = cg.getFirst();
-
-            Pair<DoubleMatrix,Double> cgBackTrack = cgBackTrack(cg.getFirst(),cg.getSecond());
-
-            p = cgBackTrack.getFirst();
-
-            double rho = network.reductionRatio(cgBackTrack.getFirst(),network.score(),cgBackTrack.getSecond(),gradient);
-            DoubleMatrix revertParams = xi.dup();
-            double newScore = network.score(xi);
-            try {
-                step = lineSearch(newScore,ch);
-                network.dampingUpdate(rho,boost,decrease);
-                xi.addi(p.mul(f * step));
-
-            }catch(Exception e) {
-                log.warn("Rejected update; continuing");
-            }
 
 
-            newScore = network.score(xi);
-            if(newScore < score) {
-                score = newScore;
-                revert = network.clone();
-                network.setParameters(xi.dup());
-                log.info("New score " + score);
+        //initial gradient, precon/conjugate gradient conditioner
+        Pair<DoubleMatrix,DoubleMatrix> backPropGradient = network.getBackPropGradient2();
 
-            }
+        gradient = backPropGradient.getFirst().neg();
 
-            else {
-                xi = revertParams;
-                network.update(revert);
-                log.info("Reverting to score " + score + " from  " + newScore);
+        DoubleMatrix preCon = backPropGradient.getSecond();
 
-            }
+        if(ch == null)
+            setup();
 
-        }
+        ch.muli(pi);
+
+        Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix>  cg = runConjugateGradient(preCon,numIterations);
+
+        p = cg.getFirst();
+
+        Pair<DoubleMatrix,Double> cgBackTrack = cgBackTrack(cg.getSecond());
+
+        p = cgBackTrack.getFirst();
+
+        double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
+        double newScore = network.score(cgBackTrack.getFirst());
+
+        step = lineSearch(newScore,gradient);
+        network.dampingUpdate(rho,boost,decrease);
+
+        DoubleMatrix proposedUpdate = xi.add(p.mul(f * step));
+        double proposedUpdateScore = network.score(proposedUpdate);
+        double currScore = network.score();
+        network.setParameters(proposedUpdate);
 
         return true;
     }

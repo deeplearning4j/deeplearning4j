@@ -139,7 +139,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
     @Override
     public void getValueGradient(double[] buffer) {
-        System.arraycopy(network.getBackPropGradient().data,0,buffer,0,buffer.length);
+       throw new UnsupportedOperationException();
     }
 
     @Override
@@ -190,7 +190,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     @Override
     public DoubleMatrix getValueGradient(int iteration) {
 
-        return network.getBackPropGradient();
+        throw new UnsupportedOperationException();
     }
 
 
