@@ -49,9 +49,6 @@ public class BackPropOptimizerTests {
         assertEquals(params.columns,params.length);
         dbn.setLabels(new DoubleMatrix(1,nOuts));
 
-        DoubleMatrix backPropGradient = dbn.getBackPropGradient();
-        assertEquals(1, backPropGradient.rows);
-        assertEquals(backPropGradient.columns, backPropGradient.length);
 
         BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1,1000);
         DoubleMatrix layerParams = op.getParameters();

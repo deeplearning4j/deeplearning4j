@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
@@ -85,6 +86,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
                 network.backProp(lr, iteration);
+
         }
 
         else {

@@ -52,15 +52,6 @@ public class DBNTest {
         assertEquals(params.columns,params.length);
         dbn.setLabels(new DoubleMatrix(1,nOuts));
 
-        DoubleMatrix backPropGradient = dbn.getBackPropGradient();
-        assertEquals(1,backPropGradient.rows);
-        assertEquals(backPropGradient.columns,backPropGradient.length);
-
-        DoubleMatrix firstLayerWeights = dbn.getLayers()[1].getW();
-        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
-        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
-        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
-        log.info("Number at " + (firstLayerWeights.get(1) == params.get(1 + firstLayerWeights.length + dbn.getLayers()[0].gethBias().length)));
 
 
 

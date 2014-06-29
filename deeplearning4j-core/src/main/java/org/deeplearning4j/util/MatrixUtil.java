@@ -982,6 +982,24 @@ public class MatrixUtil {
     }
 
 
+
+    public static DoubleMatrix addColumnVector(DoubleMatrix addTo,DoubleMatrix add) {
+        for(int i = 0; i < addTo.rows; i++) {
+            addTo.putRow(i,addTo.getRow(i).addi(add.get(i)));
+        }
+
+        return addTo;
+    }
+
+    public static DoubleMatrix addRowVector(DoubleMatrix addTo,DoubleMatrix add) {
+         for(int i = 0; i < addTo.rows; i++) {
+             addTo.putRow(i,addTo.getRow(i).addi(add.get(i)));
+         }
+
+        return addTo;
+    }
+
+
     public static void assertNaN(Collection<DoubleMatrix> matrices) {
         int count = 0;
         for(DoubleMatrix d : matrices) {

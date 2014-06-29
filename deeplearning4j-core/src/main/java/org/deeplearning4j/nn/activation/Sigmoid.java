@@ -17,8 +17,8 @@ public class Sigmoid extends BaseActivationFunction {
 	private static final long serialVersionUID = -6280602270833101092L;
 
 	@Override
-	public DoubleMatrix apply(DoubleMatrix arg0) {
-		return sigmoid(arg0);
+	public DoubleMatrix apply(DoubleMatrix input) {
+		return sigmoid(input);
 	}
 
 	@Override
