@@ -1495,7 +1495,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l).columnSums().div(input.rows);
+            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans().div(input.rows);
 
 
 
