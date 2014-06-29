@@ -7,7 +7,7 @@ layout: default
 # understanding RBMs
 
 Restricted Boltzmann machines are at the heart of many deep-learning nets, so their mechanism deserves a bit more attention. 
-To walk through the process of how an RBM works, we’ll use the example of MNIST, a collection of images representing the handwritten numerals one through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
+To walk through the process of how an RBM works, we’ll use the example of [MNIST](../rbm-mnist-tutorial.html), a collection of images representing the handwritten numerals one through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
 
 Each RBM has just two "node" layers, a visible layer and a hidden one. The first, visible, layer receives input; that is, the data you feed into the net to be learned. You can think of the RBM's input nodes as receptacles into which random samples of data are placed. They’re data boxes, each holding a data point, which in the initial layer would be a sampling of pixels. 
 
