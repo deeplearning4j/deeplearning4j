@@ -214,7 +214,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
                 break;
             }
 
-            log.info("Trial " + i + " with trial score of " + score);
+            log.info("Trial " + i + " with trial score of " + score2);
 
         }
 
