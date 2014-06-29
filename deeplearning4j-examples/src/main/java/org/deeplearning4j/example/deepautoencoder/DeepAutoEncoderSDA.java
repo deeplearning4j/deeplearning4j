@@ -39,9 +39,9 @@ public class DeepAutoEncoderSDA {
 
     public static void main(String[] args) throws Exception {
        // DataSet d = SerializationUtils.readObject(new File(args[0]));
-        DataSet d = new MnistDataSetIterator(100,100).next();
+        DataSet d = new MnistDataSetIterator(60000,60000).next();
         //d = new ListDataSetIterator(d.asList(),100).next();
-        DataSetIterator iter  = new MultipleEpochsIterator(10,new ReconstructionDataSetIterator(new ListDataSetIterator(d.asList(),100)));
+        DataSetIterator iter  = new MultipleEpochsIterator(250,new ReconstructionDataSetIterator(new ListDataSetIterator(d.asList(),1000)));
 
         int codeLayer = 3;
 
@@ -82,6 +82,8 @@ public class DeepAutoEncoderSDA {
 
 
         iter.reset();
+
+        SerializationUtils.saveObject(a,new File("deepautoencoder.ser"));
 
         while (iter.hasNext()) {
             DataSet data = iter.next();
