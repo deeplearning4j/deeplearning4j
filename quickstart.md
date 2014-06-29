@@ -48,7 +48,7 @@ Now you should see evidence that the neural net has begun to train. Look at the 
 
 At the end of the training, you should see some numerals pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net works, and they look like this.
 
-![Alt text](../img/two.png)
+![Alt text](../img/two.png)![Alt text](../img/nine.png)
 
 Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run.
 
