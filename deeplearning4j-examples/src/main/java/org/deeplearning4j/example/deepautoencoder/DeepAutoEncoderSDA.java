@@ -38,10 +38,10 @@ public class DeepAutoEncoderSDA {
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
-       // DataSet d = SerializationUtils.readObject(new File(args[0]));
-        DataSet d = new MnistDataSetIterator(60000,60000).next();
-        //d = new ListDataSetIterator(d.asList(),100).next();
-        DataSetIterator iter  = new MultipleEpochsIterator(250,new ReconstructionDataSetIterator(new ListDataSetIterator(d.asList(),1000)));
+        DataSet d = SerializationUtils.readObject(new File(args[0]));
+        //DataSet d = new MnistDataSetIterator(60000,60000).next();
+        d = new ListDataSetIterator(d.asList(),100).next();
+        DataSetIterator iter  = new MultipleEpochsIterator(10,new ReconstructionDataSetIterator(new ListDataSetIterator(d.asList(),10)));
 
         int codeLayer = 3;
 
@@ -56,8 +56,8 @@ public class DeepAutoEncoderSDA {
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
                 .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(false)
                 .hiddenLayerSizes(new int[]{1000, 500, 250, 30}).withRng(rng)
-                .activateForLayer(Collections.singletonMap(3, Activations.sigmoid())).useGaussNewtonVectorProductBackProp(true)
-                .numberOfInputs(784).sampleFromHiddenActivations(false).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
+                .activateForLayer(Collections.singletonMap(3, Activations.sigmoid())).useGaussNewtonVectorProductBackProp(false)
+                .numberOfInputs(784).sampleFromHiddenActivations(false).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .lineSearchBackProp(false).useRegularization(false).forceEpochs()
                 .withL2(0).lineSearchBackProp(true)
                 .withOutputActivationFunction(Activations.sigmoid())
@@ -68,9 +68,15 @@ public class DeepAutoEncoderSDA {
         //log.info("Begin training ");
 
 
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            dbn.pretrain(next.getFirst(),1e-1,0.3,1000);
+        }
 
+        iter.reset();
         DeepAutoEncoder a = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
-        a.setLineSearchBackProp(true);
+        a.setLineSearchBackProp(false);
+        a.setForceNumEpochs(true);
         while(iter.hasNext()) {
             DataSet next = iter.next();
             a.setInput(next.getFirst());
