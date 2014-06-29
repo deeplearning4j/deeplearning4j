@@ -61,6 +61,14 @@ For example, the file at
 can be entered into the command line as 
 
 		java -cp "lib/*" org.deeplearning4j.example.convnet.mnist.MnistConvNetTest
+		
+Here are a few other examples you can run, which take about as long as Mnist
+
+		java -cp "lib/*" org.deeplearning4j.example.mnist.MnistExampleMultiThreaded.java
+		
+		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
+		
+		java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
 
