@@ -42,7 +42,7 @@ Once you've made the the examples folder your current working directory, enter t
 
 		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
 
-Now you should see evidence that the neural net has begun to train. Look at the second-to-last number on the right hand side below. That’s the measure of the net’s error reconstructing a numeral image. As you can see, the error is decreasing, which means the net is learning, and all is well in the world.
+Now you should see evidence that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral image. If the error shrinks, that means your net is learning, and all is well in the world.
 
 ![Alt text](../img/learning.png)
 
@@ -63,3 +63,5 @@ can be entered into the command line as
 		java -cp "lib/*" org.deeplearning4j.example.convnet.mnist.MnistConvNetTest
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
+
+Congratulations. By now, you should have trained your first neural net. It's time to start thinking about how to train it on your own data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
