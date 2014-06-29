@@ -846,7 +846,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
         //- y - h
-        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
+        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).div(labels.rows);
         log.info("Ix mean " + ix.sum());
 
        	/*
@@ -871,17 +871,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         //errors
         for(int i = weights.size() - 1; i >= 0; i--) {
             deltas[i] = activations.get(i).transpose().mmul(ix);
-            double sum = deltas[i].sum();
-            preCons[i] = powi(activations.get(i).transpose(),2).mmul(pow(ix, 2)).muli(labels.rows);
-            sum = preCons[i].sum();
+            log.info("Delta sum at " + i + " is " + deltas[i].sum());
+            preCons[i] = powi(activations.get(i) .transpose(),2).mmul(pow(ix, 2)).mul(labels.rows);
             applyDropConnectIfNecessary(deltas[i]);
 
             if(i > 0) {
                 //W[i] + b[i] * f'(z[i - 1])
                 ix = ix.mmul(weights.get(i).transpose()).muli(activationFunctions.get(i - 1).applyDerivative(activations.get(i)));
-                sum = ix.sum();
-                log.info("Ix sum " + sum);
-            }
+}
         }
 
         for(int i = 0; i < deltas.length; i++) {
@@ -956,6 +953,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
             else
                 deltaRet.add(deltas[i]);
         }
+
+
 
     }
 
@@ -1508,12 +1507,17 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         DoubleMatrix biasGradient = deltas.get(getnLayers()).columnMeans();
 
 
-
-
+        if(mask == null)
+            initMask();
 
 
 
         list.add(new Pair<>(logLayerGradient,biasGradient));
+        DoubleMatrix gradient = pack(list);
+        gradient.addi(mask.mul(params()).mul(l2));
+
+
+        list = unPack(gradient);
 
         return list;
 
@@ -1576,9 +1580,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         if(mask == null)
             initMask();
 
-        g.addi(theta.muli(l2).muli(mask));
+        g.addi(theta.mul(l2).muli(mask));
 
-        DoubleMatrix conAdd = powi(mask.muli(l2).add(valueMatrixOf(dampingFactor, g.rows, g.columns)), 3.0 / 4.0);
+        DoubleMatrix conAdd = powi(mask.mul(l2).add(valueMatrixOf(dampingFactor, g.rows, g.columns)), 3.0 / 4.0);
 
         con.addi(conAdd);
 
@@ -1633,7 +1637,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans();
+            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans().add(1);
             if(deltaColumnSums.length != layers[l].gethBias().length)
                 throw new IllegalStateException("Bias change not equal to weight change");
 
