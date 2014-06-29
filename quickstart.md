@@ -64,4 +64,4 @@ can be entered into the command line as
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
 
-Congratulations. By now, you should have trained your first neural net. It's time to start thinking about how to train it on your own data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
+By now, you should have trained your first neural net. Congratulations. It's time to start thinking about how to train it on other data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
