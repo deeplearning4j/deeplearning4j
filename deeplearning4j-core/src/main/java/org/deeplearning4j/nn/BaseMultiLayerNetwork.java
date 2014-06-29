@@ -778,7 +778,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
                 DoubleMatrix weightsPlusBias = weights.get(i).addRowVector(biases.get(i).transpose()).transpose();
                 DoubleMatrix activation = activations.get(i);
                 if(i > 0)
-                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation)).divi(input.rows);
+                    rix = rix.mmul(weightsPlusBias).mul(activationFunctions.get(i - 1).applyDerivative(activation));
 
 
             }
@@ -1489,7 +1489,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
         List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
 
         for(int l = 0; l < getnLayers(); l++) {
-            DoubleMatrix gradientChange = deltas.get(l).div(input.rows);
+            DoubleMatrix gradientChange = deltas.get(l);
             if(gradientChange.length != getLayers()[l].getW().length)
                 throw new IllegalStateException("Gradient change not equal to weight change");
 
