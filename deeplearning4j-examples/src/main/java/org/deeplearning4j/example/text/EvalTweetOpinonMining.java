@@ -34,7 +34,7 @@ public class EvalTweetOpinonMining {
 
 
         LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is);
-        iterator.set~PreProcessor(new SentencePreProcessor() {
+        iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {
                 return new InputHomogenization(sentence).transform();

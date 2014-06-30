@@ -8,6 +8,7 @@ import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.collection.CollectionReader;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
+import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.util.cr.FilesCollectionReader;
@@ -16,7 +17,6 @@ import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.word2vec.sentenceiterator.BaseSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
-import org.uimafit.util.JCasUtil;
 
 /**
  * Iterates over and returns sentences

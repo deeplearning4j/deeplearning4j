@@ -13,11 +13,11 @@ import java.util.Vector;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.CASException;
+import org.apache.uima.fit.util.JCasUtil;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.springframework.core.io.ClassPathResource;
-import org.uimafit.util.JCasUtil;
 
 import com.google.common.collect.Sets;
 /**
@@ -197,7 +197,7 @@ public class SWN3 implements Serializable {
 	
 	public double score(Sentence sentence) {
 		double totalScore = 0.0;
-		for(Token token : JCasUtil.selectCovered(Token.class,sentence)) {
+		for(Token token : JCasUtil.selectCovered(Token.class, sentence)) {
 			totalScore += extract(token.getCoveredText().toLowerCase());
 		}
 		return totalScore;
