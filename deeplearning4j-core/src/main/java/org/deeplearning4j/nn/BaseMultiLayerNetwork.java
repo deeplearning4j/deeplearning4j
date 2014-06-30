@@ -1637,7 +1637,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans().add(1);
+            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans();
             if(deltaColumnSums.length != layers[l].gethBias().length)
                 throw new IllegalStateException("Bias change not equal to weight change");
 
