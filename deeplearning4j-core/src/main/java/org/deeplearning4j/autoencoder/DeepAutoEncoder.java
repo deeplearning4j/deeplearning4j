@@ -160,7 +160,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         biases.add(getOutputLayer().getB());
         activationFunctions.add(outputLayer.getActivationFunction());
 
-        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).divi(input.rows);
+        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).div(input.rows);
 
         //errors
         for(int i = getnLayers(); i >= 0; i--) {
@@ -201,18 +201,15 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         List<DoubleMatrix> W = weightMatrices();
 
         for(int i = 0; i < layers.length; i++) {
-            ActivationFunction derivative = getSigmoidLayers()[i].getActivationFunction();
-            if(getLayers()[i] instanceof AutoEncoder) {
-                AutoEncoder a = (AutoEncoder) getLayers()[i];
-                derivative = a.getAct();
-            }
+            AutoEncoder a = (AutoEncoder) getLayers()[i];
+            ActivationFunction derivative = a.getAct();
 
             //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-            R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond()))).muli((derivative.applyDerivative(acts.get(i + 1)))));
+            R.add(R.get(i).mmul(W.get(i)).add(acts.get(i).mmul(vWvB.get(i).getFirst().addRowVector(vWvB.get(i).getSecond())).add(1)).mul((derivative.applyDerivative(acts.get(i + 1)))));
         }
 
         //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
-        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).addi(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).muli((outputLayer.getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
+        R.add(R.get(R.size() - 1).mmul(W.get(W.size() - 1)).add(acts.get(acts.size() - 2).mmul(vWvB.get(vWvB.size() - 1).getFirst().addRowVector(vWvB.get(vWvB.size() - 1).getSecond()))).mul((outputLayer.getActivationFunction().applyDerivative(acts.get(acts.size() - 1)))));
 
         return R;
     }
@@ -302,11 +299,9 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         List<DoubleMatrix> activations = feedForward();
         DoubleMatrix[] deltas = new DoubleMatrix[activations.size() - 1];
         DoubleMatrix[] preCons = new DoubleMatrix[activations.size() - 1];
-        log.info("Activation sum " + activations.get(activations.size() - 1).sum());
 
         //- y - h
         DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
-        log.info("Ix sum " + ix.sum());
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */

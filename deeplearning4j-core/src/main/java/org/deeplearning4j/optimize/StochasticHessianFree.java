@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
+import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.jblas.DoubleMatrix;
 import org.jblas.SimpleBlas;
@@ -100,11 +101,14 @@ public class StochasticHessianFree implements OptimizerMatrix {
         double deltaNew = r.mul(y).sum();
         DoubleMatrix p = y.neg();
         //initial x
-        DoubleMatrix x = x0.dup();
+        DoubleMatrix x = x0;
 
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
-
+            if(MatrixUtil.isNaN(p)) {
+                log.warn("P is NaN breaking");
+                break;
+            }
             //log.info("P sum at iteration " + iterationCount + " is " + p.sum());
             //log.info("R sum at iteration " + iterationCount + " is " + r.sum());
 
@@ -112,8 +116,9 @@ public class StochasticHessianFree implements OptimizerMatrix {
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
             //think Ax + b, this is the curvature
             double pAp = Ap.mul(p).sum();
-            if(pAp < 0)
-                log.warn("Negative curve!");
+            if(pAp < 0) {
+                log.info("Negative slope: " + pAp + " breaking");
+            }
 
 
             double val = 0.5 * SimpleBlas.dot(b.neg().add(r).transpose(), x);
@@ -126,25 +131,18 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
             //step size
             double alpha = deltaNew / pAp;
-            //log.info("Alpha at iteration " + iterationCount + " is " + alpha);
-            //log.info("X at iteration " + iterationCount + " before add is " + x.sum());
             //step
             x.addi(p.mul(alpha));
-            //log.info("X at iteration " + iterationCount + " after add is " + x.sum());
-            //log.info("Alpha * AP sum at iteration " + iterationCount + " is " + Ap.mul(alpha).sum());
-            //conjugate gradient
+
+           //conjugate gradient
             DoubleMatrix rNew = r.add(Ap.mul(alpha));
             DoubleMatrix yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
             deltaNew = rNew.mul(yNew).sum();
             double beta = deltaNew / deltaOld;
             p = yNew.neg().add(p.mul(beta));
-            //log.info("P new sum at iteration " + iterationCount + " " + p.sum());
-            //log.info("Y new sum at iteration " + iterationCount + " " + yNew.sum());
 
             r = rNew;
-            //log.info("R new sum at iteration " + iterationCount + " " + rNew.sum());
-            //log.info("Beta " + beta + " at iteration " + iterationCount);
             //append to the steps taken
             is.add(iterationCount);
             xs.add(x.dup());
@@ -172,15 +170,15 @@ public class StochasticHessianFree implements OptimizerMatrix {
      */
     public double lineSearch(double newScore,DoubleMatrix params,DoubleMatrix p) {
         double rate = 1.0;
-        double c = Math.pow(1,-2);
+        double c = 1e-2;
         int j = 0;
-        int numSearches = 100;
+        int numSearches = 60;
         while(j < numSearches) {
             if(10 % numSearches == 0) {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <= gradient.mul(p).mul(score + c * rate).columnSums().sum()) {
+            if(newScore <= gradient.mul(p).mul(score + c * rate).sum()) {
                 break;
             }
             else {
@@ -219,7 +217,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
         for(; i > 0; i--) {
             double score2 = network.score(params.add(chs.get(i)));
-            if(score2 < score) {
+            if(score2 < score || score2 < currMin) {
                 i++;
                 score = score2;
                 log.info("Breaking on new score " + score2 + " with iteration " + i + " with current minimum of " + currMin);
@@ -230,6 +228,8 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
         }
 
+        if(i < 0)
+            i = 0;
 
         return new Pair<>(chs.get(i),score);
     }
