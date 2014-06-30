@@ -1,12 +1,15 @@
 package org.deeplearning4j.text.tokenizerfactory;
 
+
+import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
+import static  org.apache.uima.fit.factory.AnalysisEngineFactory.createEngine;
+
 import java.util.Collection;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
-import org.apache.uima.fit.factory.AnalysisEngineFactory;
-import org.cleartk.token.stem.snowball.DefaultSnowballStemmer;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
+import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenizer.PosUimaTokenizer;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
@@ -37,7 +40,11 @@ public class PosUimaTokenizerFactory implements TokenizerFactory {
 
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {
-            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), PoStagger.getDescription("en"),DefaultSnowballStemmer.getDescription("English")));
+            return createEngine(
+                    createEngineDescription(SentenceAnnotator.getDescription(),
+                            TokenizerAnnotator.getDescription(),
+                            PoStagger.getDescription("en"),
+                            StemmerAnnotator.getDescription("English")));
         }catch(Exception e) {
             throw new RuntimeException(e);
         }

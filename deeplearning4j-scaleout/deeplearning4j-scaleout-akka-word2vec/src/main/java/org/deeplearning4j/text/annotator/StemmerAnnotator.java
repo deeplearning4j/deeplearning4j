@@ -24,34 +24,14 @@ package org.deeplearning4j.text.annotator;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
-import org.apache.uima.cas.FSIterator;
-import org.apache.uima.cas.Type;
+import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.jcas.JCas;
-import org.apache.uima.jcas.tcas.Annotation;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.cleartk.token.stem.snowball.DefaultSnowballStemmer;
-import org.cleartk.token.stem.snowball.SnowballStemmer;
+import org.cleartk.snowball.SnowballStemmer;
 import org.cleartk.token.type.Token;
-import org.cleartk.util.ReflectionUtil;
-import org.tartarus.snowball.SnowballProgram;
-import org.uimafit.descriptor.ConfigurationParameter;
-import org.uimafit.factory.*;
 
-
-import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.uima.UimaContext;
-import org.apache.uima.analysis_engine.AnalysisEngineDescription;
-import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.cleartk.token.type.Token;
-import org.uimafit.factory.AnalysisEngineFactory;
-import org.uimafit.factory.TypeSystemDescriptionFactory;
-import org.uimafit.factory.initializable.InitializableFactory;
-import org.uimafit.util.JCasUtil;
 
 /**
  * This class borrows from {@link org.apache.lucene.analysis.snowball.SnowballFilter}
