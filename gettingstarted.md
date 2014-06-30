@@ -68,4 +68,4 @@ layout: default
 
 From here, you may be interested in exploring our [Github repo](https://github.com/agibsonccc/java-deeplearning) or accessing the core through [Maven](http://maven.apache.org/download.cgi).
 
-If you're starting to explore deep learning, we recommend following our [MNIST tutorial](../rbm-mnist-tutorial.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
+If you're starting to explore deep learning, we recommend following our [MNIST tutorial](../rbm-mnist-tutorial.html) or [running a few examples](../quickstart.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
