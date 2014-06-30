@@ -7,6 +7,7 @@ import org.apache.uima.util.CasPool;
 import org.cleartk.token.stem.snowball.DefaultSnowballStemmer;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
+import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenizer.UimaTokenizer;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
@@ -58,7 +59,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
             return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
                     SentenceAnnotator.getDescription(),
                     TokenizerAnnotator.getDescription(),
-                    DefaultSnowballStemmer.getDescription("English")));
+                    StemmerAnnotator.getDescription("English")));
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
