@@ -7,14 +7,14 @@ import java.util.List;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
-import org.cleartk.token.stem.snowball.DefaultSnowballStemmer;
+import org.apache.uima.fit.util.JCasUtil;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
+import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
-import org.uimafit.util.JCasUtil;
 
 /**
  * Filter by part of speech tag.
@@ -105,7 +105,7 @@ public class PosUimaTokenizer  implements Tokenizer {
 
     public static AnalysisEngine defaultAnalysisEngine()  {
         try {
-            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), PoStagger.getDescription("en"),DefaultSnowballStemmer.getDescription("English")));
+            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(SentenceAnnotator.getDescription(), TokenizerAnnotator.getDescription(), PoStagger.getDescription("en"), StemmerAnnotator.getDescription("English")));
         }catch(Exception e) {
             throw new RuntimeException(e);
         }

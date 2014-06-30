@@ -6,13 +6,12 @@ import java.util.List;
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
+import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.util.CasPool;
-import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.uimafit.util.JCasUtil;
 
 /**
  * Tokenizer based on the passed in analysis engine
@@ -39,7 +38,7 @@ public class UimaTokenizer implements Tokenizer {
 
             cas.setDocumentText(tokens);
             this.engine.process(cas);
-            Collection<Token> tokenList = JCasUtil.select(cas.getJCas(),Token.class);
+            Collection<Token> tokenList = JCasUtil.select(cas.getJCas(), Token.class);
 
             for(Token t : tokenList) {
                 if(valid(t.getCoveredText()))

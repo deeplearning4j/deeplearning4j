@@ -46,6 +46,8 @@ import org.apache.uima.cas.Type;
 import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.fit.component.CasAnnotator_ImplBase;
+import org.apache.uima.fit.factory.AnalysisEngineFactory;
+import org.apache.uima.fit.factory.ExternalResourceFactory;
 import org.apache.uima.resource.ResourceAccessException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
@@ -53,8 +55,7 @@ import org.apache.uima.util.Logger;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.word2vec.util.Util;
-import org.uimafit.factory.AnalysisEngineFactory;
-import org.uimafit.factory.ExternalResourceFactory;
+
 
 
 /**
@@ -244,18 +245,18 @@ public class PoStagger extends CasAnnotator_ImplBase {
 	public static AnalysisEngineDescription getDescription(String languageCode)
       throws ResourceInitializationException {
     String modelPath = String.format("/models/%s-pos-maxent.bin", languageCode);
-    return AnalysisEngineFactory.createPrimitiveDescription(
-    PoStagger.class,
-        opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
-        ExternalResourceFactory.createExternalResourceDescription(
-            POSModelResourceImpl.class,
-            PoStagger.class.getResource(modelPath).toString()),
-        opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER,
-        Sentence.class.getName(),
-        opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER,
-        Token.class.getName(),
-        opennlp.uima.util.UimaUtil.POS_FEATURE_PARAMETER,
-        "pos");
+    return AnalysisEngineFactory.createEngineDescription(
+            PoStagger.class,
+            opennlp.uima.util.UimaUtil.MODEL_PARAMETER,
+            ExternalResourceFactory.createExternalResourceDescription(
+                    POSModelResourceImpl.class,
+                    PoStagger.class.getResource(modelPath).toString()),
+            opennlp.uima.util.UimaUtil.SENTENCE_TYPE_PARAMETER,
+            Sentence.class.getName(),
+            opennlp.uima.util.UimaUtil.TOKEN_TYPE_PARAMETER,
+            Token.class.getName(),
+            opennlp.uima.util.UimaUtil.POS_FEATURE_PARAMETER,
+            "pos");
   }
 
 
