@@ -34,7 +34,6 @@ import java.util.Map;
  */
 public class DeepAutoEncoderSDA {
 
-
     private static Logger log = LoggerFactory.getLogger(DeepAutoEncoderExample.class);
 
     public static void main(String[] args) throws Exception {
@@ -45,13 +44,11 @@ public class DeepAutoEncoderSDA {
 
         int codeLayer = 3;
 
-        /*
-          Reduction of dimensionality with neural nets Hinton 2006
-         */
+        //Reduction of dimensionality with neural nets Hinton 2006
+        
         Map<Integer,Double> layerLearningRates = new HashMap<>();
         layerLearningRates.put(codeLayer,1e-1);
         RandomGenerator rng = new MersenneTwister(123);
-
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
                 .learningRateForLayer(layerLearningRates).constrainGradientToUnitNorm(false)
@@ -67,20 +64,14 @@ public class DeepAutoEncoderSDA {
         //log.info("Training with layers of " + RBMUtil.architecture(dbn));
         //log.info("Begin training ");
 
-
         DeepAutoEncoder a = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         a.setLineSearchBackProp(true);
-
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
             a.setInput(next.getFirst());
             a.finetune(next.getFirst(),1e-1,50);
-
-
-
         }
-
 
         iter.reset();
 
@@ -89,15 +80,9 @@ public class DeepAutoEncoderSDA {
         while (iter.hasNext()) {
             DataSet data = iter.next();
 
-
-
             DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),a,28,28);
             r.setPicDraw(MatrixTransformations.multiplyScalar(255));
             r.draw();
         }
-
-
     }
-
-
 }
