@@ -36,12 +36,9 @@ public class StackedDenoisingAutoEncoderExample {
 
         sda.pretrain(iter, 1, 1e-1, 1);
 
-
         iter.reset();
 
         sda.finetune(iter, 1e-1, 1);
-
-
 
 
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-dbn.bin"));
