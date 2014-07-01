@@ -6,6 +6,8 @@ layout: default
 *previous* - [deep-belief network](../deepbeliefnetwork.html)
 # deep autoencoders
 
+to
+
 Deep autoencoders are a special form of deep-belief net that typically have four or five layers to represent the encoder itself, which is just one half of the net. The layers are a series of RBMs, with several particularities that we'll discuss below. 
 
 Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real-valued data which you would use Gaussian rectified RBMs. 
@@ -64,4 +66,18 @@ Each document’s number set, or vector, is then introduced to the same vector s
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
 
-For a deeper dive, see our Github page on [deep autoencoders](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/deepautoencoder/DeepAutoEncoderExample.java).
+### initiating a deep autoencoder
+
+initiating an RBM
+
+You set up a deep autoencoder like this:
+
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/deepautoencoder/DeepAutoEncoderSDA.java?slice=52:62"></script>
+
+Deep autoencoders, when they employ Hessian Free, require no pre-training phase. They only finetune. 
+
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/deepautoencoder/DeepAutoEncoderSDA.java?slice=69:74"></script>
+
+Rather than producing an f1 score, as other nets do, deep autoencoders' performance is gauged by their reconstructions. 
+
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/deepautoencoder/DeepAutoEncoderSDA.java?slice=79:86"></script>
