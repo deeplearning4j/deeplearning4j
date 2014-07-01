@@ -113,9 +113,9 @@ public class TreeParser {
             parser.process(c2);
 
             //build the tree based on this
-            TopTreebankNode node = JCasUtil.selectSingle(c.getJCas(),TopTreebankNode.class);
+            TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
             ret.add(TreeFactory.buildTree(node));
-
+            c2.reset();
 
         }
 
