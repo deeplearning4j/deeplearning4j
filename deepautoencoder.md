@@ -6,7 +6,7 @@ layout: default
 *previous* - [deep-belief network](../deepbeliefnetwork.html)
 # deep autoencoders
 
-to
+*to cut straight to the code, [click here](../deepautoencoder.html#initiate)*
 
 Deep autoencoders are a special form of deep-belief net that typically have four or five layers to represent the encoder itself, which is just one half of the net. The layers are a series of RBMs, with several particularities that we'll discuss below. 
 
@@ -66,9 +66,7 @@ Each document’s number set, or vector, is then introduced to the same vector s
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
 
-### initiating a deep autoencoder
-
-initiating an RBM
+###<a name="initiate">initiating a deep autoencoder</a> 
 
 You set up a deep autoencoder like this:
 
