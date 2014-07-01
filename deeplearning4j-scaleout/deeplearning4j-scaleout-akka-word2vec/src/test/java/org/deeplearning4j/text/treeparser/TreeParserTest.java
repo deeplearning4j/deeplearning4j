@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 7/1/14.
+ * Basic Tree parser tests
+ * @author  Adam Gibson
  */
 public class TreeParserTest {
     private static Logger log = LoggerFactory.getLogger(TreeParserTest.class);
