@@ -8,21 +8,21 @@ layout: default
 
 *to see our Word2vec code, skip to the [training section](../word2vec.html#training1)*
 
-One of deep learning's chief applications is in textual analysis, and at the heart of text analysis is [Word2vec](https://code.google.com/p/word2vec/). Word2vec is an algorithm that does not implement deep learning, but is crucial to getting input in a numerical form that deep-learning nets can ingest -- the [vector](https://www.khanacademy.org/math/linear-algebra/vectors_and_spaces/vectors/v/vector-introduction-linear-algebra). 
+Word2vec is at the heart of text analysis with deep learning. While it does not implement deep learning, Word2vec is crucial to getting input in a numerical form that deep-learning nets can ingest -- the vector. 
 
-Word2vec creates features without human intervention, and some of those features include the context of individual words; that is, it retains context in the form of multiword windows. In deep learning, the meaning of a word is essentially the words that surround it. Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning based on its past appearances. 
+Word2vec creates features without human intervention, and some of those features include the context of individual words; that is, it retains context in the form of multiword windows. In machine learning, the meaning of a word is essentially the words that surround it. Given enough data, usage and context, Word2vec can make highly accurate guesses as to a word’s meaning based on its past appearances. 
 
 The output of the Word2vec neural net is a vocabulary with a vector attached to it, which can be fed into a deep-learning net for classification/labeling. 
 
-There is also a [skip gram representation](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) which is used in the dl4j implementation. This has proven to be more accurate due to the more generalizable contexts generated. 
+There is also a [skip gram representation](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) which is used in the DL4J implementation. This has proven to be more accurate due to the more generalizable contexts generated. 
 
-Broadly speaking, we measure words' proximity to each other through their [cosine similarity](https://en.wikipedia.org/wiki/Cosine_similarity), which gauges the similarity between two word vectors. A perfect 90 degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
+Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the similarity between two word vectors. A perfect 90 degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
 
 Here's a graph of words associated with "China" using Word2vec:
 
 ![Alt text](../img/word2vec.png)
 
-The other method of preparing text for input to a deep-learning net is called [Bag of Words](https://en.wikipedia.org/wiki/Bag-of-words_model) (BoW). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
+The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
 
 ## <a name="training1">training</a> 
 
@@ -32,17 +32,15 @@ Assuming a list of sentences, it's used for lemmatization like this:
 
 <script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=44:75"></script>
 
-From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll' want to save word2vec like this:
+From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll want to save Word2vec like this:
 
        	 SerializationUtils.saveObject(vec, new File("mypath"));
 
-This will save word2vec to mypath.
-
-You can reload it into memory like this:
+This will save wWrd2vec to mypath. You can reload it into memory like this:
         
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
-From there, you can use Word2vec as a lookup table in the following way:
+You can then use Word2vec as a lookup table in the following way:
               
         DoubleMatrix wordVector = vec.getWordVectorMatrix("myword");
 
@@ -52,7 +50,7 @@ If the word isn't in the vocabulary, Word2vec returns zeros and nothing more.
 
 ### windows
 
-Word2Vec works with other neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
+Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
 
       List<Window> windows = Windows.windows("some text");
 
