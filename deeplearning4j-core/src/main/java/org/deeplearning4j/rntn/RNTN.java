@@ -215,6 +215,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         if (numHidden == 0) {
             throw new RuntimeException("Cannot create random word vectors for an unknown numHid");
         }
+
         Set<String> words = new HashSet<>();
         words.add(UNKNOWN_FEATURE);
         for (Tree tree : trainingTrees) {
