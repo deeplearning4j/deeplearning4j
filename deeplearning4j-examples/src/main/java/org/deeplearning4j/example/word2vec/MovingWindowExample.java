@@ -43,7 +43,6 @@ public class MovingWindowExample {
 
         InputStream is = FileUtils.openInputStream(new File(args[0]));
 
-
         LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,"\t");
         //get rid of @mentions
         iterator.setPreProcessor(new SentencePreProcessor() {
@@ -55,7 +54,6 @@ public class MovingWindowExample {
             }
         });
 
-
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
         File vecModel = new File("tweet-wordvectors.ser");
         Word2Vec vec = vecModel.exists() ? (Word2Vec) SerializationUtils.readObject(vecModel) : new Word2Vec(tokenizerFactory,iterator,5);
@@ -65,22 +63,12 @@ public class MovingWindowExample {
             log.info("Saving word 2 vec model...");
 
             SerializationUtils.saveObject(vec,new File("tweet-wordvectors.ser"));
-
-
         }
 
         else
             vec.setTokenizerFactory(tokenizerFactory);
 
-
-
-
-
-
-
         iterator.reset();
-
-
 
         DataSetIterator iter = new Word2VecDataSetIterator(vec,iterator,Arrays.asList("0","1","2"));
         if(!iter.hasNext())
