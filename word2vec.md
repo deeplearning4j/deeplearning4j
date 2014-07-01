@@ -20,7 +20,7 @@ Broadly speaking, we measure words' proximity to each other through their cosine
 
 Here's a graph of words associated with "China" using Word2vec:
 
-![Alt text](../img/word2vec.png)
+![Alt text](../img/word2vec.png) 
 
 The other method of preparing text for input to a deep-learning net is called [Bag of Words (BoW)](../bagofwords-tf-idf.html). BoW produces a vocabulary with word counts associated to each element of the text. Its output is a wordcount vector. That said, it does not retain context, and therefore is not useful in a granular analysis of those words' meaning. 
 
