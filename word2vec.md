@@ -30,7 +30,7 @@ Word2Vec trains on raw text. It then records the context, or usage, of each word
 
 Assuming a list of sentences, it's used for lemmatization like this:
 
-<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=44:75"></script>
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=45:69"></script>
 
 From there, Word2vec will do automatic multithreaded training based on your sentence data. After that step, you'll want to save Word2vec like this:
 
