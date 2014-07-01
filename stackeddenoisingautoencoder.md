@@ -34,7 +34,7 @@ You can test your newly trained network by feeding it unstructured data and chec
 
 Passing an iterator to pretrain and finetune makes them automatically iterate over the dataset. After those two tasks, all that remains is creating the output, or prediction, which is expressed as an f1 score.
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/StackedDenoisingAutoEncoderExample.java?slice=54:62"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/StackedDenoisingAutoEncoderExample.java?slice=52:62"></script>
 
 Note that the eval class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
 
