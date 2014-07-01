@@ -19,8 +19,32 @@ public class Tree implements Serializable {
     private Tree parent;
     private String value;
     private String label;
+    private String type;
     private int goldLabel;
+    private List<String> tokens;
 
+
+    public Tree(Tree parent,List<String> tokens) {
+        this.parent = parent;
+        children = new ArrayList<>();
+    }
+
+    public Tree(List<String> tokens) {
+        children = new ArrayList<>();
+        this.tokens = tokens;
+    }
+
+    /**
+     * The type of node; mainly extra meta data
+     * @return
+     */
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
     /**
      * Returns all of the labels for this node and all of its children (recursively)
@@ -74,14 +98,6 @@ public class Tree implements Serializable {
 
     }
 
-    public Tree(Tree parent) {
-        this.parent = parent;
-        children = new ArrayList<>();
-    }
-
-    public Tree() {
-        children = new ArrayList<>();
-    }
 
     /**
      * Returns whether the node has any children or not
@@ -252,8 +268,8 @@ public class Tree implements Serializable {
 
     @Override
     public Tree clone() {
-        Tree ret = new Tree();
-        ret.setChildren(children());
+        Tree ret = new Tree(tokens);
+        ret.connect(children());
         ret.setError(error);
         ret.setValue(value);
         ret.setVector(vector);
@@ -276,9 +292,13 @@ public class Tree implements Serializable {
         this.error = error;
     }
 
+    public List<String> getTokens() {
+        return tokens;
+    }
 
-
-
+    public void setTokens(List<String> tokens) {
+        this.tokens = tokens;
+    }
 
     public void setParent(Tree parent) {
         this.parent = parent;
@@ -304,9 +324,15 @@ public class Tree implements Serializable {
         this.prediction = prediction;
     }
 
-
-    public void setChildren(List<Tree> children) {
+    /**
+     * Connects the given trees
+     * and sets the parents of the children
+     * @param children  the children to connect with
+     */
+    public void connect(List<Tree> children) {
         this.children = children;
+        for(Tree t : children)
+            t.setParent(this);
     }
 
 
