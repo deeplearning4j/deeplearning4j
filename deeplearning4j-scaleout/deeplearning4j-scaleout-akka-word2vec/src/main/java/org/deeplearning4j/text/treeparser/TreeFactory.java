@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  *
- * Static util class handleing the conversion of
+ * Static util class handling the conversion of
  * treebank nodes to Trees useful for recursive neural tensor networks
  *
  * @author Adam Gibson
@@ -21,9 +21,14 @@ import java.util.List;
 public class TreeFactory {
 
 
-
-
-
+    /**
+     * Builds a tree recursively
+     * adding the children as necessary
+     * @param node the node to build the tree based on
+     * @return the compiled tree with all of its children
+     * and childrens' children recursively
+     * @throws Exception
+     */
     public static Tree buildTree(TreebankNode node) throws Exception {
         if(node.getLeaf())
             return toTree(node);
@@ -45,7 +50,14 @@ public class TreeFactory {
 
     }
 
-    private static Tree toTree(TreebankNode node) throws Exception {
+    /**
+     * Converts a treebank node to a tree
+     * @param node the node to convert
+     * @return the tree with the same tokens and type as
+     * the given tree bank node
+     * @throws Exception
+     */
+    public static Tree toTree(TreebankNode node) throws Exception {
         List<String> tokens = tokens(node);
         Tree ret = new Tree(tokens);
         ret.setValue(node.getNodeValue());
