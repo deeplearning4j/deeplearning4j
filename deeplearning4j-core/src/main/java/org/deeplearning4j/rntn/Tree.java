@@ -17,12 +17,25 @@ public class Tree implements Serializable {
     private List<Tree> children;
     private double error;
     private Tree parent;
+    private String headWord;
     private String value;
     private String label;
     private String type;
     private int goldLabel;
     private List<String> tokens;
+    private List<String> tags;
 
+
+
+    public Tree(Tree tree) {
+        this.vector = tree.vector;
+        this.prediction = tree.prediction;
+        this.value = tree.value;
+        this.label = tree.label;
+        this.type = tree.type;
+        this.goldLabel = tree.goldLabel;
+        this.tokens = new ArrayList<>(tree.tokens);
+    }
 
     public Tree(Tree parent,List<String> tokens) {
         this.parent = parent;
@@ -195,7 +208,7 @@ public class Tree implements Serializable {
     }
 
     /**
-     * Returns the
+     * Returns the ancestor of the given tree
      * @param height
      * @param root
      * @return
@@ -324,6 +337,30 @@ public class Tree implements Serializable {
         this.prediction = prediction;
     }
 
+    public List<String> tags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public List<Tree> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<Tree> children) {
+        this.children = children;
+    }
+
+    public String getHeadWord() {
+        return headWord;
+    }
+
+    public void setHeadWord(String headWord) {
+        this.headWord = headWord;
+    }
+
     /**
      * Connects the given trees
      * and sets the parents of the children
@@ -336,4 +373,42 @@ public class Tree implements Serializable {
     }
 
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tree)) return false;
+
+        Tree tree = (Tree) o;
+
+        if (Double.compare(tree.error, error) != 0) return false;
+        if (goldLabel != tree.goldLabel) return false;
+        if (children != null ? !children.equals(tree.children) : tree.children != null) return false;
+        if (label != null ? !label.equals(tree.label) : tree.label != null) return false;
+        if (parent != null ? !parent.equals(tree.parent) : tree.parent != null) return false;
+        if (prediction != null ? !prediction.equals(tree.prediction) : tree.prediction != null) return false;
+        if (tokens != null ? !tokens.equals(tree.tokens) : tree.tokens != null) return false;
+        if (type != null ? !type.equals(tree.type) : tree.type != null) return false;
+        if (value != null ? !value.equals(tree.value) : tree.value != null) return false;
+        if (vector != null ? !vector.equals(tree.vector) : tree.vector != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = vector != null ? vector.hashCode() : 0;
+        result = 31 * result + (prediction != null ? prediction.hashCode() : 0);
+        result = 31 * result + (children != null ? children.hashCode() : 0);
+        temp = Double.doubleToLongBits(error);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (parent != null ? parent.hashCode() : 0);
+        result = 31 * result + (value != null ? value.hashCode() : 0);
+        result = 31 * result + (label != null ? label.hashCode() : 0);
+        result = 31 * result + (type != null ? type.hashCode() : 0);
+        result = 31 * result + goldLabel;
+        result = 31 * result + (tokens != null ? tokens.hashCode() : 0);
+        return result;
+    }
 }
