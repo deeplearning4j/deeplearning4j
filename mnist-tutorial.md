@@ -45,54 +45,6 @@ Note to windows uers, in place of the line below, please do the following:
 
 Next, we want to train a deep-belief network to reconstruct the MNIST data set. This is done with following snippet:
 
-         //Train on batches of 10 out of 60000
-         //Unix only
-         DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
-        
-	        //obtain the number of columns directly, this allows you to be agnostic to the number of training input columns.
-	        DataSet first = fetcher.next();
-			int numIns = first.getFirst().columns;
-			int numLabels = first.getSecond().columns;
-			//you may want to tune the number of layers here
-			int[] layerSizes = {500,500,500};
-			double lr = 0.001;
-	        /*
-	         *  Build the dbn with the number of inputs, don't render weights (otherwise specify the number of training epochs you want to display weights on)
-	         *  No momentun, regularization, numLabels is 10 (0-9)
-	         *
-	         */
-			DBN dbn = new DBN.Builder().numberOfInputs(numIns)
-					.renderWeights(0).withMomentum(0).useRegularization(false)
-					.numberOfOutPuts(numLabels).withRng(new MersenneTwister(123))
-					.hiddenLayerSizes(layerSizes).build();
-	      
-	        //pretrain and finetune the network on the first input, then the next ones where necessary
-			do  {
-				dbn.pretrain(first.getFirst(),1, lr, 1000);
-	             dbn.finetune(first.getSecond(),lr, 1000);
-				
-				if(fetcher.hasNext())
-					first = fetcher.next();
-			} while(fetcher.hasNext());
-
-			
-	       //reset the iterator; we will now calculate f-scores
-	       //note that this is for demo purposes only, you would typically do a test set and cross validation
-			fetcher.reset();
-			first = fetcher.next();
-			Evaluation eval = new Evaluation();
-
-	        //test on the data set
-			do {
-
-					DoubleMatrix predicted = dbn.predict(first.getFirst());
-					log.info("Predicting\n " + first.getSecond().toString().replaceAll(";","\n"));
-					log.info("Prediction was " + predicted.toString().replaceAll(";","\n"));
-					eval.eval(first.getSecond(), predicted);
-					if(fetcher.hasNext())
-						first = fetcher.next();
-				}while(fetcher.hasNext());
-		
-			System.out.println(eval.stats());
+<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RawDBNMnistExample.java?slice=24:72"></script>
 
 Now that you've seen Deeplearning4j train a neural network on MNIST images, you may want to learn how to deal with continuous data with the [Iris flower dataset](../iris-flower-dataset-tutorial.html).
