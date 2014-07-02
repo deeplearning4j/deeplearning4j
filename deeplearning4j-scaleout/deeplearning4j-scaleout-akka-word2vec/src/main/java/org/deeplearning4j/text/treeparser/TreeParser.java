@@ -5,11 +5,13 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
+import org.apache.uima.fit.util.FSCollectionFactory;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.util.CasPool;
 import org.cleartk.opennlp.tools.ParserAnnotator;
 import org.cleartk.opennlp.tools.parser.DefaultOutputTypesHelper;
 import org.cleartk.syntax.constituent.type.TopTreebankNode;
+import org.cleartk.syntax.constituent.type.TreebankNode;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.cleartk.util.ParamUtil;
@@ -19,6 +21,8 @@ import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +36,7 @@ public class TreeParser {
     private  AnalysisEngine parser;
     private AnalysisEngine tokenizer;
     private CasPool pool;
-
+    private static Logger log = LoggerFactory.getLogger(TreeParser.class);
     public TreeParser(AnalysisEngine parser,AnalysisEngine tokenizer,CasPool pool) {
         this.parser = parser;
         this.tokenizer = tokenizer;
@@ -114,6 +118,10 @@ public class TreeParser {
 
             //build the tree based on this
             TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
+            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
+                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
+            }
+
             ret.add(TreeFactory.buildTree(node));
             c2.reset();
 

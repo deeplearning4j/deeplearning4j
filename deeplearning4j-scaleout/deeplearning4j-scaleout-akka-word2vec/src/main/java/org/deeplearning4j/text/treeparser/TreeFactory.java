@@ -14,7 +14,8 @@ import java.util.List;
 /**
  *
  * Static util class handling the conversion of
- * treebank nodes to Trees useful for recursive neural tensor networks
+ * treebank nodes to Trees useful
+ * for recursive neural tensor networks
  *
  * @author Adam Gibson
  */
@@ -62,10 +63,18 @@ public class TreeFactory {
         Tree ret = new Tree(tokens);
         ret.setValue(node.getNodeValue());
         ret.setType(node.getNodeType());
+        if(node.getNodeTags() != null)
+            ret.setTags(tags(node));
         return ret;
     }
 
 
+    private static List<String> tags(TreebankNode node) {
+        List<String> ret = new ArrayList<>();
+        for(int i = 0; i < node.getNodeTags().size(); i++)
+            ret.add(node.getNodeTags(i));
+        return ret;
+    }
 
 
     private static List<TreebankNode> children(TreebankNode node) {
