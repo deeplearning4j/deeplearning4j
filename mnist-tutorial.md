@@ -28,9 +28,7 @@ Typically, a DataSetIterator handles inputs and data-set-specific concerns like 
 
 The reason we specify the batch size as well as the number of examples is so the user can choose how many examples they want to look at.
 
-
-Note to windows uers, in place of the line below, please do the following:
-
+Note to Windows uers, in place of the line below, please do the following:
 
          1. Download the preserialized mnist dataset [https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing](here):
 
