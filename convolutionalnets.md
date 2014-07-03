@@ -6,6 +6,8 @@ layout: default
 *previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
 # convolutional restricted boltzmann machine
 
+*N.B.: Our ConvNets are still getting built out.*
+
 [Convolutional RBMs](http://www.cs.toronto.edu/~norouzi/research/papers/masters_thesis.pdf) data, because they are able to handle many dimensions in data at once. 
 
 They are a type of restricted Boltzmann machine, in that there is no communication between the nodes of any given layer with other nodes of the same layer. 
