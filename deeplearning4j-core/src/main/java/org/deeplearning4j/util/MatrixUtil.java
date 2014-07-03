@@ -1099,6 +1099,44 @@ public class MatrixUtil {
         return toFloatMatrix(nums);
     }
 
+
+
+
+    public static DoubleMatrix toDoubleMatrix(FloatMatrix arr) {
+        DoubleMatrix d = new DoubleMatrix(arr.rows,arr.columns);
+        for(int i = 0; i < arr.rows; i++)
+            for(int j = 0; j < arr.columns; j++)
+                d.put(i,j,arr.get(i,j));
+        return d;
+    }
+
+
+
+    public static FloatMatrix toFloatMatrix(DoubleMatrix arr) {
+        FloatMatrix d = new FloatMatrix(arr.rows,arr.columns);
+        for(int i = 0; i < arr.rows; i++)
+            for(int j = 0; j < arr.columns; j++)
+                d.put(i,j,(float)arr.get(i,j));
+        return d;
+    }
+
+
+
+    public static FloatMatrix toFloatMatrix(double[] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length);
+        for(int i = 0; i < arr.length; i++)
+            d.put(i,(float)arr[i]);
+        return d;
+    }
+
+    public static FloatMatrix toFloatMatrix(double[][] arr) {
+        FloatMatrix d = new FloatMatrix(arr.length,arr[0].length);
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                d.put(i,j,(float)arr[i][j]);
+        return d;
+    }
+
     public static FloatMatrix toFloatMatrix(int[] arr) {
         FloatMatrix d = new FloatMatrix(arr.length);
         for(int i = 0; i < arr.length; i++)

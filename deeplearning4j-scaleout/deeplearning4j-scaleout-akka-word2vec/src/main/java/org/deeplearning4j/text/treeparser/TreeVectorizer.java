@@ -22,22 +22,19 @@ public class TreeVectorizer {
     /**
      * Uses the given parser and model
      * for vectorization of strings
-     * @param vec the model to use for word vectors
      * @param parser the parser to use for converting
      * strings to trees
      */
-    public TreeVectorizer(Word2Vec vec, TreeParser parser) {
-        this.vec = vec;
+    public TreeVectorizer(TreeParser parser) {
         this.parser = parser;
     }
 
     /**
      * Uses word vectors from the passed in word2vec model
-     * @param vec the model to use for word vectors
      * @throws Exception
      */
-    public TreeVectorizer(Word2Vec vec) throws Exception {
-        this(vec,new TreeParser());
+    public TreeVectorizer() throws Exception {
+        this(new TreeParser());
     }
 
     /**
