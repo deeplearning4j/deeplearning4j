@@ -5,15 +5,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.Stack;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +29,7 @@ import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.util.Index;
+import org.jblas.DoubleMatrix;
 import org.jblas.FloatMatrix;
 import org.jblas.SimpleBlas;
 import org.slf4j.Logger;
@@ -50,6 +43,7 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 import akka.routing.RoundRobinPool;
 import scala.concurrent.duration.Duration;
+import weka.core.matrix.DoubleVector;
 
 
 /**
@@ -609,6 +603,27 @@ public class Word2Vec implements Persistable {
             VocabWord word2 = sentence.get(c1);
             iterate(word,word2);
         }
+    }
+
+    public Map<String,FloatMatrix> toVocabFloat() {
+        Map<String,FloatMatrix> ret = new HashMap<>();
+        for(int i = 0; i < getWordIndex().size(); i++) {
+            String word = (String) wordIndex.get(i);
+            ret.put(word,getWordVectorMatrix(word));
+        }
+
+        return ret;
+
+    }
+
+    public Map<String,DoubleMatrix> toVocabDouble() {
+        Map<String,DoubleMatrix> ret = new HashMap<>();
+        for(int i = 0; i < getWordIndex().size(); i++) {
+            String word = (String) wordIndex.get(i);
+            ret.put(word,MatrixUtil.toDoubleMatrix(getWordVectorMatrix(word)));
+        }
+
+        return ret;
     }
 
     public void  iterate(VocabWord w1,VocabWord w2) {
