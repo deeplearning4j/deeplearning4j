@@ -14,4 +14,4 @@ Here’s an explanation, in the comments, of the parameters necessary to instant
 
 And here’s an example of what a CSVDataSetIterator ought to look like (in the form of a unit test):
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/iterator/CSVDataSetIteratorTest.java?slice=10-16"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/iterator/CSVDataSetIteratorTest.java?slice=10-16"></script> 
