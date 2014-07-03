@@ -208,7 +208,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     @Override
     public void setCurrentIteration(int value) {
-          this.currIteration = currIteration;
+        this.currIteration = currIteration;
     }
 
     void initRandomWordVectors(List<Tree> trainingTrees) {
@@ -282,7 +282,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
      */
     public void train(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;
-         getValueGradient(0);
+        getValueGradient(0);
     }
 
 
@@ -413,21 +413,13 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     @Override
     public DoubleMatrix getParameters() {
-       return MatrixUtil.toFlattened(getNumParameters(),
-               binaryTransform.values().iterator(),
-               binaryClassification.values().iterator(),
-               binaryTensors.values().iterator(),
-               unaryClassification.values().iterator(),
-               featureVectors.values().iterator());
+        return MatrixUtil.toFlattened(getNumParameters(),
+                binaryTransform.values().iterator(),
+                binaryClassification.values().iterator(),
+                binaryTensors.values().iterator(),
+                unaryClassification.values().iterator(),
+                featureVectors.values().iterator());
     }
-
-
-
-
-
-
-
-
 
 
     double scaleAndRegularize(MultiDimensionalMap<String, String, DoubleMatrix> derivatives,
@@ -543,7 +535,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
                 binaryCD.put(leftCategory, rightCategory, binaryCD.get(leftCategory, rightCategory).add(localCD));
             }
 
-            DoubleMatrix currentVectorDerivative = activationFunction.apply(currentVector);
+            DoubleMatrix currentVectorDerivative = activationFunction.applyDerivative(currentVector);
             DoubleMatrix deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
             deltaFromClass = deltaFromClass.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, numHidden)).mul(currentVectorDerivative);
             DoubleMatrix deltaFull = deltaFromClass.add(deltaUp);
@@ -597,8 +589,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
      * assigned to that subtree's node.
      */
     public void forwardPropagateTree(Tree tree) {
-        DoubleMatrix nodeVector = null;
-        DoubleMatrix classification = null;
+        DoubleMatrix nodeVector;
+        DoubleMatrix classification;
 
         if (tree.isLeaf()) {
             // We do nothing for the leaves.  The preterminals will
@@ -644,7 +636,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         tree.setVector(nodeVector);
         tree.setLabel(String.valueOf(index));
     }
-    
+
     @Override
     public double getParameter(int index) {
         return 0;
