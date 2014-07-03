@@ -60,11 +60,9 @@ For example, the file at
 
 can be entered into the command line as 
 
-		java -cp "lib/*" org.deeplearning4j.example.convnet.mnist.MnistConvNetTest
+		java -cp "lib/*" org.deeplearning4j.example.mnist.MnistExampleMultiThreaded.java
 		
 Here are a few other examples you can run, each of which takes about as long as the Mnist example above:
-
-		java -cp "lib/*" org.deeplearning4j.example.mnist.MnistExampleMultiThreaded.java
 		
 		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
 		
