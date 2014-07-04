@@ -67,7 +67,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
         }
 
 
-        Tree result = null;
+        Tree result;
         if(t.label().charAt(0) == 'S')
             result = new Tree(t);
 
@@ -460,7 +460,6 @@ public class BinarizeTreeTransformer implements TreeTransformer {
     private Tree outsideBinarizeLocalTree(Tree t, String labelStr, String finalCat, int headNum, Tree head, int leftProcessed, String leftStr, int rightProcessed, String rightStr) {
         List<Tree> newChildren = new ArrayList<>(2);
         String word = head.value();
-        String tag = head.tags().get(0);
         String label = labelStr + "/" + word + "/tag";
         // check if there are <=2 children already
         if (t.children().size() - leftProcessed - rightProcessed <= 2) {

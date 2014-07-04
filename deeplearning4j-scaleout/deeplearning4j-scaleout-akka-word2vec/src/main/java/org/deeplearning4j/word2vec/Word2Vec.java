@@ -326,8 +326,12 @@ public class Word2Vec implements Persistable {
                 }
             },trainingSystem.dispatcher());
         }
+
+
         if(stopWords == null)
             readStopWords();
+
+
         log.info("Training word2vec multithreaded");
 
 
@@ -532,8 +536,8 @@ public class Word2Vec implements Persistable {
                 continue;
 
             vocabActor.tell(sentence, vocabActor);
-            log.info("Sent " + queued);
             queued++;
+            log.info("Sent " + queued);
 
 
 

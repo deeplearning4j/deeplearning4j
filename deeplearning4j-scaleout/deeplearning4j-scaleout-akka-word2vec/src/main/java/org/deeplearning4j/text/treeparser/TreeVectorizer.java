@@ -49,7 +49,7 @@ public class TreeVectorizer {
         List<Tree> ret = new ArrayList<>();
         List<Tree> baseTrees = parser.getTrees(sentences);
         for(Tree t : baseTrees) {
-            ret.add(treeTransformer.transform(cnfTransformer.transform(t)));
+            ret.add(treeTransformer.transform(t));
         }
 
         return ret;
