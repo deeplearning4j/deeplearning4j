@@ -22,8 +22,10 @@ import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Matrix Ops
@@ -1271,18 +1273,19 @@ public class MatrixUtil {
         DoubleMatrix ret = new DoubleMatrix(1,length);
         int linearIndex = 0;
 
-
+        List<double[]> gradient = new ArrayList<>();
         for(Iterator<? extends DoubleMatrix> iter : matrices) {
             while(iter.hasNext()) {
                 DoubleMatrix d = iter.next();
-                for(int i = 0; i < d.length; i++) {
-                    ret.put(linearIndex++,d.get(i));
-                }
+                gradient.add(d.data);
             }
         }
 
 
-        return ret;
+
+
+        DoubleMatrix ret2 = new DoubleMatrix(ArrayUtil.combine(gradient));
+        return ret2.reshape(1,ret2.length);
     }
 
 

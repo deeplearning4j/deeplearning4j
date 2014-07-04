@@ -62,6 +62,7 @@ public class TreeFactory {
         List<String> tokens = tokens(node);
         Tree ret = new Tree(tokens);
         ret.setValue(node.getNodeValue());
+        ret.setLabel(node.getNodeType());
         ret.setType(node.getNodeType());
         if(node.getNodeTags() != null)
             ret.setTags(tags(node));
