@@ -13,6 +13,7 @@ import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
+import org.deeplearning4j.word2vec.Word2Vec;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
@@ -276,7 +277,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         DoubleMatrix binary = new DoubleMatrix(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         DoubleMatrix block = randomTransformBlock();
-        binary.put(RangeUtils.interval(0,block.rows),RangeUtils.interval(numHidden,block.columns),block);
+        binary.put(RangeUtils.interval(0,block.rows),RangeUtils.interval(0,block.columns),block);
         return SimpleBlas.scal(scalingForInit,binary);
     }
 
@@ -433,8 +434,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     public int getNumParameters() {
         int totalSize = 0;
         // binaryTensorSize was set to 0 if useTensors=false
-        totalSize = numBinaryMatrices * (binaryTransformSize + binaryClassificationSize + binaryTensorSize);
-        totalSize += numUnaryMatrices * unaryClassificationSize;
+        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassification.size() + binaryTensors.size());
+        totalSize += numUnaryMatrices * unaryClassification.size();
         totalSize += featureVectors.size() * numHidden;
         return totalSize;
     }
@@ -804,7 +805,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         private RandomGenerator rng;
         private boolean useTensors;
         private boolean combineClassification;
-        private boolean simplifiedModel;
+        private boolean simplifiedModel = true;
         private boolean randomFeatureVectors;
         private double scalingForInit;
         private boolean lowerCasefeatureNames;
@@ -820,6 +821,12 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         private int numUnaryMatrices;
         private int unaryClassificationSize;
         private Map<Integer, Double> classWeights;
+
+
+        public Builder setFeatureVectors(Word2Vec vec) {
+            setFeatureVectors(vec.toVocabDouble());
+            return this;
+        }
 
         public Builder setNumHidden(int numHidden) {
             this.numHidden = numHidden;

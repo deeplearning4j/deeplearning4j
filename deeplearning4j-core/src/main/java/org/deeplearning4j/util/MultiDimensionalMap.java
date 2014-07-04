@@ -3,11 +3,7 @@ package org.deeplearning4j.util;
 import org.deeplearning4j.berkeley.Pair;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -37,7 +33,7 @@ public class MultiDimensionalMap<K,T,V>  {
      * @return
      */
     public static <K,T,V>  MultiDimensionalMap<K,T,V> newThreadSafeHashBackedMap() {
-        return new MultiDimensionalMap<K,T,V>(new ConcurrentHashMap<Pair<K,T>,V>());
+        return new MultiDimensionalMap<>(new ConcurrentHashMap<Pair<K,T>,V>());
     }
 
     /**
@@ -48,7 +44,7 @@ public class MultiDimensionalMap<K,T,V>  {
      * @return
      */
     public static <K,T,V>  MultiDimensionalMap<K,T,V> newHashBackedMap() {
-        return new MultiDimensionalMap<K,T,V>(new HashMap<Pair<K,T>,V>());
+        return new MultiDimensionalMap<>(new HashMap<Pair<K,T>,V>());
     }
 
     /**
@@ -59,7 +55,7 @@ public class MultiDimensionalMap<K,T,V>  {
      * @return
      */
     public static <K,T,V>  MultiDimensionalMap<K,T,V> newTreeBackedMap() {
-        return new MultiDimensionalMap<K,T,V>(new TreeMap<Pair<K,T>,V>());
+        return new MultiDimensionalMap<>(new TreeMap<Pair<K,T>,V>());
     }
 
     public MultiDimensionalMap(Map<Pair<K, T>, V> backedMap) {
@@ -321,7 +317,11 @@ public class MultiDimensionalMap<K,T,V>  {
      */
 
     public Set<Entry<K,T,V>> entrySet() {
-        return null;
+        Set<Entry<K,T,V>> ret  = new HashSet<>();
+        for(Pair<K,T> pair : backedMap.keySet()) {
+            ret.add(new Entry<>(pair.getFirst(),pair.getSecond(),backedMap.get(pair)));
+        }
+        return ret;
     }
 
     public V get(K k,T t) {
@@ -368,6 +368,11 @@ public class MultiDimensionalMap<K,T,V>  {
         private T secondKey;
         private V value;
 
+        public Entry(K firstKey, T secondKey, V value) {
+            this.firstKey = firstKey;
+            this.secondKey = secondKey;
+            this.value = value;
+        }
 
         public K getFirstKey() {
             return firstKey;
