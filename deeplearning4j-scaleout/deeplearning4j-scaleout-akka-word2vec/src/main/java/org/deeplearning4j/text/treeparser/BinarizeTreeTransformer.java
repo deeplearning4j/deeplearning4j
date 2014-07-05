@@ -7,10 +7,7 @@ import org.deeplearning4j.text.treeparser.transformer.TreeTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Binarizes trees.
@@ -35,15 +32,25 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
     @Override
     public Tree transform(Tree t) {
-        String tLabelVal = t.value();
-        if(t.isLeaf())
-            return t.clone();
-        else if(t.isPreTerminal()) {
+        if(t == null)
+            return null;
+
+
+        String tLabelVal = t.label();
+        if(t.isLeaf()) {
+            Tree ret = new Tree(t);
+            ret.setLabel(tLabelVal);
+            return ret;
+        }
+
+         if(t.isPreTerminal()) {
             Tree child = transform(t.firstChild());
             String val = child.value();
-            List<Tree> newChildren = new ArrayList<>();
+            List<Tree> newChildren = new ArrayList<>(1);
+
             Tree add = new Tree(child.getTokens());
-            add.setLabel(child.value());
+            add.setLabel(child.label());
+            add.setTags(Arrays.asList(tLabelVal));
             add.setType(child.getType());
             add.setValue(val);
             newChildren.add(add);
@@ -54,6 +61,9 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
 
         Tree head = headWordFinder.findHead(t);
+
+        if(head == null && !t.label().equals("S") || !t.label().equals("TOP"))
+            log.warn("No head found");
 
         int headNum = -1;
         List<Tree> children = head.children();
@@ -68,50 +78,53 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
 
         Tree result;
-        if(t.label().charAt(0) == 'S')
+        if(t.label().charAt(0) == 'S' || t.label().equals("TOP")) {
             result = new Tree(t);
+            result.connect(newChildren);
+        }
 
         else {
-            String word = t.value();
-            String tag = t.label();
-            return binarizeLocalTree(t,headNum,head);
+            String word = head.value();
+            String tag = head.tags().get(0);
+            result = new Tree(t.getTokens());
+            result.connect(newChildren);
+            result.setTags(Arrays.asList(tag));
+            result.setLabel(tLabelVal + "[" + word + "/" + tag + "]");
+            result.setValue(word);
+            result = binarizeLocalTree(t,headNum,word,tag);
         }
 
         return result;
 
     }
 
-    Tree binarizeLocalTree(Tree t, int headNum, Tree head) {
-        //System.out.println("Working on: "+headNum+" -- "+t.label());
+    Tree binarizeLocalTree(Tree t, int headNum, String word,String tag) {
         if (markovFactor) {
             String topCat = t.label();
-            // Label newLabel = new CategoryWordTag(topCat, head.value(), head.tags().get(0));
-            // t.setLabel(newLabel);
             Tree t2;
             if (insideFactor) {
                 t2 = markovInsideBinarizeLocalTreeNew(t, headNum, 0, t.children().size() - 1, true);
             } else {
-                t2 = markovOutsideBinarizeLocalTree(t, head, headNum, topCat, new LinkedList<Tree>(), false);
+                t2 = markovOutsideBinarizeLocalTree(t, word,tag, headNum, topCat, new LinkedList<Tree>(), false);
             }
 
             return t2;
         }
         if (insideFactor) {
-            return insideBinarizeLocalTree(t, headNum, head, 0, 0);
+            return insideBinarizeLocalTree(t, headNum, word,tag, 0, 0);
         }
-        return outsideBinarizeLocalTree(t, t.label(), t.label(), headNum, head, 0, "", 0, "");
+        return outsideBinarizeLocalTree(t, t.label(), t.label(), headNum, word,tag, 0, "", 0, "");
     }
 
-    private Tree markovOutsideBinarizeLocalTree(Tree t, Tree head, int headLoc, String topCat, LinkedList<Tree> ll, boolean doneLeft) {
-        String word = head.value();
-        String tag = head.tags().get(0);
+    private Tree markovOutsideBinarizeLocalTree(Tree t, String word,String tag, int headLoc, String topCat, LinkedList<Tree> ll, boolean doneLeft) {
+
         List<Tree> newChildren = new ArrayList<>(2);
         // call with t, headNum, head, topCat, false
         if (headLoc == 0) {
             if (!doneLeft) {
                 // insert a unary to separate the sides
-                if (topCat.equals("S")) {
-                    return markovOutsideBinarizeLocalTree(t, head, headLoc, topCat, new LinkedList<Tree>(), true);
+                if (topCat.equals("S") || topCat.equals("TOP")) {
+                    return markovOutsideBinarizeLocalTree(t, word,tag, headLoc, topCat, new LinkedList<Tree>(), true);
                 }
                 String subLabelStr;
                 if (simpleLabels) {
@@ -122,19 +135,22 @@ public class BinarizeTreeTransformer implements TreeTransformer {
                 }
 
                 Tree subTree = new Tree(t);
+                subTree.setTags(Collections.singletonList(tag));
                 subTree.setLabel(subLabelStr + "[" + word + "/" + tag);
-                subTree.setChildren(t.children());
-                newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc, topCat, new LinkedList<Tree>(), true));
+                subTree.connect(t.children());
+                newChildren.add(markovOutsideBinarizeLocalTree(subTree, word,tag, headLoc, topCat, new LinkedList<Tree>(), true));
                 Tree ret = new Tree(t);
-                ret.setChildren(newChildren);
+                ret.connect(newChildren);
                 return ret;
 
             }
+
+
             int len = t.children().size();
             // len = 1
             if (len == 1) {
                 Tree ret = new Tree(t);
-                ret.setChildren(Collections.singletonList(t.children().get(0)));
+                ret.connect(Collections.singletonList(t.children().get(0)));
                 return ret;
             }
 
@@ -151,15 +167,18 @@ public class BinarizeTreeTransformer implements TreeTransformer {
                 String rightStr = (len > markovOrder - 1 ? "... " : "") +  StringUtils.join(ll);
                 subLabelStr = "@" + topCat + ": " + headStr + " " + rightStr;
             }
+
+
+
             Tree subTree = new Tree(t.getTokens());
-            subTree.setChildren(t.children().subList(0, len - 1));
+            subTree.connect(t.children().subList(0, len - 1));
             subTree.setValue(word);
             subTree.setLabel(tag);
             subTree.setHeadWord(subLabelStr);
-            newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc, topCat, ll, true));
+            newChildren.add(markovOutsideBinarizeLocalTree(subTree, word,tag, headLoc, topCat, ll, true));
             newChildren.add(t.children().get(len - 1));
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             return ret;
         }
         if (headLoc > 0) {
@@ -178,11 +197,17 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             }
 
             Tree subTree = new Tree(t.getTokens());
-            subTree.setChildren(t.children().subList(1, t.children().size()));
+            subTree.setLabel(subLabelStr);
+            subTree.setTags(Collections.singletonList(tag));
+            subTree.setValue(word);
+            subTree.connect(t.children().subList(1, t.children().size()));
             newChildren.add(t.children().get(0));
-            newChildren.add(markovOutsideBinarizeLocalTree(subTree, head, headLoc - 1, topCat, ll, false));
+            newChildren.add(markovOutsideBinarizeLocalTree(subTree, word,tag, headLoc - 1, topCat, ll, false));
+
+
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.setLabel(t.label());
+            ret.connect(newChildren);
             return ret;
         }
         return t;
@@ -207,7 +232,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             if (unaryAtTop) {
                 // if we're doing grammar compaction, we add the unary at the top
                 result = new Tree(t);
-                result.setChildren(Collections.singletonList(markovInsideBinarizeLocalTreeNew(t, headLoc, left, right, false)));
+                result.connect(Collections.singletonList(markovInsideBinarizeLocalTreeNew(t, headLoc, left, right, false)));
                 return result;
             }
         }
@@ -229,7 +254,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             newChildren.add(children.get(right));
         } else {
             // this shouldn't happen, should have been caught above
-           log.warn("Bad bad parameters passed to markovInsideBinarizeLocalTree");
+            log.warn("Bad bad parameters passed to markovInsideBinarizeLocalTree");
         }
         // newChildren should be set up now with two children
         // make our new label
@@ -256,7 +281,8 @@ public class BinarizeTreeTransformer implements TreeTransformer {
 
         // finished making new label
         result = new Tree(t);
-        result.setChildren(newChildren);
+        result.setLabel(label);
+        result.connect(newChildren);
         return result;
     }
 
@@ -373,6 +399,8 @@ public class BinarizeTreeTransformer implements TreeTransformer {
         if (right > headLoc || left < headLoc) {
             middlePiece = " ..." + middlePiece;
         }
+
+
         String headStr = t.children().get(headLoc).label();
         // Optimize memory allocation for this next line, since these are the
         // String's that linger.
@@ -388,9 +416,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
         return labelStr + "/[" + word + "/"+ tag + "]";
     }
 
-    private Tree insideBinarizeLocalTree(Tree t, int headNum, Tree head, int leftProcessed, int rightProcessed) {
-        String word = head.value();
-        String tag = head.tags().get(0);
+    private Tree insideBinarizeLocalTree(Tree t, int headNum, String word,String tag, int leftProcessed, int rightProcessed) {
         List<Tree> newChildren = new ArrayList<>(2);      // check done
         if (t.children().size() <= leftProcessed + rightProcessed + 2) {
             Tree leftChild = t.children().get(leftProcessed);
@@ -402,7 +428,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
                 ret.setTags(Collections.singletonList(tag));
                 ret.setValue(word);
                 ret.setHeadWord(finalCat);
-                ret.setChildren(newChildren);
+                ret.connect(newChildren);
                 return ret;
             }
             // binary
@@ -417,13 +443,13 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             ret.setLabel(labelStr);
             ret.setValue(word);
             ret.setTags(Collections.singletonList(tag));
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             return ret;
         }
         if (headNum > leftProcessed) {
             // eat left word
             Tree leftChild = t.children().get(leftProcessed);
-            Tree rightChild = insideBinarizeLocalTree(t, headNum, head, leftProcessed + 1, rightProcessed);
+            Tree rightChild = insideBinarizeLocalTree(t, headNum, word,tag, leftProcessed + 1, rightProcessed);
             newChildren.add(leftChild);
             newChildren.add(rightChild);
             String labelStr = ("@ " + leftChild.label() + " " + rightChild.label().substring(2));
@@ -432,7 +458,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             }
 
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             ret.setHeadWord(tag);
             ret.setLabel(labelStr);
             ret.setValue(word);
@@ -440,7 +466,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             return ret;
         } else {
             // eat right word
-            Tree leftChild = insideBinarizeLocalTree(t, headNum, head, leftProcessed, rightProcessed + 1);
+            Tree leftChild = insideBinarizeLocalTree(t, headNum, word,tag, leftProcessed, rightProcessed + 1);
             Tree rightChild = t.children().get(t.children().size() - rightProcessed - 1);
             newChildren.add(leftChild);
             newChildren.add(rightChild);
@@ -452,14 +478,13 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             Tree ret = new Tree(t);
             ret.setLabel(labelStr);
             ret.setValue(word);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             return ret;
         }
     }
 
-    private Tree outsideBinarizeLocalTree(Tree t, String labelStr, String finalCat, int headNum, Tree head, int leftProcessed, String leftStr, int rightProcessed, String rightStr) {
+    private Tree outsideBinarizeLocalTree(Tree t, String labelStr, String finalCat, int headNum, String word,String tag, int leftProcessed, String leftStr, int rightProcessed, String rightStr) {
         List<Tree> newChildren = new ArrayList<>(2);
-        String word = head.value();
         String label = labelStr + "/" + word + "/tag";
         // check if there are <=2 children already
         if (t.children().size() - leftProcessed - rightProcessed <= 2) {
@@ -470,7 +495,7 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             }
 
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             ret.setLabel(label);
 
             return ret;
@@ -485,12 +510,12 @@ public class BinarizeTreeTransformer implements TreeTransformer {
             } else {
                 childLabelStr = "@" + finalCat + " :" + childLeftStr + " ..." + rightStr;
             }
-            Tree rightChild = outsideBinarizeLocalTree(t, childLabelStr, finalCat, headNum, head, leftProcessed + 1, childLeftStr, rightProcessed, rightStr);
+            Tree rightChild = outsideBinarizeLocalTree(t, childLabelStr, finalCat, headNum, word,tag, leftProcessed + 1, childLeftStr, rightProcessed, rightStr);
             newChildren.add(leftChild);
             newChildren.add(rightChild);
 
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             ret.setLabel(label);
 
             return ret;
@@ -505,11 +530,11 @@ public class BinarizeTreeTransformer implements TreeTransformer {
                 childLabelStr = "@" + finalCat + " :" + leftStr + " ..." + childRightStr;
             }
 
-            Tree leftChild = outsideBinarizeLocalTree(t, childLabelStr, finalCat, headNum, head, leftProcessed, leftStr, rightProcessed + 1, childRightStr);
+            Tree leftChild = outsideBinarizeLocalTree(t, childLabelStr, finalCat, headNum, word,tag, leftProcessed, leftStr, rightProcessed + 1, childRightStr);
             newChildren.add(leftChild);
             newChildren.add(rightChild);
             Tree ret = new Tree(t);
-            ret.setChildren(newChildren);
+            ret.connect(newChildren);
             ret.setLabel(labelStr);
 
             return ret;

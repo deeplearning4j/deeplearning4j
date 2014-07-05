@@ -240,9 +240,11 @@ public class HeadWordFinder  {
     }
 
 
-
-
-
+    /**
+     * Finds the bottom most head
+     * @param parentNode the bottom most head
+     * @return the bottom most head (no children) for the given parent
+     */
     public Tree findHead(Tree parentNode) {
         Tree cursor = parentNode;
 
@@ -252,7 +254,7 @@ public class HeadWordFinder  {
         return cursor;
     }
 
-    Tree findHead2(Tree parentNode) {
+    public Tree findHead2(Tree parentNode) {
         List<Tree> childNodes = parentNode.children();
         List<String> childTypes = new ArrayList<>(childNodes.size());
 

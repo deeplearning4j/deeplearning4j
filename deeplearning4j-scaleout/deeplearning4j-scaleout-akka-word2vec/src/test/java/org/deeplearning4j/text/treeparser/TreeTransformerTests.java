@@ -35,13 +35,39 @@ public class TreeTransformerTests {
     public void testBinarize() throws Exception {
         List<Tree> trees = parser.getTrees("This is one sentence. This is another sentence.");
         TreeTransformer t = new BinarizeTreeTransformer();
+        TreeTransformer cnf = new CollapseUnaries();
         for(Tree t2 : trees) {
             t2 = t.transform(t2);
-           for(Tree child : t2.children()) {
-              assertEquals(true,child.isLeaf() || child.isPreTerminal() || child.children().size() <= 2);
-           }
+            assertChildSize(t2);
+            t2 = cnf.transform(t2);
+
 
         }
     }
+
+
+
+
+
+    private void assertPreTerminalOrUnary(Tree tree) {
+        for(Tree child : tree.children()) {
+            assertPreTerminalOrUnary(child);
+        }
+
+        assertEquals(true,tree.children().size() == 1 || tree.isPreTerminal() || tree.isLeaf());
+
+
+    }
+
+    private void assertChildSize(Tree tree) {
+        for(Tree child : tree.children()) {
+            assertChildSize(child);
+        }
+
+        assertEquals(true,tree.isLeaf() || tree.isPreTerminal() || tree.children().size() <= 2);
+
+
+    }
+
 
 }

@@ -2,7 +2,6 @@ package org.deeplearning4j.text.treeparser;
 
 import org.deeplearning4j.rntn.Tree;
 import org.deeplearning4j.text.treeparser.transformer.TreeTransformer;
-import org.deeplearning4j.word2vec.Word2Vec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,10 +13,10 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class TreeVectorizer {
-    private Word2Vec vec;
+
     private TreeParser parser;
     private TreeTransformer treeTransformer = new BinarizeTreeTransformer();
-    private TreeTransformer cnfTransformer = new CNFTransformer();
+    private TreeTransformer cnfTransformer = new CollapseUnaries();
 
     /**
      * Uses the given parser and model
@@ -49,7 +48,9 @@ public class TreeVectorizer {
         List<Tree> ret = new ArrayList<>();
         List<Tree> baseTrees = parser.getTrees(sentences);
         for(Tree t : baseTrees) {
-            ret.add(treeTransformer.transform(t));
+            Tree binarized = treeTransformer.transform(t);
+            binarized = cnfTransformer.transform(binarized);
+            ret.add(binarized);
         }
 
         return ret;

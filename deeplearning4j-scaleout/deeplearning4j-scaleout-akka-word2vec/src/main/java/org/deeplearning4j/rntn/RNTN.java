@@ -311,7 +311,10 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
      */
     public void train(List<Tree> trainingBatch) {
         this.trainingTrees = trainingBatch;
-        getValueGradient(0);
+        for(Tree t : trainingBatch) {
+            forwardPropagateTree(t);
+            getValueGradient(0);
+        }
     }
 
 
@@ -432,7 +435,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     @Override
     public int getNumParameters() {
-        int totalSize = 0;
+        int totalSize;
         // binaryTensorSize was set to 0 if useTensors=false
         totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassification.size() + binaryTensors.size());
         totalSize += numUnaryMatrices * unaryClassification.size();
@@ -536,7 +539,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         DoubleMatrix deltaClass = goldClass >= 0 ? SimpleBlas.scal(nodeWeight,predictions.sub(goldLabel)) : new DoubleMatrix(predictions.rows, predictions.columns);
         DoubleMatrix localCD = deltaClass.mmul(DoubleMatrix.concatHorizontally(currentVector,DoubleMatrix.ones(1,currentVector.columns)).transpose());
 
-        double error = -(MatrixFunctions.log(predictions).mul(goldLabel).sum());
+        double error = -(MatrixFunctions.log(predictions).muli(goldLabel).sum());
         error = error * nodeWeight;
         tree.setError(error);
 
@@ -601,7 +604,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         DoubleMatrix WTDelta = W.transpose().mmul(deltaFull);
         DoubleMatrix WTDeltaNoBias = WTDelta.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, deltaFull.rows * 2));
         int size = deltaFull.length;
-        DoubleMatrix deltaTensor = new DoubleMatrix(size*2, 1);
+        DoubleMatrix deltaTensor = new DoubleMatrix(size * 2, 1);
         DoubleMatrix fullVector = DoubleMatrix.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
             DoubleMatrix scaledFullVector = SimpleBlas.scal(deltaFull.get(slice),fullVector);
@@ -626,7 +629,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             // calculate the classification for this word/tag.  In fact, the
             // recursion should not have gotten here (unless there are
             // degenerate trees of just one leaf)
-            throw new AssertionError("We should not have reached leaves in forwardPropagate");
+            //throw new AssertionError("We should not have reached leaves in forwardPropagate");
+            return;
         } else if (tree.isPreTerminal()) {
             classification = getUnaryClassification(tree.label());
             String word = tree.children().get(0).label();
@@ -758,18 +762,18 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
 
         // TODO: we may find a big speedup by separating the derivatives and then summing
-       final AtomicDouble error = new AtomicDouble(0);
-       Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
-           @Override
-           public void run(Tree currentItem, Object[] args) {
-               backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD);
-           }
-       },new Parallelization.RunnableWithParams<Tree>() {
-           @Override
-           public void run(Tree currentItem, Object[] args) {
-                   error.addAndGet(currentItem.errorSum());
-           }
-       },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD});
+        final AtomicDouble error = new AtomicDouble(0);
+        Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
+            @Override
+            public void run(Tree currentItem, Object[] args) {
+                backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD);
+            }
+        },new Parallelization.RunnableWithParams<Tree>() {
+            @Override
+            public void run(Tree currentItem, Object[] args) {
+                error.addAndGet(currentItem.errorSum());
+            }
+        },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD});
 
 
 

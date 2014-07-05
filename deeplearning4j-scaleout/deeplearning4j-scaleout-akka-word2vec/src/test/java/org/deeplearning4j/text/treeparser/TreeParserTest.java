@@ -1,5 +1,6 @@
 package org.deeplearning4j.text.treeparser;
 
+import org.cleartk.syntax.constituent.type.TreebankNode;
 import org.deeplearning4j.rntn.Tree;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,5 +31,19 @@ public class TreeParserTest {
 
     }
 
+
+    @Test
+    public void testHierarchy() throws Exception {
+        List<Tree> trees = parser.getTrees("This is one sentence. This is another sentence.");
+        List<TreebankNode> treebankTrees = parser.getTreebankTrees("This is one sentence. This is another sentence.");
+        assertEquals(treebankTrees.size(),trees.size());
+
+        for(int i = 0; i < treebankTrees.size(); i++) {
+            Tree t = trees.get(i);
+            TreebankNode t2 = treebankTrees.get(i);
+            assertEquals(t.children().size(),t2.getChildren().size());
+        }
+
+    }
 
 }

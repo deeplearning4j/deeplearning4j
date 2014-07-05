@@ -24,8 +24,8 @@ public class Tree implements Serializable {
     private int goldLabel;
     private List<String> tokens;
     private List<String> tags;
-
-
+    private String parse;
+    private int begin,end;
 
     public Tree(Tree tree) {
         this.vector = tree.vector;
@@ -39,6 +39,7 @@ public class Tree implements Serializable {
 
     public Tree(Tree parent,List<String> tokens) {
         this.parent = parent;
+        this.tokens = tokens;
         children = new ArrayList<>();
     }
 
@@ -121,6 +122,9 @@ public class Tree implements Serializable {
     }
 
     public List<Tree> children() {
+        if(children == null)
+            children = new ArrayList<>();
+
         return children;
     }
 
@@ -129,6 +133,8 @@ public class Tree implements Serializable {
      * @return whether the node has one child and the child is a leaf
      */
     public boolean isPreTerminal() {
+        if(children == null && label != null && !label.equals("TOP"))
+            children = new ArrayList<>();
         return children.size() == 1 && children.get(0).isLeaf();
     }
 
@@ -349,16 +355,16 @@ public class Tree implements Serializable {
         return children;
     }
 
-    public void setChildren(List<Tree> children) {
-        this.children = children;
-    }
-
     public String getHeadWord() {
         return headWord;
     }
 
     public void setHeadWord(String headWord) {
         this.headWord = headWord;
+    }
+
+    public void setParse(String parse) {
+        this.parse = parse;
     }
 
     /**
@@ -372,6 +378,26 @@ public class Tree implements Serializable {
             t.setParent(this);
     }
 
+    public int getBegin() {
+        return begin;
+    }
+
+    public void setBegin(int begin) {
+        this.begin = begin;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public void setEnd(int end) {
+        this.end = end;
+    }
+
+    @Override
+    public String toString() {
+        return parse;
+    }
 
     @Override
     public boolean equals(Object o) {

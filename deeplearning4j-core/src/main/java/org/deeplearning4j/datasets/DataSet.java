@@ -434,6 +434,24 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         return new Pair<>(train,test);
     }
 
+
+    /**
+     * Returns the labels for the dataset
+     * @return the labels for the dataset
+     */
+    public DoubleMatrix getLabels() {
+        return getSecond();
+    }
+
+    /**
+     * Get the feature matrix (inputs for the data)
+     * @return the feature matrix for the dataset
+     */
+    public DoubleMatrix getFeatureMatrix() {
+        return getFirst();
+    }
+
+
     /**
      * Organizes the dataset to minimize sampling error
      * while still allowing efficient batching.
