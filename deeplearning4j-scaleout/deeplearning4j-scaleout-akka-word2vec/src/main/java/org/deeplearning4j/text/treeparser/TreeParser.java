@@ -4,8 +4,6 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
 
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.fit.factory.AnalysisEngineFactory;
-import org.apache.uima.fit.util.FSCollectionFactory;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.util.CasPool;
 import org.cleartk.opennlp.tools.ParserAnnotator;
@@ -15,12 +13,18 @@ import org.cleartk.syntax.constituent.type.TreebankNode;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
 import org.cleartk.util.ParamUtil;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.rntn.Tree;
 import org.deeplearning4j.text.annotator.PoStagger;
 import org.deeplearning4j.text.annotator.SentenceAnnotator;
 import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
+import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
+import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
+import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
+import org.deeplearning4j.word2vec.util.ContextLabelRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tree parser
+ * Tree parser for constituency parsing
+ *
  * @author Adam Gibson
  */
 public class TreeParser {
@@ -37,10 +42,14 @@ public class TreeParser {
     private AnalysisEngine tokenizer;
     private CasPool pool;
     private static Logger log = LoggerFactory.getLogger(TreeParser.class);
+    private TokenizerFactory tf;
+
+
     public TreeParser(AnalysisEngine parser,AnalysisEngine tokenizer,CasPool pool) {
         this.parser = parser;
         this.tokenizer = tokenizer;
         this.pool = pool;
+        tf = new UimaTokenizerFactory(tokenizer,true);
     }
 
 
@@ -52,7 +61,7 @@ public class TreeParser {
             tokenizer = getTokenizer();
         if(pool == null)
             pool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,parser);
-
+        tf = new UimaTokenizerFactory(tokenizer,true);
 
     }
 
@@ -66,6 +75,101 @@ public class TreeParser {
      * @throws Exception
      */
     public List<Tree> getTrees(String text,SentencePreProcessor preProcessor)  throws Exception {
+        CAS c = pool.getCas();
+        if(preProcessor != null)
+            text = preProcessor.preProcess(text);
+
+
+        c.setDocumentText(text);
+        tokenizer.process(c);
+        List<Tree> ret = new ArrayList<>();
+        CAS c2 = pool.getCas();
+        List< Pair<String,MultiDimensionalMap<Integer,Integer,String>>> list = new ArrayList<>();
+        for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
+            List<String> tokens = new ArrayList<>();
+            for(Token t : JCasUtil.selectCovered(Token.class,sentence))
+                tokens.add(t.getCoveredText());
+
+            Pair<String,MultiDimensionalMap<Integer,Integer,String>> p = ContextLabelRetriever.stringWithLabels(sentence.getCoveredText(),tf);
+            c2.setDocumentText(p.getFirst());
+            list.add(p);
+            tokenizer.process(c2);
+            parser.process(c2);
+
+            //build the tree based on this
+            TopTreebankNode node = JCasUtil.selectSingle(c.getJCas(),TopTreebankNode.class);
+            ret.add(TreeFactory.buildTree(node));
+
+
+        }
+
+        pool.releaseCas(c2);
+
+
+        return ret;
+
+
+    }
+
+
+    /**
+     * Gets trees from text.
+     * First a sentence segmenter is used to segment the training examples in to sentences.
+     * Sentences are then turned in to trees and returned.
+     * @param text the text to process
+     * @return the list of trees
+     * @throws Exception
+     */
+    public List<TreebankNode> getTreebankTrees(String text)  throws Exception {
+        CAS c = pool.getCas();
+        c.setDocumentText(text);
+        tokenizer.process(c);
+        List<TreebankNode> ret = new ArrayList<>();
+        for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
+            List<String> tokens = new ArrayList<>();
+            CAS c2 = tokenizer.newCAS();
+
+            for(Token t : JCasUtil.selectCovered(Token.class,sentence))
+                tokens.add(t.getCoveredText());
+
+
+            c2.setDocumentText(sentence.getCoveredText());
+            tokenizer.process(c2);
+            parser.process(c2);
+
+            //build the tree based on this
+            TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
+            log.info("Tree bank parse " + node.getTreebankParse());
+            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
+                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
+            }
+
+            ret.add(node);
+
+
+        }
+
+        pool.releaseCas(c);
+
+        return ret;
+
+
+    }
+    /**
+     * Gets trees from text.
+     * First a sentence segmenter is used to segment the training examples in to sentences.
+     * Sentences are then turned in to trees and returned.
+     *
+     * This will also process sentences with the following label format:
+     * <YOURLABEL> some text </YOURLABEL>
+     *
+     * This will allow you to train on and label sentences and label spans yourself.
+     *
+     * @param text the text to process
+     * @return the list of trees
+     * @throws Exception
+     */
+    public List<Tree> getTreesWithLabelsAndBounds(String text,MultiDimensionalMap<Integer,Integer,Integer> spanLabels)  throws Exception {
         CAS c = pool.getCas();
         c.setDocumentText(text);
         tokenizer.process(c);
@@ -82,16 +186,79 @@ public class TreeParser {
             parser.process(c2);
 
             //build the tree based on this
-            TopTreebankNode node = JCasUtil.selectSingle(c.getJCas(),TopTreebankNode.class);
-            ret.add(TreeFactory.buildTree(node));
+            TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
+            log.info("Tree bank parse " + node.getTreebankParse());
+            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
+                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
+            }
 
+            ret.add(TreeFactory.buildTree(node));
+            c2.reset();
 
         }
+
+        pool.releaseCas(c);
+        pool.releaseCas(c2);
 
         return ret;
 
 
     }
+
+
+    /**
+     * Gets trees from text.
+     * First a sentence segmenter is used to segment the training examples in to sentences.
+     * Sentences are then turned in to trees and returned.
+     *
+     * This will also process sentences with the following label format:
+     * <YOURLABEL> some text </YOURLABEL>
+     *
+     * This will allow you to train on and label sentences and label spans yourself.
+     *
+     * @param text the text to process
+     * @return the list of trees
+     * @throws Exception
+     */
+    public List<Tree> getTreesWithLabels(String text)  throws Exception {
+        CAS c = pool.getCas();
+        c.setDocumentText(text);
+        tokenizer.process(c);
+        List<Tree> ret = new ArrayList<>();
+        CAS c2 = pool.getCas();
+        for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
+            List<String> tokens = new ArrayList<>();
+            for(Token t : JCasUtil.selectCovered(Token.class,sentence))
+                tokens.add(t.getCoveredText());
+
+
+            c2.setDocumentText(sentence.getCoveredText());
+
+
+
+            tokenizer.process(c2);
+            parser.process(c2);
+
+            //build the tree based on this
+            TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
+            log.info("Tree bank parse " + node.getTreebankParse());
+            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
+                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
+            }
+
+            ret.add(TreeFactory.buildTree(node));
+            c2.reset();
+
+        }
+
+        pool.releaseCas(c);
+        pool.releaseCas(c2);
+
+        return ret;
+
+
+    }
+
     /**
      * Gets trees from text.
      * First a sentence segmenter is used to segment the training examples in to sentences.
@@ -118,6 +285,7 @@ public class TreeParser {
 
             //build the tree based on this
             TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
+            log.info("Tree bank parse " + node.getTreebankParse());
             for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
                 log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
             }
@@ -126,6 +294,9 @@ public class TreeParser {
             c2.reset();
 
         }
+
+        pool.releaseCas(c);
+        pool.releaseCas(c2);
 
         return ret;
 
@@ -146,9 +317,6 @@ public class TreeParser {
     }
 
     public static AnalysisEngine getParser() throws Exception {
-        /*
-
-         */
         return createEngine(
                 createEngineDescription(
                         createEngineDescription(

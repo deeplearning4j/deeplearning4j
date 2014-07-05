@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.*;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.SimpleBlas;
 
 /**
  * Output layer with different objective functions for different objectives.
@@ -467,6 +468,19 @@ public class OutputLayer implements Serializable {
         return ret;
 
 
+    }
+
+    /**
+     * Returns the predictions for each example in the dataset
+     * @param d the matrix to predict
+     * @return the prediction for the dataset
+     */
+    public int[] predict(DoubleMatrix d) {
+        DoubleMatrix output = output(d);
+        int[] ret = new int[d.rows];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = SimpleBlas.iamax(output);
+        return ret;
     }
 
 

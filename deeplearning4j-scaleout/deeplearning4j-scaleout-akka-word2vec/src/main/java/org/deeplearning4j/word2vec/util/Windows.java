@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
@@ -71,7 +72,7 @@ public class Windows {
 	 */
 	public static List<Window> windows(String words,TokenizerFactory tokenizerFactory) {
 		Tokenizer tokenizer = tokenizerFactory.create(words);
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 		while(tokenizer.hasMoreTokens())
 			list.add(tokenizer.nextToken());
 		return windows(list,5);
@@ -86,17 +87,27 @@ public class Windows {
 	 * @return a window based on the given sentence
 	 */
 	public static Window windowForWordInPosition(int windowSize,int wordPos,List<String> sentence) {
-		List<String> window = new ArrayList<String>();
+		List<String> window = new ArrayList<>();
+        List<String> onlyTokens = new ArrayList<>();
 		int contextSize = (int) Math.floor((windowSize - 1 ) / 2);
-		for (int i =  wordPos - contextSize; i <= wordPos + contextSize;i++){
+
+        for (int i =  wordPos - contextSize; i <= wordPos + contextSize;i++){
 			if(i < 0)
 				window.add("<s>");
 			else if(i >= sentence.size())
 				window.add("</s>");
-			else 
-				window.add(sentence.get(i));
+			else  {
+                onlyTokens.add(sentence.get(i));
+                window.add(sentence.get(i));
+
+            }
 		}
-		return new Window(window);
+
+        String wholeSentence = StringUtils.join(sentence);
+        String window2 = StringUtils.join(onlyTokens);
+        int begin = wholeSentence.indexOf(window2);
+        int end =   begin + window2.length();
+        return new Window(window,begin,end);
 
 	}
 
@@ -108,7 +119,7 @@ public class Windows {
 	 */
 	public static List<Window> windows(List<String> words,int windowSize) {
 
-		List<Window> ret = new ArrayList<Window>();
+		List<Window> ret = new ArrayList<>();
 
 		for(int i = 0; i < words.size(); i++) 
 		   ret.add(windowForWordInPosition(windowSize,i,words));

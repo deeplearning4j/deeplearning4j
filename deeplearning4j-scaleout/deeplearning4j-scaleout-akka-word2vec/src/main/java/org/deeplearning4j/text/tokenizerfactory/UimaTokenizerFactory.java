@@ -24,14 +24,30 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
     private AnalysisEngine tokenizer;
     private CasPool pool;
+    private boolean checkForLabel;
+
+
     public UimaTokenizerFactory() throws ResourceInitializationException {
-        this(defaultAnalysisEngine());
+        this(defaultAnalysisEngine(),true);
     }
 
 
+
     public UimaTokenizerFactory(AnalysisEngine tokenizer) {
+       this(tokenizer,true);
+    }
+
+
+    public UimaTokenizerFactory(boolean checkForLabel) throws ResourceInitializationException {
+        this(defaultAnalysisEngine(),checkForLabel);
+    }
+
+
+
+    public UimaTokenizerFactory(AnalysisEngine tokenizer,boolean checkForLabel) {
         super();
         this.tokenizer = tokenizer;
+        this.checkForLabel = checkForLabel;
         try {
             pool = new CasPool(Runtime.getRuntime().availableProcessors() * 10,tokenizer);
 
@@ -44,7 +60,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
     @Override
     public  Tokenizer create(String toTokenize) {
-        return new UimaTokenizer(toTokenize,tokenizer,pool);
+        return new UimaTokenizer(toTokenize,tokenizer,pool,checkForLabel);
     }
 
 

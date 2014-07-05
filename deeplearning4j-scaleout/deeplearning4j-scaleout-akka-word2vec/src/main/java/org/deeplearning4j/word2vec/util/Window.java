@@ -25,15 +25,16 @@ public class Window implements Serializable {
 	private boolean endLabel;
 	private int windowSize;
 	private int median;
-	private static String BEGIN_LABEL = "<[A-Z]+|\\d+>";
-	private static String END_LABEL = "</[A-Z]+\\d+>";
+	private static String BEGIN_LABEL = "<([A-Z]+|\\d+)>";
+	private static String END_LABEL = "</([A-Z]+|\\d+)>";
+    private int begin,end;
 
 	/**
 	 * Creates a window with a context of size 3
 	 * @param words a collection of strings of size 3
 	 */
-	public Window(Collection<String> words) {
-		this(words,5);
+	public Window(Collection<String> words,int begin,int end) {
+		this(words,5,begin,end);
 
 	}
 
@@ -46,13 +47,17 @@ public class Window implements Serializable {
 	 * Initialize a window with the given size
 	 * @param words the words to use 
 	 * @param windowSize the size of the window
+     * @param begin the begin index for the window
+     * @param end the end index for the window
 	 */
-	public Window(Collection<String> words, int windowSize) {
+	public Window(Collection<String> words, int windowSize,int begin,int end) {
 		if(words == null)
 			throw new IllegalArgumentException("Words must be a list of size 3");
 
-		this.words = new ArrayList<String>(words);
+		this.words = new ArrayList<>(words);
 		this.windowSize = windowSize;
+        this.begin = begin;
+        this.end = end;
 		initContext();
 	}
 
@@ -77,6 +82,12 @@ public class Window implements Serializable {
 		}
 
 		for(String s1 : after) {
+
+            if(s1.matches(BEGIN_LABEL)) {
+                this.label = s1.replaceAll("(<|>)","").replace("/","");
+                beginLabel = true;
+            }
+
 			if(s1.matches(END_LABEL)) {
 				endLabel = true;
 				this.label = s1.replaceAll("(<|>)","");
@@ -136,7 +147,21 @@ public class Window implements Serializable {
 		this.label = label;
 	}
 
+    public int getBegin() {
+        return begin;
+    }
 
+    public void setBegin(int begin) {
+        this.begin = begin;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public void setEnd(int end) {
+        this.end = end;
+    }
 
 
 }
