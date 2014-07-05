@@ -2,6 +2,7 @@ package org.deeplearning4j.rntn;
 
 import akka.actor.ActorSystem;
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.Tensor;
@@ -18,6 +19,8 @@ import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
 import org.jblas.ranges.RangeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -39,10 +42,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     protected double value = 0;
-    private int numOuts = 25;
+    private int numOuts = 3;
     private int numHidden = 25;
     private RandomGenerator rng;
-    private long seed = 123;
     private boolean useTensors = true;
     private boolean combineClassification = true;
     private boolean simplifiedModel = true;
@@ -51,6 +53,7 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.hardTanh();
+    protected ActivationFunction outputActivation = Activations.softmax();
     protected AdaGrad paramAdaGrad;
     private int currIteration = -1;
 
@@ -129,6 +132,9 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     private Map<Integer,Double> classWeights;
 
+    private static Logger log = LoggerFactory.getLogger(RNTN.class);
+
+
     private ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
 
     private RNTN(int numHidden, RandomGenerator rng, boolean useTensors, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, double scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, double initialAdagradWeight, int adagradResetFrequency, double regTransformTensor, Map<String, DoubleMatrix> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryTensorSize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Double> classWeights) {
@@ -158,7 +164,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
     private void init() {
 
-
+        if(rng == null)
+            rng = new MersenneTwister(123);
 
         MultiDimensionalSet<String, String> binaryProductions = MultiDimensionalSet.hashSet();
         if (simplifiedModel) {
@@ -313,11 +320,31 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         this.trainingTrees = trainingBatch;
         for(Tree t : trainingBatch) {
             forwardPropagateTree(t);
-            getValueGradient(0);
+            setParameters(getParameters().sub(getValueGradient(0)));
         }
     }
 
-
+    /**
+     * Given a sequence of Iterators over SimpleMatrix, fill in all of
+     * the matrices with the entries in the theta vector.  Errors are
+     * thrown if the theta vector does not exactly fill the matrices.
+     */
+    public  void setParams(DoubleMatrix theta, Iterator<? extends DoubleMatrix> ... matrices) {
+        int index = 0;
+        for (Iterator<? extends DoubleMatrix> matrixIterator : matrices) {
+            while (matrixIterator.hasNext()) {
+                DoubleMatrix matrix = matrixIterator.next();
+                int numElements = matrix.length;
+                for (int i = 0; i < numElements; ++i) {
+                    matrix.put(i, theta.get(index));
+                    ++index;
+                }
+            }
+        }
+        if (index != theta.length) {
+            throw new AssertionError("Did not entirely use the theta vector");
+        }
+    }
 
     public DoubleMatrix getWForNode(Tree node) {
         if (node.children().size() == 2) {
@@ -383,7 +410,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
 
 
     public DoubleMatrix getFeatureVector(String word) {
-        return featureVectors.get(getVocabWord(word));
+        DoubleMatrix ret = featureVectors.get(getVocabWord(word));
+        return ret;
     }
 
     public String getVocabWord(String word) {
@@ -633,8 +661,14 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             return;
         } else if (tree.isPreTerminal()) {
             classification = getUnaryClassification(tree.label());
-            String word = tree.children().get(0).label();
+            String word = tree.children().get(0).value();
             DoubleMatrix wordVector = getFeatureVector(word);
+            if(wordVector == null) {
+                log.warn("Unknown word: returning...");
+                return;
+            }
+
+
             nodeVector = activationFunction.apply(wordVector);
         } else if (tree.children().size() == 1) {
             throw new AssertionError("Non-preterminal nodes of size 1 should have already been collapsed");
@@ -662,7 +696,10 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-        DoubleMatrix predictions = MatrixUtil.softmax(classification.mmul(DoubleMatrix.concatHorizontally(nodeVector, DoubleMatrix.ones(nodeVector.columns, 1))));
+
+
+        DoubleMatrix inputWithBias  = DoubleMatrix.concatVertically(nodeVector.transpose(),DoubleMatrix.scalar(1.0));
+        DoubleMatrix predictions = outputActivation.apply(classification.mmul(inputWithBias));
 
         int index = SimpleBlas.iamax(predictions);
         tree.setPrediction(predictions);
@@ -670,19 +707,49 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         tree.setLabel(String.valueOf(index));
     }
 
+
+    public List<DoubleMatrix> output(List<Tree> trees) {
+        List<DoubleMatrix> ret = new ArrayList<>();
+        for(Tree t : trees) {
+            forwardPropagateTree(t);
+            ret.add(t.prediction());
+        }
+
+        return ret;
+    }
+
+
+    public List<Integer> predict(List<Tree> trees) {
+        List<Integer> ret = new ArrayList<>();
+        for(Tree t : trees) {
+           forwardPropagateTree(t);
+            ret.add(SimpleBlas.iamax(t.prediction()));
+       }
+
+        return ret;
+    }
+
+
+
+
     @Override
     public double getParameter(int index) {
-        return 0;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public void setParameters(DoubleMatrix params) {
-
+        setParams(params,binaryTransform.values().iterator(),
+                binaryClassification.values().iterator(),
+                binaryTensors.values().iterator(),
+                unaryClassification.values().iterator(),
+                featureVectors.values().iterator());
     }
 
     @Override
     public void setParameter(int index, double value) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -767,11 +834,12 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
             @Override
             public void run(Tree currentItem, Object[] args) {
                 backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD);
+                error.addAndGet(currentItem.errorSum());
+
             }
         },new Parallelization.RunnableWithParams<Tree>() {
             @Override
             public void run(Tree currentItem, Object[] args) {
-                error.addAndGet(currentItem.errorSum());
             }
         },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryTensorTD, unaryCD, wordVectorD});
 
@@ -813,7 +881,8 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         private boolean randomFeatureVectors;
         private double scalingForInit;
         private boolean lowerCasefeatureNames;
-        private ActivationFunction activationFunction;
+        private ActivationFunction activationFunction = Activations.sigmoid(),
+                outputActivationFunction = Activations.softmax();
         private double initialAdagradWeight;
         private int adagradResetFrequency;
         private double regTransformTensor;
@@ -826,6 +895,11 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
         private int unaryClassificationSize;
         private Map<Integer, Double> classWeights;
 
+
+        public Builder withOutputActivation(ActivationFunction outputActivationFunction) {
+            this.outputActivationFunction = outputActivationFunction;
+            return this;
+        }
 
         public Builder setFeatureVectors(Word2Vec vec) {
             setFeatureVectors(vec.toVocabDouble());

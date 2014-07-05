@@ -27,7 +27,6 @@ import org.deeplearning4j.word2vec.util.ContextLabelRetriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.Context;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -156,6 +155,78 @@ public class TreeParser {
 
     }
 
+    /**
+     * Gets trees from text.
+     * First a sentence segmenter is used to segment the training examples in to sentences.
+     * Sentences are then turned in to trees and returned.
+     *
+     * This will also process sentences with the following label format:
+     * <YOURLABEL> some text </YOURLABEL>
+     *
+     * This will allow you to train on and label sentences and label spans yourself.
+     *
+     * @param text the text to process
+     * @param label the label for the whole sentence
+     * @param labels the possible labels for the sentence
+     * @return the list of trees
+     * @throws Exception
+     */
+    public List<Tree> getTreesWithLabels(String text,String label,List<String> labels)  throws Exception {
+        CAS c = pool.getCas();
+        c.setDocumentText("<" + label + "> " + text + "</" + label + ">");
+        tokenizer.process(c);
+        List<String> lowerCaseLabels = new ArrayList<>();
+        for(String s : labels)
+            lowerCaseLabels.add(s.toLowerCase());
+        labels = lowerCaseLabels;
+
+        List<Tree> ret = new ArrayList<>();
+        CAS c2 = pool.getCas();
+        for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
+            List<String> tokens = new ArrayList<>();
+            for(Token t : JCasUtil.selectCovered(Token.class,sentence))
+                tokens.add(t.getCoveredText());
+
+            try {
+                Pair<String, MultiDimensionalMap<Integer, Integer, String>> stringsWithLabels = ContextLabelRetriever.stringWithLabels(sentence.getCoveredText(), tf);
+                c2.setDocumentText(stringsWithLabels.getFirst());
+                tokenizer.process(c2);
+                parser.process(c2);
+
+                //build the tree based on this
+                //damn it
+                List<TopTreebankNode> nodes = new ArrayList<>(JCasUtil.select(c2.getJCas(),TopTreebankNode.class));
+                if(nodes.size() > 1) {
+                    log.warn("More than one top level node for a treebank parse. Only accepting first input node.");
+                }
+
+                else if(nodes.isEmpty()) {
+                    c2.reset();
+                    continue;
+                }
+
+                TopTreebankNode node = nodes.get(0);
+                ret.add(TreeFactory.buildTree(node,stringsWithLabels,labels));
+                c2.reset();
+
+            }catch(Exception e) {
+                log.warn("Unable to parse " + sentence.getCoveredText());
+                c2.reset();
+                continue;
+            }
+
+
+
+        }
+
+        pool.releaseCas(c);
+        pool.releaseCas(c2);
+
+        return ret;
+
+
+    }
+
 
     /**
      * Gets trees from text.
@@ -178,9 +249,9 @@ public class TreeParser {
         tokenizer.process(c);
         List<String> lowerCaseLabels = new ArrayList<>();
         for(String s : labels)
-           lowerCaseLabels.add(s.toLowerCase());
+            lowerCaseLabels.add(s.toLowerCase());
         labels = lowerCaseLabels;
-        
+
         List<Tree> ret = new ArrayList<>();
         CAS c2 = pool.getCas();
         for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
@@ -197,12 +268,18 @@ public class TreeParser {
             parser.process(c2);
 
             //build the tree based on this
-            TopTreebankNode node = JCasUtil.selectSingle(c2.getJCas(),TopTreebankNode.class);
-            log.info("Tree bank parse " + node.getTreebankParse());
-            for(TreebankNode node2 : JCasUtil.select(c2.getJCas(),TreebankNode.class)) {
-                log.info("Node val " + node2.getNodeValue() + " and label " + node2.getNodeType() + " and tags was " + node2.getNodeTags());
+            //damn it
+            List<TopTreebankNode> nodes = new ArrayList<>(JCasUtil.select(c2.getJCas(),TopTreebankNode.class));
+            if(nodes.size() > 1) {
+                log.warn("More than one top level node for a treebank parse. Only accepting first input node.");
             }
 
+            else if(nodes.isEmpty()) {
+                c2.reset();
+                continue;
+            }
+
+            TopTreebankNode node = nodes.get(0);
             ret.add(TreeFactory.buildTree(node,stringsWithLabels,labels));
             c2.reset();
 
