@@ -60,6 +60,10 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
     @Override
     public  Tokenizer create(String toTokenize) {
+        if(tokenizer == null || pool == null)
+            throw new IllegalStateException("Unable to proceed; tokenizer or pool is null");
+        if(toTokenize == null || toTokenize.isEmpty())
+            throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
         return new UimaTokenizer(toTokenize,tokenizer,pool,checkForLabel);
     }
 

@@ -11,6 +11,7 @@ import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
+import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.vectorizer.TextVectorizer;
 import org.deeplearning4j.word2vec.vectorizer.TfidfVectorizer;
@@ -34,7 +35,7 @@ public class TweetOpinionMining {
         InputStream is = FileUtils.openInputStream(new File(args[0]));
 
 
-        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is);
+        LabelAwareSentenceIterator iterator = new LabelAwareListSentenceIterator(is);
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {
