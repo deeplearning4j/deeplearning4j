@@ -708,6 +708,11 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     }
 
 
+    /**
+     * output the prediction probabilities for each tree
+     * @param trees the trees to predict
+     * @return the prediction probabilities for each tree
+     */
     public List<DoubleMatrix> output(List<Tree> trees) {
         List<DoubleMatrix> ret = new ArrayList<>();
         for(Tree t : trees) {
@@ -719,6 +724,11 @@ public class RNTN implements Serializable,OptimizableByGradientValueMatrix {
     }
 
 
+    /**
+     * output the top level labels for each tree
+     * @param trees the trees to predict
+     * @return the prediction labels for each tree
+     */
     public List<Integer> predict(List<Tree> trees) {
         List<Integer> ret = new ArrayList<>();
         for(Tree t : trees) {
