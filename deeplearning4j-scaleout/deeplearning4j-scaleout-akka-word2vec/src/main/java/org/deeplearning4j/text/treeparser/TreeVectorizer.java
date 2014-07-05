@@ -57,6 +57,27 @@ public class TreeVectorizer {
 
     }
 
+    /**
+     * Vectorizes the passed in sentences
+     * @param sentences the sentences to convert to trees
+     * @param labels all of the possible labels for the trees
+     * @return a list of trees pre converted with CNF and
+     * binarized and word vectors at the leaves of the trees
+     *
+     * @throws Exception
+     */
+    public List<Tree> getTreesWithLabels(String sentences,List<String> labels) throws Exception {
+        List<Tree> ret = new ArrayList<>();
+        List<Tree> baseTrees = parser.getTreesWithLabels(sentences,labels);
+        for(Tree t : baseTrees) {
+            Tree binarized = treeTransformer.transform(t);
+            binarized = cnfTransformer.transform(binarized);
+            ret.add(binarized);
+        }
+
+        return ret;
+
+    }
 
 
 
