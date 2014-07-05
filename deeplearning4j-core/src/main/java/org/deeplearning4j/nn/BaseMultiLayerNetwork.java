@@ -31,6 +31,7 @@ import org.deeplearning4j.util.Dl4jReflection;
 import org.deeplearning4j.util.SerializationUtils;
 import org.jblas.DoubleMatrix;
 
+import org.jblas.SimpleBlas;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1757,6 +1758,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable 
 
 
 
+
+
+    /**
+     * Returns the predictions for each example in the dataset
+     * @param d the matrix to predict
+     * @return the prediction for the dataset
+     */
+    public int[] predict(DoubleMatrix d) {
+        DoubleMatrix output = output(d);
+        int[] ret = new int[d.rows];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = SimpleBlas.iamax(output);
+        return ret;
+    }
 
     /**
      * Label the probabilities of the input

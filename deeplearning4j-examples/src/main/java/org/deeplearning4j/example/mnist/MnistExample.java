@@ -9,6 +9,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
@@ -28,25 +29,30 @@ public class MnistExample {
      */
     public static void main(String[] args) throws IOException {
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MultipleEpochsIterator(50,new MnistDataSetIterator(10,10));
-        DataSet ne = iter.next();
-
-        RandomGenerator rng = new MersenneTwister(123);
+        DataSetIterator iter = new MnistDataSetIterator(60000,60000);
+        DataSet shuffled = iter.next();
+        shuffled.sortByLabel();
+        iter = new ListDataSetIterator(shuffled.asList(),100);
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder()
-                .hiddenLayerSizes(new int[]{600, 500, 400}).withRng(rng)
-                .useRegularization(true).withL2(2e-5)
+                .hiddenLayerSizes(new int[]{600, 500, 400})
                 .numberOfInputs(784).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
-        dbn.pretrain(iter,1,1e-1,1);
+
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            dbn.pretrain(next.getFirst(),1,1e-1,1000);
+
+        }
 
 
         iter.reset();
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            dbn.finetune(next.getSecond(),1e-1,1000);
 
-        dbn.finetune(iter,1e-1,1);
-
-
+        }
 
 
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("mnist-dbn.bin"));

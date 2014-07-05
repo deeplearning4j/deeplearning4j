@@ -25,13 +25,14 @@ public class UimaTokenizer implements Tokenizer {
     private int index;
     private CasPool pool;
     private static Logger log = LoggerFactory.getLogger(UimaTokenizer.class);
+    private boolean checkForLabel;
 
 
 
-
-    public UimaTokenizer(String tokens,AnalysisEngine engine,CasPool pool) {
+    public UimaTokenizer(String tokens,AnalysisEngine engine,CasPool pool,boolean checkForLabel) {
         this.engine = engine;
         this.pool = pool;
+        this.checkForLabel = checkForLabel;
         this.tokens = new ArrayList<>();
         try {
             CAS cas = this.pool.getCas(Integer.MAX_VALUE);
@@ -41,7 +42,7 @@ public class UimaTokenizer implements Tokenizer {
             Collection<Token> tokenList = JCasUtil.select(cas.getJCas(), Token.class);
 
             for(Token t : tokenList) {
-                if(valid(t.getCoveredText()))
+                if(!checkForLabel || valid(t.getCoveredText()))
                     if(t.getLemma() != null)
                         this.tokens.add(t.getLemma());
                     else if(t.getStem() != null)
