@@ -74,6 +74,9 @@ public class TreeParser {
      * @throws Exception
      */
     public List<Tree> getTrees(String text,SentencePreProcessor preProcessor)  throws Exception {
+        if(text.isEmpty())
+            return new ArrayList<>();
+
         CAS c = pool.getCas();
         if(preProcessor != null)
             text = preProcessor.preProcess(text);
@@ -120,6 +123,9 @@ public class TreeParser {
      * @throws Exception
      */
     public List<TreebankNode> getTreebankTrees(String text)  throws Exception {
+        if(text.isEmpty())
+            return new ArrayList<>();
+
         CAS c = pool.getCas();
         c.setDocumentText(text);
         tokenizer.process(c);
@@ -172,8 +178,10 @@ public class TreeParser {
      * @throws Exception
      */
     public List<Tree> getTreesWithLabels(String text,String label,List<String> labels)  throws Exception {
+        if(text.isEmpty())
+            return new ArrayList<>();
         CAS c = pool.getCas();
-        c.setDocumentText("<" + label + "> " + text + "</" + label + ">");
+        c.setDocumentText("<" + label + "> " + text + " </" + label + ">");
         tokenizer.process(c);
         List<String> lowerCaseLabels = new ArrayList<>();
         for(String s : labels)
@@ -183,6 +191,9 @@ public class TreeParser {
         List<Tree> ret = new ArrayList<>();
         CAS c2 = pool.getCas();
         for(Sentence sentence : JCasUtil.select(c.getJCas(),Sentence.class)) {
+           if(sentence.getCoveredText().isEmpty())
+               continue;
+
             List<String> tokens = new ArrayList<>();
             for(Token t : JCasUtil.selectCovered(Token.class,sentence))
                 tokens.add(t.getCoveredText());

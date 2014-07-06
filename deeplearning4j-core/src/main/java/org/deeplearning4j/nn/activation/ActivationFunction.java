@@ -5,12 +5,21 @@ import java.io.Serializable;
 import org.jblas.DoubleMatrix;
 
 import com.google.common.base.Function;
+import org.jblas.FloatMatrix;
+
 /**
  * An activation function for a hidden layer for neural networks
  * @author Adam Gibson
  *
  */
 public interface ActivationFunction extends Function<DoubleMatrix,DoubleMatrix>,Serializable {
+
+
+    public FloatMatrix apply(FloatMatrix input);
+
+
+    public FloatMatrix applyDerivative(FloatMatrix input);
+
 
     /**
      * Name of the function

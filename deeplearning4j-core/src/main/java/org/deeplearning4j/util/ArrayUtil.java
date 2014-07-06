@@ -58,6 +58,27 @@ public class ArrayUtil {
      * @param nums the int arrays to combine
      * @return one combined int array
      */
+    public static float[] combineFloat(List<float[]> nums) {
+        int length = 0;
+        for(int i = 0; i < nums.size(); i++)
+            length += nums.get(i).length;
+        float[] ret = new float[length];
+        int count = 0;
+        for(float[] i : nums) {
+            for(int j = 0; j < i.length; j++) {
+                ret[count++] = i[j];
+            }
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Combines a set of int arrays in to one flat int array
+     * @param nums the int arrays to combine
+     * @return one combined int array
+     */
     public static double[] combine(List<double[]> nums) {
         int length = 0;
         for(int i = 0; i < nums.size(); i++)
