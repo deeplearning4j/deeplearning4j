@@ -50,7 +50,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
-public abstract class BaseMultiLayerNetwork implements Serializable,Persistable {
+public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,Output {
 
 
 

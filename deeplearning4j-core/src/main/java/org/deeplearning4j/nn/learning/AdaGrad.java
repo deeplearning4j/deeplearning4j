@@ -81,7 +81,7 @@ public class AdaGrad implements Serializable {
 	 * @return the feature specific learning rates
 	 */
 	public DoubleMatrix getLearningRates(DoubleMatrix gradient) {
-		this.gradient = gradient.dup();
+		this.gradient = gradient;
         DoubleMatrix squaredGradient = pow(this.gradient,2);
         if(this.historicalGradient == null || this.historicalGradient.length != this.gradient.length)
             this.historicalGradient = DoubleMatrix.zeros(this.gradient.rows,this.gradient.columns);

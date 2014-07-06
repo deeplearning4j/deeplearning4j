@@ -79,13 +79,12 @@ public class LabelAwareListSentenceIterator implements LabelAwareSentenceIterato
      * @return the next sentence in the iterator
      */
     @Override
-    public synchronized String nextSentence() {
+    public  String nextSentence() {
         String ret = text.get(currPosition);
         currentLabel = labels.get(currPosition);
         if(sentencePreProcessor != null)
             ret = sentencePreProcessor.preProcess(ret);
         currPosition++;
-
         return ret;
     }
 

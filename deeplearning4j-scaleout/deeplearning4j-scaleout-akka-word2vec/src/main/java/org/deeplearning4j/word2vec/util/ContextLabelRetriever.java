@@ -62,9 +62,10 @@ public class ContextLabelRetriever {
                 currTokens.add(token);
 
             if(currLabel != null && endLabel != null) {
-                currLabel = currLabel.replaceAll("(<|>)","").replace("/","");
-                endLabel = endLabel.replaceAll("(<|>)","").replace("/","");
-
+                currLabel = currLabel.replaceAll("[<>/]","");
+                endLabel = endLabel.replaceAll("[<>/]","");
+                assert !currLabel.isEmpty() : "Current label is empty!";
+                assert !endLabel.isEmpty() : "End label is empty!";
                 assert currLabel.equals(endLabel) : "Current label begin and end did not match for the parse. Was: " + currLabel + " ending with " + endLabel;
 
                 tokensWithSameLabel.add(new Pair<>(currLabel,(List<String>) new ArrayList<>(currTokens)));

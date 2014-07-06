@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.activation;
 
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 /**
  * Rectified Linear
@@ -9,6 +10,22 @@ import org.jblas.DoubleMatrix;
  * @author Adam Gibson
  */
 public class RectifiedLinear extends BaseActivationFunction {
+
+
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        FloatMatrix dup = input.dup();
+        MatrixUtil.max(0,dup);
+        return dup;
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return FloatMatrix.ones(input.rows,input.columns);
+    }
+
+
+
     /**
      * Applies the derivative of this function
      *

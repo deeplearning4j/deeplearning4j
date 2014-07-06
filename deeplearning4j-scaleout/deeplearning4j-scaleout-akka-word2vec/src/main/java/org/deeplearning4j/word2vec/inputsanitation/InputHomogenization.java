@@ -81,6 +81,7 @@ public class InputHomogenization {
 		normalized = normalized.replace("]", "");
 		normalized = normalized.replace("‘","");
 		normalized = normalized.replace("’","");
+        normalized = normalized.replaceAll("[!]+","!");
 		return normalized;
 	}
 

@@ -1,6 +1,6 @@
 package org.deeplearning4j.rntn;
 
-import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,8 +12,8 @@ import java.util.List;
  */
 public class Tree implements Serializable {
 
-    private DoubleMatrix vector;
-    private DoubleMatrix prediction;
+    private FloatMatrix vector;
+    private FloatMatrix prediction;
     private List<Tree> children;
     private double error;
     private Tree parent;
@@ -327,19 +327,19 @@ public class Tree implements Serializable {
         return parent;
     }
 
-    public DoubleMatrix vector() {
+    public FloatMatrix vector() {
         return vector;
     }
 
-    public void setVector(DoubleMatrix vector) {
+    public void setVector(FloatMatrix vector) {
         this.vector = vector;
     }
 
-    public DoubleMatrix prediction() {
+    public FloatMatrix prediction() {
         return prediction;
     }
 
-    public void setPrediction(DoubleMatrix prediction) {
+    public void setPrediction(FloatMatrix prediction) {
         this.prediction = prediction;
     }
 
@@ -396,7 +396,22 @@ public class Tree implements Serializable {
 
     @Override
     public String toString() {
-        return parse;
+        return "Tree{" +
+                "vector=" + vector +
+                ", prediction=" + prediction +
+                ", error=" + error +
+                ", parent=" + parent +
+                ", headWord='" + headWord + '\'' +
+                ", value='" + value + '\'' +
+                ", label='" + label + '\'' +
+                ", type='" + type + '\'' +
+                ", goldLabel=" + goldLabel +
+                ", tokens=" + tokens +
+                ", tags=" + tags +
+                ", parse='" + parse + '\'' +
+                ", begin=" + begin +
+                ", end=" + end +
+                '}';
     }
 
     @Override

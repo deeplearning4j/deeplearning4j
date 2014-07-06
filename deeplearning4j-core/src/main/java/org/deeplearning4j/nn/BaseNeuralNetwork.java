@@ -1014,6 +1014,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
     }
 
+    @Override
+    public DoubleMatrix output(DoubleMatrix x) {
+        return reconstruct(x);
+    }
+
     /**
      * All neural networks are based on this idea of
      * minimizing reconstruction error.

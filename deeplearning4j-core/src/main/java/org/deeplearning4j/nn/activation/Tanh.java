@@ -2,11 +2,22 @@ package org.deeplearning4j.nn.activation;
 
 
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 import static org.deeplearning4j.util.MatrixUtil.*;
 import static org.jblas.MatrixFunctions.*;
 
 public class Tanh extends BaseActivationFunction {
+
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return tanh(input);
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return oneMinus(pow(tanh(input),2));
+    }
 
 	/**
 	 * 
