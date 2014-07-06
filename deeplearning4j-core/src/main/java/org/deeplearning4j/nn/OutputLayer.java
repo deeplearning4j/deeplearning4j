@@ -23,7 +23,7 @@ import org.jblas.SimpleBlas;
  * @author Adam Gibson
  *
  */
-public class OutputLayer implements Serializable {
+public class OutputLayer implements Serializable,Output {
 
     private static final long serialVersionUID = -7065564817460914364L;
     //number of inputs from final hidden layer

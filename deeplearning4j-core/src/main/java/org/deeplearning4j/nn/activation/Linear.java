@@ -1,13 +1,26 @@
 package org.deeplearning4j.nn.activation;
-import static org.deeplearning4j.util.MatrixUtil.stabilizeInput;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 /**
  * Linear activation function
  * @author Adam Gibson
  */
 public class Linear extends BaseActivationFunction {
+
+
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return input.dup();
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return  FloatMatrix.ones(input.rows,input.columns);
+    }
+
+
     /**
      * Name of the function
      *
@@ -32,6 +45,6 @@ public class Linear extends BaseActivationFunction {
 
     @Override
     public DoubleMatrix apply(DoubleMatrix input) {
-        return input;
+        return input.dup();
     }
 }

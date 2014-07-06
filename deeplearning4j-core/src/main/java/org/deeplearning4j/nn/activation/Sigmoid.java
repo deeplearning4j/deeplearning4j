@@ -4,12 +4,23 @@ import static org.deeplearning4j.util.MatrixUtil.oneMinus;
 
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 /**
  * Sigmoid function
  * @author Adam Gibson
  */
 public class Sigmoid extends BaseActivationFunction {
+
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return sigmoid(input);
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return  input.mul(oneMinus(input));
+    }
 
     /**
 	 * 

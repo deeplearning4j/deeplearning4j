@@ -16,7 +16,7 @@ import org.jblas.DoubleMatrix;
  * @author Adam Gibson
  *
  */
-public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener {
+public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochListener,Output {
 
 	
 	

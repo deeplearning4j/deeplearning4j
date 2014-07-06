@@ -3,12 +3,26 @@ package org.deeplearning4j.nn.activation;
 import static org.deeplearning4j.util.MatrixUtil.round;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 /**
  * Rounded output
  * @author Adam Gibson
  */
 public class RoundedLinear extends BaseActivationFunction {
+
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return round(input);
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return FloatMatrix.ones(input.rows,input.columns);
+    }
+
+
+
     /**
      * Applies the derivative of this function
      *

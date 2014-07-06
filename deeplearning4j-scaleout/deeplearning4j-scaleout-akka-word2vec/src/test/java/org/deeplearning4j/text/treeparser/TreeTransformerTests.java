@@ -64,7 +64,7 @@ public class TreeTransformerTests {
             assertChildSize(child);
         }
 
-        assertEquals(true,tree.isLeaf() || tree.isPreTerminal() || tree.children().size() <= 2);
+        assertEquals("Tree is not valid " + tree + " tree children size was " + tree.children().size(),true,tree.isLeaf() || tree.isPreTerminal() || tree.children().size() <= 2);
 
 
     }

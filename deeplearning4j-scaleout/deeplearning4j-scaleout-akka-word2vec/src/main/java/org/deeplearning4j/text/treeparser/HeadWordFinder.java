@@ -246,7 +246,7 @@ public class HeadWordFinder  {
      * @return the bottom most head (no children) for the given parent
      */
     public Tree findHead(Tree parentNode) {
-        Tree cursor = parentNode;
+        Tree cursor = parentNode.getType().equals("TOP") ? parentNode.firstChild() : parentNode;
 
         while (cursor.children() != null && !cursor.children().isEmpty())
             cursor = findHead2(cursor);

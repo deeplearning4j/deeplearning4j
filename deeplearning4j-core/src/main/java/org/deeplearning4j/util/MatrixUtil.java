@@ -1242,6 +1242,13 @@ public class MatrixUtil {
 
 
 
+    public static FloatMatrix randFloat(int rows, int columns,double min,double max,RandomGenerator rng) {
+        FloatMatrix ret = new FloatMatrix(rows,columns);
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i,MathUtils.randomNumberBetween(min,max,rng));
+        }
+        return ret;
+    }
 
     public static DoubleMatrix columnWiseMean(DoubleMatrix x,int axis) {
         DoubleMatrix ret = DoubleMatrix.zeros(x.columns);
@@ -2715,22 +2722,19 @@ public class MatrixUtil {
 
 
     public static FloatMatrix toFlattenedFloat(int length,Iterator<? extends FloatMatrix>...matrices) {
-
-        FloatMatrix ret = new FloatMatrix(1,length);
-        int linearIndex = 0;
-
-
+        List<float[]> gradient = new ArrayList<>();
         for(Iterator<? extends FloatMatrix> iter : matrices) {
             while(iter.hasNext()) {
                 FloatMatrix d = iter.next();
-                for(int i = 0; i < d.length; i++) {
-                    ret.put(linearIndex++,d.get(i));
-                }
+                gradient.add(d.data);
             }
         }
 
 
-        return ret;
+
+
+        FloatMatrix ret2 = new FloatMatrix(ArrayUtil.combineFloat(gradient));
+        return ret2.reshape(1,ret2.length);
     }
 
 

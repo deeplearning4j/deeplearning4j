@@ -4,6 +4,7 @@ import static org.deeplearning4j.util.MatrixUtil.stabilizeInput;
 import static org.deeplearning4j.util.MatrixUtil.exp;
 
 import org.jblas.DoubleMatrix;
+import org.jblas.FloatMatrix;
 
 /**
  * The exponential activation function
@@ -12,6 +13,15 @@ import org.jblas.DoubleMatrix;
 public class Exp extends BaseActivationFunction {
 
 
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return  exp(stabilizeInput(input,1));
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return apply(input);
+    }
 
     /**
      * Applies the derivative of this function
