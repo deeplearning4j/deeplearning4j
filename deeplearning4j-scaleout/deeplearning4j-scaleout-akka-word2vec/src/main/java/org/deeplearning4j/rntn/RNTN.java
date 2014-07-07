@@ -415,7 +415,7 @@ public class RNTN implements Serializable {
 
 
     public FloatMatrix getFeatureVector(String word) {
-        FloatMatrix ret = featureVectors.get(getVocabWord(word));
+        FloatMatrix ret = featureVectors.get(getVocabWord(word)).transpose();
         return ret;
     }
 
@@ -466,7 +466,7 @@ public class RNTN implements Serializable {
 
 
 
-   
+
     public int getNumParameters() {
         int totalSize;
         // binaryFloatTensorSize was set to 0 if useFloatTensors=false
@@ -476,7 +476,7 @@ public class RNTN implements Serializable {
         return totalSize;
     }
 
-   
+
     public FloatMatrix getParameters() {
         return MatrixUtil.toFlattenedFloat(getNumParameters(),
                 binaryTransform.values().iterator(),
@@ -488,9 +488,9 @@ public class RNTN implements Serializable {
 
 
     float scaleAndRegularize(MultiDimensionalMap<String, String, FloatMatrix> derivatives,
-                              MultiDimensionalMap<String, String, FloatMatrix> currentMatrices,
-                              float scale,
-                              float regCost) {
+                             MultiDimensionalMap<String, String, FloatMatrix> currentMatrices,
+                             float scale,
+                             float regCost) {
         float cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, FloatMatrix> entry : currentMatrices.entrySet()) {
             FloatMatrix D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
@@ -502,9 +502,9 @@ public class RNTN implements Serializable {
     }
 
     float scaleAndRegularize(Map<String, FloatMatrix> derivatives,
-                              Map<String, FloatMatrix> currentMatrices,
-                              float scale,
-                              float regCost) {
+                             Map<String, FloatMatrix> currentMatrices,
+                             float scale,
+                             float regCost) {
         float cost = 0.0f; // the regularization cost
         for (Map.Entry<String, FloatMatrix> entry : currentMatrices.entrySet()) {
             FloatMatrix D = derivatives.get(entry.getKey());
@@ -516,9 +516,9 @@ public class RNTN implements Serializable {
     }
 
     float scaleAndRegularizeFloatTensor(MultiDimensionalMap<String, String, FloatTensor> derivatives,
-                                    MultiDimensionalMap<String, String, FloatTensor> currentMatrices,
-                                    float scale,
-                                    float regCost) {
+                                        MultiDimensionalMap<String, String, FloatTensor> currentMatrices,
+                                        float scale,
+                                        float regCost) {
         float cost = 0.0f; // the regularization cost
         for (MultiDimensionalMap.Entry<String, String, FloatTensor> entry : currentMatrices.entrySet()) {
             FloatTensor D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
@@ -634,7 +634,7 @@ public class RNTN implements Serializable {
     }
 
     private FloatMatrix computeFloatTensorDeltaDown(FloatMatrix deltaFull, FloatMatrix leftVector, FloatMatrix rightVector,
-                                                FloatMatrix W, FloatTensor Wt) {
+                                                    FloatMatrix W, FloatTensor Wt) {
         FloatMatrix WTDelta = W.transpose().mmul(deltaFull);
         FloatMatrix WTDeltaNoBias = WTDelta.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, deltaFull.rows * 2));
         int size = deltaFull.length;
@@ -663,10 +663,17 @@ public class RNTN implements Serializable {
             // calculate the classification for this word/tag.  In fact, the
             // recursion should not have gotten here (unless there are
             // degenerate trees of just one leaf)
-            //throw new AssertionError("We should not have reached leaves in forwardPropagate");
-            return;
-        } else if (tree.isPreTerminal()) {
-            classification = getUnaryClassification(tree.value());
+            throw new AssertionError("We should not have reached leaves in forwardPropagate");
+//            String word = tree.value();
+//            FloatMatrix v = getFeatureVector(word);
+//            if(v == null)
+//                v = getFeatureVector(UNKNOWN_FEATURE);
+//            tree.setVector(v);
+//            return;
+        }
+
+        else if (tree.isPreTerminal()) {
+            classification = getUnaryClassification(tree.label());
             String word = tree.children().get(0).value();
             FloatMatrix wordVector = getFeatureVector(word);
             if(wordVector == null) {
@@ -678,8 +685,9 @@ public class RNTN implements Serializable {
         } else if (tree.children().size() == 1) {
             throw new AssertionError("Non-preterminal nodes of size 1 should have already been collapsed");
         } else if (tree.children().size() == 2) {
-            forwardPropagateTree(tree.children().get(0));
-            forwardPropagateTree(tree.children().get(1));
+            Tree left = tree.firstChild(),right = tree.lastChild();
+            forwardPropagateTree(left);
+            forwardPropagateTree(right);
 
             String leftCategory = tree.children().get(0).label();
             String rightCategory = tree.children().get(1).label();
@@ -688,29 +696,33 @@ public class RNTN implements Serializable {
 
             FloatMatrix leftVector = tree.children().get(0).vector();
             FloatMatrix rightVector = tree.children().get(1).vector();
-            FloatMatrix childrenVector = FloatMatrix.concatHorizontally(leftVector, rightVector);
+
+            FloatMatrix childrenVector = FloatMatrix.concatHorizontally(FloatMatrix.concatHorizontally(leftVector, rightVector),FloatMatrix.ones(leftVector.rows,1));
+
+
             if (useFloatTensors) {
                 FloatTensor FloatTensor = getBinaryFloatTensor(leftCategory, rightCategory);
                 FloatMatrix FloatTensorIn = FloatMatrix.concatHorizontally(leftVector, rightVector);
                 FloatMatrix FloatTensorOut = FloatTensor.bilinearProducts(FloatTensorIn);
                 nodeVector = activationFunction.apply(W.mmul(childrenVector).add(FloatTensorOut));
-            } else {
-                nodeVector = activationFunction.apply(W.mmul(childrenVector));
+            }
+
+
+
+            else {
+                nodeVector = activationFunction.apply(W.transpose().mmul(childrenVector));
             }
         } else {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-
-
-        FloatMatrix inputWithBias  = FloatMatrix.concatVertically(nodeVector.transpose(),FloatMatrix.scalar(1.0f));
+        FloatMatrix inputWithBias  = MatrixUtil.appendBias(nodeVector);
         FloatMatrix predictions = outputActivation.apply(classification.mmul(inputWithBias));
 
         int index = SimpleBlas.iamax(predictions);
 
         tree.setPrediction(predictions);
         tree.setVector(nodeVector);
-        tree.setLabel(String.valueOf(index));
     }
 
 
@@ -768,7 +780,7 @@ public class RNTN implements Serializable {
         throw new UnsupportedOperationException();
     }
 
-   
+
     public FloatMatrix getValueGradient(int iterations) {
 
 
@@ -828,7 +840,7 @@ public class RNTN implements Serializable {
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
         Parallelization.iterateInParallel(trainingTrees,new Parallelization.RunnableWithParams<Tree>() {
-           
+
             public void run(Tree currentItem, Object[] args) {
                 Tree trainingTree = currentItem.clone();
                 // this will attach the error vectors and the node vectors
@@ -847,14 +859,14 @@ public class RNTN implements Serializable {
         // TODO: we may find a big speedup by separating the derivatives and then summing
         final AtomicDouble error = new AtomicDouble(0);
         Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
-           
+
             public void run(Tree currentItem, Object[] args) {
                 backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD);
                 error.addAndGet(currentItem.errorSum());
 
             }
         },new Parallelization.RunnableWithParams<Tree>() {
-           
+
             public void run(Tree currentItem, Object[] args) {
             }
         },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD});
@@ -883,7 +895,7 @@ public class RNTN implements Serializable {
         return derivative;
     }
 
-   
+
     public float getValue() {
         return value;
     }

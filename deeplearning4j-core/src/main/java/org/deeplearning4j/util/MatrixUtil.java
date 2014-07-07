@@ -2666,6 +2666,45 @@ public class MatrixUtil {
     }
 
 
+    public static <E extends DoubleMatrix> E appendBias(E...vectors) {
+        int size = 0;
+        for (E vector : vectors) {
+            size += vector.rows;
+        }
+        // one extra for the bias
+        size++;
+
+        DoubleMatrix result = new DoubleMatrix(size, 1);
+        int index = 0;
+        for (E vector : vectors) {
+            result.put(RangeUtils.interval(index,index + vector.rows),RangeUtils.all(),vector);
+            index += vector.rows;
+        }
+
+        result.put(RangeUtils.interval(index,result.rows),RangeUtils.all(),DoubleMatrix.ones(1,result.columns));
+        return createBasedOn(result,vectors[0]);
+    }
+
+
+
+    public static <E extends FloatMatrix> E appendBias(E...vectors) {
+        int size = 0;
+        for (E vector : vectors) {
+            size += vector.rows;
+        }
+        // one extra for the bias
+        size++;
+
+        FloatMatrix result = new FloatMatrix(size, vectors[0].columns);
+        int index = 0;
+        for (E vector : vectors) {
+            result.put(RangeUtils.interval(index,index + vector.rows),RangeUtils.all(),vector);
+            index += vector.rows;
+        }
+
+        result.put(RangeUtils.interval(index,result.rows),RangeUtils.all(),FloatMatrix.ones(1,result.columns));
+        return createBasedOn(result,vectors[0]);
+    }
 
     /**
      * Generate a binomial distribution based on the given rng,

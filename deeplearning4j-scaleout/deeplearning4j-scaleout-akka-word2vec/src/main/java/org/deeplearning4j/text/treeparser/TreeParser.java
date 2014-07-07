@@ -108,11 +108,29 @@ public class TreeParser {
         pool.releaseCas(c2);
 
 
+        for(Tree t : ret) {
+           addPreTerminal(t);
+        }
+
+
         return ret;
 
 
     }
 
+
+    private void addPreTerminal(Tree t) {
+        if(t.isLeaf()) {
+            Tree newLeaf = new Tree(t);
+            newLeaf.setLabel(t.value());
+            t.children().add(newLeaf);
+            newLeaf.setParent(t);
+        }
+        else {
+            for(Tree child : t.children())
+                  addPreTerminal(child);
+        }
+    }
 
     /**
      * Gets trees from text.
