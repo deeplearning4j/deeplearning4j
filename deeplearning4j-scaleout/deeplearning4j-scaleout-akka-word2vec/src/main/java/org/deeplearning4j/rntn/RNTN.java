@@ -236,6 +236,13 @@ public class RNTN implements Serializable {
             unaryClassification.put(unary, randomClassificationMatrix());
         }
 
+
+        binaryClassificationSize = (combineClassification) ? 0 : numOuts * (numHidden + 1);
+
+        numUnaryMatrices = unaryClassification.size();
+        unaryClassificationSize = numOuts * (numHidden + 1);
+
+
         featureVectors.put(UNKNOWN_FEATURE,randomWordVector());
         numUnaryMatrices = unaryClassification.size();
         unaryClassificationSize = numOuts * (numHidden + 1);
@@ -697,7 +704,7 @@ public class RNTN implements Serializable {
             FloatMatrix leftVector = tree.children().get(0).vector();
             FloatMatrix rightVector = tree.children().get(1).vector();
 
-            FloatMatrix childrenVector = FloatMatrix.concatHorizontally(FloatMatrix.concatHorizontally(leftVector, rightVector),FloatMatrix.ones(leftVector.rows,1));
+            FloatMatrix childrenVector = MatrixUtil.appendBias(leftVector,rightVector);
 
 
             if (useFloatTensors) {
@@ -710,7 +717,7 @@ public class RNTN implements Serializable {
 
 
             else {
-                nodeVector = activationFunction.apply(W.transpose().mmul(childrenVector));
+                nodeVector = activationFunction.apply(W.mmul(childrenVector));
             }
         } else {
             throw new AssertionError("Tree not correctly binarized");
