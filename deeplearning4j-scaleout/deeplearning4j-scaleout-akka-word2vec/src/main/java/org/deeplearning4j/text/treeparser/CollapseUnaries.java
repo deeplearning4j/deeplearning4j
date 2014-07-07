@@ -13,26 +13,28 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class CollapseUnaries implements TreeTransformer {
+
+
     @Override
     public Tree transform(Tree tree) {
         if (tree.isPreTerminal() || tree.isLeaf()) {
-            return tree.clone();
+            return tree;
+        }
+        List<Tree> nodeList = new ArrayList<>();
+        nodeList.add(tree);
+        while(!nodeList.isEmpty()) {
+            Tree currentNode = nodeList.remove(0);
+            if(currentNode.children().size() == 1) {
+                currentNode.setLabel(currentNode.label() + "(" + currentNode.firstChild().label());
+                List<Tree> currChildren = new ArrayList<>(currentNode.children());
+                currentNode.children().clear();
+                currentNode.children().addAll(currChildren.get(0).children());
+            }
+            else {
+              nodeList.addAll(currentNode.children());
+            }
         }
 
-        String label = tree.label();
-        List<Tree> children = tree.children();
-        while (children.size() == 1 && !children.get(0).isLeaf()) {
-            children = children.get(0).children();
-        }
-
-        List<Tree> processedChildren =  new ArrayList<>();
-        for (Tree child : children) {
-            processedChildren.add(transform(child));
-        }
-
-        Tree ret = new Tree(tree.getTokens());
-        ret.connect(processedChildren);
-        ret.setLabel(label);
-        return ret;
+        return tree;
     }
 }

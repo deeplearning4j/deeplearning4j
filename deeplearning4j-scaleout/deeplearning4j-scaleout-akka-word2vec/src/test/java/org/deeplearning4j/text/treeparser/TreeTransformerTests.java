@@ -33,34 +33,23 @@ public class TreeTransformerTests {
 
     @Test
     public void testBinarize() throws Exception {
-        List<Tree> trees = parser.getTrees("This is one sentence. This is another sentence.");
+        List<Tree> trees = parser.getTrees("Is so sad for my apl friend.");
         TreeTransformer t = new BinarizeTreeTransformer();
         TreeTransformer cnf = new CollapseUnaries();
         for(Tree t2 : trees) {
             t2 = t.transform(t2);
             assertChildSize(t2);
+            for(Tree child : t2.children())
+                if(child.isLeaf())
+                    assertEquals("Found leaf node with parent that was not a preterminal",true,t2.isPreTerminal());
             t2 = cnf.transform(t2);
 
-
         }
     }
 
-
-
-
-
-    private void assertPreTerminalOrUnary(Tree tree) {
-        for(Tree child : tree.children()) {
-            assertPreTerminalOrUnary(child);
-        }
-
-        assertEquals(true,tree.children().size() == 1 || tree.isPreTerminal() || tree.isLeaf());
-
-
-    }
 
     private void assertChildSize(Tree tree) {
-        for(Tree child : tree.children()) {
+       for(Tree child : tree.children()) {
             assertChildSize(child);
         }
 

@@ -118,7 +118,7 @@ public class Tree implements Serializable {
      * @return whether the node has any children or not
      */
     public boolean isLeaf() {
-        return children.isEmpty();
+        return children == null || children.isEmpty();
     }
 
     public List<Tree> children() {
@@ -135,7 +135,11 @@ public class Tree implements Serializable {
     public boolean isPreTerminal() {
         if(children == null && label != null && !label.equals("TOP"))
             children = new ArrayList<>();
-        return children.size() == 1 && children.get(0).isLeaf();
+        if(children.size() == 1) {
+            Tree child = children.get(0);
+            return child != null && child.isLeaf();
+        }
+        return false;
     }
 
 
@@ -288,7 +292,7 @@ public class Tree implements Serializable {
     @Override
     public Tree clone() {
         Tree ret = new Tree(tokens);
-        ret.connect(children());
+        ret.connect(new ArrayList<>(children()));
         ret.setError(error);
         ret.setValue(value);
         ret.setVector(vector);
@@ -421,12 +425,15 @@ public class Tree implements Serializable {
 
         Tree tree = (Tree) o;
 
+        if (begin != tree.begin) return false;
+        if (end != tree.end) return false;
         if (Double.compare(tree.error, error) != 0) return false;
         if (goldLabel != tree.goldLabel) return false;
-        if (children != null ? !children.equals(tree.children) : tree.children != null) return false;
+        if (headWord != null ? !headWord.equals(tree.headWord) : tree.headWord != null) return false;
         if (label != null ? !label.equals(tree.label) : tree.label != null) return false;
-        if (parent != null ? !parent.equals(tree.parent) : tree.parent != null) return false;
+        if (parse != null ? !parse.equals(tree.parse) : tree.parse != null) return false;
         if (prediction != null ? !prediction.equals(tree.prediction) : tree.prediction != null) return false;
+        if (tags != null ? !tags.equals(tree.tags) : tree.tags != null) return false;
         if (tokens != null ? !tokens.equals(tree.tokens) : tree.tokens != null) return false;
         if (type != null ? !type.equals(tree.type) : tree.type != null) return false;
         if (value != null ? !value.equals(tree.value) : tree.value != null) return false;
@@ -441,15 +448,18 @@ public class Tree implements Serializable {
         long temp;
         result = vector != null ? vector.hashCode() : 0;
         result = 31 * result + (prediction != null ? prediction.hashCode() : 0);
-        result = 31 * result + (children != null ? children.hashCode() : 0);
         temp = Double.doubleToLongBits(error);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (parent != null ? parent.hashCode() : 0);
+        result = 31 * result + (headWord != null ? headWord.hashCode() : 0);
         result = 31 * result + (value != null ? value.hashCode() : 0);
         result = 31 * result + (label != null ? label.hashCode() : 0);
         result = 31 * result + (type != null ? type.hashCode() : 0);
         result = 31 * result + goldLabel;
         result = 31 * result + (tokens != null ? tokens.hashCode() : 0);
+        result = 31 * result + (tags != null ? tags.hashCode() : 0);
+        result = 31 * result + (parse != null ? parse.hashCode() : 0);
+        result = 31 * result + begin;
+        result = 31 * result + end;
         return result;
     }
 }
