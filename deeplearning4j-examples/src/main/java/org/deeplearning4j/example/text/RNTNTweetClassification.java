@@ -65,7 +65,7 @@ public class RNTNTweetClassification {
 
 
         RNTN r = new RNTN.Builder().setActivationFunction(Activations.hardTanh())
-                .setNumHidden(50).setFeatureVectors(vec).setCombineClassification(true)
+                .setNumHidden(50).setFeatureVectors(vec).setCombineClassification(false)
                 .build();
 
 
