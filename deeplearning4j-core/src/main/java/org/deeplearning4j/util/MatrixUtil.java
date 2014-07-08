@@ -1242,13 +1242,7 @@ public class MatrixUtil {
 
 
 
-    public static FloatMatrix randFloat(int rows, int columns,double min,double max,RandomGenerator rng) {
-        FloatMatrix ret = new FloatMatrix(rows,columns);
-        for(int i = 0; i < ret.length; i++) {
-            ret.put(i,MathUtils.randomNumberBetween(min,max,rng));
-        }
-        return ret;
-    }
+
 
     public static DoubleMatrix columnWiseMean(DoubleMatrix x,int axis) {
         DoubleMatrix ret = DoubleMatrix.zeros(x.columns);
@@ -2627,6 +2621,11 @@ public class MatrixUtil {
         diff.diviColumnVector(diff.rowSums());
         return createBasedOn(diff,input);
     }
+
+
+
+
+
     public static FloatMatrix mean(FloatMatrix input,int axis) {
         FloatMatrix ret = new FloatMatrix(input.rows,1);
         //column wise
