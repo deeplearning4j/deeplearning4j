@@ -33,7 +33,7 @@ public class TreeTransformerTests {
 
     @Test
     public void testBinarize() throws Exception {
-        List<Tree> trees = parser.getTrees("Is so sad for my apl friend.");
+        List<Tree> trees = parser.getTrees("Is so sad for my apl friend. i missed the new moon trailer.");
         TreeTransformer t = new BinarizeTreeTransformer();
         TreeTransformer cnf = new CollapseUnaries();
         for(Tree t2 : trees) {
@@ -43,10 +43,17 @@ public class TreeTransformerTests {
                 if(child.isLeaf())
                     assertEquals("Found leaf node with parent that was not a preterminal",true,t2.isPreTerminal());
             t2 = cnf.transform(t2);
-
+            assertCollapsedUnaries(t2);
         }
     }
 
+
+    private void assertCollapsedUnaries(Tree tree) {
+        for(Tree child : tree.children())
+            assertCollapsedUnaries(child);
+        if(tree.children().size() == 1 && !tree.isPreTerminal())
+            throw new IllegalStateException("Trees with size of 1 and non preterminals should have been collapsed");
+    }
 
     private void assertChildSize(Tree tree) {
        for(Tree child : tree.children()) {

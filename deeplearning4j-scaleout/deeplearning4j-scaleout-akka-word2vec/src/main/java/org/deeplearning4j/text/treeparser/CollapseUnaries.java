@@ -20,21 +20,23 @@ public class CollapseUnaries implements TreeTransformer {
         if (tree.isPreTerminal() || tree.isLeaf()) {
             return tree;
         }
-        List<Tree> nodeList = new ArrayList<>();
-        nodeList.add(tree);
-        while(!nodeList.isEmpty()) {
-            Tree currentNode = nodeList.remove(0);
-            if(currentNode.children().size() == 1) {
-                currentNode.setLabel(currentNode.label() + "(" + currentNode.firstChild().label());
-                List<Tree> currChildren = new ArrayList<>(currentNode.children());
-                currentNode.children().clear();
-                currentNode.children().addAll(currChildren.get(0).children());
-            }
-            else {
-              nodeList.addAll(currentNode.children());
-            }
+
+        List<Tree> children = tree.children();
+        while(children.size() == 1 && !children.get(0).isLeaf()) {
+            children = children.get(0).children();
         }
 
-        return tree;
+        List<Tree> processed = new ArrayList<>();
+        for(Tree child : children)
+            processed.add(transform(child));
+
+        Tree ret = new Tree(tree);
+        ret.connect(processed);
+
+        return ret;
     }
+
+
+
+
 }

@@ -21,6 +21,7 @@ import org.deeplearning4j.text.annotator.StemmerAnnotator;
 import org.deeplearning4j.text.annotator.TokenizerAnnotator;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MultiDimensionalMap;
+import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.ContextLabelRetriever;
@@ -28,7 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Tree parser for constituency parsing
@@ -234,6 +237,16 @@ public class TreeParser {
                     continue;
                 }
 
+                Collection<String> labels2 = stringsWithLabels.getSecond().values();
+                Set<String> diff = SetUtils.difference(labels2,labels);
+                if(!diff.isEmpty()) {
+                    log.warn("Found invalid sentence. Skipping");
+                    c2.reset();
+                    continue;
+
+                }
+
+
                 TopTreebankNode node = nodes.get(0);
                 ret.add(TreeFactory.buildTree(node,stringsWithLabels,labels));
                 c2.reset();
@@ -306,6 +319,16 @@ public class TreeParser {
             else if(nodes.isEmpty()) {
                 c2.reset();
                 continue;
+            }
+
+
+            Collection<String> labels2 = stringsWithLabels.getSecond().values();
+            Set<String> diff = SetUtils.difference(labels2,labels);
+            if(!diff.isEmpty()) {
+                log.warn("Found invalid sentence. Skipping");
+                c2.reset();
+                continue;
+
             }
 
             TopTreebankNode node = nodes.get(0);
