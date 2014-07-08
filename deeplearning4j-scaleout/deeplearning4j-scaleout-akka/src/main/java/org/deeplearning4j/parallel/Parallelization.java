@@ -3,6 +3,8 @@ package org.deeplearning4j.parallel;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.Future;
 
 import java.util.Collection;
@@ -15,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public class Parallelization {
 
-
+    private static Logger log = LoggerFactory.getLogger(Parallelization.class);
 
     public static interface RunnableWithParams<E> {
         void run(E currentItem,Object[] args);
@@ -55,6 +57,8 @@ public class Parallelization {
             f.onComplete(new OnComplete<E>() {
                 @Override
                 public void onComplete(Throwable throwable, E e) throws Throwable {
+                    if(throwable != null)
+                        log.warn("Error occurred processing data",throwable);
                     if(postDone != null)
                         postDone.run(e,otherArgs);
                     c.countDown();

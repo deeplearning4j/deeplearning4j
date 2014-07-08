@@ -27,14 +27,22 @@ public class Tree implements Serializable {
     private String parse;
     private int begin,end;
 
+    /**
+     * Clone constructor (all but the children)
+     * @param tree the tree to clone
+     */
     public Tree(Tree tree) {
-        this.vector = tree.vector;
-        this.prediction = tree.prediction;
-        this.value = tree.value;
-        this.label = tree.label;
-        this.type = tree.type;
-        this.goldLabel = tree.goldLabel;
-        this.tokens = new ArrayList<>(tree.tokens);
+        setError(tree.error);
+        setValue(tree.value);
+        setVector(tree.vector);
+        setParse(tree.parse);
+        setLabel(tree.label);
+        setGoldLabel(tree.goldLabel);
+        setPrediction(tree.prediction);
+        setTags(tree.tags);
+        setBegin(tree.begin);
+        setEnd(tree.end);
+        setType(tree.type);
     }
 
     public Tree(Tree parent,List<String> tokens) {
@@ -86,7 +94,7 @@ public class Tree implements Serializable {
 
 
     public void setGoldLabel(int goldLabel) {
-        this.goldLabel = goldLabel;
+          this.goldLabel = goldLabel;
     }
 
     public int goldLabel() {
@@ -291,11 +299,8 @@ public class Tree implements Serializable {
 
     @Override
     public Tree clone() {
-        Tree ret = new Tree(tokens);
+        Tree ret = new Tree(this);
         ret.connect(new ArrayList<>(children()));
-        ret.setError(error);
-        ret.setValue(value);
-        ret.setVector(vector);
         return ret;
     }
 
