@@ -337,7 +337,6 @@ public class Word2Vec implements Persistable {
 
 
 
-        getSentenceIter().reset();
 
         final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
 
