@@ -1,10 +1,14 @@
 package org.deeplearning4j.sda;
 
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Before;
@@ -41,28 +45,35 @@ public class SdaTest {
 
 
 	@Test
-	public void testOutput() {
-		DataSet xor = MatrixUtil.xorData(100, 200);
+	public void testOutput() throws Exception {
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        fetcher.fetch(100);
+        DataSet d = fetcher.next();
+        d.filterAndStrip(new int[]{0, 1});
+        log.info("Training on " + d.numExamples());
+        StopWatch watch = new StopWatch();
 
+        log.info("Data set " + d);
 
-		StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder()
-		.hiddenLayerSizes(hidden_layer_sizes_arr)
-		.numberOfInputs(xor.getFirst().columns).numberOfOutPuts(xor.getSecond().columns).renderWeights(0)
-		.useRegularization(false).withMomentum(0.).withRng(rng).build();		
+        StackedDenoisingAutoEncoder stackedDenoisingAutoEncoder = new StackedDenoisingAutoEncoder.Builder()
+                .hiddenLayerSizes(new int[]{500,250,100})
+                .withMomentum(0.5).normalizeByInputRows(true)
+                .numberOfInputs(784).useAdaGrad(true)
+                .numberOfOutPuts(2)
+                .build();
 
+        watch.start();
 
-		DoubleMatrix x = xor.getFirst();
+        stackedDenoisingAutoEncoder.pretrain(d.getFirst(), 1, 1e-2, 300);
+        stackedDenoisingAutoEncoder.finetune(d.getSecond(), 1e-2, 100);
 
-		sda.pretrain(x,pretrain_lr, corruption_level, 1000);
-		// finetune
+        watch.stop();
 
-		sda.finetune(xor.getSecond(),finetune_lr, finetune_epochs);
-		log.info("OUTPUT TEST");
-		DoubleMatrix predicted = sda.output(x);
-
-		Evaluation eval = new Evaluation();
-		eval.eval(xor.getSecond(), predicted);
-		log.info(eval.stats());
+        log.info("Took " + watch.getTime());
+        Evaluation eval = new Evaluation();
+        DoubleMatrix predict = stackedDenoisingAutoEncoder.output(d.getFirst());
+        eval.eval(d.getSecond(), predict);
+        log.info(eval.stats());
 
 
 	}

@@ -392,7 +392,13 @@ public class Word2Vec
 
         log.info("Training word2vec multithreaded");
 
+<<<<<<< HEAD
 //        getSentenceIter().reset();
+=======
+
+
+
+>>>>>>> a7cc51891e83f0c6cb2109e07416057371a7bbd8
 
         final AtomicLong changed = new AtomicLong(System.currentTimeMillis());
 

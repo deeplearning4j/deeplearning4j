@@ -20,7 +20,8 @@ import static org.deeplearning4j.util.MatrixUtil.exp;
  *  http://www.inf.ufpr.br/danielw/pos/ci724/20102/HIPR2/flatjavasrc/Convolution.java
  * @author: Simon Horne
  */
-public class Convolution {
+public class
+        Convolution {
 
     private static Logger log = LoggerFactory.getLogger(Convolution.class);
 
@@ -35,6 +36,8 @@ public class Convolution {
     public static enum Type {
         FULL,VALID,SAME
     }
+
+
 
 
     public static DoubleMatrix conv2d(DoubleMatrix input,DoubleMatrix kernel,Type type) {
@@ -58,6 +61,7 @@ public class Convolution {
         ComplexDoubleMatrix mul = fftKernel.mul(fftInput);
         ComplexDoubleMatrix retComplex = complexInverseDisceteFourierTransform(mul);
         DoubleMatrix ret = retComplex.getReal();
+
         if(type == Type.VALID) {
 
             DoubleMatrix validShape = xShape.subi(yShape).add(1);
