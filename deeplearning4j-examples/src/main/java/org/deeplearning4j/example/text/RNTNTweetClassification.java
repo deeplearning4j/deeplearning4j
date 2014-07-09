@@ -76,21 +76,23 @@ public class RNTNTweetClassification {
         tokenizerFactory = new UimaTokenizerFactory(false);
 
         TreeVectorizer vectorizer = new TreeVectorizer();
-        RNTNEval eval = new RNTNEval();
-        Iterator<List<Tree>> treeIter = new TreeIterator(lineIter,Arrays.asList("0", "1", "2"),vectorizer,100);
+        Iterator<List<Tree>> treeIter = new TreeIterator(lineIter,Arrays.asList("0", "1", "2"),vectorizer,10);
         while (treeIter.hasNext()) {
             List<Tree> trees = treeIter.next();
             if(trees.isEmpty())
                 continue;
            for(int i = 0; i < 100; i++) {
                r.train(trees);
+               RNTNEval eval = new RNTNEval();
+
                log.info("Value for batch " + r.getValue() + " at iteration " + i);
+               eval.eval(r,trees);
+               log.info("Eval stats " + eval.stats());
+
            }
 
 
-            //eval.eval(r,trees);
-            log.info("Eval stats " + eval.stats());
-            //log.info("Value for iteration " + i + " is " + r.getValue());
+           //log.info("Value for iteration " + i + " is " + r.getValue());
 
 
 
