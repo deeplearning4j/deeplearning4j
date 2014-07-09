@@ -39,8 +39,6 @@ public class RNTNEval {
             count(t);
         int treeGoldLabel = tree.goldLabel();
         int predictionLabel = SimpleBlas.iamax(tree.prediction());
-        if(treeGoldLabel < 0 || predictionLabel < 0)
-            log.warn("hmm");
         cf.add(treeGoldLabel,predictionLabel);
     }
 
