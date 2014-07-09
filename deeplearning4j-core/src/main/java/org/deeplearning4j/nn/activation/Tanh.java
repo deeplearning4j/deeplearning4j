@@ -7,22 +7,18 @@ import org.jblas.FloatMatrix;
 import static org.deeplearning4j.util.MatrixUtil.*;
 import static org.jblas.MatrixFunctions.*;
 
+/**
+ * Tanh activation function
+ *
+ * @author Adam Gibson
+ */
 public class Tanh extends BaseActivationFunction {
 
-    @Override
-    public FloatMatrix apply(FloatMatrix input) {
-        return tanh(input);
-    }
 
-    @Override
-    public FloatMatrix applyDerivative(FloatMatrix input) {
-        return oneMinus(pow(tanh(input),2));
-    }
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 4499150153988528321L;
+    /**
+     *
+     */
+    private static final long serialVersionUID = 4499150153988528321L;
 
     /**
      * Name of the function
@@ -35,16 +31,26 @@ public class Tanh extends BaseActivationFunction {
     }
 
     @Override
-	public DoubleMatrix apply(DoubleMatrix arg0) {
-		return tanh(arg0);
-	}
+    public DoubleMatrix apply(DoubleMatrix arg0) {
+        return tanh(arg0);
+    }
 
-	@Override
-	public DoubleMatrix applyDerivative(DoubleMatrix input) {
-		//1 - tanh^2 x
-		return oneMinus(pow(tanh(input),2));
-	}
+    @Override
+    public DoubleMatrix applyDerivative(DoubleMatrix input) {
+        //1 - tanh^2 x
+        return oneMinus(pow(input,2));
+    }
 
-	
+    @Override
+    public FloatMatrix apply(FloatMatrix input) {
+        return tanh(input);
+    }
+
+    @Override
+    public FloatMatrix applyDerivative(FloatMatrix input) {
+        return oneMinus(pow(input,2));
+    }
+
+
 
 }

@@ -1,5 +1,10 @@
 package org.deeplearning4j.rntn;
 
+
+import static org.jblas.ranges.RangeUtils.interval;
+import static org.deeplearning4j.util.MatrixUtil.appendBias;
+
+
 import akka.actor.ActorSystem;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -8,18 +13,15 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.FloatTensor;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.nn.learning.AdaGradFloat;
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
 import org.deeplearning4j.word2vec.Word2Vec;
-import org.jblas.DoubleMatrix;
 import org.jblas.FloatMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
-import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,6 @@ public class RNTN implements Serializable {
     protected ActivationFunction activationFunction = Activations.hardTanh();
     protected ActivationFunction outputActivation = Activations.softmax();
     protected AdaGradFloat paramAdaGrad;
-    private int currIteration = -1;
 
     /** Regularization cost for the transform matrix  */
     private float regTransformMatrix = 0.001f;
@@ -70,10 +71,6 @@ public class RNTN implements Serializable {
     /** Regularization cost for the word vectors */
     private float regWordVector = 0.0001f;
 
-    /**
-     * The value to set the learning rate for each parameter when initializing adagrad.
-     */
-    private float initialAdagradWeight = 0.0f;
 
     /**
      * How many epochs between resets of the adagrad learning rates.
@@ -139,9 +136,9 @@ public class RNTN implements Serializable {
     private static Logger log = LoggerFactory.getLogger(RNTN.class);
 
 
-    private ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
+    private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
 
-    private RNTN(int numHidden, RandomGenerator rng, boolean useFloatTensors, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, float initialAdagradWeight, int adagradResetFrequency, float regTransformFloatTensor, Map<String, FloatMatrix> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryFloatTensorSize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
+    private RNTN(int numHidden, RandomGenerator rng, boolean useFloatTensors, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, float regTransformFloatTensor, Map<String, FloatMatrix> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryFloatTensorSize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
         this.numHidden = numHidden;
         this.rng = rng;
         this.useFloatTensors = useFloatTensors;
@@ -151,7 +148,6 @@ public class RNTN implements Serializable {
         this.scalingForInit = scalingForInit;
         this.lowerCasefeatureNames = lowerCasefeatureNames;
         this.activationFunction = activationFunction;
-        this.initialAdagradWeight = initialAdagradWeight;
         this.adagradResetFrequency = adagradResetFrequency;
         this.regTransformFloatTensor = regTransformFloatTensor;
         this.featureVectors = featureVectors;
@@ -199,7 +195,7 @@ public class RNTN implements Serializable {
         binaryFloatTensors = MultiDimensionalMap.newTreeBackedMap();
         binaryClassification = MultiDimensionalMap.newTreeBackedMap();
 
-        // When making a flat model (no symantic untying) the
+        // When making a flat model (no semantic untying) the
         // basicCategory function will return the same basic category for
         // all labels, so all entries will map to the same matrix
         for (Pair<String, String> binary : binaryProductions) {
@@ -235,6 +231,7 @@ public class RNTN implements Serializable {
         // When making a flat model (no semantic untying) the
         // basicCategory function will return the same basic category for
         // all labels, so all entries will map to the same matrix
+
         for (String unary : unaryProductions) {
             unary = basicCategory(unary);
             if (unaryClassification.containsKey(unary)) {
@@ -259,35 +256,6 @@ public class RNTN implements Serializable {
 
 
 
-    void initRandomWordVectors(List<Tree> trainingTrees) {
-        if (numHidden == 0) {
-            throw new RuntimeException("Cannot create random word vectors for an unknown numHid");
-        }
-
-        Set<String> words = new HashSet<>();
-        words.add(UNKNOWN_FEATURE);
-        for (Tree tree : trainingTrees) {
-            List<Tree> leaves = tree.getLeaves();
-            for (Tree leaf : leaves) {
-                String word = leaf.value();
-                if (lowerCasefeatureNames) {
-                    word = word.toLowerCase();
-                }
-                words.add(word);
-            }
-        }
-
-
-        this.featureVectors = new TreeMap<>();
-
-        for (String word : words) {
-            FloatMatrix vector = randomWordVector();
-            featureVectors.put(word, vector);
-        }
-    }
-
-
-
 
     FloatTensor randomBinaryFloatTensor() {
         float range = 1.0f / (4.0f * numHidden);
@@ -299,7 +267,7 @@ public class RNTN implements Serializable {
         FloatMatrix binary = new FloatMatrix(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         FloatMatrix block = randomTransformBlock();
-        binary.put(RangeUtils.interval(0,block.rows),RangeUtils.interval(0,block.columns),block);
+        binary.put(interval(0,block.rows),interval(0,block.columns),block);
         return SimpleBlas.scal(scalingForInit,binary);
     }
 
@@ -319,7 +287,7 @@ public class RNTN implements Serializable {
         FloatMatrix ret = FloatMatrix.zeros(numOuts,numHidden + 1);
         FloatMatrix insert = FloatMatrix.randn(numOuts,numHidden);
         insert.muli(2).muli(range).subi(range);
-        ret.put(RangeUtils.interval(0,insert.rows),RangeUtils.interval(0,insert.columns),insert);
+        ret.put(interval(0,insert.rows),interval(0,insert.columns),insert);
         return ret;
     }
 
@@ -354,8 +322,7 @@ public class RNTN implements Serializable {
         for (Iterator<? extends FloatMatrix> matrixIterator : matrices) {
             while (matrixIterator.hasNext()) {
                 FloatMatrix matrix = matrixIterator.next();
-                int numElements = matrix.length;
-                for (int i = 0; i < numElements; ++i) {
+                for (int i = 0; i < matrix.length; ++i) {
                     matrix.put(i, theta.get(index));
                     ++index;
                 }
@@ -591,7 +558,7 @@ public class RNTN implements Serializable {
         // calculations, but this would be the easiest way to handle the
         // unlabeled class
         FloatMatrix deltaClass = goldClass >= 0 ? SimpleBlas.scal(nodeWeight,predictions.sub(goldLabel)) : new FloatMatrix(predictions.rows, predictions.columns);
-        FloatMatrix localCD = deltaClass.mmul(MatrixUtil.appendBias(currentVector).transpose());
+        FloatMatrix localCD = deltaClass.mmul(appendBias(currentVector).transpose());
 
         float error = -(MatrixFunctions.log(predictions).muli(goldLabel).sum());
         error = error * nodeWeight;
@@ -606,7 +573,7 @@ public class RNTN implements Serializable {
 
             FloatMatrix currentVectorDerivative = activationFunction.apply(currentVector);
             FloatMatrix deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
-            deltaFromClass = deltaFromClass.get(RangeUtils.interval(0, numHidden),RangeUtils.interval(0, 1)).mul(currentVectorDerivative);
+            deltaFromClass = deltaFromClass.get(interval(0, numHidden),interval(0, 1)).mul(currentVectorDerivative);
             FloatMatrix deltaFull = deltaFromClass.add(deltaUp);
             wordVectorD.put(word, wordVectorD.get(word).add(deltaFull));
 
@@ -626,14 +593,14 @@ public class RNTN implements Serializable {
             //need to figure out why dimension mismatch here
             //currentVectorDerivative: 50 x 1
             //deltaFromClass 51 x 1
-            FloatMatrix mult = deltaFromClass.get(RangeUtils.interval(0, numHidden),RangeUtils.interval(0, 1));
+            FloatMatrix mult = deltaFromClass.get(interval(0, numHidden),interval(0, 1));
             deltaFromClass = mult.muli(currentVectorDerivative);
             FloatMatrix deltaFull = deltaFromClass.add(deltaUp);
 
             FloatMatrix leftVector =tree.children().get(0).vector();
             FloatMatrix rightVector = tree.children().get(1).vector();
 
-            FloatMatrix childrenVector = MatrixUtil.appendBias(leftVector,rightVector);
+            FloatMatrix childrenVector = appendBias(leftVector,rightVector);
 
             //deltaFull 50 x 1, childrenVector: 50 x 2
             FloatMatrix add = binaryTD.get(leftCategory, rightCategory);
@@ -652,8 +619,8 @@ public class RNTN implements Serializable {
 
             FloatMatrix leftDerivative = activationFunction.apply(leftVector);
             FloatMatrix rightDerivative = activationFunction.apply(rightVector);
-            FloatMatrix leftDeltaDown = deltaDown.get(RangeUtils.interval(0, deltaFull.rows),RangeUtils.interval( 0, 1));
-            FloatMatrix rightDeltaDown = deltaDown.get(RangeUtils.interval(deltaFull.rows, deltaFull.rows * 2),RangeUtils.interval( 0, 1));
+            FloatMatrix leftDeltaDown = deltaDown.get(interval(0, deltaFull.rows),interval( 0, 1));
+            FloatMatrix rightDeltaDown = deltaDown.get(interval(deltaFull.rows, deltaFull.rows * 2),interval( 0, 1));
             backpropDerivativesAndError(tree.children().get(0), binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD, leftDerivative.mul(leftDeltaDown));
             backpropDerivativesAndError(tree.children().get(1), binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD, rightDerivative.mul(rightDeltaDown));
         }
@@ -662,7 +629,7 @@ public class RNTN implements Serializable {
     private FloatMatrix computeFloatTensorDeltaDown(FloatMatrix deltaFull, FloatMatrix leftVector, FloatMatrix rightVector,
                                                     FloatMatrix W, FloatTensor Wt) {
         FloatMatrix WTDelta = W.transpose().mmul(deltaFull);
-        FloatMatrix WTDeltaNoBias = WTDelta.get(RangeUtils.interval( 0, 1),RangeUtils.interval(0, deltaFull.rows * 2));
+        FloatMatrix WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows * 2));
         int size = deltaFull.length;
         FloatMatrix deltaFloatTensor = new FloatMatrix(size * 2, 1);
         FloatMatrix fullVector = FloatMatrix.concatHorizontally(leftVector, rightVector);
@@ -717,7 +684,7 @@ public class RNTN implements Serializable {
             FloatMatrix leftVector = tree.children().get(0).vector();
             FloatMatrix rightVector = tree.children().get(1).vector();
 
-            FloatMatrix childrenVector = MatrixUtil.appendBias(leftVector,rightVector);
+            FloatMatrix childrenVector = appendBias(leftVector,rightVector);
 
 
             if (useFloatTensors) {
@@ -734,7 +701,7 @@ public class RNTN implements Serializable {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-        FloatMatrix inputWithBias  = MatrixUtil.appendBias(nodeVector);
+        FloatMatrix inputWithBias  = appendBias(nodeVector);
         FloatMatrix predictions = outputActivation.apply(classification.mmul(inputWithBias));
 
         tree.setPrediction(predictions);
@@ -916,7 +883,6 @@ public class RNTN implements Serializable {
         private boolean lowerCasefeatureNames;
         private ActivationFunction activationFunction = Activations.sigmoid(),
                 outputActivationFunction = Activations.softmax();
-        private float initialAdagradWeight;
         private int adagradResetFrequency;
         private float regTransformFloatTensor;
         private Map<String, FloatMatrix> featureVectors;
@@ -984,10 +950,7 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setInitialAdagradWeight(float initialAdagradWeight) {
-            this.initialAdagradWeight = initialAdagradWeight;
-            return this;
-        }
+
 
         public Builder setAdagradResetFrequency(int adagradResetFrequency) {
             this.adagradResetFrequency = adagradResetFrequency;
@@ -1040,7 +1003,7 @@ public class RNTN implements Serializable {
         }
 
         public RNTN build() {
-            return new RNTN(numHidden, rng, useFloatTensors, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, initialAdagradWeight, adagradResetFrequency, regTransformFloatTensor, featureVectors, numBinaryMatrices, binaryTransformSize, binaryFloatTensorSize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+            return new RNTN(numHidden, rng, useFloatTensors, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformFloatTensor, featureVectors, numBinaryMatrices, binaryTransformSize, binaryFloatTensorSize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
         }
     }
 

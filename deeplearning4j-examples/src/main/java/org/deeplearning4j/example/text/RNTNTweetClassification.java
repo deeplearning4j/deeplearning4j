@@ -82,9 +82,10 @@ public class RNTNTweetClassification {
             List<Tree> trees = treeIter.next();
             if(trees.isEmpty())
                 continue;
-            r.train(trees);
-            log.info("Value for batch " + r.getValue());
-
+           for(int i = 0; i < 100; i++) {
+               r.train(trees);
+               log.info("Value for batch " + r.getValue() + " at iteration " + i);
+           }
 
 
             //eval.eval(r,trees);
