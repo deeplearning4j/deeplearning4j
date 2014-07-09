@@ -38,6 +38,9 @@ public class
     }
 
 
+    public static DoubleMatrix convn(DoubleMatrix input,DoubleMatrix kernel,Type type) {
+         return input;
+    }
 
 
     public static DoubleMatrix conv2d(DoubleMatrix input,DoubleMatrix kernel,Type type) {
