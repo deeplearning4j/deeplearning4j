@@ -118,9 +118,9 @@ public class CSVDataFetcher extends BaseDataFetcher {
         }
 
         this.numOutcomes = labels.size();
+        this.totalExamples = l.size();
+        
         all = DataSet.merge(l);
-
-
     }
 
 
