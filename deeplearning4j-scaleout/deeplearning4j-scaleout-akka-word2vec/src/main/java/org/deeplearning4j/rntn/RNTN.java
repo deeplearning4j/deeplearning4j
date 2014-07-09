@@ -268,13 +268,13 @@ public class RNTN implements Serializable {
         // bias column values are initialized zero
         FloatMatrix block = randomTransformBlock();
         binary.put(interval(0,block.rows),interval(0,block.columns),block);
+        binary.put(interval(0,block.rows),interval(numHidden,numHidden + block.columns),randomTransformBlock());
         return SimpleBlas.scal(scalingForInit,binary);
     }
 
     FloatMatrix randomTransformBlock() {
         float range = 1.0f / (float) (Math.sqrt((float) numHidden) * 2.0f);
-        FloatMatrix ret = FloatMatrix.randn(numHidden,numHidden);
-        ret.muli(2).muli(range).subi(range).add(identity);
+        FloatMatrix ret = MatrixUtil.rand(numHidden,numHidden,-range,range,rng).add(identity);
         return ret;
     }
 
@@ -285,10 +285,9 @@ public class RNTN implements Serializable {
         // Leave the bias column with 0 values
         float range = 1.0f / (float) (Math.sqrt((float) numHidden));
         FloatMatrix ret = FloatMatrix.zeros(numOuts,numHidden + 1);
-        FloatMatrix insert = FloatMatrix.randn(numOuts,numHidden);
-        insert.muli(2).muli(range).subi(range);
-        ret.put(interval(0,insert.rows),interval(0,insert.columns),insert);
-        return ret;
+        FloatMatrix insert = MatrixUtil.rand(numOuts,numHidden,-range,range,rng);
+        ret.put(interval(0,numOuts),interval(0,numHidden),insert);
+        return SimpleBlas.scal(scalingForInit,ret);
     }
 
     FloatMatrix randomWordVector() {
@@ -702,7 +701,8 @@ public class RNTN implements Serializable {
         }
 
         FloatMatrix inputWithBias  = appendBias(nodeVector);
-        FloatMatrix predictions = outputActivation.apply(classification.mmul(inputWithBias));
+        FloatMatrix preAct = classification.mmul(inputWithBias);
+        FloatMatrix predictions = outputActivation.apply(preAct);
 
         tree.setPrediction(predictions);
         tree.setVector(nodeVector);

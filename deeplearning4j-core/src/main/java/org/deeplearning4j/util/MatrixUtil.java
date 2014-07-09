@@ -1169,9 +1169,8 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends DoubleMatrix> E softmax(E input) {
-        DoubleMatrix max = input.rowMaxs();
-        DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
-        diff.diviColumnVector(diff.rowSums());
+        DoubleMatrix diff = MatrixFunctions.exp(input);
+        diff = SimpleBlas.scal(1.0 / diff.sum(),diff);
         return createBasedOn(diff,input);
     }
     public static DoubleMatrix mean(DoubleMatrix input,int axis) {
@@ -2616,9 +2615,8 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends FloatMatrix> E softmax(E input) {
-        FloatMatrix max = input.rowMaxs();
-        FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
-        diff.diviColumnVector(diff.rowSums());
+        FloatMatrix diff = MatrixFunctions.exp(input);
+        diff = SimpleBlas.scal(1.0f / diff.sum(),diff);
         return createBasedOn(diff,input);
     }
 
@@ -2722,11 +2720,20 @@ public class MatrixUtil {
     }
 
 
-
+    /**
+     * Generates a random matrix between min andd max
+     * @param rows the number of rows of the matrix
+     * @param columns the number of columns in the matrix
+     * @param min the minimum number
+     * @param max the maximum number
+     * @param rng the rng to use
+     * @return a drandom matrix of the sepcified shape and range
+     */
     public static FloatMatrix rand(int rows, int columns,float min,float max,RandomGenerator rng) {
         FloatMatrix ret = new FloatMatrix(rows,columns);
+        float r = max - min;
         for(int i = 0; i < ret.length; i++) {
-            ret.put(i,MathUtils.randomNumberBetween(min,max,rng));
+            ret.put(i, r * rng.nextFloat() + min);
         }
         return ret;
     }
