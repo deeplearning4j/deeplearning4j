@@ -6,8 +6,6 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.springframework.util.StringUtils;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -114,30 +112,32 @@ public class CSVDataFetcher extends BaseDataFetcher {
 
         List<DataSet> l = new ArrayList<>();
         for(int i = 0; i < rowLabels.size(); i++) {
-            l.add(new DataSet(features.get(i),MatrixUtil.toOutcomeVector(rowLabels.get(i),rowLabels.size())));
+            l.add(new DataSet(features.get(i),MatrixUtil.toOutcomeVector(rowLabels.get(i),labels.size())));
         }
 
-        this.numOutcomes = rowLabels.size();
+        this.numOutcomes = labels.size();
+        this.totalExamples = l.size();
+        
         all = DataSet.merge(l);
-
-
     }
 
 
     private Pair<DoubleMatrix,Integer> processRow(String[] data) {
 
-
         String label = data[labelColumn].replaceAll(".\".","");
-        Double labelVal = Double.parseDouble(label);
-        List<Double> vals = new ArrayList<>();
-        for(int i = 0; i < data.length; i++)
-            if(i != labelVal)
-                vals.add(Double.parseDouble(data[i]));
-
-        double[] d = new double[vals.size()];
+        int labelVal = Integer.parseInt(label);
+        
+        double[] d = new double[data.length - 1];
+        int index = 0;
+        for(int i = 0; i < data.length; i++){
+            if(i != labelColumn){
+                d[index] = Double.parseDouble(data[i]);
+                index ++;
+            }
+        }
+        
         DoubleMatrix d1 = new DoubleMatrix(d).reshape(1,d.length);
-        return new Pair<>(d1,(int) labelVal.doubleValue());
-
+        return new Pair<>(d1, labelVal);
     }
 
     /**
