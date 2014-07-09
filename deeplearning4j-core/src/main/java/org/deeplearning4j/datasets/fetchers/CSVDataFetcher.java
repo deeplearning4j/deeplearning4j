@@ -114,10 +114,10 @@ public class CSVDataFetcher extends BaseDataFetcher {
 
         List<DataSet> l = new ArrayList<>();
         for(int i = 0; i < rowLabels.size(); i++) {
-            l.add(new DataSet(features.get(i),MatrixUtil.toOutcomeVector(rowLabels.get(i),rowLabels.size())));
+            l.add(new DataSet(features.get(i),MatrixUtil.toOutcomeVector(rowLabels.get(i),labels.size())));
         }
 
-        this.numOutcomes = rowLabels.size();
+        this.numOutcomes = labels.size();
         all = DataSet.merge(l);
 
 
