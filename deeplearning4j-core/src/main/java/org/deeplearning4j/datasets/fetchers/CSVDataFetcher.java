@@ -125,7 +125,8 @@ public class CSVDataFetcher extends BaseDataFetcher {
     private Pair<DoubleMatrix,Integer> processRow(String[] data) {
 
         String label = data[labelColumn].replaceAll(".\".","");
-        int labelVal = Integer.parseInt(label);
+        double labelDouble = Double.parseDouble(label);
+        int labelVal = (int) labelDouble;
         
         double[] d = new double[data.length - 1];
         int index = 0;
