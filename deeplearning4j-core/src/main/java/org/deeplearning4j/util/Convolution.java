@@ -20,8 +20,7 @@ import static org.deeplearning4j.util.MatrixUtil.exp;
  *  http://www.inf.ufpr.br/danielw/pos/ci724/20102/HIPR2/flatjavasrc/Convolution.java
  * @author: Simon Horne
  */
-public class
-        Convolution {
+public class Convolution {
 
     private static Logger log = LoggerFactory.getLogger(Convolution.class);
 
@@ -39,6 +38,10 @@ public class
 
 
     public static DoubleMatrix convn(DoubleMatrix input,DoubleMatrix kernel,Type type) {
+         int dims = Math.max(MatrixUtil.numDims(input),MatrixUtil.numDims(kernel));
+         for(int i = 0; i < dims; i++) {
+             
+         }
          return input;
     }
 
@@ -88,8 +91,11 @@ public class
 
 
 
+
+
+
     public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
-        ComplexDoubleMatrix base = null;
+        ComplexDoubleMatrix base;
 
         //pad
         if(input.rows < rows || input.columns < cols)
@@ -237,7 +243,7 @@ public class
      * @return the discrete fourier transform of the input
      */
     public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
-        ComplexDoubleMatrix base = null;
+        ComplexDoubleMatrix base;
 
         //pad
         if(input.rows < rows || input.columns < cols)
