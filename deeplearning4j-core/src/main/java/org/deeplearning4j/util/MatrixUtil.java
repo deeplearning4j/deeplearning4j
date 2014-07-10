@@ -2616,8 +2616,9 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends FloatMatrix> E softmax(E input) {
-        FloatMatrix diff = MatrixFunctions.exp(input);
-        diff = SimpleBlas.scal(1.0f / diff.sum(),diff);
+        FloatMatrix max = input.rowMaxs();
+        FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+        diff.diviColumnVector(diff.rowSums());
         return createBasedOn(diff,input);
     }
 
