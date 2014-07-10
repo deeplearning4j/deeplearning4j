@@ -20,6 +20,7 @@ import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.iterator.Word2VecDataSetIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
+import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
 import org.jblas.DoubleMatrix;
@@ -41,9 +42,8 @@ public class MovingWindowExample {
 
     public static void main(String[] args) throws Exception {
 
-        InputStream is = FileUtils.openInputStream(new File(args[0]));
-
-        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,"\t");
+        InputStream is = new ClassPathResource("sentiment-milliontweets.csv").getInputStream();
+        LabelAwareSentenceIterator iterator = new LabelAwareListSentenceIterator(is,",",1,3);
         //get rid of @mentions
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override

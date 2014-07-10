@@ -16,9 +16,12 @@ import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.iterator.Word2VecDataSetIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
+import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
+import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
@@ -34,14 +37,13 @@ public class MovingWindowSingleThreaded {
     private static Logger log = LoggerFactory.getLogger(MovingWindowSingleThreaded.class);
 
     public static void main(String[] args) throws Exception {
-        InputStream is = FileUtils.openInputStream(new File(args[0]));
-
-
-        LabelAwareListSentenceIterator iterator = new LabelAwareListSentenceIterator(is,"\t");
+        InputStream is = new ClassPathResource(args[0]).getInputStream();
+        LabelAwareSentenceIterator iterator = new LabelAwareListSentenceIterator(is,",",1,3);
         //get rid of @mentions
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {
+                log.info("Processing sentence " + sentence);
                 String base =  new InputHomogenization(sentence).transform();
                 base = base.replaceAll("@.*","");
                 return base;
@@ -114,7 +116,8 @@ public class MovingWindowSingleThreaded {
 
         while(testIter.hasNext()) {
             DataSet d = testIter.next();
-            eval.eval(d.getSecond(),dbn.output(d.getFirst()));
+            DoubleMatrix probabilities = dbn.output(d.getFirst());
+            eval.eval(d.getSecond(),probabilities);
         }
 
         log.info(eval.stats());
