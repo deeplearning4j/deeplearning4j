@@ -12,10 +12,19 @@ public class Activations {
     private static ActivationFunction HARD_TANH = new HardTanh();
     private static ActivationFunction SIGMOID = new Sigmoid();
     private static ActivationFunction SOFTMAX = new SoftMax();
+    private static ActivationFunction SOFTMAX_ROWS = new SoftMax(true);
+
     private static ActivationFunction ROUNDED_LINEAR = new RoundedLinear();
     private static ActivationFunction RECTIFIEDLINEAR = new RoundedLinear();
 
 
+    /**
+     * Softmax with row wise features
+     * @return the softmax with row wise features
+     */
+    public static ActivationFunction softMaxRows() {
+        return SOFTMAX_ROWS;
+    }
 
     /**
      * Rectified linear, the output: rounded
