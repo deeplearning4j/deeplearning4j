@@ -116,7 +116,6 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     public DataSet reshape(int rows,int cols) {
         DataSet ret = new DataSet(getFirst().reshape(rows,cols),getSecond());
         return ret;
-
     }
 
 
