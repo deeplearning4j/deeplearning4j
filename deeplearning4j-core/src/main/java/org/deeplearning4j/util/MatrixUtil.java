@@ -1158,6 +1158,82 @@ public class MatrixUtil {
         return a.addi(b);
     }
 
+
+    /**
+     * Soft max function
+     * row_maxes is a row vector (max for each row)
+     * row_maxes = rowmaxes(input)
+     * diff = exp(input - max) / diff.rowSums()
+     *
+     * @param input the input for the softmax
+     * @param row whether the row maxes should be taken or the column maxes,
+     *            this is dependent on whether the features are column wise or row wise
+
+     * @return the softmax output (a probability matrix) scaling each row to between
+     * 0 and 1
+     */
+    public static <E extends FloatMatrix> E softmax(E input,boolean row) {
+       if(row) {
+           FloatMatrix max = input.rowMaxs();
+           FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+           diff.diviColumnVector(diff.rowSums());
+           return createBasedOn(diff,input);
+
+       }
+
+        else {
+           FloatMatrix max = input.columnMaxs();
+           FloatMatrix diff = MatrixFunctions.exp(input.subRowVector(max));
+           diff.diviRowVector(diff.columnSums());
+           return createBasedOn(diff,input);
+
+       }
+      }
+
+    /**
+     * Soft max function
+     * row_maxes is a row vector (max for each row)
+     * row_maxes = rowmaxes(input)
+     * diff = exp(input - max) / diff.rowSums()
+     *
+     * @param input the input for the softmax
+     * @param row whether the row maxes should be taken or the column maxes,
+     *            this is dependent on whether the features are column wise or row wise
+     * @return the softmax output (a probability matrix) scaling each row to between
+     * 0 and 1
+     */
+    public static <E extends DoubleMatrix> E softmax(E input,boolean row) {
+        if(row) {
+            DoubleMatrix max = input.rowMaxs();
+            DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+            diff.diviColumnVector(diff.rowSums());
+            return createBasedOn(diff,input);
+
+        }
+
+        else {
+            DoubleMatrix max = input.columnMaxs();
+            DoubleMatrix diff = MatrixFunctions.exp(input.subRowVector(max));
+            diff.diviRowVector(diff.columnSums());
+            return createBasedOn(diff,input);
+
+        }  }
+
+
+    /**
+     * Soft max function
+     * row_maxes is a row vector (max for each row)
+     * row_maxes = rowmaxes(input)
+     * diff = exp(input - max) / diff.rowSums()
+     *
+     * @param input the input for the softmax
+     * @return the softmax output (a probability matrix) scaling each row to between
+     * 0 and 1
+     */
+    public static <E extends FloatMatrix> E softmax(E input) {
+        return softmax(input,false);
+    }
+
     /**
      * Soft max function
      * row_maxes is a row vector (max for each row)
@@ -1169,11 +1245,9 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends DoubleMatrix> E softmax(E input) {
-        DoubleMatrix max = input.rowMaxs();
-        DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
-        diff.diviColumnVector(diff.rowSums());
-        return createBasedOn(diff,input);
+        return softmax(input,false);
     }
+
     public static DoubleMatrix mean(DoubleMatrix input,int axis) {
         DoubleMatrix ret = new DoubleMatrix(input.rows,1);
         //column wise
@@ -2605,22 +2679,7 @@ public class MatrixUtil {
         return a.addi(b);
     }
 
-    /**
-     * Soft max function
-     * row_maxes is a row vector (max for each row)
-     * row_maxes = rowmaxes(input)
-     * diff = exp(input - max) / diff.rowSums()
-     *
-     * @param input the input for the softmax
-     * @return the softmax output (a probability matrix) scaling each row to between
-     * 0 and 1
-     */
-    public static <E extends FloatMatrix> E softmax(E input) {
-        FloatMatrix max = input.rowMaxs();
-        FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
-        diff.diviColumnVector(diff.rowSums());
-        return createBasedOn(diff,input);
-    }
+
 
 
     /**
@@ -2750,14 +2809,35 @@ public class MatrixUtil {
     }
 
 
+
     /**
-     * Generates a random matrix between min andd max
+     * Generates a random matrix between min and max
      * @param rows the number of rows of the matrix
      * @param columns the number of columns in the matrix
      * @param min the minimum number
      * @param max the maximum number
      * @param rng the rng to use
-     * @return a drandom matrix of the sepcified shape and range
+     * @return a drandom matrix of the specified shape and range
+     */
+    public static DoubleMatrix randDouble(int rows, int columns,float min,float max,RandomGenerator rng) {
+        DoubleMatrix ret = new DoubleMatrix(rows,columns);
+        float r = max - min;
+        for(int i = 0; i < ret.length; i++) {
+            ret.put(i, r * rng.nextFloat() + min);
+        }
+        return ret;
+    }
+
+
+
+    /**
+     * Generates a random matrix between min and max
+     * @param rows the number of rows of the matrix
+     * @param columns the number of columns in the matrix
+     * @param min the minimum number
+     * @param max the maximum number
+     * @param rng the rng to use
+     * @return a drandom matrix of the specified shape and range
      */
     public static FloatMatrix rand(int rows, int columns,float min,float max,RandomGenerator rng) {
         FloatMatrix ret = new FloatMatrix(rows,columns);
