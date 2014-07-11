@@ -52,6 +52,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         this(pair.getFirst(),pair.getSecond());
     }
 
+    /**
+     * Creates a dataset with the specified input matrix and labels
+     * @param first the feature matrix
+     * @param second the labels (these should be binarized label matrices such that the specified label
+     *               has a value of 1 in the desired column with the label)
+     */
     public DataSet(DoubleMatrix first, DoubleMatrix second) {
         super(first, second);
         if(first.rows != second.rows)
@@ -73,17 +79,29 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
+    /**
+     * Clone the dataset
+     * @return a clone of the dataset
+     */
     public DataSet copy() {
-        return new DataSet(getFirst(),getSecond());
+        return new DataSet(getFirst().dup(),getSecond().dup());
     }
 
 
-
-
+    /**
+     * Returns a single dataset
+     * @return an empty dataset with 2 1x1 zero matrices
+     */
     public static DataSet empty() {
         return new DataSet(DoubleMatrix.zeros(1),DoubleMatrix.zeros(1));
     }
 
+    /**
+     * Merge the list of datasets in to one list.
+     * All the rows are merged in to one dataset
+     * @param data the data to merge
+     * @return a single dataset
+     */
     public static DataSet merge(List<DataSet> data) {
         if(data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
@@ -206,9 +224,9 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
-
-
-
+    /**
+     * Subtract by the column means and divide by the standard deviation
+     */
     public void normalizeZeroMeanZeroUnitVariance() {
         DoubleMatrix columnMeans = getFirst().columnMeans();
         DoubleMatrix columnStds = MatrixUtil.columnStdDeviation(getFirst());
@@ -226,7 +244,10 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     }
 
 
-
+    /**
+     * The number of inputs in the feature matrix
+     * @return
+     */
     public int numInputs() {
         return getFirst().columns;
     }
@@ -289,6 +310,14 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
     public DataSet get(int[] i) {
         return new DataSet(getFirst().getRows(i),getSecond().getRows(i));
     }
+
+
+    /**
+     * Partitions a dataset in to mini batches where
+     * each dataset in each list is of the specified number of examples
+     * @param num the number to split by
+     * @return the partitioned datasets
+     */
     public List<List<DataSet>> batchBy(int num) {
         return Lists.partition(asList(),num);
     }
@@ -416,6 +445,12 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         return list;
     }
 
+
+    /**
+     * Splits a dataset in to test and train
+     * @param numHoldout the number to hold out for training
+     * @return the pair of datasets for the train test split
+     */
     public Pair<DataSet,DataSet> splitTestAndTrain(int numHoldout) {
 
         if(numHoldout >= numExamples())
@@ -669,14 +704,6 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         return builder.toString();
     }
 
-    public static void main(String[] args) throws IOException {
-        MnistDataFetcher fetcher = new MnistDataFetcher();
-        fetcher.fetch(100);
-        DataSet write = new DataSet(fetcher.next());
-        write.saveTo(new File(args[0]), false);
-
-
-    }
 
     @Override
     public void write(OutputStream os) {

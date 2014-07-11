@@ -251,7 +251,7 @@ public class Word2Vec implements Persistable {
     public Collection<String> wordsNearest(String word,int n) {
         FloatMatrix vec = this.getWordVectorMatrix(word);
         if(vec == null)
-            return new ArrayList<String>();
+            return new ArrayList<>();
         Counter<String> distances = new Counter<String>();
         for(int i = 0; i < syn0.rows; i++) {
             double sim = similarity(word,wordIndex.get(i).toString());
@@ -830,9 +830,6 @@ public class Word2Vec implements Persistable {
 
 
 
-    public int getSize() {
-        return size;
-    }
 
     public float[]	 getOob() {
         if(oob == null)

@@ -12,15 +12,32 @@ import org.jblas.FloatMatrix;
  *
  */
 public class SoftMax extends BaseActivationFunction {
+     //whether to take row wise or column wise maxes on softmax calculation
+    private boolean rows;
+
+    /**
+     * Initialize softmax with whether to use row wise or column wise features
+     * @param rows whether to use row wise or column wise features for calculation
+     */
+    public SoftMax(boolean rows) {
+        this.rows = rows;
+    }
+
+    /**
+     * Initializes softmax with column wise features
+     */
+    public SoftMax() {
+        this(false);
+    }
 
     @Override
     public FloatMatrix apply(FloatMatrix input) {
-        return softmax(input);
+        return softmax(input,rows);
     }
 
     @Override
     public FloatMatrix applyDerivative(FloatMatrix input) {
-        return softmax(input).mul(oneMinus(softmax(input)));
+        return softmax(input,rows).mul(oneMinus(softmax(input,rows)));
     }
 
     /**
@@ -30,7 +47,7 @@ public class SoftMax extends BaseActivationFunction {
 
 	@Override
 	public DoubleMatrix apply(DoubleMatrix input) {
-		return softmax(input);
+		return softmax(input,rows);
 	}
 
 	@Override

@@ -58,8 +58,8 @@ public class RNTN implements Serializable {
     private float scalingForInit = 1.0f;
     public final static String UNKNOWN_FEATURE = "UNK";
     private boolean lowerCasefeatureNames;
-    protected ActivationFunction activationFunction = Activations.hardTanh();
-    protected ActivationFunction outputActivation = Activations.softmax();
+    protected ActivationFunction activationFunction = Activations.tanh();
+    protected ActivationFunction outputActivation = Activations.softMaxRows();
     protected AdaGradFloat paramAdaGrad;
 
     /** Regularization cost for the transform matrix  */
