@@ -994,9 +994,9 @@ public class MatrixUtil {
     }
 
     public static DoubleMatrix addRowVector(DoubleMatrix addTo,DoubleMatrix add) {
-         for(int i = 0; i < addTo.rows; i++) {
-             addTo.putRow(i,addTo.getRow(i).addi(add.get(i)));
-         }
+        for(int i = 0; i < addTo.rows; i++) {
+            addTo.putRow(i,addTo.getRow(i).addi(add.get(i)));
+        }
 
         return addTo;
     }
@@ -1142,7 +1142,7 @@ public class MatrixUtil {
     public static FloatMatrix toFloatMatrix(int[] arr) {
         FloatMatrix d = new FloatMatrix(arr.length);
         for(int i = 0; i < arr.length; i++)
-                d.put(i,arr[i]);
+            d.put(i,arr[i]);
         return d;
     }
 
@@ -1169,8 +1169,9 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends DoubleMatrix> E softmax(E input) {
-        DoubleMatrix diff = MatrixFunctions.exp(input);
-        diff = SimpleBlas.scal(1.0 / diff.sum(),diff);
+        DoubleMatrix max = input.rowMaxs();
+        DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+        diff.diviColumnVector(diff.rowSums());
         return createBasedOn(diff,input);
     }
     public static DoubleMatrix mean(DoubleMatrix input,int axis) {
@@ -1338,7 +1339,7 @@ public class MatrixUtil {
     public static <E extends DoubleMatrix> E sqrt(E x) {
         DoubleMatrix ret = new DoubleMatrix(x.rows,x.columns);
         for(int i = 0; i < ret.length; i++)
-             ret.put(i, x.get(i) > 0 ? FastMath.sqrt(x.get(i)) : 0.0);
+            ret.put(i, x.get(i) > 0 ? FastMath.sqrt(x.get(i)) : 0.0);
 
         return createBasedOn(ret,x);
     }
@@ -1925,7 +1926,7 @@ public class MatrixUtil {
         return createBasedOn(idx,d);
     }
 
-     public static FloatMatrix rangeVector(float begin, float end) {
+    public static FloatMatrix rangeVector(float begin, float end) {
         int diff = (int) Math.abs(end - begin);
         FloatMatrix ret = new FloatMatrix(1, diff);
         for (int i = 0; i < ret.length; i++)
@@ -2615,13 +2616,42 @@ public class MatrixUtil {
      * 0 and 1
      */
     public static <E extends FloatMatrix> E softmax(E input) {
-        FloatMatrix diff = MatrixFunctions.exp(input);
-        diff = SimpleBlas.scal(1.0f / diff.sum(),diff);
+        FloatMatrix max = input.rowMaxs();
+        FloatMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+        diff.diviColumnVector(diff.rowSums());
         return createBasedOn(diff,input);
     }
 
 
+    /**
+     * Number of dimensions for a given matrix
+     * @param input the input matrix
+     * @return the number of dimensions for a matrix
+     */
+    public static int numDims(FloatMatrix input) {
+        if(input instanceof FloatFourDTensor)
+            return 4;
 
+        if(input instanceof FloatTensor)
+            return 3;
+        else
+            return 2;
+    }
+
+    /**
+     * The number of dimensions for a given matrix
+     * @param input the input matrix
+     * @return the number of dimensions for a matrix
+     */
+    public static int numDims(DoubleMatrix input) {
+        if(input instanceof FourDTensor)
+            return 4;
+
+        if(input instanceof Tensor)
+            return 3;
+        else
+            return 2;
+    }
 
 
     public static FloatMatrix mean(FloatMatrix input,int axis) {
