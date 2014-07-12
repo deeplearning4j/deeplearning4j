@@ -4,7 +4,7 @@ layout: default
 
 # dataset methods
 
-The class *DataSet* is made to hold a pair of input feature/label matrices. Labels are binarized: all labels considered true are 1s; the rest are 0s.
+The class *[DataSet](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/DataSet.java)* is made to hold a pair of input feature/label matrices. Labels are binarized: all labels considered true are 1s; the rest are 0s.
 
 A new DataSet can be created like this:
 
