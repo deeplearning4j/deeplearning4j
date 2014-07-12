@@ -62,8 +62,6 @@ public class DataSet extends Pair<DoubleMatrix,DoubleMatrix> implements Persista
         super(first, second);
         if(first.rows != second.rows)
             throw new IllegalStateException("Invalid data set; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
-
-
     }
 
     public Counter<Integer> labelDistribution() {
