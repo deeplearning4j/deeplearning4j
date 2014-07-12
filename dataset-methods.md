@@ -8,7 +8,7 @@ The class *DataSet* is made to hold a pair of input feature/label matrices. Labe
 
 A new DataSet can be created like this:
 
- <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.java?slice=57:71"></script>
+ <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/fetchers/BaseDataFetcher.java?slice=57:70"></script>
 
 The first parameter should specify the feature matrix, the second should point to the labels.
 
