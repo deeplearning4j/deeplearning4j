@@ -184,6 +184,8 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
         if(isUseGaussNewtonVectorProductBackProp())
             log.warn("Warning; using gauss newton vector back prop with pretrain is known to cause issues with obscenely large activations.");
 
+        this.input = input;
+
         DoubleMatrix layerInput = null;
 
         for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise
