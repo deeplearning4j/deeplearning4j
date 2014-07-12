@@ -49,7 +49,6 @@ public class SdaTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(100);
         DataSet d = fetcher.next();
-        d.filterAndStrip(new int[]{0, 1});
         log.info("Training on " + d.numExamples());
         StopWatch watch = new StopWatch();
 
