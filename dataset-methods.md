@@ -18,11 +18,11 @@ Two main ways to standardize data are through mean removal and variance scaling.
 
  <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/DataSet.java?slice=226:234"></script>
 
-Normalizing data is another way of saying you're putting it in the shape of a Bell curve. Sometimes you will want to inflate or deflate your DataSet to give it other shapes. Two methods that will do that are *multiplyBy* and *divideBy*. THIS IS GOOD FOR WHAT?
+Normalizing data is another way of saying you're putting it in the shape of a Bell curve. Sometimes you will want to inflate or deflate your DataSet to give it other shapes. Two methods that will do that are *multiplyBy* and *divideBy*. (These methods and others exist simply to make manipulating the internal feature matrix easier.)
 
  <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/DataSet.java?slice=137:144"></script>
 
-You can also reshape a DataSet by defining the number of rows and columns you want it to include: THIS IS GOOD FOR WHAT?
+You can also reshape a DataSet by defining the number of rows and columns you want it to include: 
 
  <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/DataSet.java?slice=131:135"></script>
 
