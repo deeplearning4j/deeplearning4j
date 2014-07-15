@@ -1268,6 +1268,40 @@ public class NDArray extends DoubleMatrix {
     }
 
     /**
+     * The 1-norm of the matrix as vector (sum of absolute values of elements).
+     */
+    @Override
+    public double norm1() {
+        if(isVector() || shape().length == 2)
+            return super.norm2();
+        return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_1,this);
+
+    }
+
+    /**
+     * The Euclidean norm of the matrix as vector, also the Frobenius
+     * norm of the matrix.
+     */
+    @Override
+    public double norm2() {
+        if(isVector() || shape().length == 2)
+            return super.norm2();
+        return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_2,this);
+
+    }
+
+    /**
+     * The maximum norm of the matrix (maximal absolute value of the elements).
+     */
+    @Override
+    public double normmax() {
+        if(isVector() || shape().length == 2)
+            return super.normmax();
+        return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_MAX,this);
+
+    }
+
+    /**
      * Computes the product of all elements of the matrix
      */
     @Override
