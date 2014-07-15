@@ -24,11 +24,61 @@ public class ArrayUtil {
         return nas;
     }
 
+
+    public static boolean isZero(int[] as) {
+        for (int i=0; i<as.length; i++) {
+            if (as[i]!=0) return false;
+        }
+        return true;
+    }
+
+    public static boolean anyMore(int[] target,int[] test) {
+        assert target.length == test.length : "Unable to compare: different sizes";
+        for(int i = 0; i < target.length; i++) {
+            if(target[i] > test[i])
+                return true;
+        }
+        return false;
+    }
+
+
+    public static boolean anyLess(int[] target,int[] test) {
+        assert target.length == test.length : "Unable to compare: different sizes";
+        for(int i = 0; i < target.length; i++) {
+            if(target[i] < test[i])
+                return true;
+        }
+        return false;
+    }
+
+    public static int dotProduct(int[] xs, int[] ys) {
+        int result = 0;
+        int n = xs.length;
+
+        if (ys.length != n )
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i=0; i < n; i++) {
+            result += xs[i] * ys[i];
+        }
+        return result;
+    }
+
+
     public static int[] removeIndex(int[] data, int index) {
-        int len=data.length;
-        int[] result=new int[len-1];
+        int len = data.length;
+        int[] result = new int[len - 1];
         System.arraycopy(data, 0, result, 0, index);
-        System.arraycopy(data, index+1, result, index, len-index-1);
+        System.arraycopy(data, index+1, result, index, len - index - 1);
+        return result;
+    }
+
+
+    public static Integer[] removeIndex(Integer[] data, int index) {
+        int len = data.length;
+        Integer[] result = new Integer[len - 1];
+        System.arraycopy(data, 0, result, 0, index);
+        System.arraycopy(data, index+1, result, index, len-index - 1);
         return result;
     }
 
@@ -39,9 +89,9 @@ public class ArrayUtil {
      */
     public static  int[] calcStrides(int[] shape) {
         int dimensions = shape.length;
-        int[] stride=new int[dimensions];
-        int st=1;
-        for (int j= dimensions - 1; j >= 0; j--) {
+        int[] stride = new int[dimensions];
+        int st= 1;
+        for (int j = dimensions - 1; j >= 0; j--) {
             stride[j] = st;
             st *= shape[j];
         }
@@ -73,8 +123,21 @@ public class ArrayUtil {
 
     }
 
+
+    public static <E> E[] reverseCopy(E[] e) {
+        E[] copy = (E[]) new Object[e.length];
+        for(int i = 0; i <= e.length / 2; i++)
+        {
+            E temp = e[i];
+            copy[i] = e[e.length - i - 1];
+            copy[e.length - i - 1] = temp;
+        }
+        return copy;
+
+    }
+
     public static <E> void reverse(E[] e) {
-        for(int i = 0; i < e.length / 2; i++)
+        for(int i = 0; i <= e.length / 2; i++)
         {
             E temp = e[i];
             e[i] = e[e.length - i - 1];
