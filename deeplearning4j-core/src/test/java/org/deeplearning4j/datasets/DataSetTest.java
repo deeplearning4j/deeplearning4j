@@ -15,9 +15,12 @@ public class DataSetTest {
 		assertEquals(2,d.numOutcomes());
 		assertEquals(filtered.numExamples(),d.numExamples());
 		assertEquals(filtered.getFirst(),d.getFirst());
+        assertEquals(filtered.numExamples(),d.getSecond().rows);
 		
 	
 	}
+
+
 	
 	
 
