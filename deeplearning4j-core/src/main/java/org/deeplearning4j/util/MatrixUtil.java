@@ -12,10 +12,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.FloatDataSet;
-import org.deeplearning4j.nn.FloatFourDTensor;
-import org.deeplearning4j.nn.FloatTensor;
-import org.deeplearning4j.nn.FourDTensor;
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.*;
 import org.jblas.*;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
@@ -828,6 +825,35 @@ public class MatrixUtil {
         }
         return ret;
     }
+
+
+
+    public static ComplexDoubleMatrix complexPadWithZeros(ComplexDoubleMatrix toPad, int rows, int cols) {
+        ComplexDoubleMatrix ret = ComplexDoubleMatrix.zeros(rows, cols);
+        for (int i = 0; i < toPad.rows; i++) {
+            for (int j = 0; j < toPad.columns; j++) {
+                ret.put(i, j, toPad.get(i, j));
+            }
+        }
+        return ret;
+    }
+
+
+    public static ComplexNDArray complexPadWithZeros(NDArray toPad,int[] newShape) {
+        ComplexNDArray ret = ComplexNDArray.zeros(newShape);
+        for(int i = 0; i < toPad.length; i++)
+            ret.put(i,toPad.get(i));
+        return ret;
+    }
+
+
+    public static ComplexNDArray complexPadWithZeros(ComplexNDArray toPad,int[] newShape) {
+        ComplexNDArray ret = ComplexNDArray.zeros(newShape);
+        for(int i = 0; i < toPad.length; i++)
+            ret.put(i,toPad.get(i));
+        return ret;
+    }
+
 
 
     public static ComplexDoubleMatrix complexPadWithZeros(DoubleMatrix toPad, int rows, int cols) {
