@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.NDArray;
  */
 public class NDArrayUtil {
     public static enum ScalarOp {
-        SUM,MEAN,PROD,MAX,MIN,ARG_MAX,ARG_MIN
+        SUM,MEAN,PROD,MAX,MIN,ARG_MAX,ARG_MIN,NORM_2,NORM_1,NORM_MAX
     }
 
     public static enum MatrixOp {
@@ -120,6 +120,16 @@ public class NDArrayUtil {
                         if(argMax > ret)
                             ret = argMax;
                         break;
+                    case NORM_1:
+                         ret += arr.slice(i).norm1();
+                        break;
+                    case NORM_2:
+                        ret += arr.slice(i).norm2();
+                        break;
+                    case NORM_MAX:
+                        ret += arr.slice(i).normmax();
+                        break;
+
 
                 }
             }
