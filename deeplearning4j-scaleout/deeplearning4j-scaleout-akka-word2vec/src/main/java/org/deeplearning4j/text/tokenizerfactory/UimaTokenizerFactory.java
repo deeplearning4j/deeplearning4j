@@ -13,7 +13,7 @@ import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
 
 /**
- * Uses a uima {@link AnalysisEngine} to 
+ * Uses a uima {@link AnalysisEngine} to
  * tokenize text.
  *
  *
@@ -22,16 +22,18 @@ import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
  */
 public class UimaTokenizerFactory implements TokenizerFactory {
 
-    private AnalysisEngine tokenizer;
+    private final AnalysisEngine tokenizer;
     private CasPool pool;
-    private boolean checkForLabel;
+    private final boolean checkForLabel;
 
 
     public UimaTokenizerFactory() throws ResourceInitializationException {
         this(defaultAnalysisEngine(),true);
     }
 
-
+    public UimaTokenizerFactory(String language) throws ResourceInitializationException {
+        this(defaultAnalysisEngine(language),true);
+    }
 
     public UimaTokenizerFactory(AnalysisEngine tokenizer) {
        this(tokenizer,true);
@@ -60,10 +62,12 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
     @Override
     public  Tokenizer create(String toTokenize) {
-        if(tokenizer == null || pool == null)
+        if(tokenizer == null || pool == null) {
             throw new IllegalStateException("Unable to proceed; tokenizer or pool is null");
-        if(toTokenize == null || toTokenize.isEmpty())
+        }
+        if(toTokenize == null || toTokenize.isEmpty()) {
             throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
+        }
         return new UimaTokenizer(toTokenize,tokenizer,pool,checkForLabel);
     }
 
@@ -83,5 +87,19 @@ public class UimaTokenizerFactory implements TokenizerFactory {
         }
     }
 
-
+    /**
+     * Creates a tokenization,/stemming pipeline
+     * @param language
+     * @return a tokenization/stemming pipeline
+     */
+    public static AnalysisEngine defaultAnalysisEngine(String language)  {
+        try {
+            return AnalysisEngineFactory.createEngine(AnalysisEngineFactory.createEngineDescription(
+                    SentenceAnnotator.getDescription(),
+                    TokenizerAnnotator.getDescription(),
+                    StemmerAnnotator.getDescription(language)));
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
