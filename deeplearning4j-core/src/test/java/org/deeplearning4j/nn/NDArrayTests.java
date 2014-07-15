@@ -65,17 +65,12 @@ public class NDArrayTests {
         DoubleMatrix r1 = d.getColumn(0);
         NDArray r2 = n.getColumn(0);
 
-        double[] r2Column = r2.toArray();
-        double[] r1Column = r1.data;
-
-        assertEquals(true,Arrays.equals(r1Column,r2Column));
+         //note that when comparing NDArrays and DoubleMatrix, you need to use the NDArray equals() method
+        assertEquals(r2,r1);
 
         DoubleMatrix r12 = d.getColumn(1);
         NDArray r22 = n.getColumn(1);
-        double[] r12Column = r12.toArray();
-        double[] r22Column = r22.toArray();
-
-        assertEquals(true,Arrays.equals(r12Column,r22Column));
+        assertEquals(r22,r12);
 
 
 
@@ -118,16 +113,25 @@ public class NDArrayTests {
 
     }
 
-   @Test
-   public void testMatrixMultiply() {
-       DoubleMatrix d = DoubleMatrix.linspace(1,2,4).reshape(2,2);
-       NDArray n = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
+    @Test
+    public void testMatrixMultiply() {
+        DoubleMatrix d = DoubleMatrix.linspace(1,2,4).reshape(2,2);
+        NDArray n = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
 
-       DoubleMatrix d2 = DoubleMatrix.linspace(1,2,4).reshape(2,2);
-       NDArray n2 = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
-       n.mmul(n2);
+        DoubleMatrix d2 = DoubleMatrix.linspace(1,2,4).reshape(2,2);
+        NDArray n2 = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
+        n.mmul(n2);
 
-   }
+    }
+
+    @Test
+    public void testSliceWiseAggregateStats() {
+        DoubleMatrix d = DoubleMatrix.linspace(1,4,4).reshape(2,2);
+        DoubleMatrix columnMaxs = d.columnMaxs();
+        NDArray n = NDArray.wrap(d);
+        NDArray nColumnMaxes = n.columnMaxs();
+        assertEquals(columnMaxs,nColumnMaxes);
+    }
 
 
     @Test
@@ -136,6 +140,16 @@ public class NDArrayTests {
         NDArray transpose = n.transpose();
         assertEquals(n.length,transpose.length);
         assertEquals(true,Arrays.equals(new int[]{4,5,5},transpose.shape()));
+
+    }
+
+    @Test
+    public void testPutSlice() {
+        NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
+        NDArray newSlice = NDArray.wrap(DoubleMatrix.zeros(3,3));
+        n.putSlice(0,newSlice);
+        assertEquals(newSlice,n.slice(0));
+
 
     }
 

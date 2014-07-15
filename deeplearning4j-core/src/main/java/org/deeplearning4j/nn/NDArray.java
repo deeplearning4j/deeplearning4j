@@ -35,6 +35,11 @@ public class NDArray extends DoubleMatrix {
         this.data = ArrayUtil.combine(list);
         this.shape = shape;
         this.length = ArrayUtil.prod(shape);
+
+        if(this.shape.length == 2) {
+            rows = shape[0];
+            columns = shape[1];
+        }
     }
 
 
@@ -48,12 +53,15 @@ public class NDArray extends DoubleMatrix {
         if(offset >= data.length)
             throw new IllegalArgumentException("Invalid offset: must be < data.length");
 
-        if(data != null  && data.length > 0)
-            this.data = data;
-        this.shape = shape;
+       this.shape = shape;
         this.offset = offset;
         this.stride = stride;
         this.length = ArrayUtil.prod(shape);
+
+        if(data != null  && data.length > 0)
+            this.data = data;
+
+
         if(this.shape.length == 2) {
             rows = shape[0];
             columns = shape[1];
@@ -187,6 +195,39 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    /**
+     * Assigns the given matrix (put) to the specified slice
+     * @param slice the slice to assign
+     * @param put the slice to set
+     * @return this for chainability
+     */
+    public NDArray putSlice(int slice,NDArray put) {
+        int[] sliceShape = put.shape();
+        int[] requiredShape = ArrayUtil.removeIndex(shape(),0);
+        assert Arrays.equals(sliceShape,requiredShape) : "Invalid shape size. Unable to assign slice";
+        assert slice <= slices() : "Invalid slice specified " + slice;
+        NDArray view = slice(slice);
+        if(put.isVector())
+            for(int i = 0; i < put.length; i++)
+                view.put(i,put.get(i));
+        if(put.shape().length == 2) {
+            for(int i = 0; i < put.rows(); i++) {
+                for(int j = 0; j < put.columns(); j++) {
+                    view.put(i,j,put.get(i,j));
+                }
+            }
+        }
+        else {
+
+            assert put.slices() == view.slices() : "Slices must be equivalent.";
+            for(int i = 0; i < put.slices(); i++) {
+                view.slice(i).putSlice(i,view.slice(i));
+            }
+        }
+
+        return this;
+
+    }
 
 
     public NDArray get(Object...o) {
@@ -436,7 +477,7 @@ public class NDArray extends DoubleMatrix {
     public double get(int i) {
         if(shape().length > 1)
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
-        int realStride = stride[0];
+        int realStride = stride == null || stride.length < 1 ? 1 : stride[0];
         return data[offset + i * realStride];
     }
 
@@ -569,6 +610,176 @@ public class NDArray extends DoubleMatrix {
 
     }
 
+    /**
+     * Return index of minimal element per column.
+     */
+    @Override
+    public int[] columnArgmaxs() {
+        return super.columnArgmaxs();
+    }
+
+    /**
+     * Return index of minimal element per column.
+     */
+    @Override
+    public int[] columnArgmins() {
+        if(shape().length == 2)
+            return super.columnArgmins();
+        else {
+            throw new IllegalStateException("Unable to get column mins for dimensions more than 2");
+        }
+    }
+
+
+
+
+    /**
+     * Return column-wise maximums.
+     */
+    @Override
+    public NDArray columnMaxs() {
+        if(shape().length == 2)
+            return NDArray.wrap(super.columnMaxs());
+
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.COLUMN_MAX,this);
+
+    }
+
+    /**
+     * Return a vector containing the means of all columns.
+     */
+    @Override
+    public NDArray columnMeans() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.columnMeans());
+
+        }
+
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.COLUMN_MEAN,this);
+
+    }
+
+    /**
+     * Return column-wise minimums.
+     */
+    @Override
+    public NDArray columnMins() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.columnMins());
+
+        }
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.COLUMN_MIN,this);
+
+    }
+
+    /**
+     * Return a vector containing the sums of the columns (having number of columns many entries)
+     */
+    @Override
+    public NDArray columnSums() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.columnSums());
+
+        }
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.COLUMN_SUM,this);
+
+    }
+
+    /**
+     * Computes the cumulative sum, that is, the sum of all elements
+     * of the matrix up to a given index in linear addressing.
+     */
+    @Override
+    public DoubleMatrix cumulativeSum() {
+        return super.cumulativeSum();
+    }
+
+    /**
+     * Computes the cumulative sum, that is, the sum of all elements
+     * of the matrix up to a given index in linear addressing (in-place).
+     */
+    @Override
+    public DoubleMatrix cumulativeSumi() {
+        return super.cumulativeSumi();
+    }
+
+
+    /**
+     * Return index of minimal element per row.
+     */
+    @Override
+    public int[] rowArgmaxs() {
+        return super.rowArgmaxs();
+    }
+
+    /**
+     * Return index of minimal element per row.
+     */
+    @Override
+    public int[] rowArgmins() {
+        return super.rowArgmins();
+    }
+
+    /**
+     * Return row-wise maximums for each slice.
+     */
+    @Override
+    public NDArray rowMaxs() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.rowMaxs());
+
+        }
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.ROW_MAX,this);
+
+    }
+
+    /**
+     * Return a vector containing the means of the rows for each slice.
+     */
+    @Override
+    public NDArray rowMeans() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.rowMeans());
+
+        }
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.ROW_MEAN,this);
+
+    }
+
+    /**
+     * Return row-wise minimums for each slice.
+     */
+    @Override
+    public NDArray rowMins() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.rowMins());
+
+        }
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.ROW_MIN,this);
+
+    }
+
+    /**
+     * Return a matrix with the row sums for each slice
+     */
+    @Override
+    public NDArray rowSums() {
+        if(shape().length == 2) {
+            return NDArray.wrap(super.rowSums());
+
+        }
+
+        else
+            return NDArrayUtil.doSliceWise(NDArrayUtil.MatrixOp.ROW_SUM,this);
+
+    }
 
     /** Add a scalar to a matrix (in-place). */
     public NDArray addi(double v, NDArray result) {
@@ -626,6 +837,26 @@ public class NDArray extends DoubleMatrix {
         return sub(result);
     }
 
+
+
+    /**
+     * Elementwise multiply by a scalar.
+     *
+     * @param v
+     */
+    @Override
+    public NDArray mul(double v) {
+        int dims= shape().length;
+        if (dims == 0) {
+            put(0, data[0] * v);
+        } else {
+            int n = slices();
+            for (int i = 0; i < n; i++)
+                slice(i).muli(v);
+
+        }
+        return this;
+    }
 
 
     /**
@@ -770,11 +1001,11 @@ public class NDArray extends DoubleMatrix {
         NDArray arr = NDArray.wrap(this,a);
         List<DoubleMatrix> ret = new ArrayList<>();
 
-       if(shape().length == 2) {
-           rows = shape[0];
-           columns = shape[1];
-           return NDArray.wrap(super.mmul(a));
-       }
+        if(shape().length == 2) {
+            rows = shape[0];
+            columns = shape[1];
+            return NDArray.wrap(super.mmul(a));
+        }
 
         for(int i = 0; i < shape.length; i++) {
             ret.add(slice(i).mmul(arr.slice(i)));
@@ -848,10 +1079,11 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public NDArray add(double v) {
-        int dims= shape().length;
-        if (dims ==0) {
+        if (isVector() || isScalar()) {
             put(0, v + data[0]);
-        } else {
+        }
+        else {
+
             int n = slices();
             for (int i = 0; i < n; i++)
                 slice(i).add(v);
@@ -1030,7 +1262,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double sum() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.sum();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.SUM,this);
     }
@@ -1040,7 +1272,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double prod() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.prod();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this);
 
@@ -1051,7 +1283,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double max() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.max();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MAX,this);
 
@@ -1062,7 +1294,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double min() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.min();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MIN,this);
 
@@ -1074,7 +1306,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double mean() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.mean();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MEAN,this);
 
@@ -1087,7 +1319,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public int argmax() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.argmax();
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MAX,this);
 
@@ -1099,7 +1331,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public int argmin() {
-        if(isVector())
+        if(isVector() || shape().length == 2)
             return super.argmin();
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MIN,this);
 
@@ -1191,14 +1423,27 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public boolean equals(Object o) {
-        if(!o.getClass().isAssignableFrom(NDArray.class))
+        NDArray n = null;
+        if(o.getClass().isAssignableFrom(DoubleMatrix.class)) {
+            //chance for comparison of the matrices if the shape of this matrix is 2
+            if(shape().length > 2)
+                return false;
+            else {
+                DoubleMatrix d = (DoubleMatrix) o;
+                n = NDArray.wrap(this,d);
+
+            }
+        }
+        else if(!o.getClass().isAssignableFrom(NDArray.class))
             return false;
-        NDArray n = (NDArray) o;
+
+        if(n == null)
+            n = (NDArray) o;
+
+
         if(!Arrays.equals(shape(),n.shape()))
             return false;
         if(!Arrays.equals(stride(),n.stride()))
-            return false;
-        if(!Arrays.equals(n.data,data))
             return false;
         //epsilon equals
         if(isScalar())
@@ -1411,7 +1656,7 @@ public class NDArray extends DoubleMatrix {
     public static NDArray wrap(NDArray ndArray,DoubleMatrix toWrap) {
         if(toWrap instanceof NDArray)
             return (NDArray) toWrap;
-        NDArray ret = new NDArray(toWrap.data,ndArray.shape(),ndArray.stride(),ndArray.offset);
+        NDArray ret = new NDArray(toWrap.data,ndArray.shape(),ndArray.stride(),0);
         return ret;
     }
 
