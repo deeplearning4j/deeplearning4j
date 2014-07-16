@@ -42,15 +42,42 @@ public class NDArrayTests {
     }
 
     @Test
+    public void testWrap() {
+        int[] shape = {2,4};
+        DoubleMatrix d = DoubleMatrix.linspace(1,8,8).reshape(shape[0],shape[1]);
+        NDArray n = NDArray.wrap(d);
+        assertEquals(d.rows,n.rows());
+        assertEquals(d.columns,n.columns());
+
+        DoubleMatrix vector = DoubleMatrix.linspace(1,3,3);
+        NDArray testVector = NDArray.wrap(vector);
+        for(int i = 0; i < vector.length; i++)
+            assertEquals(vector.get(i),testVector.get(i),1e-1);
+
+
+    }
+
+
+    @Test
     public void testRow() {
         int[] shape = {2,4};
         DoubleMatrix d = DoubleMatrix.linspace(1,8,8).reshape(shape[0],shape[1]);
-        NDArray n = new NDArray(Arrays.copyOf(d.data,d.data.length),shape);
-        //assertEquals(d,n);
+        NDArray n = NDArray.wrap(d);
+        assertEquals(n,d);
         assertEquals(true,Arrays.equals(shape,n.shape()));
         DoubleMatrix r1 = d.getRow(0);
         NDArray r2 = n.getRow(0);
-        // assertEquals(true,Arrays.equals(r1Data,r2Data));
+
+        assertEquals(r2,r1);
+
+
+        for(int i = 0; i < n.rows(); i++) {
+            for(int j = 0; j < n.columns(); j++) {
+                double val = d.get(i,j);
+                double val2 = n.get(i,j);
+                assertEquals(val,val2,1e-1);
+            }
+        }
 
 
     }
@@ -130,7 +157,7 @@ public class NDArrayTests {
         DoubleMatrix columnMaxs = d.columnMaxs();
         NDArray n = NDArray.wrap(d);
         NDArray nColumnMaxes = n.columnMaxs();
-        assertEquals(columnMaxs,nColumnMaxes);
+        assertEquals(nColumnMaxes,columnMaxs);
     }
 
 
