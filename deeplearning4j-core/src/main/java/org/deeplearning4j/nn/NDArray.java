@@ -53,7 +53,7 @@ public class NDArray extends DoubleMatrix {
         if(offset >= data.length)
             throw new IllegalArgumentException("Invalid offset: must be < data.length");
 
-       this.shape = shape;
+        this.shape = shape;
         this.offset = offset;
         this.stride = stride;
         this.length = ArrayUtil.prod(shape);
@@ -477,8 +477,8 @@ public class NDArray extends DoubleMatrix {
     public double get(int i) {
         if(shape().length > 1)
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
-        int realStride = stride == null || stride.length < 1 ? 1 : stride[0];
-        return data[offset + i * realStride];
+        int realStirde = stride == null || stride.length < 1 ? 1 : stride[0];
+        return data[offset + i * realStirde];
     }
 
 
@@ -503,12 +503,12 @@ public class NDArray extends DoubleMatrix {
         }
         //slice of a matrix is a vector
         else if (shape.length == 2) {
-            int st = stride[1];
+            int st = stride[0];
             if (st == 1) {
                 return new NDArray(data, new int[]{ shape[1] },new int[]{1},offset + slice * stride[0]);
             } else {
 
-                return new NDArray(data,new int[]{ 1,shape[1] } ,new int[]{ stride[1] },offset + slice * stride[0]);
+                return new NDArray(data,new int[]{ shape[1] } ,new int[]{ stride[1] },offset + slice * stride[0]);
             }
         } else {
             return new NDArray(data,
@@ -557,7 +557,7 @@ public class NDArray extends DoubleMatrix {
 
     /** Retrieve matrix element */
     public double get(int rowIndex, int columnIndex) {
-        return getMulti(new int[]{rowIndex, columnIndex});
+        return data[offset + (rowIndex + rows() * columnIndex)];
     }
 
     @Override
@@ -565,7 +565,7 @@ public class NDArray extends DoubleMatrix {
         NDArray result = new NDArray(data,new int[]{1,indices.length},stride,offset);
 
         for (int i = 0; i < indices.length; i++) {
-            result.put(i, get(indices[i] + offset));
+            result.put(i, get(indices[i]));
         }
 
         return result;
@@ -1262,7 +1262,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double sum() {
-        if(isVector() || shape().length == 2)
+        if(isVector())
             return super.sum();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.SUM,this);
     }
@@ -1272,7 +1272,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double norm1() {
-        if(isVector() || shape().length == 2)
+        if(isVector())
             return super.norm2();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_1,this);
 
@@ -1284,7 +1284,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double norm2() {
-        if(isVector() || shape().length == 2)
+        if(isVector())
             return super.norm2();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_2,this);
 
@@ -1295,7 +1295,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double normmax() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.normmax();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_MAX,this);
 
@@ -1306,10 +1306,18 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double prod() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.prod();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this);
 
+    }
+
+    /**
+     * Checks whether the matrix is empty.
+     */
+    @Override
+    public boolean isEmpty() {
+        return length == 0;
     }
 
     /**
@@ -1317,7 +1325,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double max() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.max();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MAX,this);
 
@@ -1328,7 +1336,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double min() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.min();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MIN,this);
 
@@ -1340,7 +1348,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double mean() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.mean();
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MEAN,this);
 
@@ -1353,7 +1361,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public int argmax() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.argmax();
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MAX,this);
 
@@ -1365,7 +1373,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public int argmin() {
-        if(isVector() || shape().length == 2)
+        if(isVector() )
             return super.argmin();
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MIN,this);
 
@@ -1442,7 +1450,7 @@ public class NDArray extends DoubleMatrix {
                     data,
                     new int[]{shape[1]},
                     new int[]{shape[0]},
-                    offset + r * columns()
+                    r * columns()
             );
         else
             throw new IllegalArgumentException("Unable to get row of non 2d matrix");
@@ -1458,15 +1466,16 @@ public class NDArray extends DoubleMatrix {
     @Override
     public boolean equals(Object o) {
         NDArray n = null;
-        if(o.getClass().isAssignableFrom(DoubleMatrix.class)) {
+        if(o instanceof  DoubleMatrix && !(o instanceof NDArray)) {
+            DoubleMatrix d = (DoubleMatrix) o;
             //chance for comparison of the matrices if the shape of this matrix is 2
             if(shape().length > 2)
                 return false;
-            else {
-                DoubleMatrix d = (DoubleMatrix) o;
-                n = NDArray.wrap(this,d);
 
-            }
+            else
+                n = NDArray.wrap(d);
+
+
         }
         else if(!o.getClass().isAssignableFrom(NDArray.class))
             return false;
@@ -1477,15 +1486,18 @@ public class NDArray extends DoubleMatrix {
 
         if(!Arrays.equals(shape(),n.shape()))
             return false;
-        if(!Arrays.equals(stride(),n.stride()))
-            return false;
-        //epsilon equals
+         //epsilon equals
         if(isScalar())
             return Math.abs(get(0) - n.get(0)) < 1e-6;
         else if(isVector()) {
-            for(int i = 0; i < length; i++)
-                if(Math.abs(get(i) - n.get(i)) > 1e-6)
+            for(int i = 0; i < length; i++) {
+                double curr = get(i);
+                double comp = n.get(i);
+                if(Math.abs(curr - comp) > 1e-6)
                     return false;
+            }
+
+
         }
 
         for (int i=0; i< slices(); i++) {
@@ -1496,22 +1508,6 @@ public class NDArray extends DoubleMatrix {
         return true;
 
 
-    }
-
-
-
-
-
-
-
-    public List<NDArray> rowList() {
-        if(shape.length == 1)
-            return new ArrayList<>(Collections.singletonList(NDArray.scalar(this, 1)));
-        else if(shape.length == 2) {
-
-        }
-
-        return new ArrayList<>();
     }
 
 
@@ -1602,10 +1598,34 @@ public class NDArray extends DoubleMatrix {
     /** Generate string representation of the matrix. */
     @Override
     public String toString() {
-        if (shape.length == 1) {
+        if (isScalar()) {
             return Double.toString(get(0));
         }
+        else if(isVector()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append('[');
+            for(int i = 0; i < length; i++) {
+                sb.append(get(i));
+                sb.append(',');
+            }
+            sb.append(']');
+            return sb.toString();
+        }
 
+        else if(shape.length == 2) {
+            StringBuilder sb = new StringBuilder();
+            sb.append('[');
+            for(int i = 0; i < rows(); i++) {
+                for(int j = 0; j < columns(); j++) {
+                    sb.append(get(i,j));
+                    sb.append(',');
+                }
+                sb.append(';');
+            }
+
+            sb.append(']');
+            return sb.toString();
+        }
         StringBuilder sb = new StringBuilder();
         int length= shape[0];
         sb.append('[');
@@ -1687,18 +1707,37 @@ public class NDArray extends DoubleMatrix {
         return new NDArray(new double[]{num},new int[]{1},new int[]{1},0);
     }
 
+    /**
+     * Wrap toWrap with the specified shape, and dimensions from
+     * the passed in ndArray
+     * @param ndArray the way to wrap a matrix
+     * @param toWrap the matrix to wrap
+     * @return the wrapped matrix
+     */
     public static NDArray wrap(NDArray ndArray,DoubleMatrix toWrap) {
         if(toWrap instanceof NDArray)
             return (NDArray) toWrap;
-        NDArray ret = new NDArray(toWrap.data,ndArray.shape(),ndArray.stride(),0);
+        int[] stride = ndArray.stride();
+        NDArray ret = new NDArray(toWrap.data,ndArray.shape(),stride,ndArray.offset());
         return ret;
     }
 
 
+    /**
+     * Wrap a matrix in to an ndarray
+     * @param toWrap the matrix to wrap
+     * @return the wrapped matrix
+     */
     public static NDArray wrap(DoubleMatrix toWrap) {
         if(toWrap instanceof NDArray)
             return (NDArray) toWrap;
-        int[] shape = new int[]{toWrap.rows,toWrap.columns};
+        int[] shape;
+        if(toWrap.isColumnVector())
+            shape = new int[]{toWrap.rows};
+        else if(toWrap.isRowVector())
+            shape = new int[]{ toWrap.columns};
+        else
+            shape = new int[]{toWrap.rows,toWrap.columns};
         NDArray ret = new NDArray(toWrap.data,shape,ArrayUtil.calcStrides(shape));
         return ret;
     }

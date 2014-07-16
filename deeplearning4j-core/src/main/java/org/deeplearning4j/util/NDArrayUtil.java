@@ -41,6 +41,14 @@ public class NDArrayUtil {
     }
 
 
+    /**
+     * Does slice wise ops on matrices and
+     * returns the aggregate results in one matrix
+     *
+     * @param op the operation to perform
+     * @param arr the array  to do operations on
+     * @return the slice wise operations
+     */
     public static NDArray doSliceWise(MatrixOp op,NDArray arr) {
         int columns = isColumnOp(op) ? arr.columns() : arr.rows();
         int[] shape = {arr.slices(),columns};
