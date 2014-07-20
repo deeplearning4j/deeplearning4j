@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.util.ArrayUtil;
+import org.deeplearning4j.util.NDArrayUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 
@@ -92,7 +93,7 @@ public class NDArrayTests {
         DoubleMatrix r1 = d.getColumn(0);
         NDArray r2 = n.getColumn(0);
 
-         //note that when comparing NDArrays and DoubleMatrix, you need to use the NDArray equals() method
+        //note that when comparing NDArrays and DoubleMatrix, you need to use the NDArray equals() method
         assertEquals(r2,r1);
 
         DoubleMatrix r12 = d.getColumn(1);
@@ -170,6 +171,22 @@ public class NDArrayTests {
 
     }
 
+
+    @Test
+    public void testDimensionOp() {
+        //A = reshape(linspace(1,24,24),[4 3 2]);
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        int[] shape = ArrayUtil.removeIndex(arr.shape(),0);
+        int[] stride = ArrayUtil.removeIndex(arr.stride(),0);
+
+        //NDArray arr = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        NDArray firstSlice = arr.slice(0);
+        double sum = firstSlice.sum();
+        String s = firstSlice.toString();
+        NDArrayUtil.collectForOp(arr,0);
+        log.info("Is this a cell? " + sum);
+    }
+
     @Test
     public void testPutSlice() {
         NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
@@ -203,9 +220,23 @@ public class NDArrayTests {
     }
 
     @Test
+    public void reduceTest() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        NDArray reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,0);
+        log.info("Reduced " + reduced);
+        reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,1);
+        log.info("Reduced " + reduced);
+        reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,2);
+        log.info("Reduced " + reduced);
+
+
+    }
+
+
+    @Test
     public void testGetMulti() {
         assertEquals(8,n.length);
-        assertEquals(true,Arrays.equals(new int[]{2,2,2},n.shape()));
+        assertEquals(true,Arrays.equals(ArrayUtil.of(2,2,2),n.shape()));
         double val = n.getMulti(1,1,1);
         assertEquals(8.0,val,1e-6);
     }
