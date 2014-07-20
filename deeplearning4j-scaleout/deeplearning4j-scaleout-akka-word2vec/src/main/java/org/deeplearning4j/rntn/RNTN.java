@@ -589,9 +589,7 @@ public class RNTN implements Serializable {
 
             FloatMatrix currentVectorDerivative = activationFunction.applyDerivative(currentVector);
             FloatMatrix deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
-            //need to figure out why dimension mismatch here
-            //currentVectorDerivative: 50 x 1
-            //deltaFromClass 51 x 1
+
             FloatMatrix mult = deltaFromClass.get(interval(0, numHidden),interval(0, 1));
             deltaFromClass = mult.muli(currentVectorDerivative);
             FloatMatrix deltaFull = deltaFromClass.add(deltaUp);
@@ -687,10 +685,10 @@ public class RNTN implements Serializable {
 
 
             if (useFloatTensors) {
-                FloatTensor FloatTensor = getBinaryFloatTensor(leftCategory, rightCategory);
-                FloatMatrix FloatTensorIn = FloatMatrix.concatHorizontally(leftVector, rightVector);
-                FloatMatrix FloatTensorOut = FloatTensor.bilinearProducts(FloatTensorIn);
-                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(FloatTensorOut));
+                FloatTensor floatT = getBinaryFloatTensor(leftCategory, rightCategory);
+                FloatMatrix floatTensorIn = FloatMatrix.concatHorizontally(leftVector, rightVector);
+                FloatMatrix floatTensorOut = floatT.bilinearProducts(floatTensorIn);
+                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(floatTensorOut));
             }
 
             else

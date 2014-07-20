@@ -96,7 +96,7 @@ public class Convolution {
 
         //expand the ranges to get the data for each slice
         for(int i = 0; i < input.shape().length; i++) {
-            NDArray slice = input.slice(i);
+            NDArray slice = input.slice(i,0);
 
         }
 
