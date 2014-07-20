@@ -65,7 +65,30 @@ public class ArrayUtil {
     }
 
 
+    public static int[] empty() {
+        return new int[0];
+    }
+
+
+    public static int[] of(int...arr) {
+        return arr;
+    }
+
+    public static int[] copy(int[] copy) {
+        int[] ret = new int[copy.length];
+        System.arraycopy(copy,0,ret,0,ret.length);
+        return ret;
+    }
+
+
     public static int[] removeIndex(int[] data, int index) {
+        if(data == null)
+            return null;
+        if(data.length < 1)
+            return data;
+        if(index < 0)
+            return data;
+
         int len = data.length;
         int[] result = new int[len - 1];
         System.arraycopy(data, 0, result, 0, index);
@@ -74,7 +97,19 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Returns the array with the item in index
+     * removed, if the array is empty it will return the array itself
+     * @param data the data to remove data from
+     * @param index the index of the item to remove
+     * @return a copy of the array with the removed item,
+     * or the array itself if empty
+     */
     public static Integer[] removeIndex(Integer[] data, int index) {
+        if(data == null)
+            return null;
+        if(data.length < 1)
+            return data;
         int len = data.length;
         Integer[] result = new Integer[len - 1];
         System.arraycopy(data, 0, result, 0, index);
