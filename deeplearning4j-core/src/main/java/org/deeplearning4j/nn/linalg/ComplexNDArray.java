@@ -735,7 +735,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         int[] ret = new int[copy.length];
         for(int i = 0; i < copy.length; i++) {
             //give us the whole thing
-            if(copy[i].equals(Character.valueOf(':')))
+            if(((char)copy[i] == ':'))
                 ret[i] = shape[i];
                 //only allow indices
             else if(copy[i] instanceof Number)
