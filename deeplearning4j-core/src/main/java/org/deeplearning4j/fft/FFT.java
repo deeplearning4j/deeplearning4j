@@ -17,6 +17,10 @@ import static org.deeplearning4j.util.MatrixUtil.exp;
  */
 public class FFT {
 
+    public static ComplexDoubleMatrix fft(NDArray transform) {
+        return fft(new ComplexNDArray(transform),transform.length);
+    }
+
 
     public static ComplexDoubleMatrix fft(NDArray transform,int numElements) {
         return fft(new ComplexNDArray(transform),numElements);
@@ -32,7 +36,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(ComplexDoubleMatrix inputC) {
+    public static  ComplexDoubleMatrix fft(ComplexDoubleMatrix inputC) {
         return fft(inputC, inputC.length);
     }
 
