@@ -65,4 +65,13 @@ public class DimensionSlice implements Serializable {
     public void setIndices(int[] indices) {
         this.indices = indices;
     }
+
+    @Override
+    public String toString() {
+        return "DimensionSlice{" +
+                "nextSlice=" + nextSlice +
+                ", result=" + result +
+                ", indices=" + Arrays.toString(indices) +
+                '}';
+    }
 }
