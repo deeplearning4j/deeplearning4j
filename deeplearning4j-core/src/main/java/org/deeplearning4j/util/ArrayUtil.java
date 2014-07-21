@@ -88,6 +88,9 @@ public class ArrayUtil {
             return data;
         if(index < 0)
             return data;
+        if(data.length == 1)
+            throw new IllegalArgumentException("Unable to remove item from a 1 length array");
+
 
         int len = data.length;
         int[] result = new int[len - 1];

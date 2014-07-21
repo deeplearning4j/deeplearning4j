@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.learning;
 
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.linalg.Tensor;
 import org.jblas.DoubleMatrix;
 
 import static org.jblas.MatrixFunctions.abs;

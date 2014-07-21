@@ -8,7 +8,7 @@ import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.util.ImageLoader;

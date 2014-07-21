@@ -9,8 +9,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import org.deeplearning4j.nn.FourDTensor;
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.linalg.Tensor;
 import org.jblas.DoubleMatrix;
 /**
  * Image loader for taking images and converting them to matrices
