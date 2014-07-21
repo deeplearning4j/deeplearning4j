@@ -41,7 +41,7 @@ public class ComplexNDArrayTests {
     @Test
     public void testVectorDimension() {
         ComplexNDArray test = new ComplexNDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        ComplexNDArray dimension = test.vectorForDimensionAndOffset(1,1);
+        ComplexNDArray dimension = (ComplexNDArray) test.vectorForDimensionAndOffset(1,1).getResult();
         log.info("Dimension " + dimension);
     }
 

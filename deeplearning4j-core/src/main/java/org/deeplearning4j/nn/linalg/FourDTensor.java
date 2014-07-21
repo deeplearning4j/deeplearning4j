@@ -1,7 +1,6 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.linalg;
 
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.deeplearning4j.nn.linalg.Tensor;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;

@@ -46,9 +46,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     /** Construct a complex matrix from a real matrix. */
     public ComplexNDArray(NDArray m) {
-        this(m.rows, m.columns);
+        this(m.shape());
         this.shape = m.shape();
+        this.length = m.length;
         NativeBlas.dcopy(m.length, m.data, 0, 1, data, 0, 2);
+
     }
 
 
@@ -456,7 +458,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     @Override
     public ComplexNDArray putReal(int i, double v) {
-        return ComplexNDArray.wrap(this,super.putReal(i, v));
+        return ComplexNDArray.wrap(this, super.putReal(i, v));
     }
 
     @Override
@@ -493,7 +495,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @param dimension the dimension to iterate over
      * @param op the operation to apply
      */
-    public void iterateOverDimension(int dimension,ComplexSliceOp op) {
+    public void iterateOverDimension(int dimension,SliceOp op) {
         int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
 
         if(dimension == 0) {
@@ -501,7 +503,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
             for(int offset = this.offset; offset < numTimes; offset++) {
-                ComplexNDArray vector = vectorForDimensionAndOffset(dimension,offset);
+                DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                 op.operate(vector);
 
             }
@@ -523,11 +525,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     break;
 
                 //do the operation,, and look for whether it exceeded the current slice
-                Pair<Boolean,ComplexNDArray> pair = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
+                DimensionSlice pair = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
                 //append the result
-                op.operate(pair.getSecond());
+                op.operate(pair);
                 //go to next slice and iterate over that
-                if(pair.getFirst()) {
+                if(pair.isNextSlice()) {
                     //will update to next step
                     offset = sliceIndices[currOffset];
                     numTimes +=  sliceIndices[currOffset];
@@ -544,33 +546,36 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
     //get one result along one dimension based on the given offset
-    public Pair<Boolean,ComplexNDArray> vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
+    public DimensionSlice vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
         int count = 0;
         ComplexNDArray ret = new ComplexNDArray(new int[]{shape[dimension]});
         boolean newSlice = false;
+        List<Integer> indices = new ArrayList<>();
         for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
             ComplexDouble d = new ComplexDouble(data[j],data[j + 1]);
+            indices.add(j);
             ret.put(count++,d);
             if(j >= currOffsetForSlice)
                 newSlice = true;
 
         }
 
-        return new Pair<>(newSlice,ret);
+        return new DimensionSlice(newSlice,ret,ArrayUtil.toArray(indices));
     }
 
 
     //get one result along one dimension based on the given offset
-    public ComplexNDArray vectorForDimensionAndOffset(int dimension, int offset) {
+    public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
         int count = 0;
         ComplexNDArray ret = new ComplexNDArray(new int[]{shape[dimension]});
+        List<Integer> indices = new ArrayList<>();
         for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
             ComplexDouble d = new ComplexDouble(data[j],data[j + 1]);
             ret.put(count++,d);
-
+            indices.add(j);
         }
 
-        return ret;
+        return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
     }
 
 
