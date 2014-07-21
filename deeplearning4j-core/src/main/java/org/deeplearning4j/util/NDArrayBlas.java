@@ -1,8 +1,7 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.NDArray;
+import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.DoubleMatrix;
-import org.jblas.JavaBlas;
 import org.jblas.NativeBlas;
 
 /**

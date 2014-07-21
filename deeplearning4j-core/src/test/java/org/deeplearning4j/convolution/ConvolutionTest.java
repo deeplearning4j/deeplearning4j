@@ -3,10 +3,9 @@ package org.deeplearning4j.convolution;
 import static org.junit.Assert.*;
 import static org.deeplearning4j.util.Convolution.*;
 
-import org.deeplearning4j.nn.NDArray;
+import org.deeplearning4j.nn.linalg.NDArray;
 import org.deeplearning4j.util.Convolution;
 import org.jblas.DoubleMatrix;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

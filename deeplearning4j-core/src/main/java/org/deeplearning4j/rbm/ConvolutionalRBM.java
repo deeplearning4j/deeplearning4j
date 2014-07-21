@@ -12,7 +12,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.FourDTensor;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
