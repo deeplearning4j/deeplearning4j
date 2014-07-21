@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.linalg;
 
 import static org.deeplearning4j.util.ArrayUtil.calcStrides;
 import static org.deeplearning4j.util.ArrayUtil.reverseCopy;
@@ -25,6 +25,9 @@ public class NDArray extends DoubleMatrix {
     private int[] shape;
     private int[] stride;
     private int offset = 0;
+
+
+
 
 
     public NDArray(List<DoubleMatrix> slices,int[] shape) {
@@ -343,6 +346,41 @@ public class NDArray extends DoubleMatrix {
 
     }
 
+
+
+    //get one result along one dimension based on the given offset
+    public Pair<Boolean,NDArray> vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
+        int count = 0;
+        NDArray ret = new NDArray(new int[]{shape[dimension]});
+        boolean newSlice = false;
+        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
+            double d = data[j];
+            ret.put(count++,d);
+            if(j >= currOffsetForSlice)
+                newSlice = true;
+
+        }
+
+        return new Pair<>(newSlice,ret);
+    }
+
+    //get one result along one dimension based on the given offset
+    public NDArray vectorForDimensionAndOffset(int dimension, int offset) {
+        int count = 0;
+        NDArray ret = new NDArray(new int[]{shape[dimension]});
+
+        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
+            double d = data[j];
+            ret.put(count++,d);
+
+
+
+        }
+
+        return ret;
+    }
+
+
     //get one result along one dimension based on the given offset
     private Pair<Double,Boolean> op(int dimension, int offset, NDArrayUtil.DimensionOp op,int currOffsetForSlice) {
         double[] dim = new double[this.shape[dimension]];
@@ -486,6 +524,61 @@ public class NDArray extends DoubleMatrix {
         );
     }
 
+
+    /**
+     * Iterate along a dimension.
+     * This encapsulates the process of sum, mean, and other processes
+     * take when iterating over a dimension.
+     * @param dimension the dimension to iterate over
+     * @param op the operation to apply
+     */
+    public void iterateOverDimension(int dimension,SliceOp op) {
+        int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
+
+        if(dimension == 0) {
+            //iterating along the dimension is relative to the number of slices
+            //in the return dimension
+            int numTimes = ArrayUtil.prod(shape);
+            for(int offset = this.offset; offset < numTimes; offset++) {
+                NDArray vector = vectorForDimensionAndOffset(dimension,offset);
+                op.operate(vector);
+
+            }
+
+        }
+
+        else {
+            double[] data2 = new double[ArrayUtil.prod(shape)];
+            int dataIter = 0;
+            //want the milestone to slice[1] and beyond
+            int[] sliceIndices = endsForSlices();
+            int currOffset = 0;
+
+            //iterating along the dimension is relative to the number of slices
+            //in the return dimension
+            int numTimes = ArrayUtil.prod(shape);
+            for(int offset = this.offset; offset < numTimes; offset++) {
+                if(dataIter >= data2.length)
+                    break;
+
+                //do the operation,, and look for whether it exceeded the current slice
+                Pair<Boolean,NDArray> pair = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
+                //append the result
+                op.operate(pair.getSecond());
+                //go to next slice and iterate over that
+                if(pair.getFirst()) {
+                    //will update to next step
+                    offset = sliceIndices[currOffset];
+                    numTimes +=  sliceIndices[currOffset];
+                    currOffset++;
+                }
+
+            }
+
+        }
+
+
+    }
 
 
 
@@ -650,7 +743,7 @@ public class NDArray extends DoubleMatrix {
 
 
     @Override
-    public DoubleMatrix put(int i, double v) {
+    public NDArray put(int i, double v) {
         data[i + offset] = v;
         return this;
     }
@@ -1268,7 +1361,7 @@ public class NDArray extends DoubleMatrix {
                 throw new IllegalArgumentException("Too many elements");
             ec *= shape[i];
         }
-        int n= (int) ec;
+        int n = (int) ec;
 
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
@@ -1327,6 +1420,12 @@ public class NDArray extends DoubleMatrix {
             d.put(i, slice(i).dot(a));
 
         return d;
+    }
+
+
+    @Override
+    public int index(int row,int column) {
+        return row * stride[0]  + column * stride[1];
     }
 
 
@@ -1434,7 +1533,7 @@ public class NDArray extends DoubleMatrix {
     public NDArray sub(DoubleMatrix other) {
         NDArray a = NDArray.wrap(this,other);
         int dims = shape().length;
-        if (dims==0) {
+        if (dims == 0) {
             sub(data[0]);
             return this;
         }
@@ -1442,21 +1541,24 @@ public class NDArray extends DoubleMatrix {
         int n = slices();
         int na= a.slices();
         int adims = a.shape().length;
-        if (dims==adims) {
-            if (n!=na)
+
+        if (dims == adims) {
+            if (n != na)
                 throw new IllegalArgumentException("Invalid shapes ");
-            for (int i=0; i<n; i++) {
-                slice(i).sub(a.slice(i));
+            for (int i=0; i < n; i++) {
+                slice(i).subi(a.slice(i));
             }
         }
 
         else if (adims < dims) {
-            for (int i=0; i < n; i++) {
-                slice(i).sub(a);
-            }
-        } else {
-            throw new IllegalArgumentException("Invalid shape ");
+            for (int i = 0; i < n; i++)
+                slice(i).subi(a);
+
         }
+
+        else
+            throw new IllegalArgumentException("Invalid shape ");
+
         return this;
     }
 

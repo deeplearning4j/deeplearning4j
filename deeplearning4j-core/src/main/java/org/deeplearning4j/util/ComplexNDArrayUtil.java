@@ -1,16 +1,19 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.linalg.NDArray;
+import org.deeplearning4j.nn.linalg.ComplexNDArray;
+import org.jblas.ComplexDouble;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- *  Basic NDArray ops
+ * ComplexNDArray operations
  *
- *  @author Adam Gibson
+ * @author Adam Gibson
  */
-public class NDArrayUtil {
+public class ComplexNDArrayUtil {
+
+
     public static enum ScalarOp {
         SUM,
         MEAN,
@@ -78,24 +81,21 @@ public class NDArrayUtil {
      * @param dimension the dimension to do operations on
      * @return the
      */
-    public static NDArray dimensionOp(DimensionOp op,NDArray arr,int dimension) {
+    public static ComplexNDArray dimensionOp(DimensionOp op,ComplexNDArray arr,int dimension) {
         if(dimension >= arr.slices())
             return arr;
 
         int[] shape = ArrayUtil.removeIndex(arr.shape(),dimension);
 
 
-        List<NDArray> list = new ArrayList<>();
+        List<ComplexNDArray> list = new ArrayList<>();
 
         for(int i = 0; i < arr.slices(); i++) {
             switch(op) {
                 case SUM:
                     //list.add(arr.slice(i,dimension).sum());
                     break;
-                case MAX:
-                    list.add(arr.slice(i,dimension).columnMaxs());
-                    break;
-                case MEAN:
+                   case MEAN:
                     list.add(arr.slice(i,dimension).columnSums());
                     break;
                 case PROD:
@@ -109,7 +109,7 @@ public class NDArrayUtil {
     }
 
 
-    public static double[] collectForOp(NDArray from,int dimension) {
+    public static double[] collectForOp(ComplexNDArray from,int dimension) {
         //number of operations per op
         int num = from.shape()[dimension];
 
@@ -134,31 +134,19 @@ public class NDArrayUtil {
      * @param arr the array  to do operations on
      * @return the slice wise operations
      */
-    public static NDArray doSliceWise(MatrixOp op,NDArray arr) {
+    public static ComplexNDArray doSliceWise(MatrixOp op,ComplexNDArray arr) {
         int columns = isColumnOp(op) ? arr.columns() : arr.rows();
         int[] shape = {arr.slices(),columns};
 
-        NDArray ret = new NDArray(shape);
+        ComplexNDArray ret = new ComplexNDArray(shape);
 
         for(int i = 0; i < arr.slices(); i++) {
             switch(op) {
-                case COLUMN_MIN:
-                    ret.putSlice(i,arr.slice(i).columnMins());
-                    break;
-                case COLUMN_MAX:
-                    ret.putSlice(i,arr.slice(i).columnMaxs());
-                    break;
                 case COLUMN_SUM:
                     ret.putSlice(i,arr.slice(i).columnSums());
                     break;
                 case COLUMN_MEAN:
                     ret.putSlice(i,arr.slice(i).columnMeans());
-                    break;
-                case ROW_MIN:
-                    ret.putSlice(i,arr.slice(i).rowMins());
-                    break;
-                case ROW_MAX:
-                    ret.putSlice(i,arr.slice(i).rowMaxs());
                     break;
                 case ROW_SUM:
                     ret.putSlice(i,arr.slice(i).rowSums());
@@ -178,52 +166,29 @@ public class NDArrayUtil {
 
 
 
-    public static double doSliceWise(ScalarOp op,NDArray arr) {
+    public static ComplexDouble doSliceWise(ScalarOp op,ComplexNDArray arr) {
         if(arr.isScalar())
             return arr.get(0);
 
         else {
-            double ret = 0;
+            ComplexDouble ret = new ComplexDouble(0);
 
             for(int i = 0; i < arr.slices(); i++) {
                 switch(op) {
                     case MEAN:
-                        ret += arr.slice(i).mean();
+                        ret.addi(arr.slice(i).mean());
                         break;
                     case SUM :
-                        ret += arr.slice(i).sum();
+                        ret.addi(arr.slice(i).sum());
                         break;
-                    case PROD :
-                        ret += arr.slice(i).prod();
-                        break;
-                    case MAX :
-                        double max = arr.slice(i).max();
-                        if(max > ret)
-                            ret = max;
-                        break;
-                    case MIN :
-                        double min = arr.slice(i).min();
-                        if(min < ret)
-                            ret = min;
-                        break;
-                    case ARG_MIN:
-                        double argMin = arr.slice(i).argmin();
-                        if(argMin < ret)
-                            ret = argMin;
-                        break;
-                    case ARG_MAX:
-                        double argMax = arr.slice(i).argmax();
-                        if(argMax > ret)
-                            ret = argMax;
-                        break;
-                    case NORM_1:
-                        ret += arr.slice(i).norm1();
+                        case NORM_1:
+                        ret.addi(arr.slice(i).norm1());
                         break;
                     case NORM_2:
-                        ret += arr.slice(i).norm2();
+                        ret.addi(arr.slice(i).norm2());
                         break;
                     case NORM_MAX:
-                        ret += arr.slice(i).normmax();
+                        ret.addi(arr.slice(i).normmax());
                         break;
 
 
@@ -234,6 +199,5 @@ public class NDArrayUtil {
         }
 
     }
-
 
 }

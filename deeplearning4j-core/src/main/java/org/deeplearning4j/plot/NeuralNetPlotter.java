@@ -8,7 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.Tensor;
+import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;

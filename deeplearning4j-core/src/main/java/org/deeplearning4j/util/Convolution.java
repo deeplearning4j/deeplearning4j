@@ -2,11 +2,9 @@ package org.deeplearning4j.util;
 
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.ComplexNDArray;
-import org.deeplearning4j.nn.NDArray;
+import org.deeplearning4j.nn.linalg.ComplexNDArray;
+import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.*;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
@@ -15,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.deeplearning4j.util.MatrixUtil.exp;
 

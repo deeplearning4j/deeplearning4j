@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.linalg;
 
 import static org.junit.Assert.*;
 
@@ -18,8 +18,10 @@ import java.util.Arrays;
  */
 public class NDArrayTests {
     private static Logger log = LoggerFactory.getLogger(NDArrayTests.class);
-    private  NDArray n = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2});
-    ;
+    private NDArray n = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2});
+
+
+
     @Test
     public void testBasicOps() {
         NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
@@ -35,6 +37,17 @@ public class NDArrayTests {
         assertEquals(true,Arrays.equals(new int[]{3,3},a.shape()));
 
     }
+
+
+    @Test
+    public void testSlices() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        for(int i = 0; i < arr.slices(); i++) {
+            assertEquals(2, arr.slice(i).slice(1).slices());
+        }
+
+    }
+
 
     @Test
     public void testScalar() {
@@ -219,10 +232,36 @@ public class NDArrayTests {
 
     }
 
+
+    @Test
+    public void testVectorDimension() {
+        NDArray test = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        NDArray dimension = test.vectorForDimensionAndOffset(1,2);
+        test.iterateOverDimension(0,new SliceOp() {
+            @Override
+            public void operate(NDArray nd) {
+                log.info("Operator " + nd);
+            }
+        });
+
+
+    }
+
+
+    @Test
+    public void testReshape() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        NDArray reshaped = arr.reshape(new int[]{2,3,4});
+        assertEquals(arr.length,reshaped.length);
+        assertEquals(true,Arrays.equals(new int[]{4,3,2},arr.shape()));
+        assertEquals(true,Arrays.equals(new int[]{2,3,4},reshaped.shape()));
+    }
+
+
     @Test
     public void reduceTest() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        NDArray reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,0);
+        NDArray reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,1);
         log.info("Reduced " + reduced);
         reduced = arr.reduce(NDArrayUtil.DimensionOp.MAX,1);
         log.info("Reduced " + reduced);

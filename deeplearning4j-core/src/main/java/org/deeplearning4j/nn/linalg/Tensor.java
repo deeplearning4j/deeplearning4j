@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.linalg;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -9,15 +9,12 @@ import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
-import org.jblas.Geometry;
-import org.jblas.MatrixFunctions;
 import org.jblas.SimpleBlas;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
 
