@@ -349,35 +349,40 @@ public class NDArray extends DoubleMatrix {
 
 
     //get one result along one dimension based on the given offset
-    public Pair<Boolean,NDArray> vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
+    public DimensionSlice vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
         int count = 0;
         NDArray ret = new NDArray(new int[]{shape[dimension]});
         boolean newSlice = false;
+        List<Integer> indices = new ArrayList<>();
         for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
             double d = data[j];
             ret.put(count++,d);
             if(j >= currOffsetForSlice)
                 newSlice = true;
+            indices.add(j);
 
         }
 
-        return new Pair<>(newSlice,ret);
+
+
+        return new DimensionSlice(newSlice,ret,ArrayUtil.toArray(indices));
     }
 
     //get one result along one dimension based on the given offset
-    public NDArray vectorForDimensionAndOffset(int dimension, int offset) {
+    public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
         int count = 0;
+        List<Integer> indices = new ArrayList<>();
         NDArray ret = new NDArray(new int[]{shape[dimension]});
 
         for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
             double d = data[j];
             ret.put(count++,d);
-
+            indices.add(j);
 
 
         }
 
-        return ret;
+        return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
     }
 
 
@@ -525,6 +530,12 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    //TODO: HERE CLONE THIS METHOD AND ALLOW FOR SPECIFICATION OF INDICES.
+    //THE REASON FOR THIS IS WHEN DOING FFT, I NEED TO REPLACE THE ORIGINALE
+    //ELEMENT AT EACH INDEX with the items calculated by
+    //the element in FFT. See SliceOpIndices. REMEMBER TO DO THE SAME IN COMPLEX.
+
+
     /**
      * Iterate along a dimension.
      * This encapsulates the process of sum, mean, and other processes
@@ -540,7 +551,7 @@ public class NDArray extends DoubleMatrix {
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
             for(int offset = this.offset; offset < numTimes; offset++) {
-                NDArray vector = vectorForDimensionAndOffset(dimension,offset);
+                DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                 op.operate(vector);
 
             }
@@ -561,12 +572,12 @@ public class NDArray extends DoubleMatrix {
                 if(dataIter >= data2.length)
                     break;
 
-                //do the operation,, and look for whether it exceeded the current slice
-                Pair<Boolean,NDArray> pair = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
+                //do the operation, and look for whether it exceeded the current slice
+                DimensionSlice result = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
                 //append the result
-                op.operate(pair.getSecond());
+                op.operate(result);
                 //go to next slice and iterate over that
-                if(pair.getFirst()) {
+                if(result.isNextSlice()) {
                     //will update to next step
                     offset = sliceIndices[currOffset];
                     numTimes +=  sliceIndices[currOffset];

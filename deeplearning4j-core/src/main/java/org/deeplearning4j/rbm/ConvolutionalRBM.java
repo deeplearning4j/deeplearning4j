@@ -10,7 +10,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.FourDTensor;
+import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.nn.activation.ActivationFunction;
+import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.jblas.DoubleMatrix;
 
 

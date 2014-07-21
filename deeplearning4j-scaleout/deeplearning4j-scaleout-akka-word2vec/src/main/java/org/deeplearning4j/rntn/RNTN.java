@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.FloatTensor;
+import org.deeplearning4j.nn.linalg.FloatTensor;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.learning.AdaGradFloat;

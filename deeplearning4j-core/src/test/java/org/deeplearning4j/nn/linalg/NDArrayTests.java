@@ -236,12 +236,13 @@ public class NDArrayTests {
     @Test
     public void testVectorDimension() {
         NDArray test = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        NDArray dimension = test.vectorForDimensionAndOffset(1,2);
+        DimensionSlice dimension = test.vectorForDimensionAndOffset(1,2);
         test.iterateOverDimension(0,new SliceOp() {
             @Override
-            public void operate(NDArray nd) {
+            public void operate(DimensionSlice nd) {
                 log.info("Operator " + nd);
             }
+
         });
 
 

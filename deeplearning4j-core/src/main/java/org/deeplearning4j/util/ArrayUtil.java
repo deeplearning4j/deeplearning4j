@@ -81,6 +81,14 @@ public class ArrayUtil {
     }
 
 
+
+    public static int[] toArray(List<Integer> list) {
+        int[] ret = new int[list.size()];
+        for(int i = 0; i < list.size(); i++)
+            ret[i] = list.get(i);
+        return ret;
+    }
+
     public static int[] removeIndex(int[] data, int index) {
         if(data == null)
             return null;
