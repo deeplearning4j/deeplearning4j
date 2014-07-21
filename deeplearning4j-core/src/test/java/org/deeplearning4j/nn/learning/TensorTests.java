@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.learning;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.FourDTensor;
+import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.deeplearning4j.nn.linalg.Tensor;
 import static org.junit.Assert.*;
 

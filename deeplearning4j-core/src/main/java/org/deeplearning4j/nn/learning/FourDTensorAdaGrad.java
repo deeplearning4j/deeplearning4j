@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.learning;
 
-import org.deeplearning4j.nn.FourDTensor;
+import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.jblas.DoubleMatrix;
 
 import static org.jblas.MatrixFunctions.abs;

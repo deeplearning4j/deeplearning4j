@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.nn.linalg;
 
 
 import org.apache.commons.math3.distribution.RealDistribution;
@@ -8,7 +8,6 @@ import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.distributions.Distributions;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.FloatMatrix;
 import org.jblas.FloatMatrix;
 import org.jblas.SimpleBlas;
 import org.jblas.ranges.Range;

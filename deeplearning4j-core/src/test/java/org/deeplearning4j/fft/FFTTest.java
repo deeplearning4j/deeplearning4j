@@ -2,6 +2,7 @@ package org.deeplearning4j.fft;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -23,7 +24,17 @@ public class FFTTest {
         ComplexDoubleMatrix fft = FFT.fft(d2,1);
         assertEquals(1,fft.length);
         log.info("FFT " + fft);
+
+
+
     }
 
+    @Test
+    public void testFFTOp() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        log.info("Before " + arr);
+        arr.iterateOverDimension(0,new FFTSliceOp(arr));
+        log.info("After " + arr);
+    }
 
 }

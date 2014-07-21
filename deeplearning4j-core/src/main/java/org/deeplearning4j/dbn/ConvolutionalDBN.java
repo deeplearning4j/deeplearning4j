@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.*;
 import org.deeplearning4j.nn.activation.ActivationFunction;
 import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
+import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
