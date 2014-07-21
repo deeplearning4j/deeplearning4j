@@ -19,10 +19,10 @@ public class FFTTest {
 
     @Test
     public void testBasicFFT() {
-        DoubleMatrix d = DoubleMatrix.linspace(1,5,5);
+        DoubleMatrix d = DoubleMatrix.linspace(1,6,6);
         ComplexDoubleMatrix d2 = new ComplexDoubleMatrix(d);
-        ComplexDoubleMatrix fft = FFT.fft(d2,1);
-        assertEquals(1,fft.length);
+        ComplexDoubleMatrix fft = FFT.fft(d2);
+        assertEquals(6,fft.length);
         log.info("FFT " + fft);
 
 
