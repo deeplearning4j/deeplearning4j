@@ -321,7 +321,7 @@ public class NDArray extends DoubleMatrix {
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
             for(int offset = this.offset; offset < numTimes; offset++) {
-                if(dataIter >= data2.length)
+                if(dataIter >= data2.length || currOffset >= sliceIndices.length)
                     break;
 
                 //do the operation,, and look for whether it exceeded the current slice
@@ -564,7 +564,7 @@ public class NDArray extends DoubleMatrix {
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
             for(int offset = this.offset; offset < numTimes; offset++) {
-                if(dataIter >= data2.length)
+                if(dataIter >= data2.length || currOffset >= sliceIndices.length)
                     break;
 
                 //do the operation, and look for whether it exceeded the current slice

@@ -33,8 +33,10 @@ public class FFTTest {
     public void testFFTOp() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         log.info("Before " + arr);
-        arr.iterateOverDimension(0,new FFTSliceOp(arr));
+        arr.iterateOverDimension(0,new FFTSliceOp(arr,arr.shape()[0]));
         log.info("After " + arr);
+        arr.iterateOverDimension(1,new FFTSliceOp(arr,arr.shape()[1]));
+
     }
 
     @Test
