@@ -3,6 +3,7 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.fft.FFT;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.*;
@@ -66,14 +67,14 @@ public class Convolution {
             int n = kernel.size(i);
             int l = m + n - 1;
             if(i == 0) {
-                inputComplex = ComplexNDArray.wrap(inputComplex, fft(input, l,i));
-                kernelComplex = ComplexNDArray.wrap(kernelComplex, fft(kernel, l,i));
+                inputComplex = ComplexNDArray.wrap(inputComplex, FFT.fftn(input, l, i));
+                kernelComplex = ComplexNDArray.wrap(kernelComplex, FFT.fftn(kernel, l,i));
 
             }
             else {
                 //size should change but doesn't on the next time around
-                inputComplex = ComplexNDArray.wrap(inputComplex, fft(inputComplex, l,i));
-                kernelComplex = ComplexNDArray.wrap(kernelComplex, fft(kernelComplex, l,i));
+                inputComplex = ComplexNDArray.wrap(inputComplex, FFT.fftn(inputComplex, l,i));
+                kernelComplex = ComplexNDArray.wrap(kernelComplex, FFT.fftn(kernelComplex, l,i));
             }
 
             Range r = rangeFor(m,n,type);
@@ -84,18 +85,12 @@ public class Convolution {
 
         inputComplex.muli(kernelComplex);
 
+
+
         for(int i = 0; i < input.shape().length; i++) {
-            input = NDArray.wrap(input,ifft(inputComplex, inputComplex.rows, i).getReal());
+            input = NDArray.wrap(input,FFT.ifftn(inputComplex, inputComplex.rows, i).getReal());
         }
 
-
-
-
-        //expand the ranges to get the data for each slice
-        for(int i = 0; i < input.shape().length; i++) {
-            NDArray slice = input.slice(i,0);
-
-        }
 
 
 
