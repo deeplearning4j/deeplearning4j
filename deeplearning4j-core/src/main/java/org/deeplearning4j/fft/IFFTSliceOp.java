@@ -8,31 +8,34 @@ import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 
 /**
- * FFT Slice operation
+ * Dimension wise IFFT
+ *
  * @author Adam Gibson
  */
-public class FFTSliceOp implements SliceOp {
+public class IFFTSliceOp implements SliceOp {
+
+
     private int n;
-    private NDArray  operateOn;
+    private NDArray operateOn;
     private ComplexNDArray operateOnComplex;
 
 
 
-    public FFTSliceOp(NDArray operateOn,int n) {
+    public IFFTSliceOp(NDArray operateOn,int n) {
         this.operateOn = operateOn;
         this.n = n;
     }
 
-    public FFTSliceOp(ComplexNDArray operateOnComplex,int n) {
+    public IFFTSliceOp(ComplexNDArray operateOnComplex,int n) {
         this.operateOnComplex = operateOnComplex;
         this.n = n;
     }
 
-    public FFTSliceOp(NDArray operateOn) {
-         this(operateOn,operateOn.length);
+    public IFFTSliceOp(NDArray operateOn) {
+        this(operateOn,operateOn.length);
     }
 
-    public FFTSliceOp(ComplexNDArray operateOnComplex) {
+    public IFFTSliceOp(ComplexNDArray operateOnComplex) {
         this(operateOnComplex,operateOnComplex.length);
     }
 
@@ -47,7 +50,7 @@ public class FFTSliceOp implements SliceOp {
             NDArray a = (NDArray) nd.getResult();
             int n = this.n < 1 ? a.length : this.n;
 
-            DoubleMatrix result = FFT.fft(a,n).getReal();
+            DoubleMatrix result = FFT.ifft(a,n).getReal();
             for(int i = 0; i < n; i++) {
                 operateOn.data[nd.getIndices()[i]] = result.get(i);
             }
@@ -56,12 +59,13 @@ public class FFTSliceOp implements SliceOp {
         else if(nd.getResult() instanceof ComplexNDArray) {
             ComplexNDArray a = (ComplexNDArray) nd.getResult();
             int n = this.n < 1 ? a.length : this.n;
-            ComplexDoubleMatrix result = FFT.fft(a,n);
+            ComplexDoubleMatrix result = FFT.ifft(a,n);
             for(int i = 0; i < n; i++) {
                 operateOnComplex.put(nd.getIndices()[i],result.get(i));
             }
         }
     }
+
 
 
 }

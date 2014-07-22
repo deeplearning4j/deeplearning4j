@@ -37,4 +37,28 @@ public class FFTTest {
         log.info("After " + arr);
     }
 
+    @Test
+    public void testBasicIFFT() {
+        DoubleMatrix d = DoubleMatrix.linspace(1,6,6);
+        ComplexDoubleMatrix d2 = new ComplexDoubleMatrix(d);
+        ComplexDoubleMatrix fft = FFT.ifft(FFT.fft(d2));
+        assertEquals(6,fft.length);
+        log.info("IFFT " + fft);
+
+        assertEquals(d2,fft);
+
+
+
+    }
+
+    @Test
+    public void testIFFT() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        log.info("Before " + arr);
+        arr.iterateOverDimension(0,new IFFTSliceOp(arr,arr.shape()[0]));
+        log.info("After " + arr);
+    }
+
+
+
 }
