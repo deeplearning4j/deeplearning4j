@@ -530,11 +530,6 @@ public class NDArray extends DoubleMatrix {
     }
 
 
-    //TODO: HERE CLONE THIS METHOD AND ALLOW FOR SPECIFICATION OF INDICES.
-    //THE REASON FOR THIS IS WHEN DOING FFT, I NEED TO REPLACE THE ORIGINALE
-    //ELEMENT AT EACH INDEX with the items calculated by
-    //the element in FFT. See SliceOpIndices. REMEMBER TO DO THE SAME IN COMPLEX.
-
 
     /**
      * Iterate along a dimension.
