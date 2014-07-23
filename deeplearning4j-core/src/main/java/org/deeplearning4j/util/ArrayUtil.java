@@ -89,7 +89,18 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Return a copy of this array with the
+     * given index omitted
+     * @param data the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
     public static int[] removeIndex(int[] data, int index) {
+        if(index >= data.length)
+            throw new IllegalArgumentException("Unable to remove index " + index + " was >= data.length");
+
         if(data == null)
             return null;
         if(data.length < 1)

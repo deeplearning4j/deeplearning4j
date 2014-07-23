@@ -39,6 +39,17 @@ public class ComplexNDArrayTests {
     }
 
     @Test
+    public void testGetReal() {
+        double[] data = DoubleMatrix.linspace(1,8,8).data;
+        int[] shape = new int[]{1,8};
+        ComplexNDArray arr = new ComplexNDArray(shape);
+        for(int i = 0;i  < arr.length; i++)
+            arr.put(i,data[i]);
+        NDArray arr2 = new NDArray(data,shape);
+        assertEquals(arr2,arr.getReal());
+    }
+
+    @Test
     public void testVectorDimension() {
         ComplexNDArray test = new ComplexNDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         ComplexNDArray dimension = (ComplexNDArray) test.vectorForDimensionAndOffset(1,1).getResult();

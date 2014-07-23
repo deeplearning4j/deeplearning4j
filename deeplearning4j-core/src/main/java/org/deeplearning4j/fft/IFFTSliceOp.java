@@ -15,18 +15,33 @@ import org.jblas.DoubleMatrix;
 public class IFFTSliceOp implements SliceOp {
 
 
-    private int n;
+    private int n; //number of elements per dimension
     private NDArray operateOn;
     private ComplexNDArray operateOnComplex;
 
 
-
+    /**
+     * IFFT on the given nd array
+     * @param operateOn the ndarray to operate on
+     * @param n number of elements per dimension for the ifft
+     */
     public IFFTSliceOp(NDArray operateOn,int n) {
+        if(n < 1)
+            throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
+
         this.operateOn = operateOn;
         this.n = n;
     }
 
+    /**
+     * IFFT on the given ndarray
+     * @param operateOnComplex the ndarray to operate on
+     * @param n number of elements per dimension for the ifft
+     */
     public IFFTSliceOp(ComplexNDArray operateOnComplex,int n) {
+        if(n < 1)
+            throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
+
         this.operateOnComplex = operateOnComplex;
         this.n = n;
     }
@@ -52,6 +67,8 @@ public class IFFTSliceOp implements SliceOp {
 
             DoubleMatrix result = FFT.ifft(a,n).getReal();
             for(int i = 0; i < n; i++) {
+                if(i >= a.length)
+                    break;
                 operateOn.data[nd.getIndices()[i]] = result.get(i);
             }
 
@@ -61,6 +78,8 @@ public class IFFTSliceOp implements SliceOp {
             int n = this.n < 1 ? a.length : this.n;
             ComplexDoubleMatrix result = FFT.ifft(a,n);
             for(int i = 0; i < n; i++) {
+                if(i >= a.length)
+                    break;
                 operateOnComplex.put(nd.getIndices()[i],result.get(i));
             }
         }
