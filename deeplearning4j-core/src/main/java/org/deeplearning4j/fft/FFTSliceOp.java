@@ -12,26 +12,54 @@ import org.jblas.DoubleMatrix;
  * @author Adam Gibson
  */
 public class FFTSliceOp implements SliceOp {
-    private int n;
+    private int n; //number of elements to operate on per dimension
     private NDArray  operateOn;
     private ComplexNDArray operateOnComplex;
 
 
-
+    /**
+     * FFT operation on a given slice.
+     * Will throw an {@link java.lang.IllegalArgumentException}
+     * if n < 1
+     * @param operateOn the ndarray to operate on
+     * @param n the number of elements per dimension in fft
+     */
     public FFTSliceOp(NDArray operateOn,int n) {
+        if(n < 1)
+            throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
+
         this.operateOn = operateOn;
         this.n = n;
     }
 
+    /**
+     * FFT operation on a given slice
+     *
+     * Will throw an {@link java.lang.IllegalArgumentException}
+     * if n < 1
+     *
+     * @param operateOnComplex the ndarray to operate on
+     * @param n the number of elements per dimension in fft
+     */
     public FFTSliceOp(ComplexNDArray operateOnComplex,int n) {
+        if(n < 1)
+           throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
         this.operateOnComplex = operateOnComplex;
         this.n = n;
     }
 
+    /**
+     * FFT along the whole ndarray
+     * @param operateOn the ndarray to operate on
+     */
     public FFTSliceOp(NDArray operateOn) {
          this(operateOn,operateOn.length);
     }
 
+    /**
+     * FFT along the whole ndarray
+     * @param operateOnComplex the ndarray to operate on
+     */
     public FFTSliceOp(ComplexNDArray operateOnComplex) {
         this(operateOnComplex,operateOnComplex.length);
     }

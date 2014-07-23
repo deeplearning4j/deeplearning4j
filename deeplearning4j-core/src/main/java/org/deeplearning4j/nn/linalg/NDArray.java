@@ -266,6 +266,13 @@ public class NDArray extends DoubleMatrix {
         assert slice <= slices() : "Invalid slice specified " + slice;
         int[] sliceShape = put.shape();
         int[] requiredShape = ArrayUtil.removeIndex(shape(),0);
+
+        //no need to compare for scalar; primarily due to shapes either being [1] or length 0
+        if(put.isScalar())
+            return;
+
+
+
         assert Arrays.equals(sliceShape,requiredShape) : String.format("Invalid shape size of %s . Should have been %s ",Arrays.toString(sliceShape),Arrays.toString(requiredShape));
 
     }
@@ -370,19 +377,43 @@ public class NDArray extends DoubleMatrix {
 
     //get one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
-        int count = 0;
-        List<Integer> indices = new ArrayList<>();
-        NDArray ret = new NDArray(new int[]{shape[dimension]});
+        if(isScalar() && dimension == 0 && offset == 0)
+            return new DimensionSlice(false,ComplexNDArray.scalar(get(offset)),new int[]{offset});
 
-        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
-            double d = data[j];
-            ret.put(count++,d);
-            indices.add(j);
 
+            //need whole vector
+        else   if (isVector()) {
+            if(dimension == 0) {
+                int[] indices = new int[length];
+                for(int i = 0; i < indices.length; i++)
+                    indices[i] = i;
+                return new DimensionSlice(false,dup(),indices);
+            }
+            else if(dimension == 1)
+                return new DimensionSlice(false,NDArray.scalar(get(offset)),new int[]{offset});
+            else
+                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
 
         }
 
-        return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
+        else {
+
+            int count = 0;
+            List<Integer> indices = new ArrayList<>();
+            NDArray ret = new NDArray(new int[]{shape[dimension]});
+
+            for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
+                double d = data[j];
+                ret.put(count++,d);
+                indices.add(j);
+
+
+            }
+
+            return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
+
+        }
+
     }
 
 
@@ -539,49 +570,83 @@ public class NDArray extends DoubleMatrix {
      * @param op the operation to apply
      */
     public void iterateOverDimension(int dimension,SliceOp op) {
-        int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
+        if(dimension >= shape.length)
+            throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
 
-        if(dimension == 0) {
-            //iterating along the dimension is relative to the number of slices
-            //in the return dimension
-            int numTimes = ArrayUtil.prod(shape);
-            for(int offset = this.offset; offset < numTimes; offset++) {
-                DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
-                op.operate(vector);
+        if(isScalar()) {
+            if(dimension > 0)
+                throw new IllegalArgumentException("Dimension must be 0 for a scalar");
+            else {
+                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
+                op.operate(slice);
+            }
+        }
+
+        else if(isVector()) {
+            if(dimension == 0) {
+                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
+                op.operate(slice);
+            }
+            else if(dimension == 1) {
+                for(int i = 0; i < length; i++) {
+                    DimensionSlice slice = vectorForDimensionAndOffset(dimension,i);
+                    op.operate(slice);
+
+                }
+            }
+            else
+                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
+        }
+
+
+        else {
+
+            int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
+
+            if(dimension == 0) {
+                //iterating along the dimension is relative to the number of slices
+                //in the return dimension
+                int numTimes = ArrayUtil.prod(shape);
+                for(int offset = this.offset; offset < numTimes; offset++) {
+                    DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
+                    op.operate(vector);
+
+                }
 
             }
 
-        }
+            else {
+                double[] data2 = new double[ArrayUtil.prod(shape)];
+                int dataIter = 0;
+                //want the milestone to slice[1] and beyond
+                int[] sliceIndices = endsForSlices();
+                int currOffset = 0;
 
-        else {
-            double[] data2 = new double[ArrayUtil.prod(shape)];
-            int dataIter = 0;
-            //want the milestone to slice[1] and beyond
-            int[] sliceIndices = endsForSlices();
-            int currOffset = 0;
+                //iterating along the dimension is relative to the number of slices
+                //in the return dimension
+                int numTimes = ArrayUtil.prod(shape);
+                for(int offset = this.offset; offset < numTimes; offset++) {
+                    if(dataIter >= data2.length || currOffset >= sliceIndices.length)
+                        break;
 
-            //iterating along the dimension is relative to the number of slices
-            //in the return dimension
-            int numTimes = ArrayUtil.prod(shape);
-            for(int offset = this.offset; offset < numTimes; offset++) {
-                if(dataIter >= data2.length || currOffset >= sliceIndices.length)
-                    break;
+                    //do the operation, and look for whether it exceeded the current slice
+                    DimensionSlice result = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
+                    //append the result
+                    op.operate(result);
+                    //go to next slice and iterate over that
+                    if(result.isNextSlice()) {
+                        //will update to next step
+                        offset = sliceIndices[currOffset];
+                        numTimes +=  sliceIndices[currOffset];
+                        currOffset++;
+                    }
 
-                //do the operation, and look for whether it exceeded the current slice
-                DimensionSlice result = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
-                //append the result
-                op.operate(result);
-                //go to next slice and iterate over that
-                if(result.isNextSlice()) {
-                    //will update to next step
-                    offset = sliceIndices[currOffset];
-                    numTimes +=  sliceIndices[currOffset];
-                    currOffset++;
                 }
 
             }
 
         }
+
 
 
     }
@@ -1894,13 +1959,10 @@ public class NDArray extends DoubleMatrix {
         if(n == null)
             n = (NDArray) o;
 
-
-        if(!Arrays.equals(shape(),n.shape()))
-            return false;
         //epsilon equals
-        if(isScalar())
+        if(isScalar() && n.isScalar())
             return Math.abs(get(0) - n.get(0)) < 1e-6;
-        else if(isVector()) {
+        else if(isVector() && n.isVector()) {
             for(int i = 0; i < length; i++) {
                 double curr = get(i);
                 double comp = n.get(i);
@@ -1911,7 +1973,11 @@ public class NDArray extends DoubleMatrix {
 
         }
 
-        for (int i=0; i< slices(); i++) {
+
+        if(!Arrays.equals(shape(),n.shape()))
+            return false;
+
+        for (int i = 0; i < slices(); i++) {
             if (!(slice(i).equals(n.slice(i))))
                 return false;
         }
@@ -1950,6 +2016,20 @@ public class NDArray extends DoubleMatrix {
      * @return the shape of the specified dimension
      */
     public int size(int dimension) {
+        if(isScalar()) {
+            if(dimension == 0)
+                return length;
+            else
+                throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
+        }
+
+        else if(isVector()) {
+            if(dimension == 0)
+                return length;
+            else if(dimension == 1)
+                return 1;
+        }
+
         return shape[dimension];
     }
 

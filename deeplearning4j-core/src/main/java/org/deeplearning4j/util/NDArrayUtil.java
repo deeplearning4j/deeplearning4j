@@ -1,8 +1,10 @@
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.linalg.NDArray;
+import org.jblas.NativeBlas;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,6 +52,62 @@ public class NDArrayUtil {
         ROW_MEAN
     }
 
+
+    /**
+     * Truncates an ndarray to the specified shape.
+     * If the shape is the same or greater, it just returns
+     * the original array
+     * @param nd the ndarray to truncate
+     * @param targetShape the new shape
+     * @return the truncated ndarray
+     */
+    public static NDArray truncate(NDArray nd,int[] targetShape) {
+        if(Arrays.equals(nd.shape(),targetShape))
+            return nd;
+
+        //same length: just need to reshape, the reason for this is different dimensions maybe of different sizes
+        if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
+            return nd.reshape(targetShape);
+
+        NDArray ret = new NDArray(targetShape);
+        if(ret.isVector())  {
+            for(int i = 0; i < nd.rows(); i++) {
+                for(int j = 0; j < ret.length; j++) {
+                    ret.put(i,nd.get(i,j));
+                }
+            }
+
+            return ret;
+        }
+
+        int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
+        for(int i = 0; i < ret.slices(); i++) {
+            ret.putSlice(i,truncate(nd.slice(i),sliceShape));
+        }
+
+        return ret;
+
+
+    }
+
+    /**
+     * Pads an ndarray with zeros
+     * @param nd the ndarray to pad
+     * @param targetShape the the new shape
+     * @return the padded ndarray
+     */
+    public static NDArray padWithZeros(NDArray nd,int[] targetShape) {
+        if(Arrays.equals(nd.shape(),targetShape))
+            return nd;
+        //no padding required
+        if(ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
+            return nd;
+
+        NDArray ret = new NDArray(targetShape);
+        System.arraycopy(nd.data,0,ret.data,0,nd.data.length);
+        return ret;
+
+    }
 
 
 

@@ -3,7 +3,9 @@ package org.deeplearning4j.util;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.fft.FFT;
+import org.deeplearning4j.fft.IFFTSliceOp;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.*;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.deeplearning4j.util.MatrixUtil.exp;
@@ -42,14 +45,15 @@ public class Convolution {
     }
 
 
-    private static Range rangeFor(int m,int n,Type type) {
+    //range for the convolution to return
+    private static Pair<Integer,Integer> rangeFor(int m,int n,Type type) {
         switch (type) {
             case SAME:
-                return RangeUtils.interval((int) Math.ceil(n / 2), m);
+                return new Pair<>((int) Math.ceil(n / 2), m);
             case FULL:
-                return RangeUtils.interval(0, m + n);
+                return new Pair<>(0, m + n);
             case VALID:
-                return RangeUtils.interval(m, n);
+                return new Pair<>(m, n);
             default:
                 throw new IllegalStateException("This should never happen");
         }
@@ -57,28 +61,28 @@ public class Convolution {
     }
 
 
+    /**
+     * ND Convolution
+     * @param input the input to transform
+     * @param kernel the kernel to transform with
+     * @param type the type of convolution
+     * @return the convolution of the given input and kernel
+     */
     public static NDArray convn(NDArray input,NDArray kernel,Type type) {
         int dims = Math.max(input.shape().length,kernel.shape().length);
-        List<Range> results = new ArrayList<>();
+        List<Pair<Integer,Integer>> results = new ArrayList<>();
         ComplexNDArray inputComplex = new ComplexNDArray(input);
         ComplexNDArray kernelComplex = new ComplexNDArray(kernel);
         for(int i = 0; i < dims; i++) {
             int m = input.size(i);
             int n = kernel.size(i);
-            int l = m + n - 1;
-            if(i == 0) {
-                inputComplex = ComplexNDArray.wrap(inputComplex, FFT.fftn(input, l, i));
-                kernelComplex = ComplexNDArray.wrap(kernelComplex, FFT.fftn(kernel, l,i));
+            int l = (int) MathUtils.nextPowOf2((long) m + n - 1);
 
-            }
-            else {
-                //size should change but doesn't on the next time around
-                inputComplex = ComplexNDArray.wrap(inputComplex, FFT.fftn(inputComplex, l,i));
-                kernelComplex = ComplexNDArray.wrap(kernelComplex, FFT.fftn(kernelComplex, l,i));
-            }
+            //size should change but doesn't on the next time around
+            inputComplex =  FFT.fftn(inputComplex,i,l);
+            kernelComplex = FFT.fftn(kernelComplex,i,l);
 
-            Range r = rangeFor(m,n,type);
-            results.add(r);
+            results.add(rangeFor(m,n,type));
 
         }
 
@@ -86,56 +90,14 @@ public class Convolution {
         inputComplex.muli(kernelComplex);
 
 
-
-        for(int i = 0; i < input.shape().length; i++) {
-            input = NDArray.wrap(input,FFT.ifftn(inputComplex, inputComplex.rows, i).getReal());
-        }
+        inputComplex.iterateOverDimension(0,new IFFTSliceOp(inputComplex));
 
 
+
+        input = inputComplex.getReal();
 
 
         return input;
-    }
-
-
-    public static ComplexDoubleMatrix fft(DoubleMatrix transform) {
-        return complexDisceteFourierTransform(transform,transform.rows,transform.columns);
-    }
-
-    public static ComplexDoubleMatrix ifft(DoubleMatrix transform) {
-        return complexInverseDisceteFourierTransform(transform,transform.rows,transform.columns);
-    }
-
-    public static ComplexDoubleMatrix fft(NDArray transform,int numElements,int dimension) {
-        NDArray r = transform.slice(dimension);
-        return complexDisceteFourierTransform(r,r.shape());
-    }
-
-    public static ComplexDoubleMatrix fft(ComplexNDArray transform,int numElements,int dimension) {
-        ComplexNDArray r = transform.slice(dimension);
-        return complexDisceteFourierTransform(r,r.shape());
-    }
-
-
-    public static ComplexDoubleMatrix ifft(ComplexNDArray transform,int numElements,int dimension) {
-        return complexInverseDisceteFourierTransform(transform.slice(dimension,0), numElements, transform.columns);
-    }
-
-
-    public static ComplexDoubleMatrix fft(NDArray transform,int numElements) {
-        return complexDisceteFourierTransform(transform,numElements,transform.columns);
-    }
-
-    public static ComplexDoubleMatrix ifft(ComplexNDArray transform,int numElements) {
-        return complexInverseDisceteFourierTransform(transform, numElements, transform.columns);
-    }
-
-    public static ComplexDoubleMatrix fft(DoubleMatrix transform,int numElements) {
-        return complexDisceteFourierTransform(transform,numElements,transform.columns);
-    }
-
-    public static ComplexDoubleMatrix ifft(DoubleMatrix transform,int numElements) {
-        return complexInverseDisceteFourierTransform(transform, numElements, transform.columns);
     }
 
 
