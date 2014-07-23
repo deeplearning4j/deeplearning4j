@@ -68,6 +68,26 @@ public class MathUtils  {
     }
 
 
+    /**
+     * See: http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2
+     * @param v the number to get the next power of 2 for
+     * @return the next power of 2 for the passed in value
+     */
+    public static long nextPowOf2(long v)
+    {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return v;
+
+    }
+
+
+
 
     /**
      * Generates a binomial distributed number using
