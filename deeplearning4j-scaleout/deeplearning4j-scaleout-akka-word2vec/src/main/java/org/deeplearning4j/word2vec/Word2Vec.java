@@ -18,6 +18,7 @@ import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.stopwords.StopWords;
+import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.word2vec.actor.SentenceActor;
@@ -939,6 +940,108 @@ public class Word2Vec implements Persistable {
 
 
     }
+
+
+    public static class Builder {
+        private int minWordFrequency = 5;
+        private int layerSize = 50;
+        private SentenceIterator iter;
+        private Index vocab;
+        private List<String> stopWords = StopWords.getStopWords();
+        private int window = 5;
+        private TokenizerFactory tokenizerFactory;
+
+        public Builder minWordFrequency(int minWordFrequency) {
+            this.minWordFrequency = minWordFrequency;
+            return this;
+        }
+
+        public Builder tokenizerFactory(TokenizerFactory tokenizerFactory) {
+            this.tokenizerFactory = tokenizerFactory;
+            return this;
+        }
+
+
+
+        public Builder layerSize(int layerSize) {
+            this.layerSize = layerSize;
+            return this;
+        }
+
+        public Builder stopWords(List<String> stopWords) {
+            this.stopWords = stopWords;
+            return this;
+        }
+
+        public Builder windowSize(int window) {
+            this.window = window;
+            return this;
+        }
+
+        public Builder iterate(SentenceIterator iter) {
+            this.iter = iter;
+            return this;
+        }
+
+
+        public Builder layerSize(Index vocab) {
+            this.vocab = vocab;
+            return this;
+        }
+
+
+
+        public Word2Vec build() {
+
+            if(iter == null) {
+                Word2Vec ret = new Word2Vec();
+                ret.layerSize = layerSize;
+                ret.window = window;
+                ret.stopWords = stopWords;
+                ret.minWordFrequency = minWordFrequency;
+                try {
+                    if (tokenizerFactory == null)
+                        tokenizerFactory = new UimaTokenizerFactory();
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                ret.tokenizerFactory = tokenizerFactory;
+                ret.wordIndex = vocab;
+                return ret;
+            }
+
+            else {
+                Word2Vec ret = new Word2Vec(iter);
+                ret.layerSize = layerSize;
+                ret.window = window;
+                ret.stopWords = stopWords;
+                ret.minWordFrequency = minWordFrequency;
+
+                ret.minWordFrequency = minWordFrequency;
+
+                
+                try {
+                    if (tokenizerFactory == null)
+                        tokenizerFactory = new UimaTokenizerFactory();
+                }catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+
+                ret.tokenizerFactory = tokenizerFactory;
+                ret.wordIndex = vocab;
+                return ret;
+            }
+
+
+        }
+
+
+
+
+    }
+
+
 
 
 }
