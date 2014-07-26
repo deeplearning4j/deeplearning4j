@@ -89,6 +89,25 @@ public class ArrayUtil {
         return ret;
     }
 
+
+
+
+
+    /**
+     * Return a copy of this array with the
+     * given index omitted
+     * @param data the data to copy
+     * @param index the index of the item to remove
+     * @param newValue the newValue to replace
+     * @return the new array with the omitted
+     * item
+     */
+    public static int[] replace(int[] data, int index,int newValue) {
+        int[] copy = copy(data);
+        copy[index] = newValue;
+        return copy;
+    }
+
     /**
      * Return a copy of this array with the
      * given index omitted
@@ -107,9 +126,6 @@ public class ArrayUtil {
             return data;
         if(index < 0)
             return data;
-        if(data.length == 1)
-            throw new IllegalArgumentException("Unable to remove item from a 1 length array");
-
 
         int len = data.length;
         int[] result = new int[len - 1];
@@ -204,32 +220,32 @@ public class ArrayUtil {
     }
 
 
-	public static int[] flatten(int[][] arr) {
-		int[] ret = new int[arr.length * arr[0].length];
-		int count = 0;
-		for(int i = 0; i < arr.length; i++)
-			for(int j = 0; j < arr[i].length; j++)
-				ret[count++] = arr[i][j];
-		return ret;
-	}
-	
-	public static double[] flatten(double[][] arr) {
-		double[] ret = new double[arr.length * arr[0].length];
-		int count = 0;
-		for(int i = 0; i < arr.length; i++)
-			for(int j = 0; j < arr[i].length; j++)
-				ret[count++] = arr[i][j];
-		return ret;
-	}
-	
-	public static double[][] toDouble(int[][] arr) {
-		double[][] ret = new double[arr.length][arr[0].length];
-		for(int i = 0; i < arr.length; i++) {
-			for(int j = 0; j < arr[i].length; j++)
-				ret[i][j] = arr[i][j];
-		}
-		return ret;
-	}
+    public static int[] flatten(int[][] arr) {
+        int[] ret = new int[arr.length * arr[0].length];
+        int count = 0;
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static double[] flatten(double[][] arr) {
+        double[] ret = new double[arr.length * arr[0].length];
+        int count = 0;
+        for(int i = 0; i < arr.length; i++)
+            for(int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static double[][] toDouble(int[][] arr) {
+        double[][] ret = new double[arr.length][arr[0].length];
+        for(int i = 0; i < arr.length; i++) {
+            for(int j = 0; j < arr[i].length; j++)
+                ret[i][j] = arr[i][j];
+        }
+        return ret;
+    }
 
 
     /**
@@ -330,10 +346,10 @@ public class ArrayUtil {
     }
 
 
-	public static int[] toOutcomeArray(int outcome,int numOutcomes) {
-		int[] nums = new int[numOutcomes];
-		nums[outcome] = 1;
-		return nums;
-	}
+    public static int[] toOutcomeArray(int outcome,int numOutcomes) {
+        int[] nums = new int[numOutcomes];
+        nums[outcome] = 1;
+        return nums;
+    }
 
 }

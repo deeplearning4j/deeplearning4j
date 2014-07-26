@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
+import org.deeplearning4j.nn.linalg.Shape;
 import org.jblas.ComplexDouble;
 
 import java.util.ArrayList;
@@ -66,8 +67,9 @@ public class ComplexNDArrayUtil {
      * @return the truncated ndarray
      */
     public static ComplexNDArray truncate(ComplexNDArray nd,int[] targetShape) {
-        if(Arrays.equals(nd.shape(), targetShape))
+         if(Arrays.equals(nd.shape(), targetShape) || nd.isScalar())
             return nd;
+
 
         //same length: just need to reshape, the reason for this is different dimensions maybe of different sizes
         if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
@@ -78,18 +80,15 @@ public class ComplexNDArrayUtil {
         if(ret.isScalar())
             return nd.slice(0);
 
-        if(ret.isVector())  {
-            for(int i = 0; i < nd.slices(); i++) {
-                for(int j = 0; j < ret.length; j++) {
-                    ret.put(i,nd.get(i,j));
-                }
-            }
-
-            return ret;
+        if(ret.isVector()) {
+            assert nd.isMatrix();
+            return nd.getRow(0);
         }
+
 
         int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
         for(int i = 0; i < ret.slices(); i++) {
+            ComplexNDArray slice = nd.slice(i);
             ComplexNDArray put = truncate(nd.slice(i),sliceShape);
             ret.putSlice(i,put);
         }
