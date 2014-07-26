@@ -1,12 +1,12 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.Shape;
+import org.deeplearning4j.nn.linalg.*;
 import org.jblas.ComplexDouble;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ComplexNDArray operations
@@ -66,34 +66,40 @@ public class ComplexNDArrayUtil {
      * @param targetShape the new shape
      * @return the truncated ndarray
      */
-    public static ComplexNDArray truncate(ComplexNDArray nd,int[] targetShape) {
-         if(Arrays.equals(nd.shape(), targetShape) || nd.isScalar())
+    public static ComplexNDArray truncate(ComplexNDArray nd,int[] targetShape,int dimension) {
+        if(Arrays.equals(nd.shape(),targetShape))
             return nd;
-
 
         //same length: just need to reshape, the reason for this is different dimensions maybe of different sizes
         if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
             return nd.reshape(targetShape);
 
-        ComplexNDArray ret = new ComplexNDArray(targetShape);
-        //nothing to truncate
-        if(ret.isScalar())
-            return nd.slice(0);
+        final ComplexNDArray ret = new ComplexNDArray(targetShape);
+        if(ret.isVector())  {
+            final AtomicInteger currentSlice = new AtomicInteger(0);
+            nd.iterateOverDimension(dimension,new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    ComplexNDArray result = (ComplexNDArray) nd.getResult();
+                    for(int i = 0; i < 1; i++) {
+                        ret.put(currentSlice.getAndIncrement(),result.get(i));
+                    }
+                }
+            });
 
-        if(ret.isVector()) {
-            assert nd.isMatrix();
-            return nd.getRow(0);
+
+
+
+            return ret;
         }
-
 
         int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
         for(int i = 0; i < ret.slices(); i++) {
-            ComplexNDArray slice = nd.slice(i);
-            ComplexNDArray put = truncate(nd.slice(i),sliceShape);
-            ret.putSlice(i,put);
+            ret.putSlice(i,truncate(nd.slice(i),sliceShape,dimension));
         }
 
         return ret;
+
 
 
     }

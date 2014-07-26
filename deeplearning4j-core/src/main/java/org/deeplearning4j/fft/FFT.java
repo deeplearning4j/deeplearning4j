@@ -49,7 +49,7 @@ public class FFT {
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.truncate(result,finalShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape,dimension);
         }
 
         result.iterateOverDimension(dimension,new IFFTSliceOp(result,numElements));
@@ -89,7 +89,7 @@ public class FFT {
 
         else if(numElements < desiredElementsAlongDimension) {
 
-            result = ComplexNDArrayUtil.truncate(result,finalShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape,dimension);
         }
 
 
@@ -128,7 +128,7 @@ public class FFT {
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.truncate(result,finalShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape,dimension);
         }
 
 
@@ -165,7 +165,7 @@ public class FFT {
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.truncate(result,finalShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape,dimension);
         }
 
 

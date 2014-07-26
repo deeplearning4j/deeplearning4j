@@ -1,11 +1,14 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.nn.linalg.DimensionSlice;
 import org.deeplearning4j.nn.linalg.NDArray;
+import org.deeplearning4j.nn.linalg.SliceOp;
 import org.jblas.NativeBlas;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *  Basic NDArray ops
@@ -61,7 +64,7 @@ public class NDArrayUtil {
      * @param targetShape the new shape
      * @return the truncated ndarray
      */
-    public static NDArray truncate(NDArray nd,int[] targetShape) {
+    public static NDArray truncate(NDArray nd, final int[] targetShape,int dimension) {
         if(Arrays.equals(nd.shape(),targetShape))
             return nd;
 
@@ -69,20 +72,28 @@ public class NDArrayUtil {
         if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
             return nd.reshape(targetShape);
 
-        NDArray ret = new NDArray(targetShape);
+        final NDArray ret = new NDArray(targetShape);
         if(ret.isVector())  {
-            for(int i = 0; i < nd.rows(); i++) {
-                for(int j = 0; j < ret.length; j++) {
-                    ret.put(i,nd.get(i,j));
+            final AtomicInteger currentSlice = new AtomicInteger(0);
+            nd.iterateOverDimension(dimension,new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                      NDArray result = (NDArray) nd.getResult();
+                      for(int i = 0; i < 1; i++) {
+                          ret.put(currentSlice.getAndIncrement(),result.get(i));
+                      }
                 }
-            }
+            });
+
+
+
 
             return ret;
         }
 
         int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
         for(int i = 0; i < ret.slices(); i++) {
-            ret.putSlice(i,truncate(nd.slice(i),sliceShape));
+            ret.putSlice(i,truncate(nd.slice(i),sliceShape,dimension));
         }
 
         return ret;

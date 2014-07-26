@@ -159,11 +159,11 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public void putRow(int r, DoubleMatrix v) {
-        NDArray n = NDArray.wrap(this,v);
+        NDArray n = NDArray.wrap(v);
         if(n.isVector() && n.length != columns())
             throw new IllegalArgumentException("Unable to put row, mis matched columns");
         for(int i = 0; i < v.length; i++) {
-            put(r  + (i * stride[1]),v.get(i));
+            put(offset + i  + (r * stride[1] * columns()),v.get(i));
         }
 
     }
@@ -1910,7 +1910,7 @@ public class NDArray extends DoubleMatrix {
                     offset + c
             );
         else
-            throw new IllegalArgumentException("Unable to get row of non 2d matrix");
+            throw new IllegalArgumentException("Unable to get column of non 2d matrix");
     }
 
 
@@ -1926,7 +1926,7 @@ public class NDArray extends DoubleMatrix {
                     data,
                     new int[]{shape[1]},
                     new int[]{stride[1]},
-                    offset + r
+                    offset +  r * columns()
             );
         else
             throw new IllegalArgumentException("Unable to get row of non 2d matrix");
