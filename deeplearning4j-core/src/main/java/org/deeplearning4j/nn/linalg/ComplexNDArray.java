@@ -546,7 +546,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                 //iterating along the dimension is relative to the number of slices
                 //in the return dimension
                 int numTimes = ArrayUtil.prod(shape);
-                for(int offset = this.offset; offset < numTimes; offset++) {
+                for(int offset = this.offset; offset < numTimes; offset += 2) {
                     DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                     op.operate(vector);
 
@@ -576,9 +576,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     //go to next slice and iterate over that
                     if(pair.isNextSlice()) {
                         //will update to next step
-                        offset = sliceIndices[currOffset];
+                        offset = sliceIndices[currOffset] * 4;
                         numTimes +=  sliceIndices[currOffset];
-                        currOffset++;
+                        currOffset+= 2;
                     }
 
                 }
@@ -599,7 +599,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         ComplexNDArray ret = new ComplexNDArray(new int[]{shape[dimension]});
         boolean newSlice = false;
         List<Integer> indices = new ArrayList<>();
-        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
+        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension] * 2) {
             ComplexDouble d = new ComplexDouble(data[j],data[j + 1]);
             indices.add(j);
             ret.put(count++,d);
@@ -640,7 +640,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             int count = 0;
             ComplexNDArray ret = new ComplexNDArray(new int[]{shape[dimension]});
             List<Integer> indices = new ArrayList<>();
-            for (int j = offset; count < this.shape[dimension]; j += this.stride[dimension]) {
+            for (int j = offset; count < this.shape[dimension]; j += this.stride[dimension] * 2) {
                 ComplexDouble d = new ComplexDouble(data[j], data[j + 1]);
                 ret.put(count++, d);
                 indices.add(j);
@@ -2122,26 +2122,42 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     /** Generate string representation of the matrix. */
     @Override
     public String toString() {
+
+        StringBuilder sb = new StringBuilder();
+
         if (isScalar()) {
             return String.valueOf(get(0));
         }
         else if(isVector()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[");
+            sb.append("[ ");
             for(int i = 0; i < length; i++) {
                 if(linearIndex(i) >= data.length)
                     throw new IllegalArgumentException("Illegal index greater than length " + i);
                 sb.append(get(i));
                 if(i < length - 1)
-                    sb.append(',');
+                    sb.append(" ,");
             }
 
             sb.append("]\n");
             return sb.toString();
         }
 
+        else if(isMatrix()) {
+            sb.append('[');
+            for(int i = 0; i < rows(); i++) {
+                for(int j = 0; j < columns(); j++) {
+                    sb.append(get(i,j));
+                    if(j < columns() - 1)
+                        sb.append(" ,");
+                }
+                if(i < rows() - 1)
+                    sb.append(" ;");
+            }
+            sb.append(" ]");
+            return sb.toString();
+        }
 
-        StringBuilder sb = new StringBuilder();
+
         int length = shape[0];
         sb.append("[");
         if (length > 0) {

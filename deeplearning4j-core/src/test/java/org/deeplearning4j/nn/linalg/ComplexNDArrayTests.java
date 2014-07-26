@@ -2,11 +2,15 @@ package org.deeplearning4j.nn.linalg;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.util.ComplexNDArrayUtil;
+import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for a complex ndarray
@@ -85,6 +89,10 @@ public class ComplexNDArrayTests {
     }
 
 
+
+
+
+
     @Test
     public void testPutAndGet() {
         ComplexNDArray arr = new ComplexNDArray(new double[]{0,1,2,1,1,2,3,4},new int[]{2,2});
@@ -107,12 +115,7 @@ public class ComplexNDArrayTests {
         assertEquals(arr2,arr.getReal());
     }
 
-    @Test
-    public void testVectorDimension() {
-        ComplexNDArray test = new ComplexNDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        ComplexNDArray dimension = (ComplexNDArray) test.vectorForDimensionAndOffset(1,1).getResult();
-        log.info("Dimension " + dimension);
-    }
+
 
 
     @Test
@@ -130,6 +133,63 @@ public class ComplexNDArrayTests {
         assertEquals(2,sum,1e-1);
     }
 
+
+
+
+    @Test
+    public void testVectorDimension() {
+        ComplexNDArray test = new ComplexNDArray(new double[]{1,0,2,0,3,0,4,0},new int[]{2,2});
+        final AtomicInteger count = new AtomicInteger(0);
+        //row wise
+        test.iterateOverDimension(1,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                log.info("Operator " + nd);
+                ComplexNDArray test = (ComplexNDArray) nd.getResult();
+                if(count.get() == 0) {
+                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{3,0,4,0},new int[]{2});
+                    assertEquals(firstDimension,test);
+
+                }
+
+                count.incrementAndGet();
+            }
+
+        });
+
+
+
+        count.set(0);
+
+        //columnwise
+        test.iterateOverDimension(0,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                log.info("Operator " + nd);
+                ComplexNDArray test = (ComplexNDArray) nd.getResult();
+                if(count.get() == 0) {
+                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{1,0,3,0},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{2,0,4,0},new int[]{2});
+                    assertEquals(firstDimension,test);
+
+                }
+
+                count.incrementAndGet();
+            }
+
+        });
+
+
+
+
+    }
 
 
 
