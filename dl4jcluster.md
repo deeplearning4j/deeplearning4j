@@ -7,7 +7,7 @@ layout: default
 
 *Assumptions: AWS experience*
 
-For the moment, a DeepLearning4J cluster consists of one master node that is setup manually. (Mainly due to all of the possible configurations that are involved with getting a DataSetIterator and all the other scaffolding done!) This will be fixed in future releases when vectorization and dataset creation are a little more refined.
+For the moment, a DeepLearning4J cluster consists of one master node set up manually. This will be changed in future releases, when vectorization and dataset creation are a little more refined. 
 
 Before you set up a master node, you need a [deeplearning4j distribution](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/).
 
