@@ -30,9 +30,21 @@ public class ComplexNDArrayUtilTests {
 
     @Test
     public void testTruncate() {
-        ComplexNDArray ret = new ComplexNDArray(new int[]{2,1});
-        ComplexNDArray truncated = ComplexNDArrayUtil.truncate(ret,new int[]{2});
-        assertEquals(true,Arrays.equals(new int[]{2},truncated.shape()));
+        ComplexNDArray ret = new ComplexNDArray(new double[]{1,0,2,0,3,0,4,0},new int[]{2,2});
+        ret.toString();
+        //axis 0 or column wise
+        ComplexNDArray truncated = ComplexNDArrayUtil.truncate(ret,new int[]{2},0);
+        ComplexNDArray answer = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
+        assertEquals(answer,truncated);
+        //axis 1 or row wise
+        ComplexNDArray answer0 = new ComplexNDArray(new double[]{1,0,3,0},new int[]{2});
+        ComplexNDArray truncated0 = ComplexNDArrayUtil.truncate(ret,new int[]{2},1);
+        assertEquals(answer0,truncated0);
+
     }
+
+
+
+
 
 }

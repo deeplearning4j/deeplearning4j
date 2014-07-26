@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * NDArrayTests
@@ -86,27 +87,10 @@ public class NDArrayTests {
 
 
 
-    @Test
-    public void testOddRows() {
-        NDArray arr = new NDArray(new int[]{3,2});
-        NDArray row = new NDArray(new double[]{1,2},new int[]{2});
-        arr.putRow(0,row);
-        NDArray firstRow = arr.getRow(0);
-        assertEquals(true, Shape.shapeEquals(new int[]{2},firstRow.shape()));
-        NDArray testRow = arr.getRow(0);
-        assertEquals(row,testRow);
 
-
-        NDArray row1 = new NDArray(new double[]{1,3},new int[]{2});
-        arr.putRow(1,row1);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
-        NDArray testRow1 = arr.getRow(1);
-        assertEquals(row1,testRow1);
-
-    }
 
     @Test
-    public void testOddColumns() {
+    public void testColumns() {
         NDArray arr = new NDArray(new int[]{3,2});
         NDArray column2 = arr.getColumn(0);
         assertEquals(true,Shape.shapeEquals(new int[]{3}, column2.shape()));
@@ -126,8 +110,28 @@ public class NDArrayTests {
 
 
 
+        NDArray evenArr = new NDArray(new double[]{1,2,3,4},new int[]{2,2});
+        NDArray put = new NDArray(new double[]{5,6},new int[]{2});
+        evenArr.putColumn(1,put);
+        NDArray testColumn = evenArr.getColumn(1);
+        assertEquals(put,testColumn);
+
+
+
+        NDArray n = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        NDArray column23 = n.getColumn(0);
+        NDArray column12 = new NDArray(new double[]{1,3},new int[]{2});
+        assertEquals(column23,column12);
+
+
+        NDArray column0 = n.getColumn(1);
+        NDArray column01 = new NDArray(new double[]{2,4},new int[]{2});
+        assertEquals(column0,column01);
+
+
+
     }
-    
+
     
     @Test
     public void testPutRow() {
@@ -162,20 +166,22 @@ public class NDArrayTests {
 
 
 
-    }
+        NDArray arr = new NDArray(new int[]{3,2});
+        NDArray evenRow = new NDArray(new double[]{1,2},new int[]{2});
+        arr.putRow(0,evenRow);
+        NDArray firstRow = arr.getRow(0);
+        assertEquals(true, Shape.shapeEquals(new int[]{2},firstRow.shape()));
+        NDArray testRowEven = arr.getRow(0);
+        assertEquals(evenRow,testRowEven);
 
 
-    @Test
-    public void testPutColumn() {
-        NDArray n = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
-        NDArray column = n.getColumn(0);
-        NDArray column1 = new NDArray(new double[]{1,3},new int[]{2});
-        assertEquals(column,column1);
+        NDArray row12 = new NDArray(new double[]{5,6},new int[]{2});
+        arr.putRow(1,row12);
+        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
+        NDArray testRow1 = arr.getRow(1);
+        assertEquals(row12,testRow1);
 
 
-        NDArray column0 = n.getColumn(1);
-        NDArray column01 = new NDArray(new double[]{2,4},new int[]{2});
-        assertEquals(column0,column01);
     }
 
 
@@ -236,15 +242,55 @@ public class NDArrayTests {
 
     @Test
     public void testVectorDimension() {
-        NDArray test = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        DimensionSlice dimension = test.vectorForDimensionAndOffset(1,2);
+        NDArray test = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        final AtomicInteger count = new AtomicInteger(0);
+        //row wise
+        test.iterateOverDimension(1,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                log.info("Operator " + nd);
+                NDArray test = (NDArray) nd.getResult();
+                if(count.get() == 0) {
+                    NDArray firstDimension = new NDArray(new double[]{1,2},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    NDArray firstDimension = new NDArray(new double[]{3,4},new int[]{2});
+                    assertEquals(firstDimension,test);
+
+                }
+
+                count.incrementAndGet();
+            }
+
+        });
+
+
+
+        count.set(0);
+
+        //columnwise
         test.iterateOverDimension(0,new SliceOp() {
             @Override
             public void operate(DimensionSlice nd) {
                 log.info("Operator " + nd);
+                NDArray test = (NDArray) nd.getResult();
+                if(count.get() == 0) {
+                    NDArray firstDimension = new NDArray(new double[]{1,3},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    NDArray firstDimension = new NDArray(new double[]{2,4},new int[]{2});
+                    assertEquals(firstDimension,test);
+
+                }
+
+                count.incrementAndGet();
             }
 
         });
+
+
 
 
     }
