@@ -72,50 +72,6 @@ public class NDArrayTests {
     }
 
 
-    @Test
-    public void testRow() {
-        int[] shape = {2,4};
-        DoubleMatrix d = DoubleMatrix.linspace(1,8,8).reshape(shape[0],shape[1]);
-        NDArray n = NDArray.wrap(d);
-        assertEquals(n,d);
-        assertEquals(true,Arrays.equals(shape,n.shape()));
-        DoubleMatrix r1 = d.getRow(0);
-        NDArray r2 = n.getRow(0);
-
-        assertEquals(r2,r1);
-
-
-        for(int i = 0; i < n.rows(); i++) {
-            for(int j = 0; j < n.columns(); j++) {
-                double val = d.get(i,j);
-                double val2 = n.get(i,j);
-                assertEquals(val,val2,1e-1);
-            }
-        }
-
-
-    }
-
-    @Test
-    public void testColumn() {
-        int[] shape = {2,4};
-        DoubleMatrix d = DoubleMatrix.linspace(1,8,8).reshape(shape[0],shape[1]);
-        NDArray n = new NDArray(Arrays.copyOf(d.data,d.data.length),shape);
-        assertEquals(true,Arrays.equals(d.data,n.data));
-        assertEquals(true,Arrays.equals(shape,n.shape()));
-        DoubleMatrix r1 = d.getColumn(0);
-        NDArray r2 = n.getColumn(0);
-
-        //note that when comparing NDArrays and DoubleMatrix, you need to use the NDArray equals() method
-        assertEquals(r2,r1);
-
-        DoubleMatrix r12 = d.getColumn(1);
-        NDArray r22 = n.getColumn(1);
-        assertEquals(r22,r12);
-
-
-
-    }
 
     @Test
     public void testToArray() {
@@ -125,6 +81,54 @@ public class NDArrayTests {
     }
 
 
+
+
+
+
+
+    @Test
+    public void testOddRows() {
+        NDArray arr = new NDArray(new int[]{3,2});
+        NDArray row = new NDArray(new double[]{1,2},new int[]{2});
+        arr.putRow(0,row);
+        NDArray firstRow = arr.getRow(0);
+        assertEquals(true, Shape.shapeEquals(new int[]{2},firstRow.shape()));
+        NDArray testRow = arr.getRow(0);
+        assertEquals(row,testRow);
+
+
+        NDArray row1 = new NDArray(new double[]{1,3},new int[]{2});
+        arr.putRow(1,row1);
+        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
+        NDArray testRow1 = arr.getRow(1);
+        assertEquals(row1,testRow1);
+
+    }
+
+    @Test
+    public void testOddColumns() {
+        NDArray arr = new NDArray(new int[]{3,2});
+        NDArray column2 = arr.getColumn(0);
+        assertEquals(true,Shape.shapeEquals(new int[]{3}, column2.shape()));
+        NDArray column = new NDArray(new double[]{1,2,3},new int[]{3});
+        arr.putColumn(0,column);
+
+        NDArray firstColumn = arr.getColumn(0);
+
+        assertEquals(column,firstColumn);
+
+
+        NDArray column1 = new NDArray(new double[]{4,5,6},new int[]{3});
+        arr.putColumn(1,column1);
+        assertEquals(true, Shape.shapeEquals(new int[]{3}, arr.getColumn(1).shape()));
+        NDArray testRow1 = arr.getColumn(1);
+        assertEquals(column1,testRow1);
+
+
+
+    }
+    
+    
     @Test
     public void testPutRow() {
         DoubleMatrix d = DoubleMatrix.linspace(1,4,4).reshape(2,2);
@@ -139,7 +143,7 @@ public class NDArrayTests {
         assertEquals(true,Arrays.equals(d.toArray(),n.toArray()));
         assertEquals(true,Arrays.equals(new int[]{2,2},n.shape()));
 
-        DoubleMatrix newRow = DoubleMatrix.rand(1,2);
+        DoubleMatrix newRow = DoubleMatrix.linspace(1,2,2);
         n.putRow(0,newRow);
         d.putRow(0,newRow);
 
@@ -149,10 +153,31 @@ public class NDArrayTests {
         assertEquals(newRow.length,testRow.length);
         assertEquals(true,Arrays.equals(new int[]{2},testRow.shape()));
 
-        assertEquals(newRow,d.getRow(0));
+
+
+        NDArray nLast = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        NDArray row = nLast.getRow(1);
+        NDArray row1 = new NDArray(new double[]{3,4},new int[]{2});
+        assertEquals(row,row1);
+
 
 
     }
+
+
+    @Test
+    public void testPutColumn() {
+        NDArray n = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        NDArray column = n.getColumn(0);
+        NDArray column1 = new NDArray(new double[]{1,3},new int[]{2});
+        assertEquals(column,column1);
+
+
+        NDArray column0 = n.getColumn(1);
+        NDArray column01 = new NDArray(new double[]{2,4},new int[]{2});
+        assertEquals(column0,column01);
+    }
+
 
     @Test
     public void testMatrixMultiply() {
@@ -165,14 +190,6 @@ public class NDArrayTests {
 
     }
 
-    @Test
-    public void testSliceWiseAggregateStats() {
-        DoubleMatrix d = DoubleMatrix.linspace(1,4,4).reshape(2,2);
-        DoubleMatrix columnMaxs = d.columnMaxs();
-        NDArray n = NDArray.wrap(d);
-        NDArray nColumnMaxes = n.columnMaxs();
-        assertEquals(nColumnMaxes,columnMaxs);
-    }
 
 
     @Test
@@ -182,22 +199,6 @@ public class NDArrayTests {
         assertEquals(n.length,transpose.length);
         assertEquals(true,Arrays.equals(new int[]{4,5,5},transpose.shape()));
 
-    }
-
-
-    @Test
-    public void testDimensionOp() {
-        //A = reshape(linspace(1,24,24),[4 3 2]);
-        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        int[] shape = ArrayUtil.removeIndex(arr.shape(),0);
-        int[] stride = ArrayUtil.removeIndex(arr.stride(),0);
-
-        //NDArray arr = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
-        NDArray firstSlice = arr.slice(0);
-        double sum = firstSlice.sum();
-        String s = firstSlice.toString();
-        NDArrayUtil.collectForOp(arr,0);
-        log.info("Is this a cell? " + sum);
     }
 
     @Test

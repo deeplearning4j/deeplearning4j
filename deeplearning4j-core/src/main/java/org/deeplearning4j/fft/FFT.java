@@ -3,6 +3,7 @@ package org.deeplearning4j.fft;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
+import org.deeplearning4j.nn.linalg.Shape;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ComplexNDArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
@@ -10,6 +11,8 @@ import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
+
+import java.util.Arrays;
 
 import static org.deeplearning4j.util.MatrixUtil.exp;
 
@@ -19,61 +22,6 @@ import static org.deeplearning4j.util.MatrixUtil.exp;
  */
 public class FFT {
 
-
-
-    /**
-     * ND IFFT
-     * @param transform the ndarray to transform
-     * @param dimension the dimension to iterate along
-     * @param numElements the desired number of elements in each fft
-     * @return the transformed array
-     */
-    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension,int numElements) {
-        if(numElements < 1)
-            throw new IllegalArgumentException("No elements specified");
-
-
-        ComplexNDArray result = transform.dup();
-        if(dimension == 0 && transform.shape().length <= 1)
-            return result;
-
-
-
-        int desiredElementsAlongDimension = result.size(dimension);
-
-        if(numElements > desiredElementsAlongDimension) {
-            int[] targetShape = ArrayUtil.copy(result.shape());
-            targetShape[dimension] = numElements;
-            result = ComplexNDArrayUtil.padWithZeros(result,targetShape);
-        }
-
-        else if(numElements < desiredElementsAlongDimension) {
-            int[] targetShape;
-            if(result.isVector() && dimension == 0 || dimension == 1) {
-                targetShape = new int[] {numElements };
-
-            }
-            else {
-                targetShape = ArrayUtil.copy(result.shape());
-                targetShape[dimension] = numElements;
-
-            }
-            result = ComplexNDArrayUtil.truncate(result,targetShape);
-        }
-
-
-        result.iterateOverDimension(dimension,new IFFTSliceOp(transform,numElements));
-        return result;
-    }
-
-    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension) {
-        return fftn(transform,dimension,transform.shape()[0]);
-    }
-
-
-    public static ComplexNDArray ifftn(ComplexNDArray transform) {
-        return fftn(transform,0,transform.length);
-    }
 
 
     /**
@@ -88,39 +36,68 @@ public class FFT {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
+        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
+
 
         if(dimension == 0 && transform.shape().length <= 1)
-               return new ComplexNDArray(transform);
+            return new ComplexNDArray(transform);
         ComplexNDArray result = new ComplexNDArray(transform);
         int desiredElementsAlongDimension = result.size(dimension);
 
         if(numElements > desiredElementsAlongDimension) {
-            int[] targetShape = ArrayUtil.copy(result.shape());
-            targetShape[dimension] = numElements;
-            result = ComplexNDArrayUtil.padWithZeros(result,targetShape);
+            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            int[] targetShape;
-            if(result.isVector() && dimension == 0 || dimension == 1) {
-                targetShape = new int[] {numElements };
-
-            }
-            else {
-                targetShape = ArrayUtil.copy(result.shape());
-                targetShape[dimension] = numElements;
-
-            }
-            result = ComplexNDArrayUtil.truncate(result,targetShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape);
         }
 
         result.iterateOverDimension(dimension,new IFFTSliceOp(result,numElements));
+
+        assert Shape.shapeEquals(result.shape(),finalShape);
+
+
         return result;
     }
 
 
-    public static ComplexNDArray ifftn(NDArray transform) {
-        return fftn(transform,0,transform.length);
+
+    /**
+     * ND IFFT
+     * @param transform the ndarray to transform
+     * @param dimension the dimension to iterate along
+     * @param numElements the desired number of elements in each fft
+     * @return the transformed array
+     */
+    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension,int numElements) {
+        if(numElements < 1)
+            throw new IllegalArgumentException("No elements specified");
+        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
+
+
+        ComplexNDArray result = transform.dup();
+        if(dimension == 0 && transform.shape().length <= 1)
+            return result;
+
+
+
+        int desiredElementsAlongDimension = result.size(dimension);
+
+        if(numElements > desiredElementsAlongDimension) {
+            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
+        }
+
+        else if(numElements < desiredElementsAlongDimension) {
+
+            result = ComplexNDArrayUtil.truncate(result,finalShape);
+        }
+
+
+        result.iterateOverDimension(dimension,new IFFTSliceOp(transform,numElements));
+
+        assert Shape.shapeEquals(result.shape(),finalShape);
+
+        return result;
     }
 
 
@@ -137,6 +114,7 @@ public class FFT {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
+        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
 
         ComplexNDArray result = transform.dup();
         //do along the first non singleton dimension when the number of dimensions is
@@ -146,39 +124,22 @@ public class FFT {
         int desiredElementsAlongDimension = result.size(dimension);
 
         if(numElements > desiredElementsAlongDimension) {
-            int[] targetShape = ArrayUtil.copy(result.shape());
-            targetShape[dimension] = numElements;
-            result = ComplexNDArrayUtil.padWithZeros(result,targetShape);
+            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            int[] targetShape;
-            if(result.isVector() && dimension == 0 || dimension == 1) {
-                targetShape = new int[] {numElements };
-
-            }
-            else {
-                targetShape = ArrayUtil.copy(result.shape());
-                targetShape[dimension] = numElements;
-
-            }
-            result = ComplexNDArrayUtil.truncate(result,targetShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape);
         }
 
 
         result.iterateOverDimension(dimension,new FFTSliceOp(result,numElements));
+
+        assert Shape.shapeEquals(result.shape(),finalShape);
+
+
         return result;
     }
 
-
-    /**
-     * FFT on the whole array (n is equal the first dimension shape)
-     * @param transform the matrix to transform
-     * @return the ffted array
-     */
-    public static ComplexNDArray fftn(ComplexNDArray transform) {
-        return fftn(transform,0,transform.shape()[0]);
-    }
 
     /**
      * Computes the fft along the first non singleton dimension of transform
@@ -192,39 +153,26 @@ public class FFT {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
-        if(dimension == 0 && transform.shape().length <= 1)
-            return new ComplexNDArray(transform);
+        int[] finalShape = Shape.squeeze(ArrayUtil.replace(transform.shape(), dimension, numElements));
+
 
         ComplexNDArray result = new ComplexNDArray(transform);
 
-        //do along the first non singleton dimension when the number of dimensions is
-        //greater than 1
-        if(dimension == 0 && result.shape().length <= 1)
-            return result;
         int desiredElementsAlongDimension = result.size(dimension);
 
         if(numElements > desiredElementsAlongDimension) {
-            int[] targetShape = ArrayUtil.copy(result.shape());
-            targetShape[dimension] = numElements;
-            result = ComplexNDArrayUtil.padWithZeros(result,targetShape);
+            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
         }
 
         else if(numElements < desiredElementsAlongDimension) {
-            int[] targetShape;
-            if(result.isVector() && dimension == 0 || dimension == 1) {
-                targetShape = new int[] {numElements };
-
-            }
-            else {
-                targetShape = ArrayUtil.copy(result.shape());
-                targetShape[dimension] = numElements;
-
-            }
-            result = ComplexNDArrayUtil.truncate(result,targetShape);
+            result = ComplexNDArrayUtil.truncate(result,finalShape);
         }
 
 
+
         result.iterateOverDimension(dimension,new FFTSliceOp(result,numElements));
+        assert Shape.shapeEquals(result.shape(),finalShape);
+
         return result;
     }
 
@@ -287,6 +235,15 @@ public class FFT {
 
 
 
+    /**
+     * FFT on the whole array (n is equal the first dimension shape)
+     * @param transform the matrix to transform
+     * @return the ffted array
+     */
+    public static ComplexNDArray fftn(ComplexNDArray transform) {
+        return fftn(transform,0,transform.shape()[0]);
+    }
+
 
 
     public static ComplexDoubleMatrix fft(NDArray transform,int numElements) {
@@ -318,6 +275,20 @@ public class FFT {
      */
     public static  ComplexDoubleMatrix fft(ComplexNDArray inputC, int n) {
         return fft((ComplexDoubleMatrix) inputC,n);
+    }
+
+    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension) {
+        return fftn(transform,dimension,transform.shape()[0]);
+    }
+
+
+    public static ComplexNDArray ifftn(ComplexNDArray transform) {
+        return fftn(transform, 0, transform.length);
+    }
+
+
+    public static ComplexNDArray ifftn(NDArray transform) {
+        return fftn(transform, 0, transform.length);
     }
 
 

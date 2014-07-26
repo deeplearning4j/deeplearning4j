@@ -1019,7 +1019,7 @@ public class Word2Vec implements Persistable {
 
                 ret.minWordFrequency = minWordFrequency;
 
-                
+
                 try {
                     if (tokenizerFactory == null)
                         tokenizerFactory = new UimaTokenizerFactory();

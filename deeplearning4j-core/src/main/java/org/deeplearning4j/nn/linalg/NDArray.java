@@ -163,7 +163,7 @@ public class NDArray extends DoubleMatrix {
         if(n.isVector() && n.length != columns())
             throw new IllegalArgumentException("Unable to put row, mis matched columns");
         for(int i = 0; i < v.length; i++) {
-            put(r  + i * stride[0],v.get(i));
+            put(r  + (i * stride[1]),v.get(i));
         }
 
     }
@@ -176,11 +176,11 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public void putColumn(int c, DoubleMatrix v) {
-        NDArray n = NDArray.wrap(this,v);
+        NDArray n = NDArray.wrap(v);
         if(n.isVector() && n.length != rows())
             throw new IllegalArgumentException("Unable to put row, mis matched columns");
         for(int i = 0; i < v.length; i++) {
-            put(c * rows(),v.get(i));
+            put(c +  (i * stride[0]),v.get(i));
         }
 
     }
@@ -273,7 +273,7 @@ public class NDArray extends DoubleMatrix {
 
 
 
-        assert Arrays.equals(sliceShape,requiredShape) : String.format("Invalid shape size of %s . Should have been %s ",Arrays.toString(sliceShape),Arrays.toString(requiredShape));
+        assert Shape.shapeEquals(sliceShape,requiredShape) : String.format("Invalid shape size of %s . Should have been %s ",Arrays.toString(sliceShape),Arrays.toString(requiredShape));
 
     }
 
@@ -821,7 +821,7 @@ public class NDArray extends DoubleMatrix {
 
     @Override
     public double get(int i) {
-        if(shape().length > 1)
+        if(!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i);
         return data[idx];
@@ -832,7 +832,7 @@ public class NDArray extends DoubleMatrix {
         int realStride = stride == null || stride.length < 1 ? 1 : stride[0];
         int idx = offset + i * realStride;
         if(idx >= data.length)
-            throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i);
+            throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
 
@@ -1062,7 +1062,7 @@ public class NDArray extends DoubleMatrix {
 
 
     private void ensureSameShape(NDArray arr1,NDArray arr2) {
-        assert true == Arrays.equals(arr1.shape(),arr2.shape());
+        assert true == Shape.shapeEquals(arr1.shape(),arr2.shape());
 
     }
 
@@ -1906,8 +1906,8 @@ public class NDArray extends DoubleMatrix {
             return new NDArray(
                     data,
                     new int[]{shape[0]},
-                    new int[]{1},
-                    offset + c * rows()
+                    new int[]{stride[0]},
+                    offset + c
             );
         else
             throw new IllegalArgumentException("Unable to get row of non 2d matrix");
@@ -1924,9 +1924,9 @@ public class NDArray extends DoubleMatrix {
         if(shape.length == 2)
             return new NDArray(
                     data,
-                    ArrayUtil.of(shape[1]),
-                    ArrayUtil.of(shape[0]),
-                    r * columns()
+                    new int[]{shape[1]},
+                    new int[]{stride[1]},
+                    offset + r
             );
         else
             throw new IllegalArgumentException("Unable to get row of non 2d matrix");
@@ -1974,7 +1974,7 @@ public class NDArray extends DoubleMatrix {
         }
 
 
-        if(!Arrays.equals(shape(),n.shape()))
+        if(!Shape.shapeEquals(shape(),n.shape()))
             return false;
 
         for (int i = 0; i < slices(); i++) {
@@ -2083,7 +2083,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public boolean isVector() {
-        return shape.length == 1;
+        return shape.length == 1 || shape.length == 1 && shape[0] == 1;
     }
 
     /** Generate string representation of the matrix. */
@@ -2096,8 +2096,6 @@ public class NDArray extends DoubleMatrix {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             for(int i = 0; i < length; i++) {
-                if(linearIndex(i) >= data.length)
-                    throw new IllegalArgumentException("Illegal index greater than length " + i);
                 sb.append(get(i));
                 if(i < length - 1)
                     sb.append(',');
