@@ -14,9 +14,9 @@ Word2vec creates features without human intervention, and some of those features
 
 The output of the Word2vec neural net is a vocabulary with a vector attached to it, which can be fed into a deep-learning net for classification/labeling. 
 
-There is also a [skip gram representation](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) which is used in the DL4J implementation. This has proven to be more accurate due to the more generalizable contexts generated. 
+There is also a [skip gram representation](http://homepages.inf.ed.ac.uk/ballison/pdf/lrec_skipgrams.pdf) which is used in the DL4J implementation. This has proven to be more accurate than other models due to the more generalizable contexts generated. 
 
-Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the similarity between two word vectors. A perfect 90 degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
+Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90 degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
 
 Here's a graph of words associated with "China" using Word2vec:
 
@@ -36,7 +36,7 @@ From there, Word2vec will do automatic multithreaded training based on your sent
 
        	 SerializationUtils.saveObject(vec, new File("mypath"));
 
-This will save wWrd2vec to mypath. You can reload it into memory like this:
+This will save Word2vec to mypath. You can reload it into memory like this:
         
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
@@ -76,7 +76,7 @@ Notably, you can also specify the window size like so:
 
 Training word sequence models is done through optimization with the [Viterbi algorithm](../doc/org/deeplearning4j/word2vec/viterbi/Viterbi.html).
 
-The general idea is that you train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
+The general idea is to train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
 
 Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
 
@@ -98,7 +98,7 @@ The following code saves your Viterbi implementation for later use:
        
         SerializationUtils.saveObject(viterbi, new File("mypath"));
         
-###training
+###fine-tuning DBNs
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used to finetune a deep-belief network:
 
