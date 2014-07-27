@@ -8,9 +8,9 @@ layout: default
 
 Recursive neural tensor networks (RNTNs) are neural nets useful for natural-language processing. They have a tree structure with a neural net at each node. You can use recursive neural tensor networks for boundary segmentation, to determine which word groups are positive and which are negative. The same applies to sentences as a whole. 
 
-Word vectors are used as features and serve as the basis of sequential classification. They are which are grouped into subphrases, and the subphrases are combined into a sentence that can be classified as a whole. 
+Word vectors are used as features and serve as the basis of sequential classification. They are then grouped into subphrases, and the subphrases are combined into a sentence that can be classified by sentiment and other metrics. 
 
-Recursive neural tensor networks require external components like [Word2vec](http://deeplearning4j.org/word2vec.html), which is described below. To analyze text with neural nets, words can be represented as continuous vectors of parameters. Those word vectors contain information not only about the word in question, but about surrounding words; i.e. the word's context, usage and other semantic information. Deeplearning4j contains both recursive neural tensor networks and Word2vec. 
+Recursive neural tensor networks require external components like [Word2vec](http://deeplearning4j.org/word2vec.html), which is described below. To analyze text with neural nets, words can be represented as continuous vectors of parameters. Those word vectors contain information not only about the word in question, but about surrounding words; i.e. the word's context, usage and other semantic information. Deeplearning4j implements both recursive neural tensor networks and Word2vec. 
 
 ###word2vec
 
