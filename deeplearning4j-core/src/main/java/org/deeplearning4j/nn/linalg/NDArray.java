@@ -30,6 +30,8 @@ public class NDArray extends DoubleMatrix {
 
 
 
+
+
     public NDArray(List<DoubleMatrix> slices,int[] shape) {
         List<double[]> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++)
