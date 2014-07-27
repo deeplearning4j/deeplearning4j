@@ -23,12 +23,14 @@ public class FFTTest {
 
     @Test
     public void testBasicFFT() {
-        DoubleMatrix d = DoubleMatrix.linspace(1,6,6);
+        DoubleMatrix d = DoubleMatrix.linspace(1,4,4);
         ComplexDoubleMatrix d2 = new ComplexDoubleMatrix(d);
         ComplexDoubleMatrix fft = FFT.fft(d2);
-        assertEquals(6,fft.length);
-        log.info("FFT " + fft);
-
+        assertEquals(4, fft.length);
+        ComplexDoubleMatrix test = new ComplexDoubleMatrix(new double[]{
+                10,0,-2,2,-2,0,-2,-2
+        });
+        assertEquals(fft,test);
 
 
     }
@@ -57,8 +59,11 @@ public class FFTTest {
     public void testFFTDifferentDimensions() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         ComplexNDArray arr2 = FFT.fftn(arr,1,1);
-        assertEquals(true, Shape.shapeEquals(new int[]{4,2}, arr2.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{4,1,2}, arr2.shape()));
         assertEquals(8,arr2.length);
+        ComplexNDArray result = new ComplexNDArray(new double[]{1,0,2,0,7,0,8,0,13,0,14,0,19,0,20,0},new int[]{4,1,2});
+        assertEquals(result,arr2);
+
     }
 
 

@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -189,6 +190,74 @@ public class ComplexNDArrayTests {
 
 
 
+    }
+
+
+    @Test
+    public void testEndsForSlices() {
+        ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
+        int[] endsForSlices = arr.endsForSlices();
+        assertEquals(true, Arrays.equals(new int[]{0, 12, 24, 36}, endsForSlices));
+    }
+
+
+    @Test
+    public void testVectorDimensionMulti() {
+        ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
+        final AtomicInteger count = new AtomicInteger(0);
+
+        arr.iterateOverDimension(0,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                ComplexNDArray test =(ComplexNDArray) nd.getResult();
+                if(count.get() == 0) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{1,0,7,0,13,0,19,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 1) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{2,0,8,0,14,0,20,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 2) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{3,0,9,0,15,0,21,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 3) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{4,0,10,0,16,0,22,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 4) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{5,0,11,0,17,0,23,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 5) {
+                    ComplexNDArray answer = new ComplexNDArray(new double[]{6,0,12,0,18,0,24,0},new int[]{4});
+                    assertEquals(answer,test);
+                }
+
+
+                count.incrementAndGet();
+            }
+        });
+
+
+
+        ComplexNDArray ret = new ComplexNDArray(new double[]{1,0,2,0,3,0,4,0},new int[]{2,2});
+        final ComplexNDArray firstRow = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
+        final ComplexNDArray secondRow = new ComplexNDArray(new double[]{3,0,4,0},new int[]{2});
+        count.set(0);
+        ret.iterateOverDimension(1,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                ComplexNDArray c = (ComplexNDArray) nd.getResult();
+                if(count.get() == 0) {
+                    assertEquals(firstRow,c);
+                }
+                else if(count.get() == 1)
+                     assertEquals(secondRow,c);
+                count.incrementAndGet();
+            }
+        });
     }
 
 

@@ -31,7 +31,6 @@ public class ComplexNDArrayUtilTests {
     @Test
     public void testTruncate() {
         ComplexNDArray ret = new ComplexNDArray(new double[]{1,0,2,0,3,0,4,0},new int[]{2,2});
-        ret.toString();
         //axis 0 or column wise
         ComplexNDArray truncated = ComplexNDArrayUtil.truncate(ret,new int[]{2},0);
         ComplexNDArray answer = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});

@@ -70,6 +70,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    /**
+     * Create a complex ndarray with the given complex doubles.
+     * Note that this maybe an easier setup than the new double[]
+     * @param newData the new data for this array
+     * @param shape the shape of the ndarray
+     */
     public ComplexNDArray(ComplexDouble[] newData,int[] shape) {
         super(newData);
         this.shape = shape;
@@ -141,7 +147,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         this(shape,calcStrides(shape),offset);
     }
 
-
+    /**
+     * Create with the specified shape
+     * and an offset of 0
+     * @param shape the shape of the ndarray
+     */
     public ComplexNDArray(int[] shape) {
         this(shape,0);
     }
@@ -546,7 +556,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                 //iterating along the dimension is relative to the number of slices
                 //in the return dimension
                 int numTimes = ArrayUtil.prod(shape);
-                for(int offset = this.offset; offset < numTimes; offset += 2) {
+                //note difference here from ndarray, the offset is incremented by 2 every time
+                //note also numtimes is multiplied by 2, this is due to the complex and imaginary components
+                for(int offset = this.offset; offset < numTimes * 2; offset += 2) {
                     DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                     op.operate(vector);
 
@@ -564,8 +576,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
                 //iterating along the dimension is relative to the number of slices
                 //in the return dimension
-                int numTimes = ArrayUtil.prod(shape);
-                for(int offset = this.offset; offset < numTimes; offset++) {
+                //note here the * 2 and +=2 this is for iterating over real and imaginary components
+                for(int offset = this.offset;;) {
                     if(dataIter >= data2.length || currOffset >= sliceIndices.length)
                         break;
 
@@ -575,10 +587,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     op.operate(pair);
                     //go to next slice and iterate over that
                     if(pair.isNextSlice()) {
+                        //DO NOT CHANGE
+                        currOffset++;
+                        if(currOffset >= sliceIndices.length)
+                             break;
                         //will update to next step
-                        offset = sliceIndices[currOffset] * 4;
-                        numTimes +=  sliceIndices[currOffset];
-                        currOffset+= 2;
+                        offset = sliceIndices[currOffset];
                     }
 
                 }
@@ -732,9 +746,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     public int[] endsForSlices() {
         int[] ret = new int[slices()];
-        int currOffset = offset + stride[0] - 1;
+        int currOffset = offset;
         for(int i = 0; i < slices(); i++) {
-            ret[i] = currOffset;
+            ret[i] = (currOffset * 2);
             currOffset += stride[0];
         }
         return ret;

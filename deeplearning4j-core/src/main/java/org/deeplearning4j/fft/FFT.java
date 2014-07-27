@@ -153,7 +153,7 @@ public class FFT {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
-        int[] finalShape = Shape.squeeze(ArrayUtil.replace(transform.shape(), dimension, numElements));
+        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
 
 
         ComplexNDArray result = new ComplexNDArray(transform);
