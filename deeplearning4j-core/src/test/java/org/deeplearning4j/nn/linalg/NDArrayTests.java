@@ -132,7 +132,7 @@ public class NDArrayTests {
 
     }
 
-    
+
     @Test
     public void testPutRow() {
         DoubleMatrix d = DoubleMatrix.linspace(1,4,4).reshape(2,2);
@@ -380,6 +380,55 @@ public class NDArrayTests {
         NDArray n2 = new NDArray(DoubleMatrix.linspace(1,16,16).data,new int[]{2,2,2,2});
         log.info("N2 shape " + n2.slice(1,1).slice(1));
 
+    }
+
+
+    @Test
+    public void testEndsForSlices() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        int[] endsForSlices = arr.endsForSlices();
+        assertEquals(true,Arrays.equals(new int[]{5,11,17,23},endsForSlices));
+    }
+
+
+    @Test
+    public void testVectorDimensionMulti() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        final AtomicInteger count = new AtomicInteger(0);
+
+        arr.iterateOverDimension(0,new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                NDArray test =(NDArray) nd.getResult();
+                if(count.get() == 0) {
+                    NDArray answer = new NDArray(new double[]{1,7,13,19},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 1) {
+                    NDArray answer = new NDArray(new double[]{2,8,14,20},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 2) {
+                    NDArray answer = new NDArray(new double[]{3,9,15,21},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 3) {
+                    NDArray answer = new NDArray(new double[]{4,10,16,22},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 4) {
+                    NDArray answer = new NDArray(new double[]{5,11,17,23},new int[]{4});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 5) {
+                    NDArray answer = new NDArray(new double[]{6,12,18,24},new int[]{4});
+                    assertEquals(answer,test);
+                }
+
+
+                count.incrementAndGet();
+            }
+        });
     }
 
 }
