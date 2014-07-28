@@ -10,7 +10,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -56,6 +58,16 @@ public class ComplexNDArrayTests {
 
     }
 
+    @Test
+    public void testSliceConstructor() {
+        List<ComplexNDArray> testList = new ArrayList<>();
+        for(int i = 0; i < 5; i++)
+            testList.add(ComplexNDArray.scalar(i + 1));
+
+        ComplexNDArray test = new ComplexNDArray(testList,new int[]{testList.size()});
+        ComplexNDArray expected = new ComplexNDArray(new NDArray(new double[]{1,2,3,4,5},new int[]{5}));
+        assertEquals(expected,test);
+    }
 
 
     @Test

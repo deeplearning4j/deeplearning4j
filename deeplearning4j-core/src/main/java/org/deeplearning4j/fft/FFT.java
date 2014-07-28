@@ -164,9 +164,9 @@ public class FFT {
             result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
         }
 
-        else if(numElements < desiredElementsAlongDimension) {
+        else if(numElements < desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-        }
+
 
 
 

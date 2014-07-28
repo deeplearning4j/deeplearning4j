@@ -43,7 +43,7 @@ public class FFTSliceOp implements SliceOp {
      */
     public FFTSliceOp(ComplexNDArray operateOnComplex,int n) {
         if(n < 1)
-           throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
+            throw new IllegalArgumentException("Number of elements per dimension must be at least 1");
         this.operateOnComplex = operateOnComplex;
         this.n = n;
     }
@@ -53,7 +53,7 @@ public class FFTSliceOp implements SliceOp {
      * @param operateOn the ndarray to operate on
      */
     public FFTSliceOp(NDArray operateOn) {
-         this(operateOn,operateOn.length);
+        this(operateOn,operateOn.length);
     }
 
     /**
@@ -85,8 +85,11 @@ public class FFTSliceOp implements SliceOp {
             ComplexNDArray a = (ComplexNDArray) nd.getResult();
             int n = this.n < 1 ? a.length : this.n;
             ComplexDoubleMatrix result = FFT.fft(a,n);
+            int count = 0;
             for(int i = 0; i < n; i++) {
-                operateOnComplex.put(nd.getIndices()[i],result.get(i));
+                operateOnComplex.data[nd.getIndices()[count]] = result.get(i).real();
+                operateOnComplex.data[nd.getIndices()[count] + 1] = result.get(i).imag();
+                count+= 2;
             }
         }
     }

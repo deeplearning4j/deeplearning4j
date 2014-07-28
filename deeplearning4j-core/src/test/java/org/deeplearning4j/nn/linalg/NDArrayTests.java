@@ -10,7 +10,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -253,6 +255,18 @@ public class NDArrayTests {
 
 
 
+    }
+
+
+    @Test
+    public void testSliceConstructor() {
+        List<NDArray> testList = new ArrayList<>();
+        for(int i = 0; i < 5; i++)
+            testList.add(NDArray.scalar(i + 1));
+
+        NDArray test = new NDArray(testList,new int[]{testList.size()});
+        NDArray expected = new NDArray(new double[]{1,2,3,4,5},new int[]{5});
+        assertEquals(expected,test);
     }
 
 
