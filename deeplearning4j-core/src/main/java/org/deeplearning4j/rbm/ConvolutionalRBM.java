@@ -899,7 +899,7 @@ public class ConvolutionalRBM extends RBM  {
             if(filterSize == null)
                 throw new IllegalStateException("Please specify a filter size");
             if(visibleSize == null)
-                throw new IllegalStateException("Please specify a viisble size");
+                throw new IllegalStateException("Please specify a visible size");
             ret.numFilters = numFilters;
             ret.stride = stride;
             ret.sparseGain = sparseGain;
