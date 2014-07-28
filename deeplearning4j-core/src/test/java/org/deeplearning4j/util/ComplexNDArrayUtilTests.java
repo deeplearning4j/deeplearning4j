@@ -61,6 +61,12 @@ public class ComplexNDArrayUtilTests {
         assertEquals(ten,test10);
 
 
+        arr2 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
+        ComplexNDArray dimension1 = new ComplexNDArray(new NDArray(new double[]{1,2,3,4,7,8,9,10,13,14,15,16,19,20,21,22},new int[]{4,2,2}));
+        ComplexNDArray truncatedTest = ComplexNDArrayUtil.truncate(arr2,2,1);
+        assertEquals(dimension1,truncatedTest);
+
+
 
     }
 

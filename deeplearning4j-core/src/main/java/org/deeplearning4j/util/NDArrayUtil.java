@@ -117,13 +117,31 @@ public class NDArrayUtil {
             }
 
 
-            List<NDArray> slices = new ArrayList<>();
-            for(int i = 0; i < n; i++) {
-                NDArray slice = nd.slice(i);
-                slices.add(slice);
+            if(dimension == 0) {
+                List<NDArray> slices = new ArrayList<>();
+                for(int i = 0; i < n; i++) {
+                    NDArray slice = nd.slice(i);
+                    slices.add(slice);
+                }
+
+                return new NDArray(slices,targetShape);
+
+            }
+            else {
+                List<Double> list = new ArrayList<>();
+                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape,0));
+                for(int i = 0; i < nd.slices(); i++) {
+                    NDArray slice = nd.slice(i).flatten();
+                    for(int j = 0; j < numElementsPerSlice; j++)
+                        list.add(slice.get(j));
+                }
+
+                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
+
+                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+
             }
 
-            return new NDArray(slices,targetShape);
 
 
 
