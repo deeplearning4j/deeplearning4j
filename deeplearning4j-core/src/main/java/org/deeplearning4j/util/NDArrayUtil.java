@@ -1,8 +1,10 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.DimensionSlice;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.deeplearning4j.nn.linalg.SliceOp;
+import org.jblas.ComplexDouble;
 import org.jblas.NativeBlas;
 
 import java.util.ArrayList;
@@ -61,46 +63,75 @@ public class NDArrayUtil {
      * If the shape is the same or greater, it just returns
      * the original array
      * @param nd the ndarray to truncate
-     * @param targetShape the new shape
+     * @param n the number of elements to truncate to
      * @return the truncated ndarray
      */
-    public static NDArray truncate(NDArray nd, final int[] targetShape,int dimension) {
-        if(Arrays.equals(nd.shape(),targetShape))
-            return nd;
+    public static NDArray truncate(NDArray nd,final int n,int dimension) {
 
-        //same length: just need to reshape, the reason for this is different dimensions maybe of different sizes
-        if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
-            return nd.reshape(targetShape);
+        if(nd.size(dimension) > n) {
+            int[] targetShape = ArrayUtil.copy(nd.shape());
+            targetShape[dimension] = n;
+            int numRequired = ArrayUtil.prod(targetShape);
+            if(nd.isVector()) {
+                NDArray ret = new NDArray(targetShape);
+                int count = 0;
+                for(int i = 0; i < nd.length; i+= nd.stride()[dimension]) {
+                    ret.put(count++,nd.get(i));
 
-        final NDArray ret = new NDArray(targetShape);
-        if(ret.isVector())  {
-            final AtomicInteger currentSlice = new AtomicInteger(0);
-            nd.iterateOverDimension(dimension,new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                      NDArray result = (NDArray) nd.getResult();
-                      for(int i = 0; i < 1; i++) {
-                          ret.put(currentSlice.getAndIncrement(),result.get(i));
-                      }
                 }
-            });
+                return ret;
+            }
+
+            else if(nd.isMatrix()) {
+                List<Double> list = new ArrayList<>();
+                //row
+                if(dimension == 0) {
+                    for(int i = 0;i < nd.rows(); i++) {
+                        NDArray row = nd.getRow(i);
+                        for(int j = 0; j < row.length; j++) {
+                            if(list.size() == numRequired)
+                                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+
+                            list.add(row.get(j));
+                        }
+                    }
+                }
+                else if(dimension == 1) {
+                    for(int i = 0;i < nd.columns(); i++) {
+                        NDArray row = nd.getColumn(i);
+                        for(int j = 0; j < row.length; j++) {
+                            if(list.size() == numRequired)
+                                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+
+                            list.add(row.get(j));
+                        }
+                    }
+                }
+
+                else
+                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
+
+
+                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+
+            }
+
+
+            List<NDArray> slices = new ArrayList<>();
+            for(int i = 0; i < n; i++) {
+                NDArray slice = nd.slice(i);
+                slices.add(slice);
+            }
+
+            return new NDArray(slices,targetShape);
 
 
 
-
-            return ret;
         }
 
-        int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
-        for(int i = 0; i < ret.slices(); i++) {
-            ret.putSlice(i,truncate(nd.slice(i),sliceShape,dimension));
-        }
-
-        return ret;
-
+        return nd;
 
     }
-
     /**
      * Pads an ndarray with zeros
      * @param nd the ndarray to pad

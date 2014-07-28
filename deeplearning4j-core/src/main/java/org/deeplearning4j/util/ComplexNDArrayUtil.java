@@ -2,6 +2,8 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.linalg.*;
 import org.jblas.ComplexDouble;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ComplexNDArrayUtil {
 
+    private static Logger log = LoggerFactory.getLogger(ComplexNDArrayUtil.class);
 
     public static enum ScalarOp {
         SUM,
@@ -58,51 +61,82 @@ public class ComplexNDArrayUtil {
 
 
 
+
     /**
      * Truncates an ndarray to the specified shape.
      * If the shape is the same or greater, it just returns
      * the original array
      * @param nd the ndarray to truncate
-     * @param targetShape the new shape
+     * @param n the number of elements to truncate to
      * @return the truncated ndarray
      */
-    public static ComplexNDArray truncate(ComplexNDArray nd,int[] targetShape,int dimension) {
-        if(Arrays.equals(nd.shape(),targetShape))
-            return nd;
+    public static ComplexNDArray truncate(ComplexNDArray nd,final int n,int dimension) {
 
-        //same length: just need to reshape, the reason for this is different dimensions maybe of different sizes
-        if(ArrayUtil.prod(nd.shape()) == ArrayUtil.prod(targetShape))
-            return nd.reshape(targetShape);
+        if(nd.size(dimension) > n) {
+            int[] targetShape = ArrayUtil.copy(nd.shape());
+            targetShape[dimension] = n;
+            int numRequired = ArrayUtil.prod(targetShape);
+            if(nd.isVector()) {
+                ComplexNDArray ret = new ComplexNDArray(targetShape);
+                int count = 0;
+                for(int i = 0; i < nd.length; i+= nd.stride()[dimension]) {
+                    ret.put(count++,nd.get(i));
 
-        final ComplexNDArray ret = new ComplexNDArray(targetShape);
-        if(ret.isVector())  {
-            final AtomicInteger currentSlice = new AtomicInteger(0);
-            nd.iterateOverDimension(dimension,new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    ComplexNDArray result = (ComplexNDArray) nd.getResult();
-                    for(int i = 0; i < 1; i++) {
-                        ret.put(currentSlice.getAndIncrement(),result.get(i));
+                }
+                return ret;
+            }
+
+            else if(nd.isMatrix()) {
+                List<ComplexDouble> list = new ArrayList<>();
+                //row
+                if(dimension == 0) {
+                    for(int i = 0;i < nd.rows(); i++) {
+                        ComplexNDArray row = nd.getRow(i);
+                        for(int j = 0; j < row.length; j++) {
+                            if(list.size() == numRequired)
+                                return new ComplexNDArray(list.toArray(new ComplexDouble[0]),targetShape);
+
+                            list.add(row.get(j));
+                        }
                     }
                 }
-            });
+                else if(dimension == 1) {
+                    for(int i = 0;i < nd.columns(); i++) {
+                        ComplexNDArray row = nd.getColumn(i);
+                        for(int j = 0; j < row.length; j++) {
+                            if(list.size() == numRequired)
+                                return new ComplexNDArray(list.toArray(new ComplexDouble[0]),targetShape);
+
+                            list.add(row.get(j));
+                        }
+                    }
+                }
+
+                else
+                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
+
+
+                return new ComplexNDArray(list.toArray(new ComplexDouble[0]),targetShape);
+
+            }
+
+
+            List<ComplexNDArray> slices = new ArrayList<>();
+            for(int i = 0; i < n; i++) {
+                ComplexNDArray slice = nd.slice(i);
+                slices.add(slice);
+            }
+
+            return new ComplexNDArray(slices,targetShape);
 
 
 
-
-            return ret;
         }
 
-        int[] sliceShape = ArrayUtil.removeIndex(targetShape,0);
-        for(int i = 0; i < ret.slices(); i++) {
-            ret.putSlice(i,truncate(nd.slice(i),sliceShape,dimension));
-        }
-
-        return ret;
-
-
+        return nd;
 
     }
+
 
     /**
      * Pads an ndarray with zeros
@@ -164,7 +198,7 @@ public class ComplexNDArrayUtil {
                 case SUM:
                     //list.add(arr.slice(i,dimension).sum());
                     break;
-                   case MEAN:
+                case MEAN:
                     list.add(arr.slice(i,dimension).columnSums());
                     break;
                 case PROD:
@@ -250,7 +284,7 @@ public class ComplexNDArrayUtil {
                     case SUM :
                         ret.addi(arr.slice(i).sum());
                         break;
-                        case NORM_1:
+                    case NORM_1:
                         ret.addi(arr.slice(i).norm1());
                         break;
                     case NORM_2:

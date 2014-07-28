@@ -185,6 +185,8 @@ public class NDArrayTests {
     }
 
 
+
+
     @Test
     public void testMatrixMultiply() {
         DoubleMatrix d = DoubleMatrix.linspace(1,2,4).reshape(2,2);
@@ -236,6 +238,20 @@ public class NDArrayTests {
         NDArray slice1 = n.slice(1);
         assertEquals(true,Arrays.equals(slice.shape(),slice1.shape()));
         assertNotEquals(true,Arrays.equals(slice.toArray(),slice1.toArray()));
+
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        NDArray slice0 = new NDArray(new double[]{1,2,3,4,5,6},new int[]{3,2});
+        NDArray slice2 = new NDArray(new double[]{7,8,9,10,11,12},new int[]{3,2});
+
+        NDArray testSlice0 = arr.slice(0);
+        NDArray testSlice1 = arr.slice(1);
+
+        assertEquals(slice0,testSlice0);
+        assertEquals(slice2,testSlice1);
+
+
+
+
 
     }
 
@@ -390,6 +406,17 @@ public class NDArrayTests {
         assertEquals(true,Arrays.equals(new int[]{5,11,17,23},endsForSlices));
     }
 
+
+    @Test
+    public void testFlatten() {
+        NDArray arr = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        NDArray flattened = arr.flatten();
+        assertEquals(arr.length,flattened.length);
+        assertEquals(true,Arrays.equals(new int[]{1,arr.length},flattened.shape()));
+        for(int i = 0; i < arr.length; i++) {
+            assertEquals(i + 1,flattened.get(i),1e-1);
+        }
+    }
 
     @Test
     public void testVectorDimensionMulti() {

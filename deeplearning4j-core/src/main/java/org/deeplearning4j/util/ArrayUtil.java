@@ -81,6 +81,54 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Returns a subset of an array from 0 to "to"
+     * @param data the data to get a subset of
+     * @param to the end point of the data
+     * @return the subset of the data specified
+     */
+    public static double[] range(double[] data,int to) {
+       return range(data,to,1);
+    }
+
+
+
+    /**
+     * Returns a subset of an array from 0 to "to"
+     * using the specified stride
+     * @param data the data to get a subset of
+     * @param to the end point of the data
+     * @param stride the stride to go through the array
+     * @return the subset of the data specified
+     */
+    public static double[] range(double[] data,int to,int stride) {
+        return range(data,to,stride,1);
+    }
+
+
+    /**
+     * Returns a subset of an array from 0 to "to"
+     * using the specified stride
+     * @param data the data to get a subset of
+     * @param to the end point of the data
+     * @param stride the stride to go through the array
+     * @param numElementsEachStride the number of elements to collect at each stride
+     * @return the subset of the data specified
+     */
+    public static double[] range(double[] data,int to,int stride,int numElementsEachStride) {
+        double[] ret = new double[to];
+        int count = 0;
+        for(int i = 0; i < data.length; i+= stride) {
+           for(int j = 0; j < numElementsEachStride; j++) {
+               if(i + j >= data.length || count >= ret.length)
+                   break;
+               ret[count++] = data[i + j];
+           }
+        }
+        return ret;
+    }
+
+
 
     public static int[] toArray(List<Integer> list) {
         int[] ret = new int[list.size()];
@@ -90,6 +138,14 @@ public class ArrayUtil {
     }
 
 
+
+    public static double[] toArrayDouble(List<Double> list) {
+        double[] ret = new double[list.size()];
+        for(int i = 0; i < list.size(); i++)
+            ret[i] = list.get(i);
+        return ret;
+
+    }
 
 
 

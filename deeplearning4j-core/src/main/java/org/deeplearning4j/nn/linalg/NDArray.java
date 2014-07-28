@@ -32,7 +32,7 @@ public class NDArray extends DoubleMatrix {
 
 
 
-    public NDArray(List<DoubleMatrix> slices,int[] shape) {
+    public NDArray(List<NDArray> slices,int[] shape) {
         List<double[]> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++)
             list.add(slices.get(i).data);
@@ -280,8 +280,14 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    /**
+     * Returns true if this ndarray is 2d
+     * or 3d with a singleton element
+     * @return true if the element is a matrix, false otherwise
+     */
     public boolean isMatrix() {
-        return shape().length == 2;
+        return shape().length == 2 ||
+                shape.length == 3 && shape[0] == 1 || shape[1] == 1 || shape[2] == 1;
     }
 
     /**
@@ -831,13 +837,22 @@ public class NDArray extends DoubleMatrix {
 
 
     private int linearIndex(int i) {
-        int realStride = stride == null || stride.length < 1 ? 1 : stride[0];
+        int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
 
+    private int getRealStrideForLinearIndex() {
+        if(stride == null || stride().length < 1)
+            return 1;
+        if(stride.length == 2 && shape[0] == 1)
+            return stride[1];
+        if(stride().length == 2 && shape[1] == 1)
+            return stride[0];
+        return stride[0];
+    }
 
 
     /**
@@ -1457,7 +1472,7 @@ public class NDArray extends DoubleMatrix {
     @Override
     public NDArray mmul(DoubleMatrix a) {
         NDArray arr = NDArray.wrap(this,a);
-        List<DoubleMatrix> ret = new ArrayList<>();
+        List<NDArray> ret = new ArrayList<>();
 
         if(shape().length == 2) {
             rows = shape[0];
@@ -1865,8 +1880,11 @@ public class NDArray extends DoubleMatrix {
      * @return the number of columns in the array (only 2d)
      */
     public int columns() {
-        if(shape.length == 2)
-            return shape[1];
+        if(isMatrix())
+            if(shape().length > 2)
+                return Shape.squeeze(shape)[1];
+            else if(shape().length == 2)
+                return shape[1];
         throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
 
@@ -1877,13 +1895,26 @@ public class NDArray extends DoubleMatrix {
      * @return the number of rows in the matrix
      */
     public int rows() {
-        if(shape.length == 2)
-            return shape[0];
-        throw new IllegalStateException("Unable to get number of rows for a non 2d matrix");
+        if(isMatrix())
+            if(shape().length > 2)
+                return Shape.squeeze(shape)[0];
+            else if(shape().length == 2)
+                return shape[0];
+        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
 
 
 
+
+
+
+    /**
+     * Flattens the array for linear indexing
+     * @return the flattened version of this array
+     */
+    public NDArray flatten() {
+        return reshape(new int[]{1,ArrayUtil.prod(shape())});
+    }
 
 
     /**
@@ -2079,15 +2110,17 @@ public class NDArray extends DoubleMatrix {
 
     }
 
-
     /**
      * Checks whether the matrix is a vector.
      */
     @Override
     public boolean isVector() {
-        return shape.length == 1 || shape.length == 1 && shape[0] == 1;
+        return shape.length == 1
+                ||
+                shape.length == 1  && shape[0] == 1
+                ||
+                shape.length == 2 && (shape[0] == 1 || shape[1] == 1);
     }
-
     /** Generate string representation of the matrix. */
     @Override
     public String toString() {
