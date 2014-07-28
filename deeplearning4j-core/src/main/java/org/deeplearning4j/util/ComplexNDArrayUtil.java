@@ -100,6 +100,7 @@ public class ComplexNDArrayUtil {
                         }
                     }
                 }
+
                 else if(dimension == 1) {
                     for(int i = 0;i < nd.columns(); i++) {
                         ComplexNDArray row = nd.getColumn(i);
@@ -121,13 +122,30 @@ public class ComplexNDArrayUtil {
             }
 
 
-            List<ComplexNDArray> slices = new ArrayList<>();
-            for(int i = 0; i < n; i++) {
-                ComplexNDArray slice = nd.slice(i);
-                slices.add(slice);
-            }
+            if(dimension == 0) {
+                List<ComplexNDArray> slices = new ArrayList<>();
+                for(int i = 0; i < n; i++) {
+                    ComplexNDArray slice = nd.slice(i);
+                    slices.add(slice);
+                }
 
-            return new ComplexNDArray(slices,targetShape);
+                return new ComplexNDArray(slices,targetShape);
+
+            }
+            else {
+                List<ComplexDouble> list = new ArrayList<>();
+                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape,0));
+                for(int i = 0; i < nd.slices(); i++) {
+                    ComplexNDArray slice = nd.slice(i).flatten();
+                    for(int j = 0; j < numElementsPerSlice; j++)
+                        list.add(slice.get(j));
+                }
+
+                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
+
+                return new ComplexNDArray(list.toArray(new ComplexDouble[0]),targetShape);
+
+            }
 
 
 

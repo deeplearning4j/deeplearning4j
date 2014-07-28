@@ -27,11 +27,14 @@ public class NDArray extends DoubleMatrix {
     private int offset = 0;
 
 
-
-
-
-
-
+    /**
+     * Create an ndarray from the specified slices.
+     * This will go through and merge all of the
+     * data from each slice in to one ndarray
+     * which will then take the specified shape
+     * @param slices the slices to merge
+     * @param shape the shape of the ndarray
+     */
     public NDArray(List<NDArray> slices,int[] shape) {
         List<double[]> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++)
@@ -40,7 +43,7 @@ public class NDArray extends DoubleMatrix {
         this.data = ArrayUtil.combine(list);
         this.shape = shape;
         this.length = ArrayUtil.prod(shape);
-
+        this.stride = ArrayUtil.calcStrides(shape);
         if(this.shape.length == 2) {
             rows = shape[0];
             columns = shape[1];

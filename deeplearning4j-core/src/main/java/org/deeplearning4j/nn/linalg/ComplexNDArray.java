@@ -9,7 +9,6 @@ import org.jblas.ranges.Range;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import static org.deeplearning4j.util.ArrayUtil.calcStrides;
@@ -55,9 +54,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
-
-
-
+    /**
+     * Create an ndarray from the specified slices
+     * and the given shape
+     * @param slices the slices of the ndarray
+     * @param shape the final shape of the ndarray
+     */
     public ComplexNDArray(List<ComplexNDArray> slices,int[] shape) {
         super(new double[ArrayUtil.prod(shape)]);
         List<ComplexDouble> list = new ArrayList<>();
@@ -68,8 +70,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         }
 
         this.data = new double[ArrayUtil.prod(shape) * 2];
-        for (int i = 0; i < list.size(); i++)
-            put(i, list.get(i));
+        int count = 0;
+        for (int i = 0; i < list.size(); i++) {
+            data[count] = list.get(i).real();
+            data[count + 1] = list.get(i).imag();
+            count += 2;
+        }
         this.shape = shape;
         this.stride = ArrayUtil.calcStrides(shape);
         this.length = ArrayUtil.prod(shape);
@@ -257,7 +263,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     @Override
     public ComplexNDArray put(int i, ComplexDouble v) {
-        data[offset + 2 * i] = v.real();
+        if(i > length)
+            throw new IllegalArgumentException("Unable to insert element " + v + " at index " + i + " with length " + length);
+        data[offset + (2 * i)] = v.real();
         data[offset + (2 * i) + 1] = v.imag();
         return this;
     }
@@ -1145,12 +1153,15 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
         }
 
-        else
+        else {
+            int offset = this.offset + (slice) * stride[0] * 2;
+            if(offset >= data.length)
+                throw new IllegalArgumentException("Offset index is > data.length");
             return new ComplexNDArray(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
                     Arrays.copyOfRange(stride, 1, stride.length),
-                    offset + (slice * 2) * stride[0]);
-
+                    offset);
+        }
     }
 
 
@@ -1168,7 +1179,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                 throw new IllegalArgumentException("Unable to retrieve slice " + slice + " from a 2d array");
             return new ComplexNDArray(data,
                     ArrayUtil.of(shape[0]),
-                    ArrayUtil.of(stride[0] * 2),
+                    ArrayUtil.of(stride[0]),
                     offset + dimension * stride[1]
             );
         }
@@ -2249,9 +2260,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         sb.append("[");
         if (length > 0) {
             sb.append(slice(0).toString());
-            for (int i = 1; i < length; i++) {
+            for (int i = 1; i < slices(); i++) {
                 sb.append(slice(i).toString());
-                if(i < length - 1)
+                if(i < slices() - 1)
                     sb.append(',');
 
             }
@@ -2266,6 +2277,16 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         return new ComplexNDArray(from.data,new int[]{1},new int[]{1},index);
     }
 
+
+    /**
+     * Create a scalar ndarray with the specified number as the real
+     * component and 0 as an imaginary
+     * @param num the number to use
+     * @return a scalar ndarray
+     */
+    public static ComplexNDArray scalar(double num) {
+        return new ComplexNDArray(new double[]{num,0},new int[]{1},new int[]{1},0);
+    }
 
     public static ComplexNDArray scalar(ComplexDouble num) {
         return new ComplexNDArray(new double[]{num.real(),num.imag()},new int[]{1},new int[]{1},0);
