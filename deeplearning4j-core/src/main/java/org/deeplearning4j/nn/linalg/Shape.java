@@ -36,7 +36,7 @@ public class Shape {
      * @return whether the shapes are equivalent
      */
     public static boolean shapeEquals(int[] shape1,int[] shape2) {
-        return scalarEquals(shape1,shape2) || Arrays.equals(shape1,shape2);
+        return scalarEquals(shape1,shape2) || Arrays.equals(shape1,shape2) || squeezeEquals(shape1,shape2);
     }
 
     /**
@@ -58,6 +58,20 @@ public class Shape {
 
         return false;
     }
+
+    /**
+     * Returns true for the case where
+     * singleton dimensions are being compared
+     * @param test1 the first to test
+     * @param test2 the second to test
+     * @return true if the arrays
+     * are equal with the singleton dimension omitted
+     */
+   public static boolean squeezeEquals(int[] test1,int[] test2) {
+       int[] s1 = squeeze(test1);
+       int[] s2 = squeeze(test2);
+       return scalarEquals(s1,s2) || Arrays.equals(s1,s2);
+   }
 
 
 }
