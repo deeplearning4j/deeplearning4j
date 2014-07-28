@@ -2003,6 +2003,7 @@ public class NDArray extends DoubleMatrix {
                     return false;
             }
 
+            return true;
 
         }
 

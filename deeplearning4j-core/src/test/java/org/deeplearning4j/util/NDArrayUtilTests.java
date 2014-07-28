@@ -32,12 +32,12 @@ public class NDArrayUtilTests {
     public void testTruncate() {
         NDArray ret = new NDArray(new double[]{1,2,3,4},new int[]{2,2});
         //axis 0 or column wise
-        NDArray truncated = NDArrayUtil.truncate(ret,new int[]{2},0);
+        NDArray truncated = NDArrayUtil.truncate(ret,1,0);
         NDArray answer = new NDArray(new double[]{1,2},new int[]{2});
         assertEquals(answer,truncated);
        //axis 1 or row wise
         NDArray answer0 = new NDArray(new double[]{1,3},new int[]{2});
-        NDArray truncated0 = NDArrayUtil.truncate(ret,new int[]{2},1);
+        NDArray truncated0 = NDArrayUtil.truncate(ret,1,1);
         assertEquals(answer0,truncated0);
 
     }

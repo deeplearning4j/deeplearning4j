@@ -83,7 +83,7 @@ public class FFT {
 
         int desiredElementsAlongDimension = result.size(dimension);
 
-        if(numElements > desiredElementsAlongDimension) 
+        if(numElements > desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
 
 
