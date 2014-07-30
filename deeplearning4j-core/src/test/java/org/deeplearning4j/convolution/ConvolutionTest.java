@@ -30,7 +30,7 @@ public class ConvolutionTest {
    public void convNTest() {
        NDArray arr = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{1,8},0);
        NDArray kernel = new NDArray(DoubleMatrix.linspace(1,3,3).data,new int[]{1,3},0);
-       NDArray answer = new NDArray(new double[]{1,4,10,16,22,28,34,40,37,24},new int[]{1,10},0);
+       NDArray answer = new NDArray(new double[]{10,16,22,28,34,40},new int[]{1,6},0);
        NDArray test = Convolution.convn(arr,kernel,Type.VALID);
        assertEquals(answer,test);
     }

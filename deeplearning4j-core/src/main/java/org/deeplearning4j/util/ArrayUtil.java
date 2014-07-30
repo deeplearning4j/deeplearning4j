@@ -88,7 +88,7 @@ public class ArrayUtil {
      * @return the subset of the data specified
      */
     public static double[] range(double[] data,int to) {
-       return range(data,to,1);
+        return range(data,to,1);
     }
 
 
@@ -119,11 +119,11 @@ public class ArrayUtil {
         double[] ret = new double[to];
         int count = 0;
         for(int i = 0; i < data.length; i+= stride) {
-           for(int j = 0; j < numElementsEachStride; j++) {
-               if(i + j >= data.length || count >= ret.length)
-                   break;
-               ret[count++] = data[i + j];
-           }
+            for(int j = 0; j < numElementsEachStride; j++) {
+                if(i + j >= data.length || count >= ret.length)
+                    break;
+                ret[count++] = data[i + j];
+            }
         }
         return ret;
     }
@@ -148,6 +148,32 @@ public class ArrayUtil {
     }
 
 
+
+
+    public static int[] range(int from,int to) {
+        int diff = Math.abs(from - to);
+        int[] ret = new int[diff];
+        if(from < to) {
+            int count = 0;
+            for(int i = from; i < to; i++) {
+                ret[count++] = i;
+            }
+        }
+        else if(from > to) {
+            int count = 0;
+            for(int i = from; i >= to; i--)
+                ret[count++] = i;
+        }
+
+        return ret;
+    }
+
+    public static double[] toDoubles(int[] ints) {
+        double[] ret = new double[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (double) ints[i];
+        return ret;
+    }
 
     /**
      * Return a copy of this array with the

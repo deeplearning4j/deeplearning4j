@@ -364,19 +364,13 @@ public class MatrixUtil {
 
 
     public static DoubleMatrix rangeVector(double begin, double end) {
-        int diff = (int) Math.abs(end - begin);
-        DoubleMatrix ret = new DoubleMatrix(1, diff);
-        for (int i = 0; i < ret.length; i++)
-            ret.put(i, i);
-        return ret;
+            return new DoubleMatrix(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end)));
     }
 
     public static ComplexDoubleMatrix complexRangeVector(double begin, double end) {
-        int diff = (int) Math.abs(end - begin);
-        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(1, diff);
-        for (int i = 0; i < ret.length; i++)
-            ret.put(i, i);
-        return ret.transpose();
+        double[] data = ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end));
+        ComplexDoubleMatrix ret = new ComplexDoubleMatrix((new DoubleMatrix(data)));
+        return ret;
     }
 
 
@@ -547,7 +541,7 @@ public class MatrixUtil {
     }
 
 
-    public static DataSet xorData(int n) {
+    static DataSet xorData(int n) {
 
         DoubleMatrix x = DoubleMatrix.rand(n, 2);
         x = x.gti(0.5);
@@ -1231,7 +1225,7 @@ public class MatrixUtil {
     public static <E extends DoubleMatrix> E softmax(E input,boolean row) {
         if(row) {
             DoubleMatrix max = input.rowMaxs();
-            DoubleMatrix diff = MatrixFunctions.exp(input.subColumnVector(max));
+            DoubleMatrix diff = exp(input.subColumnVector(max));
             diff.diviColumnVector(diff.rowSums());
             return createBasedOn(diff,input);
 
@@ -1239,7 +1233,7 @@ public class MatrixUtil {
 
         else {
             DoubleMatrix max = input.columnMaxs();
-            DoubleMatrix diff = MatrixFunctions.exp(input.subRowVector(max));
+            DoubleMatrix diff = exp(input.subRowVector(max));
             diff.diviRowVector(diff.columnSums());
             return createBasedOn(diff,input);
 

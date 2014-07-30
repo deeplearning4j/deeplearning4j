@@ -10,9 +10,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -71,6 +69,59 @@ public class ComplexNDArrayTests {
 
 
     @Test
+    public void testVectorInit() {
+        double[] data = DoubleMatrix.linspace(1,4,4).data;
+        ComplexNDArray arr = new ComplexNDArray(data,new int[]{4});
+        assertEquals(true,arr.isRowVector());
+        ComplexNDArray arr2 = new ComplexNDArray(data,new int[]{1,4});
+        assertEquals(true,arr2.isRowVector());
+
+        ComplexNDArray columnVector = new ComplexNDArray(data,new int[]{4,1});
+        assertEquals(true,columnVector.isColumnVector());
+    }
+
+
+
+    @Test
+    public void testIterateOverAllRows() {
+        ComplexNDArray c = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(0,29,30).data,new int[]{3,5,2}));
+
+        final AtomicInteger i = new AtomicInteger(0);
+        final Set<ComplexNDArray> set = new HashSet<>();
+        c.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                ComplexNDArray result = (ComplexNDArray) nd.getResult();
+                int curr = i.get();
+                i.incrementAndGet();
+                ComplexNDArray test = new ComplexNDArray(new double[]{curr * 2,0,curr * 2 + 1,0},new int[]{2});
+                assertEquals(result,test);
+                assertEquals(true,!set.contains(test));
+                set.add(result);
+
+
+            }
+        });
+    }
+
+
+    @Test
+    public void testMmul() {
+        double[] data = DoubleMatrix.linspace(1,10,10).data;
+        ComplexNDArray n = new ComplexNDArray((new NDArray(data,new int[]{10})));
+        ComplexNDArray transposed = n.transpose();
+        assertEquals(true,n.isRowVector());
+        assertEquals(true,transposed.isColumnVector());
+
+        ComplexNDArray innerProduct = n.mmul(transposed);
+        NDArray scalar = NDArray.scalar(385);
+        assertEquals(scalar,innerProduct.getReal());
+
+        ComplexNDArray outerProduct = transposed.mmul(n);
+        assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
+    }
+
+    @Test
     public void testGetRow() {
         ComplexNDArray arr = new ComplexNDArray(new int[]{3,2});
         ComplexNDArray row = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
@@ -81,7 +132,7 @@ public class ComplexNDArrayTests {
         assertEquals(row,testRow);
 
 
-        ComplexNDArray row1 = new ComplexNDArray(new double[]{1,0,3,0},new int[]{2});
+        ComplexNDArray row1 = new ComplexNDArray(new double[]{3,0,4,0},new int[]{2});
         arr.putRow(1,row1);
         assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
         ComplexNDArray testRow1 = arr.getRow(1);
@@ -147,14 +198,12 @@ public class ComplexNDArrayTests {
         ComplexNDArray arr = new ComplexNDArray(new double[]{0,1,2,1,1,2,3,4},new int[]{2,2});
         double sum = arr.sum().real();
         assertEquals(4,sum,1e-1);
-        log.info("Sum " + sum);
         arr.addi(1);
         sum = arr.sum().real();
         assertEquals(6,sum,1e-1);
-        log.info("Sum " + sum);
         arr.subi(1);
         sum = arr.sum().real();
-        assertEquals(2,sum,1e-1);
+        assertEquals(4,sum,1e-1);
     }
 
 
@@ -220,7 +269,7 @@ public class ComplexNDArrayTests {
         ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2}));
         ComplexNDArray flattened = arr.flatten();
         assertEquals(arr.length,flattened.length);
-        assertEquals(true,Arrays.equals(new int[]{1,arr.length},flattened.shape()));
+        assertEquals(true,Arrays.equals(new int[]{arr.length},flattened.shape()));
         for(int i = 0; i < arr.length; i++) {
             assertEquals(i + 1,flattened.get(i).real(),1e-1);
         }
@@ -242,6 +291,21 @@ public class ComplexNDArrayTests {
         int[] endsForSlices = arr.endsForSlices();
         assertEquals(true, Arrays.equals(new int[]{0, 12, 24, 36}, endsForSlices));
     }
+
+
+    @Test
+    public void testWrap() {
+        ComplexDoubleMatrix c = new ComplexDoubleMatrix(DoubleMatrix.linspace(1,4,4).reshape(2,2));
+        ComplexNDArray wrapped = ComplexNDArray.wrap(c);
+        assertEquals(true,Arrays.equals(new int[]{2,2},wrapped.shape()));
+
+        ComplexDoubleMatrix vec = new ComplexDoubleMatrix(DoubleMatrix.linspace(1,4,4));
+        ComplexNDArray wrappedVector = ComplexNDArray.wrap(vec);
+        assertEquals(true,wrappedVector.isVector());
+        assertEquals(true,Shape.shapeEquals(new int[]{4},wrappedVector.shape()));
+
+    }
+
 
 
     @Test
@@ -297,7 +361,7 @@ public class ComplexNDArrayTests {
                     assertEquals(firstRow,c);
                 }
                 else if(count.get() == 1)
-                     assertEquals(secondRow,c);
+                    assertEquals(secondRow,c);
                 count.incrementAndGet();
             }
         });
