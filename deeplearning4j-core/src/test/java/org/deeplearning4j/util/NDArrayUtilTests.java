@@ -31,7 +31,7 @@ public class NDArrayUtilTests {
     }
 
     @Test
-    public void testTrucncate() {
+    public void testTruncate() {
         NDArray ret = new NDArray(new double[]{1,2,3,4},new int[]{2,2});
         //axis 0 or column wise
         NDArray truncated = NDArrayUtil.truncate(ret,1,0);

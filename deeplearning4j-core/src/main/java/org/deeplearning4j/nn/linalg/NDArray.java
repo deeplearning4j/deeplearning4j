@@ -41,13 +41,11 @@ public class NDArray extends DoubleMatrix {
             list.add(slices.get(i).data);
 
         this.data = ArrayUtil.combine(list);
-        this.shape = shape;
-        this.length = ArrayUtil.prod(shape);
-        this.stride = ArrayUtil.calcStrides(shape);
-        if(this.shape.length == 2) {
-            rows = shape[0];
-            columns = shape[1];
-        }
+
+        initShape(shape);
+
+
+
     }
 
 
@@ -61,21 +59,25 @@ public class NDArray extends DoubleMatrix {
         if(offset >= data.length)
             throw new IllegalArgumentException("Invalid offset: must be < data.length");
 
-        this.shape = shape;
+
+        initShape(shape);
+
         this.offset = offset;
         this.stride = stride;
-        this.length = ArrayUtil.prod(shape);
+        this.length = ArrayUtil.prod(this.shape);
 
         if(data != null  && data.length > 0)
             this.data = data;
 
 
-        if(this.shape.length == 2) {
-            rows = shape[0];
-            columns = shape[1];
-        }
+
     }
 
+    /**
+     * Create this ndarray with the given data and shape and 0 offset
+     * @param data the data to use
+     * @param shape the shape of the ndarray
+     */
     public NDArray(double[] data,int[] shape) {
         this(data,shape,0);
     }
@@ -502,6 +504,42 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    /**
+     * Iterate over every row of every slice
+     * @param op the operation to apply
+     */
+    public void iterateOverAllRows(SliceOp op) {
+        if(isVector())
+            op.operate(new DimensionSlice(false,this,null));
+        if(isMatrix()) {
+            for(int i = 0; i < rows(); i++) {
+                op.operate(new DimensionSlice(false,getRow(i),null));
+            }
+        }
+
+        else {
+            for(int i = 0; i < slices(); i++) {
+                slice(i).iterateOverAllRows(op);
+            }
+        }
+    }
+
+
+    /**
+     * Mainly here for people coming from numpy.
+     * This is equivalent to a call to permute
+     * @param dimension the dimension to swap
+     * @param with the one to swap it with
+     * @return the swapped axes view
+     */
+    public NDArray swapAxes(int dimension,int with) {
+        int[] shape = ArrayUtil.range(0,shape().length);
+        shape[dimension] = with;
+        shape[with] = dimension;
+        return permute(shape);
+    }
+
+
 
     /**
      * Gives the indices for the ending of each slice
@@ -822,6 +860,32 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+
+    private void initShape(int[] shape) {
+        if(shape.length == 1) {
+            this.shape = new int[2];
+            this.shape[0] = 1;
+            this.shape[1] = shape[0];
+        }
+        else
+            this.shape = shape;
+
+        if(this.shape.length == 2) {
+            rows = this.shape[0];
+            columns = this.shape[1];
+        }
+
+
+        this.length = ArrayUtil.prod(this.shape);
+        if(this.stride == null)
+            this.stride = ArrayUtil.calcStrides(this.shape);
+
+
+        if(this.stride.length != this.shape.length) {
+            this.stride = ArrayUtil.calcStrides(this.shape);
+        }
+
+    }
 
 
     @Override
@@ -1888,6 +1952,12 @@ public class NDArray extends DoubleMatrix {
                 return Shape.squeeze(shape)[1];
             else if(shape().length == 2)
                 return shape[1];
+        if(isVector()) {
+            if(isColumnVector())
+                return 1;
+            else
+                return shape[1];
+        }
         throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
 
@@ -1903,6 +1973,12 @@ public class NDArray extends DoubleMatrix {
                 return Shape.squeeze(shape)[0];
             else if(shape().length == 2)
                 return shape[0];
+            else if(isVector()) {
+                if(isRowVector())
+                    return 1;
+                else
+                    return shape[0];
+            }
         throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
 
@@ -2125,6 +2201,37 @@ public class NDArray extends DoubleMatrix {
                 ||
                 shape.length == 2 && (shape[0] == 1 || shape[1] == 1);
     }
+
+
+    /**
+     * Checks whether the matrix is a row vector.
+     */
+    @Override
+    public boolean isRowVector() {
+        if(shape().length == 1)
+            return true;
+
+        if(isVector())
+            return shape()[0] == 1;
+
+        return false;
+    }
+
+    /**
+     * Checks whether the matrix is a column vector.
+     */
+    @Override
+    public boolean isColumnVector() {
+        if(shape().length == 1)
+            return false;
+
+        if(isVector())
+            return shape()[1] == 1;
+
+        return false;
+
+    }
+
     /** Generate string representation of the matrix. */
     @Override
     public String toString() {

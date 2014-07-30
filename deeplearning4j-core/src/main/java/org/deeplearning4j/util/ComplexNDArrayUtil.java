@@ -59,7 +59,22 @@ public class ComplexNDArrayUtil {
     }
 
 
+    public static ComplexNDArray exp(ComplexNDArray toExp) {
+        return expi(toExp.dup());
+    }
 
+    /**
+     * Returns the exponential of a complex ndarray
+     * @param toExp the ndarray to convert
+     * @return the exponential of the specified
+     * ndarray
+     */
+    public static ComplexNDArray expi(ComplexNDArray toExp) {
+        ComplexNDArray flattened = toExp.flatten();
+        for(int i = 0; i < flattened.length; i++)
+            flattened.put(i,ComplexUtil.exp(flattened.get(i)));
+        return flattened.reshape(toExp.shape());
+    }
 
 
     /**
