@@ -28,6 +28,13 @@ public class Shape {
     }
 
 
+    public static int nonZeroDimension(int[] shape) {
+        if(shape[0] == 1 && shape.length > 1)
+            return shape[1];
+        return shape[0];
+    }
+
+
     /**
      * Returns whether 2 shapes are equals by checking for dimension semantics
      * as well as array equality

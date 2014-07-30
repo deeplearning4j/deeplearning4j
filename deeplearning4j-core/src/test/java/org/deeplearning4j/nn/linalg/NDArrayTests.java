@@ -70,8 +70,25 @@ public class NDArrayTests {
         NDArray testVector = NDArray.wrap(vector);
         for(int i = 0; i < vector.length; i++)
             assertEquals(vector.get(i),testVector.get(i),1e-1);
+        assertEquals(3,testVector.length);
+        assertEquals(true,testVector.isVector());
+        assertEquals(true,Shape.shapeEquals(new int[]{3},testVector.shape()));
 
 
+
+    }
+
+
+    @Test
+    public void testVectorInit() {
+        double[] data = DoubleMatrix.linspace(1,4,4).data;
+        NDArray arr = new NDArray(data,new int[]{4});
+        assertEquals(true,arr.isRowVector());
+        NDArray arr2 = new NDArray(data,new int[]{1,4});
+        assertEquals(true,arr2.isRowVector());
+
+        NDArray columnVector = new NDArray(data,new int[]{4,1});
+        assertEquals(true,columnVector.isColumnVector());
     }
 
 
@@ -189,15 +206,21 @@ public class NDArrayTests {
 
 
 
+
     @Test
-    public void testMatrixMultiply() {
-        DoubleMatrix d = DoubleMatrix.linspace(1,2,4).reshape(2,2);
-        NDArray n = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
+    public void testMmul() {
+        double[] data = DoubleMatrix.linspace(1,10,10).data;
+        NDArray n = new NDArray(data,new int[]{10});
+        NDArray transposed = n.transpose();
+        assertEquals(true,n.isRowVector());
+        assertEquals(true,transposed.isColumnVector());
 
-        DoubleMatrix d2 = DoubleMatrix.linspace(1,2,4).reshape(2,2);
-        NDArray n2 = new NDArray(Arrays.copyOf(d.data,d.data.length),new int[]{2,2});
-        n.mmul(n2);
+        NDArray innerProduct = n.mmul(transposed);
+        NDArray scalar = NDArray.scalar(385);
+        assertEquals(scalar,innerProduct);
 
+        NDArray outerProduct = transposed.mmul(n);
+        assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
     }
 
 
@@ -256,6 +279,15 @@ public class NDArrayTests {
 
 
     }
+
+    @Test
+    public void testSwapAxes() {
+        NDArray n = new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2});
+        NDArray assertion = n.permute(new int[]{2,1,0});
+        NDArray validate = new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        assertEquals(validate,assertion);
+    }
+
 
 
     @Test

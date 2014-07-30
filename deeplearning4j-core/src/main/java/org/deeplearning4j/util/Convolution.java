@@ -69,33 +69,7 @@ public class Convolution {
      * @return the convolution of the given input and kernel
      */
     public static NDArray convn(NDArray input,NDArray kernel,Type type) {
-        int dims = Math.max(input.shape().length,kernel.shape().length);
-        List<Pair<Integer,Integer>> results = new ArrayList<>();
-        ComplexNDArray inputComplex = new ComplexNDArray(input);
-        ComplexNDArray kernelComplex = new ComplexNDArray(kernel);
-        for(int i = 0; i < dims; i++) {
-            int m = input.size(i);
-            int n = kernel.size(i);
-            int l = (int) MathUtils.nextPowOf2((long) m + n - 1);
-
-            //size should change but doesn't on the next time around
-            inputComplex =  FFT.fftn(inputComplex,i,l);
-            kernelComplex = FFT.fftn(kernelComplex,i,l);
-
-            results.add(rangeFor(m,n,type));
-
-        }
-
-
-        inputComplex.muli(kernelComplex);
-
-
-        inputComplex.iterateOverDimension(0,new IFFTSliceOp(inputComplex));
-
-
-
-        input = inputComplex.getReal();
-
+       //        ret = ifftn(fftn(in1, fshape) * fftn(in2, fshape))[fslice].copy()
 
         return input;
     }

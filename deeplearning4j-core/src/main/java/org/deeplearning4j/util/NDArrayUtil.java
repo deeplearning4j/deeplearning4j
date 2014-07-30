@@ -58,6 +58,23 @@ public class NDArrayUtil {
     }
 
 
+    public static NDArray exp(NDArray toExp) {
+        return expi(toExp.dup());
+    }
+
+    /**
+     * Returns an exponential version of this ndarray
+     * @param toExp the ndarray to convert
+     * @return the converted ndarray
+     */
+    public static NDArray expi(NDArray toExp) {
+        NDArray flattened = toExp.flatten();
+        for(int i = 0; i < flattened.length; i++)
+            flattened.put(i,Math.exp(flattened.get(i)));
+        return flattened.reshape(toExp.shape());
+    }
+
+
     /**
      * Truncates an ndarray to the specified shape.
      * If the shape is the same or greater, it just returns
