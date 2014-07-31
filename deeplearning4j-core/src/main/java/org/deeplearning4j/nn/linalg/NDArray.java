@@ -6,8 +6,10 @@ import static org.deeplearning4j.util.ArrayUtil.reverseCopy;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.util.NDArrayBlas;
 import org.deeplearning4j.util.NDArrayUtil;
 import org.jblas.*;
+import org.jblas.exceptions.SizeException;
 import org.jblas.ranges.Range;
 
 import java.io.PrintWriter;
@@ -127,16 +129,7 @@ public class NDArray extends DoubleMatrix {
      */
     public NDArray(int newRows, int newColumns) {
         super(newRows, newColumns);
-        if(newRows > 1 && newColumns >1)
-            this.shape = new int[]{newRows,newColumns};
-            //vector shapes only contain one element
-        else if(newRows > 1)
-            this.shape = new int[]{newRows};
-        else
-            this.shape = new int[]{newColumns};
-        offset = 0;
-        stride = ArrayUtil.calcStrides(this.shape);
-        this.length = newRows * newColumns;
+        initShape(new int[]{newRows,newColumns});
     }
 
     @Override
@@ -291,8 +284,10 @@ public class NDArray extends DoubleMatrix {
      * @return true if the element is a matrix, false otherwise
      */
     public boolean isMatrix() {
-        return shape().length == 2 ||
-                shape.length == 3 && shape[0] == 1 || shape[1] == 1 || shape[2] == 1;
+        return (shape().length == 2
+                && (shape[0] != 1 && shape[1] != 1)) ||
+                shape.length == 3 &&
+                        (shape[0] == 1 || shape[1] == 1 || shape[2] == 1);
     }
 
     /**
@@ -701,6 +696,9 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    public void setStride(int[] stride) {
+        this.stride = stride;
+    }
 
     public NDArray subArray(int[] offsets, int[] shape) {
         return subArray(offsets,shape,stride);
@@ -1097,7 +1095,7 @@ public class NDArray extends DoubleMatrix {
 
     /** Retrieve matrix element */
     public double get(int rowIndex, int columnIndex) {
-        return data[offset + (rowIndex + rows() * columnIndex)];
+        return data[offset + (rowIndex * stride[0] + columnIndex)];
     }
 
     @Override
@@ -1416,8 +1414,7 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public NDArray mmuli( DoubleMatrix result) {
-        super.mmuli(result);
-        return this;
+        return NDArray.wrap(super.mmuli(result));
     }
 
 
@@ -1535,23 +1532,64 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    /** Elementwise multiplication with a scalar (in-place). */
+    @Override
+    public NDArray muli(double v, DoubleMatrix result) {
+        NDArray wrapped = NDArray.wrap(result);
+        for (int i = 0; i < length; i++) {
+            result.put(i, get(i) * v);
+        }
+        return wrapped;
+    }
+
+
+    /** Matrix-matrix multiplication (in-place). */
+    @Override
+    public NDArray mmuli(DoubleMatrix other, DoubleMatrix result) {
+        NDArray otherArray = NDArray.wrap(other);
+        NDArray resultArray = NDArray.wrap(result);
+
+        if (other.isScalar()) {
+            return muli(otherArray.scalar(), resultArray);
+        }
+        if (isScalar()) {
+            return otherArray.muli(scalar(), resultArray);
+        }
+
+        /* check sizes and resize if necessary */
+        assertMultipliesWith(other);
+
+
+        if (result == this || result == other) {
+            /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
+             * allocating a temporary object on the side and copy the result later.
+             */
+            NDArray temp = new NDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
+
+            if (otherArray.columns() == 1) {
+                NDArrayBlas.gemv(1.0, this, otherArray, 0.0, temp);
+            } else {
+                NDArrayBlas.gemm(1.0, this, otherArray, 0.0, temp);
+            }
+
+            NDArrayBlas.copy(temp, resultArray);
+
+
+        } else {
+            if (otherArray.columns() == 1)
+                NDArrayBlas.gemv(1.0, this, otherArray, 0.0, resultArray);
+            else
+                NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
+
+        }
+        return resultArray;
+    }
+
 
     @Override
     public NDArray mmul(DoubleMatrix a) {
-        NDArray arr = NDArray.wrap(this,a);
-        List<NDArray> ret = new ArrayList<>();
-
-        if(shape().length == 2) {
-            rows = shape[0];
-            columns = shape[1];
-            return NDArray.wrap(super.mmul(a));
-        }
-
-        for(int i = 0; i < shape.length; i++) {
-            ret.add(slice(i).mmul(arr.slice(i)));
-        }
-
-        return new NDArray(ret,ArrayUtil.consArray(shape[0],new int[]{ret.get(0).rows,ret.get(0).columns}));
+        int[] shape = {rows(),NDArray.wrap(a).columns()};
+        return mmuli(a,new NDArray(shape));
     }
 
 
@@ -1947,11 +1985,12 @@ public class NDArray extends DoubleMatrix {
      * @return the number of columns in the array (only 2d)
      */
     public int columns() {
-        if(isMatrix())
-            if(shape().length > 2)
+        if(isMatrix()) {
+            if (shape().length > 2)
                 return Shape.squeeze(shape)[1];
-            else if(shape().length == 2)
+            else if (shape().length == 2)
                 return shape[1];
+        }
         if(isVector()) {
             if(isColumnVector())
                 return 1;
@@ -1968,20 +2007,20 @@ public class NDArray extends DoubleMatrix {
      * @return the number of rows in the matrix
      */
     public int rows() {
-        if(isMatrix())
-            if(shape().length > 2)
+        if(isMatrix()) {
+            if (shape().length > 2)
                 return Shape.squeeze(shape)[0];
-            else if(shape().length == 2)
+            else if (shape().length == 2)
                 return shape[0];
-            else if(isVector()) {
-                if(isRowVector())
-                    return 1;
-                else
-                    return shape[0];
-            }
+        }
+        else if(isVector()) {
+            if(isRowVector())
+                return 1;
+            else
+                return shape[0];
+        }
         throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
-
 
 
 
@@ -2082,6 +2121,9 @@ public class NDArray extends DoubleMatrix {
                     return false;
             }
 
+            if(!Shape.shapeEquals(shape(),n.shape()))
+                return false;
+
             return true;
 
         }
@@ -2089,6 +2131,20 @@ public class NDArray extends DoubleMatrix {
 
         if(!Shape.shapeEquals(shape(),n.shape()))
             return false;
+
+        if(isMatrix()) {
+            for(int i = 0; i < rows(); i++) {
+                for(int j = 0; j < columns(); j++) {
+                    double val1 = get(i,j);
+                    double val2 = n.get(i,j);
+                    if(val1 != val2)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
 
         for (int i = 0; i < slices(); i++) {
             if (!(slice(i).equals(n.slice(i))))
@@ -2251,6 +2307,20 @@ public class NDArray extends DoubleMatrix {
             return sb.toString();
         }
 
+        else if(isMatrix()) {
+            StringBuilder sb = new StringBuilder();
+
+            for(int i = 0; i < rows(); i++) {
+                sb.append('[');
+                for(int j = 0; j < columns(); j++) {
+                    sb.append(get(i,j));
+                    if(j < columns() - 1)
+                        sb.append(',');
+                }
+                sb.append(']');
+            }
+        }
+
 
         StringBuilder sb = new StringBuilder();
         int length= shape[0];
@@ -2359,14 +2429,8 @@ public class NDArray extends DoubleMatrix {
     public static NDArray wrap(DoubleMatrix toWrap) {
         if(toWrap instanceof NDArray)
             return (NDArray) toWrap;
-        int[] shape;
-        if(toWrap.isColumnVector())
-            shape = new int[]{toWrap.rows};
-        else if(toWrap.isRowVector())
-            shape = new int[]{ toWrap.columns};
-        else
-            shape = new int[]{toWrap.rows,toWrap.columns};
-        NDArray ret = new NDArray(toWrap.data,shape,ArrayUtil.calcStrides(shape));
+        int[]  shape = new int[]{toWrap.rows,toWrap.columns};
+        NDArray ret = new NDArray(toWrap.data,shape);
         return ret;
     }
 

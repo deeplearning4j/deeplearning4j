@@ -74,6 +74,16 @@ public class NDArrayTests {
         assertEquals(true,testVector.isVector());
         assertEquals(true,Shape.shapeEquals(new int[]{3},testVector.shape()));
 
+        DoubleMatrix row12 = DoubleMatrix.linspace(1,2,2).reshape(2,1);
+        DoubleMatrix row22 = DoubleMatrix.linspace(3,4,2).reshape(1,2);
+
+        NDArray row122 = NDArray.wrap(row12);
+        NDArray row222 = NDArray.wrap(row22);
+        assertEquals(row122.rows(),2);
+        assertEquals(row122.columns(),1);
+        assertEquals(row222.rows(),1);
+        assertEquals(row222.columns(),2);
+
 
 
     }
@@ -174,7 +184,7 @@ public class NDArrayTests {
 
         NDArray testRow = n.getRow(0);
         assertEquals(newRow.length,testRow.length);
-        assertEquals(true,Arrays.equals(new int[]{2},testRow.shape()));
+        assertEquals(true,Shape.shapeEquals(new int[]{2},testRow.shape()));
 
 
 
@@ -215,14 +225,56 @@ public class NDArrayTests {
         assertEquals(true,n.isRowVector());
         assertEquals(true,transposed.isColumnVector());
 
+        DoubleMatrix d = new DoubleMatrix(n.rows(),n.columns());
+        d.data = n.data;
+        DoubleMatrix dTransposed = d.transpose();
+        DoubleMatrix result2 = d.mmul(dTransposed);
+
+
         NDArray innerProduct = n.mmul(transposed);
+
         NDArray scalar = NDArray.scalar(385);
         assertEquals(scalar,innerProduct);
 
         NDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
+
+
+        NDArray testMatrix = new NDArray(data,new int[]{5,2});
+        NDArray row1 = testMatrix.getRow(0).transpose();
+        NDArray row2 = testMatrix.getRow(1);
+        DoubleMatrix row12 = DoubleMatrix.linspace(1,2,2).reshape(2,1);
+        DoubleMatrix row22 = DoubleMatrix.linspace(3,4,2).reshape(1,2);
+        DoubleMatrix rowResult = row12.mmul(row22);
+
+        NDArray row122 = NDArray.wrap(row12);
+        NDArray row222 = NDArray.wrap(row22);
+        NDArray rowResult2 = row122.mmul(row222);
+
+
+
+
+        NDArray mmul = row1.mmul(row2);
+        NDArray result = new NDArray(new double[]{3,6,4,8},new int[]{2,2});
+        assertEquals(result,mmul);
+
+
     }
 
+    @Test
+    public void testRowsColumns() {
+        double[] data = DoubleMatrix.linspace(1,6,6).data;
+        NDArray rows = new NDArray(data,new int[]{2,3});
+        assertEquals(2,rows.rows());
+        assertEquals(3,rows.columns());
+
+        NDArray columnVector = new NDArray(data,new int[]{6,1});
+        assertEquals(6,columnVector.rows());
+        assertEquals(1,columnVector.columns());
+        NDArray rowVector = new NDArray(data,new int[]{1,6});
+        assertEquals(1,rowVector.rows());
+        assertEquals(6,rowVector.columns());
+    }
 
 
     @Test
