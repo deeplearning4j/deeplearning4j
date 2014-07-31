@@ -2063,11 +2063,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @return the number of columns in the array (only 2d)
      */
     public int columns() {
-        if(isMatrix())
-            if(shape().length > 2)
+        if(isMatrix()) {
+            if (shape().length > 2)
                 return Shape.squeeze(shape)[1];
-            else if(shape().length == 2)
+            else if (shape().length == 2)
                 return shape[1];
+        }
         if(isVector()) {
             if(isColumnVector())
                 return 1;
@@ -2084,20 +2085,20 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @return the number of rows in the matrix
      */
     public int rows() {
-        if(isMatrix())
-            if(shape().length > 2)
+        if(isMatrix()) {
+            if (shape().length > 2)
                 return Shape.squeeze(shape)[0];
-            else if(shape().length == 2)
+            else if (shape().length == 2)
                 return shape[0];
-            else if(isVector()) {
-                if(isRowVector())
-                    return 1;
-                else
-                    return shape[0];
-            }
+        }
+        else if(isVector()) {
+            if(isRowVector())
+                return 1;
+            else
+                return shape[0];
+        }
         throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
     }
-
 
 
 

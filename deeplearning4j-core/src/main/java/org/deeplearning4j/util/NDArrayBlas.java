@@ -29,12 +29,27 @@ public class NDArrayBlas {
      * multiplication)
      */
     public static NDArray gemm(double alpha, NDArray a,
-                                    NDArray b, double beta, NDArray c) {
+                               NDArray b, double beta, NDArray c) {
         NativeBlas.dgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset(),
                 a.rows(), b.data, b.offset(), b.rows(), beta, c.data, c.offset(), c.rows());
         return c;
     }
 
+
+    /***************************************************************************
+     * BLAS Level 3
+     */
+
+    /**
+     * Compute c <- a*b + beta * c (general matrix matrix
+     * multiplication)
+     */
+    public static DoubleMatrix gemm(double alpha, DoubleMatrix a,
+                                    DoubleMatrix b, double beta, DoubleMatrix c) {
+        NativeBlas.dgemm('V', 'V', c.rows, c.columns, a.columns, alpha, a.data, 0,
+                a.rows, b.data, 0, b.rows, beta, c.data, 0, c.rows);
+        return c;
+    }
 
 
     public static ComplexNDArray gemm(ComplexDouble alpha,
@@ -45,9 +60,23 @@ public class NDArrayBlas {
 
         NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset(),
                 a.rows(), b.data, b.offset(), b.rows(), beta, c.data, c.offset(), c.rows);
+        int rowStride = c.stride()[0];
+        int columnStride = c.stride()[1];
+
         return c;
     }
 
+
+    /**
+     * Copy data from x to y
+     * @param x
+     * @param y
+     * @return
+     */
+    public static NDArray copy(NDArray x, NDArray y) {
+        JavaBlas.rcopy(x.length, x.data, 0, 1, y.data, 0, 1);
+        return y;
+    }
 
     public static ComplexNDArray copy(ComplexNDArray x, ComplexNDArray y) {
         NativeBlas.zcopy(x.length, x.data, x.offset(), 1, y.data, y.offset(), 1);
@@ -55,6 +84,41 @@ public class NDArrayBlas {
     }
 
 
+    /***************************************************************************
+     * BLAS Level 2
+     */
 
+    /**
+     * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
+     * multiplication)
+     */
+    public static NDArray gemv(double alpha, NDArray a,
+                               NDArray x, double beta, NDArray y) {
+        if (false) {
+            NativeBlas.dgemv('N', a.rows, a.columns, alpha, a.data, a.offset(), a.rows, x.data, 0,
+                    1, beta, y.data, y.offset(), 1);
+        } else {
+            if (beta == 0.0) {
+                for (int i = 0; i < y.length; i++)
+                    y.data[i] = 0.0;
+
+                for (int j = 0; j < a.columns; j++) {
+                    double xj = x.get(j);
+                    if (xj != 0.0) {
+                        for (int i = 0; i < a.rows; i++)
+                            y.data[i] += a.get(i, j) * xj;
+                    }
+                }
+            } else {
+                for (int j = 0; j < a.columns; j++) {
+                    double byj = beta * y.data[j];
+                    double xj = x.get(j);
+                    for (int i = 0; i < a.rows; i++)
+                        y.data[j] = a.get(i, j) * xj + byj;
+                }
+            }
+        }
+        return y;
+    }
 
 }

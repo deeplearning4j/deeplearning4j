@@ -119,7 +119,8 @@ public class ComplexNDArrayTests {
 
         ComplexNDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
-    }
+
+         }
 
     @Test
     public void testGetRow() {
