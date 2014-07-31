@@ -237,6 +237,25 @@ public class ArrayUtil {
         return result;
     }
 
+
+
+    /**
+     * Computes the standard packed array strides for a given shape.
+     * @param shape the shape of a matrix:
+     * @return the strides for a matrix of n dimensions
+     */
+    public static  int[]  calcStridesFortran(int[] shape) {
+        int dimensions = shape.length;
+        int[] stride = new int[dimensions];
+        int st = 1;
+        for (int j = 0; j < stride.length; j++) {
+            stride[j] = st;
+            st *= shape[j];
+        }
+
+        return stride;
+    }
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:

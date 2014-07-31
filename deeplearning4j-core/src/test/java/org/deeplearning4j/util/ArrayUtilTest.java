@@ -28,5 +28,27 @@ public class ArrayUtilTest {
 
     }
 
+    @Test
+    public void testStrides() {
+        int[] shape = {5,4,3};
+        int[] cStyleStride = {12,3,1};
+        int[] fortranStyleStride = {1,5,20};
+        int[] fortranStyleTest = ArrayUtil.calcStridesFortran(shape);
+        int[] cStyleTest = ArrayUtil.calcStrides(shape);
+        assertEquals(true,Arrays.equals(cStyleStride,cStyleTest));
+        assertEquals(true,Arrays.equals(fortranStyleStride,fortranStyleTest));
+
+        int[] shape2 = {2,2};
+        int[] cStyleStride2 = {2,1};
+        int[] fortranStyleStride2 = {1,2};
+        int[] cStyleTest2 = ArrayUtil.calcStrides(shape2);
+        int[] fortranStyleTest2 = ArrayUtil.calcStridesFortran(shape2);
+        assertEquals(true,Arrays.equals(cStyleStride2,cStyleTest2));
+        assertEquals(true,Arrays.equals(fortranStyleStride2,fortranStyleTest2));
+
+
+
+    }
+
 
 }
