@@ -26,7 +26,7 @@ public class NDArrayTests {
 
 
     @Test
-    public void testBasicOps() {
+    public void testScalarOps() {
         NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
         assertEquals(27,n.length);
         n.checkDimensions(n.addi(1));
@@ -46,7 +46,7 @@ public class NDArrayTests {
     public void testSlices() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         for(int i = 0; i < arr.slices(); i++) {
-            assertEquals(2, arr.slice(i).slice(1).slices());
+            assertEquals(1, arr.slice(i).slice(1).slices());
         }
 
     }
@@ -55,7 +55,11 @@ public class NDArrayTests {
     @Test
     public void testScalar() {
         NDArray a = NDArray.scalar(1.0);
-        assertEquals(true,Arrays.equals(new int[]{1},a.shape()));
+        assertEquals(true,a.isScalar());
+
+        NDArray n = new NDArray(new double[]{1.0},new int[]{1,1});
+        assertEquals(n,a);
+        assertTrue(n.isScalar());
     }
 
     @Test
@@ -514,6 +518,13 @@ public class NDArrayTests {
         for(int i = 0; i < arr.length; i++) {
             assertEquals(i + 1,flattened.get(i),1e-1);
         }
+        assertTrue(flattened.isVector());
+
+
+        NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
+        NDArray nFlattened = n.flatten();
+        assertTrue(nFlattened.isVector());
+
     }
 
     @Test
