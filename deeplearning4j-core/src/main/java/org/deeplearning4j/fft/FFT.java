@@ -392,7 +392,8 @@ public class FFT {
         double len = inputC.length;
         ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
         ComplexNDArray range = ComplexNDArray.wrap(MatrixUtil.complexRangeVector(0, len));
-        ComplexNDArray matrix = ComplexNDArray.wrap(ComplexNDArrayUtil.exp(range.mmul(range.mul(c2))));
+        ComplexNDArray rangeTimesC2 = range.mul(c2).transpose();
+        ComplexNDArray matrix = ComplexNDArray.wrap(ComplexNDArrayUtil.exp(rangeTimesC2.mmul(range)));
         ComplexNDArray complexRet =  inputC.mmul(matrix);
         return ComplexNDArray.wrap(complexRet);
     }
