@@ -174,7 +174,7 @@ public class ComplexNDArrayTests {
         assertEquals(row1,testRow1);
 
         ComplexNDArray multiRow = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,16,16).data,new int[]{4,2,2}));
-        ComplexNDArray test = new ComplexNDArray(new NDArray(new double[]{7,8},new int[]{2}));
+        ComplexNDArray test = new ComplexNDArray(new NDArray(new double[]{7,8},new int[]{1,2}));
         ComplexNDArray multiRowSlice1 = multiRow.slice(0);
         ComplexNDArray multiRowSlice = multiRow.slice(1);
         ComplexNDArray testMultiRow = multiRowSlice.getRow(1);
@@ -190,8 +190,9 @@ public class ComplexNDArrayTests {
         ComplexNDArray n = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
         for(int i = 0; i < n.length; i++) {
             int linearIndex = n.linearIndex(i);
-            assertEquals(i,linearIndex);
-            assertEquals(i + 1,n.get(i).real(),1e-1);
+            assertEquals(i * 2,linearIndex);
+            double curr = n.get(i).real();
+            assertEquals(i + 1,curr,1e-1);
         }
     }
 
@@ -247,12 +248,12 @@ public class ComplexNDArrayTests {
 
     @Test
     public void testPutAndGet() {
-        ComplexNDArray arr = new ComplexNDArray(new double[]{0,1,2,1,1,2,3,4},new int[]{2,2});
+        ComplexNDArray arr = new ComplexNDArray(new NDArray(new double[]{1,2,3,4},new int[]{2,2}));
         assertEquals(4,arr.length);
         assertEquals(8,arr.data.length);
-        arr.put(1,1,1.0);
-        assertEquals(1.0,arr.get(1,1).real(),1e-1);
-        assertEquals(4.0,arr.get(1,1).imag(),1e-1);
+        arr.put(1,1,5.0);
+        assertEquals(5.0,arr.get(1,1).real(),1e-1);
+        assertEquals(0.0,arr.get(1,1).imag(),1e-1);
 
     }
 
@@ -297,7 +298,7 @@ public class ComplexNDArrayTests {
                 log.info("Operator " + nd);
                 ComplexNDArray test = (ComplexNDArray) nd.getResult();
                 if(count.get() == 0) {
-                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
+                    ComplexNDArray firstDimension = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2,1});
                     assertEquals(firstDimension,test);
                 }
                 else {

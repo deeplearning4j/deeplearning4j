@@ -35,7 +35,6 @@ public class ComplexNDArrayUtilTests {
         ComplexNDArray ret = new ComplexNDArray(new double[]{1,0,2,0,3,0,4,0},new int[]{2,2});
         //axis 0 or column wise
         ComplexNDArray truncated = ComplexNDArrayUtil.truncate(ret,1,0);
-        truncated.toString();
         ComplexNDArray answer = new ComplexNDArray(new double[]{1,0,2,0},new int[]{1,2});
         assertEquals(answer,truncated);
         //axis 1 or row wise

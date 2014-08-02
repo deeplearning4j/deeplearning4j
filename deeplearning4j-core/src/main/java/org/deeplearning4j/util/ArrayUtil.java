@@ -256,21 +256,32 @@ public class ArrayUtil {
         return stride;
     }
 
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:
+     * @param startValue the startValue for the strides
      * @return the strides for a matrix of n dimensions
      */
-    public static  int[] calcStrides(int[] shape) {
+    public static  int[] calcStrides(int[] shape,int startValue) {
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
-        int st= 1;
+        int st= startValue;
         for (int j = dimensions - 1; j >= 0; j--) {
             stride[j] = st;
             st *= shape[j];
         }
 
         return stride;
+    }
+
+    /**
+     * Computes the standard packed array strides for a given shape.
+     * @param shape the shape of a matrix:
+     * @return the strides for a matrix of n dimensions
+     */
+    public static  int[] calcStrides(int[] shape) {
+        return calcStrides(shape,1);
     }
 
 
