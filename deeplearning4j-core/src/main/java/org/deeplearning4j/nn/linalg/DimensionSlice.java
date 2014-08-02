@@ -11,6 +11,7 @@ import java.util.Arrays;
 public class DimensionSlice implements Serializable {
     private boolean nextSlice;
     private Object result;
+    private boolean modify = false;
     private int[] indices;
 
     public DimensionSlice(boolean nextSlice, Object result, int[] indices) {
@@ -64,6 +65,14 @@ public class DimensionSlice implements Serializable {
 
     public void setIndices(int[] indices) {
         this.indices = indices;
+    }
+
+    public boolean isModify() {
+        return modify;
+    }
+
+    public void setModify(boolean modify) {
+        this.modify = modify;
     }
 
     @Override

@@ -54,7 +54,7 @@ public class FFT {
             result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
         }
 
-        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements));
+        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements),true);
 
         assert Shape.shapeEquals(result.shape(),finalShape);
 
@@ -104,7 +104,7 @@ public class FFT {
         if(dimension == 0 && transform.shape().length <= 1)
             return result;
 
-        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements));
+        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements),true);
 
 
         int desiredElementsAlongDimension = result.size(dimension);
@@ -146,7 +146,7 @@ public class FFT {
 
 
         for(int i = transform.shape().length - 1; i >= 0; i--) {
-            result.iterateOverDimension(dimension,new FFTSliceOp(result.size(i)));
+            result.iterateOverDimension(dimension,new FFTSliceOp(result.size(i)),true);
         }
 
         //do along the first non singleton dimension when the number of dimensions is
@@ -198,7 +198,7 @@ public class FFT {
 
 
 
-        result.iterateOverDimension(dimension,new FFTSliceOp(numElements));
+        result.iterateOverDimension(dimension,new FFTSliceOp(numElements),true);
         assert Shape.shapeEquals(result.shape(),finalShape);
 
         return result;
@@ -233,7 +233,7 @@ public class FFT {
      * @param numElements the number of elements per dimension for fft
      * @return the ffted array
      */
-    public static ComplexDoubleMatrix ifft(NDArray transform,int numElements) {
+    public static ComplexNDArray ifft(NDArray transform,int numElements) {
         if(!transform.isVector())
             throw new IllegalArgumentException("Input to this function must be a vector");
 
@@ -254,7 +254,7 @@ public class FFT {
         if(!inputC.isVector())
             throw new IllegalArgumentException("Input to this function must be a vector");
 
-        return ifft(inputC,inputC.rows);
+        return ifft(inputC,inputC.length);
     }
 
 
@@ -266,7 +266,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the the discrete fourier transform of the passed in input
      */
-    public static  ComplexDoubleMatrix ifft(ComplexNDArray inputC, int n) {
+    public static  ComplexNDArray ifft(ComplexNDArray inputC, int n) {
         if(!inputC.isVector())
             throw new IllegalArgumentException("Input to this function must be a vector");
 
@@ -286,7 +286,7 @@ public class FFT {
 
 
 
-    public static ComplexDoubleMatrix fft(NDArray transform,int numElements) {
+    public static ComplexNDArray fft(NDArray transform,int numElements) {
         return fft(new ComplexNDArray(transform),numElements);
     }
 
@@ -336,7 +336,7 @@ public class FFT {
      * @param inputC the input to transform
      * @return the inverse fourier transform of the passed in input
      */
-    public static ComplexDoubleMatrix ifft(ComplexDoubleMatrix inputC,int n) {
+    public static ComplexNDArray ifft(ComplexDoubleMatrix inputC,int n) {
         if(inputC.rows != 1 && inputC.columns != 1)
             throw new IllegalArgumentException("Illegal input: Must be a vector");
         double len = MatrixUtil.length(inputC);
@@ -345,7 +345,7 @@ public class FFT {
         ComplexDoubleMatrix div2 = range.transpose().mul(c2);
         ComplexDoubleMatrix div3 = range.mmul(div2).negi();
         ComplexDoubleMatrix matrix = exp(div3).div(len);
-        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
+        ComplexDoubleMatrix complexRet = inputC.mmul(matrix);
 
 
         if(n != complexRet.length) {
@@ -356,10 +356,10 @@ public class FFT {
 
                 newRet.put(i, complexRet.get(i));
             }
-            return newRet;
+            return ComplexNDArray.wrap(newRet);
         }
 
-        return complexRet;
+        return ComplexNDArray.wrap(complexRet);
     }
 
 
@@ -406,7 +406,7 @@ public class FFT {
 
 
         for(int i = transform.shape().length - 1; i >= 0; i--)
-            result.iterateOverDimension(axes[i],new IFFTSliceOp(shape[i]));
+            result.iterateOverDimension(axes[i],new IFFTSliceOp(shape[i]),true);
 
         return result;
     }
