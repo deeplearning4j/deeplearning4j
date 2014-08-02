@@ -1506,11 +1506,11 @@ public class NDArray extends DoubleMatrix {
             if (n != na)
                 throw new IllegalArgumentException("Invalid shapes for element wise operator");
             for (int i = 0; i < n; i++) {
-                slice(i).div(a.slice(i));
+                slice(i).divi(a.slice(i));
             }
         } else if (adims < dims) {
             for (int i = 0; i < n; i++) {
-                slice(i).div(a);
+                slice(i).divi(a);
             }
         } else {
             throw new IllegalArgumentException("Invalid shapes for element wise operator");

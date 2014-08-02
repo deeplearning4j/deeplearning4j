@@ -44,11 +44,20 @@ public class ComplexNDArrayTests {
         assertEquals(firstSlice,firstSliceTest);
 
 
+        NDArray secondSlice = arr.slice(1);
+        NDArray secondSliceTest = arr2.slice(1).getReal();
+        assertEquals(secondSlice,secondSliceTest);
+
+
         NDArray slice0 = new NDArray(new double[]{1,2,3,4,5,6},new int[]{3,2});
         NDArray slice2 = new NDArray(new double[]{7,8,9,10,11,12},new int[]{3,2});
 
-        NDArray testSlice0 = arr2.slice(0).getReal();
-        NDArray testSlice1 = arr2.slice(1).getReal();
+
+        ComplexNDArray testSliceComplex = arr2.slice(0);
+        ComplexNDArray testSliceComplex2 = arr2.slice(1);
+
+        NDArray testSlice0 = testSliceComplex.getReal();
+        NDArray testSlice1 = testSliceComplex2.getReal();
 
         assertEquals(slice0,testSlice0);
         assertEquals(slice2,testSlice1);
@@ -88,6 +97,7 @@ public class ComplexNDArrayTests {
 
         final AtomicInteger i = new AtomicInteger(0);
         final Set<ComplexNDArray> set = new HashSet<>();
+
         c.iterateOverAllRows(new SliceOp() {
             @Override
             public void operate(DimensionSlice nd) {
@@ -120,7 +130,7 @@ public class ComplexNDArrayTests {
         ComplexNDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
 
-         }
+    }
 
     @Test
     public void testGetRow() {
@@ -139,28 +149,70 @@ public class ComplexNDArrayTests {
         ComplexNDArray testRow1 = arr.getRow(1);
         assertEquals(row1,testRow1);
 
+        ComplexNDArray multiRow = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,16,16).data,new int[]{4,2,2}));
+        ComplexNDArray test = new ComplexNDArray(new NDArray(new double[]{7,8},new int[]{2}));
+        ComplexNDArray multiRowSlice1 = multiRow.slice(0);
+        ComplexNDArray multiRowSlice = multiRow.slice(1);
+        ComplexNDArray testMultiRow = multiRowSlice.getRow(1);
+
+        assertEquals(test,testMultiRow);
+
+
+
+    }
+
+    @Test
+    public void testLinearIndex() {
+        ComplexNDArray n = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
+        for(int i = 0; i < n.length; i++) {
+            int linearIndex = n.linearIndex(i);
+            assertEquals(i,linearIndex);
+            assertEquals(i + 1,n.get(i).real(),1e-1);
+        }
+    }
+
+
+    @Test
+    public void testNdArrayConstructor() {
+        ComplexNDArray result = new ComplexNDArray(new NDArray(new double[]{2,6},new int[]{1,2}));
+        result.toString();
     }
 
     @Test
     public void testGetColumn() {
-        ComplexNDArray arr = new ComplexNDArray(new int[]{3,2});
-        ComplexNDArray column2 = arr.getColumn(0);
-        assertEquals(true,Shape.shapeEquals(new int[]{3}, column2.shape()));
-        ComplexNDArray column = new ComplexNDArray(new double[]{1,0,2,0,3,0},new int[]{3});
-        arr.putColumn(0,column);
+        ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,4}));
+        ComplexNDArray column2 = arr.getColumn(1);
+        ComplexNDArray result = new ComplexNDArray(new NDArray(new double[]{2,6},new int[]{1,2}));
 
-        ComplexNDArray firstColumn = arr.getColumn(0);
+        assertEquals(result, column2);
+        assertEquals(true,Shape.shapeEquals(new int[]{2}, column2.shape()));
+        ComplexNDArray column = new ComplexNDArray(new double[]{11,0,12,0},new int[]{2});
+        arr.putColumn(1,column);
+
+        ComplexNDArray firstColumn = arr.getColumn(1);
 
         assertEquals(column,firstColumn);
 
 
-        ComplexNDArray column1 = new ComplexNDArray(new double[]{4,0,5,0,6,0},new int[]{3});
+        ComplexNDArray column1 = new ComplexNDArray(new double[]{5,0,6,0},new int[]{2});
         arr.putColumn(1,column1);
-        assertEquals(true, Shape.shapeEquals(new int[]{3}, arr.getColumn(1).shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getColumn(1).shape()));
         ComplexNDArray testC = arr.getColumn(1);
         assertEquals(column1,testC);
 
 
+        ComplexNDArray multiSlice = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,32,32).data,new int[]{4,4,2}));
+        ComplexNDArray testColumn = new ComplexNDArray(new NDArray(new double[]{10,12,14,16},new int[]{4}));
+        ComplexNDArray sliceColumn = multiSlice.slice(1).getColumn(1);
+        assertEquals(sliceColumn,testColumn);
+
+        ComplexNDArray testColumn2 = new ComplexNDArray(new NDArray(new double[]{17,19,21,23},new int[]{4}));
+        ComplexNDArray testSlice2 = multiSlice.slice(2).getColumn(0);
+        assertEquals(testColumn2,testSlice2);
+
+        ComplexNDArray testColumn3 = new ComplexNDArray(new NDArray(new double[]{18,20,22,24},new int[]{4}));
+        ComplexNDArray testSlice3 = multiSlice.slice(2).getColumn(1);
+        assertEquals(testColumn3,testSlice3);
 
     }
 
@@ -201,7 +253,7 @@ public class ComplexNDArrayTests {
         assertEquals(4,sum,1e-1);
         arr.addi(1);
         sum = arr.sum().real();
-        assertEquals(6,sum,1e-1);
+        assertEquals(8,sum,1e-1);
         arr.subi(1);
         sum = arr.sum().real();
         assertEquals(4,sum,1e-1);
@@ -270,7 +322,7 @@ public class ComplexNDArrayTests {
         ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2}));
         ComplexNDArray flattened = arr.flatten();
         assertEquals(arr.length,flattened.length);
-        assertEquals(true,Arrays.equals(new int[]{arr.length},flattened.shape()));
+        assertTrue(Shape.shapeEquals(new int[]{1, 4}, flattened.shape()));
         for(int i = 0; i < arr.length; i++) {
             assertEquals(i + 1,flattened.get(i).real(),1e-1);
         }
