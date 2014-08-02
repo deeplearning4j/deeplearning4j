@@ -1065,6 +1065,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         if(!isVector() && !isScalar())
             throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
         int idx = linearIndex(i) * 2;
+
         return new ComplexDouble(data[idx],data[idx + 1]);
     }
 
@@ -2076,7 +2077,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     @Override
     public ComplexNDArray getRow(int r) {
         if(shape.length == 2) {
-            int offset = this.offset > 0 ? this.offset / 2 + r * 2 : this.offset + r * 2;
+            int offset = this.offset > 0 ? this.offset / 2 + r * 4 : this.offset + r * 4;
+
 
             return new ComplexNDArray(
                     data,
