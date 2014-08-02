@@ -388,7 +388,7 @@ public class NDArrayTests {
                 count.incrementAndGet();
             }
 
-        });
+        },false);
 
 
 
@@ -413,7 +413,7 @@ public class NDArrayTests {
                 count.incrementAndGet();
             }
 
-        });
+        },false);
 
 
 
@@ -571,7 +571,7 @@ public class NDArrayTests {
 
                 count.incrementAndGet();
             }
-        });
+        },false);
     }
 
 }

@@ -611,14 +611,23 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * take when iterating over a dimension.
      * @param dimension the dimension to iterate over
      * @param op the operation to apply
+     * @param modify whether to modify this array or not based on the results
      */
-    public void iterateOverDimension(int dimension,SliceOp op) {
+    public void iterateOverDimension(int dimension,SliceOp op,boolean modify) {
         if(isScalar()) {
             if(dimension > 1)
                 throw new IllegalArgumentException("Dimension must be 0 for a scalar");
             else {
                 DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
                 op.operate(slice);
+
+                if(modify && slice.getIndices() != null) {
+                    ComplexNDArray result = (ComplexNDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = result.get(i).real();
+                        data[slice.getIndices()[i] + 1] = result.get(i).imag();
+                    }
+                }
             }
         }
 
@@ -628,11 +637,25 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             if(dimension == 0) {
                 DimensionSlice slice = vectorForDimensionAndOffset(0,0);
                 op.operate(slice);
+                if(modify && slice.getIndices() != null) {
+                    ComplexNDArray result = (ComplexNDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = result.get(i).real();
+                        data[slice.getIndices()[i] + 1] = result.get(i).imag();
+                    }
+                }
             }
             else if(dimension == 1) {
                 for(int i = 0; i < length; i++) {
                     DimensionSlice slice = vectorForDimensionAndOffset(dimension,i);
                     op.operate(slice);
+                    if(modify && slice.getIndices() != null) {
+                        ComplexNDArray result = (ComplexNDArray) slice.getResult();
+                        for(int j = 0; j < slice.getIndices().length; j++) {
+                            data[slice.getIndices()[j]] = result.get(j).real();
+                            data[slice.getIndices()[j] + 1] = result.get(j).imag();
+                        }
+                    }
                 }
             }
             else
@@ -655,6 +678,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                 for(int offset = this.offset; offset < numTimes ; offset += 2) {
                     DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                     op.operate(vector);
+                    if(modify && vector.getIndices() != null) {
+                        ComplexNDArray result = (ComplexNDArray) vector.getResult();
+                        for(int i = 0; i < vector.getIndices().length; i++) {
+                            data[vector.getIndices()[i]] = result.get(i).real();
+                            data[vector.getIndices()[i] + 1] = result.get(i).imag();
+                        }
+                    }
 
                 }
 
@@ -679,6 +709,16 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     DimensionSlice pair = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
                     //append the result
                     op.operate(pair);
+
+
+                    if(modify && pair.getIndices() != null) {
+                        ComplexNDArray result = (ComplexNDArray) pair.getResult();
+                        for(int i = 0; i < pair.getIndices().length; i++) {
+                            data[pair.getIndices()[i]] = result.get(i).real();
+                            data[pair.getIndices()[i] + 1] = result.get(i).imag();
+                        }
+                    }
+
                     //go to next slice and iterate over that
                     if(pair.isNextSlice()) {
                         //DO NOT CHANGE

@@ -623,8 +623,9 @@ public class NDArray extends DoubleMatrix {
      * take when iterating over a dimension.
      * @param dimension the dimension to iterate over
      * @param op the operation to apply
+     * @param modify whether to modify this array while iterating
      */
-    public void iterateOverDimension(int dimension,SliceOp op) {
+    public void iterateOverDimension(int dimension,SliceOp op,boolean modify) {
         if(dimension >= shape.length)
             throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
 
@@ -634,6 +635,12 @@ public class NDArray extends DoubleMatrix {
             else {
                 DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
                 op.operate(slice);
+                if(modify && slice.getIndices() != null) {
+                    NDArray result = (NDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = result.get(i);
+                    }
+                }
             }
         }
 
@@ -641,11 +648,23 @@ public class NDArray extends DoubleMatrix {
             if(dimension == 0) {
                 DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
                 op.operate(slice);
+                if(modify && slice.getIndices() != null) {
+                    NDArray result = (NDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = result.get(i);
+                    }
+                }
             }
             else if(dimension == 1) {
                 for(int i = 0; i < length; i++) {
                     DimensionSlice slice = vectorForDimensionAndOffset(dimension,i);
                     op.operate(slice);
+                    if(modify && slice.getIndices() != null) {
+                        NDArray result = (NDArray) slice.getResult();
+                        for(int j = 0; j < slice.getIndices().length; j++) {
+                            data[slice.getIndices()[j]] = result.get(j);
+                        }
+                    }
 
                 }
             }
@@ -665,6 +684,12 @@ public class NDArray extends DoubleMatrix {
                 for(int offset = this.offset; offset < numTimes; offset++) {
                     DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
                     op.operate(vector);
+                    if(modify && vector.getIndices() != null) {
+                        NDArray result = (NDArray) vector.getResult();
+                        for(int i = 0; i < vector.getIndices().length; i++) {
+                            data[vector.getIndices()[i]] = result.get(i);
+                        }
+                    }
 
                 }
 
@@ -685,11 +710,19 @@ public class NDArray extends DoubleMatrix {
                         break;
 
                     //do the operation, and look for whether it exceeded the current slice
-                    DimensionSlice result = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
+                    DimensionSlice dimensionResult = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
                     //append the result
-                    op.operate(result);
+                    op.operate(dimensionResult);
+
+                    if(modify && dimensionResult.getIndices() != null) {
+                        NDArray result = (NDArray) dimensionResult.getResult();
+                        for(int i = 0; i < dimensionResult.getIndices().length; i++) {
+                            data[dimensionResult.getIndices()[i]] = result.get(i);
+                        }
+                    }
+
                     //go to next slice and iterate over that
-                    if(result.isNextSlice()) {
+                    if(dimensionResult.isNextSlice()) {
                         //will update to next step
                         offset = sliceIndices[currOffset];
                         numTimes +=  sliceIndices[currOffset];

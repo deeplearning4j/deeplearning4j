@@ -310,7 +310,7 @@ public class ComplexNDArrayTests {
                 count.incrementAndGet();
             }
 
-        });
+        },false);
 
 
 
@@ -335,7 +335,7 @@ public class ComplexNDArrayTests {
                 count.incrementAndGet();
             }
 
-        });
+        },false);
 
 
 
@@ -423,7 +423,7 @@ public class ComplexNDArrayTests {
 
                 count.incrementAndGet();
             }
-        });
+        },false);
 
 
 
@@ -442,7 +442,7 @@ public class ComplexNDArrayTests {
                     assertEquals(secondRow,c);
                 count.incrementAndGet();
             }
-        });
+        },false);
     }
 
 
