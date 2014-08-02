@@ -45,7 +45,9 @@ public class FFTTest {
                 -4,
                 -4,
                 -9.65685425
-        });
+        }).reshape(1,8);
+
+
         assertEquals(fft.rows,test.rows);
         assertEquals(fft.columns,test.columns);
         assertEquals(fft,test);

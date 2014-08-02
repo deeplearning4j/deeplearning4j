@@ -1667,6 +1667,22 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     }
 
+    /** (Elementwise) Multiplication with a scalar */
+    @Override
+    public ComplexNDArray muli(ComplexDouble v, ComplexDoubleMatrix result) {
+        ComplexNDArray wrap = ComplexNDArray.wrap(result);
+        ComplexDouble c = new ComplexDouble(0.0);
+
+        for (int i = 0; i < length; i++)
+            wrap.put(i, get(i, c).muli(v));
+        return wrap;
+    }
+
+    @Override
+    public ComplexNDArray mul(ComplexDouble v) {
+        return muli(v, new ComplexDoubleMatrix(rows, columns));
+    }
+
 
     public void checkDimensions(ComplexNDArray other) {
         assert Arrays.equals(shape,other.shape) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape);
@@ -2060,11 +2076,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     @Override
     public ComplexNDArray getRow(int r) {
         if(shape.length == 2) {
+            int offset = this.offset > 0 ? this.offset / 2 + r * 2 : this.offset + r * 2;
+
             return new ComplexNDArray(
                     data,
                     new int[]{1,shape[1]},
                     new int[]{1,stride[1]},
-                    offset + r * 2
+                    offset
             );
 
         }
