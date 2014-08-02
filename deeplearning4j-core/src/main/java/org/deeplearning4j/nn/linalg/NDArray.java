@@ -86,6 +86,7 @@ public class NDArray extends DoubleMatrix {
 
     public NDArray(double[] data,int[] shape,int offset) {
         this(data,shape,calcStrides(shape),offset);
+
     }
 
 
