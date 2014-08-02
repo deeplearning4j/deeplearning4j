@@ -40,6 +40,7 @@ public class FFTSliceOp implements SliceOp {
     public void operate(DimensionSlice nd) {
         if(nd.getResult() instanceof NDArray) {
             NDArray a = (NDArray) nd.getResult();
+
             int n = this.n < 1 ? a.length : this.n;
 
             DoubleMatrix result = FFT.fft(a,a.length).getReal();
