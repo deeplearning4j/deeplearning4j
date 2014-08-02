@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.linalg;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.util.ComplexNDArrayUtil;
+import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -28,6 +29,29 @@ public class ComplexNDArrayTests {
         //both real and imaginary components
         assertEquals(2,arr.data.length);
         assertEquals(0,arr.get(0).real(),1e-1);
+
+
+    }
+
+    @Test
+    public void testVectorGet() {
+        ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
+        for(int i = 0; i < arr.length; i++) {
+            assertEquals(new ComplexDouble(i + 1),arr.get(i));
+        }
+
+        ComplexNDArray matrix = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,4}));
+        ComplexNDArray row = matrix.getRow(1);
+        ComplexNDArray column = matrix.getColumn(1);
+
+        ComplexNDArray validate = new ComplexNDArray(new NDArray(new double[]{5,6,7,8},new int[]{4}));
+        ComplexDouble d = row.get(3);
+        assertEquals(new ComplexDouble(8), d);
+        assertEquals(row,validate);
+
+        assertEquals(new ComplexDouble(6),column.get(1));
+        log.info("Column " + column);
+
 
 
     }
