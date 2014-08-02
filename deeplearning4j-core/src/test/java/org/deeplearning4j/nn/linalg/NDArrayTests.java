@@ -215,6 +215,13 @@ public class NDArrayTests {
         assertEquals(row12,testRow1);
 
 
+        NDArray multiSliceTest = new NDArray(DoubleMatrix.linspace(1,16,16).data,new int[]{4,2,2});
+        NDArray test = new NDArray(new double[]{7,8},new int[]{2});
+        NDArray test2 = new NDArray(new double[]{9,10},new int[]{2});
+
+        assertEquals(test,multiSliceTest.slice(1).getRow(1));
+        assertEquals(test2,multiSliceTest.slice(1).getRow(2));
+
     }
 
 

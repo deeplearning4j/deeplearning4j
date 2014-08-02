@@ -21,16 +21,16 @@ public class RBMMnistExample {
     public static void main(String[] args) throws Exception {
         RBM r = new RBM.Builder()
                 .numberOfVisible(784)
-                .numHidden(600).useRegularization(true).withL2(2e-4)
+                .numHidden(600).renderWeights(10)
                 .build();
 
         //batches of 10, 60000 examples total
-        DataSetIterator iter = new MnistDataSetIterator(10,50);
+        DataSetIterator iter = new MnistDataSetIterator(10,10);
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
             log.info(String.valueOf(next.labelDistribution()));
-            r.trainTillConvergence(next.getFirst(), 1e-2, new Object[]{1, 1e-2, 5000});
+            r.trainTillConvergence(next.getFirst(), 1e-1, new Object[]{1, 1e-1, 5000});
 
         }
 
