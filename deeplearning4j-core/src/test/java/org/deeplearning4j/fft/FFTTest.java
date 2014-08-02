@@ -153,7 +153,7 @@ public class FFTTest {
 
 
         ComplexNDArray ffted = FFT.rawfftn(test,test.shape(), ArrayUtil.range(0,3));
-        assertEquals(true,Arrays.equals(result.shape(),ffted.shape()));
+        assertEquals(true,Shape.shapeEquals(result.shape(),ffted.shape()));
         assertEquals(result,ffted);
 
     }
@@ -206,9 +206,9 @@ public class FFTTest {
     public void testFFTOp() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         log.info("Before " + arr);
-        arr.iterateOverDimension(0,new FFTSliceOp(arr.shape()[0]));
+        arr.iterateOverDimension(0,new FFTSliceOp(arr.shape()[0]),true);
         log.info("After " + arr);
-        arr.iterateOverDimension(1,new FFTSliceOp(arr.shape()[1]));
+        arr.iterateOverDimension(1,new FFTSliceOp(arr.shape()[1]),true);
 
     }
 
@@ -229,7 +229,7 @@ public class FFTTest {
     public void testIFFT() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         log.info("Before " + arr);
-        arr.iterateOverDimension(1,new IFFTSliceOp(arr.shape()[0]));
+        arr.iterateOverDimension(1,new IFFTSliceOp(arr.shape()[1]),true);
         log.info("After " + arr);
 
     }

@@ -40,11 +40,9 @@ public class IFFTSliceOp implements SliceOp {
             NDArray a = (NDArray) nd.getResult();
             int n = this.n < 1 ? a.length : this.n;
 
-            DoubleMatrix result = FFT.ifft(a,n).getReal();
-            for(int i = 0; i < n; i++) {
-                if(i >= a.length)
-                    break;
-                a.data[nd.getIndices()[i]] = result.get(i);
+            NDArray result = FFT.ifft(a,n).getReal();
+            for(int i = 0; i < result.length; i++) {
+                a.put(i,result.get(i));
             }
 
         }
@@ -52,10 +50,8 @@ public class IFFTSliceOp implements SliceOp {
             ComplexNDArray a = (ComplexNDArray) nd.getResult();
             int n = this.n < 1 ? a.length : this.n;
             ComplexDoubleMatrix result = FFT.ifft(a,n);
-            for(int i = 0; i < n; i++) {
-                if(i >= a.length)
-                    break;
-                a.put(nd.getIndices()[i],result.get(i));
+            for(int i = 0; i < result.length; i++) {
+                a.put(i,result.get(i));
             }
         }
     }

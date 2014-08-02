@@ -43,23 +43,27 @@ public class FFTSliceOp implements SliceOp {
 
             int n = this.n < 1 ? a.length : this.n;
 
-            DoubleMatrix result = FFT.fft(a,a.length).getReal();
-            if(nd.getIndices() == null) {
+            NDArray result = FFT.fft(a,n).getReal();
+            //if(nd.getIndices() == null) {
                 for(int i = 0; i < result.length; i++)
                     a.put(i,result.get(i));
-            }
+           // }
 
-            else
+            /*else
                 for(int i = 0; i < n; i++) {
-                    a.data[nd.getIndices()[i]] = result.get(i);
+                    int idx = nd.getIndices()[i];
+                    a.data[idx] = result.get(i);
                 }
-
+*/
         }
         else if(nd.getResult() instanceof ComplexNDArray) {
             ComplexNDArray a = (ComplexNDArray) nd.getResult();
             int n =  a.length;
             ComplexDoubleMatrix result = FFT.fft(a,n);
-            if(nd.getIndices() == null) {
+            for(int i = 0; i <result.length; i++) {
+                a.put(i,result.get(i));
+            }
+          /*  if(nd.getIndices() == null) {
                 for(int i = 0; i < a.length; i++)
                     a.put(i,result.get(i));
             }
@@ -71,7 +75,7 @@ public class FFTSliceOp implements SliceOp {
                     count++;
                 }
             }
-
+*/
         }
     }
 
