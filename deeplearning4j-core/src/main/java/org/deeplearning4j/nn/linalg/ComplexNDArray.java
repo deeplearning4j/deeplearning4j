@@ -1732,7 +1732,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     @Override
     public ComplexNDArray mul(ComplexDouble v) {
-        return muli(v, new ComplexDoubleMatrix(rows, columns));
+        return dup().muli(v, new ComplexDoubleMatrix(rows, columns));
     }
 
 
@@ -1744,9 +1744,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    @Override
     public ComplexNDArray mmul(ComplexDoubleMatrix other) {
-        return mmuli(other, new ComplexDoubleMatrix(rows, other.columns));
+        return dup().mmuli(other, new ComplexDoubleMatrix(rows, other.columns));
     }
+
     /** Matrix-Matrix Multiplication */
     @Override
     public ComplexNDArray mmuli(ComplexDoubleMatrix other, ComplexDoubleMatrix result) {
@@ -2084,6 +2086,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             for(int i = 0; i < rows(); i++) {
                 ComplexNDArray row = getRow(i);
                 op.operate(new DimensionSlice(false,row,null));
+                row = getRow(i);
+                System.out.println(row);
             }
         }
 

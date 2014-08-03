@@ -154,6 +154,22 @@ public class ComplexNDArrayTests {
         ComplexNDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
 
+
+        ComplexNDArray three = new ComplexNDArray(new NDArray(new double[]{3,4},new int[]{2}));
+        ComplexNDArray test = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,30,30).data,new int[]{3,5,2}));
+        ComplexNDArray sliceRow = test.slice(0).getRow(1);
+        assertEquals(three,sliceRow);
+
+        ComplexNDArray twoSix = new ComplexNDArray(new NDArray(new double[]{2,6},new int[]{2,1}));
+        ComplexNDArray threeTwoSix = three.mmul(twoSix);
+
+        ComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
+
+        assertEquals(threeTwoSix,sliceRowTwoSix);
+
+
+
+
     }
 
     @Test

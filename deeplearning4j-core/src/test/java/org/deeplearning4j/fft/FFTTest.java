@@ -59,6 +59,9 @@ public class FFTTest {
         assertEquals(threeAnswer,fftedThree);
 
 
+
+
+
     }
 
     @Test
@@ -162,7 +165,7 @@ public class FFTTest {
     @Test
     public void testFFTDifferentDimensions() {
         ComplexNDArray fftTest = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,30,30).data,new int[]{3,5,2}));
-        ComplexNDArray result = FFT.fft(fftTest.dup());
+        ComplexNDArray result = FFT.fft(fftTest);
 
         ComplexNDArray assertion = new ComplexNDArray(new double[] {
                 3 , 0 ,
