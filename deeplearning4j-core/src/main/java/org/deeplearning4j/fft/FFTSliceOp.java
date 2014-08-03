@@ -58,8 +58,7 @@ public class FFTSliceOp implements SliceOp {
         }
         else if(nd.getResult() instanceof ComplexNDArray) {
             ComplexNDArray a = (ComplexNDArray) nd.getResult();
-            int n =  a.length;
-            ComplexDoubleMatrix result = FFT.fft(a,n);
+            ComplexDoubleMatrix result = FFT.fft(a);
             for(int i = 0; i <result.length; i++) {
                 a.put(i,result.get(i));
             }

@@ -58,10 +58,8 @@ public class NDArrayBlas {
                                       ComplexDouble beta,
                                       ComplexNDArray c) {
 
-        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset(),
-                a.rows(), b.data, b.offset(), b.rows(), beta, c.data, c.offset(), c.rows);
-        int rowStride = c.stride()[0];
-        int columnStride = c.stride()[1];
+        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset() / 2,
+                a.rows(), b.data, b.offset() /2, b.rows(), beta, c.data, c.offset() / 2, c.rows());
 
         return c;
     }

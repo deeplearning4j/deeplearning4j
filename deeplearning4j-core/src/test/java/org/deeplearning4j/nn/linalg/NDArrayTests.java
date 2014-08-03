@@ -270,6 +270,22 @@ public class NDArrayTests {
         assertEquals(result,mmul);
 
 
+
+
+        NDArray three = new NDArray(new double[]{3,4},new int[]{2});
+        NDArray test = new NDArray(DoubleMatrix.linspace(1,30,30).data,new int[]{3,5,2});
+        NDArray sliceRow = test.slice(0).getRow(1);
+        assertEquals(three,sliceRow);
+
+        NDArray twoSix = new NDArray(new double[]{2,6},new int[]{2,1});
+        NDArray threeTwoSix = three.mmul(twoSix);
+
+        NDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
+
+        assertEquals(threeTwoSix,sliceRowTwoSix);
+
+
+
     }
 
     @Test
