@@ -367,6 +367,13 @@ public class MatrixUtil {
             return new DoubleMatrix(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end)));
     }
 
+
+    public static ComplexFloatMatrix complexRangeVectorFloat(float begin, float end) {
+        float[] data = ArrayUtil.toFloats(ArrayUtil.range((int) begin, (int) end));
+        ComplexFloatMatrix ret = new ComplexFloatMatrix((new FloatMatrix(data)));
+        return ret;
+    }
+
     public static ComplexDoubleMatrix complexRangeVector(double begin, double end) {
         double[] data = ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end));
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix((new DoubleMatrix(data)));

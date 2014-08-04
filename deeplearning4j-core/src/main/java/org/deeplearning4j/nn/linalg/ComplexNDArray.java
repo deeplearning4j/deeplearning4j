@@ -2238,6 +2238,27 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
     /**
+     * Get elements from specified rows and columns.
+     *
+     * @param rs
+     * @param cs
+     */
+    public ComplexNDArray get(Range rs, Range cs) {
+        rs.init(0, rows());
+        cs.init(0, columns());
+        ComplexNDArray result = new ComplexNDArray(rs.length(), cs.length());
+
+        for (; rs.hasMore(); rs.next()) {
+            cs.init(0, columns());
+            for (; cs.hasMore(); cs.next()) {
+                result.put(rs.index(), cs.index(), get(rs.value(), cs.value()));
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the shape(dimensions) of this array
      * @return the shape of this matrix
      */

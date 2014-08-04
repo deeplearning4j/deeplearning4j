@@ -209,63 +209,8 @@ public class FFT {
 
 
 
-    /**
-     * IFFT on the whole array (n is equal the first dimension shape)
-     * @param transform the matrix to transform
-     * @return the iffted array
-     */
-    public static ComplexDoubleMatrix ifft(NDArray transform) {
-        if(!transform.isVector())
-            throw new IllegalArgumentException("Input to this function must be a vector");
-
-        return ifft(new ComplexNDArray(transform),transform.size(0));
-    }
-
-    /**
-     * FFT on the whole array (n is equal the first dimension shape)
-     * @param transform the matrix to transform
-     * @param numElements the number of elements per dimension for fft
-     * @return the ffted array
-     */
-    public static ComplexNDArray ifft(NDArray transform,int numElements) {
-        if(!transform.isVector())
-            throw new IllegalArgumentException("Input to this function must be a vector");
-
-        return ifft(new ComplexNDArray(transform), numElements);
-    }
 
 
-
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexDoubleMatrix ifft(ComplexDoubleMatrix inputC) {
-        if(!inputC.isVector())
-            throw new IllegalArgumentException("Input to this function must be a vector");
-
-        return ifft(inputC,inputC.length);
-    }
-
-
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexNDArray ifft(ComplexNDArray inputC, int n) {
-        if(!inputC.isVector())
-            throw new IllegalArgumentException("Input to this function must be a vector");
-
-        return ifft((ComplexDoubleMatrix) inputC, n);
-    }
 
 
 
@@ -322,39 +267,6 @@ public class FFT {
 
 
 
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param inputC the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexNDArray ifft(ComplexDoubleMatrix inputC,int n) {
-        if(inputC.rows != 1 && inputC.columns != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-        double len = MatrixUtil.length(inputC);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2).negi();
-        ComplexDoubleMatrix matrix = exp(div3).div(len);
-        ComplexDoubleMatrix complexRet = inputC.mmul(matrix);
-
-
-        if(n != complexRet.length) {
-            ComplexDoubleMatrix newRet = new ComplexDoubleMatrix(1,n);
-            for(int i = 0; i < n; i++) {
-                if(i >= complexRet.length)
-                    break;
-
-                newRet.put(i, complexRet.get(i));
-            }
-            return ComplexNDArray.wrap(newRet);
-        }
-
-        return ComplexNDArray.wrap(complexRet);
-    }
-
 
     public static Pair<int[],int[]> cookNdArgs(NDArray arr,int[] shape,int[] axes) {
         if(shape == null)
@@ -376,8 +288,10 @@ public class FFT {
 
 
 
-        for(int i = transform.shape().length - 1; i >= 0; i--)
-            result.iterateOverDimension(axes[i],new IFFTSliceOp(shape[i]),true);
+        for(int i = transform.shape().length - 1; i >= 0; i--) {
+            result = FFT.rawifft(result,shape[i],axes[i]);
+        }
+
 
         return result;
     }
@@ -415,7 +329,6 @@ public class FFT {
         if(dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1,dimension);
 
-        //right her
         result.iterateOverAllRows(new FFTSliceOp(result.size(result.shape().length - 1)));
 
         if(dimension != result.shape().length - 1)
@@ -424,10 +337,42 @@ public class FFT {
         return result;
     }
 
+
+
+
     //underlying fftn
-    public static ComplexNDArray rawfft(ComplexNDArray transform,int dimension) {
-        return rawfft(transform,transform.shape()[dimension],dimension);
+    public static ComplexNDArray rawifft(ComplexNDArray transform,int n,int dimension) {
+        ComplexNDArray result = transform.dup();
+
+        if(transform.size(dimension) != n) {
+            int[] shape = ArrayUtil.copy(result.shape());
+            shape[dimension] = n;
+            if(transform.size(dimension) > n) {
+                result = ComplexNDArrayUtil.truncate(result,n,dimension);
+            }
+            else
+                result = ComplexNDArrayUtil.padWithZeros(result,shape);
+
+        }
+
+
+        if(dimension != result.shape().length - 1)
+            result = result.swapAxes(result.shape().length - 1,dimension);
+
+        result.iterateOverAllRows(new IFFTSliceOp(result.size(result.shape().length - 1)));
+
+        if(dimension != result.shape().length - 1)
+            result = result.swapAxes(result.shape().length - 1,dimension);
+
+        return result;
     }
+
+    //underlying fftn
+    public static ComplexNDArray rawifft(ComplexNDArray transform,int dimension) {
+        return rawifft(transform,transform.shape()[dimension],dimension);
+    }
+
+
 
 
 
