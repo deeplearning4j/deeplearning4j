@@ -62,11 +62,11 @@ public class NDArray extends DoubleMatrix {
             throw new IllegalArgumentException("Invalid offset: must be < data.length");
 
 
-        initShape(shape);
 
         this.offset = offset;
         this.stride = stride;
-        this.length = ArrayUtil.prod(this.shape);
+
+        initShape(shape);
 
         if(data != null  && data.length > 0)
             this.data = data;
@@ -576,6 +576,20 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    public double[] data() {
+        if(offset == 0)
+            return data;
+
+
+        double[] data = new double[length * 2];
+        int count = 0;
+        for(int i = 0; i < length; i++) {
+            data[count++] = get(i);
+        }
+        return data;
+    }
+
+
     public NDArray subArray(int[] shape) {
         return subArray(offsetsForSlices(),shape);
     }
@@ -922,7 +936,7 @@ public class NDArray extends DoubleMatrix {
         if(this.stride == null)
             this.stride = ArrayUtil.calcStrides(this.shape);
 
-
+        //recalculate stride: this should only happen with row vectors
         if(this.stride.length != this.shape.length) {
             this.stride = ArrayUtil.calcStrides(this.shape);
         }
@@ -2016,9 +2030,30 @@ public class NDArray extends DoubleMatrix {
      * @return the flattened version of this array
      */
     public NDArray flatten() {
-        return reshape(new int[]{ArrayUtil.prod(shape())});
+        NDArray ret = new NDArray(new int[]{1,length});
+        List<NDArray> list = new ArrayList<>();
+        sliceVectors(list);
+        int count = 0;
+        for(int i = 0; i < list.size(); i++) {
+            for(int j = 0; j < list.get(i).length; j++)
+                ret.put(count++,list.get(i).get(j));
+        }
+        return ret;
     }
 
+    /**
+     * Flattens the array for linear indexing
+     * @return the flattened version of this array
+     */
+    private void sliceVectors(List<NDArray> list) {
+        if(isVector())
+            list.add(this);
+        else {
+            for(int i = 0; i < slices(); i++) {
+                slice(i).sliceVectors(list);
+            }
+        }
+    }
 
     /**
      * Reshape the matrix. Number of elements must not change.

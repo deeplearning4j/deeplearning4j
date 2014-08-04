@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.linalg;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ComplexNDArrayUtil;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
@@ -52,6 +53,20 @@ public class ComplexNDArrayTests {
         assertEquals(new ComplexDouble(6),column.get(1));
         log.info("Column " + column);
 
+
+
+    }
+
+    @Test
+    public void testSwapAxes() {
+        ComplexNDArray n = new ComplexNDArray(new NDArray(new double[]{1,2,3},new int[]{2}));
+        ComplexNDArray swapped = n.swapAxes(1,0);
+        assertEquals(n.transpose(),swapped);
+
+        ComplexNDArray n2 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2}));
+        ComplexNDArray assertion = n2.permute(new int[]{2,1,0});
+        ComplexNDArray validate = new ComplexNDArray(new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2}));
+        assertEquals(validate,assertion);
 
 
     }
@@ -168,6 +183,48 @@ public class ComplexNDArrayTests {
         assertEquals(threeTwoSix,sliceRowTwoSix);
 
 
+
+        ComplexNDArray anotherOffsetTest = new ComplexNDArray(new double[]{
+                3.0,0.0,-1.0,-2.4492935982947064E-16,7.0,0.0,-1.0,-4.898587196589413E-16,11.0,0.0,-1.0,
+                -7.347880794884119E-16,15.0,0.0,-1.0,-9.797174393178826E-16,19.0,0.0,-1.0,-1.2246467991473533E-15,23.0,0.0,-1.0,
+                -1.4695761589768238E-15,27.0,0.0,-1.0,-1.7145055188062944E-15,31.0,0.0,-0.9999999999999982,-1.959434878635765E-15,35.0,0.0,
+                -1.0,-2.204364238465236E-15,39.0,0.0,-1.0,-2.4492935982947065E-15,43.0,0.0,-1.0,-2.6942229581241772E-15,47.0,0.0,-1.0000000000000036,
+                -2.9391523179536483E-15,51.0,0.0,-0.9999999999999964,-3.1840816777831178E-15,55.0,0.0,-1.0,-3.429011037612589E-15,59.0,0.0,-0.9999999999999964,
+                -3.67394039744206E-15},new int[]{3,2,5},new int[]{20,2,4});
+
+        ComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
+        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,7,0,11,0,15,0,19,0},new int[]{5});
+        assertEquals(rowToTest,noOffsetRow);
+
+        ComplexNDArray rowOther = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{5,1}));
+        ComplexNDArray noOffsetTimesrowOther = noOffsetRow.mmul(rowOther);
+        ComplexNDArray rowToTestTimesrowOther = rowToTest.mmul(rowOther);
+        assertEquals(noOffsetTimesrowOther,rowToTestTimesrowOther);
+
+
+
+
+    }
+
+    @Test
+    public void testLinearData() {
+        double[] d = {1,0,2,0};
+        ComplexNDArray c = new ComplexNDArray(d,new int[]{2});
+        assertTrue(Arrays.equals(d,c.data()));
+
+        ComplexNDArray needsToBeFlattened = new ComplexNDArray(new NDArray(new double[]{1,2,3,4},new int[]{2,2}));
+        double[] d2 = {1,0,2,0,3,0,4,0};
+        assertTrue(Arrays.equals(d2,needsToBeFlattened.data()));
+
+        ComplexNDArray anotherOffsetTest = new ComplexNDArray(new double[]{
+                3.0,0.0,-1.0,-2.4492935982947064E-16,7.0,0.0,-1.0,-4.898587196589413E-16,11.0,0.0,-1.0,-7.347880794884119E-16,15.0,0.0,-1.0,-9.797174393178826E-16,19.0,0.0,-1.0,-1.2246467991473533E-15,23.0,0.0,-1.0,-1.4695761589768238E-15,27.0,0.0,-1.0,-1.7145055188062944E-15,31.0,0.0,-0.9999999999999982,-1.959434878635765E-15,35.0,0.0,-1.0,-2.204364238465236E-15,39.0,0.0,-1.0,-2.4492935982947065E-15,43.0,0.0,-1.0,-2.6942229581241772E-15,47.0,0.0,-1.0000000000000036,-2.9391523179536483E-15,51.0,0.0,-0.9999999999999964,-3.1840816777831178E-15,55.0,0.0,-1.0,-3.429011037612589E-15,59.0,0.0,-0.9999999999999964,-3.67394039744206E-15},new int[]{3,2,5},new int[]{20,2,4});
+
+
+        ComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
+        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,7,0,11,0,15,0,19,0},new int[]{5});
+        double[] rowToTestData = rowToTest.data();
+        double[] noOffsetRowData = noOffsetRow.data();
+        assertTrue(Arrays.equals(noOffsetRowData,rowToTestData));
 
 
     }

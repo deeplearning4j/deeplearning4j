@@ -1746,7 +1746,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     @Override
     public ComplexNDArray mmul(ComplexDoubleMatrix other) {
-        return dup().mmuli(other, new ComplexDoubleMatrix(rows, other.columns));
+        ComplexNDArray n = ComplexNDArray.wrap(other);
+        return dup().mmuli(other, new ComplexDoubleMatrix(rows(), n.columns()));
     }
 
     /** Matrix-Matrix Multiplication */
@@ -1774,12 +1775,16 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 			 * allocating a temporary object on the side and copy the result later.
 			 */
 
-            ComplexNDArray temp = new ComplexNDArray(result.rows, result.columns);
+            ComplexNDArray temp = new ComplexNDArray(resultArray.shape());
             NDArrayBlas.gemm(ComplexDouble.UNIT, this, otherArray, ComplexDouble.ZERO, temp);
             NDArrayBlas.copy(temp, resultArray);
         }
         else {
-            NDArrayBlas.gemm(ComplexDouble.UNIT, this, otherArray, ComplexDouble.ZERO, resultArray);
+            otherArray = otherArray.flatten().reshape(otherArray.shape);
+            ComplexNDArray thisInput =  this.flatten().reshape(shape());
+
+
+            NDArrayBlas.gemm(ComplexDouble.UNIT, thisInput, otherArray, ComplexDouble.ZERO, resultArray);
         }
 
 
@@ -1787,6 +1792,19 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
         return resultArray;
+    }
+
+
+    public double[] data() {
+        double[] ret = new double[length * 2];
+        ComplexNDArray flattened = flatten();
+        int count = 0;
+        for(int i = 0; i < flattened.length; i++) {
+            ret[count++] = flattened.get(i).real();
+            ret[count++] = flattened.get(i).imag();
+        }
+
+        return ret;
     }
 
 
@@ -2083,11 +2101,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         if(isVector())
             op.operate(new DimensionSlice(false,this,null));
         if(isMatrix()) {
-            for(int i = 0; i < rows(); i++) {
-                ComplexNDArray row = getRow(i);
+            for(int i = 0; i < slices(); i++) {
+                ComplexNDArray row = slice(i);
                 op.operate(new DimensionSlice(false,row,null));
-                row = getRow(i);
-                System.out.println(row);
+
             }
         }
 
@@ -2185,6 +2202,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     return false;
             }
 
+            return true;
 
         }
 
@@ -2321,7 +2339,29 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @return the flattened version of this array
      */
     public ComplexNDArray flatten() {
-        return reshape(new int[]{ArrayUtil.prod(shape())});
+        ComplexNDArray ret = new ComplexNDArray(new int[]{1,length});
+        List<ComplexNDArray> list = new ArrayList<>();
+        sliceVectors(list);
+        int count = 0;
+        for(int i = 0; i < list.size(); i++) {
+            for(int j = 0; j < list.get(i).length; j++)
+                ret.put(count++,list.get(i).get(j));
+        }
+        return ret;
+    }
+
+    /**
+     * Flattens the array for linear indexing
+     * @return the flattened version of this array
+     */
+    private void sliceVectors(List<ComplexNDArray> list) {
+        if(isVector())
+            list.add(this);
+        else {
+            for(int i = 0; i < slices(); i++) {
+                slice(i).sliceVectors(list);
+            }
+        }
     }
 
 
@@ -2355,21 +2395,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             }
 
             sb.append("]\n");
-            return sb.toString();
-        }
-
-        else if(isMatrix()) {
-            sb.append('[');
-            for(int i = 0; i < rows(); i++) {
-                for(int j = 0; j < columns(); j++) {
-                    sb.append(get(i,j));
-                    if(j < columns() - 1)
-                        sb.append(" ,");
-                }
-                if(i < rows() - 1)
-                    sb.append(" ;");
-            }
-            sb.append(" ]");
             return sb.toString();
         }
 

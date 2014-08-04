@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>hadoop-yarn</artifactId>
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-parent</artifactId>
+        <version>0.0.3.2-SNAPSHOT</version>
+    </parent>
+    <properties>
+        <logback.version>1.0.6</logback.version>
+        <spring.version>3.2.5.RELEASE</spring.version>
+        <mallet.version>2.0.7</mallet.version>
+        <jblas.version>1.2.3</jblas.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>snapshots-repo</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases><enabled>false</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+
+    </dependencies>
+</project>
