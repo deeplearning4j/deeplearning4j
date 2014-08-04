@@ -21,6 +21,14 @@ public class NDArrayUtilTests {
 
     private static Logger log = LoggerFactory.getLogger(NDArrayUtil.class);
 
+    @Test
+    public void testCenter() {
+        NDArray a = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,4});
+        NDArray centered = NDArrayUtil.center(a,new int[]{2,2});
+        NDArray assertion = new NDArray(new double[]{2,3,6,7},new int[]{2,2});
+        assertEquals(assertion,centered);
+
+    }
 
     @Test
     public void testPadWithZeros() {

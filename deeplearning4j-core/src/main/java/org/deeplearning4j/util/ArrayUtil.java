@@ -3,6 +3,9 @@ package org.deeplearning4j.util;
 import java.lang.reflect.Array;
 import java.util.List;
 
+/**
+ * @author Adam Gibson
+ */
 public class ArrayUtil {
 
 
@@ -182,6 +185,14 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static float[] toFloats(int[] ints) {
+        float[] ret = new float[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = (float) ints[i];
+        return ret;
+    }
+
     /**
      * Return a copy of this array with the
      * given index omitted
@@ -292,8 +303,15 @@ public class ArrayUtil {
     }
 
 
-
+    /**
+     * Create a backwards copy of the given array
+     * @param e the array to create a reverse clone of
+     * @return the reversed copy
+     */
     public static  int[] reverseCopy(int[] e) {
+        if(e.length < 1)
+            return e;
+
         int[] copy = new int[e.length];
         for(int i = 0; i <= e.length / 2; i++)
         {
@@ -305,6 +323,10 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Reverse the passed in array in place
+     * @param e the array to reverse
+     */
     public static  void reverse(int[] e) {
         for(int i = 0; i <= e.length / 2; i++)
         {
