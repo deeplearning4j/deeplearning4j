@@ -182,7 +182,7 @@ public class FFT {
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-
+        int[] axes = ArrayUtil.reverseCopy(ArrayUtil.range(0,dimension));
 
         ComplexNDArray result = new ComplexNDArray(transform);
 
@@ -195,13 +195,7 @@ public class FFT {
         else if(numElements < desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
 
-
-
-
-        result.iterateOverDimension(dimension,new FFTSliceOp(numElements),true);
-        assert Shape.shapeEquals(result.shape(),finalShape);
-
-        return result;
+        return rawfftn(result,finalShape,axes);
     }
 
     /**
@@ -287,7 +281,7 @@ public class FFT {
 
 
     public static ComplexNDArray fft(NDArray transform,int numElements) {
-        return fft(new ComplexNDArray(transform),numElements);
+        return new VectorFFT(numElements).apply(new ComplexNDArray(transform));
     }
 
 
@@ -302,10 +296,9 @@ public class FFT {
      */
     public static  ComplexNDArray fft(ComplexNDArray inputC) {
         if(inputC.isVector())
-            return fft(ComplexNDArray.wrap(inputC), inputC.shape()[0]);
+            return  new VectorFFT(inputC.length).apply(inputC);
         else {
-            inputC.iterateOverAllRows(new FFTSliceOp(inputC.shape()[0]));
-            return inputC;
+            return rawfft(inputC,inputC.size(inputC.shape().length - 1),inputC.shape().length - 1);
         }
     }
 
@@ -377,28 +370,6 @@ public class FFT {
     }
 
 
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexNDArray fft(ComplexNDArray inputC, int n) {
-        if(!inputC.isVector())
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-
-        double len = inputC.length;
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexNDArray range = ComplexNDArray.wrap(MatrixUtil.complexRangeVector(0, len));
-        ComplexNDArray rangeTimesC2 = range.mul(c2);
-        ComplexNDArray matrix = ComplexNDArray.wrap(ComplexNDArrayUtil.exp(range.transpose().mmul(rangeTimesC2)));
-        ComplexNDArray complexRet =  inputC.mmul(matrix);
-        return ComplexNDArray.wrap(complexRet);
-    }
-
-
     //underlying ifftn
     public static ComplexNDArray rawifftn(ComplexNDArray transform,int[] shape,int[] axes) {
         ComplexNDArray result = transform.dup();
@@ -418,14 +389,44 @@ public class FFT {
 
 
         for(int i = transform.shape().length - 1; i >= 0; i--) {
-            if(i < transform.shape().length) {
-                result = result.swapAxes(axes[axes.length - 1],i);
-            }
-            result.iterateOverAllRows(new FFTSliceOp(shape[i]));
+              result = FFT.rawfft(result,shape[i],axes[i]);
         }
 
 
-        return result.reshape(transform.shape());
+        return result;
+    }
+
+    //underlying fftn
+    public static ComplexNDArray rawfft(ComplexNDArray transform,int n,int dimension) {
+        ComplexNDArray result = transform.dup();
+
+        if(transform.size(dimension) != n) {
+            int[] shape = ArrayUtil.copy(result.shape());
+            shape[dimension] = n;
+            if(transform.size(dimension) > n) {
+                result = ComplexNDArrayUtil.truncate(result,n,dimension);
+            }
+            else
+                result = ComplexNDArrayUtil.padWithZeros(result,shape);
+
+        }
+
+
+        if(dimension != result.shape().length - 1)
+            result = result.swapAxes(result.shape().length - 1,dimension);
+
+        //right her
+        result.iterateOverAllRows(new FFTSliceOp(result.size(result.shape().length - 1)));
+
+        if(dimension != result.shape().length - 1)
+            result = result.swapAxes(result.shape().length - 1,dimension);
+
+        return result;
+    }
+
+    //underlying fftn
+    public static ComplexNDArray rawfft(ComplexNDArray transform,int dimension) {
+        return rawfft(transform,transform.shape()[dimension],dimension);
     }
 
 

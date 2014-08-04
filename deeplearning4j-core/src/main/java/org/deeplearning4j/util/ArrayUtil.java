@@ -148,8 +148,15 @@ public class ArrayUtil {
     }
 
 
-
-
+    /**
+     * Generate an int array ranging from
+     * from to to.
+     * if from is > to this method will
+     * count backwards
+     * @param from the from
+     * @param to the end point of the data
+     * @return the int array with a length equal to abs(from - to)
+     */
     public static int[] range(int from,int to) {
         int diff = Math.abs(from - to);
         int[] ret = new int[diff];

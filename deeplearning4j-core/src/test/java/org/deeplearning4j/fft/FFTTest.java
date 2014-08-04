@@ -59,6 +59,11 @@ public class FFTTest {
         assertEquals(threeAnswer,fftedThree);
 
 
+        ComplexNDArray anotherTest = new ComplexNDArray(new NDArray(new double[]{3,7,11,15,19},new int[]{5}));
+        ComplexNDArray assertion = new ComplexNDArray(new double[]{55,0,-10,13.7638192,-10,3.24919696,-10,-3.24919696,-10,-13.7638192},new int[]{5});
+        assertEquals(FFT.fft(anotherTest),assertion);
+
+
 
 
 

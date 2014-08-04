@@ -286,6 +286,7 @@ public class NDArrayTests {
 
 
 
+
     }
 
     @Test
@@ -357,6 +358,8 @@ public class NDArrayTests {
 
 
 
+
+
     }
 
     @Test
@@ -365,6 +368,9 @@ public class NDArrayTests {
         NDArray assertion = n.permute(new int[]{2,1,0});
         NDArray validate = new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(validate,assertion);
+
+
+
     }
 
 
