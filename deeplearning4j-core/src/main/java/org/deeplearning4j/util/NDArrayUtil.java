@@ -5,7 +5,9 @@ import org.deeplearning4j.nn.linalg.DimensionSlice;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.deeplearning4j.nn.linalg.SliceOp;
 import org.jblas.ComplexDouble;
+import org.jblas.DoubleMatrix;
 import org.jblas.NativeBlas;
+import org.jblas.ranges.RangeUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +74,27 @@ public class NDArrayUtil {
         for(int i = 0; i < flattened.length; i++)
             flattened.put(i,Math.exp(flattened.get(i)));
         return flattened.reshape(toExp.shape());
+    }
+
+
+    /**
+     * Center an array
+     * @param arr the arr to center
+     * @param shape the shape of the array
+     * @return the center portion of the array based on the
+     * specified shape
+     */
+    public static NDArray center(NDArray arr,int[] shape) {
+        DoubleMatrix shapeMatrix = MatrixUtil.toMatrix(shape);
+        DoubleMatrix currShape = MatrixUtil.toMatrix(arr.shape());
+
+        DoubleMatrix startIndex = currShape.sub(shapeMatrix).div(2);
+        DoubleMatrix endIndex = startIndex.add(shapeMatrix);
+        arr = NDArray.wrap(arr.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)),RangeUtils.interval((int) startIndex.get(1),(int) endIndex.get(1))));
+
+
+
+        return arr;
     }
 
 

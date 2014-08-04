@@ -1,24 +1,14 @@
 package org.deeplearning4j.util;
 
 
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.fft.FFT;
-import org.deeplearning4j.fft.IFFTSliceOp;
+import org.deeplearning4j.fft.*;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.*;
-import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.deeplearning4j.util.MatrixUtil.exp;
 
 
 
@@ -70,9 +60,66 @@ public class Convolution {
      */
     public static NDArray convn(NDArray input,NDArray kernel,Type type) {
        //        ret = ifftn(fftn(in1, fshape) * fftn(in2, fshape))[fslice].copy()
+        if(kernel.isScalar() && input.isScalar())
+            return kernel.mul(input);
+        DoubleMatrix shape = MatrixUtil.toMatrix(input.shape()).add(MatrixUtil.toMatrix(kernel.shape())).subi(1);
+        int[] intShape = MatrixUtil.toInts(shape);
+        int[] axes = ArrayUtil.range(0,intShape.length);
 
-        return input;
+        ComplexNDArray ret = FFT.rawifftn(FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes)),intShape,axes);
+
+
+        switch(type) {
+            case FULL:
+                return ret.getReal();
+            case SAME:
+                return ComplexNDArrayUtil.center(ret,input.shape()).getReal();
+            case VALID:
+                return ComplexNDArrayUtil.center(ret,MatrixUtil.toInts(MatrixUtil.toMatrix(input.shape()).sub(MatrixUtil.toMatrix(kernel.shape())).addi(1))).getReal();
+
+        }
+
+
+        return ret.getReal();
     }
+
+
+
+
+    /**
+     * ND Convolution
+     * @param input the input to transform
+     * @param kernel the kernel to transform with
+     * @param type the type of convolution
+     * @return the convolution of the given input and kernel
+     */
+    public static ComplexNDArray convn(ComplexNDArray input,ComplexNDArray kernel,Type type) {
+
+        if(kernel.isScalar() && input.isScalar())
+            return kernel.mul(input);
+
+        DoubleMatrix shape = MatrixUtil.toMatrix(input.shape()).add(MatrixUtil.toMatrix(kernel.shape())).subi(1);
+        int[] intShape = MatrixUtil.toInts(shape);
+        int[] axes = ArrayUtil.range(0,intShape.length);
+
+        ComplexNDArray ret = FFT.rawifftn(FFT.rawfftn(input,intShape,axes).muli(FFT.rawfftn(kernel,intShape,axes)),intShape,axes);
+
+
+        switch(type) {
+            case FULL:
+                 return ret;
+            case SAME:
+                return ComplexNDArrayUtil.center(ret,input.shape());
+            case VALID:
+                return ComplexNDArrayUtil.center(ret,MatrixUtil.toInts(MatrixUtil.toMatrix(input.shape()).sub(MatrixUtil.toMatrix(kernel.shape())).addi(1)));
+
+        }
+
+        return ret;
+    }
+
+
+
 
 
     public static DoubleMatrix conv2d(DoubleMatrix input,DoubleMatrix kernel,Type type) {
@@ -91,10 +138,10 @@ public class Convolution {
         int retRows = (int) zShape.get(0);
         int retCols = (int) zShape.get(1);
 
-        ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(input, retRows, retCols);
-        ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(kernel, retRows, retCols);
+        ComplexDoubleMatrix fftInput = complexDisceteFourierTransform(new ComplexDoubleMatrix(input), retRows, retCols);
+        ComplexDoubleMatrix fftKernel = complexDisceteFourierTransform(new ComplexDoubleMatrix(kernel), retRows, retCols);
         ComplexDoubleMatrix mul = fftKernel.muli(fftInput);
-        ComplexDoubleMatrix retComplex = complexInverseDisceteFourierTransform(mul);
+        ComplexDoubleMatrix retComplex = complexInverseDisceteFourierTransform(mul,mul.rows,mul.columns);
         DoubleMatrix ret = retComplex.getReal();
 
         if(type == Type.VALID) {
@@ -122,212 +169,6 @@ public class Convolution {
 
 
 
-
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
-        ComplexDoubleMatrix base;
-
-        //pad
-        if(input.rows < rows || input.columns < cols)
-            base = MatrixUtil.padWithZeros(input, rows, cols);
-            //truncation
-        else if(input.rows > rows || input.columns > cols) {
-            base = input.dup();
-            base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
-        }
-
-        else
-            base = input.dup();
-
-        ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
-        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
-        for(int i = 0; i < base.columns; i++) {
-            ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
-        }
-
-        for(int i = 0; i < ret.rows; i++) {
-            ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
-        }
-
-        return ret;
-
-    }
-
-
-
-
-
-    /**
-     * Performs an inverse discrete fourier transform with the solution
-     * being the number of rows and number of columns.
-     * See matlab's iftt2 for more examples
-     * @param input the input to transform
-     * @param rows the number of rows for the transform
-     * @param cols the number of columns for the transform
-     * @return the 2d inverse discrete fourier transform
-     */
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
-        ComplexDoubleMatrix base;
-        StopWatch watch = new StopWatch();
-        watch.start();
-        //pad
-        if(input.rows < rows || input.columns < cols)
-            base = MatrixUtil.complexPadWithZeros(input, rows, cols);
-            //truncation
-        else if(input.rows > rows || input.columns > cols) {
-            base = new ComplexDoubleMatrix(input);
-            base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
-        }
-
-        else
-            base = new ComplexDoubleMatrix(input);
-
-        ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
-        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
-        for(int i = 0; i < base.columns; i++) {
-            ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
-        }
-
-        for(int i = 0; i < ret.rows; i++) {
-            ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
-        }
-        watch.stop();
-        return ret;
-    }
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param input the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(DoubleMatrix input) {
-        return complexInverseDisceteFourierTransform1d(new ComplexDoubleMatrix((input)));
-    }
-
-
-
-
-
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param input the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(NDArray input) {
-        return complexInverseDisceteFourierTransform1d(new ComplexNDArray((input)));
-    }
-
-
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param inputC the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexNDArray complexInverseDisceteFourierTransform1d(ComplexNDArray inputC) {
-        if(inputC.shape().length != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-        double len = MatrixUtil.length(inputC);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2).negi();
-        ComplexDoubleMatrix matrix = exp(div3).div(len);
-        ComplexDoubleMatrix complexRet = matrix.mmul(inputC);
-
-        return ComplexNDArray.wrap(inputC,complexRet);
-    }
-
-
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexNDArray complexDiscreteFourierTransform1d(ComplexNDArray inputC) {
-        if(inputC.shape().length != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-
-        double len = Math.max(inputC.rows,inputC.columns);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, len);
-        ComplexDoubleMatrix matrix = exp(range.mmul(range.transpose().mul(c2)));
-        ComplexDoubleMatrix complexRet = matrix.mmul(inputC);
-        return ComplexNDArray.wrap(inputC,complexRet);
-    }
-
-
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param inputC the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform1d(ComplexDoubleMatrix inputC) {
-        if(inputC.rows != 1 && inputC.columns != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-        double len = MatrixUtil.length(inputC);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2).negi();
-        ComplexDoubleMatrix matrix = exp(div3).div(len);
-        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
-
-        return complexRet;
-    }
-
-
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(ComplexDoubleMatrix inputC) {
-        if(inputC.rows != 1 && inputC.columns != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-
-        double len = Math.max(inputC.rows,inputC.columns);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0, len);
-        ComplexDoubleMatrix matrix = exp(range.mmul(range.transpose().mul(c2)));
-        ComplexDoubleMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
-        return complexRet;
-    }
-
-
-
-
-    /**
-     * 1d discrete fourier transform, note that this will throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param input the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexDoubleMatrix complexDiscreteFourierTransform1d(DoubleMatrix input) {
-        return complexDiscreteFourierTransform1d(new ComplexDoubleMatrix(input));
-    }
-
-
     /**
      * Discrete fourier transform 2d
      * @param input the input to transform
@@ -353,102 +194,30 @@ public class Convolution {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
         for(int i = 0; i < base.columns; i++) {
             ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
+            temp.putColumn(i,new VectorFFT(column.length).apply((ComplexNDArray.wrap(column))));
         }
 
         for(int i = 0; i < ret.rows; i++) {
             ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexDiscreteFourierTransform1d(row));
+            ret.putRow(i,new VectorFFT(row.length).apply((ComplexNDArray.wrap(row))));
         }
         return ret;
 
     }
 
 
-    /**
-     * Discrete fourier transform 2d
-     * @param input the input to transform
-     * @param shape the shape of the output matrix
-     * @return the discrete fourier transform of the input
-     */
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(ComplexNDArray input,int[] shape) {
-        ComplexNDArray base;
-
-        //pad
-        if(ArrayUtil.anyLess(input.shape(),shape))
-            base = MatrixUtil.complexPadWithZeros(input,shape);
-            //truncation
-        else if(ArrayUtil.anyMore(input.shape(),shape)) {
-            base = new ComplexNDArray(shape);
-            for(int i = 0; i < ArrayUtil.prod(shape); i++)
-                base.put(i,input.get(i));
-        }
-        else
-            base = input;
-
-        ComplexNDArray temp = new ComplexNDArray(shape);
-        ComplexNDArray ret = new ComplexNDArray(shape);
-
-
-        for(int i = 0; i < base.columns; i++) {
-            ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
-        }
-
-        for(int i = 0; i < ret.rows; i++) {
-            ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexDiscreteFourierTransform1d(row));
-        }
-        return ret;
-
-    }
-    /**
-     * Discrete fourier transform 2d
-     * @param input the input to transform
-     * @param shape the shape of the output matrix
-     * @return the discrete fourier transform of the input
-     */
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(NDArray input,int[] shape) {
-        ComplexNDArray base;
-
-        //pad
-        if(ArrayUtil.anyLess(input.shape(),shape))
-            base = MatrixUtil.complexPadWithZeros(input,shape);
-            //truncation
-        else if(ArrayUtil.anyMore(input.shape(),shape)) {
-            base = new ComplexNDArray(shape);
-            for(int i = 0; i < ArrayUtil.prod(shape); i++)
-                base.put(i,input.get(i));
-        }
-        else
-            base = new ComplexNDArray(input);
-
-        ComplexNDArray temp = new ComplexNDArray(shape);
-        ComplexNDArray ret = new ComplexNDArray(shape);
-
-
-        for(int i = 0; i < base.columns; i++) {
-            ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
-        }
-
-        for(int i = 0; i < ret.rows; i++) {
-            ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexDiscreteFourierTransform1d(row));
-        }
-        return ret;
-
-    }
 
 
     /**
-     * Discrete fourier transform 2d
+     * Performs an inverse discrete fourier transform with the solution
+     * being the number of rows and number of columns.
+     * See matlab's iftt2 for more examples
      * @param input the input to transform
-     * @param rows the number of rows in the transformed output matrix
-     * @param cols the number of columns in the transformed output matrix
-     * @return the discrete fourier transform of the input
+     * @param rows the number of rows for the transform
+     * @param cols the number of columns for the transform
+     * @return the 2d inverse discrete fourier transform
      */
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
+    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
         ComplexDoubleMatrix base;
 
         //pad
@@ -456,91 +225,30 @@ public class Convolution {
             base = MatrixUtil.complexPadWithZeros(input, rows, cols);
             //truncation
         else if(input.rows > rows || input.columns > cols) {
-            base = new ComplexDoubleMatrix(input);
+            base = input.dup();
             base = base.get(MatrixUtil.toIndices(RangeUtils.interval(0,rows)),MatrixUtil.toIndices(RangeUtils.interval(0,cols)));
         }
+
         else
-            base = new ComplexDoubleMatrix(input);
+            base = input.dup();
 
         ComplexDoubleMatrix temp = new ComplexDoubleMatrix(base.rows,base.columns);
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(base.rows,base.columns);
         for(int i = 0; i < base.columns; i++) {
             ComplexDoubleMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
+            temp.putColumn(i,new VectorIFFT(column.length).apply(ComplexNDArray.wrap(column)));
         }
 
         for(int i = 0; i < ret.rows; i++) {
             ComplexDoubleMatrix row = temp.getRow(i);
-            ret.putRow(i,complexDiscreteFourierTransform1d(row));
+            ret.putRow(i,new VectorIFFT(row.length).apply(ComplexNDArray.wrap(row)));
         }
+
         return ret;
-
-    }
-
-
-    /**
-     * Returns the real component of an inverse 2d fourier transform
-     * @param input the input to transform
-     * @param rows the number of rows of the solution
-     * @param cols the number of columns of the solution
-     * @return the real component of an inverse discrete fourier transform
-     */
-    public static DoubleMatrix inverseDisceteFourierTransform(DoubleMatrix input,int rows,int cols) {
-        return complexInverseDisceteFourierTransform(input,rows,cols).getReal();
-
-    }
-
-
-    /**
-     * Returns the real component of a 2d fourier transform
-     * @param input the input to transform
-     * @param rows the number of rows of the solution
-     * @param cols the number of columns of the solution
-     * @return the real component of a discrete fourier transform
-     */
-    public static DoubleMatrix disceteFourierTransform(DoubleMatrix input,int rows,int cols) {
-        return complexDisceteFourierTransform(input,rows,cols).getReal();
-
-    }
-
-
-    /**
-     * The inverse discrete fourier transform with the dimension size
-     * being the same as the passed in input.
-     *
-     * @param inputC the input to transform
-     * @return the
-     */
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix inputC) {
-        return complexInverseDisceteFourierTransform(inputC,inputC.rows,inputC.columns);
-
     }
 
 
 
-    public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(DoubleMatrix input) {
-        return complexInverseDisceteFourierTransform(input,input.rows,input.columns);
-    }
-
-
-
-    public static ComplexDoubleMatrix complexDisceteFourierTransform(DoubleMatrix input) {
-        return complexDisceteFourierTransform(input,input.rows,input.columns);
-
-    }
-
-
-    public static DoubleMatrix inverseDisceteFourierTransform(DoubleMatrix input) {
-        return complexInverseDisceteFourierTransform(input).getReal();
-
-    }
-
-
-
-    public static DoubleMatrix disceteFourierTransform(DoubleMatrix input) {
-        return complexDisceteFourierTransform(input).getReal();
-
-    }
 
     public static FloatMatrix conv2d(FloatMatrix input,FloatMatrix kernel,Type type) {
 
@@ -561,7 +269,7 @@ public class Convolution {
         ComplexFloatMatrix fftInput = complexDisceteFourierTransform(input, retRows, retCols);
         ComplexFloatMatrix fftKernel = complexDisceteFourierTransform(kernel, retRows, retCols);
         ComplexFloatMatrix mul = fftKernel.mul(fftInput);
-        ComplexFloatMatrix retComplex = complexInverseDisceteFourierTransform(mul);
+        ComplexFloatMatrix retComplex = complexInverseDisceteFourierTransform(mul,mul.rows,mul.columns);
 
         FloatMatrix ret = retComplex.getReal();
 
@@ -607,12 +315,12 @@ public class Convolution {
         ComplexFloatMatrix ret = new ComplexFloatMatrix(base.rows,base.columns);
         for(int i = 0; i < base.columns; i++) {
             ComplexFloatMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
+            temp.putColumn(i,new VectorFloatIFFT(column.length).apply(column));
         }
 
         for(int i = 0; i < ret.rows; i++) {
             ComplexFloatMatrix row = temp.getRow(i);
-            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
+            ret.putRow(i,new VectorFloatIFFT(row.length).apply(row));
         }
 
         return ret;
@@ -634,8 +342,6 @@ public class Convolution {
      */
     public static ComplexFloatMatrix complexInverseDisceteFourierTransform(FloatMatrix input,int rows,int cols) {
         ComplexFloatMatrix base = null;
-        StopWatch watch = new StopWatch();
-        watch.start();
         //pad
         if(input.rows < rows || input.columns < cols)
             base = MatrixUtil.complexPadWithZeros(input, rows, cols);
@@ -652,81 +358,14 @@ public class Convolution {
         ComplexFloatMatrix ret = new ComplexFloatMatrix(base.rows,base.columns);
         for(int i = 0; i < base.columns; i++) {
             ComplexFloatMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexInverseDisceteFourierTransform1d(column));
+            temp.putColumn(i,new VectorFloatIFFT(column.length).apply(column));
         }
 
         for(int i = 0; i < ret.rows; i++) {
             ComplexFloatMatrix row = temp.getRow(i);
-            ret.putRow(i,complexInverseDisceteFourierTransform1d(row));
+            ret.putRow(i,new VectorFloatIFFT(row.length).apply(row));
         }
-        watch.stop();
         return ret;
-    }
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param input the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexFloatMatrix complexInverseDisceteFourierTransform1d(FloatMatrix input) {
-        return complexInverseDisceteFourierTransform1d(new ComplexFloatMatrix((input)));
-    }
-
-    /**
-     * 1d inverse discrete fourier transform
-     * see matlab's fft2 for more examples.
-     * Note that this will throw an exception if the input isn't a vector
-     * @param inputC the input to transform
-     * @return the inverse fourier transform of the passed in input
-     */
-    public static ComplexFloatMatrix complexInverseDisceteFourierTransform1d(ComplexFloatMatrix inputC) {
-        if(inputC.rows != 1 && inputC.columns != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-        float len = MatrixUtil.length(inputC);
-        ComplexFloat c2 = new ComplexFloat(0,-2).muli((float) FastMath.PI).divi(len);
-        ComplexFloatMatrix range = MatrixUtil.complexRangeVector(0, (int) len);
-        ComplexFloatMatrix div2 = range.transpose().mul(c2);
-        ComplexFloatMatrix div3 = range.mmul(div2).negi();
-        ComplexFloatMatrix matrix = exp(div3).div(len);
-        ComplexFloatMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
-
-        return complexRet;
-    }
-
-
-    /**
-     * 1d discrete fourier transform, note that this will throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexFloatMatrix complexDiscreteFourierTransform1d(ComplexFloatMatrix inputC) {
-        if(inputC.rows != 1 && inputC.columns != 1)
-            throw new IllegalArgumentException("Illegal input: Must be a vector");
-
-        float len = Math.max(inputC.rows,inputC.columns);
-        ComplexFloat c2 = new ComplexFloat(0,-2).muli((float) FastMath.PI).divi(len);
-        ComplexFloatMatrix range = MatrixUtil.complexRangeVector(0, len);
-        ComplexFloatMatrix matrix = exp(range.mmul(range.transpose().mul(c2)));
-        ComplexFloatMatrix complexRet = inputC.isRowVector() ? matrix.mmul(inputC) : inputC.mmul(matrix);
-        return complexRet;
-    }
-
-
-
-
-    /**
-     * 1d discrete fourier transform, note that this will throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param input the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexFloatMatrix complexDiscreteFourierTransform1d(FloatMatrix input) {
-        return complexDiscreteFourierTransform1d(new ComplexFloatMatrix(input));
     }
 
     /**
@@ -754,78 +393,14 @@ public class Convolution {
         ComplexFloatMatrix ret = new ComplexFloatMatrix(base.rows,base.columns);
         for(int i = 0; i < base.columns; i++) {
             ComplexFloatMatrix column = base.getColumn(i);
-            temp.putColumn(i,complexDiscreteFourierTransform1d(column));
+            temp.putColumn(i,new VectorFloatFFT(column.length).apply(column));
         }
 
         for(int i = 0; i < ret.rows; i++) {
             ComplexFloatMatrix row = temp.getRow(i);
-            ret.putRow(i,complexDiscreteFourierTransform1d(row));
+            ret.putRow(i,new VectorFloatFFT(row.length).apply(row));
         }
         return ret;
-
-    }
-
-    /**
-     * Returns the real component of an inverse 2d fourier transform
-     * @param input the input to transform
-     * @param rows the number of rows of the solution
-     * @param cols the number of columns of the solution
-     * @return the real component of an inverse discrete fourier transform
-     */
-    public static FloatMatrix inverseDisceteFourierTransform(FloatMatrix input,int rows,int cols) {
-        return complexInverseDisceteFourierTransform(input,rows,cols).getReal();
-
-    }
-
-
-    /**
-     * Returns the real component of a 2d fourier transform
-     * @param input the input to transform
-     * @param rows the number of rows of the solution
-     * @param cols the number of columns of the solution
-     * @return the real component of a discrete fourier transform
-     */
-    public static FloatMatrix disceteFourierTransform(FloatMatrix input,int rows,int cols) {
-        return complexDisceteFourierTransform(input,rows,cols).getReal();
-
-    }
-
-
-    /**
-     * The inverse discrete fourier transform with the dimension size
-     * being the same as the passed in input.
-     *
-     * @param inputC the input to transform
-     * @return the
-     */
-    public static ComplexFloatMatrix complexInverseDisceteFourierTransform(ComplexFloatMatrix inputC) {
-        return complexInverseDisceteFourierTransform(inputC,inputC.rows,inputC.columns);
-
-    }
-
-
-
-    public static ComplexFloatMatrix complexInverseDisceteFourierTransform(FloatMatrix input) {
-        return complexInverseDisceteFourierTransform(input,input.rows,input.columns);
-    }
-
-
-
-    public static ComplexFloatMatrix complexDisceteFourierTransform(FloatMatrix input) {
-        return complexDisceteFourierTransform(input,input.rows,input.columns);
-
-    }
-
-
-    public static FloatMatrix inverseDisceteFourierTransform(FloatMatrix input) {
-        return complexInverseDisceteFourierTransform(input).getReal();
-
-    }
-
-
-
-    public static FloatMatrix disceteFourierTransform(FloatMatrix input) {
-        return complexDisceteFourierTransform(input).getReal();
 
     }
 

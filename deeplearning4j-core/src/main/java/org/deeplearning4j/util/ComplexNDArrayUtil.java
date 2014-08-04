@@ -2,6 +2,8 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.linalg.*;
 import org.jblas.ComplexDouble;
+import org.jblas.DoubleMatrix;
+import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +77,29 @@ public class ComplexNDArrayUtil {
             flattened.put(i,ComplexUtil.exp(flattened.get(i)));
         return flattened.reshape(toExp.shape());
     }
+
+
+
+    /**
+     * Center an array
+     * @param arr the arr to center
+     * @param shape the shape of the array
+     * @return the center portion of the array based on the
+     * specified shape
+     */
+    public static ComplexNDArray center(ComplexNDArray arr,int[] shape) {
+        DoubleMatrix shapeMatrix = MatrixUtil.toMatrix(shape);
+        DoubleMatrix currShape = MatrixUtil.toMatrix(arr.shape());
+
+        DoubleMatrix startIndex = currShape.sub(shapeMatrix).div(2);
+        DoubleMatrix endIndex = startIndex.add(shapeMatrix);
+        arr = ComplexNDArray.wrap(arr.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)),RangeUtils.interval((int) startIndex.get(1),(int) endIndex.get(1))));
+
+
+
+        return arr;
+    }
+
 
 
     /**

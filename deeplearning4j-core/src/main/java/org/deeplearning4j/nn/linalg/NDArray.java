@@ -753,6 +753,27 @@ public class NDArray extends DoubleMatrix {
 
     }
 
+    /**
+     * Get elements from specified rows and columns.
+     *
+     * @param rs
+     * @param cs
+     */
+    @Override
+    public NDArray get(Range rs, Range cs) {
+        rs.init(0, rows());
+        cs.init(0, columns());
+        NDArray result = new NDArray(rs.length(), cs.length());
+
+        for (; rs.hasMore(); rs.next()) {
+            cs.init(0, columns());
+            for (; cs.hasMore(); cs.next()) {
+                result.put(rs.index(), cs.index(), get(rs.value(), cs.value()));
+            }
+        }
+
+        return result;
+    }
 
     public void setStride(int[] stride) {
         this.stride = stride;

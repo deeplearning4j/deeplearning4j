@@ -224,7 +224,9 @@ public class FFTTest {
     public void testBasicIFFT() {
         DoubleMatrix d = DoubleMatrix.linspace(1,6,6);
         ComplexNDArray d2 = ComplexNDArray.wrap(new ComplexDoubleMatrix(d));
-        ComplexDoubleMatrix fft = FFT.ifft(FFT.fft(d2));
+        int n = d2.shape()[d2.shape().length - 1];
+        int dimension = d2.shape().length - 1;
+                ComplexDoubleMatrix fft = FFT.rawifft(FFT.rawfft(d2,n,dimension),n,dimension);
         assertEquals(6, fft.length);
 
         assertEquals(d2,fft);
