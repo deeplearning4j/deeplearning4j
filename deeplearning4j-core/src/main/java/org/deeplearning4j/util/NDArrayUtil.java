@@ -108,6 +108,13 @@ public class NDArrayUtil {
      */
     public static NDArray truncate(NDArray nd,final int n,int dimension) {
 
+        if(nd.isVector()) {
+            NDArray truncated = new NDArray(new int[]{n});
+            for(int i = 0;i  < n; i++)
+                truncated.put(i,nd.get(i));
+            return truncated;
+        }
+
         if(nd.size(dimension) > n) {
             int[] targetShape = ArrayUtil.copy(nd.shape());
             targetShape[dimension] = n;

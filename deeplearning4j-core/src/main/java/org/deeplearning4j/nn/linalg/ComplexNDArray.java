@@ -232,11 +232,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
 
-    private void ensureDataLength() {
-        // int dataLen =  data.length - offset;
-        //assert dataLen == 2 * length : "Length of data array must be 2 * array length. The data array must contain both real AND imaginary components (one imaginary component for each real)";
-    }
-
 
 
 
@@ -244,8 +239,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     public ComplexNDArray put(int i, ComplexDouble v) {
         if(i > length)
             throw new IllegalArgumentException("Unable to insert element " + v + " at index " + i + " with length " + length);
-        data[offset + (2 * i)] = v.real();
-        data[offset + (2 * i) + 1] = v.imag();
+        int linearIndex = linearIndex(i);
+        data[linearIndex] = v.real();
+        data[linearIndex + 1] = v.imag();
         return this;
     }
 
@@ -1107,7 +1103,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     @Override
     public ComplexNDArray put(int i, double v) {
-        data[2 * i + offset] = v;
+        if(!isVector() && !isScalar())
+            throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
+
+        data[linearIndex(i)] = v;
         return this;
     }
 
@@ -1690,7 +1689,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray transpose() {
-        ComplexNDArray n = new ComplexNDArray(data,reverseCopy(shape),ArrayUtil.reverseCopy(stride),offset);
+        ComplexNDArray n = new ComplexNDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
         return n;
 
     }

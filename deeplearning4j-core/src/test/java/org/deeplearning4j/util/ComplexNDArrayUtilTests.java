@@ -66,6 +66,12 @@ public class ComplexNDArrayUtilTests {
         assertEquals(dimension1,truncatedTest);
 
 
+        ComplexNDArray vectorTest = new ComplexNDArray(new double[]{1,0,2,0},new int[]{2});
+        ComplexNDArray vectorAnswer = new ComplexNDArray(new double[]{1,0},new int[]{1});
+        ComplexNDArray vectorTruncated = ComplexNDArrayUtil.truncate(vectorTest,1,0);
+        assertEquals(vectorAnswer,vectorTruncated);
+        assertEquals(1,vectorTruncated.length);
+
 
     }
 
