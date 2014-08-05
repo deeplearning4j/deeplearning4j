@@ -967,7 +967,8 @@ public class NDArray extends DoubleMatrix {
 
     @Override
     public NDArray put(int i, double v) {
-        data[i + offset] = v;
+        int idx = linearIndex(i);
+        data[idx] = idx;
         return this;
     }
 

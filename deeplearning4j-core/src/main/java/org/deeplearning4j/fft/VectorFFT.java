@@ -22,6 +22,16 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
     @Override
     public ComplexNDArray apply(ComplexNDArray ndArray) {
         double len = n;
+        int desiredElementsAlongDimension = ndArray.length;
+
+        if(len > desiredElementsAlongDimension) {
+            ndArray = ComplexNDArrayUtil.padWithZeros(ndArray,new int[]{n});
+        }
+
+        else if(len < desiredElementsAlongDimension) {
+            ndArray = ComplexNDArrayUtil.truncate(ndArray,n,0);
+        }
+
         ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
         ComplexNDArray range = ComplexNDArray.wrap(MatrixUtil.complexRangeVector(0, len));
         ComplexNDArray rangeTimesC2 = range.mul(c2);

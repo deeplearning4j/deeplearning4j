@@ -1,6 +1,5 @@
 package org.deeplearning4j.fft;
 
-import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
@@ -8,21 +7,184 @@ import org.deeplearning4j.nn.linalg.Shape;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ComplexNDArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.ComplexDouble;
-import org.jblas.ComplexDoubleMatrix;
-import org.jblas.DoubleMatrix;
 import org.jblas.FloatMatrix;
-import org.jblas.ranges.RangeUtils;
 
 import java.util.Arrays;
 
-import static org.deeplearning4j.util.MatrixUtil.exp;
 
 /**
  * FFT and IFFT
  * @author Adam Gibson
  */
 public class FFT {
+
+
+
+    /**
+     * FFT along a particular dimension
+     * @param transform the ndarray to transform
+     * @param numElements the desired number of elements in each fft
+     * @return the ffted output
+     */
+    public static ComplexNDArray fft(NDArray transform,int numElements) {
+        ComplexNDArray inputC = new ComplexNDArray(transform);
+        if(inputC.isVector())
+            return  new VectorFFT(inputC.length).apply(inputC);
+        else {
+            return rawfft(inputC,numElements,inputC.shape().length - 1);
+        }
+    }
+
+
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray fft(ComplexNDArray inputC) {
+        if(inputC.isVector())
+            return  new VectorFFT(inputC.length).apply(inputC);
+        else {
+            return rawfft(inputC,inputC.size(inputC.shape().length - 1),inputC.shape().length - 1);
+        }
+    }
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param input the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray fft(NDArray input) {
+        ComplexNDArray inputC = new ComplexNDArray(input);
+        return fft(inputC);
+    }
+
+
+
+    /**
+     * FFT along a particular dimension
+     * @param transform the ndarray to transform
+     * @param numElements the desired number of elements in each fft
+     * @return the ffted output
+     */
+    public static ComplexNDArray fft(NDArray transform,int numElements,int dimension) {
+        ComplexNDArray inputC = new ComplexNDArray(transform);
+        if(inputC.isVector())
+            return  new VectorFFT(numElements).apply(inputC);
+        else {
+            return rawfft(inputC,numElements,dimension);
+        }
+    }
+
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements) {
+        return fft(inputC,numElements,inputC.shape().length - 1);
+    }
+
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements,int dimension) {
+        if(inputC.isVector())
+            return  new VectorFFT(numElements).apply(inputC);
+        else {
+            return rawfft(inputC,numElements,dimension);
+        }
+    }
+
+
+
+    /**
+     * IFFT along a particular dimension
+     * @param transform the ndarray to transform
+     * @param numElements the desired number of elements in each fft
+     * @param dimension the dimension to do fft along
+     * @return the iffted output
+     */
+    public static ComplexNDArray ifft(NDArray transform,int numElements,int dimension) {
+        ComplexNDArray inputC = new ComplexNDArray(transform);
+        if(inputC.isVector())
+            return  new VectorFFT(numElements).apply(inputC);
+        else {
+            return rawifft(inputC, numElements, dimension);
+        }
+    }
+
+
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray ifft(ComplexNDArray inputC) {
+        if(inputC.isVector())
+            return  new VectorIFFT(inputC.length).apply(inputC);
+        else {
+            return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
+        }
+    }
+
+
+
+    /**
+     * FFT along a particular dimension
+     * @param transform the ndarray to transform
+     * @param numElements the desired number of elements in each fft
+     * @return the ffted output
+     */
+    public static ComplexNDArray ifft(NDArray transform,int numElements) {
+        ComplexNDArray inputC = new ComplexNDArray(transform);
+        if(inputC.isVector())
+            return  new VectorFFT(inputC.length).apply(inputC);
+        else {
+            return rawifft(inputC,numElements,inputC.shape().length - 1);
+        }
+    }
+
+
+
+    /**
+     * 1d discrete fourier transform, note that this will
+     * throw an exception if the passed in input
+     * isn't a vector.
+     * See matlab's fft2 for more information
+     * @param inputC the input to transform
+     * @return the the discrete fourier transform of the passed in input
+     */
+    public static  ComplexNDArray ifft(ComplexNDArray inputC,int numElements,int dimension) {
+        if(inputC.isVector())
+            return  new VectorIFFT(numElements).apply(inputC);
+        else {
+            return rawifft(inputC,numElements,dimension);
+        }
+    }
+
+
 
 
 
@@ -182,7 +344,7 @@ public class FFT {
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-        int[] axes = ArrayUtil.reverseCopy(ArrayUtil.range(0,dimension));
+        int[] axes = ArrayUtil.range(0,finalShape.length);
 
         ComplexNDArray result = new ComplexNDArray(transform);
 
@@ -204,7 +366,7 @@ public class FFT {
      * @return the ffted array
      */
     public static ComplexNDArray fftn(NDArray transform) {
-        return fftn(transform,0,transform.shape()[0]);
+        return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
     }
 
 
@@ -224,28 +386,6 @@ public class FFT {
     }
 
 
-
-    public static ComplexNDArray fft(NDArray transform,int numElements) {
-        return new VectorFFT(numElements).apply(new ComplexNDArray(transform));
-    }
-
-
-
-    /**
-     * 1d discrete fourier transform, note that this will
-     * throw an exception if the passed in input
-     * isn't a vector.
-     * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
-     */
-    public static  ComplexNDArray fft(ComplexNDArray inputC) {
-        if(inputC.isVector())
-            return  new VectorFFT(inputC.length).apply(inputC);
-        else {
-            return rawfft(inputC,inputC.size(inputC.shape().length - 1),inputC.shape().length - 1);
-        }
-    }
 
 
 
@@ -302,8 +442,8 @@ public class FFT {
 
 
 
-        for(int i = transform.shape().length - 1; i >= 0; i--) {
-              result = FFT.rawfft(result,shape[i],axes[i]);
+        for(int i = shape.length - 1; i >= 0; i--) {
+            result = FFT.fft(result, shape[i], axes[i]);
         }
 
 
