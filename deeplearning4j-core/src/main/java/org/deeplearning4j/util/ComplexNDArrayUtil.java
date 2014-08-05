@@ -110,7 +110,16 @@ public class ComplexNDArrayUtil {
      * @param n the number of elements to truncate to
      * @return the truncated ndarray
      */
-    public static ComplexNDArray truncate(ComplexNDArray nd,final int n,int dimension) {
+    public static ComplexNDArray truncate(ComplexNDArray nd, int n,int dimension) {
+
+
+        if(nd.isVector()) {
+            ComplexNDArray truncated = new ComplexNDArray(new int[]{n});
+            for(int i = 0;i  < n; i++)
+                truncated.put(i,nd.get(i));
+            return truncated;
+        }
+
 
         if(nd.size(dimension) > n) {
             int[] targetShape = ArrayUtil.copy(nd.shape());

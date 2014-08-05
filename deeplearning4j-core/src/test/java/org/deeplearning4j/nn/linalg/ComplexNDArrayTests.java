@@ -59,14 +59,39 @@ public class ComplexNDArrayTests {
 
     @Test
     public void testSwapAxes() {
-        ComplexNDArray n = new ComplexNDArray(new NDArray(new double[]{1,2,3},new int[]{2}));
+        ComplexNDArray n = new ComplexNDArray(new NDArray(new double[]{1,2,3},new int[]{3}));
         ComplexNDArray swapped = n.swapAxes(1,0);
         assertEquals(n.transpose(),swapped);
+        //vector despite being transposed should have same linear index
+        assertEquals(swapped.get(0),n.get(0));
+        assertEquals(swapped.get(1),n.get(1));
+        assertEquals(swapped.get(2),n.get(2));
 
         ComplexNDArray n2 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2}));
         ComplexNDArray assertion = n2.permute(new int[]{2,1,0});
         ComplexNDArray validate = new ComplexNDArray(new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2}));
         assertEquals(validate,assertion);
+
+
+        ComplexNDArray v1 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
+        ComplexNDArray swap = v1.swapAxes(1,0);
+        ComplexNDArray transposed = v1.transpose();
+        assertEquals(swap, transposed);
+
+
+        transposed.put(1,9);
+        swap.put(1,9);
+        assertEquals(transposed,swap);
+        assertEquals(transposed.get(1),swap.get(1));
+
+
+        ComplexNDArray row = n2.slice(0).getRow(1);
+        row.put(1,9);
+        assertEquals(9,row.get(1).real(),1e-1);
+
+
+
+
 
 
     }
@@ -148,9 +173,52 @@ public class ComplexNDArrayTests {
                 assertEquals(true,!set.contains(test));
                 set.add(result);
 
-
+                result.put(0,(curr + 1) * 3);
+                result.put(1,(curr + 2) * 3);
+                assertEquals((curr + 1) * 3,result.get(0).real(),1e-1);
+                assertEquals((curr + 2) * 3,result.get(1).real(),1e-1);
             }
         });
+
+        ComplexNDArray permuted = c.permute(new int[]{2,1,0});
+        set.clear();
+        i.set(0);
+
+        permuted.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                ComplexNDArray result = (ComplexNDArray) nd.getResult();
+                int curr = i.get();
+                i.incrementAndGet();
+
+                result.put(0,(curr + 1) * 3);
+                result.put(1,(curr + 2) * 3);
+                assertEquals((curr + 1) * 3,result.get(0).real(),1e-1);
+                assertEquals((curr + 2) * 3,result.get(1).real(),1e-1);
+            }
+        });
+
+        ComplexNDArray swapped = c.swapAxes(2,1);
+        i.set(0);
+
+        swapped.iterateOverAllRows(new SliceOp() {
+            @Override
+            public void operate(DimensionSlice nd) {
+                ComplexNDArray result = (ComplexNDArray) nd.getResult();
+                int curr = i.get();
+                i.incrementAndGet();
+
+                result.put(0,(curr + 1) * 3);
+                result.put(1,(curr + 2) * 3);
+                assertEquals((curr + 1) * 3,result.get(0).real(),1e-1);
+                assertEquals((curr + 2) * 3,result.get(1).real(),1e-1);
+            }
+        });
+
+
+
+
+
     }
 
 
@@ -205,6 +273,8 @@ public class ComplexNDArrayTests {
 
 
     }
+
+
 
     @Test
     public void testLinearData() {

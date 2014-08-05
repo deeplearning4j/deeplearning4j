@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.DimensionSlice;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.deeplearning4j.nn.linalg.SliceOp;
+import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
 
