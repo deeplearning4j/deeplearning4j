@@ -9,8 +9,8 @@ import org.deeplearning4j.rntn.Tree;
 public interface TreeTransformer {
 
     /**
-     * Applies a transform to a tree
-     * @param t the tree to transform
+     * Applies a applyTransformToOrigin to a tree
+     * @param t the tree to applyTransformToOrigin
      * @return the transformed tree
      */
     Tree transform(Tree t);

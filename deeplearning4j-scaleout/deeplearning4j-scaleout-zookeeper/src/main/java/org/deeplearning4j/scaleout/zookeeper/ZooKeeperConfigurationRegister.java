@@ -30,7 +30,7 @@ import java.net.UnknownHostException;
  * key=value
  * key2=value2
  * This is meant for use by a map reduce cluster
- * to get run time configuration parameters.
+ * to getFromOrigin run time configuration parameters.
  * Usage:
  * ZooKeeperConfigurationRegiste register = ...
  * register.register();

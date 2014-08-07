@@ -24,7 +24,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
      * customizable number of examples returned
      *
      * @param num the number of examples
-     * @return the next data set
+     * @return the next data applyTransformToDestination
      */
     @Override
     public DataSet next(int num) {

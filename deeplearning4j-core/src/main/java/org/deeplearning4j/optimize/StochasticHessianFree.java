@@ -203,7 +203,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     /**
-     * Iterate through the current set of gradients
+     * Iterate through the current applyTransformToDestination of gradients
      * and backtrack upon an optimal step
      * that improves the current score
      * @param chs the proposed changes

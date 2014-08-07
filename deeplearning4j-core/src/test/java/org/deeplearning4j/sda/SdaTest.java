@@ -52,7 +52,7 @@ public class SdaTest {
         log.info("Training on " + d.numExamples());
         StopWatch watch = new StopWatch();
 
-        log.info("Data set " + d);
+        log.info("Data applyTransformToDestination " + d);
 
         StackedDenoisingAutoEncoder stackedDenoisingAutoEncoder = new StackedDenoisingAutoEncoder.Builder()
                 .hiddenLayerSizes(new int[]{500,250,100})

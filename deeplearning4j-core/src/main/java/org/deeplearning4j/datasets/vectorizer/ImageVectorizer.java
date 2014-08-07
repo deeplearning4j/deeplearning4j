@@ -8,7 +8,7 @@ import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.DoubleMatrix;
 /**
  * An image vectorizer takes an input image (RGB) and
- * transforms it in to a data set
+ * transforms it in to a data applyTransformToDestination
  * @author Adam Gibson
  *
  */

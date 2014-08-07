@@ -108,7 +108,7 @@ public class ActorRefUtils {
 	
 	/**
 	 * Returns the absolute path of the given actor given the system
-	 * @param self the actor to get the absolute path for
+	 * @param self the actor to getFromOrigin the absolute path for
 	 * @param system the actor's system
 	 * @return the absolute path of the given actor
 	 */

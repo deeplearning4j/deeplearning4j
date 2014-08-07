@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A set of utils for basic hdfs operations
+ * A applyTransformToDestination of utils for basic hdfs operations
  * @author Adam Gibson
  *
  */
@@ -94,7 +94,7 @@ public class HdfsUtils {
 	/**
 	 * Returns the default file system used to reach hdfs
 	 * @param conf the configuration to use
-	 * @return conf.get(fs.defaultFS)
+	 * @return conf.getFromOrigin(fs.defaultFS)
 	 */
 	public static String getHost(Configuration conf) {
 		if(conf.get("hdfs.host")==null) {
@@ -115,7 +115,7 @@ public class HdfsUtils {
 	/**
 	 * Returns the default file system used to reach hdfs
 	 * @param conf the configuration to use
-	 * @return conf.get(fs.defaultFS)
+	 * @return conf.getFromOrigin(fs.defaultFS)
 	 */
 	public static String getHdfs(Configuration conf) {
 		return conf.get("fs.defaultFS");
@@ -124,7 +124,7 @@ public class HdfsUtils {
 	/**
 	 * Set the name node and job tracker for a given host
 	 * based on an autodiscovered file: host.properties
-	 * @param conf the configuration to set
+	 * @param conf the configuration to applyTransformToDestination
 	 * @throws IOException
 	 */
 	public static void setHostForConf(Configuration conf) throws IOException {

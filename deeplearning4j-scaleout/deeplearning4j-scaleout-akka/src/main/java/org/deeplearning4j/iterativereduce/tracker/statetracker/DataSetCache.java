@@ -5,7 +5,7 @@ import org.deeplearning4j.datasets.DataSet;
 import java.io.Serializable;
 
 /**
- * The data set cache is used for caching data sets to a storage mechanism.
+ * The data applyTransformToDestination cache is used for caching data sets to a storage mechanism.
  * This is then used to load and store data sets such that the storage does not necessarily
  * have to be in memory
  */

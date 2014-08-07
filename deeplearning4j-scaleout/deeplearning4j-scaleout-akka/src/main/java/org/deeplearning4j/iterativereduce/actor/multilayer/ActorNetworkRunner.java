@@ -291,7 +291,7 @@ public class ActorNetworkRunner implements DeepLearningConfigurable,Serializable
                 String host = a.host().get();
 
                 if(host == null)
-                    throw new IllegalArgumentException("No host set for worker");
+                    throw new IllegalArgumentException("No host applyTransformToDestination for worker");
 
 
                 String connectionString = conf.getStateTrackerConnectionString();

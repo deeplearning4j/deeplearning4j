@@ -5,7 +5,7 @@ import org.deeplearning4j.datasets.fetchers.CurvesDataFetcher;
 import java.io.IOException;
 
 /**
- * Curves data set iterator
+ * Curves data applyTransformToDestination iterator
  *
  * @author Adam Gibson
  */

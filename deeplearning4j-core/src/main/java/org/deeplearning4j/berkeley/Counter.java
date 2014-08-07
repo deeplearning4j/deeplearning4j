@@ -42,7 +42,7 @@ public class Counter<E> implements Serializable {
 	/**
 	 * The elements in the counter.
 	 * 
-	 * @return set of keys
+	 * @return applyTransformToDestination of keys
 	 */
 	public Set<E> keySet() {
 		return entries.keySet();

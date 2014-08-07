@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loads LFW faces data set. You can customize the size of the images as well
+ * Loads LFW faces data applyTransformToDestination. You can customize the size of the images as well
  * @author Adam Gibson
  *
  */
@@ -122,13 +122,13 @@ public class LFWLoader {
         try {
             return new DataSet(loader.asRowVector(image),MatrixUtil.toOutcomeVector(outcome, outcomes.size()));
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to get data for image " + i + " for path " + images.get(i));
+            throw new IllegalStateException("Unable to getFromOrigin data for image " + i + " for path " + images.get(i));
         }
     }
 
     /**
      * Get the first num found images
-     * @param num the number of images to get
+     * @param num the number of images to getFromOrigin
      * @return
      * @throws Exception
      */

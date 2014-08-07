@@ -80,7 +80,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
      *
      * @param is    the input stream to read from
      * @param label the label to assign
-     * @return a dataset with a set of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
      */
     @Override
     public DataSet vectorize(InputStream is, String label) {
@@ -99,7 +99,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
      *
      * @param text  the text to vectorize
      * @param label the label of the text
-     * @return a dataset with a set of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
      */
     @Override
     public DataSet vectorize(String text, String label) {
@@ -133,7 +133,7 @@ public class BagOfWordsVectorizer implements TextVectorizer {
     /**
      * @param input the text to vectorize
      * @param label the label of the text
-     * @return a dataset with a set of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
      */
     @Override
     public DataSet vectorize(File input, String label) {
@@ -156,4 +156,22 @@ public class BagOfWordsVectorizer implements TextVectorizer {
         return DataSet.merge(ret);
     }
 
+    /**
+     * Transforms the matrix
+     *
+     * @param text
+     * @return
+     */
+    @Override
+    public DoubleMatrix transform(String text) {
+        Tokenizer tokenizer = tokenizerFactory.create(text);
+        List<String> tokens = tokenizer.getTokens();
+        DoubleMatrix input = new DoubleMatrix(1,vocab.size());
+        for(int i = 0; i < tokens.size(); i++) {
+            int idx = vocab.indexOf(tokens.get(i));
+            if(vocab.indexOf(tokens.get(i)) >= 0)
+                input.put(idx,wordCounts.getCount(tokens.get(i)));
+        }
+        return input;
+    }
 }

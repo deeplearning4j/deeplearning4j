@@ -64,8 +64,8 @@ public class CurvesDataFetcher extends BaseDataFetcher {
 
     /**
      * Fetches the next dataset. You need to call this
-     * to get a new dataset, otherwise {@link #next()}
-     * just returns the last data set fetch
+     * to getFromOrigin a new dataset, otherwise {@link #next()}
+     * just returns the last data applyTransformToDestination fetch
      *
      * @param numExamples the number of examples to fetch
      */

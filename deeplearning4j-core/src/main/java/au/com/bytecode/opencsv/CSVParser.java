@@ -75,8 +75,8 @@ public class CSVParser {
     public static final boolean DEFAULT_IGNORE_LEADING_WHITESPACE = true;
 
     /**
-     * This is the "null" character - if a value is set to this then it is ignored.
-     * I.E. if the quote character is set to null then there is no quote character.
+     * This is the "null" character - if a value is applyTransformToDestination to this then it is ignored.
+     * I.E. if the quote character is applyTransformToDestination to null then there is no quote character.
      */
     public static final char NULL_CHARACTER = '\0';
 

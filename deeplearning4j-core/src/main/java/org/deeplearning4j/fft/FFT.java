@@ -22,7 +22,7 @@ public class FFT {
 
     /**
      * FFT along a particular dimension
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -38,12 +38,12 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray fft(ComplexNDArray inputC) {
         if(inputC.isVector())
@@ -54,12 +54,12 @@ public class FFT {
     }
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param input the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param input the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray fft(NDArray input) {
         ComplexNDArray inputC = new ComplexNDArray(input);
@@ -70,7 +70,7 @@ public class FFT {
 
     /**
      * FFT along a particular dimension
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -85,12 +85,12 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements) {
         return fft(inputC,numElements,inputC.shape().length - 1);
@@ -98,12 +98,12 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements,int dimension) {
         if(inputC.isVector())
@@ -117,7 +117,7 @@ public class FFT {
 
     /**
      * IFFT along a particular dimension
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param numElements the desired number of elements in each fft
      * @param dimension the dimension to do fft along
      * @return the iffted output
@@ -134,12 +134,12 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray ifft(ComplexNDArray inputC) {
         if(inputC.isVector())
@@ -153,7 +153,7 @@ public class FFT {
 
     /**
      * FFT along a particular dimension
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
@@ -169,12 +169,12 @@ public class FFT {
 
 
     /**
-     * 1d discrete fourier transform, note that this will
+     * 1d discrete fourier applyTransformToOrigin, note that this will
      * throw an exception if the passed in input
      * isn't a vector.
      * See matlab's fft2 for more information
-     * @param inputC the input to transform
-     * @return the the discrete fourier transform of the passed in input
+     * @param inputC the input to applyTransformToOrigin
+     * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
     public static  ComplexNDArray ifft(ComplexNDArray inputC,int numElements,int dimension) {
         if(inputC.isVector())
@@ -190,8 +190,8 @@ public class FFT {
 
     /**
      * ND IFFT, computes along the first on singleton dimension of
-     * transform
-     * @param transform the ndarray to transform
+     * applyTransformToOrigin
+     * @param transform the ndarray to applyTransformToOrigin
      * @param dimension the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
@@ -248,7 +248,7 @@ public class FFT {
 
     /**
      * ND IFFT
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param dimension the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
@@ -290,8 +290,8 @@ public class FFT {
 
     /**
      * Performs FFT along the first non singleton dimension of
-     * transform. This means
-     * @param transform the ndarray to transform
+     * applyTransformToOrigin. This means
+     * @param transform the ndarray to applyTransformToOrigin
      * @param dimension the dimension to iterate along
      * @param numElements the desired number of elements in each fft
      *                    along each dimension from each slice (note: each slice)
@@ -332,9 +332,9 @@ public class FFT {
 
 
     /**
-     * Computes the fft along the first non singleton dimension of transform
+     * Computes the fft along the first non singleton dimension of applyTransformToOrigin
      * when it is a matrix
-     * @param transform the ndarray to transform
+     * @param transform the ndarray to applyTransformToOrigin
      * @param dimension the dimension to do fft along
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
@@ -362,7 +362,7 @@ public class FFT {
 
     /**
      * FFT on the whole array (n is equal the first dimension shape)
-     * @param transform the matrix to transform
+     * @param transform the matrix to applyTransformToOrigin
      * @return the ffted array
      */
     public static ComplexNDArray fftn(NDArray transform) {
@@ -378,7 +378,7 @@ public class FFT {
 
     /**
      * FFT on the whole array (n is equal the first dimension shape)
-     * @param transform the matrix to transform
+     * @param transform the matrix to applyTransformToOrigin
      * @return the ffted array
      */
     public static ComplexNDArray fftn(ComplexNDArray transform) {

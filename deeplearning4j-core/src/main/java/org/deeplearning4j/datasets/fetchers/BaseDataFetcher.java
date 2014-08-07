@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A base class for assisting with creation of matrices
- * with the data set fetcher
+ * with the data applyTransformToDestination fetcher
  * @author Adam Gibson
  *
  */
@@ -40,7 +40,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	/**
 	 * Creates an output label matrix
 	 * @param outcomeLabel the outcome label to use
-	 * @return a binary vector where 1 is set to the
+	 * @return a binary vector where 1 is applyTransformToDestination to the
 	 * index specified by outcomeLabel
 	 */
 	protected DoubleMatrix createOutputVector(int outcomeLabel) {
@@ -52,7 +52,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	}
 	
 	/**
-	 * Initializes this data set fetcher from the passed in datasets
+	 * Initializes this data applyTransformToDestination fetcher from the passed in datasets
 	 * @param examples the examples to use
 	 */
 	protected void initializeCurrFromList(List<DataSet> examples) {

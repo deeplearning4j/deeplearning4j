@@ -101,7 +101,7 @@ public class Evaluation {
 
 	/**
 	 * Returns the number of times a given label was predicted 
-	 * @param label the label to get
+	 * @param label the label to getFromOrigin
 	 * @return the number of times the given label was predicted
 	 */
 	public int numtimesPredicted(int label) {

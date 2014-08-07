@@ -138,7 +138,7 @@ public class MatrixUtil {
     /**
      * Cumulative sum
      *
-     * @param sum the matrix to get the cumulative sum of
+     * @param sum the matrix to getFromOrigin the cumulative sum of
      * @return a matrix of the same dimensions such that the at i,j
      * is the cumulative sum of it + the predecessor elements in the column
      */
@@ -310,7 +310,7 @@ public class MatrixUtil {
     /**
      * Takes the product of all the elements in the matrix
      *
-     * @param product the matrix to get the product of elements of
+     * @param product the matrix to getFromOrigin the product of elements of
      * @return the product of all the elements in the matrix
      */
     public static <E extends DoubleMatrix> double prod(E product) {
@@ -1115,13 +1115,24 @@ public class MatrixUtil {
     }
 
 
-
+    /**
+     * Creates an out come vector from the specified inputs
+     * @param index the index of the label
+     * @param numOutcomes the number of possible outcomes
+     * @return a binary label matrix used for supervised learning
+     */
     public static DoubleMatrix toOutcomeVector(int index,int numOutcomes) {
         int[] nums = new int[numOutcomes];
         nums[index] = 1;
         return toMatrix(nums);
     }
 
+    /**
+     * Creates an out come vector from the specified inputs
+     * @param index the index of the label
+     * @param numOutcomes the number of possible outcomes
+     * @return a binary label matrix used for supervised learning
+     */
     public static FloatMatrix toOutcomeVectorFloat(int index,int numOutcomes) {
         int[] nums = new int[numOutcomes];
         nums[index] = 1;
@@ -1538,7 +1549,7 @@ public class MatrixUtil {
 
     /**
      * Column wise variance
-     * @param input the input to get the variance for
+     * @param input the input to getFromOrigin the variance for
      * @return the column wise variance of the input
      */
     public static DoubleMatrix columnVariance(DoubleMatrix input) {
@@ -1822,7 +1833,7 @@ public class MatrixUtil {
     /**
      * Cumulative sum
      *
-     * @param sum the matrix to get the cumulative sum of
+     * @param sum the matrix to getFromOrigin the cumulative sum of
      * @return a matrix of the same dimensions such that the at i,j
      * is the cumulative sum of it + the predecessor elements in the column
      */
@@ -1994,7 +2005,7 @@ public class MatrixUtil {
     /**
      * Takes the product of all the elements in the matrix
      *
-     * @param product the matrix to get the product of elements of
+     * @param product the matrix to getFromOrigin the product of elements of
      * @return the product of all the elements in the matrix
      */
     public static <E extends FloatMatrix> float prod(E product) {
@@ -3065,7 +3076,7 @@ public class MatrixUtil {
 
     /**
      * Column wise variance
-     * @param input the input to get the variance for
+     * @param input the input to getFromOrigin the variance for
      * @return the column wise variance of the input
      */
     public static FloatMatrix columnVariance(FloatMatrix input) {

@@ -214,7 +214,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
      * Loads the data for a given worker
      *
      * @param workerId the worker id to load data for
-     * @return the data set for a given worker
+     * @return the data applyTransformToDestination for a given worker
      */
     @Override
     public DataSet loadForWorker(String workerId) {
@@ -250,7 +250,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     }
 
     /**
-     * Set the data set cache to use for fetching the test set
+     * Set the data applyTransformToDestination cache to use for fetching the test applyTransformToDestination
      *
      * @param cache the cache to use
      */
@@ -265,7 +265,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     /**
      * The patience improvement to use
      *
-     * @param improvmentThreshold the patience improvement to set
+     * @param improvmentThreshold the patience improvement to applyTransformToDestination
      */
     @Override
     public void setImprovmentThreshold(double improvmentThreshold) {
@@ -316,7 +316,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     }
 
     /**
-     * The test set to use for validation
+     * The test applyTransformToDestination to use for validation
      *
      * @return the test to use for validation
      */
@@ -356,9 +356,9 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
     }
 
     /**
-     * Whether to validate against a held out test set and test for validation error.
+     * Whether to validate against a held out test applyTransformToDestination and test for validation error.
      *
-     * @return whether to validate against a held out test set and test for validation error.
+     * @return whether to validate against a held out test applyTransformToDestination and test for validation error.
      */
     @Override
     public boolean isEarlyStopTesting() {
@@ -409,7 +409,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     /**
      * The input split to use.
-     * This means that each data set that is trained on
+     * This means that each data applyTransformToDestination that is trained on
      * and loaded will be this batch size or lower
      * per worker
      *
@@ -617,7 +617,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         workers = h.getList(WORKERS);
 
         //we can make the assumption workers isn't empty because
-        //the master node by default comes with a set of workers
+        //the master node by default comes with a applyTransformToDestination of workers
         if(!this.type.equals("master")) {
             while(workers.isEmpty()) {
                 log.warn("Waiting for data sync...");
@@ -648,7 +648,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
         patienceIncrease = h.getAtomicReference(PATIENCE_INCREASE);
         numBatches = h.getAtomicReference(NUM_BATCHES_SO_FAR_RAN);
 
-        //set defaults only when master, otherwise, overrides previous values
+        //applyTransformToDestination defaults only when master, otherwise, overrides previous values
         if(type.equals("master")) {
             begunTraining.set(false);
             saver = createUpdateSaver();
@@ -972,7 +972,7 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     @Override
     public boolean isDone() {
-        //reason being that isDone() may get called and throw errors
+        //reason being that isDone() may getFromOrigin called and throw errors
         //this ensures a safe method call happens and just silently
         //returns true in case hazelcast is shutdown
         try {
@@ -990,14 +990,14 @@ public abstract class BaseHazelCastStateTracker<E extends Updateable<?>>  implem
 
     @Override
     public void finish() {
-        //reason being that isDone() may get called and throw errors
+        //reason being that isDone() may getFromOrigin called and throw errors
         //this ensures a safe method call happens and just silently
         //returns true in case hazelcast is shutdown
         try {
             done.set(true);
             updateSaver().cleanup();
         }catch(Exception e) {
-            log.warn("Hazelcast already shutdown...done() being set is pointless");
+            log.warn("Hazelcast already shutdown...done() being applyTransformToDestination is pointless");
         }
     }
 

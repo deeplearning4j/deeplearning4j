@@ -54,7 +54,7 @@ public class CatDataFetcher extends BaseDataFetcher {
     @Override
     public void fetch(int numExamples) {
         if(!hasMore())
-            throw new IllegalStateException("Unable to get more; there are no more images");
+            throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
 
 
 

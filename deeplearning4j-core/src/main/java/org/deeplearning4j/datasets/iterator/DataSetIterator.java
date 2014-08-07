@@ -37,7 +37,7 @@ public interface DataSetIterator extends Iterator<DataSet>,Serializable {
 	 * Like the standard next method but allows a 
 	 * customizable number of examples returned
 	 * @param num the number of examples
-	 * @return the next data set
+	 * @return the next data applyTransformToDestination
 	 */
 	DataSet next(int num);
 

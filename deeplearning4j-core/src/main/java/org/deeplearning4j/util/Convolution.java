@@ -53,20 +53,23 @@ public class Convolution {
 
     /**
      * ND Convolution
-     * @param input the input to transform
-     * @param kernel the kernel to transform with
+     * @param input the input to applyTransformToOrigin
+     * @param kernel the kernel to applyTransformToOrigin with
      * @param type the type of convolution
      * @return the convolution of the given input and kernel
      */
     public static NDArray convn(NDArray input,NDArray kernel,Type type) {
-       //        ret = ifftn(fftn(in1, fshape) * fftn(in2, fshape))[fslice].copy()
         if(kernel.isScalar() && input.isScalar())
             return kernel.mul(input);
         DoubleMatrix shape = MatrixUtil.toMatrix(input.shape()).add(MatrixUtil.toMatrix(kernel.shape())).subi(1);
+
         int[] intShape = MatrixUtil.toInts(shape);
         int[] axes = ArrayUtil.range(0,intShape.length);
 
-        ComplexNDArray ret = FFT.rawifftn(FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes)),intShape,axes);
+        ComplexNDArray ret = FFT.rawifftn(
+                FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(
+                        FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes)),intShape,axes);
+
 
 
         switch(type) {
@@ -88,8 +91,8 @@ public class Convolution {
 
     /**
      * ND Convolution
-     * @param input the input to transform
-     * @param kernel the kernel to transform with
+     * @param input the input to applyTransformToOrigin
+     * @param kernel the kernel to applyTransformToOrigin with
      * @param type the type of convolution
      * @return the convolution of the given input and kernel
      */
@@ -170,11 +173,11 @@ public class Convolution {
 
 
     /**
-     * Discrete fourier transform 2d
-     * @param input the input to transform
+     * Discrete fourier applyTransformToOrigin 2d
+     * @param input the input to applyTransformToOrigin
      * @param rows the number of rows in the transformed output matrix
      * @param cols the number of columns in the transformed output matrix
-     * @return the discrete fourier transform of the input
+     * @return the discrete fourier applyTransformToOrigin of the input
      */
     public static ComplexDoubleMatrix complexDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
         ComplexDoubleMatrix base;
@@ -209,13 +212,13 @@ public class Convolution {
 
 
     /**
-     * Performs an inverse discrete fourier transform with the solution
+     * Performs an inverse discrete fourier applyTransformToOrigin with the solution
      * being the number of rows and number of columns.
      * See matlab's iftt2 for more examples
-     * @param input the input to transform
-     * @param rows the number of rows for the transform
-     * @param cols the number of columns for the transform
-     * @return the 2d inverse discrete fourier transform
+     * @param input the input to applyTransformToOrigin
+     * @param rows the number of rows for the applyTransformToOrigin
+     * @param cols the number of columns for the applyTransformToOrigin
+     * @return the 2d inverse discrete fourier applyTransformToOrigin
      */
     public static ComplexDoubleMatrix complexInverseDisceteFourierTransform(ComplexDoubleMatrix input,int rows,int cols) {
         ComplexDoubleMatrix base;
@@ -332,13 +335,13 @@ public class Convolution {
 
 
     /**
-     * Performs an inverse discrete fourier transform with the solution
+     * Performs an inverse discrete fourier applyTransformToOrigin with the solution
      * being the number of rows and number of columns.
      * See matlab's iftt2 for more examples
-     * @param input the input to transform
-     * @param rows the number of rows for the transform
-     * @param cols the number of columns for the transform
-     * @return the 2d inverse discrete fourier transform
+     * @param input the input to applyTransformToOrigin
+     * @param rows the number of rows for the applyTransformToOrigin
+     * @param cols the number of columns for the applyTransformToOrigin
+     * @return the 2d inverse discrete fourier applyTransformToOrigin
      */
     public static ComplexFloatMatrix complexInverseDisceteFourierTransform(FloatMatrix input,int rows,int cols) {
         ComplexFloatMatrix base = null;
@@ -369,11 +372,11 @@ public class Convolution {
     }
 
     /**
-     * Discrete fourier transform 2d
-     * @param input the input to transform
+     * Discrete fourier applyTransformToOrigin 2d
+     * @param input the input to applyTransformToOrigin
      * @param rows the number of rows in the transformed output matrix
      * @param cols the number of columns in the transformed output matrix
-     * @return the discrete fourier transform of the input
+     * @return the discrete fourier applyTransformToOrigin of the input
      */
     public static ComplexFloatMatrix complexDisceteFourierTransform(FloatMatrix input,int rows,int cols) {
         ComplexFloatMatrix base;

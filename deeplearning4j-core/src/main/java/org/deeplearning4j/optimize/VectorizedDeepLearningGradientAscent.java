@@ -73,7 +73,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
         return lineMaximizer;
     }
 
-	/* Tricky: this is now set at GradientAscent construction time.  How to set it later?  
+	/* Tricky: this is now applyTransformToDestination at GradientAscent construction time.  How to applyTransformToDestination it later?
 	 * What to pass as an argument here?  The lineMaximizer needs the function at the time of its construction!
 	  public void setLineMaximizer (LineOptimizer.ByGradient lineMaximizer)
 	  {

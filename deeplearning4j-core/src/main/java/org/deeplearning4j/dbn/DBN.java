@@ -702,7 +702,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
         /**
          * Transform the weights at the given layer
-         * @param layer the layer to transform
+         * @param layer the layer to applyTransformToOrigin
          * @param transform the function used for transformation
          * @return
          */
