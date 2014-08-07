@@ -35,10 +35,10 @@ public class ArchiveUtils {
         byte data[] = new byte[BUFFER];
 
         if(file.endsWith(".zip")) {
-            //get the zip file content
+            //getFromOrigin the zip file content
             ZipInputStream zis =
                     new ZipInputStream(fin);
-            //get the zipped file list entry
+            //getFromOrigin the zipped file list entry
             ZipEntry ze = zis.getNextEntry();
 
             while(ze!=null){

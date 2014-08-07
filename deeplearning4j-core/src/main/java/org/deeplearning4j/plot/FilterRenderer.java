@@ -249,8 +249,8 @@ public class FilterRenderer {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        double min = data.min(); //data.get(0, 0);
-        double max = data.max(); //data.get(0, 0);
+        double min = data.min(); //data.getFromOrigin(0, 0);
+        double max = data.max(); //data.getFromOrigin(0, 0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -431,7 +431,7 @@ public class FilterRenderer {
 
             for (int i = 0; i < column.length; i++) {
 
-                //double patch_normal = ( column.get(i) - min ) / ( max - min + 0.000001 );
+                //double patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
                 double patch_normal = ( column.get(i) - col_min ) / ( col_max - col_min + 0.000001 );
                 equiv[i] = (int) (255 * patch_normal);
 

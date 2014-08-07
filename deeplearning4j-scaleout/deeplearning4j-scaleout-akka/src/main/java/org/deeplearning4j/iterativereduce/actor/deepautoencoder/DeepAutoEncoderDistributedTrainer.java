@@ -301,7 +301,7 @@ public class DeepAutoEncoderDistributedTrainer implements DeepLearningConfigurab
                 String host = a.host().get();
 
                 if(host == null)
-                    throw new IllegalArgumentException("No host set for worker");
+                    throw new IllegalArgumentException("No host applyTransformToDestination for worker");
 
 
                 String connectionString = conf.getStateTrackerConnectionString();

@@ -163,7 +163,7 @@ public class Word2Vec implements Persistable {
     }
 
     /**
-     * Initializes based on assumption of whole data set being passed in.
+     * Initializes based on assumption of whole data applyTransformToDestination being passed in.
      * @param sentences the sentences to be used for training
      * @param minWordFrequency the minimum word frequency
      * to be counted in the vocab

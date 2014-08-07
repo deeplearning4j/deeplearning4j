@@ -87,7 +87,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> {
   }
 
   /**
-   * Gives the set of all classes in the confusion matrix.
+   * Gives the applyTransformToDestination of all classes in the confusion matrix.
    */
   public SortedSet<T> getClasses() {
     return classes;

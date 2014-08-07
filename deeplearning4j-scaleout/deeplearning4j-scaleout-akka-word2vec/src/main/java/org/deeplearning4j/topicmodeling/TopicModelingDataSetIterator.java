@@ -29,8 +29,8 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 
 	/**
 	 * 
-	 * @param rootDir the root directory to get data from
-	 * @param numWords the number of words to set as vocab
+	 * @param rootDir the root directory to getFromOrigin data from
+	 * @param numWords the number of words to applyTransformToDestination as vocab
 	 * @param batchSize the batch size to train on
 	 */
 	@SuppressWarnings("unchecked")
@@ -65,7 +65,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	 * This assumes a previously persisted vocab creator was used.
 	 * @param rootDir the root directory to train on
 	 * @param batchSize the batch size, or number of rows
-	 * in the data set
+	 * in the data applyTransformToDestination
 	 * @param vocabCreator the vocab creator 
 	 */
 	@SuppressWarnings("unchecked")
@@ -107,7 +107,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	public DataSet next() {
 		int curr = 0;
 		if(!hasNext())
-			throw new IllegalStateException("Unable to get next; no more data found");
+			throw new IllegalStateException("Unable to getFromOrigin next; no more data found");
 
 		List<DataSet> d = new ArrayList<DataSet>();
 		while(files.hasNext() && curr  < batchSize) {
@@ -175,7 +175,7 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 	public DataSet next(int num) {
 		int curr = 0;
 		if(!hasNext())
-			throw new IllegalStateException("Unable to get next; no more data found");
+			throw new IllegalStateException("Unable to getFromOrigin next; no more data found");
 
 		List<DataSet> d = new ArrayList<DataSet>();
 		while(files.hasNext() && curr  < num) {

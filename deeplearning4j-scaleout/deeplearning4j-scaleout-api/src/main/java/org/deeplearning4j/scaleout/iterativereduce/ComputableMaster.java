@@ -7,7 +7,7 @@ import org.deeplearning4j.scaleout.conf.Conf;
 
 
 /**
- * Master result set
+ * Master result applyTransformToDestination
  * Based on the iterative reduce specification seen here:
  * https://github.com/emsixteeen/IterativeReduce/blob/master/src/main/java/com/cloudera/iterativereduce/ComputableMaster.java
  * @author Adam Gibson

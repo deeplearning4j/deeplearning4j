@@ -41,7 +41,7 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 	
 	public Word2VecDataFetcher(String path,Word2Vec vec,List<String> labels) {
 		if(vec == null || labels == null || labels.isEmpty())
-			throw new IllegalArgumentException("Unable to initialize due to missing argument or empty label set");
+			throw new IllegalArgumentException("Unable to initialize due to missing argument or empty label applyTransformToDestination");
 		this.vec = vec;
 		this.labels = labels;
 		this.path = path;

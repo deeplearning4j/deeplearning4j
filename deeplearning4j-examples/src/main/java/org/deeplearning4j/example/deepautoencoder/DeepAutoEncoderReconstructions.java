@@ -27,7 +27,7 @@ public class DeepAutoEncoderReconstructions {
         DataSetIterator iter = new MnistDataSetIterator(80,1000);
 
         DeepAutoEncoder encoder = SerializationUtils.readObject(new File(args[0]));
-        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
+        //Iterate over the data applyTransformToDestination after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
             DoubleMatrix reconstruct = encoder.reconstruct(first.getFirst());

@@ -16,8 +16,8 @@ public class InputHomogenization {
 	private boolean preserveCase;
 	
 	/**
-	 * Input text to transform
-	 * @param input the input text to transform, 
+	 * Input text to applyTransformToOrigin
+	 * @param input the input text to applyTransformToOrigin,
 	 * equivalent to calling this(input,false)
 	 * wrt preserving case
 	 */
@@ -27,7 +27,7 @@ public class InputHomogenization {
 	
 	/**
 	 * 
-	 * @param input the input to transform
+	 * @param input the input to applyTransformToOrigin
 	 * @param preserveCase whether to preserve case
 	 */
 	public InputHomogenization(String input,boolean preserveCase) {
@@ -37,7 +37,7 @@ public class InputHomogenization {
 	
 	/**
 	 * 
-	 * @param input the input to transform
+	 * @param input the input to applyTransformToOrigin
 	 * @param ignoreCharactersContaining ignore transformation of words
 	 * containigng specified strings
 	 */

@@ -4,7 +4,7 @@ package org.deeplearning4j.datasets.iterator;
 import org.deeplearning4j.datasets.DataSet;
 
 /**
- * Wraps a data set iterator setting the first (feature matrix) as
+ * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
  * the labels.
  *
  * @author Adam Gibson
@@ -22,7 +22,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
      * customizable number of examples returned
      *
      * @param num the number of examples
-     * @return the next data set
+     * @return the next data applyTransformToDestination
      */
     @Override
     public DataSet next(int num) {

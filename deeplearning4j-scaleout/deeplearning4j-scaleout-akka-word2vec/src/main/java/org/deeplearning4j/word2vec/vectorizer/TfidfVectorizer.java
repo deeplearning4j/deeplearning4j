@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 
 /**
- * Turns a set of documents in to a tfidf bag of words
+ * Turns a applyTransformToDestination of documents in to a tfidf bag of words
  * @author Adam Gibson
  */
 public class TfidfVectorizer implements TextVectorizer {
@@ -272,4 +272,17 @@ public class TfidfVectorizer implements TextVectorizer {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Transforms the matrix
+     *
+     * @param text
+     * @return
+     */
+    @Override
+    public DoubleMatrix transform(String text) {
+        return tfidfForInput(text);
+    }
+
+
 }

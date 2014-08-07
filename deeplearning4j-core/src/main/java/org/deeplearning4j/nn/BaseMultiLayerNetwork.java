@@ -82,8 +82,8 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     //whether to render weights or not; anything <=0 will not render the weights
     protected int renderWeightsEveryNEpochs = -1;
     protected boolean useRegularization = false;
-    //sometimes we may need to transform weights; this allows a
-    //weight transform upon layer setup
+    //sometimes we may need to applyTransformToOrigin weights; this allows a
+    //weight applyTransformToOrigin upon layer setup
     protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
     //hidden bias transforms; for initialization
     protected Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
@@ -1357,7 +1357,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /**
-     * Packs a set of matrices in to one vector,
+     * Packs a applyTransformToDestination of matrices in to one vector,
      * where the matrices in this case are the w,hbias at each layer
      * and the output layer w,bias
      * @return a singular matrix of all of the layers packed in to one matrix
@@ -1375,7 +1375,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /**
-     * Packs a set of matrices in to one vector
+     * Packs a applyTransformToDestination of matrices in to one vector
      * @param layers the layers to pack
      * @return a singular matrix of all of the layers packed in to one matrix
      */
@@ -1415,7 +1415,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     /**
      * Unpacks a parameter matrix in to a
-     * set of pairs(w,hbias)
+     * applyTransformToDestination of pairs(w,hbias)
      * triples with layer wise
      * @param param the param vector
      * @return a segmented list of the param vector
@@ -1884,7 +1884,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /**
      * Assigns the parameters of this model to the ones specified by this
      * network. This is used in loading from input streams, factory methods, etc
-     * @param network the network to get parameters from
+     * @param network the network to getFromOrigin parameters from
      */
     public  void update(BaseMultiLayerNetwork network) {
 
@@ -2005,7 +2005,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
     /**
-     * Pretrain with a data set iterator.
+     * Pretrain with a data applyTransformToDestination iterator.
      * This will run through each neural net at a time and train on the input.
      * @param iter the iterator to use
      * @param otherParams
@@ -2619,7 +2619,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     /**
      * Returns a start index for a given layer (neural net or outputlayer)
-     * @param layer the layer to get the index for
+     * @param layer the layer to getFromOrigin the index for
      * @return the index for the layer
      */
     public ParamRange startIndexForLayer(int layer) {
@@ -3057,7 +3057,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
         /**
          * Transform the weights at the given layer
-         * @param layer the layer to transform
+         * @param layer the layer to applyTransformToOrigin
          * @param transform the function used for transformation
          * @return
          */

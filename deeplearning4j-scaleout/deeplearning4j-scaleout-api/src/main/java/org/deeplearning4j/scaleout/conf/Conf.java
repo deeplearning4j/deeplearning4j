@@ -352,7 +352,7 @@ public class Conf implements Serializable,Cloneable {
 
     /**
      * Returns the hidden layer sizes
-     * @return the hidden layer sizes set for this configuration
+     * @return the hidden layer sizes applyTransformToDestination for this configuration
      */
     public int[] getLayerSizes() {
         return layerSizes;

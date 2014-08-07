@@ -616,7 +616,7 @@ public class StringUtils {
 	 * assumed to be 1 and not 0. </li>
 	 * <li> Furthermore, the list of arguments not bound to a flag is mapped to the "" property, not null </li>
 	 * <li> The special flag "-prop" will load the property file specified by it's argument. </li>
-	 * <li> The value for flags without arguments is set to "true" </li>
+	 * <li> The value for flags without arguments is applyTransformToDestination to "true" </li>
 	 */
 	public static Properties argsToProperties(String[] args, Map flagsToNumArgs) {
 		Properties result = new Properties();
@@ -658,7 +658,7 @@ public class StringUtils {
 	 * This method converts a comma-separated String (with whitespace
 	 * optionally allowed after the comma) representing properties
 	 * to a Properties object.  Each property is "property=value".  The value
-	 * for properties without an explicitly given value is set to "true".
+	 * for properties without an explicitly given value is applyTransformToDestination to "true".
 	 */
 	public static Properties stringToProperties(String str) {
 		Properties result = new Properties();
@@ -893,7 +893,7 @@ public class StringUtils {
 			for (j = 1; j <= m; j++) {
 				t_j = t.charAt(j - 1);
 				// Step 5
-				// js: if the chars match, you can get an extra point
+				// js: if the chars match, you can getFromOrigin an extra point
 				// otherwise you have to skip an insertion or deletion (no subs)
 				if (s_i == t_j) {
 					d[i][j] = SloppyMath.max(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1] + 1);

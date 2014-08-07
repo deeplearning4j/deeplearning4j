@@ -23,11 +23,7 @@
             <name>Sonatype Nexus snapshot repository</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
-        <repository>
-            <id>bintray-agibsonccc-maven-DeepLearning4j</id>
-            <name>agibsonccc-maven-DeepLearning4j</name>
-            <url>https://api.bintray.com/maven/agibsonccc/maven/DeepLearning4j</url>
-        </repository>
+
     </distributionManagement>
 
 

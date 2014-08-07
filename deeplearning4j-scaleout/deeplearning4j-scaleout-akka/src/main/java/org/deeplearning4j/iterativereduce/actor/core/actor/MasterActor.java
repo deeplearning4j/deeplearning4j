@@ -39,7 +39,7 @@ import akka.japi.Function;
 
 
 /**
- * Handles a set of workers and acts as a parameter server for iterative reduce
+ * Handles a applyTransformToDestination of workers and acts as a parameter server for iterative reduce
  * @author Adam Gibson
  *
  */
@@ -64,7 +64,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
-     * @param batchActor the batch actor to use for data set distribution
+     * @param batchActor the batch actor to use for data applyTransformToDestination distribution
      * @param tracker the state tracker
      *
      */
@@ -288,7 +288,7 @@ public abstract class MasterActor<E extends Updateable<?>> extends UntypedActor 
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
-     * @param batchActor the batch actor to use for data set distribution
+     * @param batchActor the batch actor to use for data applyTransformToDestination distribution
      *
      */
     public MasterActor(Conf conf,ActorRef batchActor) {

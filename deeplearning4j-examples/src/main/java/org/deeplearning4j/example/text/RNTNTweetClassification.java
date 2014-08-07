@@ -41,7 +41,7 @@ public class RNTNTweetClassification {
     public static void main(String[] args) throws Exception {
         InputStream is = new ClassPathResource("sentiment-milliontweets.csv").getInputStream();
         LabelAwareSentenceIterator lineIter = new LabelAwareListSentenceIterator(is,",",1,3);
-        //get rid of @mentions
+        //getFromOrigin rid of @mentions
         lineIter.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {

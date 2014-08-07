@@ -8,7 +8,7 @@ import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 
 /**
- * Wraps a data set collection
+ * Wraps a data applyTransformToDestination collection
  * @author Adam Gibson
  *
  */

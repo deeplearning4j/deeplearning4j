@@ -24,12 +24,24 @@ public class ComplexNDArrayTests {
 
     @Test
     public void testConstruction() {
+
+        ComplexNDArray arr2 = new ComplexNDArray(new int[]{3,2});
+        assertEquals(3,arr2.rows());
+        assertEquals(arr2.rows(),arr2.rows);
+        assertEquals(2,arr2.columns());
+        assertEquals(arr2.columns(),arr2.columns);
+        assertTrue(arr2.isMatrix());
+
+
+
         ComplexNDArray arr = new ComplexNDArray(new double[]{0,1},new int[]{1});
         //only each complex double: one element
         assertEquals(1,arr.length);
         //both real and imaginary components
         assertEquals(2,arr.data.length);
         assertEquals(0,arr.get(0).real(),1e-1);
+
+
 
 
     }
@@ -51,7 +63,8 @@ public class ComplexNDArrayTests {
         assertEquals(row,validate);
 
         assertEquals(new ComplexDouble(6),column.get(1));
-        log.info("Column " + column);
+
+
 
 
 
@@ -428,6 +441,26 @@ public class ComplexNDArrayTests {
     }
 
 
+
+    @Test
+    public void testElementWiseOps() {
+        ComplexNDArray n1 = ComplexNDArray.scalar(1);
+        ComplexNDArray n2 = ComplexNDArray.scalar(2);
+        assertEquals(ComplexNDArray.scalar(3),n1.add(n2));
+        assertFalse(n1.add(n2).equals(n1));
+
+        ComplexNDArray n3 = ComplexNDArray.scalar(3);
+        ComplexNDArray n4 = ComplexNDArray.scalar(4);
+        ComplexNDArray subbed = n4.sub(n3);
+        ComplexNDArray mulled = n4.mul(n3);
+        ComplexNDArray div = n4.div(n3);
+
+        assertFalse(subbed.equals(n4));
+        assertFalse(mulled.equals(n4));
+        assertEquals(NDArray.scalar(1),subbed);
+        assertEquals(ComplexNDArray.scalar(12),mulled);
+        assertEquals(ComplexNDArray.scalar(1),div);
+    }
 
 
     @Test

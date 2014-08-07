@@ -214,7 +214,7 @@ public class RBM extends BaseNeuralNetwork {
             else
                 matrices = gibbhVh(nhSamples);
 
-            //get the cost updates for sampling in the chain after k iterations
+            //getFromOrigin the cost updates for sampling in the chain after k iterations
             nvMeans = matrices.getFirst().getFirst();
             nvSamples = matrices.getFirst().getSecond();
             nhMeans = matrices.getSecond().getFirst();

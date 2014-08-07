@@ -42,7 +42,7 @@ public class MnistFetcher {
 
 
 		log.info("Downloading mnist...");
-		// get training records
+		// getFromOrigin training records
 		File tarFile = new File(baseDir, trainingFilesFilename);
 
 		if(!tarFile.isFile()) {
@@ -54,7 +54,7 @@ public class MnistFetcher {
 
 
 
-        // get training records
+        // getFromOrigin training records
         File labels = new File(baseDir, trainingFileLabelsFilename);
 
         if(!labels.isFile()) {

@@ -6,7 +6,7 @@ import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 
 /**
- * Mnist data set iterator.
+ * Mnist data applyTransformToDestination iterator.
  * @author Adam Gibson
  */
 public class MnistDataSetIterator extends BaseDatasetIterator {

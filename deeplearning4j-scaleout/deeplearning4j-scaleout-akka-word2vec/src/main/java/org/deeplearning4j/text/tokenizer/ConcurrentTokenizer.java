@@ -32,7 +32,7 @@ import org.apache.uima.resource.ResourceInitializationException;
  * <table border=1>
  *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
  *   <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td> <td>The name of the double 
- *       probability feature (not set by default)</td>
+ *       probability feature (not applyTransformToDestination by default)</td>
  * </table>
  * @see {@link TokenizerME}
  */

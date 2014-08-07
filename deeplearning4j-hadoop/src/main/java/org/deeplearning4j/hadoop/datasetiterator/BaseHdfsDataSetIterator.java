@@ -36,7 +36,7 @@ public abstract class BaseHdfsDataSetIterator implements DataSetIterator {
 
 	
 	/**
-	 * Constructs a data set iterator with the hdfs uri root directory.
+	 * Constructs a data applyTransformToDestination iterator with the hdfs uri root directory.
 	 * This assumes that individual files are what are being read from wrt
 	 * helper methods present.
 	 * 

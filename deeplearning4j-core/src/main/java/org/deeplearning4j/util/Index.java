@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An index is a set of objects augmented with a list and a reverse lookup table
+ * An index is a applyTransformToDestination of objects augmented with a list and a reverse lookup table
  * for fast lookups.
  * Indices are used for vocabulary in many of the natural language processing
  * training tools with {@link Word2Vec}

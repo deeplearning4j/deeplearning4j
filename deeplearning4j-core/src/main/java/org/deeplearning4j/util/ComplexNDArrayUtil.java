@@ -88,6 +88,9 @@ public class ComplexNDArrayUtil {
      * specified shape
      */
     public static ComplexNDArray center(ComplexNDArray arr,int[] shape) {
+        if(arr.length < ArrayUtil.prod(shape))
+            return arr;
+
         DoubleMatrix shapeMatrix = MatrixUtil.toMatrix(shape);
         DoubleMatrix currShape = MatrixUtil.toMatrix(arr.shape());
 

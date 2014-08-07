@@ -674,7 +674,7 @@ public final class SloppyMath {
 
     double ans = 1.0;
     // do (n-r)x...x((n-r)-((m-k)-1))/n x...x (n-((m-k-1)))
-    // leaving rest of denominator to get to multimply by (n-(m-1))
+    // leaving rest of denominator to getFromOrigin to multimply by (n-(m-1))
     // that's k things which goes into next loop
     for (int nr = n - r, n0 = n; nr > (n - r) - (m - k); nr--, n0--) {
       // System.out.println("Multiplying by " + nr);

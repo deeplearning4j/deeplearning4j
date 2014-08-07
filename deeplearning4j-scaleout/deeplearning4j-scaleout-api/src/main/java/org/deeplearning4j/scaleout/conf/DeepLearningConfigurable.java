@@ -17,7 +17,7 @@ public interface DeepLearningConfigurable {
 	public final static String SEED = "org.deeplearning4j.seed";
 	/* A double: the starting learning rate for training */
 	public final static String LEARNING_RATE = "org.deeplearning4j.learningrate";
-	/* The corruption level: the percent of inputs to be set to zero */
+	/* The corruption level: the percent of inputs to be applyTransformToDestination to zero */
 	public final static String CORRUPTION_LEVEL = "org.deeplearning4j.corruptionlevel";
 	/* The number of epochs to train on */
 	public final static String FINE_TUNE_EPOCHS = "org.deeplearning4j.epochs";
@@ -53,7 +53,7 @@ public interface DeepLearningConfigurable {
 	public final static String PARAM_FINETUNE_EPOCHS = "finetunepochs";
 	public final static String PARAM_CORRUPTION_LEVEL = "corruptionlevel";
 	public final static String PARAM_LEARNING_RATE = "lr";
-	/* Number of passes to do on the data set */
+	/* Number of passes to do on the data applyTransformToDestination */
 	public final static String NUM_PASSES = "org.deeplearning4j.numpasses";
 	
     void setup(Conf conf);

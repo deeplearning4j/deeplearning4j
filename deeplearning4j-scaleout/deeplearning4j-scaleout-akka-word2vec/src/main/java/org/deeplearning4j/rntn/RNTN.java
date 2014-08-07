@@ -62,7 +62,7 @@ public class RNTN implements Serializable {
     protected ActivationFunction outputActivation = Activations.softMaxRows();
     protected AdaGradFloat paramAdaGrad;
 
-    /** Regularization cost for the transform matrix  */
+    /** Regularization cost for the applyTransformToOrigin matrix  */
     private float regTransformMatrix = 0.001f;
 
     /** Regularization cost for the classification matrices */
@@ -78,7 +78,7 @@ public class RNTN implements Serializable {
      */
     private int adagradResetFrequency = 1;
 
-    /** Regularization cost for the transform FloatTensor  */
+    /** Regularization cost for the applyTransformToOrigin FloatTensor  */
     private float regTransformFloatTensor = 0.001f;
 
     /**
@@ -312,7 +312,7 @@ public class RNTN implements Serializable {
     }
 
     /**
-     * Given a sequence of Iterators over a set of matrices, fill in all of
+     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
      */
@@ -343,7 +343,7 @@ public class RNTN implements Serializable {
             String rightBasic = basicCategory(rightLabel);
             return binaryTransform.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
-            throw new AssertionError("No unary transform matrices, only unary classification");
+            throw new AssertionError("No unary applyTransformToOrigin matrices, only unary classification");
         } else {
             throw new AssertionError("Unexpected tree children size of " + node.children().size());
         }
@@ -360,7 +360,7 @@ public class RNTN implements Serializable {
             String rightBasic = basicCategory(rightLabel);
             return binaryFloatTensors.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
-            throw new AssertionError("No unary transform matrices, only unary classification");
+            throw new AssertionError("No unary applyTransformToOrigin matrices, only unary classification");
         } else {
             throw new AssertionError("Unexpected tree children size of " + node.children().size());
         }
@@ -453,7 +453,7 @@ public class RNTN implements Serializable {
 
     public int getNumParameters() {
         int totalSize;
-        // binaryFloatTensorSize was set to 0 if useFloatTensors=false
+        // binaryFloatTensorSize was applyTransformToDestination to 0 if useFloatTensors=false
         totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryFloatTensorSize;
         totalSize += numUnaryMatrices * unaryClassification.size();
         totalSize += featureVectors.size() * numHidden;
@@ -552,7 +552,7 @@ public class RNTN implements Serializable {
             nodeWeight = 1.0f;
         FloatMatrix predictions = tree.prediction();
 
-        // If this is an unlabeled class, set deltaClass to 0.  We could
+        // If this is an unlabeled class, applyTransformToDestination deltaClass to 0.  We could
         // make this more efficient by eliminating various of the below
         // calculations, but this would be the easiest way to handle the
         // unlabeled class

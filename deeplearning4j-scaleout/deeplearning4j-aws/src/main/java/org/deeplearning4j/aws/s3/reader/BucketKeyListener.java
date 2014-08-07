@@ -3,7 +3,7 @@ package org.deeplearning4j.aws.s3.reader;
 import com.amazonaws.services.s3.AmazonS3;
 
 /**
- * When paginating through a result set, 
+ * When paginating through a result applyTransformToDestination,
  * allows the user to react to a bucket result being found
  * @author Adam Gibson
  *

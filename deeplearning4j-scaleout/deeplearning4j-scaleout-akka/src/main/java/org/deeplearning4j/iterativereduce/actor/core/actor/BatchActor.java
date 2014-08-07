@@ -17,7 +17,7 @@ import akka.contrib.pattern.DistributedPubSubExtension;
 import akka.contrib.pattern.DistributedPubSubMediator;
 
 /**
- * Handles the data set iterator.
+ * Handles the data applyTransformToDestination iterator.
  * This includes disseminating new data sets to the cluster.
  * @author Adam Gibson
  *
