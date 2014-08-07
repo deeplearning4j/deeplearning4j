@@ -21,7 +21,7 @@ public class TrainWord2VecOnLineSentences {
     public static void main(String[] args) throws Exception {
         File lines = new File(args[0]);
         SentenceIterator lineIter = new LineSentenceIterator(lines);
-        //get rid of @mentions
+        //getFromOrigin rid of @mentions
         lineIter.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {

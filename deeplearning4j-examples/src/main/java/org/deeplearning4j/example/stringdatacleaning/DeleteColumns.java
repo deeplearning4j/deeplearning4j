@@ -3,7 +3,7 @@ package org.deeplearning4j.example.stringdatacleaning;
 import org.deeplearning4j.util.StringGrid;
 
 /**
- * Example of deleting columns from a data set
+ * Example of deleting columns from a data applyTransformToDestination
  */
 public class DeleteColumns {
 

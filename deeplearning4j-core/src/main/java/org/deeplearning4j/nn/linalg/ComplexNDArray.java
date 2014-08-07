@@ -2,6 +2,11 @@ package org.deeplearning4j.nn.linalg;
 
 import org.apache.commons.math3.complex.Complex;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.linalg.elementwise.complex.ComplexElementWiseOp;
+import org.deeplearning4j.nn.linalg.elementwise.complex.ops.AddOp;
+import org.deeplearning4j.nn.linalg.elementwise.complex.ops.DivideOp;
+import org.deeplearning4j.nn.linalg.elementwise.complex.ops.MultiplyOp;
+import org.deeplearning4j.nn.linalg.elementwise.complex.ops.SubtractOp;
 import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ComplexNDArrayUtil;
 import org.deeplearning4j.util.MatrixUtil;
@@ -206,14 +211,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             put(row,column,new ComplexDouble(value));
 
         else
-            throw new UnsupportedOperationException("Invalid set for a non 2d array");
+            throw new UnsupportedOperationException("Invalid applyTransformToDestination for a non 2d array");
         return this;
     }
 
     @Override
     public int index(int row,int column) {
         if(!isMatrix())
-            throw new IllegalStateException("Unable to get row/column from a non matrix");
+            throw new IllegalStateException("Unable to getFromOrigin row/column from a non matrix");
 
         return row *  stride[0]  + column * stride[1];
     }
@@ -257,10 +262,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         ComplexNDArray n = ComplexNDArray.wrap(this,v);
         if(n.isVector() && n.length != rows())
             throw new IllegalArgumentException("Unable to put row, mis matched columns");
+        ComplexNDArray column = getColumn(c);
 
-        for(int i = 0; i < v.length; i++) {
-            put(c  + i * stride[0] / 2,v.get(i));
-        }
+        for(int i = 0; i < v.length; i++)
+            column.put(i,v.get(i));
+
 
     }
     /**
@@ -278,9 +284,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
         if(n.isVector() && n.length != columns())
             throw new IllegalArgumentException("Unable to put row, mis matched columns");
-        for(int i = 0; i < v.length; i++) {
-            put(offset + i  + (r * (stride[1] / 2) * columns()),v.get(i));
-        }
+
+        ComplexNDArray row = getRow(r);
+
+        for(int i = 0; i < v.length; i++)
+            row.put(i,v.get(i));
+
 
     }
     /**
@@ -288,7 +297,18 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public boolean isScalar() {
-        return shape.length == 0 || shape.length == 1 && shape[0] == 1;
+        if(shape.length == 0)
+            return true;
+        else if(shape.length == 1 && shape[0] == 1)
+            return true;
+        else if(shape.length >= 2) {
+            for(int i = 0; i < shape.length; i++)
+                if(shape[i] != 1)
+                    return false;
+        }
+
+        return length == 1;
+
     }
 
     /**
@@ -301,7 +321,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     public ComplexNDArray put(int[] indexes, double value) {
         int ix = offset;
         if (indexes.length != shape.length)
-            throw new IllegalArgumentException("Unable to set values: number of indices must be equal to the shape");
+            throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
 
         for (int i = 0; i< shape.length; i++)
             ix += indexes[i] * stride[i];
@@ -315,7 +335,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     /**
      * Assigns the given matrix (put) to the specified slice
      * @param slice the slice to assign
-     * @param put the slice to set
+     * @param put the slice to applyTransformToDestination
      * @return this for chainability
      */
     public ComplexNDArray putSlice(int slice,ComplexNDArray put) {
@@ -737,7 +757,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
 
-    //get one result along one dimension based on the given offset
+    //getFromOrigin one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
         int count = 0;
         ComplexNDArray ret = new ComplexNDArray(new int[]{shape[dimension]});
@@ -756,7 +776,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
-    //get one result along one dimension based on the given offset
+    //getFromOrigin one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
         if(isScalar() && dimension == 0 && offset == 0)
             return new DimensionSlice(false,ComplexNDArray.scalar(get(offset)),new int[]{offset});
@@ -798,7 +818,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
 
-    //get one result along one dimension based on the given offset
+    //getFromOrigin one result along one dimension based on the given offset
     private Pair<ComplexDouble,Boolean> op(int dimension, int offset, ComplexNDArrayUtil.DimensionOp op,int currOffsetForSlice) {
         double[] dim = new double[this.shape[dimension]];
         int count = 0;
@@ -814,7 +834,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
-    //get one result along one dimension based on the given offset
+    //getFromOrigin one result along one dimension based on the given offset
     private ComplexDouble op(int dimension, int offset, ComplexNDArrayUtil.DimensionOp op) {
         double[] dim = new double[this.shape[dimension]];
         int count = 0;
@@ -1120,6 +1140,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
 
 
+    public int unSafeLinearIndex(int i) {
+        int realStride = getRealStrideForLinearIndex();
+        int idx = offset + i;
+        if(idx >= data.length)
+            throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
+        return idx;
+    }
+
     public int linearIndex(int i) {
         int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
@@ -1325,7 +1353,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     /**
      * Fetch a particular number on a multi dimensional scale.
-     * @param indexes the indexes to get a number from
+     * @param indexes the indexes to getFromOrigin a number from
      * @return the number at the specified indices
      */
     public double getMulti(int... indexes) {
@@ -1469,8 +1497,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     /** Add a scalar to a matrix (in-place). */
     public ComplexNDArray addi(double v, ComplexNDArray result) {
-        super.addi(new ComplexDouble(v),result);
-        return addi(new ComplexDouble(v), result);
+        new AddOp(this,result,new ComplexDouble(v)).exec();
+        return this;
     }
 
     /**
@@ -1508,23 +1536,37 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray addi(ComplexDouble v, ComplexDoubleMatrix result) {
-        ComplexNDArray arr = ComplexNDArray.wrap(this,result);
-        for (int i = 0; i < length; i++)
-            result.put(i, get(i).add(v));
-        return arr;
+        ComplexNDArray r = ComplexNDArray.wrap(result);
+        for(int i = 0; i < length; i++) {
+            result.data[r.unSafeLinearIndex(i)] = data[unSafeLinearIndex(i)] + v.real();
+            result.data[unSafeLinearIndex(i) + 1] = data[unSafeLinearIndex(i)] + v.imag();
+
+        }
+
+        return r;
     }
 
     @Override
     public ComplexNDArray addi(double v, ComplexDoubleMatrix result) {
-        return ComplexNDArray.wrap(this, super.addi(v, result));
+        ComplexNDArray r = ComplexNDArray.wrap(result);
+        for(int i = 0; i < length; i++) {
+            result.data[r.unSafeLinearIndex(i)] = data[unSafeLinearIndex(i)] + v;
+
+        }
+
+        return r;
     }
 
     /** Add a scalar to a matrix. */
     public ComplexNDArray addi(ComplexDouble v, ComplexNDArray result) {
+        ComplexNDArray r = ComplexNDArray.wrap(result);
+        for(int i = 0; i < length; i++) {
+            result.data[r.unSafeLinearIndex(i)] = data[unSafeLinearIndex(i)] + v.real();
+            result.data[unSafeLinearIndex(i) + 1] = data[unSafeLinearIndex(i)] + v.imag();
 
-        for (int i = 0; i < length; i++)
-            result.put(i, get(i).add(v));
-        return result;
+        }
+
+        return r;
     }
 
     /** Add two matrices (in-place). */
@@ -1549,26 +1591,24 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     /**
      * Add a scalar to a matrix (in-place).
-     * @param result
+     * @param other
      */
     @Override
-    public ComplexNDArray addi(ComplexDoubleMatrix result) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).addi(result.get(i)));
+    public ComplexNDArray addi(ComplexDoubleMatrix other) {
+        ComplexNDArray r = ComplexNDArray.wrap(other);
+        new AddOp(this,this,r).exec();
         return this;
     }
 
     /**
      * Subtract two matrices (in-place).
      *
-     * @param result
+     * @param other
      */
     @Override
-    public ComplexNDArray subi(ComplexDoubleMatrix result) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).subi(result.get(i)));
+    public ComplexNDArray subi(ComplexDoubleMatrix other) {
+        ComplexNDArray r = ComplexNDArray.wrap(other);
+        new SubtractOp(this,this,r).exec();
         return this;
     }
 
@@ -1592,9 +1632,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray muli(ComplexDoubleMatrix result) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).muli(result.get(i)));
+        new MultiplyOp(this,this,ComplexNDArray.wrap(result)).exec();
         return this;
     }
 
@@ -1618,9 +1656,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray divi(ComplexDoubleMatrix result) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).divi(result.get(i)));
+        ComplexNDArray flatten = ComplexNDArray.wrap(result);
+        new DivideOp(this,this,flatten).exec();
         return this;
     }
 
@@ -1631,9 +1668,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray addi(double v) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).addi(v));
+        new AddOp(this,new ComplexDouble(v)).exec();
         return this;
     }
 
@@ -1678,9 +1713,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray subi(double v) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).subi(v));
+        new SubtractOp(this,new ComplexDouble(v)).exec();
         return this;
     }
 
@@ -1689,6 +1722,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray transpose() {
+        //transpose of row vector is column vector
+        if(isRowVector())
+            return new ComplexNDArray(data,new int[]{shape[0],1},offset);
+            //transpose of a column vector is row vector
+        else if(isColumnVector())
+            return new ComplexNDArray(data,new int[]{shape[1]},offset);
+
         ComplexNDArray n = new ComplexNDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
         return n;
 
@@ -1722,11 +1762,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     @Override
     public ComplexNDArray muli(ComplexDouble v, ComplexDoubleMatrix result) {
         ComplexNDArray wrap = ComplexNDArray.wrap(result);
-        ComplexDouble c = new ComplexDouble(0.0);
-
-        for (int i = 0; i < length; i++)
-            wrap.put(i, get(i, c).muli(v));
-        return wrap;
+        new MultiplyOp(this,wrap,v).exec();
+        return this;
     }
 
     @Override
@@ -1741,6 +1778,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         assert offset == other.offset : "Offset of this array is " + offset + " but other was " + other.offset;
 
     }
+
 
 
     @Override
@@ -1794,6 +1832,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    /**
+     * Returns a copy of
+     * all of the data in this array in order
+     * @return all of the data in order
+     */
     public double[] data() {
         double[] ret = new double[length * 2];
         ComplexNDArray flattened = flatten();
@@ -1906,22 +1949,30 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray muli(double v) {
-        return dup().subi(v);
+        new MultiplyOp(this,new ComplexDouble(v)).exec();
+        return this;
     }
 
 
     private void initShape(int[] shape) {
-        if(shape.length == 1) {
-            this.shape = new int[2];
-            this.shape[0] = 1;
-            this.shape[1] = shape[0];
-        }
-        else
-            this.shape = shape;
+
+        this.shape = shape;
 
         if(this.shape.length == 2) {
-            rows = this.shape[0];
-            columns = this.shape[1];
+            if(this.shape[0] == 1) {
+                this.shape = new int[1];
+                this.shape[0] = shape[1];
+            }
+
+            if(this.shape.length == 1) {
+                rows = 1;
+                columns = shape[1];
+            }
+            else {
+                rows = shape[0];
+                columns = shape[1];
+            }
+
         }
 
         this.length = ArrayUtil.prod(this.shape);
@@ -2043,13 +2094,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             else if (shape().length == 2)
                 return shape[1];
         }
+
         if(isVector()) {
             if(isColumnVector())
                 return 1;
             else
-                return shape[1];
+                return shape[0];
         }
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to getFromOrigin number of of rows for a non 2d matrix");
     }
 
     /**
@@ -2071,7 +2123,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             else
                 return shape[0];
         }
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to getFromOrigin number of of rows for a non 2d matrix");
     }
 
 
@@ -2094,8 +2146,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @param op the operation to apply
      */
     public void iterateOverAllRows(SliceOp op) {
-
-
 
         if(isVector())
             op.operate(new DimensionSlice(false,this,null));
@@ -2134,7 +2184,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         }
 
         else
-            throw new IllegalArgumentException("Unable to get row of non 2d matrix");
+            throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
 
     }
 
@@ -2157,7 +2207,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
                     offset +  (r * 2) * columns()
             );
         else
-            throw new IllegalArgumentException("Unable to get row of non 2d matrix");
+            throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
 
     }
 
@@ -2494,5 +2544,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         ComplexNDArray ret = new ComplexNDArray(toWrap.data,shape);
         return ret;
     }
+
+
+    public static ComplexNDArray linspace(int lower,int upper,int num) {
+        return new ComplexNDArray(new NDArray(DoubleMatrix.linspace(lower,upper,num).data,new int[]{num}));
+    }
+
+
 
 }

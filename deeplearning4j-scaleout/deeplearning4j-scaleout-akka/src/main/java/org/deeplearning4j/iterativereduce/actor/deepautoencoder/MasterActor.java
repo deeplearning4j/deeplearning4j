@@ -23,7 +23,7 @@ import java.util.Collection;
 
 
 /**
- * Handles a set of workers and acts as a
+ * Handles a applyTransformToDestination of workers and acts as a
  * parameter server for iterative reduce
  * @author Adam Gibson
  *
@@ -35,7 +35,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
     /**
      * Creates the master and the workers with this given conf
      * @param conf the neural net config to use
-     * @param batchActor the batch actor that handles data set dispersion
+     * @param batchActor the batch actor that handles data applyTransformToDestination dispersion
      */
     public MasterActor(Conf conf,ActorRef batchActor, StateTracker<UpdateableEncoderImpl> stateTracker) {
         super(conf,batchActor,stateTracker);

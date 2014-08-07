@@ -246,7 +246,7 @@ public class DBNTest {
         log.info("Training on " + d.numExamples());
         StopWatch watch = new StopWatch();
 
-        log.info("Data set " + d);
+        log.info("Data applyTransformToDestination " + d);
 
         DBN dbn = new DBN.Builder()
                 .withActivation(Activations.sigmoid())

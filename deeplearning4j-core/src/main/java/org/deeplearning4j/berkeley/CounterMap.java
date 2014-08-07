@@ -11,7 +11,7 @@ import java.util.Set;
 
 /**
  * Maintains counts of (key, value) pairs.  The map is structured so that for
- * every key, one can get a counter over values.  Example usage: keys might be
+ * every key, one can getFromOrigin a counter over values.  Example usage: keys might be
  * words with values being POS tags, and the count being the number of
  * occurences of that word/tag pair.  The sub-counters returned by
  * getCounter(word) would be count distributions over tags for that word.

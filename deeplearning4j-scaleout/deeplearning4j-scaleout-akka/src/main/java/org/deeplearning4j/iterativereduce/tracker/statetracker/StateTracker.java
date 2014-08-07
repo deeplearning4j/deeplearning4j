@@ -48,7 +48,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
     /**
      * Loads the data for a given worker
      * @param workerId the worker id to load data for
-     * @return the data set for a given worker
+     * @return the data applyTransformToDestination for a given worker
      */
     public DataSet loadForWorker(String workerId);
 
@@ -69,14 +69,14 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
     public TrainingEvaluator create(BaseMultiLayerNetwork network);
 
     /**
-     * Set the data set cache to use for fetching the test set
+     * Set the data applyTransformToDestination cache to use for fetching the test applyTransformToDestination
      * @param cache the cache to use
      */
     public void setDataSetCache(DataSetCache cache);
 
     /**
      * The patience improvement to use
-     * @param improvmentThreshold the patience improvement to set
+     * @param improvmentThreshold the patience improvement to applyTransformToDestination
      */
     public void setImprovmentThreshold(double improvmentThreshold);
 
@@ -108,7 +108,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
     public double improvementThreshold();
 
     /**
-     * The test set to use for validation
+     * The test applyTransformToDestination to use for validation
      * @return the test to use for validation
      */
     public DataSet testSet();
@@ -132,9 +132,9 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
     public int validationEpochs();
 
     /**
-     * Whether to validate against a held out test set and test for validation error.
+     * Whether to validate against a held out test applyTransformToDestination and test for validation error.
      *
-     * @return whether to validate against a held out test set and test for validation error.
+     * @return whether to validate against a held out test applyTransformToDestination and test for validation error.
      */
     public boolean isEarlyStopTesting();
 
@@ -171,7 +171,7 @@ public interface StateTracker<E extends Updateable<?>> extends Serializable {
 
     /**
      * The input split to use.
-     * This means that each data set that is trained on
+     * This means that each data applyTransformToDestination that is trained on
      * and loaded will be this batch size or lower
      * per worker
      * @return the input split to use

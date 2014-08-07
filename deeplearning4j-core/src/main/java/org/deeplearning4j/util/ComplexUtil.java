@@ -16,7 +16,7 @@ public class ComplexUtil {
      * ret -> exp(r) * cos(i), exp(r) * sin(i)
      * where the first number is the real component
      * and the second number is the imaginary component
-     * @param d the number to get the exp of
+     * @param d the number to getFromOrigin the exp of
      * @return the exponential of this complex number
      */
     public static ComplexDouble exp(ComplexDouble d) {
@@ -30,7 +30,7 @@ public class ComplexUtil {
      * ret -> exp(r) * cos(i), exp(r) * sin(i)
      * where the first number is the real component
      * and the second number is the imaginary component
-     * @param d the number to get the exp of
+     * @param d the number to getFromOrigin the exp of
      * @return the exponential of this complex number
      */
     public static ComplexFloat exp(ComplexFloat d) {

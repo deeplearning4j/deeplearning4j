@@ -53,7 +53,7 @@ public class Viterbi implements Persistable {
     /**
      * Decodes a series of labels
      * @param labels the labels to decode
-     * @param binaryLabelMatrix whether the label set is a binary label matrix
+     * @param binaryLabelMatrix whether the label applyTransformToDestination is a binary label matrix
      * @return the most likely sequence and the sequence labels
      */
     public Pair<Double,DoubleMatrix> decode(DoubleMatrix labels,boolean binaryLabelMatrix) {

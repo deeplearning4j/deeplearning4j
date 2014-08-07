@@ -107,7 +107,7 @@ public class OutputLayer implements Serializable,Output {
 
     /**
      * Train with the given input
-     * and the currently set labels
+     * and the currently applyTransformToDestination labels
      * @param x the input to use
      * @param lr the learning rate to use
      */

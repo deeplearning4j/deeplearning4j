@@ -150,7 +150,7 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
 
     }
 
-    /* Run compute on the data set */
+    /* Run compute on the data applyTransformToDestination */
     protected  void processDataSet(final List<DataSet> list) {
         if(list == null || list.isEmpty()) {
             log.warn("Worker " + id + " was passed an empty or null list");

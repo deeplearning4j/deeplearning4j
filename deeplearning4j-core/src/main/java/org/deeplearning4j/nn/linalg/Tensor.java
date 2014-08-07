@@ -19,7 +19,7 @@ import java.util.Arrays;
 import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
 
 /**
- * Tensor represents a set of matrices of all the same dimensions.
+ * Tensor represents a applyTransformToDestination of matrices of all the same dimensions.
  * Based on the Recursive Neural Tensor Network by Socher et. al
  * @author Adam Gibson
  */
@@ -33,7 +33,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * Creates this tensor with the specified number of rows, columns and slices
      * Note that this will throw an illegal argument exception if any of the given
      * params are less than 1
-     * @param baseLineMatrix the matrix to get the data from
+     * @param baseLineMatrix the matrix to getFromOrigin the data from
      * @param rows the number of rows per slice
      * @param columns the number of columns in the matrix
      * @param slices the number of slices in the tensor
@@ -65,7 +65,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
      * Creates this tensor with the specified number of rows, columns and slices
      * Note that this will throw an illegal argument exception if any of the given
      * params are less than 1
-     * @param baseLineMatrix the matrix to get the data from
+     * @param baseLineMatrix the matrix to getFromOrigin the data from
      * @param rows the number of rows per matrix
      * @param columns the number of columns for the tensor
      * @param slices the number of slices in the tensor
@@ -258,21 +258,21 @@ public class Tensor extends DoubleMatrix implements Serializable {
      */
     public DoubleMatrix getSlice(int index) {
         if(index >= slices())
-            throw new IllegalArgumentException("Unable to get slice " + index + " out of bounds");
+            throw new IllegalArgumentException("Unable to getFromOrigin slice " + index + " out of bounds");
 
         try {
             DoubleMatrix slice =  get(RangeUtils.interval(index,index + rows()),RangeUtils.interval(0,columns()));
             return slice;
 
         } catch(Exception e) {
-            throw new IllegalArgumentException("Unable to get a slice ",e);
+            throw new IllegalArgumentException("Unable to getFromOrigin a slice ",e);
         }
     }
 
     /**
      * Sets the slice, note that the given slice must be
      * the same dimensions
-     * @param index the slice to set
+     * @param index the slice to applyTransformToDestination
      * @param slice the new slice
      */
     public void setSlice(int index,DoubleMatrix slice) {
@@ -302,7 +302,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Assigns the corresponding slice to the passed in elements for each slice[i] in tensor
-     * @param tensor the tensor to set
+     * @param tensor the tensor to applyTransformToDestination
      * @param rowIndices the row indices for each slice
      * @param columnIndices the column indices for each slice
      */
@@ -315,9 +315,9 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Sets the passed in matrix to each of the row/column indices in each slice
-     * @param toSet the matrix to set
-     * @param rowIndices the row indices to set
-     * @param columnIndices the column indices to set
+     * @param toSet the matrix to applyTransformToDestination
+     * @param rowIndices the row indices to applyTransformToDestination
+     * @param columnIndices the column indices to applyTransformToDestination
      */
     public void set(DoubleMatrix toSet,int[] rowIndices,int[] columnIndices) {
         for(int i = 0; i < slices(); i++) {
@@ -370,7 +370,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Gets the specified row from each slice
-     * @param row the row to get from each slice
+     * @param row the row to getFromOrigin from each slice
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRows(int row) {
@@ -384,7 +384,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Gets the specified row from each slice
-     * @param column the row to get from each slice
+     * @param column the row to getFromOrigin from each slice
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getColumns(int column) {
@@ -399,8 +399,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Gets the specified row from the specified slice
-     * @param row the row to get from each slice
-     * @param slice the slice to get
+     * @param row the row to getFromOrigin from each slice
+     * @param slice the slice to getFromOrigin
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getRow(int row,int slice) {
@@ -420,8 +420,8 @@ public class Tensor extends DoubleMatrix implements Serializable {
 
     /**
      * Gets the specified column from each slice
-     * @param column the row to get from each slice
-     * @param slice the slice to get
+     * @param column the row to getFromOrigin from each slice
+     * @param slice the slice to getFromOrigin
      * @return a slices() x column matrix of each slices row $row
      */
     public DoubleMatrix getColumn(int column,int slice) {
@@ -432,7 +432,7 @@ public class Tensor extends DoubleMatrix implements Serializable {
     /**
      * Transposes the tensor in a number of ways relative to the passed in vals:
      * Very similar to matlabs permute over 3d matrices
-     * @param nums the nums (only 1,2,3)  to transform with
+     * @param nums the nums (only 1,2,3)  to applyTransformToOrigin with
      * @return a tensor that is permuted with the elements of this tensor
      */
     public Tensor permute(int[] nums) {

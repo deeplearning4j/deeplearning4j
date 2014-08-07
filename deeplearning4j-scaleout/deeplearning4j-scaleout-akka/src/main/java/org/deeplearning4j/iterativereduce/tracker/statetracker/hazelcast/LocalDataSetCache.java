@@ -7,7 +7,7 @@ import org.deeplearning4j.util.SerializationUtils;
 import java.io.File;
 
 /**
- * Stores the data set on local disk
+ * Stores the data applyTransformToDestination on local disk
  * @author Adam Gibson
  */
 public class LocalDataSetCache implements DataSetCache {

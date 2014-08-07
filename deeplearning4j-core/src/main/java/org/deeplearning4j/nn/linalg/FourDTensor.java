@@ -119,7 +119,7 @@ public class FourDTensor extends Tensor {
 
     /**
      * Sets the tensor at the specified index
-     * @param tensor the tensor to set
+     * @param tensor the tensor to applyTransformToDestination
      * @param set the new tensor
      * @return the tensor at the specified index
      */
@@ -161,7 +161,7 @@ public class FourDTensor extends Tensor {
     /**
      * Sets the slice of the given tensor
      * @param tensor the tensor to insert in to
-     * @param slice the slice to set
+     * @param slice the slice to applyTransformToDestination
      * @param put the matrix to put
      */
     public void put(int tensor,int slice,DoubleMatrix put) {
@@ -190,8 +190,8 @@ public class FourDTensor extends Tensor {
 
     /**
      * Returns a slice of a tensor
-     * @param tensor the tensor to get the slice of
-     * @param slice the slice of the tensor to get
+     * @param tensor the tensor to getFromOrigin the slice of
+     * @param slice the slice of the tensor to getFromOrigin
      * @return the slice of the specified tensor
      */
     public DoubleMatrix getSliceOfTensor(int tensor, int slice) {

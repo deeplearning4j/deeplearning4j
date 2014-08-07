@@ -89,7 +89,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
     }
 
     /**
-     * Pretrain with a data set iterator.
+     * Pretrain with a data applyTransformToDestination iterator.
      * This will run through each neural net at a time and train on the input.
      *
      * @param iter        the iterator to use
@@ -331,7 +331,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
             DoubleMatrix gradientChange = deltas.get(l);
-            //get the gradient
+            //getFromOrigin the gradient
             if(isUseAdaGrad())
                 gradientChange.muli(getLayers()[l].getAdaGrad().getLearningRates(gradientChange));
 

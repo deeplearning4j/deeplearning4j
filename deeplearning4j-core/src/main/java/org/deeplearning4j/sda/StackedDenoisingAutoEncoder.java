@@ -51,7 +51,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
     }
 
     /**
-     * Pretrain with a data set iterator.
+     * Pretrain with a data applyTransformToDestination iterator.
      * This will run through each neural net at a time and train on the input.
      *
      * @param iter        the iterator to use
@@ -496,7 +496,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
         /**
          * Transform the weights at the given layer
-         * @param layer the layer to transform
+         * @param layer the layer to applyTransformToOrigin
          * @param transform the function used for transformation
          * @return
          */

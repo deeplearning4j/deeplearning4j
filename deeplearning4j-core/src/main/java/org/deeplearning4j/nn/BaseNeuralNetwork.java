@@ -112,7 +112,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected  boolean concatBiases = false;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
-    //weight init scheme, this can either be a distribution or a set scheme
+    //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
     protected WeightInit weightInit;
 
 
@@ -1138,7 +1138,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         protected int resetAdaGradIterations = -1;
         protected boolean concatBiases = false;
         private boolean constrainGradientToUnitNorm = false;
-        //private init scheme, this can either be a distribution or a set scheme
+        //private init scheme, this can either be a distribution or a applyTransformToDestination scheme
         protected WeightInit weightInit;
 
         /**

@@ -137,7 +137,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 	public void exec() throws Exception {
 
 		//this is just a worker node: load everything from the master. All we should need is the ip of the master
-		//to set everything up
+		//to applyTransformToDestination everything up
 		if(type != null && type.equals("worker"))  {
 			log.info("Initializing conf from zookeeper at " + host);
 			ZookeeperConfigurationRetriever retriever = new ZookeeperConfigurationRetriever(host, 2181, "master");
@@ -218,7 +218,7 @@ public class ActorNetworkRunnerApp implements DeepLearningConfigurableDistribute
 			return;
 		try {
 			if(this.dataPath != null && this.dataSet != null)
-				throw new IllegalStateException("Can't have both a data set and a dataset path defined");
+				throw new IllegalStateException("Can't have both a data applyTransformToDestination and a dataset path defined");
 
 			else if(dataPath != null) {
 				DataSet data = DataSet.load(new File(dataPath));

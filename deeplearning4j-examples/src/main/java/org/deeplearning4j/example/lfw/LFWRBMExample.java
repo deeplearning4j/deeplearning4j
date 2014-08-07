@@ -76,7 +76,7 @@ public class LFWRBMExample {
 
 
 
-        //Iterate over the data set after done training and show the 2 side by side (you have to drag the test image over to the right)
+        //Iterate over the data applyTransformToDestination after done training and show the 2 side by side (you have to drag the test image over to the right)
         while(iter.hasNext()) {
             DataSet first = iter.next();
             DoubleMatrix reconstruct = r.reconstruct(first.getFirst());

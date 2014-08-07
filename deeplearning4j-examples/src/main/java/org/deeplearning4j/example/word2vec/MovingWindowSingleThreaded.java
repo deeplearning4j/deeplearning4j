@@ -39,7 +39,7 @@ public class MovingWindowSingleThreaded {
     public static void main(String[] args) throws Exception {
         InputStream is = new ClassPathResource(args[0]).getInputStream();
         LabelAwareSentenceIterator iterator = new LabelAwareListSentenceIterator(is,",",1,3);
-        //get rid of @mentions
+        //getFromOrigin rid of @mentions
         iterator.setPreProcessor(new SentencePreProcessor() {
             @Override
             public String preProcess(String sentence) {

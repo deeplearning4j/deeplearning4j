@@ -73,7 +73,7 @@ public class AdaGradFloat {
      * Adagrad keeps a history of gradients being passed in.
      * Note that each gradient passed in becomes adapted over time, hence
      * the name adagrad
-     * @param gradient the gradient to get learning rates for
+     * @param gradient the gradient to getFromOrigin learning rates for
      * @return the feature specific learning rates
      */
     public FloatMatrix getLearningRates(FloatMatrix gradient) {

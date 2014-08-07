@@ -30,7 +30,7 @@ public class LFWExample {
         load.filterAndStrip(new int[]{1,2});
         load.normalizeZeroMeanZeroUnitVariance();
         load.sortByLabel();
-        log.info("Data set " + load.numExamples());
+        log.info("Data applyTransformToDestination " + load.numExamples());
         iter = new SamplingDataSetIterator(load,6,16);
 		//784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder()

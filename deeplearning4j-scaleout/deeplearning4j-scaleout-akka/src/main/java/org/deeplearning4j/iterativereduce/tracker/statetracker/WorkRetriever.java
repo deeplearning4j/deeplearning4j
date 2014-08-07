@@ -29,14 +29,14 @@ public interface WorkRetriever extends Serializable {
     Collection<String> workers();
 
     /**
-     * Loads the data set
+     * Loads the data applyTransformToDestination
      * @param worker the worker to load for
      * @return the data for the given worker or null
      */
     DataSet load(String worker);
 
     /**
-     * Saves the data set for a given worker
+     * Saves the data applyTransformToDestination for a given worker
      * @param worker the worker to save data for
      * @param data the data to save
      */

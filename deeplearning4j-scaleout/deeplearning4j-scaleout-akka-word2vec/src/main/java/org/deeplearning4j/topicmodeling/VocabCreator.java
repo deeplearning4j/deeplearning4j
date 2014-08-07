@@ -34,7 +34,7 @@ import akka.routing.RoundRobinPool;
 
 /**
  * Sets up the word count frequencies
- * across a set of directories such that
+ * across a applyTransformToDestination of directories such that
  * the root directory has a directory for each topic
  * where the files underlying each directory
  * represent the topic.

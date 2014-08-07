@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 /**
- * A data set (example/outcome pairs)
+ * A data applyTransformToDestination (example/outcome pairs)
  * The outcomes are specifically for neural network encoding such that
  * any labels that are considered true are 1s. The rest are zeros.
  * @author Adam Gibson
@@ -52,7 +52,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
     public FloatDataSet(FloatMatrix first, FloatMatrix second) {
         super(first, second);
         if(first.rows != second.rows)
-            throw new IllegalStateException("Invalid data set; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
+            throw new IllegalStateException("Invalid data applyTransformToDestination; first and second do not have equal rows. First was " + first.rows + " second was " + second.rows);
 
 
     }
@@ -109,7 +109,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
      * Reshapes the input in to the given rows and columns
      * @param rows the row size
      * @param cols the column size
-     * @return a copy of this data set with the input resized
+     * @return a copy of this data applyTransformToDestination with the input resized
      */
     public FloatDataSet reshape(int rows,int cols) {
         FloatDataSet ret = new FloatDataSet(getFirst().reshape(rows,cols),getSecond());
@@ -155,7 +155,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
     }
 
     /**
-     * Divides the input data set by the max number in each row
+     * Divides the input data applyTransformToDestination by the max number in each row
      */
     public void scale() {
         MatrixUtil.scaleByMax(getFirst());
@@ -254,7 +254,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sets the outcome of a particular example
-     * @param example the example to set
+     * @param example the example to applyTransformToDestination
      * @param label the label of the outcome
      */
     public void setOutcome(int example,int label) {
@@ -269,7 +269,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Gets a copy of example i
-     * @param i the example to get
+     * @param i the example to getFromOrigin
      * @return the example at i (one example)
      */
     public FloatDataSet get(int i) {
@@ -298,8 +298,8 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
     }
 
     /**
-     * Strips the data set of all but the passed in labels
-     * @param labels strips the data set of all but the passed in labels
+     * Strips the data applyTransformToDestination of all but the passed in labels
+     * @param labels strips the data applyTransformToDestination of all but the passed in labels
      * @return the dataset with only the specified labels
      */
     public FloatDataSet filterBy(int[] labels) {
@@ -364,9 +364,9 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
 
     /**
-     * Partitions the data set by the specified number.
+     * Partitions the data applyTransformToDestination by the specified number.
      * @param num the number to split by
-     * @return the partitioned data set
+     * @return the partitioned data applyTransformToDestination
      */
     public List<FloatDataSet> dataSetBatches(int num) {
         List<List<FloatDataSet>> list =  Lists.partition(asList(),num);
@@ -380,7 +380,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sorts the dataset by label:
-     * Splits the data set such that examples are sorted by their labels.
+     * Splits the data applyTransformToDestination such that examples are sorted by their labels.
      * A ten label dataset would produce lists with batches like the following:
      * x1   y = 1
      * x2   y = 2
@@ -553,8 +553,8 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sample without replacement and a random rng
-     * @param numSamples the number of samples to get
-     * @return a sample data set without replacement
+     * @param numSamples the number of samples to getFromOrigin
+     * @return a sample data applyTransformToDestination without replacement
      */
     public FloatDataSet sample(int numSamples) {
         return sample(numSamples,new MersenneTwister(System.currentTimeMillis()));
@@ -562,7 +562,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sample without replacement
-     * @param numSamples the number of samples to get
+     * @param numSamples the number of samples to getFromOrigin
      * @param rng the rng to use
      * @return the sampled dataset without replacement
      */
@@ -572,7 +572,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sample a dataset numSamples times
-     * @param numSamples the number of samples to get
+     * @param numSamples the number of samples to getFromOrigin
      * @param withReplacement the rng to use
      * @return the sampled dataset without replacement
      */
@@ -582,7 +582,7 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
 
     /**
      * Sample a dataset
-     * @param numSamples the number of samples to get
+     * @param numSamples the number of samples to getFromOrigin
      * @param rng the rng to use
      * @param withReplacement whether to allow duplicates (only tracked by example row number)
      * @return the sample dataset
@@ -666,12 +666,12 @@ public class FloatDataSet  extends Pair<FloatMatrix,FloatMatrix> implements Pers
      */
     public void setLabelNames(List<String> labelNames) {
         if(labelNames == null || labelNames.size() != numOutcomes())
-            throw new IllegalArgumentException("Unable to set label names, does not match number of possible outcomes");
+            throw new IllegalArgumentException("Unable to applyTransformToDestination label names, does not match number of possible outcomes");
         this.labelNames = labelNames;
     }
 
     /**
-     * Optional column names of the data set, this is mainly used
+     * Optional column names of the data applyTransformToDestination, this is mainly used
      * for interpeting what columns are in the dataset
      * @return
      */

@@ -17,20 +17,20 @@ public interface DataSetFetcher extends Serializable {
 
 	/**
 	 * Whether the dataset has more to load
-	 * @return whether the data set has more to load
+	 * @return whether the data applyTransformToDestination has more to load
 	 */
 	boolean hasMore();
 	
 	/**
-	 * Returns the next data set
+	 * Returns the next data applyTransformToDestination
 	 * @return the next dataset
 	 */
 	DataSet next();
 	
 	/**
 	 * Fetches the next dataset. You need to call this
-	 * to get a new dataset, otherwise {@link #next()}
-	 * just returns the last data set fetch
+	 * to getFromOrigin a new dataset, otherwise {@link #next()}
+	 * just returns the last data applyTransformToDestination fetch
 	 * @param numExamples the number of examples to fetch
 	 */
 	void fetch(int numExamples);

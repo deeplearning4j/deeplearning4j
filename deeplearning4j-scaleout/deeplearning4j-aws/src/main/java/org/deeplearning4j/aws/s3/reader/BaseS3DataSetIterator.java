@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 /**
- * baseline data set iterator for 
+ * baseline data applyTransformToDestination iterator for
  * @author Adam Gibson
  *
  */

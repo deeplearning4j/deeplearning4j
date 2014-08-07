@@ -16,4 +16,7 @@ public interface Vectorizer {
 	 * @return Adam Gibson
 	 */
 	DataSet vectorize();
+
+
+
 }

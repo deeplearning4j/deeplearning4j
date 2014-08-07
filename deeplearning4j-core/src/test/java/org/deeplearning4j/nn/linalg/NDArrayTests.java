@@ -46,7 +46,7 @@ public class NDArrayTests {
     public void testSlices() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         for(int i = 0; i < arr.slices(); i++) {
-            assertEquals(1, arr.slice(i).slice(1).slices());
+            assertEquals(2, arr.slice(i).slice(1).slices());
         }
 
     }
@@ -180,7 +180,7 @@ public class NDArrayTests {
         assertEquals(true,Arrays.equals(d.toArray(),n.toArray()));
         assertEquals(true,Arrays.equals(new int[]{2,2},n.shape()));
 
-        DoubleMatrix newRow = DoubleMatrix.linspace(1,2,2);
+        DoubleMatrix newRow = DoubleMatrix.linspace(5,6,2);
         n.putRow(0,newRow);
         d.putRow(0,newRow);
 
@@ -299,7 +299,7 @@ public class NDArrayTests {
         NDArray columnVector = new NDArray(data,new int[]{6,1});
         assertEquals(6,columnVector.rows());
         assertEquals(1,columnVector.columns());
-        NDArray rowVector = new NDArray(data,new int[]{1,6});
+        NDArray rowVector = new NDArray(data,new int[]{6});
         assertEquals(1,rowVector.rows());
         assertEquals(6,rowVector.columns());
     }
@@ -311,6 +311,11 @@ public class NDArrayTests {
         NDArray transpose = n.transpose();
         assertEquals(n.length,transpose.length);
         assertEquals(true,Arrays.equals(new int[]{4,5,5},transpose.shape()));
+
+        NDArray rowVector = NDArray.linspace(1,10,10);
+        assertTrue(rowVector.isRowVector());
+        NDArray columnVector = rowVector.transpose();
+        assertTrue(columnVector.isColumnVector());
 
     }
 
@@ -505,6 +510,26 @@ public class NDArrayTests {
 
     }
 
+    @Test
+    public void testElementWiseOps() {
+        NDArray n1 = NDArray.scalar(1);
+        NDArray n2 = NDArray.scalar(2);
+        assertEquals(NDArray.scalar(3),n1.add(n2));
+        assertFalse(n1.add(n2).equals(n1));
+
+        NDArray n3 = NDArray.scalar(3);
+        NDArray n4 = NDArray.scalar(4);
+        NDArray subbed = n4.sub(n3);
+        NDArray mulled = n4.mul(n3);
+        NDArray div = n4.div(n3);
+
+        assertFalse(subbed.equals(n4));
+        assertFalse(mulled.equals(n4));
+        assertEquals(NDArray.scalar(1),subbed);
+        assertEquals(NDArray.scalar(12),mulled);
+        assertEquals(NDArray.scalar(1),div);
+    }
+
 
 
 
@@ -543,7 +568,7 @@ public class NDArrayTests {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
         NDArray flattened = arr.flatten();
         assertEquals(arr.length,flattened.length);
-        assertEquals(true,Arrays.equals(new int[]{1,arr.length},flattened.shape()));
+        assertEquals(true,Shape.shapeEquals(new int[]{1, arr.length}, flattened.shape()));
         for(int i = 0; i < arr.length; i++) {
             assertEquals(i + 1,flattened.get(i),1e-1);
         }

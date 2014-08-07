@@ -86,7 +86,7 @@ public class ArrayUtil {
 
     /**
      * Returns a subset of an array from 0 to "to"
-     * @param data the data to get a subset of
+     * @param data the data to getFromOrigin a subset of
      * @param to the end point of the data
      * @return the subset of the data specified
      */
@@ -99,7 +99,7 @@ public class ArrayUtil {
     /**
      * Returns a subset of an array from 0 to "to"
      * using the specified stride
-     * @param data the data to get a subset of
+     * @param data the data to getFromOrigin a subset of
      * @param to the end point of the data
      * @param stride the stride to go through the array
      * @return the subset of the data specified
@@ -112,7 +112,7 @@ public class ArrayUtil {
     /**
      * Returns a subset of an array from 0 to "to"
      * using the specified stride
-     * @param data the data to get a subset of
+     * @param data the data to getFromOrigin a subset of
      * @param to the end point of the data
      * @param stride the stride to go through the array
      * @param numElementsEachStride the number of elements to collect at each stride
@@ -390,7 +390,7 @@ public class ArrayUtil {
 
 
     /**
-     * Combines a set of int arrays in to one flat int array
+     * Combines a applyTransformToDestination of int arrays in to one flat int array
      * @param nums the int arrays to combine
      * @return one combined int array
      */
@@ -411,7 +411,7 @@ public class ArrayUtil {
 
 
     /**
-     * Combines a set of int arrays in to one flat int array
+     * Combines a applyTransformToDestination of int arrays in to one flat int array
      * @param nums the int arrays to combine
      * @return one combined int array
      */
@@ -431,7 +431,7 @@ public class ArrayUtil {
     }
 
     /**
-     * Combines a set of int arrays in to one flat int array
+     * Combines a applyTransformToDestination of int arrays in to one flat int array
      * @param ints the int arrays to combine
      * @return one combined int array
      */
@@ -451,7 +451,7 @@ public class ArrayUtil {
     }
 
     /**
-     * Combines a set of int arrays in to one flat int array
+     * Combines a applyTransformToDestination of int arrays in to one flat int array
      * @param ints the int arrays to combine
      * @return one combined int array
      */
