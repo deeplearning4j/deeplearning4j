@@ -1250,22 +1250,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
             //slice of a matrix is a vector
         else if (shape.length == 2) {
-            int st = getRealStrideForLinearIndex();
-            if (st == 1)
-                return new ComplexNDArray(
-                        data,
-                        ArrayUtil.of(1,shape[0]),
-                        offset
-                );
+            return new ComplexNDArray(
+                    data,
+                    ArrayUtil.of(shape[1]),
+                    Arrays.copyOfRange(stride,1,stride.length),
+                    offset
 
-            else
-                return new ComplexNDArray(
-                        data,
-                        ArrayUtil.of(1,shape[1]),
-                        ArrayUtil.of(1,stride[1]),
-                        offset
-
-                );
+            );
 
         }
 
@@ -1974,6 +1965,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
             }
 
         }
+        //default row vector
+        else if(this.shape.length == 1) {
+            columns = this.shape[0];
+            rows = 1;
+        }
 
         this.length = ArrayUtil.prod(this.shape);
         if(this.stride == null) {
@@ -2369,6 +2365,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         checkArrangeArray(rearrange);
         int[] newDims = doPermuteSwap(shape,rearrange);
         int[] newStrides = doPermuteSwap(stride,rearrange);
+
         ComplexNDArray ret = new ComplexNDArray(data,newDims,newStrides,offset);
 
         return ret;
