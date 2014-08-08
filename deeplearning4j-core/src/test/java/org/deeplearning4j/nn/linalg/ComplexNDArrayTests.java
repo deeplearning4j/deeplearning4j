@@ -72,7 +72,7 @@ public class ComplexNDArrayTests {
 
     @Test
     public void testSwapAxes() {
-        ComplexNDArray n = new ComplexNDArray(new NDArray(new double[]{1,2,3},new int[]{3}));
+        ComplexNDArray n = new ComplexNDArray(new NDArray(new double[]{1,2,3},new int[]{3,1}));
         ComplexNDArray swapped = n.swapAxes(1,0);
         assertEquals(n.transpose(),swapped);
         //vector despite being transposed should have same linear index
@@ -86,7 +86,7 @@ public class ComplexNDArrayTests {
         assertEquals(validate,assertion);
 
 
-        ComplexNDArray v1 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
+        ComplexNDArray v1 = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8,1}));
         ComplexNDArray swap = v1.swapAxes(1,0);
         ComplexNDArray transposed = v1.transpose();
         assertEquals(swap, transposed);
@@ -304,11 +304,8 @@ public class ComplexNDArrayTests {
 
 
         ComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
-        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,7,0,11,0,15,0,19,0},new int[]{5});
-        double[] rowToTestData = rowToTest.data();
-        double[] noOffsetRowData = noOffsetRow.data();
-        assertTrue(Arrays.equals(noOffsetRowData,rowToTestData));
-
+        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,-1,0,7,0,-1,0,11,0},new int[]{5});
+        assertEquals(rowToTest,noOffsetRow);
 
     }
 
@@ -457,9 +454,9 @@ public class ComplexNDArrayTests {
 
         assertFalse(subbed.equals(n4));
         assertFalse(mulled.equals(n4));
-        assertEquals(NDArray.scalar(1),subbed);
+        assertEquals(ComplexNDArray.scalar(1),subbed);
         assertEquals(ComplexNDArray.scalar(12),mulled);
-        assertEquals(ComplexNDArray.scalar(1),div);
+        assertEquals(ComplexNDArray.scalar(new ComplexDouble(1.3333333333333333)),div);
     }
 
 

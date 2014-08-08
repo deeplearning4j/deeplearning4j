@@ -331,11 +331,18 @@ public class NDArrayTests {
 
     @Test
     public void testPermute() {
-        NDArray n = new NDArray(DoubleMatrix.rand(20).data,new int[]{5,4});
+        NDArray n = new NDArray(DoubleMatrix.linspace(1,20,20).data,new int[]{5,4});
         NDArray transpose = n.transpose();
         NDArray permute = n.permute(new int[]{1,0});
         assertEquals(permute,transpose);
         assertEquals(transpose.length,permute.length,1e-1);
+
+
+        NDArray toPermute = new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2});
+        NDArray permuted = toPermute.permute(new int[]{2,1,0});
+        NDArray assertion = new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        assertEquals(permuted,assertion);
+
     }
 
     @Test
@@ -371,6 +378,7 @@ public class NDArrayTests {
     public void testSwapAxes() {
         NDArray n = new NDArray(DoubleMatrix.linspace(0,7,8).data,new int[]{2,2,2});
         NDArray assertion = n.permute(new int[]{2,1,0});
+        double[] data = assertion.data();
         NDArray validate = new NDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(validate,assertion);
 
