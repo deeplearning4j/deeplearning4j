@@ -2145,7 +2145,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
         if(isVector())
             op.operate(new DimensionSlice(false,this,null));
-        if(isMatrix()) {
+        else if(isMatrix()) {
             for(int i = 0; i < slices(); i++) {
                 ComplexNDArray row = slice(i);
                 op.operate(new DimensionSlice(false,row,null));
