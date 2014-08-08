@@ -1018,6 +1018,17 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+    /**
+     * Linear get ignoring linear restrictions
+     * @param i the index of the element to get
+     * @return the item at the given index
+     */
+    public double unSafeGet(int i) {
+        int idx = unSafeLinearIndex(i);
+        return data[idx];
+    }
+
+
 
 
     public int unSafeLinearIndex(int i) {

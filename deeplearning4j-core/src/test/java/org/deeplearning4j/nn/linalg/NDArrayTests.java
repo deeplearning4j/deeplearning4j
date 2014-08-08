@@ -226,6 +226,11 @@ public class NDArrayTests {
 
 
 
+    @Test
+    public void testSum() {
+        NDArray n = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2});
+        assertEquals(36,n.sum(),1e-1);
+    }
 
 
     @Test

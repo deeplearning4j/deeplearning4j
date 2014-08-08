@@ -236,59 +236,6 @@ public class NDArrayUtil {
     }
 
 
-    /**
-     * Dimension wise operation along an ndarray
-     * @param op the op to do
-     * @param arr the array  to do operations on
-     * @param dimension the dimension to do operations on
-     * @return the
-     */
-    public static NDArray dimensionOp(DimensionOp op,NDArray arr,int dimension) {
-        if(dimension >= arr.slices())
-            return arr;
-
-        int[] shape = ArrayUtil.removeIndex(arr.shape(),dimension);
-
-
-        List<NDArray> list = new ArrayList<>();
-
-        for(int i = 0; i < arr.slices(); i++) {
-            switch(op) {
-                case SUM:
-                    //list.add(arr.slice(i,dimension).sum());
-                    break;
-                case MAX:
-                    list.add(arr.slice(i,dimension).columnMaxs());
-                    break;
-                case MEAN:
-                    list.add(arr.slice(i,dimension).columnSums());
-                    break;
-                case PROD:
-                    list.add(arr.slice(i,dimension).columnMeans());
-                    break;
-            }
-        }
-
-
-        return arr;
-    }
-
-
-    public static double[] collectForOp(NDArray from,int dimension) {
-        //number of operations per op
-        int num = from.shape()[dimension];
-
-        //how to isolate blocks from the matrix
-        double[] d = new double[num];
-        int idx = 0;
-        for(int k = 0; k < d.length; k++) {
-            d[k] = from.data[idx];
-            idx += num;
-        }
-
-
-        return d;
-    }
 
 
     /**
@@ -342,63 +289,64 @@ public class NDArrayUtil {
 
 
 
-
+    /**
+     * Execute an element wise operation over the whole array
+     * @param op the operation to execute
+     * @param arr the array to perform operations on
+     * @return the result over the whole nd array
+     */
     public static double doSliceWise(ScalarOp op,NDArray arr) {
-        if(arr.isScalar())
-            return arr.get(0);
 
-        else {
-            double ret = 0;
+        arr = arr.reshape(new int[]{1,arr.length});
 
-            for(int i = 0; i < arr.slices(); i++) {
-                switch(op) {
-                    case MEAN:
-                        ret += arr.slice(i).mean();
-                        break;
-                    case SUM :
-                        ret += arr.slice(i).sum();
-                        break;
-                    case PROD :
-                        ret += arr.slice(i).prod();
-                        break;
-                    case MAX :
-                        double max = arr.slice(i).max();
-                        if(max > ret)
-                            ret = max;
-                        break;
-                    case MIN :
-                        double min = arr.slice(i).min();
-                        if(min < ret)
-                            ret = min;
-                        break;
-                    case ARG_MIN:
-                        double argMin = arr.slice(i).argmin();
-                        if(argMin < ret)
-                            ret = argMin;
-                        break;
-                    case ARG_MAX:
-                        double argMax = arr.slice(i).argmax();
-                        if(argMax > ret)
-                            ret = argMax;
-                        break;
-                    case NORM_1:
-                        ret += arr.slice(i).norm1();
-                        break;
-                    case NORM_2:
-                        ret += arr.slice(i).norm2();
-                        break;
-                    case NORM_MAX:
-                        ret += arr.slice(i).normmax();
-                        break;
-
-
-                }
-            }
-
-            return ret;
+        if(op == ScalarOp.NORM_1) {
+            return NDArrayBlas.asum(arr);
         }
 
+        else if(op == ScalarOp.NORM_2) {
+            return NDArrayBlas.nrm2(arr);
+
+        }
+
+        else if(op == ScalarOp.NORM_MAX) {
+            int i = NDArrayBlas.iamax(arr);
+            return arr.get(i);
+        }
+
+        double s = 0.0;
+        for (int i = 0; i < arr.length; i++) {
+            switch (op) {
+                case SUM:
+                    s += arr.unSafeGet(i);
+                    break;
+                case MEAN:
+                    s += arr.unSafeGet(i);
+                    break;
+                case MAX:
+                    if (arr.unSafeGet(i) > s)
+                        s = arr.unSafeGet(i);
+                    break;
+                case MIN:
+                    if (arr.unSafeGet(i) < s)
+                        s = arr.unSafeGet(i);
+                    break;
+                case PROD:
+                    s *= arr.get(i);
+                    break;
+
+
+            }
+
+
+        }
+
+        if(op == ScalarOp.MEAN)
+            s /= arr.length;
+
+
+        return s;
     }
+
 
 
 }
