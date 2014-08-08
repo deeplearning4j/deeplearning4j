@@ -424,11 +424,14 @@ public class FFT {
 
     //underlying ifftn
     public static ComplexNDArray rawifftn(ComplexNDArray transform,int[] shape,int[] axes) {
+        assert shape.length > 0 : "Shape length must be > 0";
+        assert shape.length == axes.length : "Axes and shape must be the same length";
+
         ComplexNDArray result = transform.dup();
 
 
 
-        for(int i = transform.shape().length - 1; i >= 0; i--) {
+        for(int i =  shape.length - 1; i >= 0; i--) {
             result = FFT.rawifft(result,shape[i],axes[i]);
         }
 

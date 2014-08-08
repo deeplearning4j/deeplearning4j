@@ -537,7 +537,7 @@ public class NDArray extends DoubleMatrix {
     public void iterateOverAllRows(SliceOp op) {
         if(isVector())
             op.operate(new DimensionSlice(false,this,null));
-        if(isMatrix()) {
+        else if(isMatrix()) {
             for(int i = 0; i < rows(); i++) {
                 op.operate(new DimensionSlice(false,getRow(i),null));
             }
@@ -1124,7 +1124,7 @@ public class NDArray extends DoubleMatrix {
             NDArray slice2 =  new NDArray(
                     data,
                     ArrayUtil.of(shape[1]),
-                   Arrays.copyOfRange(stride,1,stride.length),
+                    Arrays.copyOfRange(stride,1,stride.length),
                     offset + slice * stride[0]
             );
             return slice2;
