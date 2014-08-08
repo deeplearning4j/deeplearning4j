@@ -980,6 +980,13 @@ public class NDArray extends DoubleMatrix {
 
         }
 
+        //default row vector
+        else if(this.shape.length == 1) {
+            columns = this.shape[0];
+            rows = 1;
+        }
+
+
 
         this.length = ArrayUtil.prod(this.shape);
         if(this.stride == null)
@@ -1114,22 +1121,13 @@ public class NDArray extends DoubleMatrix {
 
             //slice of a matrix is a vector
         else if (shape.length == 2) {
-            int st = stride[0];
-            if (st == 1)
-                return new NDArray(
-                        data,
-                        ArrayUtil.of(shape[1]),
-                        offset + slice * stride[0]
-                );
-
-            else
-                return new NDArray(
-                        data,
-                        ArrayUtil.of(shape[1]) ,
-                        ArrayUtil.of(stride[1]),
-                        offset + slice * stride[0]
-
-                );
+            NDArray slice2 =  new NDArray(
+                    data,
+                    ArrayUtil.of(shape[1]),
+                   Arrays.copyOfRange(stride,1,stride.length),
+                    offset + slice * stride[0]
+            );
+            return slice2;
 
         }
 
@@ -1592,7 +1590,7 @@ public class NDArray extends DoubleMatrix {
             return new NDArray(data,new int[]{shape[0],1},offset);
         else if(isColumnVector())
             return new NDArray(data,new int[]{shape[1]},offset);
-        NDArray n = new NDArray(data,reverseCopy(shape),ArrayUtil.reverseCopy(stride),offset);
+        NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
         return n;
 
     }
@@ -2169,12 +2167,14 @@ public class NDArray extends DoubleMatrix {
      */
     public NDArray permute(int[] rearrange) {
         checkArrangeArray(rearrange);
-        int[] newDims = doPermuteSwap(shape,rearrange);
-        int[] newStrides = doPermuteSwap(stride,rearrange);
-        NDArray ret = new NDArray(data,newDims,newStrides,offset);
 
-        return ret;
+        int[] newShape = doPermuteSwap(shape,rearrange);
+        int[] newStride = doPermuteSwap(stride,rearrange);
+        return new NDArray(data,newShape,newStride,offset);
     }
+
+
+
 
     private int[] doPermuteSwap(int[] shape,int[] rearrange) {
         int[] ret = new int[shape.length];
@@ -2266,19 +2266,6 @@ public class NDArray extends DoubleMatrix {
             return sb.toString();
         }
 
-        else if(isMatrix()) {
-            StringBuilder sb = new StringBuilder();
-
-            for(int i = 0; i < rows(); i++) {
-                sb.append('[');
-                for(int j = 0; j < columns(); j++) {
-                    sb.append(get(i,j));
-                    if(j < columns() - 1)
-                        sb.append(',');
-                }
-                sb.append(']');
-            }
-        }
 
 
         StringBuilder sb = new StringBuilder();
@@ -2286,7 +2273,7 @@ public class NDArray extends DoubleMatrix {
         sb.append("[");
         if (length > 0) {
             sb.append(slice(0).toString());
-            for (int i = 1; i < length; i++) {
+            for (int i = 1; i < slices(); i++) {
                 sb.append(slice(i).toString());
                 if(i < length - 1)
                     sb.append(',');

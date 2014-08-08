@@ -23,11 +23,9 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
     public ComplexNDArray apply(ComplexNDArray ndArray) {
         double len = n;
         int desiredElementsAlongDimension = ndArray.length;
-        boolean transpose = ndArray.isColumnVector();
-        //transpose in to a row vector then applyTransformToOrigin back
+        boolean transpose = ndArray.isRowVector();
         if(transpose)
             ndArray = ndArray.transpose();
-
 
 
         if(len > desiredElementsAlongDimension) {
