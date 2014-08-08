@@ -1139,10 +1139,20 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    /**
+     * Linear get ignoring linear restrictions
+     * @param i the index of the element to get
+     * @return the item at the given index
+     */
+    public ComplexDouble unSafeGet(int i) {
+        int idx = unSafeLinearIndex(i);
+        return new ComplexDouble(data[idx],data[idx + 1]);
+    }
+
 
     public int unSafeLinearIndex(int i) {
-        int realStride = getRealStrideForLinearIndex();
-        int idx = offset + i;
+        int realStride = stride[0];
+        int idx = offset + i * realStride;
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
@@ -1639,6 +1649,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    @Override
+    public ComplexNDArray muli(ComplexDouble v) {
+        return muli(v, this);
+    }
 
     /**
      * Elementwise division (in-place).
@@ -1651,6 +1665,17 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         new DivideOp(this,this,flatten).exec();
         return this;
     }
+
+
+    /** (Elementwise) division with a scalar */
+    @Override
+    public ComplexNDArray divi(ComplexDouble a, ComplexDoubleMatrix result) {
+        ComplexNDArray flatten = ComplexNDArray.wrap(result);
+        new DivideOp(this,flatten,a).exec();
+        return flatten;
+    }
+
+
 
     /**
      * Add a scalar (in place).
@@ -1770,6 +1795,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     }
 
+
+    @Override
+    public ComplexNDArray div(double v) {
+        return divi(new ComplexDouble(v), new ComplexDoubleMatrix(rows, columns));
+    }
 
 
     @Override

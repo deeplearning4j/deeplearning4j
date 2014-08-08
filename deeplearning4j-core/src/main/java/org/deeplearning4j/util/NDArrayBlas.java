@@ -131,4 +131,51 @@ public class NDArrayBlas {
         return y;
     }
 
+
+    /**
+     * Compute || x ||_1 (1-norm, sum of absolute values)
+     */
+    public static double asum(NDArray x) {
+        return NativeBlas.dasum(x.length, x.data, x.offset(), 1);
+    }
+
+    public static double asum(ComplexNDArray x) {
+        return NativeBlas.dzasum(x.length, x.data, x.offset(), 1);
+    }
+
+
+
+
+    /**
+     * Compute || x ||_2 (2-norm)
+     */
+    public static double nrm2(NDArray x) {
+        return NativeBlas.dnrm2(x.length, x.data, x.offset(), 1);
+    }
+
+    public static double nrm2(ComplexNDArray x) {
+        return NativeBlas.dznrm2(x.length, x.data, x.offset(), 1);
+    }
+
+
+    /**
+     * Compute index of element with largest absolute value (index of absolute
+     * value maximum)
+     */
+    public static int iamax(NDArray x) {
+        return NativeBlas.idamax(x.length, x.data, x.offset(), 1) - 1;
+    }
+
+    /**
+     * Compute index of element with largest absolute value (complex version).
+     *
+     * @param x matrix
+     * @return index of element with largest absolute value.
+     */
+    public static int iamax(ComplexNDArray x) {
+        return NativeBlas.izamax(x.length, x.data, x.offset(), 1) - 1;
+    }
+
+
+
 }

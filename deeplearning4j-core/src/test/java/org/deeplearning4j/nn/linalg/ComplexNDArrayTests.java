@@ -46,6 +46,13 @@ public class ComplexNDArrayTests {
 
     }
 
+
+    @Test
+    public void testSum() {
+        ComplexNDArray n = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2}));
+        assertEquals(new ComplexDouble(36),n.sum());
+    }
+
     @Test
     public void testVectorGet() {
         ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8}));
@@ -304,7 +311,7 @@ public class ComplexNDArrayTests {
 
 
         ComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
-        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,-1,0,7,0,-1,0,11,0},new int[]{5});
+        ComplexNDArray noOffsetRow = new ComplexNDArray(new double[]{3,0,7,0,11,0,15,0,19,0},new int[]{5});
         assertEquals(rowToTest,noOffsetRow);
 
     }
@@ -457,6 +464,17 @@ public class ComplexNDArrayTests {
         assertEquals(ComplexNDArray.scalar(1),subbed);
         assertEquals(ComplexNDArray.scalar(12),mulled);
         assertEquals(ComplexNDArray.scalar(new ComplexDouble(1.3333333333333333)),div);
+
+
+        ComplexNDArray multiDimensionElementWise = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
+        ComplexDouble sum2 = multiDimensionElementWise.sum();
+        assertEquals(sum2,new ComplexDouble(300));
+        multiDimensionElementWise.addi(1);
+        ComplexDouble sum3 = multiDimensionElementWise.sum();
+        assertEquals(sum3,new ComplexDouble(324));
+
+
+
     }
 
 
