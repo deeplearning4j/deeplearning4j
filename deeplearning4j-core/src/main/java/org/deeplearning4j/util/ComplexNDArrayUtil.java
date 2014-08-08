@@ -96,8 +96,17 @@ public class ComplexNDArrayUtil {
 
         DoubleMatrix startIndex = currShape.sub(shapeMatrix).div(2);
         DoubleMatrix endIndex = startIndex.add(shapeMatrix);
-        arr = ComplexNDArray.wrap(arr.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)),RangeUtils.interval((int) startIndex.get(1),(int) endIndex.get(1))));
-
+        if(shapeMatrix.length > 1)
+            arr = ComplexNDArray.wrap(arr.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)),RangeUtils.interval((int) startIndex.get(1),(int) endIndex.get(1))));
+        else {
+            ComplexNDArray ret = new ComplexNDArray(new int[]{(int) shapeMatrix.get(0)});
+            int start = (int) startIndex.get(0);
+            int end = (int) endIndex.get(0);
+            int count = 0;
+            for(int i = start; i < end; i++) {
+                ret.put(count++,arr.get(i));
+            }
+        }
 
 
         return arr;
