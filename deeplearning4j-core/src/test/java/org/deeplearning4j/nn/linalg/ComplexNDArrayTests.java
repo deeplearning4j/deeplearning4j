@@ -435,13 +435,13 @@ public class ComplexNDArrayTests {
     public void testBasicOperations() {
         ComplexNDArray arr = new ComplexNDArray(new double[]{0,1,2,1,1,2,3,4},new int[]{2,2});
         double sum = arr.sum().real();
-        assertEquals(4,sum,1e-1);
+        assertEquals(6,sum,1e-1);
         arr.addi(1);
         sum = arr.sum().real();
-        assertEquals(8,sum,1e-1);
+        assertEquals(10,sum,1e-1);
         arr.subi(1);
         sum = arr.sum().real();
-        assertEquals(4,sum,1e-1);
+        assertEquals(6,sum,1e-1);
     }
 
 
