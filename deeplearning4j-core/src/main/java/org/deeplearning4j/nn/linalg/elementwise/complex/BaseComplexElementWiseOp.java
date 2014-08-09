@@ -14,8 +14,9 @@ public abstract class BaseComplexElementWiseOp implements ComplexElementWiseOp {
 
 
     protected BaseComplexElementWiseOp(ComplexNDArray from, ComplexNDArray to) {
-        this.from = from;
-        this.to = to;
+        this.from = from.reshape(new int[]{1,from.length});
+        this.to = to.reshape(new int[]{1,to.length});
+
         assert from.length == to.length : "From and to must be the same length";
 
     }
@@ -25,7 +26,7 @@ public abstract class BaseComplexElementWiseOp implements ComplexElementWiseOp {
     }
 
     protected BaseComplexElementWiseOp(ComplexNDArray from,ComplexDouble scalarValue) {
-        this.from = from;
+        this.from = from.reshape(new int[]{1,from.length});
         this.scalarValue = scalarValue;
     }
 
@@ -37,8 +38,7 @@ public abstract class BaseComplexElementWiseOp implements ComplexElementWiseOp {
     @Override
     public void applyTransformToOrigin(int i) {
         ComplexDouble get =  apply(getFromOrigin(i),i);
-        from.data[from.unSafeLinearIndex(i)] = get.real();
-        from.data[from.unSafeLinearIndex(i) + 1] = get.abs();
+        from.put(i,get);
 
     }
 
@@ -51,15 +51,14 @@ public abstract class BaseComplexElementWiseOp implements ComplexElementWiseOp {
     @Override
     public void applyTransformToOrigin(int i, ComplexDouble valueToApply) {
         ComplexDouble ret = apply(valueToApply,i);
-        from.data[from.unSafeLinearIndex(i)] = ret.real();
-        from.data[from.unSafeLinearIndex(i) + 1] = ret.imag();
+        from.put(i,ret);
 
 
     }
 
     @Override
     public ComplexDouble getFromOrigin(int i) {
-        return new ComplexDouble(from.data[from.unSafeLinearIndex(i)],from.data[from.unSafeLinearIndex(i) + 1]);
+        return from.get(i);
     }
 
     /**

@@ -25,6 +25,8 @@ public abstract class BaseComplexTwoArrayElementWiseOp extends BaseComplexElemen
         super(from,scalarValue);
         this.to = to;
         this.other = other;
+        to = to.reshape(new int[]{1,to.length});
+        from = from.reshape(new int[]{1,other.length});
         assert from.length == to.length : "From and to must be the same length";
     }
 
@@ -35,8 +37,8 @@ public abstract class BaseComplexTwoArrayElementWiseOp extends BaseComplexElemen
      */
     public BaseComplexTwoArrayElementWiseOp(ComplexNDArray from, ComplexNDArray to,ComplexNDArray other) {
         super(from);
-        this.to = to;
-        this.other = other;
+        this.to = to.reshape(new int[]{1,to.length});
+        this.other = other.reshape(new int[]{1,other.length});
         assert from.length == to.length : "From and to must be the same length";
     }
 
@@ -49,7 +51,7 @@ public abstract class BaseComplexTwoArrayElementWiseOp extends BaseComplexElemen
      */
     public BaseComplexTwoArrayElementWiseOp(ComplexNDArray from, ComplexNDArray to,ComplexDouble scalarValue) {
         super(from,scalarValue);
-        this.to = to;
+        this.to = to.reshape(1,to.length);
         this.other = to;
         assert from.length == to.length : "From and to must be the same length";
     }
@@ -89,14 +91,14 @@ public abstract class BaseComplexTwoArrayElementWiseOp extends BaseComplexElemen
     public void applyTransformToDestination(int i) {
         if(Double.isInfinite(scalarValue.real())) {
             ComplexDouble ret =  apply(getFromDestination(i),i);
-            to.data[to.unSafeLinearIndex(i)] = ret.real();
-            to.data[to.unSafeLinearIndex(i) + 1] = ret.imag();
+            to.data[to.linearIndex(i)] = ret.real();
+            to.data[to.linearIndex(i) + 1] = ret.imag();
 
         }
         else {
             ComplexDouble c = apply(scalarValue,i);
-            to.data[to.unSafeLinearIndex(i)] = c.real();
-            to.data[to.unSafeLinearIndex(i) + 1] = c.imag();
+            to.data[to.linearIndex(i)] = c.real();
+            to.data[to.linearIndex(i) + 1] = c.imag();
 
 
         }
@@ -132,7 +134,7 @@ public abstract class BaseComplexTwoArrayElementWiseOp extends BaseComplexElemen
      */
     @Override
     public ComplexDouble getFromDestination(int i) {
-        return new ComplexDouble(other.data[other.unSafeLinearIndex(i)],other.data[other.unSafeLinearIndex(i) + 1]);
+        return new ComplexDouble(other.data[other.linearIndex(i)],other.data[other.linearIndex(i) + 1]);
     }
 
     /**

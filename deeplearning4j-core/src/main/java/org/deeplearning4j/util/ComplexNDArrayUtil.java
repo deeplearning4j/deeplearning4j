@@ -313,21 +313,21 @@ public class ComplexNDArrayUtil {
 
         ComplexDouble s = new ComplexDouble(0.0);
         for (int i = 0; i < arr.length; i++) {
-            ComplexDouble curr = arr.unSafeGet(i);
+            ComplexDouble curr = arr.get(i);
 
             switch (op) {
                 case SUM:
                     s.addi(curr);
                     break;
                 case MEAN:
-                    s.addi(arr.unSafeGet(i));
+                    s.addi(arr.get(i));
                     break;
                 case MAX:
-                    if (arr.unSafeGet(i).abs() > s.abs())
+                    if (arr.get(i).abs() > s.abs())
                         s.set(arr.get(i).real(), arr.get(i).imag());
                     break;
                 case MIN:
-                    if (arr.unSafeGet(i).abs() < s.abs())
+                    if (arr.get(i).abs() < s.abs())
                         s.set(arr.get(i).real(), arr.get(i).imag());
                 case PROD:
                     s.muli(curr);

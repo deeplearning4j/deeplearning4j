@@ -88,14 +88,11 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
     @Override
     public void applyTransformToDestination(int i) {
         if(Double.isInfinite(scalarValue)) {
-
-
-
-            to.data[to.unSafeLinearIndex(i)] = apply(getFromDestination(i),i);
+            to.put(i,apply(getFromDestination(i),i));
 
         }
         else {
-            to.data[to.unSafeLinearIndex(i)] = apply(scalarValue,i);
+            to.put(i,apply(scalarValue,i));
 
         }
     }
@@ -130,7 +127,7 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public double getFromDestination(int i) {
-        return other.data[other.unSafeLinearIndex(i)];
+        return other.get(i);
     }
 
     /**
