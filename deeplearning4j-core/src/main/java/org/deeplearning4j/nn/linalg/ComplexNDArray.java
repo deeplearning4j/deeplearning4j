@@ -1152,7 +1152,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
     public int unSafeLinearIndex(int i) {
         int realStride = stride[0];
-        int idx = offset + i * realStride;
+        int idx = offset + i;
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
@@ -2032,8 +2032,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexDouble sum() {
-        if(isVector())
-            return super.sum();
         return ComplexNDArrayUtil.doSliceWise(ComplexNDArrayUtil.ScalarOp.SUM,this);
     }
 

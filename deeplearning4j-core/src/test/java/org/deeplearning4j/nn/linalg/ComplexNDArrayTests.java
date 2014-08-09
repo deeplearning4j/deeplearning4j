@@ -469,8 +469,8 @@ public class ComplexNDArrayTests {
         ComplexNDArray multiDimensionElementWise = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
         ComplexDouble sum2 = multiDimensionElementWise.sum();
         assertEquals(sum2,new ComplexDouble(300));
-        multiDimensionElementWise.addi(1);
-        ComplexDouble sum3 = multiDimensionElementWise.sum();
+        ComplexNDArray added = multiDimensionElementWise.add(1);
+        ComplexDouble sum3 = added.sum();
         assertEquals(sum3,new ComplexDouble(324));
 
 
