@@ -33,7 +33,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void applyTransformToOrigin(int i) {
-        from.data[from.unSafeLinearIndex(i)] = apply(getFromOrigin(i),i);
+        from.put(i,apply(getFromOrigin(i),i));
     }
 
     /**
@@ -50,7 +50,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
 
     @Override
     public double getFromOrigin(int i) {
-        return from.data[from.unSafeLinearIndex(i)];
+        return from.get(i);
     }
 
     /**
