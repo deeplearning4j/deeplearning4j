@@ -44,7 +44,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
      */
     @Override
     public void applyTransformToOrigin(int i, double valueToApply) {
-        from.data[from.unSafeLinearIndex(i)] = apply(valueToApply,i);
+        from.put(i,apply(valueToApply,i));
 
     }
 
