@@ -503,9 +503,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray conji() {
+        ComplexNDArray reshaped = reshape(1,length);
         ComplexDouble c = new ComplexDouble(0.0);
         for (int i = 0; i < length; i++)
-            put(i, get(i, c).conji());
+            reshaped.put(i, reshaped.get(i, c).conji());
         return this;
     }
 
@@ -1614,6 +1615,19 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     }
 
 
+    /** Subtract a scalar from a matrix */
+    public ComplexNDArray subi(ComplexDouble v, ComplexDoubleMatrix result) {
+        ComplexNDArray wrapped = ComplexNDArray.wrap(result);
+        new SubtractOp(this,wrapped,v).exec();
+        return wrapped;
+    }
+
+    @Override
+    public ComplexNDArray subi(ComplexDouble v) {
+        return subi(v, this);
+    }
+
+
 
     /**
      * Elementwise multiply by a scalar.
@@ -1706,9 +1720,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     @Override
     public ComplexNDArray divi(double v) {
-        ComplexNDArray flatten = flatten();
-        for(int i = 0; i < flatten.length; i++)
-            flatten.put(i,flatten.get(i).divi(v));
+        new DivideOp(this,new ComplexDouble(v)).exec();
         return this;
     }
 
@@ -1733,6 +1745,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         return this;
     }
 
+
+
+
     /**
      * Return transposed copy of this matrix.
      */
@@ -1741,9 +1756,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         //transpose of row vector is column vector
         if(isRowVector())
             return new ComplexNDArray(data,new int[]{shape[0],1},offset);
-            //transpose of a column vector is row vector
+        //transpose of a column vector is row vector
         else if(isColumnVector())
-            return new ComplexNDArray(data,new int[]{shape[1]},offset);
+            return new ComplexNDArray(data,new int[]{shape[0]},offset);
 
         ComplexNDArray n = new ComplexNDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
         return n;
@@ -1808,6 +1823,25 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         return dup().mmuli(other, new ComplexDoubleMatrix(rows(), n.columns()));
     }
 
+
+
+    /**
+     * Check whether this can be multiplied with a.
+     *
+     * @param a right-hand-side of the multiplication.
+     * @return true iff <tt>this.columns == a.rows</tt>
+     */
+    @Override
+    public boolean multipliesWith(ComplexDoubleMatrix a) {
+        return columns() == ComplexNDArray.wrap(a).rows();
+    }
+
+    public void assertMultipliesWith(ComplexDoubleMatrix a) {
+        if (!multipliesWith(a))
+            throw new SizeException("Number of columns of left matrix must be equal to number of rows of right matrix.");
+    }
+
+
     /** Matrix-Matrix Multiplication */
     @Override
     public ComplexNDArray mmuli(ComplexDoubleMatrix other, ComplexDoubleMatrix result) {
@@ -1833,15 +1867,15 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 			 * allocating a temporary object on the side and copy the result later.
 			 */
 
-            ComplexNDArray temp = new ComplexNDArray(resultArray.shape());
+            ComplexNDArray temp = new ComplexNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
             NDArrayBlas.gemm(ComplexDouble.UNIT, this, otherArray, ComplexDouble.ZERO, temp);
+
             NDArrayBlas.copy(temp, resultArray);
+
         }
         else {
             otherArray = otherArray.flatten().reshape(otherArray.shape);
             ComplexNDArray thisInput =  this.flatten().reshape(shape());
-
-
             NDArrayBlas.gemm(ComplexDouble.UNIT, thisInput, otherArray, ComplexDouble.ZERO, resultArray);
         }
 

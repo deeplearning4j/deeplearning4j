@@ -1600,7 +1600,7 @@ public class NDArray extends DoubleMatrix {
         if(isRowVector())
             return new NDArray(data,new int[]{shape[0],1},offset);
         else if(isColumnVector())
-            return new NDArray(data,new int[]{shape[1]},offset);
+            return new NDArray(data,new int[]{shape[0]},offset);
         NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
         return n;
 
@@ -2352,6 +2352,21 @@ public class NDArray extends DoubleMatrix {
 
     }
 
+    public ComplexNDArray add(ComplexDouble d) {
+        return new ComplexNDArray(this).muli(d);
+    }
+
+    public ComplexNDArray mul(ComplexDouble d) {
+        return new ComplexNDArray(this).muli(d);
+    }
+
+    public ComplexNDArray sub(ComplexDouble d) {
+        return new ComplexNDArray(this).subi(d);
+    }
+
+    public ComplexNDArray div(ComplexDouble d) {
+        return new ComplexNDArray(this).muli(d);
+    }
 
     public static NDArray scalar(NDArray from,int index) {
         return new NDArray(from.data,new int[]{1},new int[]{1},index);
@@ -2395,6 +2410,11 @@ public class NDArray extends DoubleMatrix {
 
     public static NDArray linspace(int lower,int upper,int num) {
         return new NDArray(DoubleMatrix.linspace(lower,upper,num).data,new int[]{num});
+    }
+
+
+    public static NDArray arange(double begin, double end) {
+        return NDArray.wrap(new DoubleMatrix(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end))).transpose());
     }
 
 

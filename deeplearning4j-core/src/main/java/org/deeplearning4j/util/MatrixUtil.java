@@ -374,7 +374,7 @@ public class MatrixUtil {
         return ret;
     }
 
-    public static ComplexDoubleMatrix complexRangeVector(double begin, double end) {
+    public static ComplexDoubleMatrix arange(double begin, double end) {
         double[] data = ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end));
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix((new DoubleMatrix(data)));
         return ret;
