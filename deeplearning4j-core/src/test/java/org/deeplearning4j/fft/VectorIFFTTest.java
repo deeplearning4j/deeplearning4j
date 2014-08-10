@@ -33,14 +33,16 @@ public class VectorIFFTTest {
 
         double[] ffted2 = {17.8,9.,-1,-8.6,4.6,3.};
         double[] orig2 = {3.6,2, 6.6 ,3,7.6 ,4};
+        double[] fftOrig2 = { 17.8000000,9,-4.3660254,-0.6339746,-2.6339746,-2.3660254};
         ComplexNDArray c2 = new ComplexNDArray(orig2,new int[]{3});
-        ComplexNDArray assertion2 = new ComplexNDArray(ffted2,new int[]{3});
 
-        ComplexNDArray fftedTest2 = new VectorFFT(3).apply(c2.dup());
+        ComplexNDArray fftOrig2Arr = new ComplexNDArray(fftOrig2,new int[]{fftOrig2.length / 2});
+        ComplexNDArray fftOrig2Test = new VectorFFT(fftOrig2Arr.length).apply(c2);
+        assertEquals(fftOrig2Arr,fftOrig2Test);
 
-        assertEquals(assertion2,fftedTest2);
-        ComplexNDArray iffted2 = new VectorIFFT(3).apply(fftedTest2);
-        assertEquals(c2,iffted2);
+        ComplexNDArray ifftTestFor = new ComplexNDArray(new double[]{3.6,2,6.6,3,7.6,4},new int[]{3});
+        ComplexNDArray ifftTest = new VectorIFFT(fftOrig2Arr.length).apply(fftOrig2Arr);
+        assertEquals(ifftTestFor,ifftTest);
     }
 
 
