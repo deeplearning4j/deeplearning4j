@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ComplexNDArray operations
@@ -73,7 +72,7 @@ public class ComplexNDArrayUtil {
      * ndarray
      */
     public static ComplexNDArray expi(ComplexNDArray toExp) {
-        ComplexNDArray flattened = toExp.flatten();
+        ComplexNDArray flattened = toExp.ravel();
         for (int i = 0; i < flattened.length; i++)
             flattened.put(i, ComplexUtil.exp(flattened.get(i)));
         return flattened.reshape(toExp.shape());
@@ -191,7 +190,7 @@ public class ComplexNDArrayUtil {
                 List<ComplexDouble> list = new ArrayList<>();
                 int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape, 0));
                 for (int i = 0; i < nd.slices(); i++) {
-                    ComplexNDArray slice = nd.slice(i).flatten();
+                    ComplexNDArray slice = nd.slice(i).ravel();
                     for (int j = 0; j < numElementsPerSlice; j++)
                         list.add(slice.get(j));
                 }

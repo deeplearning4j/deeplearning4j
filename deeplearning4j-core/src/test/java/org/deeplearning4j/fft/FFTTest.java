@@ -75,38 +75,29 @@ public class FFTTest {
 
     @Test
     public void testAllDimensionFFT() {
-        NDArray n = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        NDArray n = new NDArray(DoubleMatrix.linspace(1,30,30).data,new int[]{3,5,2});
         ComplexNDArray afterLastDimension = new ComplexNDArray(new double[]{
-                3. ,0   ,-1. ,0 ,    7. ,0   ,-1. ,0 ,   11. ,0   ,-1. ,0 ,  15. ,0   ,-1. ,0 ,   19. ,0   ,-1. ,0 ,   23. ,0  ,
-                -1. ,0 ,  27. ,0  ,-1. ,0 ,   31. ,0  , -1. ,0 ,   35. ,0   ,-1. ,0 ,  39. ,0   ,-1. ,0 ,   43. ,0   ,-1. ,0 ,
-                47. ,0   ,-1. ,0
-        },new int[]{4,3,2});
+                3.,0,-1.,0,7.,0,-1.,0, 11.,0,-1.,0, 15.,0,-1.,0, 19.,0,-1.,0,23.,0,-1.,0, 27.,0,-1.,0, 31.,0,-1.,0, 35.,0,-1.,0, 39.,0,-1.,0,43.,0,-1.,0, 47.,0,-1.,0, 51.,0,-1.,0, 55.,0,-1.,0, 59.,0,-1.,0
+        },new int[]{3,5,2});
 
-        ComplexNDArray afterLastDimensionTest = FFT.fft(n);
+        ComplexNDArray afterLastDimensionTest = FFT.fft(n,2,n.shape().length - 1);
         assertEquals(afterLastDimension,afterLastDimensionTest);
 
         ComplexNDArray afterSecondDimension = new ComplexNDArray(new double[]{
-                21., 0.            ,-3., 0.
-                ,-6., 3.46410162   , 0., 0.,-6.,-3.46410162
-                ,0., 0.,57., 0.,-3., 0.,-6., 3.46410162
-                ,0., 0. ,-6.,-3.46410162    ,0., 0. ,93., 0.,-3., 0.,-6.,
-                3.46410162, 0., 0.,-6.,-3.46410162   , 0., 0. ,129, 0.
-                ,-3., 0.          ,-6., 3.46410162   , 0., 0. ,-6.,-3.46410162
-                ,0., 0.
-        },new int[]{4,3,2});
+                25.,0.,30.,0.,-5.,6.8819096,-5.,6.8819096,-5.,1.62459848,-5.,1.62459848,-5.,-1.62459848,-5.,-1.62459848,-5.,-6.8819096,-5.,-6.8819096,75.,0.,80.,0.,-5.,6.8819096,-5.,6.8819096,-5.,1.62459848,-5.,1.62459848,-5.,-1.62459848,-5.,-1.62459848,-5.,-6.8819096,-5.,-6.8819096,125.,0.,130.,0.,-5.,6.8819096,-5.,6.8819096,-5.,1.62459848,-5.,1.62459848,-5.,-1.62459848,-5.,-1.62459848,-5.,-6.8819096,-5.,-6.8819096,        },new int[]{3,5,2});
 
 
-        ComplexNDArray afterSecondDimensionTest = FFT.fft(afterLastDimensionTest,3,1);
+        ComplexNDArray afterSecondDimensionTest = FFT.fft(n,5,n.shape().length  - 2);
         assertEquals(afterSecondDimension,afterSecondDimensionTest);
 
 
         ComplexNDArray afterFirstDimension = new ComplexNDArray(new double[]{
-                300.  ,0  ,-12. ,0 ,-24. ,13.85640646 ,0.  ,0 ,-24. ,-13.85640646 ,0.  ,0 ,-72. ,72  ,0.  ,0 ,0. , 0 ,0. , 0 , 0.  ,0  ,0. , 0 ,-72.  ,0  ,0.  ,0 ,  0. , 0   ,  0. , 0 , 0.  ,0 , 0. , 0 ,0 ,  -72. ,-72 , 0.  ,0 , 0. , 0   ,  0. , 0 , 0. , 0  ,0. , 0
-        },new int[]{4,3,2});
+                33.,0.,36.,0.,39.,0.,42.,0.,45.,0.,48.,0.,51.,0.,54.,0.,57.,0.,60.,0.,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,-15.,-8.66025404,465.,0.,-15.,0.,-30.,41.29145761,0.,0.,-30.,9.74759089,0.,0.,-30.,-9.74759089,0.,0.,-30.-41.29145761,0.,0.,-150.,86.60254038,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,-150.-86.60254038,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,
+        },new int[]{3,5,2});
 
 
-        ComplexNDArray afterFirstDimensionTest = FFT.fft(afterSecondDimensionTest,4,0);
-        //assertEquals(afterFirstDimension,afterFirstDimensionTest);
+        ComplexNDArray afterFirstDimensionTest = FFT.fft(n,3,n.shape().length  - 3);
+        assertEquals(afterFirstDimension,afterFirstDimensionTest);
 
 
 
@@ -250,6 +241,10 @@ public class FFTTest {
 
         assertEquals(assertion.length,ArrayUtil.prod(assertion.shape()));
         assertEquals(assertion,result);
+
+
+
+
     }
 
 

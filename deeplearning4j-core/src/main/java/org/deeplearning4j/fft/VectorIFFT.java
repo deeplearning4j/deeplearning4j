@@ -31,10 +31,6 @@ public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
      */
     public VectorIFFT(int n) {
         this.n = n;
-        if (Math.log(n) % 1 != 0) {
-            this.n = (int) MathUtils.nextPowOf2(n);
-            this.originalN = n;
-        }
     }
 
     /**
@@ -55,7 +51,7 @@ public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
     @Override
     public ComplexNDArray apply(ComplexNDArray ndArray) {
         //ifft(x) = conj(fft(conj(x)) / length(x)
-        ComplexNDArray ret = new VectorFFT(ndArray.length).apply(ndArray.conj()).conj().divi(ndArray.length);
+        ComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(n);
         return originalN > 0 ? ComplexNDArrayUtil.truncate(ret,originalN,0) : ret;
 
     }

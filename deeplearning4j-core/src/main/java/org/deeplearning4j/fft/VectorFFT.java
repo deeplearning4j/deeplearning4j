@@ -28,10 +28,6 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
      */
     public VectorFFT(int n) {
         this.n = n;
-        if (Math.log(n) % 1 != 0) {
-            this.n = (int) MathUtils.nextPowOf2(n);
-            this.originalN = n;
-        }
     }
 
     @Override
@@ -57,7 +53,8 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
         //column vector
         NDArray k = n.reshape(new int[]{n.length,1});
         ComplexNDArray M = exp(k.mmul(n).mul(c2).divi(len));
-        ComplexNDArray matrix = ndArray.reshape(new int[]{ndArray.length}).mmul(M);
+        ComplexNDArray reshaped = ndArray.reshape(new int[]{ndArray.length});
+        ComplexNDArray matrix = reshaped.mmul(M);
         if(originalN > 0) {
             matrix = ComplexNDArrayUtil.truncate(matrix, originalN, 0);
 

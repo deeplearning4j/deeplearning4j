@@ -3,8 +3,6 @@ package org.deeplearning4j.nn.linalg;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
-import org.deeplearning4j.util.ArrayUtil;
-import org.deeplearning4j.util.ComplexNDArrayUtil;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
 import org.jblas.DoubleMatrix;
@@ -43,7 +41,13 @@ public class ComplexNDArrayTests {
         assertEquals(0,arr.get(0).real(),1e-1);
 
 
-
+        ComplexDouble[] two = new ComplexDouble[2];
+        two[0] = new ComplexDouble(1,0);
+        two[1] = new ComplexDouble(2,0);
+        double[] testArr = {1,0,2,0};
+        ComplexNDArray assertComplexDouble = new ComplexNDArray(testArr,new int[]{2});
+        ComplexNDArray testComplexDouble = new ComplexNDArray(two,new int[]{2});
+        assertEquals(assertComplexDouble,testComplexDouble);
 
     }
 
@@ -146,6 +150,16 @@ public class ComplexNDArrayTests {
 
         assertEquals(slice0,testSlice0);
         assertEquals(slice2,testSlice1);
+
+
+        NDArray n2 = new NDArray(DoubleMatrix.linspace(1, 30, 30).data,new int[]{3,5,2});
+        NDArray swapped   = n2.swapAxes(n2.shape().length - 1,1);
+        NDArray firstSlice2 = swapped.slice(0).slice(0);
+        ComplexNDArray testSlice = new ComplexNDArray(firstSlice2);
+        ComplexNDArray testNoOffset = new ComplexNDArray(new double[]{1,0,3,0,5,0,7,0,9,0},new int[]{5});
+        assertEquals(testSlice,testNoOffset);
+
+
 
 
     }
@@ -346,6 +360,16 @@ public class ComplexNDArrayTests {
         ComplexNDArray testNdArrayM = transposed2.mmul(M);
         ComplexNDArray assertion = new ComplexNDArray(testVector,new int[]{16});
         assertEquals(assertion,testNdArrayM);
+
+
+        ComplexNDArray M2 = new ComplexNDArray(new double[]{1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,0.30901699437494745,-0.9510565162951535,-0.8090169943749473,-0.5877852522924732,-0.8090169943749478,0.5877852522924727,0.30901699437494723,0.9510565162951536,1.0,0.0,-0.8090169943749473,-0.5877852522924732,0.30901699437494723,0.9510565162951536,0.30901699437494856,-0.9510565162951532,-0.8090169943749477,0.5877852522924728,1.0,0.0,-0.8090169943749478,0.5877852522924727,0.30901699437494856,-0.9510565162951532,0.309016994374947,0.9510565162951538,-0.809016994374946,-0.587785252292475,1.0,0.0,0.30901699437494723,0.9510565162951536,-0.8090169943749477,0.5877852522924728,-0.809016994374946,-0.587785252292475,0.3090169943749482,-0.9510565162951533},new int[]{5,5});
+        NDArray n2 = new NDArray(DoubleMatrix.linspace(1, 30, 30).data,new int[]{3,5,2});
+        NDArray swapped   = n2.swapAxes(n2.shape().length - 1,1);
+        NDArray firstSlice = swapped.slice(0).slice(0);
+        ComplexNDArray testSlice = new ComplexNDArray(firstSlice);
+        ComplexNDArray testNoOffset = new ComplexNDArray(new double[]{1,0,3,0,5,0,7,0,9,0},new int[]{5});
+        assertEquals(testSlice,testNoOffset);
+        assertEquals(testSlice.mmul(M2),testNoOffset.mmul(M2));
 
 
     }
@@ -608,7 +632,7 @@ public class ComplexNDArrayTests {
     @Test
     public void testFlatten() {
         ComplexNDArray arr = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2}));
-        ComplexNDArray flattened = arr.flatten();
+        ComplexNDArray flattened = arr.ravel();
         assertEquals(arr.length,flattened.length);
         assertTrue(Shape.shapeEquals(new int[]{1, 4}, flattened.shape()));
         for(int i = 0; i < arr.length; i++) {
