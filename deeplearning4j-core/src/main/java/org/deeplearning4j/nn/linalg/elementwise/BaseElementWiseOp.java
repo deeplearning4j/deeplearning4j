@@ -21,7 +21,7 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
     }
 
     protected BaseElementWiseOp(NDArray from,double scalarValue) {
-        this.from = from;
+        this.from = from.reshape(new int[]{1,from.length});
         this.scalarValue = scalarValue;
     }
 
