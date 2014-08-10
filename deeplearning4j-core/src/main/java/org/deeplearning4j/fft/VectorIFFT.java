@@ -3,6 +3,9 @@ package org.deeplearning4j.fft;
 import com.google.common.base.Function;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.linalg.ComplexNDArray;
+import org.deeplearning4j.nn.linalg.NDArray;
+import org.deeplearning4j.util.ComplexNDArrayUtil;
+import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.util.MatrixUtil;
 import org.jblas.ComplexDouble;
 import org.jblas.ComplexDoubleMatrix;
@@ -18,9 +21,20 @@ public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
 
 
     private int n;
-
+    private int originalN = -1;
+    /**
+     * Create a vector fft operation.
+     * If initialized with  a nonzero number, this will
+     * find the next power of 2 for the element and truncate the
+     * return matrix to the original n
+     * @param n
+     */
     public VectorIFFT(int n) {
         this.n = n;
+        if (Math.log(n) % 1 != 0) {
+            this.n = (int) MathUtils.nextPowOf2(n);
+            this.originalN = n;
+        }
     }
 
     /**
@@ -39,27 +53,10 @@ public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
      *                              arguments
      */
     @Override
-    public ComplexNDArray apply(ComplexNDArray input) {
-        double len = MatrixUtil.length(input);
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI).divi(len);
-        ComplexDoubleMatrix range = MatrixUtil.complexRangeVector(0,len);
-        ComplexDoubleMatrix div2 = range.transpose().mul(c2);
-        ComplexDoubleMatrix div3 = range.mmul(div2).negi();
-        ComplexDoubleMatrix matrix = exp(div3).div(len);
-        ComplexDoubleMatrix complexRet = input.mmul(matrix);
+    public ComplexNDArray apply(ComplexNDArray ndArray) {
+        //ifft(x) = conj(fft(conj(x)) / length(x)
+        ComplexNDArray ret = new VectorFFT(ndArray.length).apply(ndArray.conj()).conj().divi(ndArray.length);
+        return originalN > 0 ? ComplexNDArrayUtil.truncate(ret,originalN,0) : ret;
 
-
-        if(n != complexRet.length) {
-            ComplexDoubleMatrix newRet = new ComplexDoubleMatrix(1,n);
-            for(int i = 0; i < n; i++) {
-                if(i >= complexRet.length)
-                    break;
-
-                newRet.put(i, complexRet.get(i));
-            }
-            return ComplexNDArray.wrap(newRet);
-        }
-
-        return ComplexNDArray.wrap(complexRet);
     }
 }
