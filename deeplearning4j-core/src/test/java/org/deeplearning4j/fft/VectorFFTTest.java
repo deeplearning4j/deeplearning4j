@@ -57,15 +57,7 @@ public class VectorFFTTest {
 
     private float[] testFloatVector = new float[]{ 55f , 0f  , -5,  1.53884177e01f ,  -5f , 6.88190960e00f,   -5f , 3.63271264e00f ,  -5f , 1.62459848e00f  , -5f, 4.44089210e-16f, -5.f , -1.62459848e00f  , -5.f , -3.63271264e00f ,  -5.f , -6.88190960e00f,  -5.f , -1.53884177e01f};
 
-    @Test
-    public void testRowVector() {
-        ComplexNDArray n = new VectorFFT(10).apply(ComplexNDArray.linspace(1,10,10));
-        ComplexNDArray assertion = new ComplexNDArray(testVector,new int[]{10});
-        assertEquals(n,assertion);
 
-
-
-    }
 
     @Test
     public void testColumnVector() {
@@ -79,30 +71,6 @@ public class VectorFFTTest {
 
 
 
-
-    @Test
-    public void testSmall() {
-        double[] ffted = {10.2,5.,-3.0,-1.};
-        double[] orig = {3.5999999999999996,2, 6.5999999999999996 ,3};
-        ComplexNDArray c = new ComplexNDArray(orig,new int[]{2});
-        ComplexNDArray assertion = new ComplexNDArray(ffted,new int[]{2});
-        assertEquals(assertion,new VectorFFT(2).apply(c));
-
-
-
-        double[] ffted2 = {17.8,9.,-1,-8.6,4.6,3.};
-        double[] orig2 = {3.6,2, 6.6 ,3,7.6 ,4};
-        ComplexNDArray c2 = new ComplexNDArray(orig2,new int[]{3});
-        ComplexNDArray assertion2 = new ComplexNDArray(ffted2,new int[]{3});
-
-        ComplexNDArray fftedTest2 = new VectorFFT(3).apply(c2.dup());
-
-        assertEquals(assertion2,fftedTest2);
-
-
-
-
-    }
 
 
     @Test
