@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.linalg;
 
-import org.apache.commons.math3.complex.Complex;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.linalg.elementwise.complex.ComplexElementWiseOp;
 import org.deeplearning4j.nn.linalg.elementwise.complex.ops.AddOp;
 import org.deeplearning4j.nn.linalg.elementwise.complex.ops.DivideOp;
 import org.deeplearning4j.nn.linalg.elementwise.complex.ops.MultiplyOp;
@@ -55,8 +53,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
     /** Construct a complex matrix from a real matrix. */
     public ComplexNDArray(NDArray m) {
         this(m.shape());
-        NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
-
+        //NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
+        NDArray flattened = m.reshape(new int[]{1,m.length});
+        ComplexNDArray flatten = reshape(1,length);
+        for(int i = 0; i < length; i++) {
+            flatten.put(i, new ComplexDouble(flattened.get(i), 0));
+        }
     }
 
 
@@ -70,7 +72,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         super(new double[ArrayUtil.prod(shape) * 2]);
         List<ComplexDouble> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++) {
-            ComplexNDArray flattened = slices.get(i).flatten();
+            ComplexNDArray flattened = slices.get(i).ravel();
             for(int j = 0; j < flattened.length; j++)
                 list.add(flattened.get(j));
         }
@@ -99,8 +101,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * @param shape the shape of the ndarray
      */
     public ComplexNDArray(ComplexDouble[] newData,int[] shape) {
-        super(newData);
+        super(new double[ArrayUtil.prod(shape) * 2]);
         initShape(shape);
+        for(int i = 0;i  < length; i++)
+            put(i,newData[i]);
 
     }
 
@@ -1756,7 +1760,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         //transpose of row vector is column vector
         if(isRowVector())
             return new ComplexNDArray(data,new int[]{shape[0],1},offset);
-        //transpose of a column vector is row vector
+            //transpose of a column vector is row vector
         else if(isColumnVector())
             return new ComplexNDArray(data,new int[]{shape[0]},offset);
 
@@ -1784,7 +1788,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        ComplexNDArray ndArray = new ComplexNDArray(data,shape,offset);
+        ComplexNDArray ndArray = new ComplexNDArray(data,shape,stride,offset);
         return ndArray;
 
     }
@@ -1866,6 +1870,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 			/* actually, blas cannot do multiplications in-place. Therefore, we will fake by
 			 * allocating a temporary object on the side and copy the result later.
 			 */
+            otherArray = otherArray.ravel().reshape(otherArray.shape);
 
             ComplexNDArray temp = new ComplexNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
             NDArrayBlas.gemm(ComplexDouble.UNIT, this, otherArray, ComplexDouble.ZERO, temp);
@@ -1874,8 +1879,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
         }
         else {
-            otherArray = otherArray.flatten().reshape(otherArray.shape);
-            ComplexNDArray thisInput =  this.flatten().reshape(shape());
+            otherArray = otherArray.ravel().reshape(otherArray.shape);
+            ComplexNDArray thisInput =  this.ravel().reshape(shape());
             NDArrayBlas.gemm(ComplexDouble.UNIT, thisInput, otherArray, ComplexDouble.ZERO, resultArray);
         }
 
@@ -1894,7 +1899,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      */
     public double[] data() {
         double[] ret = new double[length * 2];
-        ComplexNDArray flattened = flatten();
+        ComplexNDArray flattened = ravel();
         int count = 0;
         for(int i = 0; i < flattened.length; i++) {
             ret[count++] = flattened.get(i).real();
@@ -2207,13 +2212,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
 
         if(isVector())
             op.operate(new DimensionSlice(false,this,null));
-        else if(isMatrix()) {
-            for(int i = 0; i < slices(); i++) {
-                ComplexNDArray row = slice(i);
-                op.operate(new DimensionSlice(false,row,null));
-
-            }
-        }
 
         else {
             for(int i = 0; i < slices(); i++) {
@@ -2467,7 +2465,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix {
      * Flattens the array for linear indexing
      * @return the flattened version of this array
      */
-    public ComplexNDArray flatten() {
+    public ComplexNDArray ravel() {
         ComplexNDArray ret = new ComplexNDArray(new int[]{1,length});
         List<ComplexNDArray> list = new ArrayList<>();
         sliceVectors(list);

@@ -590,7 +590,7 @@ public class NDArrayTests {
     @Test
     public void testFlatten() {
         NDArray arr = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
-        NDArray flattened = arr.flatten();
+        NDArray flattened = arr.ravel();
         assertEquals(arr.length,flattened.length);
         assertEquals(true,Shape.shapeEquals(new int[]{1, arr.length}, flattened.shape()));
         for(int i = 0; i < arr.length; i++) {
@@ -600,7 +600,7 @@ public class NDArrayTests {
 
 
         NDArray n = new NDArray(DoubleMatrix.ones(27).data,new int[]{3,3,3});
-        NDArray nFlattened = n.flatten();
+        NDArray nFlattened = n.ravel();
         assertTrue(nFlattened.isVector());
 
     }

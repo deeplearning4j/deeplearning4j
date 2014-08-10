@@ -1625,7 +1625,7 @@ public class NDArray extends DoubleMatrix {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        NDArray ndArray = new NDArray(data,shape,ArrayUtil.calcStrides(shape),offset);
+        NDArray ndArray = new NDArray(data,shape,stride,offset);
         return ndArray;
 
     }
@@ -1983,7 +1983,7 @@ public class NDArray extends DoubleMatrix {
      * Flattens the array for linear indexing
      * @return the flattened version of this array
      */
-    public NDArray flatten() {
+    public NDArray ravel() {
         NDArray ret = new NDArray(new int[]{1,length});
         List<NDArray> list = new ArrayList<>();
         sliceVectors(list);

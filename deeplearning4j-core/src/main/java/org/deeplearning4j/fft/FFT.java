@@ -454,6 +454,14 @@ public class FFT {
     }
 
     //underlying fftn
+
+    /**
+     * Underlying fft algorithm
+     * @param transform the ndarray to transform
+     * @param n the desired number of elements
+     * @param dimension the dimension to do fft along
+     * @return the transformed ndarray
+     */
     public static ComplexNDArray rawfft(ComplexNDArray transform,int n,int dimension) {
         ComplexNDArray result = transform.dup();
 

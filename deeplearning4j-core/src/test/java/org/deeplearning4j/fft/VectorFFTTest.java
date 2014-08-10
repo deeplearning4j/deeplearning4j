@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.linalg.ComplexNDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
 import org.jblas.ComplexFloat;
 import org.jblas.ComplexFloatMatrix;
+import org.jblas.DoubleMatrix;
 import org.jblas.FloatMatrix;
 import org.junit.Test;
 
@@ -104,6 +105,17 @@ public class VectorFFTTest {
     }
 
 
+    @Test
+    public void testWithOffset() {
+        NDArray n = new NDArray(DoubleMatrix.linspace(1, 30, 30).data,new int[]{3,5,2});
+        NDArray swapped   = n.swapAxes(n.shape().length - 1,1);
+        VectorFFT op = new VectorFFT(5);
+        NDArray firstSlice = swapped.slice(0).slice(0);
+        ComplexNDArray test = new ComplexNDArray(firstSlice);
+        ComplexNDArray testNoOffset = new ComplexNDArray(new double[]{1,0,3,0,5,0,7,0,9,0},new int[]{5});
+        assertEquals(op.apply(testNoOffset),op.apply(test));
+
+    }
 
 
 }

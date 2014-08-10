@@ -1,18 +1,12 @@
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.DimensionSlice;
 import org.deeplearning4j.nn.linalg.NDArray;
-import org.deeplearning4j.nn.linalg.SliceOp;
-import org.jblas.ComplexDouble;
 import org.jblas.DoubleMatrix;
-import org.jblas.NativeBlas;
 import org.jblas.ranges.RangeUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *  Basic NDArray ops
@@ -70,7 +64,7 @@ public class NDArrayUtil {
      * @return the converted ndarray
      */
     public static NDArray expi(NDArray toExp) {
-        NDArray flattened = toExp.flatten();
+        NDArray flattened = toExp.ravel();
         for(int i = 0; i < flattened.length; i++)
             flattened.put(i,Math.exp(flattened.get(i)));
         return flattened.reshape(toExp.shape());
@@ -178,7 +172,7 @@ public class NDArrayUtil {
                 List<Double> list = new ArrayList<>();
                 int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape,0));
                 for(int i = 0; i < nd.slices(); i++) {
-                    NDArray slice = nd.slice(i).flatten();
+                    NDArray slice = nd.slice(i).ravel();
                     for(int j = 0; j < numElementsPerSlice; j++)
                         list.add(slice.get(j));
                 }

@@ -66,27 +66,25 @@ public class Convolution {
         int[] intShape = MatrixUtil.toInts(shape);
         int[] axes = ArrayUtil.range(0,intShape.length);
 
-        ComplexNDArray convolution =   FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(
-                FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes));
 
+        ComplexNDArray convolution =   FFT.ifftn(FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(
+                FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes)));
 
-        ComplexNDArray ret = FFT.rawifftn(
-              convolution,intShape,axes);
 
 
 
         switch(type) {
             case FULL:
-                return ret.getReal();
+                return convolution.getReal();
             case SAME:
-                return ComplexNDArrayUtil.center(ret,input.shape()).getReal();
+                return ComplexNDArrayUtil.center(convolution,input.shape()).getReal();
             case VALID:
-                return ComplexNDArrayUtil.center(ret,MatrixUtil.toInts(MatrixUtil.toMatrix(input.shape()).sub(MatrixUtil.toMatrix(kernel.shape())).addi(1))).getReal();
+                return ComplexNDArrayUtil.center(convolution,MatrixUtil.toInts(MatrixUtil.toMatrix(input.shape()).sub(MatrixUtil.toMatrix(kernel.shape())).addi(1))).getReal();
 
         }
 
 
-        return ret.getReal();
+        return convolution.getReal();
     }
 
 
