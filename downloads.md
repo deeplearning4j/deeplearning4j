@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# datasets & downloads
+# Datasets & Downloads
 
 We'll talk about three types of downloads here.  
 
