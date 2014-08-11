@@ -4,14 +4,18 @@ layout: default
 ---
 
 *previous* - [restricted Boltzmann machine](../restrictedboltzmannmachine.html)
-# convolutional restricted boltzmann machine
+# Convolutional Nets
 
-*N.B.: Our ConvNets are still getting built out.*
+Convolutional nets take slices of the feature space, say, of an image, and learn them one by one. 
 
-[Convolutional RBMs](http://www.cs.toronto.edu/~norouzi/research/papers/masters_thesis.pdf) data, because they are able to handle many dimensions in data at once. 
+That is, convolutional nets analyze images differently than RBMs. While RBMs learn to reconstruct and identify the features of each image as a whole, convolutional nets learn images in pieces that we call feature maps. 
 
-They are a type of restricted Boltzmann machine, in that there is no communication between the nodes of any given layer with other nodes of the same layer. 
+Picture a grid superimposed on an image, which is broken down into a series of squares. The convolutional net learns each of those squares and then weaves them together in a later stage.
 
-In a typical RBM, each node of one layer is connected to all nodes of the next, and this is known as symmetry. Convolutional nets are not symmetric. The node of one layer will connect to its direct counterpart, as well as nodes to the right and left of it, but to no others. So rather than the total overlap of connections seen in an RBM, they have a partial overlap, and there will be certain nodes of layer A that have no connection whatsoever with certain distant nodes of layer B.
+![Alt text](../img/convnet.png) 
 
-In addition, convolutional nets’ algorithm analyzes images differently than typical RBMs. While RBMs learn to reconstruct and identify the features of each image as a whole, convolutional nets learn images in pieces. Picture a grid superimposed on an image, which is broken down into a series of squares. The convolutional net learns each of those squares and then weaves them together in a later stage.
+By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
+
+### Yann LeCun
+
+[Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
