@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# architecture
+# Architecture
 
 In building Deeplearning4j, we made a series of design decisions, explained in depth below.
 
