@@ -848,7 +848,7 @@ public class NDArray extends DoubleMatrix {
         Integer[] ret = new Integer[o.length];
         for(int i = 0; i < o.length; i++) {
             //give us the whole thing
-            if(copy[i] == ':')
+            if((char)copy[i] == ':')
                 ret[i] = shape[i];
                 //only allow indices
             else if(copy[i] instanceof Number)
@@ -887,7 +887,7 @@ public class NDArray extends DoubleMatrix {
         int[] ret = new int[copy.length];
         for(int i = 0; i < copy.length; i++) {
             //give us the whole thing
-            if(copy[i] == ':')
+            if((char)copy[i] == ':')
                 ret[i] = shape[i];
                 //only allow indices
             else if(copy[i] instanceof Number)
@@ -928,7 +928,7 @@ public class NDArray extends DoubleMatrix {
         Integer[] ret = new Integer[o.length];
         for(int i = 0; i < o.length; i++) {
             //give us the whole thing
-            if(copy[i] == ':')
+            if((char)copy[i] == ':')
                 ret[i] = shape[i];
                 //only allow indices
             else if(copy[i] instanceof Number)
