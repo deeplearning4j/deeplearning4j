@@ -125,7 +125,7 @@ public class FFT {
     public static ComplexNDArray ifft(NDArray transform,int numElements,int dimension) {
         ComplexNDArray inputC = new ComplexNDArray(transform);
         if(inputC.isVector())
-            return  new VectorFFT(numElements).apply(inputC);
+            return  new VectorIFFT(numElements).apply(inputC);
         else {
             return rawifft(inputC, numElements, dimension);
         }
@@ -160,7 +160,7 @@ public class FFT {
     public static ComplexNDArray ifft(NDArray transform,int numElements) {
         ComplexNDArray inputC = new ComplexNDArray(transform);
         if(inputC.isVector())
-            return  new VectorFFT(inputC.length).apply(inputC);
+            return  new VectorIFFT(numElements).apply(inputC);
         else {
             return rawifft(inputC,numElements,inputC.shape().length - 1);
         }
@@ -197,31 +197,7 @@ public class FFT {
      * @return the reverse ifft of the passed in array
      */
     public static ComplexNDArray ifftn(NDArray transform,int dimension,int numElements) {
-        if(numElements < 1)
-            throw new IllegalArgumentException("No elements specified");
-
-        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-
-
-        if(dimension == 0 && transform.shape().length <= 1)
-            return new ComplexNDArray(transform);
-        ComplexNDArray result = new ComplexNDArray(transform);
-        int desiredElementsAlongDimension = result.size(dimension);
-
-        if(numElements > desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
-        }
-
-        else if(numElements < desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-        }
-
-        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements),true);
-
-        assert Shape.shapeEquals(result.shape(),finalShape);
-
-
-        return result;
+           return ifftn(new ComplexNDArray(transform),dimension,numElements);
     }
 
 
@@ -256,35 +232,22 @@ public class FFT {
     public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension,int numElements) {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
+
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-        FloatMatrix s1 = MatrixUtil.toFloatMatrix(transform.shape());
-        FloatMatrix s2 = MatrixUtil.toFloatMatrix(finalShape);
-        FloatMatrix shape = s1.sub(s2).addi(1);
-        finalShape = MatrixUtil.toInts(shape);
+        int[] axes = ArrayUtil.range(0, finalShape.length);
 
         ComplexNDArray result = transform.dup();
-        if(dimension == 0 && transform.shape().length <= 1)
-            return result;
-
-        result.iterateOverDimension(dimension,new IFFTSliceOp(numElements),true);
-
 
         int desiredElementsAlongDimension = result.size(dimension);
 
-        if(numElements > desiredElementsAlongDimension)
+        if(numElements > desiredElementsAlongDimension) {
             result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
-
+        }
 
         else if(numElements < desiredElementsAlongDimension)
-
             result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
 
-
-
-
-        assert Shape.shapeEquals(result.shape(),finalShape) : "Shape was " + Arrays.toString(result.shape()) + " when should have been " + Arrays.toString(finalShape);
-
-        return result;
+        return rawifftn(result, finalShape, axes);
     }
 
 
@@ -302,32 +265,20 @@ public class FFT {
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
+        int[] axes = ArrayUtil.range(0, finalShape.length);
 
         ComplexNDArray result = transform.dup();
 
-
-
-        for(int i = transform.shape().length - 1; i >= 0; i--) {
-            result.iterateOverDimension(dimension,new FFTSliceOp(result.size(i)),true);
-        }
-
-        //do along the first non singleton dimension when the number of dimensions is
-        //greater than 1
-        if(dimension == 0 && result.shape().length <= 1)
-            return result;
         int desiredElementsAlongDimension = result.size(dimension);
 
         if(numElements > desiredElementsAlongDimension) {
             result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
         }
 
-        else if(numElements < desiredElementsAlongDimension) {
+        else if(numElements < desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-        }
 
-
-
-        return result;
+        return rawfftn(result,finalShape,axes);
     }
 
 
@@ -340,24 +291,7 @@ public class FFT {
      * @return the fft of the specified ndarray
      */
     public static ComplexNDArray fftn(NDArray transform,int dimension,int numElements) {
-        if(numElements < 1)
-            throw new IllegalArgumentException("No elements specified");
-
-        int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-        int[] axes = ArrayUtil.range(0,finalShape.length);
-
-        ComplexNDArray result = new ComplexNDArray(transform);
-
-        int desiredElementsAlongDimension = result.size(dimension);
-
-        if(numElements > desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
-        }
-
-        else if(numElements < desiredElementsAlongDimension)
-            result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-
-        return rawfftn(result,finalShape,axes);
+        return fftn(new ComplexNDArray(transform),dimension,numElements);
     }
 
     /**
@@ -382,7 +316,7 @@ public class FFT {
      * @return the ffted array
      */
     public static ComplexNDArray fftn(ComplexNDArray transform) {
-        return fftn(transform,0,transform.shape()[0]);
+        return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
     }
 
 
@@ -391,17 +325,17 @@ public class FFT {
 
 
     public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension) {
-        return ifftn(transform, dimension, transform.shape()[0]);
+        return ifftn(transform, dimension, transform.shape()[dimension]);
     }
 
 
     public static ComplexNDArray ifftn(ComplexNDArray transform) {
-        return ifftn(transform, 0, transform.size(0));
+        return ifftn(transform, transform.shape().length - 1,transform.size(transform.shape().length - 1));
     }
 
 
     public static ComplexNDArray ifftn(NDArray transform) {
-        return ifftn(transform, 0, transform.length);
+        return ifftn(transform, transform.shape().length - 1, transform.size(transform.shape().length - 1));
     }
 
 
@@ -432,7 +366,7 @@ public class FFT {
 
 
         for(int i =  shape.length - 1; i >= 0; i--) {
-            result = FFT.rawifft(result,shape[i],axes[i]);
+            result = FFT.ifft(result,shape[i],axes[i]);
         }
 
 

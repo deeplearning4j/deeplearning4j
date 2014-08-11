@@ -66,9 +66,11 @@ public class Convolution {
         int[] intShape = MatrixUtil.toInts(shape);
         int[] axes = ArrayUtil.range(0,intShape.length);
 
+        ComplexNDArray fftedInput = FFT.rawfftn(new ComplexNDArray(input),intShape,axes);
+        ComplexNDArray fftedKernel = FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes);
+        ComplexNDArray inputTimesKernel = fftedInput.muli(fftedKernel);
 
-        ComplexNDArray convolution =   FFT.ifftn(FFT.rawfftn(new ComplexNDArray(input),intShape,axes).muli(
-                FFT.rawfftn(new ComplexNDArray(kernel), intShape, axes)));
+        ComplexNDArray convolution = FFT.ifftn(inputTimesKernel);
 
 
 
