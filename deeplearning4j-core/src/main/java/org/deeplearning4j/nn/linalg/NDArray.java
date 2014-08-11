@@ -25,7 +25,7 @@ import java.util.List;
  * NDArray: (think numpy)
  * @author Adam Gibson
  */
-public class NDArray extends DoubleMatrix  {
+public class NDArray extends DoubleMatrix {
 
     private int[] shape;
     private int[] stride;
