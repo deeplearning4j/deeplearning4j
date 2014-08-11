@@ -294,10 +294,12 @@ public class FFTTest {
 
     @Test
     public void testIFFT() {
-        NDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
-        log.info("Before " + arr);
-        arr.iterateOverDimension(1,new IFFTSliceOp(arr.shape()[1]),true);
-        log.info("After " + arr);
+        double[] inputData = new double[]{216.00000000,0.00000000e00,-52.43362879,6.73130104e01,-28.37132289,9.37180789e00,-11.06637121,4.56760655e-01,-7.12867711,1.84911247e00,-8.00000000,-3.55271368e-15,-7.12867711,-1.84911247e00,-11.06637121,-4.56760655e-01,-28.37132289,-9.37180789e00,-52.43362879,-6.73130104e01};
+        ComplexNDArray input = new ComplexNDArray(inputData,new int[]{inputData.length / 2});
+        double[] resultData = {1.,1.38555833e-14,4.,1.59872116e-15,10.,9.24662637e-15,16.,5.33143481e-15,22.,9.48248494e-16,28.,-9.75252047e-15,34.,-1.51195060e-14,40.,4.08185908e-15,37.,-1.07073090e-14,24.,5.16862266e-16};
+        ComplexNDArray result = new ComplexNDArray(resultData,new int[]{resultData.length / 2});
+        ComplexNDArray iffted = FFT.ifft(input);
+        assertEquals(result,iffted);
 
     }
 
