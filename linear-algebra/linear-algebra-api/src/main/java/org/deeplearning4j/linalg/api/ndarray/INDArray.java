@@ -9,6 +9,13 @@ public interface INDArray {
 
 
     /**
+     * Replicate and tile array to fill out to the given shape
+     * @param shape the new shape of this ndarray
+     * @return the shape to fill out to
+     */
+    public INDArray repmat(int[] shape);
+
+    /**
      * Insert a row in to this array
      * Will throw an exception if this
      * ndarray is not a matrix
