@@ -4,7 +4,7 @@ layout: default
 ---
 
 *previous* - [a neural nets overview](../overview.html)
-# denoising autoencoders
+# Denoising Autoencoders
 
 An autoencoder is a neural network used for dimensionality reduction; that is, for feature selection and extraction. Autoencoders with more hidden layers than inputs run the risk of learning the [identity function](https://en.wikipedia.org/wiki/Identity_function) -- where the output simply equals the input -- thereby becoming useless. 
 
