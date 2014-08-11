@@ -23,7 +23,7 @@ For a full list of Deeplearning4j's features, please see our [features page](../
 
 We're often asked why we chose to implement an open-source deep-learning project in Java, when so much of the deep-learning community is focused on Python. After all, Python has great syntactic elements that allow you to add matrices together without creating explicit classes, as Java requires you to do. Likewise, Python has an extensive scientific computing environment with native extensions like Theano and Numpy.
 
-Yet Java has several advantages. First of all, as a language it is inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C. When we takll about operations, we consider things like strings and other operations involved with higher level machine learning processes.
+Yet Java has several advantages. First of all, as a language it is inherently faster than Python. Anything written in Python by itself, disregarding its reliance on Cython, will be slower. Admittedly, most computationally expensive operations are written in C. (When we talk about operations, we also consider things like strings and other operations involved with higher-level machine learning processes.)
 
 Second, most companies use Java or a Java-based system. It remains the most widely used language in the world. That is, many programmers solving real-world problems could benefit from deep learning, but they are separated from it by a language barrier. We want to make deep learning more usable to a large new audience that can put it to immediate use. 
 
