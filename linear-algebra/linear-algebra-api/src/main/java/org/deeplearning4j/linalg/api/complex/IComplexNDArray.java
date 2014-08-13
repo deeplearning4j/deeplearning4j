@@ -1,11 +1,12 @@
-package org.deeplearning4j.linalg.api.ndarray;
+package org.deeplearning4j.linalg.api.complex;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import sun.plugin2.os.windows.OVERLAPPED;
 
 /**
- * Interface for an ndarray
- *
- * @author Adam Gibson
+ * Created by agibsonccc on 8/12/14.
  */
-public interface INDArray {
+public interface IComplexNDArray extends INDArray {
 
 
     /**
@@ -13,7 +14,8 @@ public interface INDArray {
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
-    public INDArray repmat(int[] shape);
+    @Override
+    IComplexNDArray repmat(int[] shape);
 
     /**
      * Insert a row in to this array
@@ -23,7 +25,8 @@ public interface INDArray {
      * @param toPut the row to insert
      * @return this
      */
-    public INDArray putRow(int row,INDArray toPut);
+    @Override
+    IComplexNDArray putRow(int row,INDArray toPut);
 
     /**
      * Insert a column in to this array
@@ -33,7 +36,8 @@ public interface INDArray {
      * @param toPut the array to put
      * @return this
      */
-    public INDArray putColumn(int column,INDArray toPut);
+    @Override
+    IComplexNDArray putColumn(int column,INDArray toPut);
 
     /**
      * Returns the element at the specified row/column
@@ -43,14 +47,16 @@ public interface INDArray {
 
      * @return a scalar indarray of the element at this index
      */
-    public INDArray getScalar(int row,int column);
+    @Override
+    IComplexNDArray getScalar(int row,int column);
 
     /**
      * Returns the element at the specified index
      * @param i the index of the element to return
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray getScalar(int i);
+    @Override
+    IComplexNDArray getScalar(int i);
 
 
 
@@ -60,7 +66,8 @@ public interface INDArray {
      * @param element a scalar ndarray
      * @return a scalar ndarray of the element at this index
      */
-    public INDArray put(int i,INDArray element);
+    @Override
+    IComplexNDArray put(int i,INDArray element);
 
 
     /**
@@ -68,55 +75,30 @@ public interface INDArray {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray diviColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray diviColumnVector(INDArray columnVector);
     /**
      * In place addition of a column vector
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray divColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray divColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray diviRowVector(INDArray rowVector);
+    @Override
+    IComplexNDArray diviRowVector(INDArray rowVector);
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray divRowVector(INDArray rowVector);
-
-
-    /**
-     * In place addition of a column vector
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
-    public INDArray muliColumnVector(INDArray columnVector);
-    /**
-     * In place addition of a column vector
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
-    public INDArray mulColumnVector(INDArray columnVector);
-
-    /**
-     * In place addition of a column vector
-     * @param rowVector the column vector to add
-     * @return the result of the addition
-     */
-    public INDArray muliRowVector(INDArray rowVector);
-    /**
-     * In place addition of a column vector
-     * @param rowVector the column vector to add
-     * @return the result of the addition
-     */
-    public INDArray mulRowVector(INDArray rowVector);
-
-
+    @Override
+    IComplexNDArray divRowVector(INDArray rowVector);
 
 
     /**
@@ -124,59 +106,101 @@ public interface INDArray {
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subiColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray muliColumnVector(INDArray columnVector);
     /**
      * In place addition of a column vector
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray mulColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subiRowVector(INDArray rowVector);
+    @Override
+    IComplexNDArray muliRowVector(INDArray rowVector);
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray subRowVector(INDArray rowVector);
+    @Override
+    IComplexNDArray mulRowVector(INDArray rowVector);
+
+
+
 
     /**
      * In place addition of a column vector
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addiColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray subiColumnVector(INDArray columnVector);
     /**
      * In place addition of a column vector
      * @param columnVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addColumnVector(INDArray columnVector);
+    @Override
+    IComplexNDArray subColumnVector(INDArray columnVector);
 
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addiRowVector(INDArray rowVector);
+    @Override
+    IComplexNDArray subiRowVector(INDArray rowVector);
     /**
      * In place addition of a column vector
      * @param rowVector the column vector to add
      * @return the result of the addition
      */
-    public INDArray addRowVector(INDArray rowVector);
+    @Override
+    IComplexNDArray subRowVector(INDArray rowVector);
+
+    /**
+     * In place addition of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    @Override
+    IComplexNDArray addiColumnVector(INDArray columnVector);
+    /**
+     * In place addition of a column vector
+     * @param columnVector the column vector to add
+     * @return the result of the addition
+     */
+    @Override
+    IComplexNDArray addColumnVector(INDArray columnVector);
+
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    @Override
+    IComplexNDArray addiRowVector(INDArray rowVector);
+    /**
+     * In place addition of a column vector
+     * @param rowVector the column vector to add
+     * @return the result of the addition
+     */
+    @Override
+    IComplexNDArray addRowVector(INDArray rowVector);
 
     /**
      * Perform a copy matrix multiplication
      * @param other the other matrix to perform matrix multiply with
      * @return the result of the matrix multiplication
      */
-    public INDArray mmul(INDArray other);
+    @Override
+    IComplexNDArray mmul(INDArray other);
 
 
     /**
@@ -185,7 +209,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the matrix multiplication
      */
-    public INDArray mmul(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray mmul(INDArray other,INDArray result);
 
 
     /**
@@ -193,7 +218,8 @@ public interface INDArray {
      * @param other the second ndarray to divide
      * @return the result of the divide
      */
-    public INDArray div(INDArray other);
+    @Override
+    IComplexNDArray div(INDArray other);
 
     /**
      * copy (element wise) division of two matrices
@@ -201,7 +227,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the divide
      */
-    public INDArray div(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray div(INDArray other,INDArray result);
 
 
     /**
@@ -209,7 +236,8 @@ public interface INDArray {
      * @param other the second ndarray to multiply
      * @return the result of the addition
      */
-    public INDArray mul(INDArray other);
+    @Override
+    IComplexNDArray mul(INDArray other);
 
     /**
      * copy (element wise) multiplication of two matrices
@@ -217,14 +245,16 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the multiplication
      */
-    public INDArray mul(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray mul(INDArray other,INDArray result);
 
     /**
      * copy subtraction of two matrices
      * @param other the second ndarray to subtract
      * @return the result of the addition
      */
-    public INDArray sub(INDArray other);
+    @Override
+    IComplexNDArray sub(INDArray other);
 
     /**
      * copy subtraction of two matrices
@@ -232,14 +262,16 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the subtraction
      */
-    public INDArray sub(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray sub(INDArray other,INDArray result);
 
     /**
      * copy addition of two matrices
      * @param other the second ndarray to add
      * @return the result of the addition
      */
-    public INDArray add(INDArray other);
+    @Override
+    IComplexNDArray add(INDArray other);
 
     /**
      * copy addition of two matrices
@@ -247,13 +279,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the addition
      */
-    public INDArray add(INDArray other,INDArray result);
-
-
-
-
-
-
+    @Override
+    IComplexNDArray add(INDArray other,INDArray result);
 
 
 
@@ -263,7 +290,8 @@ public interface INDArray {
      * @param other the other matrix to perform matrix multiply with
      * @return the result of the matrix multiplication
      */
-    public INDArray mmuli(INDArray other);
+    @Override
+    IComplexNDArray mmuli(INDArray other);
 
 
     /**
@@ -272,7 +300,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the matrix multiplication
      */
-    public INDArray mmuli(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray mmuli(INDArray other,INDArray result);
 
 
     /**
@@ -280,7 +309,8 @@ public interface INDArray {
      * @param other the second ndarray to divide
      * @return the result of the divide
      */
-    public INDArray divi(INDArray other);
+    @Override
+    IComplexNDArray divi(INDArray other);
 
     /**
      * in place (element wise) division of two matrices
@@ -288,7 +318,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the divide
      */
-    public INDArray divi(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray divi(INDArray other,INDArray result);
 
 
     /**
@@ -296,7 +327,8 @@ public interface INDArray {
      * @param other the second ndarray to multiply
      * @return the result of the addition
      */
-    public INDArray muli(INDArray other);
+    @Override
+    IComplexNDArray muli(INDArray other);
 
     /**
      * in place (element wise) multiplication of two matrices
@@ -304,14 +336,15 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the multiplication
      */
-    public INDArray muli(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray muli(INDArray other,INDArray result);
 
     /**
      * in place subtraction of two matrices
      * @param other the second ndarray to subtract
      * @return the result of the addition
      */
-    public INDArray subi(INDArray other);
+    IComplexNDArray subi(INDArray other);
 
     /**
      * in place subtraction of two matrices
@@ -319,14 +352,16 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the subtraction
      */
-    public INDArray subi(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray subi(INDArray other,INDArray result);
 
     /**
      * in place addition of two matrices
      * @param other the second ndarray to add
      * @return the result of the addition
      */
-    public INDArray addi(INDArray other);
+    @Override
+    IComplexNDArray addi(INDArray other);
 
     /**
      * in place addition of two matrices
@@ -334,7 +369,8 @@ public interface INDArray {
      * @param result the result ndarray
      * @return the result of the addition
      */
-    public INDArray addi(INDArray other,INDArray result);
+    @Override
+    IComplexNDArray addi(INDArray other,INDArray result);
 
 
     /**
@@ -342,7 +378,8 @@ public interface INDArray {
      * @param dimension  the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    public INDArray normmax(int dimension);
+    @Override
+    IComplexNDArray normmax(int dimension);
 
 
 
@@ -352,7 +389,8 @@ public interface INDArray {
      * @param dimension  the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
-    public INDArray norm2(int dimension);
+    @Override
+    IComplexNDArray norm2(int dimension);
 
 
     /**
@@ -360,7 +398,8 @@ public interface INDArray {
      * @param dimension  the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    public INDArray norm1(int dimension);
+    @Override
+    IComplexNDArray norm1(int dimension);
 
 
 
@@ -369,7 +408,8 @@ public interface INDArray {
      * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
-    public INDArray prod(int dimension);
+    @Override
+    IComplexNDArray prod(int dimension);
 
 
     /**
@@ -377,14 +417,16 @@ public interface INDArray {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    public INDArray mean(int dimension);
+    @Override
+    IComplexNDArray mean(int dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
      * @param dimension  the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    public INDArray sum(int dimension);
+    @Override
+    IComplexNDArray sum(int dimension);
 
 
 
@@ -395,28 +437,26 @@ public interface INDArray {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    public INDArray get(int[] indices);
+    @Override
+    IComplexNDArray get(int[] indices);
 
 
     /**
      * Return a copy of this ndarray
      * @return a copy of this ndarray
      */
-    public INDArray dup();
+    @Override
+    IComplexNDArray dup();
 
 
     /**
      * Returns a flattened version (row vector) of this ndarray
      * @return a flattened version (row vector) of this ndarray
      */
-    public INDArray ravel();
+    @Override
+    IComplexNDArray ravel();
 
 
-    /**
-     * Returns the number of slices in this ndarray
-     * @return the number of slices in this ndarray
-     */
-    public int slices();
 
 
     /**
@@ -425,7 +465,7 @@ public interface INDArray {
      * @param dimension the dimension to return the slice for
      * @return the specified slice of this ndarray
      */
-    public INDArray slice(int i,int dimension);
+    IComplexNDArray slice(int i,int dimension);
 
 
     /**
@@ -433,28 +473,24 @@ public interface INDArray {
      * @param i the index of the slice to return
      * @return the specified slice of this ndarray
      */
-    public INDArray slice(int i);
+    IComplexNDArray slice(int i);
 
 
-    /**
-     * Returns the start of where the ndarray is
-     * for the underlying data
-     * @return the starting offset
-     */
-    public int offset();
 
     /**
      * Reshapes the ndarray (can't change the length of the ndarray)
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
-    public INDArray reshape(int[] newShape);
+    @Override
+    IComplexNDArray reshape(int[] newShape);
 
     /**
      * Flip the rows and columns of a matrix
      * @return the flipped rows and columns of a matrix
      */
-    public INDArray transpose();
+    @Override
+    IComplexNDArray transpose();
 
     /**
      * Mainly here for people coming from numpy.
@@ -463,14 +499,16 @@ public interface INDArray {
      * @param with the one to swap it with
      * @return the swapped axes view
      */
-    public INDArray swapAxes(int dimension,int with);
+    @Override
+    IComplexNDArray swapAxes(int dimension,int with);
 
     /**
      * See: http://www.mathworks.com/help/matlab/ref/permute.html
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
-    public INDArray permute(int[] rearrange);
+    @Override
+    IComplexNDArray permute(int[] rearrange);
 
 
     /**
@@ -479,7 +517,8 @@ public interface INDArray {
      * @param i the column to getScalar
      * @return the specified column
      */
-    INDArray getColumn(int i);
+    @Override
+    IComplexNDArray getColumn(int i);
 
     /**
      * Returns the specified row.
@@ -487,75 +526,11 @@ public interface INDArray {
      * @param i the row to getScalar
      * @return the specified row
      */
-    INDArray getRow(int i);
-
-    /**
-     * Returns the number of columns in this matrix (throws exception if not 2d)
-     * @return the number of columns in this matrix
-     */
-    int columns();
-
-    /**
-     * Returns the number of rows in this matrix (throws exception if not 2d)
-     * @return the number of rows in this matrix
-     */
-    int rows();
-
-    /**
-     * Returns true if the number of columns is 1
-     * @return true if the number of columns is 1
-     */
-    boolean isColumnVector();
-    /**
-     * Returns true if the number of rows is 1
-     * @return true if the number of rows is 1
-     */
-    boolean isRowVector();
-
-    /**
-     * Returns true if this ndarray is a vector
-     * @return whether this ndarray is a vector
-     */
-    boolean isVector();
-
-    /**
-     * Returns true if this ndarray is a matrix
-     * @return whether this ndarray is a matrix
-     */
-    boolean isMatrix();
-
-    /**
-     * Returns true if this ndarray is a scalar
-     * @return whether this ndarray is a scalar
-     */
-    boolean isScalar();
+    @Override
+    IComplexNDArray getRow(int i);
 
 
-    /**
-     * Returns the shape of this ndarray
-     * @return the shape of this ndarray
-     */
-    int[] shape();
 
-
-    /**
-     * Returns the stride of this ndarray
-     * @return the stride of this ndarray
-     */
-    int[] stride();
-
-    /**
-     * Returns the size along a specified dimension
-     * @param dimension the dimension to return the size for
-     * @return the size of the array along the specified dimension
-     */
-    int size(int dimension);
-
-    /**
-     * Returns the total number of elements in the ndarray
-     * @return the number of elements in the ndarray
-     */
-    int length();
 
 
 
@@ -564,32 +539,17 @@ public interface INDArray {
      * @param shape the new shape of this ndarray
      * @return the broadcasted ndarray
      */
-    INDArray broadcast(int[] shape);
+    @Override
+    IComplexNDArray broadcast(int[] shape);
 
     /**
      * Broadcasts this ndarray to be the specified shape
      * @param shape the new shape of this ndarray
      * @return the broadcasted ndarray
      */
-    INDArray broadcasti(int[] shape);
+    @Override
+    IComplexNDArray broadcasti(int[] shape);
 
 
-    /**
-     * Returns a scalar (individual element)
-     * of a scalar ndarray
-     * @return the individual item in this ndarray
-     */
-    Object element();
 
-    /**
-     * Returns a linear double array representation of this ndarray
-     * @return the linear double array representation of this ndarray
-     */
-    public double[] data();
-
-    /**
-     * Returns a linear float array representation of this ndarray
-     * @return the linear float array representation of this ndarray
-     */
-    public float[] floatData();
 }
