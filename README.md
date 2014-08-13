@@ -74,6 +74,6 @@ Maven central and other support coming soon.
 
 Contact us:
 
-Deeplearning4j has its own IRC channel at https://webchat.freenode.net/ (just enter /join #deeplearning4j in the IRC command line).
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j in on IRC where you would normally type to chat.
 
 Apache 2.0 licensed. 
