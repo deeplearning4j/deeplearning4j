@@ -72,4 +72,8 @@ For classification: Due to heavy sampling leveraged in deep learning, try to hav
 
 Maven central and other support coming soon.
 
+Contact us:
+
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/ (just enter /join #deeplearning4j in the IRC command line).
+
 Apache 2.0 licensed. 
