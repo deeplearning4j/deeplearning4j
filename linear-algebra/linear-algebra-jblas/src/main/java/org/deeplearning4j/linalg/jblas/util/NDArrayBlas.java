@@ -116,7 +116,7 @@ public class NDArrayBlas {
                     y.data[i] = 0.0;
 
                 for (int j = 0; j < a.columns; j++) {
-                    double xj = x.getScalar(j);
+                    double xj = (double) x.getScalar(j).element();
                     if (xj != 0.0) {
                         for (int i = 0; i < a.rows; i++)
                             y.data[i] += a.get(i, j) * xj;
@@ -125,7 +125,7 @@ public class NDArrayBlas {
             } else {
                 for (int j = 0; j < a.columns; j++) {
                     double byj = beta * y.data[j];
-                    double xj = x.getScalar(j);
+                    double xj = (double) x.getScalar(j).element();
                     for (int i = 0; i < a.rows; i++)
                         y.data[j] = a.get(i, j) * xj + byj;
                 }

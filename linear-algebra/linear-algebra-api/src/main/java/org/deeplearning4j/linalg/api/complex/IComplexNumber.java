@@ -107,4 +107,17 @@ public interface IComplexNumber {
     public boolean isReal();
 
     public boolean isImag();
+
+    /**
+     * Convert to a float
+     * @return this complex number as a float
+     */
+    public IComplexFloat asFloat();
+    /**
+     * Convert to a double
+     * @return this complex number as a double
+     */
+    public IComplexDouble asDouble();
+
+
 }
