@@ -61,12 +61,7 @@ Neural net knobs supported
 Coming up
 =============================
 
-Recurrent neural nets, convolutional neural nets and a recursive neural tensor.
-
-Matrix-provider agnostic: 
-
-A matrix-abstraction layer that sits atop various matrix providers which will allow for 
-distributed GPU deep learning via either AMD, NVIDIA or native with BLAS, as well as bindings for Colt for plain old Java abstraction layers used in tasks such as face detection, named-entity recognition and sentiment analysis.
+See our wiki: https://github.com/agibsonccc/java-deeplearning/wiki/Deeplearning4j-Roadmap
 
 
 
