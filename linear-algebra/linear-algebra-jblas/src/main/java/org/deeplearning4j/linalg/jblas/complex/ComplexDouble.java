@@ -1,5 +1,7 @@
 package org.deeplearning4j.linalg.jblas.complex;
 
+import org.deeplearning4j.linalg.api.complex.IComplexDouble;
+import org.deeplearning4j.linalg.api.complex.IComplexFloat;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 
 /**
@@ -8,7 +10,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
  *
  * @author Adam Gibson
  */
-public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexNumber {
+public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDouble {
 
 
     public ComplexDouble(org.jblas.ComplexDouble c) {
@@ -23,7 +25,25 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexNu
         super(real);
     }
 
+    /**
+     * Convert to a float
+     *
+     * @return this complex number as a float
+     */
+    @Override
+    public IComplexFloat asFloat() {
+        return null;
+    }
 
+    /**
+     * Convert to a double
+     *
+     * @return this complex number as a double
+     */
+    @Override
+    public IComplexDouble asDouble() {
+        return this;
+    }
 
     @Override
     public ComplexDouble dup() {

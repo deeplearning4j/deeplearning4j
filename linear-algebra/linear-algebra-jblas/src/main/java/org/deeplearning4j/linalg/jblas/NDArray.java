@@ -1445,6 +1445,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subi(INDArray other, INDArray result) {
+
+
         return null;
     }
 
