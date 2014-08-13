@@ -1,8 +1,9 @@
 package org.deeplearning4j.linalg.util;
 
 import org.apache.commons.math3.util.FastMath;
-import org.jblas.ComplexDouble;
-import org.jblas.ComplexFloat;
+import org.deeplearning4j.linalg.api.complex.IComplexDouble;
+import org.deeplearning4j.linalg.api.complex.IComplexFloat;
+import org.deeplearning4j.linalg.factory.NDArrays;
 
 /**
  * @author Adam Gibson
@@ -19,8 +20,8 @@ public class ComplexUtil {
      * @param d the number to getFromOrigin the exp of
      * @return the exponential of this complex number
      */
-    public static ComplexDouble exp(ComplexDouble d) {
-          return  new ComplexDouble(FastMath.exp(d.real()) * FastMath.cos(d.imag()),FastMath.exp(d.real()) * FastMath.sin(d.imag()));
+    public static IComplexDouble exp(IComplexDouble d) {
+          return  NDArrays.createDouble(FastMath.exp(d.realComponent()) * FastMath.cos(d.imaginaryComponent()), FastMath.exp(d.realComponent()) * FastMath.sin(d.imaginaryComponent()));
     }
 
     /**
@@ -33,8 +34,8 @@ public class ComplexUtil {
      * @param d the number to getFromOrigin the exp of
      * @return the exponential of this complex number
      */
-    public static ComplexFloat exp(ComplexFloat d) {
-        return  new ComplexFloat((float) FastMath.exp(d.real()) * (float) FastMath.cos(d.imag()),(float) FastMath.exp(d.real()) * (float) FastMath.sin(d.imag()));
+    public static IComplexFloat exp(IComplexFloat d) {
+        return  NDArrays.createFloat((float) FastMath.exp(d.realComponent()) * (float) FastMath.cos(d.imaginaryComponent()),(float) FastMath.exp(d.realComponent()) * (float) FastMath.sin(d.imaginaryComponent()));
     }
 
 

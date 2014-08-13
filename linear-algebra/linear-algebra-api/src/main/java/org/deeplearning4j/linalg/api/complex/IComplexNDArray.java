@@ -1,10 +1,10 @@
 package org.deeplearning4j.linalg.api.complex;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import sun.plugin2.os.windows.OVERLAPPED;
 
 /**
- * Created by agibsonccc on 8/12/14.
+ * Complex numbers
+ * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
 
