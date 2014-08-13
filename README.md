@@ -63,22 +63,41 @@ Coming up
 
 See our wiki: https://github.com/agibsonccc/java-deeplearning/wiki/Deeplearning4j-Roadmap
 
+Contact
+=============================
+
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
+
+
+
+EXPERIMENTAL GPU SUPPORT (NOT DONE YET ONLY SCAFFOLDING IN THERE)
+==========================================
+
+Initial deployment instructions:
+
+1. git clone git@github.com:MysterionRise/mavenized-jcuda.git
+2. cd mavenized-jcuda && mvn clean install -DskipTests
+3. Include the linear-algebra-jcublas in your pom:
+
+          <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                     <artifactId>linear-algebra-jcublas</artifactId>
+                      <version>0.0.3.2-SNAPSHOT</version>
+                   </dependency>
 
 
 Bugs/Feature Requests
-================
+=============================
+
+
 
 https://github.com/agibsonccc/java-deeplearning/issues
 
 
 
 
-
-
 Installation
 ===========================================
-
-
 
 # Maven coordinates
 
