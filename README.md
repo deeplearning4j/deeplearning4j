@@ -72,6 +72,21 @@ https://github.com/agibsonccc/java-deeplearning/issues
 
 
 
+EXPERIMENTAL GPU SUPPORT (NOT DONE YET ONLY SCAFFOLDING IN THERE)
+==========================================
+
+Initial deployment instructions:
+
+1. git clone git@github.com:MysterionRise/mavenized-jcuda.git
+2. cd mavenized-jcuda && mvn clean install -DskipTests
+3. Include the linear-algebra-jcublas in your pom:
+
+          <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                     <artifactId>linear-algebra-jcublas</artifactId>
+                      <version>0.0.3.2-SNAPSHOT</version>
+                   </dependency>
+
 
 
 

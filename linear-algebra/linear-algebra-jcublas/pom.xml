@@ -1,35 +1,56 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.deeplearning4j</groupId>
-  <artifactId>linear-algebra-jcublas</artifactId>
-  <version>0.0.3.2-SNAPSHOT</version>
-  <packaging>jar</packaging>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>linear-algebra-jcublas</artifactId>
+    <version>0.0.3.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-  <name>linear-algebra-jcublas</name>
-  <url>http://maven.apache.org</url>
+    <name>linear-algebra-jcublas</name>
+    <url>http://maven.apache.org</url>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <properties>
+        <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+        <github.global.server>github</github.global.server>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Set needed version of JCuda here -->
+        <jcuda.version>0.5.5</jcuda.version>
+    </properties>
 
-  <dependencies>
-      <dependency>
-          <groupId>org.scalanlp</groupId>
-          <artifactId>jcublas</artifactId>
-          <version>0.5.5</version>
-      </dependency>
-      <dependency>
-          <groupId>org.deeplearning4j</groupId>
-          <artifactId>linear-algebra-api</artifactId>
-          <version>${project.version}</version>
-      </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+
+    <dependencies>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcublas</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcuda</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcufft</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcurand</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jcuda</groupId>
+            <artifactId>jcusparse</artifactId>
+            <version>${jcuda.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>linear-algebra-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+    </dependencies>
 </project>
