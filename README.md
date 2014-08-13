@@ -63,12 +63,10 @@ Coming up
 
 See our wiki: https://github.com/agibsonccc/java-deeplearning/wiki/Deeplearning4j-Roadmap
 
+Contact
+=============================
 
-
-Bugs/Feature Requests
-================
-
-https://github.com/agibsonccc/java-deeplearning/issues
+Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a network intended primarily for developers of free and open source software. Just enter /join #deeplearning4j on IRC where you would normally type to chat.
 
 
 
@@ -88,12 +86,18 @@ Initial deployment instructions:
                    </dependency>
 
 
+Bugs/Feature Requests
+=============================
+
+
+
+https://github.com/agibsonccc/java-deeplearning/issues
+
+
 
 
 Installation
 ===========================================
-
-
 
 # Maven coordinates
 
