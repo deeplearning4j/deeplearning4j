@@ -10,12 +10,14 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
+import org.deeplearning4j.linalg.jblas.complex.*;
 import org.deeplearning4j.linalg.jblas.NDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.ComplexUtil;
 import org.deeplearning4j.linalg.util.MathUtils;
 import org.jblas.*;
+import org.jblas.ComplexDouble;
+import org.jblas.ComplexFloat;
 import org.jblas.ranges.Range;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
@@ -598,7 +600,8 @@ public class MatrixUtil {
     public static ComplexDoubleMatrix exp(ComplexDoubleMatrix input) {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(input.rows, input.columns);
         for (int i = 0; i < ret.length; i++) {
-            ret.put(i, ComplexUtil.exp(input.get(i)));
+            org.deeplearning4j.linalg.jblas.complex.ComplexDouble d = (org.deeplearning4j.linalg.jblas.complex.ComplexDouble) ComplexUtil.exp(new org.deeplearning4j.linalg.jblas.complex.ComplexDouble(input.get(i)));
+            ret.put(i, d);
         }
         return ret;
     }
@@ -1768,7 +1771,8 @@ public class MatrixUtil {
     public static ComplexFloatMatrix exp(ComplexFloatMatrix input) {
         ComplexFloatMatrix ret = new ComplexFloatMatrix(input.rows, input.columns);
         for (int i = 0; i  < ret.length; i++) {
-            ret.put(i, ComplexUtil.exp(input.get(i)));
+            org.jblas.ComplexFloat f = (org.deeplearning4j.linalg.jblas.complex.ComplexFloat) ComplexUtil.exp(new org.deeplearning4j.linalg.jblas.complex.ComplexFloat(input.get(i)));
+            ret.put(i, f);
         }
         return ret;
     }
