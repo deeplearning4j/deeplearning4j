@@ -22,10 +22,16 @@ public class NDArrays {
 
     private static Class<? extends INDArray> clazz;
     private static Class<? extends IComplexNDArray> complexClazz;
+    private static Class<? extends IComplexDouble> complexDoubleClazz;
+    private static Class<? extends IComplexFloat> complexFloatClazz;
+
     public final static String LINALG_PROPS = "/dl4j-linalg.properties";
     public final static String REAL_CLASS_PROP = "real.class";
     public final static String COMPLEX_CLASS_PROP = "complex.class";
     public final static String DTYPE = "dtype";
+    public final static String COMPLEX_DOUBLE = "complex.double.class";
+    public final static String COMPLEX_FLOAT = "complex.float.class";
+
     public static String dtype;
     private static Properties props = new Properties();
 
@@ -37,9 +43,38 @@ public class NDArrays {
             String realType = props.get(REAL_CLASS_PROP + "." + props.get(DTYPE)).toString();
             String complexType = props.get(COMPLEX_CLASS_PROP + "." + props.get(DTYPE)).toString();
             dtype = props.get(DTYPE).toString();
+            complexDoubleClazz = (Class<? extends IComplexDouble>) Class.forName(props.get(COMPLEX_DOUBLE).toString());
+            complexFloatClazz = (Class<? extends IComplexFloat>) Class.forName(props.get(COMPLEX_FLOAT).toString());
+
             clazz = (Class<? extends INDArray>) Class.forName(realType);
             complexClazz = (Class<? extends IComplexNDArray>) Class.forName(complexType);
         }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create float
+     * @param real real component
+     * @param imag imag component
+     * @return
+     */
+    public static IComplexFloat createFloat(float real,float imag) {
+        try {
+            Constructor c = complexDoubleClazz.getConstructor(double.class,double.class);
+            return (IComplexFloat) c.newInstance(real,imag);
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+    public static IComplexDouble createDouble(double real,double imag) {
+        try {
+            Constructor c = complexDoubleClazz.getConstructor(double.class,double.class);
+            return (IComplexDouble) c.newInstance(real,imag);
+        }catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -380,6 +415,40 @@ public class NDArrays {
     }
 
 
+
+    /**
+     * Create a scalar ndarray with the specified offset
+     * @param value the value to initialize the scalar with
+     * @return the created ndarray
+     */
+    public static INDArray scalar(Number value) {
+        if(dtype.equals("double"))
+            return scalar(value.doubleValue(),0);
+        if(dtype.equals("float"))
+            return scalar(value.floatValue(),0);
+        throw new IllegalStateException("Illegal data type " + dtype);
+    }
+
+    /**
+     * Create a scalar nd array with the specified value and offset
+     * @param value the value of the scalar
+=     * @return the scalar nd array
+     */
+    public static INDArray scalar(float value) {
+        return create(new float[]{value},new int[]{1},new int[]{1},0);
+    }
+
+    /**
+     * Create a scalar nd array with the specified value and offset
+     * @param value the value of the scalar
+=     * @return the scalar nd array
+     */
+    public static INDArray scalar(double value) {
+        return create(new double[]{value},new int[]{1},new int[]{1},0);
+
+    }
+
+
     /**
      * Create a scalar ndarray with the specified offset
      * @param value the value to initialize the scalar with
@@ -391,6 +460,39 @@ public class NDArrays {
             return scalar(value.asDouble(),offset);
         if(dtype.equals("float"))
             return scalar(value.asFloat(),offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
+    }
+
+    /**
+     * Create a scalar nd array with the specified value and offset
+     * @param value the value of the scalar
+     * @return the scalar nd array
+     */
+    public static IComplexNDArray scalar(IComplexFloat value) {
+        return createComplex(new float[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},0);
+    }
+
+    /**
+     * Create a scalar nd array with the specified value and offset
+     * @param value the value of the scalar
+=     * @return the scalar nd array
+     */
+    public static IComplexNDArray scalar(IComplexDouble value) {
+        return createComplex(new double[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},0);
+
+    }
+
+
+    /**
+     * Create a scalar ndarray with the specified offset
+     * @param value the value to initialize the scalar with
+     * @return the created ndarray
+     */
+    public static IComplexNDArray scalar(IComplexNumber value) {
+        if(dtype.equals("double"))
+            return scalar(value.asDouble(),0);
+        if(dtype.equals("float"))
+            return scalar(value.asFloat(),0);
         throw new IllegalStateException("Illegal data type " + dtype);
     }
 

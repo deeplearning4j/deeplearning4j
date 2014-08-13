@@ -75,8 +75,10 @@ public class ComplexNDArrayUtil {
      */
     public static ComplexNDArray expi(ComplexNDArray toExp) {
         ComplexNDArray flattened = toExp.ravel();
-        for (int i = 0; i < flattened.length; i++)
-            flattened.put(i, ComplexUtil.exp(flattened.get(i)));
+        for (int i = 0; i < flattened.length; i++) {
+            ComplexDouble d = (ComplexDouble) ComplexUtil.exp(flattened.get(i));
+            flattened.put(i, d);
+        }
         return flattened.reshape(toExp.shape());
     }
 
