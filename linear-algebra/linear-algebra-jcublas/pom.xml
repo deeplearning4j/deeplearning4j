@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
 
     <name>linear-algebra-jcublas</name>
-    <url>http://maven.apache.org</url>
+    <url>http://deeplearning4j.org/</url>
 
     <properties>
         <!-- github server corresponds to entry in ~/.m2/settings.xml -->
