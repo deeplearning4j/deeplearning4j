@@ -54,11 +54,11 @@ public class DummyNDArray implements INDArray {
      * @return a scalar indarray of the element at this index
      */
     @Override
-    public INDArray get(int row, int column) {
-        return this;
+    public INDArray getScalar(int row, int column) {
+        return null;
     }
 
-    /**
+       /**
      * Returns the element at the specified index
      *
      * @param i the index of the element to return
@@ -498,15 +498,6 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
-    /**
-     * Returns the normmmax along the last dimension
-     *
-     * @return the norm1 along the last dimension
-     */
-    @Override
-    public INDArray normmax() {
-        return this;
-    }
 
     /**
      * Returns the norm2 along the specified dimension
@@ -519,15 +510,6 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
-    /**
-     * Returns the norm1 along the last dimension
-     *
-     * @return the norm1 along the last dimension
-     */
-    @Override
-    public INDArray norm2() {
-        return this;
-    }
 
     /**
      * Returns the norm1 along the specified dimension
@@ -540,15 +522,6 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
-    /**
-     * Returns the norm1 along the last dimension
-     *
-     * @return the norm1 along the last dimension
-     */
-    @Override
-    public INDArray norm1() {
-        return this;
-    }
 
     /**
      * Returns the product along a given dimension
@@ -583,35 +556,7 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
-    /**
-     * Returns the overall product of this ndarray
-     *
-     * @return the overall product of this ndarray
-     */
-    @Override
-    public INDArray prod() {
-        return this;
-    }
 
-    /**
-     * Returns the overall mean of this ndarray
-     *
-     * @return the overall mean of this ndarray
-     */
-    @Override
-    public INDArray mean() {
-        return this;
-    }
-
-    /**
-     * Returns the sum along the last dimension of this ndarray
-     *
-     * @return the sum along the last dimension of this ndarray
-     */
-    @Override
-    public INDArray sum() {
-        return this;
-    }
 
     /**
      * Returns the elements at the the specified indices
@@ -888,6 +833,37 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray broadcasti(int[] shape) {
         return this;
+    }
+
+    /**
+     * Returns a scalar (individual element)
+     * of a scalar ndarray
+     *
+     * @return the individual item in this ndarray
+     */
+    @Override
+    public Object element() {
+        return null;
+    }
+
+    /**
+     * Returns a linear double array representation of this ndarray
+     *
+     * @return the linear double array representation of this ndarray
+     */
+    @Override
+    public double[] data() {
+        return new double[0];
+    }
+
+    /**
+     * Returns a linear float array representation of this ndarray
+     *
+     * @return the linear float array representation of this ndarray
+     */
+    @Override
+    public float[] floatData() {
+        return new float[0];
     }
 }
 

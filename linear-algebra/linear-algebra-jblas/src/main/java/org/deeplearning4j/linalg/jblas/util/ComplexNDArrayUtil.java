@@ -1,9 +1,9 @@
 package org.deeplearning4j.linalg.jblas.util;
 
+import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.ComplexUtil;
-import org.jblas.ComplexDouble;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
@@ -314,14 +314,14 @@ public class ComplexNDArrayUtil {
 
         ComplexDouble s = new ComplexDouble(0.0);
         for (int i = 0; i < arr.length; i++) {
-            ComplexDouble curr = arr.get(i);
+            org.jblas.ComplexDouble curr = arr.get(i);
 
             switch (op) {
                 case SUM:
                     s.addi(curr);
                     break;
                 case MEAN:
-                    s.addi(arr.get(i));
+                    s.addi(curr);
                     break;
                 case MAX:
                     if (arr.get(i).absoluteValue() > s.abs())
