@@ -53,4 +53,28 @@
         </dependency>
 
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/repo</url>
+        </repository>
+        <repository>
+            <id>jcuda.local</id>
+            <name>JCuda</name>
+            <url>file:${project.basedir}/repo</url>
+        </repository>
+
+        <repository>
+            <id>mavenized-jcuda-mvn-repo</id>
+            <url>https://raw.github.com/emmjaykay/mavenized-jcuda/repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
 </project>
