@@ -4,6 +4,7 @@
         <artifactId>linear-algebra</artifactId>
         <groupId>org.deeplearning4j</groupId>
         <version>0.0.3.2-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
