@@ -1071,7 +1071,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray diviColumnVector(INDArray columnVector) {
-        return null;
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).divi(columnVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1093,7 +1096,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray diviRowVector(INDArray rowVector) {
-        return null;
+        for(int i = 0; i < rows(); i++) {
+            getRow(i).divi(rowVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1115,7 +1121,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray muliColumnVector(INDArray columnVector) {
-        return null;
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).muli(columnVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1137,7 +1146,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray muliRowVector(INDArray rowVector) {
-        return null;
+        for(int i = 0; i < rows(); i++) {
+            getRow(i).muli(rowVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1159,7 +1171,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subiColumnVector(INDArray columnVector) {
-        return null;
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).subi(columnVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1181,8 +1196,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subiRowVector(INDArray rowVector) {
-
-        return null;
+        for(int i = 0; i < rows(); i++) {
+            getRow(i).subi(rowVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1204,7 +1221,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addiColumnVector(INDArray columnVector) {
-        return null;
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).addi(columnVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1226,8 +1246,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addiRowVector(INDArray rowVector) {
-
-        return null;
+        for(int i = 0; i < rows(); i++) {
+            getRow(i).addi(rowVector.getScalar(i));
+        }
+        return this;
     }
 
     /**
@@ -1307,7 +1329,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray mul(INDArray other, INDArray result) {
-        return null;
+        return dup().muli(other,result);
     }
 
     /**
@@ -1399,7 +1421,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray divi(INDArray other, INDArray result) {
-        return null;
+        new TwoArrayOps().from(this).other(other).op(DivideOp.class)
+                .to(result).build().exec();
+        return (NDArray) result;
     }
 
     /**
@@ -1445,9 +1469,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subi(INDArray other, INDArray result) {
-
-
-        return null;
+        new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
+                .to(result).build().exec();
+        return (NDArray) result;
     }
 
     /**
@@ -1470,7 +1494,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addi(INDArray other, INDArray result) {
-        return null;
+      new TwoArrayOps().from(this).other(other).op(AddOp.class)
+             .to(result).build().exec();
+        return (NDArray) result;
     }
 
     /**
@@ -1963,12 +1989,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return this;
     }
 
-    /** Add two matrices (in-place). */
-    public NDArray addi(NDArray other, NDArray result) {
-        new TwoArrayOps().from(this).to(result).other(other)
-                .op(AddOp.class).build().exec();
-        return result;
-    }
+
 
 
     /**
@@ -1977,7 +1998,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addi(DoubleMatrix other) {
-        NDArray ret = NDArray.wrap(other);
         new TwoArrayOps().from(this).to(this).other(NDArray.wrap(other))
                 .op(AddOp.class).build().exec();
         return this;
