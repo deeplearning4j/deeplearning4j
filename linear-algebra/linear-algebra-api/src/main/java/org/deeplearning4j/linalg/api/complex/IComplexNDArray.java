@@ -8,6 +8,77 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
  */
 public interface IComplexNDArray extends INDArray {
 
+    /**
+     * Reverse division
+     *
+     * @param other the matrix to divide from
+     * @return
+     */
+    @Override
+    IComplexNDArray rdiv(INDArray other);
+
+    /**
+     * Reverse divsion (in place)
+     *
+     * @param other
+     * @return
+     */
+    @Override
+    IComplexNDArray rdivi(INDArray other);
+
+    /**
+     * Reverse division
+     *
+     * @param other  the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    @Override
+    IComplexNDArray rdiv(INDArray other, INDArray result);
+
+    /**
+     * Reverse division (in-place)
+     *
+     * @param other  the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    @Override
+    IComplexNDArray rdivi(INDArray other, INDArray result);
+
+    /**
+     * Reverse subtraction
+     *
+     * @param other  the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    @Override
+    IComplexNDArray rsub(INDArray other, INDArray result);
+
+    /**
+     * @param other
+     * @return
+     */
+    @Override
+    IComplexNDArray rsub(INDArray other);
+
+    /**
+     * @param other
+     * @return
+     */
+    @Override
+    IComplexNDArray rsubi(INDArray other);
+
+    /**
+     * Reverse subtraction (in-place)
+     *
+     * @param other  the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    @Override
+    IComplexNDArray rsubi(INDArray other, INDArray result);
 
     /**
      *  a Hermitian matrix is a square matrix with complex entries that is equal to its own conjugate transpose
