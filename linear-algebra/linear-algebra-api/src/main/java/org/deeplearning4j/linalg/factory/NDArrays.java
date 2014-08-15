@@ -153,9 +153,9 @@ public class NDArrays {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-   public static INDArray create(double[] data,int[] shape) {
-       return create(data,shape,ArrayUtil.calcStrides(shape),0);
-   }
+    public static INDArray create(double[] data,int[] shape) {
+        return create(data,shape,ArrayUtil.calcStrides(shape),0);
+    }
 
     /**
      * Create an ndrray with the specified shape
@@ -456,7 +456,7 @@ public class NDArrays {
      * @return the created ndarray
      */
     public static INDArray complexScalar(Number value) {
-         return complexScalar(value,0);
+        return complexScalar(value,0);
     }
 
 
@@ -504,7 +504,10 @@ public class NDArrays {
     =     * @return the scalar nd array
      */
     public static INDArray scalar(float value) {
-        return create(new float[]{value},new int[]{1},new int[]{1},0);
+        if(dtype.equals("float"))
+            return create(new float[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((double) value);
     }
 
     /**
@@ -513,8 +516,10 @@ public class NDArrays {
     =     * @return the scalar nd array
      */
     public static INDArray scalar(double value) {
-        return create(new double[]{value},new int[]{1},new int[]{1},0);
-
+        if(dtype.equals("double"))
+            return create(new double[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((float) value);
     }
 
 
