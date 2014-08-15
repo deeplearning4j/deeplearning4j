@@ -28,7 +28,7 @@ public class AddOp extends BaseTwoArrayElementWiseOp {
             throw new IllegalArgumentException("Unable to access individual element with a scalar");
         INDArray origin = getFromOrigin(i);
         if(value instanceof IComplexNDArray) {
-            IComplexNDArray complexValue = (IComplexNDArray) origin;
+            IComplexNDArray complexValue = (IComplexNDArray) value;
             IComplexNumber firstValue = (IComplexNumber) complexValue.element();
             //complex + complex
             if(origin instanceof IComplexNDArray) {

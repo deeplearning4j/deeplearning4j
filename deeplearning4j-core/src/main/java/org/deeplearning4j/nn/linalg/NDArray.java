@@ -773,6 +773,7 @@ public class NDArray extends DoubleMatrix {
 
     }
 
+
     /**
      * Get elements from specified rows and columns.
      *

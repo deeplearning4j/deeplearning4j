@@ -63,7 +63,7 @@ public class ComplexNDArrayTests {
     @Test
     public void testSum() {
         IComplexNDArray n = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2}));
-        assertEquals(new ComplexDouble(36),n.sum(n.shape().length - 1));
+        assertEquals(new ComplexDouble(36),n.sum(Integer.MAX_VALUE).element());
     }
 
     @Test
@@ -596,15 +596,15 @@ public class ComplexNDArrayTests {
     @Test
     public void testBasicOperations() {
         IComplexNDArray arr = new ComplexNDArray(new double[]{0,1,2,1,1,2,3,4},new int[]{2,2});
-        IComplexDouble scalar = (IComplexDouble) arr.sum(arr.shape().length - 1).element();
+        IComplexDouble scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         double sum = scalar.realComponent();
         assertEquals(6,sum,1e-1);
         arr.addi(NDArrays.scalar(1));
-        scalar = (IComplexDouble) arr.sum(arr.shape().length - 1).element();
+        scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         sum = scalar.realComponent();
         assertEquals(10,sum,1e-1);
         arr.subi(NDArrays.scalar(1));
-        scalar = (IComplexDouble) arr.sum(arr.shape().length - 1).element();
+        scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
 
         sum = scalar.realComponent();
         assertEquals(6,sum,1e-1);
@@ -629,14 +629,14 @@ public class ComplexNDArrayTests {
         assertFalse(mulled.equals(n4));
         assertEquals(ComplexNDArray.scalar(1),subbed);
         assertEquals(ComplexNDArray.scalar(12),mulled);
-        assertEquals(ComplexNDArray.scalar((org.deeplearning4j.linalg.jblas.complex.ComplexDouble) new ComplexDouble(1.3333333333333333)),div);
+        assertEquals(NDArrays.complexScalar(1.3333333333333333),div);
 
 
         IComplexNDArray multiDimensionElementWise = new ComplexNDArray(new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2}));
-        ComplexDouble sum2 = (ComplexDouble) multiDimensionElementWise.sum(multiDimensionElementWise.shape().length - 1).element();
+        ComplexDouble sum2 = (ComplexDouble) multiDimensionElementWise.sum(Integer.MAX_VALUE).element();
         assertEquals(sum2,new ComplexDouble(300));
         IComplexNDArray added = multiDimensionElementWise.add(NDArrays.scalar(1));
-        ComplexDouble sum3 = (ComplexDouble) added.sum(added.shape().length - 1);
+        ComplexDouble sum3 = (ComplexDouble) added.sum(Integer.MAX_VALUE).element();
         assertEquals(sum3,new ComplexDouble(324));
 
 
