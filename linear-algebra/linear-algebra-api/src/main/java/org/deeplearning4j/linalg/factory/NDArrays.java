@@ -128,6 +128,8 @@ public class NDArrays {
     }
 
 
+
+
     /**
      * Creates an ndarray with the specified shape
      * @param shape the shape of the ndarray
@@ -145,6 +147,45 @@ public class NDArrays {
     }
 
 
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(double[] data,int[] shape) {
+        return create(data,shape,ArrayUtil.calcStrides(shape),0);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(float[] data,int[] shape) {
+        return create(data,shape,ArrayUtil.calcStrides(shape),0);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data,int[] shape) {
+        return createComplex(data,shape,ArrayUtil.calcStrides(shape,2),0);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data,int[] shape) {
+        return createComplex(data,shape,ArrayUtil.calcStrides(shape,2),0);
+    }
 
 
     /**
@@ -393,6 +434,34 @@ public class NDArrays {
         throw new IllegalStateException("Illegal data type " + dtype);
     }
 
+
+    /**
+     * Create a scalar ndarray with the specified offset
+     * @param value the value to initialize the scalar with
+     * @param offset the offset of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray complexScalar(Number value,int offset) {
+        if(dtype.equals("double"))
+            return scalar(createDouble(value.doubleValue(),0),offset);
+        if(dtype.equals("float"))
+            return scalar(createFloat(value.floatValue(),0),offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
+    }
+
+
+    /**
+     * Create a scalar ndarray with the specified offset
+     * @param value the value to initialize the scalar with
+     * @return the created ndarray
+     */
+    public static INDArray complexScalar(Number value) {
+        return complexScalar(value,0);
+    }
+
+
+
+
     /**
      * Create a scalar nd array with the specified value and offset
      * @param value the value of the scalar
@@ -432,20 +501,25 @@ public class NDArrays {
     /**
      * Create a scalar nd array with the specified value and offset
      * @param value the value of the scalar
-=     * @return the scalar nd array
+    =     * @return the scalar nd array
      */
     public static INDArray scalar(float value) {
-        return create(new float[]{value},new int[]{1},new int[]{1},0);
+        if(dtype.equals("float"))
+            return create(new float[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((double) value);
     }
 
     /**
      * Create a scalar nd array with the specified value and offset
      * @param value the value of the scalar
-=     * @return the scalar nd array
+    =     * @return the scalar nd array
      */
     public static INDArray scalar(double value) {
-        return create(new double[]{value},new int[]{1},new int[]{1},0);
-
+        if(dtype.equals("double"))
+            return create(new double[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((float) value);
     }
 
 
@@ -475,7 +549,7 @@ public class NDArrays {
     /**
      * Create a scalar nd array with the specified value and offset
      * @param value the value of the scalar
-=     * @return the scalar nd array
+    =     * @return the scalar nd array
      */
     public static IComplexNDArray scalar(IComplexDouble value) {
         return createComplex(new double[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},0);

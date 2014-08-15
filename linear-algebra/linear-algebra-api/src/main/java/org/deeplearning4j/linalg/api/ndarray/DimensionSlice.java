@@ -1,4 +1,4 @@
-package org.deeplearning4j.linalg.jblas;
+package org.deeplearning4j.linalg.api.ndarray;
 
 import java.io.Serializable;
 import java.util.Arrays;

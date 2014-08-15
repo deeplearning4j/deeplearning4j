@@ -1,11 +1,106 @@
 package org.deeplearning4j.linalg.ops.elementwise;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
  * Created by agibsonccc on 8/12/14.
  */
 public class DummyNDArray implements INDArray {
+
+    /**
+     * Get the linear index of the data in to
+     * the array
+     *
+     * @param i the index to get
+     * @return the linear index in to the data
+     */
+    @Override
+    public int linearIndex(int i) {
+        return 0;
+    }
+
+    /**
+     * Iterate over every row of every slice
+     *
+     * @param op the operation to apply
+     */
+    @Override
+    public void iterateOverAllRows(SliceOp op) {
+
+    }
+
+    /**
+     * Fetch a particular number on a multi dimensional scale.
+     *
+     * @param indexes the indexes to getFromOrigin a number from
+     * @return the number at the specified indices
+     */
+    @Override
+    public INDArray getScalar(int... indexes) {
+        return null;
+    }
+
+    /**
+     * Validate dimensions are equal
+     *
+     * @param other the other ndarray to compare
+     */
+    @Override
+    public void checkDimensions(INDArray other) {
+
+    }
+
+    /**
+     * Gives the indices for the ending of each slice
+     *
+     * @return the off sets for the beginning of each slice
+     */
+    @Override
+    public int[] endsForSlices() {
+        return new int[0];
+    }
+
+    /**
+     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
+     *
+     * @param op        the operation to do
+     * @param dimension the dimension to return from
+     * @return the results of the reduce (applying the operation along the specified
+     * dimension)t
+     */
+    @Override
+    public INDArray reduce(Ops.DimensionOp op, int dimension) {
+        return null;
+    }
+
+    /**
+     * Assigns the given matrix (put) to the specified slice
+     *
+     * @param slice the slice to assign
+     * @param put   the slice to applyTransformToDestination
+     * @return this for chainability
+     */
+    @Override
+    public INDArray putSlice(int slice, INDArray put) {
+        return null;
+    }
+
+    /**
+     * Iterate along a dimension.
+     * This encapsulates the process of sum, mean, and other processes
+     * take when iterating over a dimension.
+     *
+     * @param dimension the dimension to iterate over
+     * @param op        the operation to apply
+     * @param modify    whether to modify this array while iterating
+     */
+    @Override
+    public void iterateOverDimension(int dimension, SliceOp op, boolean modify) {
+
+    }
+
     /**
      * Replicate and tile array to fill out to the given shape
      *
@@ -67,6 +162,31 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray getScalar(int i) {
         return this;
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param indices the indices to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int[] indices, INDArray element) {
+        return null;
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int i, int j, INDArray element) {
+        return null;
     }
 
     /**
