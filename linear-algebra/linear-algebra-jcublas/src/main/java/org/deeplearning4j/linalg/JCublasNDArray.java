@@ -199,7 +199,7 @@ public class JCublasNDArray implements INDArray {
      * Flattens the array for linear indexing
      * @return the flattened version of this array
      */
-    private void sliceVectors(List<JCublasNDArray> list) {
+    private void sliceVectors(java.util.List<JCublasNDArray> list) {
         if(isVector())
             list.add(this);
         else {
@@ -208,7 +208,74 @@ public class JCublasNDArray implements INDArray {
             }
         }
     }
+    /**
+     * Returns the specified slice of this matrix.
+     * In matlab, this would be equivalent to (given a 2 x 2 x 2):
+     * A(:,:,x) where x is the slice you want to return.
+     *
+     * The slice is always relative to the final dimension of the matrix.
+     *
+     * @param slice the slice to return
+     * @return the specified slice of this matrix
+     */
+    public JCublasNDArray slice(int slice) {
 
+        if (shape.length == 0)
+            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
+
+            //slice of a vector is a scalar
+        else if (shape.length == 1)
+            return new JCublasNDArray(data,ArrayUtil.empty(),ArrayUtil.empty(),offset + slice * stride[0]);
+
+
+            //slice of a matrix is a vector
+        else if (shape.length == 2) {
+            JCublasNDArray slice2 =  new JCublasNDArray(
+                    data,
+                    ArrayUtil.of(shape[1]),
+                    Arrays.copyOfRange(stride,1,stride.length),
+                    offset + slice * stride[0]
+            );
+            return slice2;
+
+        }
+
+        else
+            return new JCublasNDArray(data,
+                    Arrays.copyOfRange(shape, 1, shape.length),
+                    Arrays.copyOfRange(stride, 1, stride.length),
+                    offset + (slice * stride[0]));
+
+    }
+
+
+    /**
+     * Returns the slice of this from the specified dimension
+     * @param slice the dimension to return from
+     * @param dimension the dimension of the slice to return
+     * @return the slice of this matrix from the specified dimension
+     * and dimension
+     */
+    public JCublasNDArray slice(int slice, int dimension) {
+        if (slice == 0)
+            return slice(dimension);
+        if (shape.length == 2) {
+            if (slice != 1)
+                throw new IllegalArgumentException("Unable to retrieve dimension " + slice + " from a 2d array");
+            return new JCublasNDArray(data,
+                    ArrayUtil.of(shape[0]),
+                    ArrayUtil.of(stride[0]),
+                    offset + dimension * stride[1]
+            );
+        }
+
+        return new JCublasNDArray (
+                data,
+                ArrayUtil.removeIndex(shape,dimension),
+                ArrayUtil.removeIndex(stride,dimension),
+                offset + dimension * stride[slice]
+        );
+    }
     public JCublasNDArray get(int[] indices) {
         JCublasNDArray result = new JCublasNDArray(data,new int[]{1,indices.length},stride,offset);
 
@@ -226,7 +293,7 @@ public class JCublasNDArray implements INDArray {
         return JCublasNDArray.scalar(data[idx]);
     }
 
-    private int linearIndex(int i) {
+    public int linearIndex(int i) {
         int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
         if(idx >= data.length)
@@ -358,7 +425,6 @@ public class JCublasNDArray implements INDArray {
         return a;
     }
     /** Matrix-matrix multiplication (in-place). */
-    @Override
     public JCublasNDArray mmuli(JCublasNDArray other, JCublasNDArray result) {
         JCublasNDArray otherArray = JCublasNDArray.wrap(other);
         JCublasNDArray resultArray = JCublasNDArray.wrap(result);
@@ -472,11 +538,94 @@ public class JCublasNDArray implements INDArray {
 
 
         } else {
-            if (otherArray.columns() == 1)
-                NDArrayBlas.gemv(1.0, this, otherArray, 0.0, resultArray);
-            else
-                NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
+            if (otherArray.columns() == 1) {
+                Pointer d_A = new Pointer();
+                Pointer d_B = new Pointer();
 
+                JCublas.cublasSetVector(
+                        otherArray.length(),
+                        Sizeof.FLOAT,
+                        Pointer.to(otherArray.data()),
+                        1,
+                        d_A,
+                        1);
+                JCublas.cublasSetVector(
+                        length(),
+                        Sizeof.FLOAT,
+                        Pointer.to(data()),
+                        1,
+                        d_B,
+                        1);
+
+                JCublas.cublasDgemv(
+                        'n',
+                        otherArray.rows(),
+                        otherArray.columns(),
+                        1,
+                        d_A,
+                        1,
+                        d_A,
+                        1,
+                        1,
+                        d_B,
+                        1);
+
+                JCublas.cublasGetVector(
+                        length(),
+                        Sizeof.FLOAT,
+                        d_B,
+                        1,
+                        Pointer.to(resultArray.data()),
+                        1);
+
+                //NDArrayBlas.gemv(1.0, this, otherArray, 0.0, resultArray);
+            }
+            else {
+                Pointer d_A = new Pointer();
+                Pointer d_B = new Pointer();
+                Pointer d_C = new Pointer();
+
+                JCublas.cublasSetMatrix(
+                        columns(),
+                        rows(),
+                        Sizeof.FLOAT,
+                        Pointer.to(data()),
+                        1,
+                        d_A,
+                        1
+                );
+                JCublas.cublasSetMatrix(
+                        other.columns(),
+                        other.rows(),
+                        Sizeof.FLOAT,
+                        Pointer.to(otherArray.data()),
+                        1,
+                        d_B,
+                        1
+                );
+                JCublas.cublasSgemm(
+                        'n',
+                        'n',
+                        otherArray.rows(),
+                        columns(),
+                        otherArray.columns(),
+                        1,
+                        d_A,
+                        1,
+                        d_B,
+                        1,
+                        0,
+                        d_C,
+                        1);
+                JCublas.cublasGetVector(
+                        length(),
+                        Sizeof.FLOAT,
+                        d_B,
+                        1,
+                        Pointer.to(resultArray.data()),
+                        1);
+                //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
+            }
         }
         return resultArray;
     }
