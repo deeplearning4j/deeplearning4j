@@ -27,17 +27,18 @@ public class TwoArrayOps  {
     }
 
     public TwoArrayOps from(INDArray from) {
-        this.from = from;
+        this.from = from.reshape(new int[]{1,from.length()});
         return this;
     }
 
     public TwoArrayOps to(INDArray to) {
-        this.to = to;
+        this.to = to.reshape(new int[]{1,to.length()});
         return this;
     }
 
     public TwoArrayOps scalar(INDArray scalar) {
         this.scalar = scalar;
+        assert scalar.isScalar() : "Input is not a scalar";
         return this;
     }
 
