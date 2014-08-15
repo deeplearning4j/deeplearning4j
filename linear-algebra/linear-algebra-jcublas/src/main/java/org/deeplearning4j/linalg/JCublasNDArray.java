@@ -321,6 +321,16 @@ public class JCublasNDArray implements INDArray {
         return this;
     }
 
+    //@Override
+    public JCublasNDArray put(int row,int column,double value) {
+        if (shape.length == 2)
+            data[offset + row * stride[0]  + column * stride[1]] = value;
+
+        else
+            throw new UnsupportedOperationException("Invalid applyTransformToDestination for a non 2d array");
+        return this;
+    }
+
     private void assertSlice(INDArray put,int slice) {
         assert slice <= slices() : "Invalid slice specified " + slice;
         int[] sliceShape = put.shape();
@@ -900,7 +910,7 @@ public class JCublasNDArray implements INDArray {
         return dup().mmuli(other,result);
     }
 
-    @Override
+    //@Override
     public JCublasNDArray mmul(JCublasNDArray other) {
         int[] shape = {rows(),other.columns()};
         return mmuli(other,NDArrays.create(shape));
@@ -1048,7 +1058,7 @@ public class JCublasNDArray implements INDArray {
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, temp);
             }
 
-            JCublasNDArray.copy(temp, resultArray);
+            resultArray = copy(temp);
 
 
         } else {
@@ -1338,7 +1348,7 @@ public class JCublasNDArray implements INDArray {
         }
         else {
             int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final JCublasNDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
             final AtomicInteger i = new AtomicInteger(0);
             iterateOverDimension(dimension, new SliceOp() {
                 @Override
@@ -1354,11 +1364,12 @@ public class JCublasNDArray implements INDArray {
                  * @param nd the result to operate on
                  */
 
-                public void operate(JCublasNDArray nd) {
-                    JCublasNDArray arr2 = nd;
+                public void operate(INDArray nd) {
+                    INDArray arr2 = nd;
                     arr.put(i.get(),arr2.normmax(0));
                     i.incrementAndGet();
                 }
+
             }, false);
 
             return arr.reshape(shape);
@@ -1433,7 +1444,46 @@ public class JCublasNDArray implements INDArray {
         }
     }
 
-    @Override
+    public static JCublasNDArray doSliceWise(MatrixOp op,JCublasNDArray arr) {
+        int columns = isColumnOp(op) ? arr.columns() : arr.rows();
+        int[] shape = {arr.slices(),columns};
+
+        JCublasNDArray ret = new JCublasNDArray(shape);
+
+        for(int i = 0; i < arr.slices(); i++) {
+            switch(op) {
+                case COLUMN_MIN:
+                    ret.putSlice(i,arr.slice(i).columnMins());
+                    break;
+                case COLUMN_MAX:
+                    ret.putSlice(i,arr.slice(i).columnMaxs());
+                    break;
+                case COLUMN_SUM:
+                    ret.putSlice(i,arr.slice(i).columnSums());
+                    break;
+                case COLUMN_MEAN:
+                    ret.putSlice(i,arr.slice(i).columnMeans());
+                    break;
+                case ROW_MIN:
+                    ret.putSlice(i,arr.slice(i).rowMins());
+                    break;
+                case ROW_MAX:
+                    ret.putSlice(i,arr.slice(i).rowMaxs());
+                    break;
+                case ROW_SUM:
+                    ret.putSlice(i,arr.slice(i).rowSums());
+                    break;
+                case ROW_MEAN:
+                    ret.putSlice(i,arr.slice(i).rowMeans());
+                    break;
+            }
+        }
+
+
+        return ret;
+    }
+
+    //@Override
     public double prod() {
         if(isVector() ) {
             double ret = 0.0;
@@ -1443,7 +1493,7 @@ public class JCublasNDArray implements INDArray {
             return ret;
         }
 
-        return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this).element();
+        return (double) JCublasNDArray.doSliceWise(ScalarOp.PROD,this).element();
 
     }
     @Override
@@ -1822,6 +1872,307 @@ public class JCublasNDArray implements INDArray {
     //@Override
     public JCublasNDArray mulColumnVector(JCublasNDArray columnVector) {
         return dup().muliColumnVector(columnVector);
+    }
+
+    public static enum ScalarOp {
+        SUM,
+        MEAN,
+        PROD,
+        MAX,
+        MIN,
+        ARG_MAX,
+        ARG_MIN,
+        NORM_2,
+        NORM_1,
+        NORM_MAX
+    }
+
+
+    public static enum DimensionOp {
+        SUM,
+        MEAN,
+        PROD,
+        MAX,
+        MIN,
+        ARG_MIN,
+        NORM_2,
+        NORM_1,
+        NORM_MAX,
+        FFT
+    }
+
+
+    public static enum MatrixOp {
+        COLUMN_MIN,
+        COLUMN_MAX,
+        COLUMN_SUM,
+        COLUMN_MEAN,
+        ROW_MIN,
+        ROW_MAX,
+        ROW_SUM,
+        ROW_MEAN
+    }
+
+    private static boolean isRowOp(MatrixOp op) {
+        return
+                op == MatrixOp.ROW_MIN ||
+                        op == MatrixOp.ROW_MAX ||
+                        op == MatrixOp.ROW_SUM ||
+                        op == MatrixOp.ROW_MEAN;
+    }
+
+
+    private static boolean isColumnOp(MatrixOp op) {
+        return
+                op == MatrixOp.COLUMN_MIN ||
+                        op == MatrixOp.COLUMN_MAX ||
+                        op == MatrixOp.COLUMN_SUM ||
+                        op == MatrixOp.COLUMN_MEAN;
+    }
+
+    public JCublasNDArray supercolumnMins() {
+        JCublasNDArray mins = new JCublasNDArray(1, columns);
+        for (int c = 0; c < columns; c++) {
+            mins.put(c, getColumn(c).min());
+        }
+        return mins;
+    }
+
+    //@Override
+    public JCublasNDArray columnMins() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(supercolumnMins());
+
+        }
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.COLUMN_MIN,this);
+
+    }
+
+    public JCublasNDArray supercolumnSums() {
+        if (rows == 1) {
+            return dup();
+        } else {
+            JCublasNDArray v = new JCublasNDArray(1, columns);
+
+            for (int c = 0; c < columns; c++) {
+                for (int r = 0; r < rows; r++) {
+                    v.put(c, v.get(c) + get(r, c));
+                }
+            }
+
+            return v;
+        }
+    }
+    /**
+     * Return a vector containing the sums of the columns (having number of columns many entries)
+     */
+    //@Override
+    public JCublasNDArray columnSums() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(supercolumnSums());
+
+        }
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.COLUMN_SUM,this);
+
+    }
+
+    public JCublasNDArray supercolumnMaxs() {
+        JCublasNDArray maxs = new JCublasNDArray(1, columns);
+        for (int c = 0; c < columns; c++) {
+            maxs.put(c, getColumn(c).max());
+        }
+        return maxs;
+    }
+
+    //@Override
+    public JCublasNDArray columnMaxs() {
+        if(shape().length == 2)
+            return JCublasNDArray.wrap(supercolumnMaxs());
+
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.COLUMN_MAX,this);
+
+    }
+
+    public static INDArray doSliceWise(ScalarOp op,INDArray arr) {
+
+        arr = arr.reshape(new int[]{1,arr.length()});
+
+        JCublasNDArray cast = (JCublasNDArray) arr;
+
+        if(op == ScalarOp.NORM_1) {
+            return JCublasNDArray.scalar(NDArrayBlas.asum(cast));
+        }
+
+        else if(op == ScalarOp.NORM_2) {
+            return JCublasNDArray.scalar(NDArrayBlas.nrm2(cast));
+
+        }
+
+        else if(op == ScalarOp.NORM_MAX) {
+            int i = NDArrayBlas.iamax(cast);
+            return arr.getScalar(i);
+        }
+
+        INDArray s = JCublasNDArray.scalar(0);
+        for (int i = 0; i < arr.length(); i++) {
+            switch (op) {
+                case SUM:
+                    s.addi(arr.getScalar(i));
+                    break;
+                case MEAN:
+                    s.addi(arr.getScalar(i));
+                    break;
+                case MAX:
+                    double curr = (double) arr.getScalar(i).element();
+                    double sEle1 = (double) arr.getScalar(i).element();
+                    if (curr > sEle1)
+                        s = arr.getScalar(i);
+                    break;
+                case MIN:
+                    double curr2 = (double) arr.getScalar(i).element();
+                    double sEle2 = (double) arr.getScalar(i).element();
+                    if (curr2 < sEle2)
+                        s = arr.getScalar(i);
+
+                    break;
+                case PROD:
+                    s.muli(arr.getScalar(i));
+                    break;
+
+
+            }
+
+
+        }
+
+        if(op == ScalarOp.MEAN)
+            s.divi(JCublasNDArray.scalar(arr.length()));
+
+
+        return s;
+    }
+
+    public JCublasNDArray supercolumnMeans() {
+        return columnSums().divi(rows);
+    }
+
+    public JCublasNDArray columnMeans() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(supercolumnMeans());
+
+        }
+
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.COLUMN_MEAN,this);
+
+    }
+
+    public JCublasNDArray superrowMins() {
+        JCublasNDArray mins = new JCublasNDArray(rows);
+        for (int c = 0; c < rows; c++) {
+            mins.put(c, getRow(c).min());
+        }
+        return mins;
+    }
+    public JCublasNDArray rowMins() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(superrowMins());
+
+        }
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.ROW_MIN,this);
+
+    }
+    public JCublasNDArray rowMaxs() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(superrowMaxs());
+
+        }
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.ROW_MAX,this);
+
+    }
+    public JCublasNDArray superrowMaxs() {
+        JCublasNDArray maxs = new JCublasNDArray(rows);
+        for (int c = 0; c < rows; c++) {
+            maxs.put(c, getRow(c).max());
+        }
+        return maxs;
+    }
+
+    public JCublasNDArray rowSums() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(superrowSums());
+
+        }
+
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.ROW_SUM,this);
+    }
+
+    public JCublasNDArray superrowSums() {
+        if (columns == 1) {
+            return dup();
+        } else {
+            JCublasNDArray v = new JCublasNDArray(rows);
+
+            for (int c = 0; c < columns; c++) {
+                for (int r = 0; r < rows; r++) {
+                    v.put(r, v.get(r) + get(r, c));
+                }
+            }
+
+            return v;
+        }
+    }
+    public JCublasNDArray superrowMeans() {
+        return rowSums().divi(columns);
+    }
+
+    public JCublasNDArray rowMeans() {
+        if(shape().length == 2) {
+            return JCublasNDArray.wrap(superrowMeans());
+
+        }
+        else
+            return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.ROW_MEAN,this);
+
+    }
+
+    public JCublasNDArray divi(double v) {
+        return divi(v, this);
+    }
+
+    /** Elementwise divide by a scalar. */
+    public JCublasNDArray div(double v) {
+        return divi(v, new JCublasNDArray(rows, columns));
+    }
+    public JCublasNDArray divi(double a, JCublasNDArray result) {
+        ensureResultLength(null, result);
+
+        for (int i = 0; i < length; i++) {
+            result.put(i, get(i) / a);
+        }
+        return result;
+    }
+    public boolean sameLength(JCublasNDArray a) {
+        return length == a.length;
+    }
+
+    private void ensureResultLength(JCublasNDArray other, JCublasNDArray result) {
+        if (!sameLength(result)) {
+            if (result == this || result == other) {
+                throw new SizeException("Cannot resize result matrix because it is used in-place.");
+            }
+            result.resize(rows, columns);
+        }
+    }
+
+    public JCublasNDArray(int len) {
+        this(len, 1, new double[len]);
     }
 
 }
