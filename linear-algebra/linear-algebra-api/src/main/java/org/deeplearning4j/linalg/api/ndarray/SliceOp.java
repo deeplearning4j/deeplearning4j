@@ -1,4 +1,4 @@
-package org.deeplearning4j.linalg.jblas;
+package org.deeplearning4j.linalg.api.ndarray;
 
 /**
  * Slice wise operation
@@ -12,7 +12,11 @@ public interface SliceOp {
      */
    void operate(DimensionSlice nd);
 
-
+    /**
+     * Operates on an ndarray slice
+     * @param nd the result to operate on
+     */
+    void operate(INDArray nd);
 
 
 }
