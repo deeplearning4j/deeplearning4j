@@ -1290,9 +1290,17 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         for (int i = 0; i< shape.length; i++)
             ix += indices[i] * stride[i];
 
-        IComplexNumber element2 = (IComplexNumber) element.element();
-        data[ix] = (double) element2.realComponent();
-        data[ix + 1]= (double) element2.imaginaryComponent();
+        if(element instanceof IComplexNDArray) {
+            IComplexNumber element2 = (IComplexNumber) element.element();
+            data[ix] = (double) element2.realComponent();
+            data[ix + 1]= (double) element2.imaginaryComponent();
+        }
+        else {
+            double element2 = (double) element.element();
+            data[ix] = element2;
+            data[ix + 1]= 0;
+        }
+
         return this;
 
     }
@@ -1607,7 +1615,15 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray put(int i, INDArray element) {
-        return null;
+        if(element == null)
+            throw new IllegalArgumentException("Unable to insert null element");
+        assert element.isScalar() : "Unable to insert non scalar element";
+        if(element instanceof  IComplexNDArray) {
+            put(i,(org.jblas.ComplexDouble) element.element());
+        }
+        else
+            put(i,(double) element.element());
+        return this;
     }
 
     /**
@@ -1818,7 +1834,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray mmul(INDArray other) {
-        return dup().mmuli(other);
+        int[] shape = {rows(),other.columns()};
+        return mmuli(other,NDArrays.create(shape));
     }
 
     /**
@@ -2002,8 +2019,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray divi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(DivideOp.class)
+        if(other.isScalar())
+        new TwoArrayOps().from(this).scalar(other).op(DivideOp.class)
                 .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(DivideOp.class)
+                    .to(result).build().exec();
         return (IComplexNDArray) result;
     }
 
@@ -2027,7 +2048,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray muli(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
+        if(other.isScalar())
+        new TwoArrayOps().from(this).scalar(other).op(MultiplyOp.class)
+                .to(result).build().exec();
+
+       else
+            new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
                 .to(result).build().exec();
         return (IComplexNDArray) result;
     }
@@ -2052,8 +2078,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray subi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
                 .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
+                    .to(result).build().exec();
         return (IComplexNDArray) result;
     }
 
@@ -2077,8 +2107,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray addi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(AddOp.class)
-                .to(result).build().exec();
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(AddOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(AddOp.class)
+                    .to(result).build().exec();
         return (IComplexNDArray) result;
     }
 
@@ -2773,7 +2807,23 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public ComplexDouble sum() {
-        return new ComplexDouble(ComplexNDArrayUtil.doSliceWise(ComplexNDArrayUtil.ScalarOp.SUM,this));
+        ComplexDouble d = new ComplexDouble(0);
+
+        if(isVector()) {
+            for(int i = 0; i < length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) getScalar(i).element();
+                d.addi(d2);
+            }
+        }
+        else {
+            ComplexNDArray reshape = reshape(new int[]{1,length()});
+            for(int i = 0; i < reshape.length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) reshape.getScalar(i).element();
+                d.addi(d2);
+            }
+        }
+
+        return d;
     }
 
     /**
@@ -2787,6 +2837,56 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     }
 
+
+
+
+    public ComplexDouble mean() {
+        ComplexDouble d = new ComplexDouble(0);
+
+        if(isVector()) {
+            for(int i = 0; i < length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) getScalar(i).element();
+                d.addi(d2);
+            }
+        }
+        else {
+            ComplexNDArray reshape = reshape(new int[]{1,length()});
+            for(int i = 0; i < reshape.length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) reshape.getScalar(i).element();
+                d.addi(d2);
+            }
+        }
+
+
+        d.divi(new org.jblas.ComplexDouble(length(),length()));
+
+        return d;
+
+    }
+
+
+    public ComplexDouble prod() {
+        ComplexDouble d = new ComplexDouble(1);
+
+        if(isVector()) {
+            for(int i = 0; i < length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) getScalar(i).element();
+                d.muli(d2);
+            }
+        }
+        else {
+            ComplexNDArray reshape = reshape(new int[]{1,length()});
+            for(int i = 0; i < reshape.length(); i++) {
+                org.jblas.ComplexDouble d2 = (ComplexDouble) reshape.getScalar(i).element();
+                d.muli(d2);
+            }
+        }
+
+        return d;
+
+    }
+
+
     /**
      * Returns the product along a given dimension
      *
@@ -2795,7 +2895,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray prod(int dimension) {
-        if(isVector()) {
+        if(dimension == Integer.MAX_VALUE) {
+            return ComplexNDArray.scalar(reshape(new int[]{1,length}).prod());
+        }
+
+        else if(isVector()) {
             return ComplexNDArray.scalar(sum().divi(length));
         }
         else {
@@ -2817,7 +2921,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.prod(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
@@ -2843,9 +2948,9 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
             iterateOverDimension(dimension, new SliceOp() {
                 @Override
                 public void operate(DimensionSlice nd) {
-                       IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                       arr.put(i.get(),arr2.mean(0));
-                       i.incrementAndGet();
+                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
+                    arr.put(i.get(),arr2.mean(0));
+                    i.incrementAndGet();
                 }
 
                 /**
@@ -2855,7 +2960,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.mean(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
@@ -2895,7 +3001,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.normmax(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
@@ -2912,6 +3019,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray sum(int dimension) {
+        if(dimension == Integer.MAX_VALUE)
+            return ComplexNDArray.scalar(sum());
         if(isVector()) {
             return ComplexNDArray.scalar(sum().divi(length()));
         }
@@ -2934,7 +3043,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.sum(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
@@ -2962,7 +3072,10 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray norm1(int dimension) {
-        if(isVector()) {
+        if(dimension == Integer.MAX_VALUE)
+             return ComplexNDArray.scalar(norm1());
+
+        else if(isVector()) {
             return ComplexNDArray.scalar(sum().divi(length()));
         }
         else {
@@ -2984,7 +3097,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.norm1(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
@@ -3011,6 +3125,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public IComplexNDArray norm2(int dimension) {
+        if(dimension == Integer.MAX_VALUE)
+            return ComplexNDArray.scalar(norm2());
         if(isVector()) {
             return ComplexNDArray.scalar(sum().divi(length()));
         }
@@ -3033,7 +3149,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                  */
                 @Override
                 public void operate(INDArray nd) {
-
+                    arr.put(i.get(),nd.norm1(0));
+                    i.incrementAndGet();
                 }
             }, false);
 
