@@ -24,7 +24,21 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
         super(real);
     }
 
+    /**
+     * Returns the argument of a complex number.
+     */
+    @Override
+    public float arg() {
+        return super.arg();
+    }
 
+    /**
+     * Return the absolute value
+     */
+    @Override
+    public float abs() {
+        return super.abs();
+    }
 
     /**
      * Convert to a double

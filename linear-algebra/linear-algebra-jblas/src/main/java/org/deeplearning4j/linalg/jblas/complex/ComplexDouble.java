@@ -26,6 +26,22 @@ public class ComplexDouble extends org.jblas.ComplexDouble implements IComplexDo
     }
 
     /**
+     * Returns the argument of a complex number.
+     */
+    @Override
+    public double arg() {
+        return super.arg();
+    }
+
+    /**
+     * Return the absolute value
+     */
+    @Override
+    public double abs() {
+        return super.abs();
+    }
+
+    /**
      * Convert to a float
      *
      * @return this complex number as a float

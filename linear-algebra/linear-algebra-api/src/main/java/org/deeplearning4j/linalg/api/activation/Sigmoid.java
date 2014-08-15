@@ -30,7 +30,7 @@ public class Sigmoid extends BaseActivationFunction {
     public INDArray apply(INDArray input) {
         if(input instanceof IComplexNDArray) {
             IComplexNumber number = (IComplexNumber) input.element();
-            double arg = number.arg();
+            double arg = number.complexArgument().doubleValue();
             double sigArg = 1  / 1 + (Math.exp(-arg)) - k + .5;
             double ret = Math.exp(sigArg);
             return NDArrays.scalar(NDArrays.createDouble(ret,0));
