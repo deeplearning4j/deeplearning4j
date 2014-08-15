@@ -4,13 +4,17 @@ import jcuda.jcublas.JCublas;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 
+import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.SizeException;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.TwoArrayOps;
 import org.deeplearning4j.linalg.ops.elementwise.AddOp;
 import org.deeplearning4j.linalg.ops.elementwise.DivideOp;
 import org.deeplearning4j.linalg.ops.elementwise.MultiplyOp;
 import org.deeplearning4j.linalg.ops.elementwise.SubtractOp;
+import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.IterationResult;
 import org.deeplearning4j.linalg.util.Shape;
@@ -22,6 +26,8 @@ import org.deeplearning4j.linalg.util.Shape;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Arrays;
 
 import static org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
 import static org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
@@ -38,7 +44,12 @@ public class JCublasNDArray implements INDArray {
     /** The actual data stored by rows (that is, row 0, row 1...). */
     public double[] data = null; // rows are contiguous
 
+    public void checkDimensions(JCublasNDArray other) {
+        assert Arrays.equals(shape,other.shape()) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape());
+        assert Arrays.equals(stride,other.stride()) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride());
+        assert offset == other.offset() : "Offset of this array is " + offset + " but other was " + other.offset();
 
+    }
     /**
      * Construct an ndarray of the specified shape
      * with an empty data array
@@ -98,6 +109,31 @@ public class JCublasNDArray implements INDArray {
         return this;
     }
 
+    @Override
+    public JCublasNDArray getColumn(int c) {
+        if(shape.length == 2)
+            return new JCublasNDArray(
+                    data,
+                    new int[]{shape[0]},
+                    new int[]{stride[0]},
+                    offset + c
+            );
+        else
+            throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
+    }
+    /**
+     * Returns the stride(indices along the linear index for which each slice is accessed) of this array
+     * @return the stride of this array
+     */
+    public int[] stride() {
+        return stride;
+    }
+
+
+    public int offset() {
+        return offset;
+    }
+
     public JCublasNDArray dup() {
         double[] dupData = new double[data.length];
         System.arraycopy(data,0,dupData,0,dupData.length);
@@ -116,6 +152,264 @@ public class JCublasNDArray implements INDArray {
         return this;
     }
 
+
+    @Override
+    public boolean isVector() {
+        return shape.length == 1
+                ||
+                shape.length == 1  && shape[0] == 1
+                ||
+                shape.length == 2 && (shape[0] == 1 || shape[1] == 1);
+    }
+
+    @Override
+    public JCublasNDArray subi(INDArray other) {
+        return subi(other,this);
+    }
+    @Override
+    public JCublasNDArray subi(INDArray other, INDArray result) {
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
+                    .to(result).build().exec();
+        return (JCublasNDArray) result;
+    }
+
+    @Override
+    public int[] endsForSlices() {
+        int[] ret = new int[slices()];
+        int currOffset = offset + stride[0] - 1;
+        for(int i = 0; i < slices(); i++) {
+            ret[i] = currOffset;
+            currOffset += stride[0];
+        }
+        return ret;
+    }
+
+    @Override
+    public JCublasNDArray reduce(Ops.DimensionOp op,int dimension) {
+        if(isScalar())
+            return this;
+
+
+        if(isVector())
+            return JCublasNDArray.scalar(reduceVector(op, this));
+
+
+        int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
+
+        if(dimension == 0) {
+            double[] data2 = new double[ArrayUtil.prod(shape)];
+            int dataIter = 0;
+
+            //iterating along the dimension is relative to the number of slices
+            //in the return dimension
+            int numTimes = ArrayUtil.prod(shape);
+            for(int offset = this.offset; offset < numTimes; offset++) {
+                double reduce = op(dimension, offset, op);
+                data2[dataIter++] = reduce;
+
+            }
+
+            return new JCublasNDArray(data2,shape);
+        }
+
+        else {
+            double[] data2 = new double[ArrayUtil.prod(shape)];
+            int dataIter = 0;
+            //want the milestone to slice[1] and beyond
+            int[] sliceIndices = endsForSlices();
+            int currOffset = 0;
+
+            //iterating along the dimension is relative to the number of slices
+            //in the return dimension
+            int numTimes = ArrayUtil.prod(shape);
+            for(int offset = this.offset; offset < numTimes; offset++) {
+                if(dataIter >= data2.length || currOffset >= sliceIndices.length)
+                    break;
+
+                //do the operation,, and look for whether it exceeded the current slice
+                IterationResult pair = op(dimension, offset, op,sliceIndices[currOffset]);
+                //append the result
+                double reduce = pair.getResult();
+                data2[dataIter++] = reduce;
+
+                //go to next slice and iterate over that
+                if(pair.isNextSlice()) {
+                    //will update to next step
+                    offset = sliceIndices[currOffset];
+                    numTimes +=  sliceIndices[currOffset];
+                    currOffset++;
+                }
+
+            }
+
+            return new JCublasNDArray(data2,shape);
+        }
+
+
+    }
+
+    private double reduceVector(Ops.DimensionOp op,JCublasNDArray vector) {
+
+        switch(op) {
+            case SUM:
+                return vector.sum();
+            case MEAN:
+                return vector.mean();
+            case MIN:
+                return vector.min();
+            case MAX:
+                return vector.max();
+            case NORM_1:
+                return vector.norm1();
+            case NORM_2:
+                return vector.norm2();
+            case NORM_MAX:
+                return vector.normmax();
+            default: throw new IllegalArgumentException("Illegal operation");
+        }
+    }
+    public boolean isEmpty() {
+        return columns == 0 || rows == 0;
+    }
+
+    public double norm1() {
+        double norm = 0.0;
+        for (int i = 0; i < length; i++) {
+            norm += Math.abs(get(i));
+        }
+        return norm;
+    }
+    public double norm2() {
+        double norm = 0.0;
+        for (int i = 0; i < length; i++) {
+            norm += get(i) * get(i);
+        }
+        return (double) Math.sqrt(norm);
+    }
+    public double sum() {
+        double s = 0.0;
+        for (int i = 0; i < length; i++) {
+            s += get(i);
+        }
+        return s;
+    }
+
+    @Override
+    public INDArray sum(int dimension) {
+        if(dimension == Integer.MAX_VALUE) {
+            return JCublasNDArray.scalar(reshape(new int[]{1,length}).sum());
+        }
+
+        else if(isVector()) {
+            return JCublasNDArray.scalar(sum());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.sum(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.sum(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape).transpose();
+        }
+    }
+
+    public double mean() {
+        return sum() / length;
+    }
+    @Override
+    public INDArray mean(int dimension) {
+        if(dimension == Integer.MAX_VALUE) {
+            return JCublasNDArray.scalar(reshape(new int[]{1,length}).mean());
+        }
+        else if(isVector()) {
+            return JCublasNDArray.scalar(sum() / length());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.mean(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.mean(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
+    }
+    public double min() {
+        if (isEmpty()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double v = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < length; i++) {
+            if (!Double.isNaN(get(i)) && get(i) < v) {
+                v = get(i);
+            }
+        }
+
+        return v;
+    }
+
+    public double max() {
+        if (isEmpty()) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        double v = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < length; i++) {
+            if (!Double.isNaN(get(i)) && get(i) > v) {
+                v = get(i);
+            }
+        }
+        return v;
+    }
+    public boolean isMatrix() {
+        return (shape().length == 2
+                && (shape[0] != 1 && shape[1] != 1)) ||
+                shape.length == 3 &&
+                        (shape[0] == 1 || shape[1] == 1 || shape[2] == 1);
+    }
+
+    @Override
+    public int length() {
+        return length;
+    }
 
     private void initShape(int[] shape) {
         this.shape = shape;
@@ -344,7 +638,26 @@ public class JCublasNDArray implements INDArray {
         return this;
     }
 
+    @Override
+    public JCublasNDArray getRow(int r) {
+        if(shape.length == 2)
+            return new JCublasNDArray(
+                    data,
+                    new int[]{shape[1]},
+                    new int[]{stride[1]},
+                    offset +  r * columns()
+            );
+        else
+            throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
+    }
 
+    @Override
+    public JCublasNDArray muliColumnVector(INDArray columnVector) {
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).muli(columnVector.getScalar(i));
+        }
+        return this;
+    }
     public JCublasNDArray mulRowVector(INDArray rowVector) {
         return dup().muliRowVector(rowVector);
     }
@@ -424,6 +737,79 @@ public class JCublasNDArray implements INDArray {
         System.arraycopy(a.data, 0, data, 0, length);
         return a;
     }
+
+    public double scalar() {
+        return get(0);
+    }
+
+    public double get(int i) {
+        int idx = linearIndex(i);
+        return data[idx];
+    }
+
+
+    public double get(int i,int j) {
+        if(isColumnVector()) {
+            if(j > 0)
+                throw new IllegalArgumentException("Trying to access column > " + columns() + " at " + j);
+            return get(i);
+
+        }
+        else if(isRowVector()) {
+            if(i > 0)
+                throw new IllegalArgumentException("Trying to access row > " + rows() + " at " + i);
+            return get(j);
+        }
+
+
+        return (double) get(new int[]{i,j}).element();
+
+    }
+
+    @Override
+    public JCublasNDArray mmul(INDArray other) {
+        int[] shape = {rows(),other.columns()};
+        return mmuli(other,NDArrays.create(shape));
+    }
+
+    @Override
+    public JCublasNDArray mmul(JCublasNDArray other) {
+        int[] shape = {rows(),other.columns()};
+        return mmuli(other,NDArrays.create(shape));
+    }
+
+
+
+    public JCublasNDArray muli(INDArray other) {
+        return muli(other,this);
+    }
+
+    /**
+     * in place (element wise) multiplication of two matrices
+     *
+     * @param other  the second ndarray to multiply
+     * @param result the result ndarray
+     * @return the result of the multiplication
+     */
+    @Override
+    public JCublasNDArray muli(INDArray other, INDArray result) {
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(MultiplyOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
+                    .to(result).build().exec();
+        return (JCublasNDArray) result;
+    }
+
+    //@Override
+    public JCublasNDArray muli(double v, JCublasNDArray result) {
+        new TwoArrayOps().from(this).to(this).scalar(JCublasNDArray.scalar(v))
+                .op(MultiplyOp.class).build().exec();
+
+        return this;
+    }
+
     /** Matrix-matrix multiplication (in-place). */
     public JCublasNDArray mmuli(JCublasNDArray other, JCublasNDArray result) {
         JCublasNDArray otherArray = JCublasNDArray.wrap(other);
@@ -629,12 +1015,36 @@ public class JCublasNDArray implements INDArray {
         }
         return resultArray;
     }
-
-    public JCublasNDArray mmul(JCublasNDArray a) {
-        int[] shape = {rows(),JCublasNDArray.wrap(a).columns()};
-        return mmuli(a,new JCublasNDArray(shape));
+    //public JCublasNDArray mmuli(JCublasNDArray other) {return dup().mmuli(other,this); }
+    public JCublasNDArray mmuli( INDArray result) {
+        return JCublasNDArray.wrap(mmuli(result));
     }
 
+    public JCublasNDArray mul(JCublasNDArray other, JCublasNDArray result) {return dup().muli(other,result);}
+    public JCublasNDArray mul(INDArray other, INDArray result) {
+        return dup().muli(other, result);
+    }
+
+
+    @Override
+    public double[] data() {
+        if(offset == 0)
+            return data;
+
+        INDArray linear = reshape(new int[]{1,length});
+        double[] data = new double[length];
+        int count = 0;
+        for(int i = 0; i < length; i++) {
+            data[count++] = (double) linear.getScalar(i).element();
+        }
+        return data;
+    }
+
+    public Object element() {
+        if(!isScalar())
+            throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
+        return data[0];
+    }
     /**
      * Wrap toWrap with the specified shape, and dimensions from
      * the passed in ndArray
@@ -652,6 +1062,14 @@ public class JCublasNDArray implements INDArray {
 
 
     /**
+     * Returns the shape(dimensions) of this array
+     * @return the shape of this matrix
+     */
+    public int[] shape() {
+        return shape;
+    }
+
+    /**
      * Wrap a matrix in to an ndarray
      * @param toWrap the matrix to wrap
      * @return the wrapped matrix
@@ -664,4 +1082,441 @@ public class JCublasNDArray implements INDArray {
         return ret;
     }
 
+    @Override
+    public JCublasNDArray div(INDArray other) {
+        return dup().divi(other);
+    }
+
+    /**
+     * copy (element wise) division of two matrices
+     *
+     * @param other  the second ndarray to divide
+     * @param result the result ndarray
+     * @return the result of the divide
+     */
+    @Override
+    public JCublasNDArray div(INDArray other, INDArray result) {
+        return dup().divi(other,result);
+    }
+
+    public JCublasNDArray divi(INDArray other) {
+        return divi(other,this);
+    }
+
+    /**
+     * in place (element wise) division of two matrices
+     *
+     * @param other  the second ndarray to divide
+     * @param result the result ndarray
+     * @return the result of the divide
+     */
+    @Override
+    public JCublasNDArray divi(INDArray other, INDArray result) {
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(DivideOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(DivideOp.class)
+                    .to(result).build().exec();
+        return (JCublasNDArray) result;
+    }
+
+    public float[] floatData() {
+        float[] ret = new float[data.length];
+        for(int i = 0; i < ret.length ;i++)
+            ret[i] = (float) data[i];
+        return ret;
+    }
+
+    public JCublasNDArray diviRowVector(INDArray rowVector) {
+        for(int i = 0; i < rows(); i++) {
+            getRow(i).divi(rowVector.getScalar(i));
+        }
+        return this;
+    }
+
+    public JCublasNDArray add(INDArray other) {
+        return dup().addi(other);
+    }
+
+    public JCublasNDArray mul(INDArray other) {
+        return dup().muli(other);
+    }
+
+    public int rows() {
+        if(isMatrix()) {
+            if (shape().length > 2)
+                return Shape.squeeze(shape)[0];
+            else if (shape().length == 2)
+                return shape[0];
+        }
+        else if(isVector()) {
+            if(isRowVector())
+                return 1;
+            else
+                return shape[0];
+        }
+        throw new IllegalStateException("Unable to getFromOrigin number of of rows for a non 2d matrix");
+    }
+
+    public boolean isRowVector() {
+        if(shape().length == 1)
+            return true;
+
+        if(isVector())
+            return shape()[0] == 1;
+
+        return false;
+    }
+
+    /**
+     * Checks whether the matrix is a column vector.
+     */
+    public boolean isColumnVector() {
+        if(shape().length == 1)
+            return false;
+
+        if(isVector())
+            return shape()[1] == 1;
+
+        return false;
+
+    }
+
+    public JCublasNDArray normmax(int dimension) {
+        if(isVector()) {
+            return JCublasNDArray.scalar(normmax());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final JCublasNDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (JCublasNDArray) nd.getResult();
+                    arr.put(i.get(),arr2.normmax(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+
+                public void operate(JCublasNDArray nd) {
+                    JCublasNDArray arr2 = nd;
+                    arr.put(i.get(),arr2.normmax(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
+    }
+
+    public double normmax() {
+        double max = 0.0;
+        for (int i = 0; i < length; i++) {
+            double a = Math.abs(get(i));
+            if (a > max) {
+                max = a;
+            }
+        }
+        return max;
+    }
+    /*
+    public double normmax() {
+        if(isVector())
+            return super.normmax();
+        return (double) JCublasNDArray.doSliceWise(NDArrayUtil.ScalarOp.NORM_MAX,this).element();
+
+    }
+    */
+
+    //@Override
+    public JCublasNDArray put(int i, int j, JCublasNDArray element) {
+        return put(new int[]{i,j},element);
+    }
+
+    //@Override
+    public JCublasNDArray muliColumnVector(JCublasNDArray columnVector) {
+        for(int i = 0; i < columns(); i++) {
+            getColumn(i).muli(columnVector.getScalar(i));
+        }
+        return this;
+    }
+
+    //@Override
+    public JCublasNDArray put(int[] indices, JCublasNDArray element) {
+        if(!element.isScalar())
+            throw new IllegalArgumentException("Unable to insert anything but a scalar");
+        int ix = offset;
+        if (indices.length != shape.length)
+            throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
+
+        for (int i = 0; i< shape.length; i++)
+            ix += indices[i] * stride[i];
+
+
+        data[ix] = (double) element.element();
+        return this;
+
+    }
+    public JCublasNDArray broadcast(int[] shape) {
+        return null;
+    }
+    @Override
+    public JCublasNDArray broadcasti(int[] shape) {
+        return null;
+    }
+    @Override
+    public JCublasNDArray repmat(int[] shape) {
+        return null;
+    }
+
+    @Override
+    public JCublasNDArray transpose() {
+        if(isRowVector())
+            return new JCublasNDArray(data,new int[]{shape[0],1},offset);
+        else if(isColumnVector())
+            return new JCublasNDArray(data,new int[]{shape[0]},offset);
+        JCublasNDArray n = new JCublasNDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
+        return n;
+
+    }
+
+    public boolean isScalar() {
+        if(shape.length == 0)
+            return true;
+        else if(shape.length == 1 && shape[0] == 1)
+            return true;
+        else if(shape.length >= 2) {
+            for(int i = 0; i < shape.length; i++)
+                if(shape[i] != 1)
+                    return false;
+        }
+
+        return length == 1;
+    }
+
+    public JCublasNDArray getScalar(int row, int column) {
+        return get(new int[]{row,column});
+    }
+
+    public int size(int dimension) {
+        if(isScalar()) {
+            if(dimension == 0)
+                return length;
+            else
+                throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
+        }
+
+        else if(isVector()) {
+            if(dimension == 0)
+                return length;
+            else if(dimension == 1)
+                return 1;
+        }
+
+        return shape[dimension];
+    }
+
+
+    public JCublasNDArray mmul(JCublasNDArray other, JCublasNDArray result) {
+        return dup().mmuli(other,result);
+    }
+
+    /**
+     * Iterate over every row of every slice
+     * @param op the operation to apply
+     */
+    public void iterateOverAllRows(SliceOp op) {
+        if(isVector())
+            op.operate(new DimensionSlice(false,this,null));
+        else if(isMatrix()) {
+            for(int i = 0; i < rows(); i++) {
+                op.operate(new DimensionSlice(false,getRow(i),null));
+            }
+        }
+
+        else {
+            for(int i = 0; i < slices(); i++) {
+                slice(i).iterateOverAllRows(op);
+            }
+        }
+    }
+
+    public JCublasNDArray permute(int[] rearrange) {
+        checkArrangeArray(rearrange);
+
+        int[] newShape = doPermuteSwap(shape,rearrange);
+        int[] newStride = doPermuteSwap(stride,rearrange);
+        return new JCublasNDArray(data,newShape,newStride,offset);
+    }
+    private void checkArrangeArray(int[] arr) {
+        assert arr.length == shape.length : "Invalid rearrangement: number of arrangement != shape";
+        for(int i = 0; i < arr.length; i++) {
+            if (arr[i] >= arr.length)
+                throw new IllegalArgumentException("The specified dimensions can't be swapped. Given element " + i + " was >= number of dimensions");
+            if (arr[i] < 0)
+                throw new IllegalArgumentException("Invalid dimension: " + i + " : negative value");
+
+
+        }
+
+        for(int i = 0; i < arr.length; i++) {
+            for(int j = 0; j < arr.length; j++) {
+                if(i != j && arr[i] == arr[j])
+                    throw new IllegalArgumentException("Permute array must have unique elements");
+            }
+        }
+    }
+
+    private int[] doPermuteSwap(int[] shape,int[] rearrange) {
+        int[] ret = new int[shape.length];
+        for(int i = 0; i < shape.length; i++) {
+            ret[i] = shape[rearrange[i]];
+        }
+        return ret;
+    }
+
+    @Override
+    public JCublasNDArray swapAxes(int dimension,int with) {
+        int[] shape = ArrayUtil.range(0,shape().length);
+        shape[dimension] = with;
+        shape[with] = dimension;
+        return permute(shape);
+    }
+
+
+    @Override
+    public int slices() {
+        if(shape.length < 1)
+            return 0;
+        return shape[0];
+    }
+
+    @Override
+    public void iterateOverDimension(int dimension,SliceOp op,boolean modify) {
+        if(dimension >= shape.length)
+            throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
+
+        if(isScalar()) {
+            if(dimension > 0)
+                throw new IllegalArgumentException("Dimension must be 0 for a scalar");
+            else {
+                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
+                op.operate(slice);
+                if(modify && slice.getIndices() != null) {
+                    JCublasNDArray result = (JCublasNDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = (double) result.getScalar(i).element();
+                    }
+                }
+            }
+        }
+
+        else if(isVector()) {
+            if(dimension == 0) {
+                DimensionSlice slice = this.vectorForDimensionAndOffset(0,0);
+                op.operate(slice);
+                if(modify && slice.getIndices() != null) {
+                    JCublasNDArray result = (JCublasNDArray) slice.getResult();
+                    for(int i = 0; i < slice.getIndices().length; i++) {
+                        data[slice.getIndices()[i]] = (double) result.getScalar(i).element();
+                    }
+                }
+            }
+            else if(dimension == 1) {
+                for(int i = 0; i < length; i++) {
+                    DimensionSlice slice = vectorForDimensionAndOffset(dimension,i);
+                    op.operate(slice);
+                    if(modify && slice.getIndices() != null) {
+                        JCublasNDArray result = (JCublasNDArray) slice.getResult();
+                        for(int j = 0; j < slice.getIndices().length; j++) {
+                            data[slice.getIndices()[j]] = (double) result.getScalar(j).element();
+                        }
+                    }
+
+                }
+            }
+            else
+                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
+        }
+
+
+        else {
+
+            int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
+            int[] stride = ArrayUtil.reverseCopy(ArrayUtil.removeIndex(this.stride,dimension));
+            for(int currSlice = 0; currSlice < shape[0]; currSlice++) {
+                JCublasNDArray ret = new JCublasNDArray(data,
+                        shape,
+                        stride,
+                        currSlice);
+                for(int j = 0; j < ret.slices(); j++) {
+                    JCublasNDArray slice = ret.slice(j);
+                    if(slice.isVector())
+                        op.operate(slice);
+                    else {
+                        for(int i = 0; i < slice.slices(); i++) {
+                            iterateOverDimension(dimension,op,modify);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //getFromOrigin one result along one dimension based on the given offset
+    public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
+        if(isScalar() && dimension == 0 && offset == 0)
+            return new DimensionSlice(false,getScalar(offset),new int[]{offset});
+
+
+            //need whole vector
+        else   if (isVector()) {
+            if(dimension == 0) {
+                int[] indices = new int[length];
+                for(int i = 0; i < indices.length; i++)
+                    indices[i] = i;
+                return new DimensionSlice(false,dup(),indices);
+            }
+            else if(dimension == 1)
+                return new DimensionSlice(false,getScalar(offset),new int[]{offset});
+            else
+                throw new IllegalArgumentException("Illegal dimension for vector " + dimension);
+
+        }
+
+        else {
+
+            int count = 0;
+            List<Integer> indices = new ArrayList<>();
+            JCublasNDArray ret = new JCublasNDArray(new int[]{shape[dimension]});
+
+            for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
+                double d = data[j];
+                ret.put(count++,d);
+                indices.add(j);
+
+
+            }
+
+            return new DimensionSlice(false,ret,ArrayUtil.toArray(indices));
+
+        }
+
+    }
+
+    //@Override
+    public JCublasNDArray put(int i, double v) {
+        if(!isVector() && !isScalar())
+            throw new IllegalStateException("Unable to do linear indexing on a non vector");
+        int idx = linearIndex(i);
+        data[idx] = v;
+        return this;
+    }
 }
