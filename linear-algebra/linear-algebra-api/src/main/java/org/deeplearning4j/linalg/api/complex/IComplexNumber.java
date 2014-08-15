@@ -97,6 +97,7 @@ public interface IComplexNumber {
     public IComplexNumber sqrt();
 
 
+    public double arg();
 
     public boolean eq(IComplexNumber c);
 

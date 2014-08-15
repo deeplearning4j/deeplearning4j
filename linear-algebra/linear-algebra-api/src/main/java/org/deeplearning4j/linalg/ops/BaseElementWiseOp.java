@@ -56,7 +56,13 @@ public abstract class BaseElementWiseOp implements ElementWiseOp {
         return from;
     }
 
+    /**
+     * Apply the transformation
+     */
+    @Override
+    public void exec() {
+        for(int i = 0; i < from.length(); i++)
+            applyTransformToOrigin(i);
 
-
-
+    }
 }

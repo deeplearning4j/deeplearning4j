@@ -2970,6 +2970,133 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     }
 
+    /**
+     * Set the value of the ndarray to the specified value
+     *
+     * @param value the value to assign
+     * @return the ndarray with the values
+     */
+    @Override
+    public INDArray assign(Number value) {
+        IComplexNDArray one = reshape(new int[]{1,length});
+        for(int i = 0; i < one.length(); i++)
+            one.put(i,NDArrays.complexScalar(value));
+        return one;
+    }
+
+
+    /**
+     * Reverse division
+     *
+     * @param other the matrix to divide from
+     * @return
+     */
+    @Override
+    public INDArray rdiv(INDArray other) {
+        return dup().rdivi(other);
+    }
+
+    /**
+     * Reverse divsion (in place)
+     *
+     * @param other
+     * @return
+     */
+    @Override
+    public INDArray rdivi(INDArray other) {
+        return rdivi(other,this);
+    }
+
+    /**
+     * Reverse division
+     *
+     * @param other  the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    @Override
+    public INDArray rdiv(INDArray other, INDArray result) {
+        return dup().rdivi(other,result);
+    }
+
+    /**
+     * Reverse division (in-place)
+     *
+     * @param other  the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    @Override
+    public INDArray rdivi(INDArray other, INDArray result) {
+        return other.divi(this, result);
+    }
+
+    /**
+     * Reverse subtraction
+     *
+     * @param other  the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    @Override
+    public INDArray rsub(INDArray other, INDArray result) {
+        return dup().rsubi(other,result);
+    }
+
+    /**
+     * @param other
+     * @return
+     */
+    @Override
+    public INDArray rsub(INDArray other) {
+        return dup().rsubi(other);
+    }
+
+    /**
+     * @param other
+     * @return
+     */
+    @Override
+    public INDArray rsubi(INDArray other) {
+        return rsubi(other,this);
+    }
+
+    /**
+     * Reverse subtraction (in-place)
+     *
+     * @param other  the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    @Override
+    public INDArray rsubi(INDArray other, INDArray result) {
+        return other.subi(this, result);
+    }
+
+
+
+    /**
+     * Returns the overall max of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray max(int dimension) {
+        return null;
+    }
+
+    /**
+     * Returns the overall min of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray min(int dimension) {
+        return null;
+    }
+
 
     /**
      * Returns the normmax along the specified dimension
