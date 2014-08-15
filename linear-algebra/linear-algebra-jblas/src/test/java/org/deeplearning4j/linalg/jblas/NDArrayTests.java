@@ -543,7 +543,29 @@ public class NDArrayTests {
 
     }
 
+    @Test
+    public void testRowVectorOps() {
+        INDArray twoByTwo = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        INDArray toAdd = NDArrays.create(new double[]{1,2},new int[]{2});
+        twoByTwo.addiRowVector(toAdd);
+        INDArray assertion = NDArrays.create(new double[]{2,3,5,6},new int[]{2,2});
+        assertEquals(assertion,twoByTwo);
 
+
+
+    }
+
+    @Test
+    public void testColumnVectorOps() {
+        INDArray twoByTwo = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        INDArray toAdd = NDArrays.create(new double[]{1,2},new int[]{2,1});
+        twoByTwo.addiColumnVector(toAdd);
+        INDArray assertion = NDArrays.create(new double[]{2,4,4,6},new int[]{2,2});
+        assertEquals(assertion,twoByTwo);
+
+
+
+    }
 
     @Test
     public void testGetScalar() {

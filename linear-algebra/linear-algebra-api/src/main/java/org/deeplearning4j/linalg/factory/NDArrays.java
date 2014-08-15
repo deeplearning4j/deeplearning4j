@@ -69,7 +69,12 @@ public class NDArrays {
     }
 
 
-
+    /**
+     * Create an instance of a complex double
+     * @param real the real component
+     * @param imag the imaginary component
+     * @return a new imaginary double with the specified real and imaginary components
+     */
     public static IComplexDouble createDouble(double real,double imag) {
         try {
             Constructor c = complexDoubleClazz.getConstructor(double.class,double.class);
@@ -79,6 +84,30 @@ public class NDArrays {
         }
     }
 
+
+    /**
+     * Create an ndarray of ones
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public static INDArray ones(int[] shape) {
+        INDArray ret = create(shape);
+        ret.assign(1);
+        return ret;
+
+    }
+
+    /**
+     * Create an ndarray of ones
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public static IComplexNDArray complexOnes(int[] shape) {
+        IComplexNDArray ret = createComplex(shape);
+        ret.assign(1);
+        return ret;
+
+    }
 
 
     /**

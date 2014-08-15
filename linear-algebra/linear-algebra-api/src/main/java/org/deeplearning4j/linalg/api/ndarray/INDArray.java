@@ -11,6 +11,76 @@ public interface INDArray {
 
 
     /**
+     * Reverse division
+     * @param other the matrix to divide from
+     * @return
+     */
+    INDArray rdiv(INDArray other);
+
+    /**
+     * Reverse divsion (in place)
+     * @param other
+     * @return
+     */
+    INDArray rdivi(INDArray other);
+
+
+    /**
+     * Reverse division
+     * @param other the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    INDArray rdiv(INDArray other,INDArray result);
+
+    /**
+     * Reverse division (in-place)
+     * @param other the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    INDArray rdivi(INDArray other,INDArray result);
+
+    /**
+     * Reverse subtraction
+     * @param other the matrix to subtract from
+     * @param result the result ndarray
+     * @return
+     */
+    INDArray rsub(INDArray other,INDArray result);
+
+
+    /**
+     *
+     * @param other
+     * @return
+     */
+    INDArray rsub(INDArray other);
+
+    /**
+     *
+     * @param other
+     * @return
+     */
+    INDArray rsubi(INDArray other);
+
+    /**
+     * Reverse subtraction (in-place)
+     * @param other the other ndarray to subtract
+     * @param result the result ndarray
+     * @return the ndarray with the operation applied
+     */
+    INDArray rsubi(INDArray other,INDArray result);
+
+    /**
+     * Set the value of the ndarray to the specified value
+     * @param value the value to assign
+     * @return the ndarray with the values
+     */
+    INDArray assign(Number value);
+
+
+    /**
      * Get the linear index of the data in to
      * the array
      * @param i the index to get
@@ -466,6 +536,21 @@ public interface INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     public INDArray mean(int dimension);
+
+
+    /**
+     * Returns the overall max of this ndarray
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    public INDArray max(int dimension);
+
+    /**
+     * Returns the overall min of this ndarray
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    public INDArray min(int dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
