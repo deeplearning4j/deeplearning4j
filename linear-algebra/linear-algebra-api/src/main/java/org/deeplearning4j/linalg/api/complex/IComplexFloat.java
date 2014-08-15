@@ -11,4 +11,5 @@ public interface IComplexFloat extends IComplexNumber {
 
     @Override
     Float imaginaryComponent();
+
 }

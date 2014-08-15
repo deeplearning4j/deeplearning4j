@@ -2647,7 +2647,39 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public INDArray max(int dimension) {
-        return null;
+        if(dimension == Integer.MAX_VALUE) {
+            return NDArray.scalar(reshape(new int[]{1,length}).max());
+        }
+
+        else if(isVector()) {
+            return NDArray.scalar(max());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.max(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.max(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape).transpose();
+        }
     }
 
     /**
@@ -2658,7 +2690,39 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public INDArray min(int dimension) {
-        return null;
+        if(dimension == Integer.MAX_VALUE) {
+            return NDArray.scalar(reshape(new int[]{1,length}).min());
+        }
+
+        else if(isVector()) {
+            return NDArray.scalar(min());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.min(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.min(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape).transpose();
+        }
     }
 
     /**
