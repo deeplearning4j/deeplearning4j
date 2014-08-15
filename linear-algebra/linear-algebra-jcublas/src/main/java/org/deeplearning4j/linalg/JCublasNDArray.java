@@ -1289,6 +1289,13 @@ public class JCublasNDArray implements INDArray {
         JCublasNDArray ret = new JCublasNDArray(toWrap.data,shape);
         return ret;
     }
+    public static JCublasNDArray wrap(INDArray toWrap) {
+        if(toWrap instanceof JCublasNDArray)
+            return (JCublasNDArray) toWrap;
+        int[]  shape = new int[]{toWrap.rows(),toWrap.columns()};
+        JCublasNDArray ret = new JCublasNDArray(toWrap.data(),shape);
+        return ret;
+    }
 
     @Override
     public JCublasNDArray div(INDArray other) {
