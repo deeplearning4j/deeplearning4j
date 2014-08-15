@@ -251,6 +251,7 @@ public class NDArray extends DoubleMatrix {
      * @param put the slice to applyTransformToDestination
      * @return this for chainability
      */
+
     public NDArray putSlice(int slice,NDArray put) {
         if(isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
