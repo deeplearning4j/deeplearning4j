@@ -836,7 +836,7 @@ public class JCublasNDArray implements INDArray {
 
 
     /** Throws SizeException unless matrices can be multiplied with one another. */
-    public void assertMultipliesWith(INDArray a) {
+    public void assertMultipliesWith(JCublasNDArray a) {
         if (!multipliesWith(a)) {
             throw new SizeException("Number of columns of left matrix must be equal to number of rows of right matrix.");
         }
@@ -951,7 +951,7 @@ public class JCublasNDArray implements INDArray {
         }
 
         /* check sizes and resize if necessary */
-        assertMultipliesWith(other);
+        assertMultipliesWith(otherArray);
 
 
         if (result == this || result == other) {
@@ -1434,14 +1434,27 @@ public class JCublasNDArray implements INDArray {
     }
 
     @Override
+    public double prod() {
+        if(isVector() ) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++) {
+                ret *= get(i);
+            }
+            return ret;
+        }
+
+        return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this).element();
+
+    }
+    @Override
     public INDArray prod(int dimension) {
 
         if(dimension == Integer.MAX_VALUE) {
-            return NDArray.scalar(reshape(new int[]{1,length}).prod());
+            return JCublasNDArray.scalar(reshape(new int[]{1,length}).prod());
         }
 
         else if(isVector()) {
-            return NDArray.scalar(prod());
+            return JCublasNDArray.scalar(prod());
         }
         else {
             int[] shape = ArrayUtil.removeIndex(shape(),dimension);
