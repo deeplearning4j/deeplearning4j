@@ -2054,6 +2054,44 @@ public class JCublasNDArray implements INDArray {
             return JCublasNDArray.doSliceWise(JCublasNDArray.MatrixOp.COLUMN_MAX,this);
 
     }
+    public static double asum(JCublasNDArray x) {
+        Pointer d_A = new Pointer();
+        JCublas.cublasSetVector(
+                x.length(),
+                Sizeof.FLOAT,
+                Pointer.to(x.data()),
+                1,
+                d_A,
+                1);
+        return JCublas.cublasDasum(x.length, d_A, 1);
+    }
+    public static double nrm2(JCublasNDArray x) {
+        Pointer d_A = new Pointer();
+        JCublas.cublasSetVector(
+                x.length(),
+                Sizeof.FLOAT,
+                Pointer.to(x.data()),
+                1,
+                d_A,
+                1);
+        return JCublas.cublasDnrm2(x.length, d_A,1 );
+    }
+    public static int iamax(JCublasNDArray x) {
+        Pointer d_A = new Pointer();
+        JCublas.cublasSetVector(
+                x.length(),
+                Sizeof.FLOAT,
+                Pointer.to(x.data()),
+                1,
+                d_A,
+                1);
+        return JCublas.cublasIdamax(x.length, d_A,1 ) - 1;
+    }
+
+    //public static double asum(ComplexNDArray x) {
+    //    return NativeBlas.dzasum(x.length, x.data, x.offset(), 1);
+    //}
+
 
     public static INDArray doSliceWise(ScalarOp op,INDArray arr) {
 
@@ -2062,16 +2100,16 @@ public class JCublasNDArray implements INDArray {
         JCublasNDArray cast = (JCublasNDArray) arr;
 
         if(op == ScalarOp.NORM_1) {
-            return JCublasNDArray.scalar(NDArrayBlas.asum(cast));
+            return JCublasNDArray.scalar(JCublasNDArray.asum(cast));
         }
 
         else if(op == ScalarOp.NORM_2) {
-            return JCublasNDArray.scalar(NDArrayBlas.nrm2(cast));
+            return JCublasNDArray.scalar(JCublasNDArray.nrm2(cast));
 
         }
 
         else if(op == ScalarOp.NORM_MAX) {
-            int i = NDArrayBlas.iamax(cast);
+            int i = JCublasNDArray.iamax(cast);
             return arr.getScalar(i);
         }
 
