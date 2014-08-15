@@ -1,13 +1,13 @@
-package org.deeplearning4j.linalg.ops.elementwise;
+package org.deeplearning4j.linalg.api.ndarray;
 
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
- * Created by agibsonccc on 8/12/14.
+ * Created by mjk on 8/12/14.
  */
-public class DummyNDArray implements INDArray {
+public class JCUBlasNDArray  implements INDArray  {
+
 
     /**
      * Reverse division
@@ -208,7 +208,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray repmat(int[] shape) {
-        return this;
+        return null;
     }
 
     /**
@@ -222,7 +222,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-        return this;
+        return null;
     }
 
     /**
@@ -236,7 +236,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        return this;
+        return null;
     }
 
     /**
@@ -252,7 +252,7 @@ public class DummyNDArray implements INDArray {
         return null;
     }
 
-       /**
+    /**
      * Returns the element at the specified index
      *
      * @param i the index of the element to return
@@ -260,7 +260,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray getScalar(int i) {
-        return this;
+        return null;
     }
 
     /**
@@ -297,7 +297,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray put(int i, INDArray element) {
-        return this;
+        return null;
     }
 
     /**
@@ -308,7 +308,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray diviColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -319,7 +319,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray divColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -330,7 +330,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray diviRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -341,7 +341,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray divRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -352,7 +352,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray muliColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -363,7 +363,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mulColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -374,7 +374,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray muliRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -385,7 +385,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mulRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -396,7 +396,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subiColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -407,7 +407,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -418,7 +418,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subiRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -429,7 +429,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -440,7 +440,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -451,7 +451,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addColumnVector(INDArray columnVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -462,7 +462,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -473,7 +473,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addRowVector(INDArray rowVector) {
-        return this;
+        return null;
     }
 
     /**
@@ -484,7 +484,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mmul(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -496,7 +496,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mmul(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -507,7 +507,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray div(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -519,7 +519,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray div(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -530,7 +530,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mul(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -542,7 +542,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mul(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -553,7 +553,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray sub(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -565,7 +565,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray sub(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -576,7 +576,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray add(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -588,7 +588,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray add(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -599,7 +599,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mmuli(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -611,7 +611,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -622,7 +622,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray divi(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -634,7 +634,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray divi(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -645,7 +645,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray muli(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -657,7 +657,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray muli(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -668,7 +668,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subi(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -680,7 +680,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray subi(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -691,7 +691,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addi(INDArray other) {
-        return this;
+        return null;
     }
 
     /**
@@ -703,7 +703,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray addi(INDArray other, INDArray result) {
-        return this;
+        return null;
     }
 
     /**
@@ -714,9 +714,8 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray normmax(int dimension) {
-        return this;
+        return null;
     }
-
 
     /**
      * Returns the norm2 along the specified dimension
@@ -726,9 +725,8 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray norm2(int dimension) {
-        return this;
+        return null;
     }
-
 
     /**
      * Returns the norm1 along the specified dimension
@@ -738,9 +736,8 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray norm1(int dimension) {
-        return this;
+        return null;
     }
-
 
     /**
      * Returns the product along a given dimension
@@ -750,7 +747,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray prod(int dimension) {
-        return this;
+        return null;
     }
 
     /**
@@ -761,7 +758,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray mean(int dimension) {
-        return this;
+        return null;
     }
 
     /**
@@ -794,10 +791,8 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray sum(int dimension) {
-        return this;
+        return null;
     }
-
-
 
     /**
      * Returns the elements at the the specified indices
@@ -807,7 +802,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray get(int[] indices) {
-        return this;
+        return null;
     }
 
     /**
@@ -817,7 +812,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray dup() {
-        return this;
+        return null;
     }
 
     /**
@@ -827,7 +822,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray ravel() {
-        return this;
+        return null;
     }
 
     /**
@@ -849,7 +844,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int i, int dimension) {
-        return this;
+        return null;
     }
 
     /**
@@ -860,7 +855,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int i) {
-        return this;
+        return null;
     }
 
     /**
@@ -882,7 +877,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray reshape(int[] newShape) {
-        return this;
+        return null;
     }
 
     /**
@@ -892,7 +887,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray transpose() {
-        return this;
+        return null;
     }
 
     /**
@@ -905,7 +900,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray swapAxes(int dimension, int with) {
-        return this;
+        return null;
     }
 
     /**
@@ -916,7 +911,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray permute(int[] rearrange) {
-        return this;
+        return null;
     }
 
     /**
@@ -928,7 +923,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray getColumn(int i) {
-        return this;
+        return null;
     }
 
     /**
@@ -940,7 +935,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray getRow(int i) {
-        return this;
+        return null;
     }
 
     /**
@@ -1062,7 +1057,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray broadcast(int[] shape) {
-        return this;
+        return null;
     }
 
     /**
@@ -1073,7 +1068,7 @@ public class DummyNDArray implements INDArray {
      */
     @Override
     public INDArray broadcasti(int[] shape) {
-        return this;
+        return null;
     }
 
     /**
@@ -1107,6 +1102,3 @@ public class DummyNDArray implements INDArray {
         return new float[0];
     }
 }
-
-
-

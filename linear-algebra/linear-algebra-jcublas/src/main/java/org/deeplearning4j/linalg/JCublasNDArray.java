@@ -1401,7 +1401,7 @@ public class JCublasNDArray implements INDArray {
 
     }
 
-    public JCublasNDArray normmax(int dimension) {
+    public INDArray normmax(int dimension) {
         if(isVector()) {
             return JCublasNDArray.scalar(normmax());
         }

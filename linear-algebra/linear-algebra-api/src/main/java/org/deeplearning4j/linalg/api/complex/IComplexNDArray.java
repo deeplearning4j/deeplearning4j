@@ -1,12 +1,121 @@
 package org.deeplearning4j.linalg.api.complex;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
  * Complex numbers
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
+
+
+    /**
+     * Returns the overall min of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    IComplexNDArray min(int dimension);
+
+    /**
+     * Returns the overall max of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    IComplexNDArray max(int dimension);
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    IComplexNDArray put(int i, int j, INDArray element);
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param indices the indices to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    IComplexNDArray put(int[] indices, INDArray element);
+
+    /**
+     * Assigns the given matrix (put) to the specified slice
+     *
+     * @param slice the slice to assign
+     * @param put   the slice to applyTransformToDestination
+     * @return this for chainability
+     */
+    @Override
+    IComplexNDArray putSlice(int slice, INDArray put);
+
+    /**
+     * Iterate along a dimension.
+     * This encapsulates the process of sum, mean, and other processes
+     * take when iterating over a dimension.
+     *
+     * @param dimension the dimension to iterate over
+     * @param op        the operation to apply
+     * @param modify    whether to modify this array while iterating
+     */
+    @Override
+    void iterateOverDimension(int dimension, SliceOp op, boolean modify);
+
+    /**
+     * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
+     *
+     * @param op        the operation to do
+     * @param dimension the dimension to return from
+     * @return the results of the reduce (applying the operation along the specified
+     * dimension)t
+     */
+    @Override
+    IComplexNDArray reduce(Ops.DimensionOp op, int dimension);
+
+    /**
+     * Fetch a particular number on a multi dimensional scale.
+     *
+     * @param indexes the indexes to getFromOrigin a number from
+     * @return the number at the specified indices
+     */
+    @Override
+    IComplexNDArray getScalar(int... indexes);
+
+    /**
+     * Validate dimensions are equal
+     *
+     * @param other the other ndarray to compare
+     */
+    @Override
+    void checkDimensions(INDArray other);
+
+    /**
+     * Gives the indices for the ending of each slice
+     *
+     * @return the off sets for the beginning of each slice
+     */
+    @Override
+    int[] endsForSlices();
+
+    /**
+     * Set the value of the ndarray to the specified value
+     *
+     * @param value the value to assign
+     * @return the ndarray with the values
+     */
+    @Override
+    IComplexNDArray assign(Number value);
 
     /**
      * Reverse division
