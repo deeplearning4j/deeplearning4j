@@ -1647,6 +1647,7 @@ public class NDArray extends DoubleMatrix {
     }
 
 
+
     /** Matrix-matrix multiplication (in-place). */
     @Override
     public NDArray mmuli(DoubleMatrix other, DoubleMatrix result) {
@@ -1802,8 +1803,13 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double sum() {
-        if(isVector())
-            return super.sum();
+        if(isVector()) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++)
+                ret += get(i);
+            return ret;
+        }
+
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.SUM,this);
     }
 
@@ -1846,8 +1852,12 @@ public class NDArray extends DoubleMatrix {
      */
     @Override
     public double prod() {
-        if(isVector() )
-            return super.prod();
+        if(isVector()) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++)
+                ret *= get(i);
+            return ret;
+        }
         return NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this);
 
     }

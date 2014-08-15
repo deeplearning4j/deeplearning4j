@@ -3,7 +3,11 @@ package org.deeplearning4j.linalg.jblas;
 
 import static org.deeplearning4j.linalg.util.ArrayUtil.*;
 
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.deeplearning4j.linalg.jblas.util.MatrixUtil;
 import org.deeplearning4j.linalg.jblas.util.NDArrayBlas;
@@ -13,6 +17,7 @@ import org.deeplearning4j.linalg.ops.elementwise.AddOp;
 import org.deeplearning4j.linalg.ops.elementwise.DivideOp;
 import org.deeplearning4j.linalg.ops.elementwise.MultiplyOp;
 import org.deeplearning4j.linalg.ops.elementwise.SubtractOp;
+import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.IterationResult;
 import org.deeplearning4j.linalg.util.Shape;
@@ -26,6 +31,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -257,10 +263,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
     /**
-     *
-     * @param indexes
-     * @param value
-     * @return
+     * Insert the element at the specified position
+     * @param indexes the index to insert into
+     * @param value the value to insert
+     * @return the ndarray with the element
+     * inserted
      */
     @Override
     public NDArray put(int[] indexes, double value) {
@@ -278,12 +285,51 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
     /**
+     * Inserts the element at the specified index
+     *
+     * @param indices the indices to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int[] indices, INDArray element) {
+        if(!element.isScalar())
+            throw new IllegalArgumentException("Unable to insert anything but a scalar");
+        int ix = offset;
+        if (indices.length != shape.length)
+            throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
+
+        for (int i = 0; i< shape.length; i++)
+            ix += indices[i] * stride[i];
+
+
+        data[ix] = (double) element.element();
+        return this;
+
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int i, int j, INDArray element) {
+        return put(new int[]{i,j},element);
+    }
+
+
+    /**
      * Assigns the given matrix (put) to the specified slice
      * @param slice the slice to assign
      * @param put the slice to applyTransformToDestination
      * @return this for chainability
      */
-    public NDArray putSlice(int slice,NDArray put) {
+    @Override
+    public NDArray putSlice(int slice,INDArray put) {
         if(isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
             put(0,put.getScalar(0));
@@ -305,12 +351,12 @@ public class NDArray extends DoubleMatrix implements INDArray {
         if(put.isScalar())
             put(slice,put.getScalar(0));
         else if(put.isVector())
-            for(int i = 0; i < put.length; i++)
+            for(int i = 0; i < put.length(); i++)
                 view.put(i,put.getScalar(i));
         else if(put.shape().length == 2)
             for(int i = 0; i < put.rows(); i++)
                 for(int j = 0; j < put.columns(); j++)
-                    view.put(i,j,put.get(i,j));
+                    view.put(i,j,(double) put.getScalar(i,j).element());
 
         else {
 
@@ -325,7 +371,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
-    private void assertSlice(NDArray put,int slice) {
+    private void assertSlice(INDArray put,int slice) {
         assert slice <= slices() : "Invalid slice specified " + slice;
         int[] sliceShape = put.shape();
         int[] requiredShape = ArrayUtil.removeIndex(shape(),0);
@@ -359,9 +405,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param op the operation to do
      * @param dimension the dimension to return from
      * @return the results of the reduce (applying the operation along the specified
-     * dimension)t
+     * dimension)
      */
-    public NDArray reduce(NDArrayUtil.DimensionOp op,int dimension) {
+    @Override
+    public NDArray reduce(Ops.DimensionOp op,int dimension) {
         if(isScalar())
             return this;
 
@@ -489,7 +536,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
     //getFromOrigin one result along one dimension based on the given offset
-    private IterationResult op(int dimension, int offset, NDArrayUtil.DimensionOp op,int currOffsetForSlice) {
+    private IterationResult op(int dimension, int offset, Ops.DimensionOp op,int currOffsetForSlice) {
         double[] dim = new double[this.shape[dimension]];
         int count = 0;
         boolean newSlice = false;
@@ -505,7 +552,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
     //getFromOrigin one result along one dimension based on the given offset
-    private double op(int dimension, int offset, NDArrayUtil.DimensionOp op) {
+    private double op(int dimension, int offset, Ops.DimensionOp op) {
         double[] dim = new double[this.shape[dimension]];
         int count = 0;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
@@ -518,7 +565,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
 
-    private double reduceVector(NDArrayUtil.DimensionOp op,DoubleMatrix vector) {
+    private double reduceVector(Ops.DimensionOp op,DoubleMatrix vector) {
 
         switch(op) {
             case SUM:
@@ -539,27 +586,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
         }
     }
 
-    public NDArray get(Object...o) {
-
-
-        int[] shape = shapeFor(shape(),o,true);
-        int[] indexingShape = shapeFor(shape(),o,false);
-        int[] stride = calcStrides(shape);
-        int[] query = queryForObject(shape(),o);
-
-        if(query.length == 1)
-            return NDArray.scalar(this,query[0]);
-
-
-
-        //promising
-        int index = offset + indexingShape[0] * stride[0];
-        //int[] baseLineIndices = new int[]
-        return new NDArray(data,
-                shape,
-                stride,
-                index);
-    }
 
 
     /**
@@ -590,6 +616,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param with the one to swap it with
      * @return the swapped axes view
      */
+    @Override
     public NDArray swapAxes(int dimension,int with) {
         int[] shape = ArrayUtil.range(0,shape().length);
         shape[dimension] = with;
@@ -603,6 +630,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * Gives the indices for the ending of each slice
      * @return the off sets for the beginning of each slice
      */
+    @Override
     public int[] endsForSlices() {
         int[] ret = new int[slices()];
         int currOffset = offset + stride[0] - 1;
@@ -633,11 +661,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
         if(offset == 0)
             return data;
 
-
+        INDArray linear = reshape(new int[]{1,length});
         double[] data = new double[length];
         int count = 0;
         for(int i = 0; i < length; i++) {
-            data[count++] = (double) getScalar(i).element();
+            data[count++] = (double) linear.getScalar(i).element();
         }
         return data;
     }
@@ -653,7 +681,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the number of slices
      * for this nd array
      */
+    @Override
     public int slices() {
+        if(shape.length < 1)
+            return 0;
         return shape[0];
     }
 
@@ -692,6 +723,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param op the operation to apply
      * @param modify whether to modify this array while iterating
      */
+    @Override
     public void iterateOverDimension(int dimension,SliceOp op,boolean modify) {
         if(dimension >= shape.length)
             throw new IllegalArgumentException("Unable to remove dimension  " + dimension + " was >= shape length");
@@ -743,62 +775,28 @@ public class NDArray extends DoubleMatrix implements INDArray {
         else {
 
             int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
-
-            if(dimension == 0) {
-                //iterating along the dimension is relative to the number of slices
-                //in the return dimension
-                int numTimes = ArrayUtil.prod(shape);
-                for(int offset = this.offset; offset < numTimes; offset++) {
-                    DimensionSlice vector = vectorForDimensionAndOffset(dimension,offset);
-                    op.operate(vector);
-                    if(modify && vector.getIndices() != null) {
-                        NDArray result = (NDArray) vector.getResult();
-                        for(int i = 0; i < vector.getIndices().length; i++) {
-                            data[vector.getIndices()[i]] = (double) result.getScalar(i).element();
+            int[] stride = ArrayUtil.reverseCopy(ArrayUtil.removeIndex(this.stride,dimension));
+            for(int currSlice = 0; currSlice < shape[0]; currSlice++) {
+                NDArray ret = new NDArray(data,
+                        shape,
+                        stride,
+                        currSlice);
+                for(int j = 0; j < ret.slices(); j++) {
+                    NDArray slice = ret.slice(j);
+                    if(slice.isVector())
+                        op.operate(slice);
+                    else {
+                        for(int i = 0; i < slice.slices(); i++) {
+                            iterateOverDimension(dimension,op,modify);
                         }
                     }
+
 
                 }
 
             }
 
-            else {
-                double[] data2 = new double[ArrayUtil.prod(shape)];
-                int dataIter = 0;
-                //want the milestone to slice[1] and beyond
-                int[] sliceIndices = endsForSlices();
-                int currOffset = 0;
 
-                //iterating along the dimension is relative to the number of slices
-                //in the return dimension
-                int numTimes = ArrayUtil.prod(shape);
-                for(int offset = this.offset; offset < numTimes; offset++) {
-                    if(dataIter >= data2.length || currOffset >= sliceIndices.length)
-                        break;
-
-                    //do the operation, and look for whether it exceeded the current slice
-                    DimensionSlice dimensionResult = vectorForDimensionAndOffsetPair(dimension, offset,sliceIndices[currOffset]);
-                    //append the result
-                    op.operate(dimensionResult);
-
-                    if(modify && dimensionResult.getIndices() != null) {
-                        NDArray result = (NDArray) dimensionResult.getResult();
-                        for(int i = 0; i < dimensionResult.getIndices().length; i++) {
-                            data[dimensionResult.getIndices()[i]] = (double) result.getScalar(i).element();
-                        }
-                    }
-
-                    //go to next slice and iterate over that
-                    if(dimensionResult.isNextSlice()) {
-                        //will update to next step
-                        offset = sliceIndices[currOffset];
-                        numTimes +=  sliceIndices[currOffset];
-                        currOffset++;
-                    }
-
-                }
-
-            }
 
         }
 
@@ -914,45 +912,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
 
-    public static int[] shapeFor(int[] shape,Object[] o,boolean dropZeros) {
-        //allows us to put it in to shape format
-        Object[] copy = reverseCopy(o);
-        int[] ret = new int[copy.length];
-        for(int i = 0; i < copy.length; i++) {
-            //give us the whole thing
-            if((char)copy[i] == ':')
-                ret[i] = shape[i];
-                //only allow indices
-            else if(copy[i] instanceof Number)
-                ret[i] = (Integer) copy[i];
-            else if(copy[i] instanceof Range) {
-                Range r = (Range) copy[i];
-                int len = MatrixUtil.toIndices(r).length;
-                ret[i] = len;
-            }
-            else
-                throw new IllegalArgumentException("Unknown kind of index of type: " + o[i].getClass());
-
-        }
-
-
-        if(!dropZeros)
-            return ret;
-
-
-        //drop all shapes of 0
-        int[] realRet = ret;
-
-        for(int i = 0; i < ret.length; i++) {
-            if(ret[i] <= 0)
-                realRet = ArrayUtil.removeIndex(ret,i);
-        }
-
-
-        return realRet;
-    }
-
-
 
 
     public static Integer[] shapeForObject(Integer[] shape,Object[] o) {
@@ -1050,6 +1009,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return NDArray.scalar(data[idx]);
     }
 
+
+
     /**
      * Inserts the element at the specified index
      *
@@ -1059,6 +1020,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray put(int i, INDArray element) {
+        if(element == null)
+            throw new IllegalArgumentException("Unable to insert null element");
+        assert element.isScalar() : "Unable to insert non scalar element";
+
         put(i,(double) element.element());
         return this;
     }
@@ -1085,7 +1050,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray divColumnVector(INDArray columnVector) {
-         return dup().diviColumnVector(columnVector);
+        return dup().diviColumnVector(columnVector);
     }
 
     /**
@@ -1110,7 +1075,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray divRowVector(INDArray rowVector) {
-         return dup().diviRowVector(rowVector);
+        return dup().diviRowVector(rowVector);
     }
 
     /**
@@ -1135,7 +1100,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray mulColumnVector(INDArray columnVector) {
-         return dup().muliColumnVector(columnVector);
+        return dup().muliColumnVector(columnVector);
     }
 
     /**
@@ -1160,7 +1125,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray mulRowVector(INDArray rowVector) {
-         return dup().muliRowVector(rowVector);
+        return dup().muliRowVector(rowVector);
     }
 
     /**
@@ -1210,7 +1175,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subRowVector(INDArray rowVector) {
-         return dup().subiRowVector(rowVector);
+        return dup().subiRowVector(rowVector);
     }
 
     /**
@@ -1271,7 +1236,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray mmul(INDArray other) {
-        return dup().mmuli(other);
+        int[] shape = {rows(),other.columns()};
+        return mmuli(other,NDArrays.create(shape));
     }
 
     /**
@@ -1398,7 +1364,43 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray mmuli(INDArray other, INDArray result) {
-        return null;
+        NDArray otherArray = (NDArray) other;
+        NDArray resultArray = (NDArray) result;
+
+        if (other.isScalar()) {
+            return muli(otherArray.scalar(), resultArray);
+        }
+        if (isScalar()) {
+            return otherArray.muli(scalar(), resultArray);
+        }
+
+        /* check sizes and resize if necessary */
+        //assertMultipliesWith(other);
+
+
+        if (result == this || result == other) {
+            /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
+             * allocating a temporary object on the side and copy the result later.
+             */
+            NDArray temp = new NDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
+
+            if (otherArray.columns() == 1) {
+                NDArrayBlas.gemv(1.0, this, otherArray, 0.0, temp);
+            } else {
+                NDArrayBlas.gemm(1.0, this, otherArray, 0.0, temp);
+            }
+
+            NDArrayBlas.copy(temp, resultArray);
+
+
+        } else {
+            if (otherArray.columns() == 1)
+                NDArrayBlas.gemv(1.0, this, otherArray, 0.0, resultArray);
+            else
+                NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
+
+        }
+        return resultArray;
     }
 
     /**
@@ -1421,8 +1423,12 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray divi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(DivideOp.class)
-                .to(result).build().exec();
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(DivideOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(DivideOp.class)
+                    .to(result).build().exec();
         return (NDArray) result;
     }
 
@@ -1446,7 +1452,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray muli(INDArray other, INDArray result) {
-        return null;
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(MultiplyOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(MultiplyOp.class)
+                    .to(result).build().exec();
+        return (NDArray) result;
     }
 
     /**
@@ -1469,8 +1481,12 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
-                .to(result).build().exec();
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
+                    .to(result).build().exec();
+        else
+            new TwoArrayOps().from(this).other(other).op(SubtractOp.class)
+                    .to(result).build().exec();
         return (NDArray) result;
     }
 
@@ -1494,8 +1510,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addi(INDArray other, INDArray result) {
-      new TwoArrayOps().from(this).other(other).op(AddOp.class)
-             .to(result).build().exec();
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(AddOp.class)
+                    .to(result).build().exec();
+
+        else
+            new TwoArrayOps().from(this).other(other).op(AddOp.class)
+                    .to(result).build().exec();
         return (NDArray) result;
     }
 
@@ -1506,8 +1527,37 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    public NDArray normmax(int dimension) {
-        return null;
+    public INDArray normmax(int dimension) {
+        if(isVector()) {
+            return NDArray.scalar(normmax());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.normmax(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    INDArray arr2 = nd;
+                    arr.put(i.get(),arr2.normmax(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
     }
 
 
@@ -1532,7 +1582,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return idx;
     }
 
-    private int linearIndex(int i) {
+    @Override
+    public int linearIndex(int i) {
         int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
         if(idx >= data.length)
@@ -1706,13 +1757,16 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param indexes the indexes to getFromOrigin a number from
      * @return the number at the specified indices
      */
-    public double getMulti(int... indexes) {
+    @Override
+    public INDArray getScalar(int... indexes) {
         int ix = offset;
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
-        return data[ix];
+        return NDArrays.scalar(data[ix]);
     }
+
+
 
 
     /**
@@ -1754,7 +1808,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray putColumn(int column, INDArray toPut) {
         DoubleMatrix put = (NDArray) toPut;
-        putRow(column,put);
+        putColumn(column, put);
         return this;
     }
 
@@ -1762,13 +1816,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public NDArray get(int[] indices) {
-        NDArray result = new NDArray(data,new int[]{1,indices.length},stride,offset);
-
-        for (int i = 0; i < indices.length; i++) {
-            result.put(i, getScalar(indices[i]));
-        }
-
-        return result;
+        return (NDArray) getScalar(indices);
     }
 
 
@@ -2172,10 +2220,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
-    public void checkDimensions(NDArray other) {
-        assert Arrays.equals(shape,other.shape) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape);
-        assert Arrays.equals(stride,other.stride) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride);
-        assert offset == other.offset : "Offset of this array is " + offset + " but other was " + other.offset;
+    @Override
+    public void checkDimensions(INDArray other) {
+        assert Arrays.equals(shape,other.shape()) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape());
+        assert Arrays.equals(stride,other.stride()) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride());
+        assert offset == other.offset() : "Offset of this array is " + offset + " but other was " + other.offset();
 
     }
 
@@ -2342,13 +2391,44 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
         return this;
     }
+
+    @Override
+    public double get(int i) {
+        int idx = linearIndex(i);
+        return data[idx];
+    }
+
+    @Override
+    public double get(int i,int j) {
+        if(isColumnVector()) {
+            if(j > 0)
+                throw new IllegalArgumentException("Trying to access column > " + columns() + " at " + j);
+            return get(i);
+
+        }
+        else if(isRowVector()) {
+            if(i > 0)
+                throw new IllegalArgumentException("Trying to access row > " + rows() + " at " + i);
+            return get(j);
+        }
+
+
+        return (double) get(new int[]{i,j}).element();
+
+    }
+
     /**
      * Computes the sum of all elements of the matrix.
      */
     @Override
     public double sum() {
-        if(isVector())
-            return super.sum();
+        if(isVector()) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++) {
+                ret += get(i);
+            }
+            return ret;
+        }
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.SUM,this).element();
     }
 
@@ -2357,8 +2437,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double norm1() {
-        if(isVector())
-            return super.norm2();
+        if(isVector()) {
+            double norm = 0.0;
+            for (int i = 0; i < length; i++) {
+                norm += Math.abs(get(i));
+            }
+            return norm;
+        }
         return (Double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_1,this).element();
 
     }
@@ -2370,8 +2455,42 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the product along the specified dimension
      */
     @Override
-    public NDArray prod(int dimension) {
-        return null;
+    public INDArray prod(int dimension) {
+
+        if(dimension == Integer.MAX_VALUE) {
+            return NDArray.scalar(reshape(new int[]{1,length}).prod());
+        }
+
+        else if(isVector()) {
+            return NDArray.scalar(prod());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
+                    arr.put(i.get(),arr2.prod(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.prod(0));
+                    i.incrementAndGet();
+
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
     }
 
     /**
@@ -2381,8 +2500,39 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    public NDArray mean(int dimension) {
-        return null;
+    public INDArray mean(int dimension) {
+        if(dimension == Integer.MAX_VALUE) {
+            return NDArray.scalar(reshape(new int[]{1,length}).mean());
+        }
+        else if(isVector()) {
+            return NDArray.scalar(sum() / length());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.mean(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.mean(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
     }
 
     /**
@@ -2392,8 +2542,40 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the sum along the specified dimension of this ndarray
      */
     @Override
-    public NDArray sum(int dimension) {
-        return null;
+    public INDArray sum(int dimension) {
+        if(dimension == Integer.MAX_VALUE) {
+            return NDArray.scalar(reshape(new int[]{1,length}).sum());
+        }
+
+        else if(isVector()) {
+            return NDArray.scalar(sum());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.sum(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.sum(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape).transpose();
+        }
     }
 
     /**
@@ -2402,8 +2584,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double norm2() {
-        if(isVector())
-            return super.norm2();
+        if(isVector()) {
+            double norm = 0.0;
+            for (int i = 0; i < length; i++) {
+                norm += get(i) * get(i);
+            }
+            return   Math.sqrt(norm);
+        }
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_2,this).element();
 
     }
@@ -2415,8 +2602,37 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    public NDArray norm1(int dimension) {
-        return null;
+    public INDArray norm1(int dimension) {
+        if(isVector()) {
+            return NDArray.scalar(norm1());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.norm1(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.norm1(0));
+                    i.incrementAndGet();
+
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
     }
 
     /**
@@ -2424,7 +2640,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double normmax() {
-        if(isVector() )
+        if(isVector())
             return super.normmax();
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.NORM_MAX,this).element();
 
@@ -2437,8 +2653,37 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the norm2 along the specified dimension
      */
     @Override
-    public NDArray norm2(int dimension) {
-        return null;
+    public INDArray norm2(int dimension) {
+        if(isVector()) {
+            return NDArray.scalar(norm2());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.norm2(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.norm2(0));
+                    i.incrementAndGet();
+
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
     }
 
     /**
@@ -2446,8 +2691,14 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double prod() {
-        if(isVector() )
-            return super.prod();
+        if(isVector() ) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++) {
+                ret *= get(i);
+            }
+            return ret;
+        }
+
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.PROD,this).element();
 
     }
@@ -2465,8 +2716,14 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double max() {
-        if(isVector() )
-            return super.max();
+        if(isVector() ) {
+            double ret = Double.NEGATIVE_INFINITY;
+            for(int i = 0; i < length; i++) {
+                if(get(i) > ret)
+                    ret = get(i);
+            }
+            return ret;
+        }
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MAX,this).element();
 
     }
@@ -2476,8 +2733,14 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double min() {
-        if(isVector() )
-            return super.min();
+        if(isVector() ) {
+            double ret = Double.NEGATIVE_INFINITY;
+            for(int i = 0; i < length; i++) {
+                if(get(i) > ret)
+                    ret = get(i);
+            }
+            return ret;
+        }
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MIN,this).element();
 
     }
@@ -2488,8 +2751,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public double mean() {
-        if(isVector() )
-            return super.mean();
+        if(isVector() ) {
+            double ret = 0.0;
+            for(int i = 0; i < length; i++) {
+                ret += get(i);
+            }
+            return ret / length();
+        }
         return (double) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.MEAN,this).element();
 
     }
@@ -2501,8 +2769,17 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public int argmax() {
-        if(isVector() )
-            return super.argmax();
+        if(isVector() ) {
+            double ret = Double.NEGATIVE_INFINITY;
+            int idx = 0;
+            for(int i = 0; i < length; i++) {
+                if(get(i) > ret) {
+                    ret = get(i);
+                    idx = i;
+                }
+            }
+            return idx;
+        }
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MAX,this).element();
 
     }
@@ -2513,8 +2790,17 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public int argmin() {
-        if(isVector() )
-            return super.argmin();
+        if(isVector() ) {
+            double ret = Double.NEGATIVE_INFINITY;
+            int idx = 0;
+            for(int i = 0; i < length; i++) {
+                if(get(i) < ret) {
+                    ret = get(i);
+                    idx = i;
+                }
+            }
+            return idx;
+        }
         return (int) NDArrayUtil.doSliceWise(NDArrayUtil.ScalarOp.ARG_MIN,this).element();
 
     }
@@ -2583,6 +2869,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * Flattens the array for linear indexing
      * @return the flattened version of this array
      */
+    @Override
     public NDArray ravel() {
         NDArray ret = new NDArray(new int[]{1,length});
         List<NDArray> list = new ArrayList<>();
@@ -2780,7 +3067,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public int length() {
-        return 0;
+        return length;
     }
 
     /**

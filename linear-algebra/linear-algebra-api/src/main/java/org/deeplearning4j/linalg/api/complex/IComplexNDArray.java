@@ -10,6 +10,32 @@ public interface IComplexNDArray extends INDArray {
 
 
     /**
+     *  a Hermitian matrix is a square matrix with complex entries that is equal to its own conjugate transpose
+     *
+     * @return the hermitian of this ndarray
+     */
+    public IComplexNDArray hermitian();
+
+    /**
+     * Compute complex conj.
+     */
+
+    public IComplexNDArray conj();
+
+
+    /**
+     * Compute complex conj (in-place).
+     */
+
+    public IComplexNDArray conji();
+
+    /**
+     * Gets the real portion of this complex ndarray
+     * @return the real portion of this complex ndarray
+     */
+    INDArray getReal();
+
+    /**
      * Replicate and tile array to fill out to the given shape
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
