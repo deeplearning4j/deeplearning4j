@@ -52,6 +52,10 @@ public interface ElementWiseOp {
 
     INDArray apply(INDArray value, int i);
 
+    /**
+     * Apply the transformation
+     */
+    void exec();
 
 
 }
