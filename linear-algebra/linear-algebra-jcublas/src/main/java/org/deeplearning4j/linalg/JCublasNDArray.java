@@ -466,6 +466,17 @@ public class JCublasNDArray implements INDArray {
             return arr.reshape(shape);
         }
     }
+
+    @Override
+    public INDArray max(int dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray min(int dimension) {
+        return null;
+    }
+
     public double min() {
         if (isEmpty()) {
             return Double.POSITIVE_INFINITY;
@@ -712,6 +723,54 @@ public class JCublasNDArray implements INDArray {
 
             put(i,(double) element.element());
             return this;
+    }
+
+    @Override
+    public INDArray rdiv(INDArray other) {
+        return dup().rdivi(other);
+    }
+
+    @Override
+    public INDArray rdivi(INDArray other) {
+        return rdivi(other,this);
+    }
+
+    @Override
+    public INDArray rdiv(INDArray other, INDArray result) {
+        return dup().rdivi(other,result);
+    }
+
+    @Override
+    public INDArray rdivi(INDArray other, INDArray result) {
+        return other.divi(this, result);
+    }
+
+    @Override
+    public INDArray rsub(INDArray other, INDArray result) {
+        return dup().rsubi(other,result);
+    }
+
+    @Override
+    public INDArray rsub(INDArray other) {
+        return dup().rsubi(other);
+    }
+
+    @Override
+    public INDArray rsubi(INDArray other) {
+        return rsubi(other,this);
+    }
+
+    @Override
+    public INDArray rsubi(INDArray other, INDArray result) {
+        return other.subi(this, result);
+    }
+
+    @Override
+    public INDArray assign(Number value) {
+        INDArray one = reshape(new int[]{1,length});
+        for(int i = 0; i < one.length(); i++)
+            one.put(i,NDArrays.scalar(value.doubleValue()));
+        return one;
     }
 
     public int linearIndex(int i) {
