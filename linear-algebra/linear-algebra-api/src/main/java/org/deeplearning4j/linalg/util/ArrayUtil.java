@@ -1,5 +1,8 @@
 package org.deeplearning4j.linalg.util;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+
 import java.lang.reflect.Array;
 import java.util.List;
 
@@ -10,6 +13,12 @@ public class ArrayUtil {
 
 
 
+
+    public static INDArray toNDArray(int[] nums) {
+        double[] doubles = toDoubles(nums);
+        INDArray create = NDArrays.create(doubles,new int[]{1,nums.length});
+        return create;
+    }
 
     public static int prod(int[] mult) {
         int ret = 1;

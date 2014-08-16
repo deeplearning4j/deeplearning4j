@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.jblas;
 
 import static org.deeplearning4j.linalg.util.ArrayUtil.*;
 
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
@@ -2825,6 +2826,54 @@ public class NDArray extends DoubleMatrix implements INDArray {
         }
     }
 
+
+
+    public double std() {
+        StandardDeviation dev = new StandardDeviation();
+        double std = dev.evaluate(data());
+        return std;
+    }
+
+    /**
+     * Standard deviation of an ndarray along a dimension
+     *
+     * @param dimension the dimension to get the std along
+     * @return the standard deviation along a particular dimension
+     */
+    @Override
+    public INDArray std(int dimension) {
+        if(isVector()) {
+            return NDArray.scalar(std());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.std(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.std(0));
+                    i.incrementAndGet();
+
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
+    }
+
     /**
      * The maximum norm of the matrix (maximal absolute value of the elements).
      */
@@ -3115,6 +3164,34 @@ public class NDArray extends DoubleMatrix implements INDArray {
             throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
     }
 
+
+    /**
+     * Get whole rows from the passed indices.
+     *
+     * @param rindices
+     */
+    @Override
+    public NDArray getRows(int[] rindices) {
+        INDArray rows = NDArrays.create(rindices.length,columns());
+        for(int i = 0; i < rindices.length; i++) {
+            rows.putRow(i,getRow(rindices[i]));
+        }
+        return (NDArray) rows;
+    }
+
+    /**
+     * Get whole columns from the passed indices.
+     *
+     * @param cindices
+     */
+    @Override
+    public NDArray getColumns(int[] cindices) {
+        INDArray rows = NDArrays.create(rows(),cindices.length);
+        for(int i = 0; i < cindices.length; i++) {
+            rows.putColumn(i,getColumn(cindices[i]));
+        }
+        return (NDArray) rows;
+    }
 
     /**
      * Get a copy of a row.

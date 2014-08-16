@@ -4,6 +4,7 @@ package org.deeplearning4j.linalg.jblas.complex;
 import static  org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
 import static  org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
 
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
@@ -1570,6 +1571,37 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     public IComplexNDArray repmat(int[] shape) {
         return null;
     }
+
+
+
+    /**
+     * Get whole rows from the passed indices.
+     *
+     * @param rindices
+     */
+    @Override
+    public ComplexNDArray getRows(int[] rindices) {
+        INDArray rows = NDArrays.create(rindices.length,columns());
+        for(int i = 0; i < rindices.length; i++) {
+            rows.putRow(i,getRow(rindices[i]));
+        }
+        return (ComplexNDArray) rows;
+    }
+
+    /**
+     * Get whole columns from the passed indices.
+     *
+     * @param cindices
+     */
+    @Override
+    public ComplexNDArray getColumns(int[] cindices) {
+        INDArray rows = NDArrays.create(rows(),cindices.length);
+        for(int i = 0; i < cindices.length; i++) {
+            rows.putColumn(i,getColumn(cindices[i]));
+        }
+        return (ComplexNDArray) rows;
+    }
+
 
     /**
      * Insert a row in to this array
@@ -3348,6 +3380,56 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                 @Override
                 public void operate(INDArray nd) {
                     arr.put(i.get(),nd.norm1(0));
+                    i.incrementAndGet();
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }
+    }
+
+    public ComplexDouble std() {
+        StandardDeviation dev = new StandardDeviation();
+        INDArray real = getReal();
+        NDArray imag = imag();
+        double std = dev.evaluate(real.data());
+        double std2 = dev.evaluate(imag.data());
+        return new ComplexDouble(std,std2);
+    }
+
+    /**
+     * Standard deviation of an ndarray along a dimension
+     *
+     * @param dimension the dimension to get the std along
+     * @return the standard deviation along a particular dimension
+     */
+    @Override
+    public INDArray std(int dimension) {
+        if(dimension == Integer.MAX_VALUE)
+            return ComplexNDArray.scalar(std());
+        if(isVector()) {
+            return ComplexNDArray.scalar(sum().divi(length()));
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final IComplexNDArray arr = NDArrays.createComplex(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
+                    arr.put(i.get(),arr2.std(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.std(0));
                     i.incrementAndGet();
                 }
             }, false);
