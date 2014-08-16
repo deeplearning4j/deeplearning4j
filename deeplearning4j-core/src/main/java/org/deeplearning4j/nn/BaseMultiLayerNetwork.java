@@ -1769,7 +1769,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         DoubleMatrix output = output(d);
         int[] ret = new int[d.rows];
         for(int i = 0; i < ret.length; i++)
-            ret[i] = SimpleBlas.iamax(output);
+            ret[i] = SimpleBlas.iamax(output.getRow(i));
         return ret;
     }
 
