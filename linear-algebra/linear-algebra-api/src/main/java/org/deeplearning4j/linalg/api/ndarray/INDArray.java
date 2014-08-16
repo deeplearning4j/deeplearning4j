@@ -10,6 +10,10 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 public interface INDArray {
 
 
+    INDArray getColumns(int[] columns);
+
+    INDArray getRows(int[] rows);
+
     /**
      * Reverse division
      * @param other the matrix to divide from
@@ -521,6 +525,12 @@ public interface INDArray {
     public INDArray norm1(int dimension);
 
 
+    /**
+     * Standard deviation of an ndarray along a dimension
+     * @param dimension the dimension to get the std along
+     * @return the standard deviation along a particular dimension
+     */
+    public INDArray std(int dimension);
 
     /**
      * Returns the product along a given dimension
