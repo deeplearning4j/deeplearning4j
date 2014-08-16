@@ -86,7 +86,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
                 network.backProp(lr, iteration);
-
+          network.getOutputLayer().trainTillConvergence(lr,iteration);
         }
 
         else {
