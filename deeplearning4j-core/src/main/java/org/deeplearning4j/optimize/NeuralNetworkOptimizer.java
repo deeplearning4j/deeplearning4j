@@ -65,6 +65,8 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
             opt = new VectorizedNonZeroStoppingConjugateGradient(this,this);
             opt.setTolerance(tolerance);
         }
+
+
         else {
             opt = new VectorizedDeepLearningGradientAscent(this,this);
             opt.setTolerance(tolerance);
