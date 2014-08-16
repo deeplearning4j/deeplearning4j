@@ -9,6 +9,16 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  */
 public class DummyNDArray implements INDArray {
 
+    @Override
+    public INDArray getColumns(int[] columns) {
+        return null;
+    }
+
+    @Override
+    public INDArray getRows(int[] rows) {
+        return null;
+    }
+
     /**
      * Reverse division
      *
@@ -739,6 +749,17 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray norm1(int dimension) {
         return this;
+    }
+
+    /**
+     * Standard deviation of an ndarray along a dimension
+     *
+     * @param dimension the dimension to get the std along
+     * @return the standard deviation along a particular dimension
+     */
+    @Override
+    public INDArray std(int dimension) {
+        return null;
     }
 
 
