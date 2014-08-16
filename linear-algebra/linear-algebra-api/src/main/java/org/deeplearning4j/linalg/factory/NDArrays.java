@@ -86,6 +86,89 @@ public class NDArrays {
 
 
     /**
+     * Copy a to b
+     * @param a the origin matrix
+     * @param b the destination matrix
+     */
+    public static void copy(INDArray a,INDArray b) {
+        a = a.reshape(new int[]{1,a.length()});
+        b = b.reshape(new int[]{1,b.length()});
+        for(int i = 0; i < a.length(); i++) {
+            b.put(i,a.getScalar(i));
+        }
+    }
+
+
+    /**
+     * Concatenates two matrices horizontally. Matrices must have identical
+     * numbers of rows.
+     */
+    public static INDArray concatHorizontally(INDArray A, INDArray B) {
+        if (A.rows() != B.rows()) {
+            throw new IllegalArgumentException("Matrices don't have same number of rows.");
+        }
+
+        INDArray result = NDArrays.create(A.rows(), A.columns() + B.columns());
+        copy(A,result);
+
+        int count = 0;
+
+        for(int i = A.rows(); i < B.rows(); i++) {
+            result.putRow(i,B.getRow(count++));
+        }
+        return result;
+    }
+
+    /**
+     * Concatenates two matrices vertically. Matrices must have identical
+     * numbers of columns.
+     */
+    public static INDArray concatVertically(INDArray A, INDArray B) {
+        if (A.columns() != B.columns()) {
+            throw new IllegalArgumentException("Matrices don't have same number of columns (" + A.columns() + " != " + B.columns() + ".");
+        }
+
+        INDArray result = NDArrays.create(A.rows() + B.rows(), A.columns());
+        copy(A,result);
+
+        int count = 0;
+
+        for(int i = A.columns(); i < B.columns(); i++) {
+            result.putColumn(i,B.getColumn(count++));
+        }
+        return result;
+    }
+
+
+
+
+
+
+
+    /**
+     * Create an ndarray of zeros
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public static INDArray zeros(int[] shape) {
+        INDArray ret = create(shape);
+        return ret;
+
+    }
+
+    /**
+     * Create an ndarray of ones
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public static IComplexNDArray complexZeros(int[] shape) {
+        IComplexNDArray ret = createComplex(shape);
+        return ret;
+
+    }
+
+
+    /**
      * Create an ndarray of ones
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in

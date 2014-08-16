@@ -10,6 +10,11 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  */
 public interface IComplexNDArray extends INDArray {
 
+    @Override
+    INDArray getColumns(int[] columns);
+
+    @Override
+    INDArray getRows(int[] rows);
 
     /**
      * Returns the overall min of this ndarray
