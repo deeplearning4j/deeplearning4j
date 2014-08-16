@@ -1,9 +1,10 @@
-package org.mystic.cuda;
+
+package org.deeplearning4j.example.jcublas;
 
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 
-import org.deeplearning4j.linalg.jcublas.*;
+import org.deeplearning4j.linalg.*;
 
 /**
  * Hello, World in JCuda
@@ -12,7 +13,8 @@ import org.deeplearning4j.linalg.jcublas.*;
 public class JCudaRuntimeTest {
     public static void main(String args[]) {
         Pointer pointer = new Pointer();
-	JCublasNDArray  a = new JCublasNDArray();
+        double[] b = new double[3];
+	JCublasNDArray  a = new JCublasNDArray(b);
         JCuda.cudaMalloc(pointer, 4);
         System.out.println("Pointer: " + pointer);
         JCuda.cudaFree(pointer);

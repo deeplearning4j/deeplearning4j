@@ -1,13 +1,13 @@
 package org.deeplearning4j.linalg;
 
-import jcuda.jcublas.JCublas;
 import jcuda.Pointer;
 import jcuda.Sizeof;
-
+import jcuda.jcublas.JCublas;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
-import org.deeplearning4j.linalg.api.ndarray.SizeException;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SizeException;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.TwoArrayOps;
@@ -20,15 +20,10 @@ import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.IterationResult;
 import org.deeplearning4j.linalg.util.Shape;
 
-
-
-
-
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
 import static org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
@@ -280,6 +275,37 @@ public class JCublasNDArray implements INDArray {
 
     }
 
+    //getFromOrigin one result along one dimension based on the given offset
+    private IterationResult op(int dimension, int offset, Ops.DimensionOp op,int currOffsetForSlice) {
+        double[] dim = new double[this.shape[dimension]];
+        int count = 0;
+        boolean newSlice = false;
+        for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
+            double d = data[j];
+            dim[count++] = d;
+            if(j >= currOffsetForSlice)
+                newSlice = true;
+        }
+
+        return new IterationResult(reduceVector(op,new JCublasNDArray(dim)),newSlice);
+    }
+
+    //getFromOrigin one result along one dimension based on the given offset
+    private double op(int dimension, int offset, Ops.DimensionOp op) {
+        double[] dim = new double[this.shape[dimension]];
+        int count = 0;
+        for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
+            double d = data[j];
+            dim[count++] = d;
+        }
+
+        return reduceVector(op,new JCublasNDArray(dim));
+    }
+
+    public JCublasNDArray(double[] newData) {
+        this(newData.length);
+        data = newData;
+    }
     @Override
     public JCublasNDArray putSlice(int slice, INDArray put) {
         if(isScalar()) {
@@ -724,6 +750,23 @@ public class JCublasNDArray implements INDArray {
             put(i,(double) element.element());
             return this;
     }
+
+    @Override
+    public JCublasNDArray getColumns(int[] cindices) {
+        INDArray rows = NDArrays.create(rows(),cindices.length);
+        for(int i = 0; i < cindices.length; i++) {
+            rows.putColumn(i,getColumn(cindices[i]));
+        }
+        return (JCublasNDArray) rows;
+    }
+
+    @Override
+    public INDArray getRows(int[] rindices) {
+        INDArray rows = NDArrays.create(rindices.length,columns());
+        for(int i = 0; i < rindices.length; i++) {
+            rows.putRow(i,getRow(rindices[i]));
+        }
+        return (JCublasNDArray) rows;    }
 
     @Override
     public INDArray rdiv(INDArray other) {
@@ -1510,6 +1553,45 @@ public class JCublasNDArray implements INDArray {
         }
     }
 
+    public double std() {
+        StandardDeviation dev = new StandardDeviation();
+        double std = dev.evaluate(data());
+        return std;
+    }
+
+    @Override
+    public INDArray std(int dimension) {
+        if(isVector()) {
+            return JCublasNDArray.scalar(std());
+        }
+        else {
+            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr.put(i.get(),arr2.std(0));
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    arr.put(i.get(),nd.std(0));
+                    i.incrementAndGet();
+
+                }
+            }, false);
+
+            return arr.reshape(shape);
+        }    }
+
     public static JCublasNDArray doSliceWise(MatrixOp op,JCublasNDArray arr) {
         int columns = isColumnOp(op) ? arr.columns() : arr.rows();
         int[] shape = {arr.slices(),columns};
@@ -2081,7 +2163,7 @@ public class JCublasNDArray implements INDArray {
                 1,
                 d_A,
                 1);
-        return JCublas.cublasDnrm2(x.length, d_A,1 );
+        return JCublas.cublasDnrm2(x.length, d_A, 1);
     }
     public static int iamax(JCublasNDArray x) {
         Pointer d_A = new Pointer();
@@ -2092,7 +2174,7 @@ public class JCublasNDArray implements INDArray {
                 1,
                 d_A,
                 1);
-        return JCublas.cublasIdamax(x.length, d_A,1 ) - 1;
+        return JCublas.cublasIdamax(x.length, d_A, 1) - 1;
     }
 
     //public static double asum(ComplexNDArray x) {
