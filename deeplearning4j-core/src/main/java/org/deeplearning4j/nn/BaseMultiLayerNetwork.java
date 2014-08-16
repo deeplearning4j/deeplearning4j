@@ -2722,7 +2722,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private OutputLayer.LossFunction outputLossFunction = OutputLayer.LossFunction.MCXENT;
-        private ActivationFunction outputActivationFunction = Activations.softmax();
+        private ActivationFunction outputActivationFunction = Activations.softMaxRows();
         private Map<Integer,Integer> renderByLayer = new HashMap<>();
         private Map<Integer,Boolean> sampleOrActivateByLayer = new HashMap<>();
         private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
@@ -3265,7 +3265,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
                 ret.setLossFunction(lossFunction);
                 ret.setOutputActivationFunction(outputActivationFunction);
                 ret.setOutputLossFunction(outputLossFunction);
-                ret.initializeLayers(DoubleMatrix.zeros(1,nIns));
                 if(activation != null)
                     ret.setActivation(activation);
                 if(dist != null)
