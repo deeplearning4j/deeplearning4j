@@ -338,10 +338,11 @@ public class DBN extends BaseMultiLayerNetwork {
     public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
                                      int nHidden, DoubleMatrix W, DoubleMatrix hBias,
                                      DoubleMatrix vBias, RandomGenerator rng,int index) {
-
+        RBM.HiddenUnit h = hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit;
+        RBM.VisibleUnit v =visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit;
         RBM ret = new RBM.Builder().constrainGradientToUnitNorm(constrainGradientToUnitNorm).weightInit(weightInitByLayer.get(index) != null ? weightInitByLayer.get(index) : weightInit)
-                .withHidden(hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit)
-                .withVisible(visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit)
+                .withHidden(h)
+                .withVisible(v)
                 .useRegularization(isUseRegularization()).withOptmizationAlgo(getOptimizationAlgorithm()).withL2(getL2())
                 .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(isNormalizeByInputRows())
                 .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) : getLossFunction())

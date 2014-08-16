@@ -51,8 +51,11 @@ public class DBNTest {
         assertEquals(1,params.rows);
         assertEquals(params.columns,params.length);
         dbn.setLabels(new DoubleMatrix(1,nOuts));
-
-
+        assertEquals(RBM.HiddenUnit.RECTIFIED,dbn.getHiddenUnit());
+        assertEquals(RBM.VisibleUnit.GAUSSIAN,dbn.getVisibleUnit());
+        RBM r = (RBM) dbn.getLayers()[0];
+        assertEquals(RBM.HiddenUnit.RECTIFIED,r.getHiddenType());
+        assertEquals(RBM.VisibleUnit.GAUSSIAN,r.getVisibleType());
 
 
 
