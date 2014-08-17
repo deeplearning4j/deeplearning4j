@@ -3,11 +3,9 @@ title:
 layout: default
 ---
 
-**prerequisites**
+**prerequisites**: *you've gone through [these steps](../gettingstarted.html) and set up Maven and Blas (native matrices).*
 
-*you've gone through [these steps](../gettingstarted.html) and set up Maven and Blas (native matrices).*
-
-#quickstart
+#Quickstart
 
 If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
 
