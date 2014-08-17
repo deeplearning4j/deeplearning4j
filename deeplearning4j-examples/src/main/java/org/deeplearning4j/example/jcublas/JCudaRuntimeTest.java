@@ -40,7 +40,7 @@ public class JCudaRuntimeTest {
         System.out.println("JCUBLAS finished");
         d3 = b0.mmul(b1);
         System.out.println("Native CPU finished");
-        /*
+
         System.out.println("JCUblas output:");
         double[] d = d0.data();
         for (int i = 0; i < d.length; i++) {System.out.print (" " + Double.toString(d[i]));}
@@ -48,7 +48,7 @@ public class JCudaRuntimeTest {
         double[] d_ = d3.data();
         for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
         System.out.println("");
-        */
+
 
 
         JCuda.cudaFree(pointer);

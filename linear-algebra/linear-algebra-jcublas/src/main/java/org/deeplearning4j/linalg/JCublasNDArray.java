@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static jcuda.jcublas.JCublas.cublasGetError;
 import static org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
 import static org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
 
@@ -1067,7 +1068,7 @@ public class JCublasNDArray implements INDArray {
         /* check sizes and resize if necessary */
         assertMultipliesWith(otherArray);
         JCublas.cublasInit();
-        //setExceptionsEnabled(true);
+        JCublas.setExceptionsEnabled(true);
 
 
         if (result == this || result == other) {
@@ -1219,19 +1220,21 @@ public class JCublasNDArray implements INDArray {
                 Pointer d_B = new Pointer();
                 Pointer d_C = new Pointer();
 
-                JCublas.cublasSetMatrix(
-                        columns(),
-                        rows(),
-                        Sizeof.FLOAT,
-                        Pointer.to(data()),
+                JCublas.cublasAlloc(data.length, Sizeof.DOUBLE, d_A);
+                JCublas.cublasAlloc(other.data().length, Sizeof.DOUBLE, d_B);
+                JCublas.cublasAlloc(data.length, Sizeof.DOUBLE, d_C);
+
+                JCublas.cublasSetVector(
+                        data.length,
+                        Sizeof.DOUBLE,
+                        Pointer.to(data),
                         1,
                         d_A,
                         1
                 );
-                JCublas.cublasSetMatrix(
-                        other.columns(),
-                        other.rows(),
-                        Sizeof.FLOAT,
+                JCublas.cublasSetVector(
+                        other.data().length,
+                        Sizeof.DOUBLE,
                         Pointer.to(otherArray.data()),
                         1,
                         d_B,
@@ -1240,34 +1243,38 @@ public class JCublasNDArray implements INDArray {
                 JCublas.cublasSgemm(
                         'n',
                         'n',
-                        otherArray.rows(),  // m
-                        columns(),          // n
-                        otherArray.columns(), // k
+                        rows(),  // m
+                        otherArray.columns(),          // n
+                        otherArray.rows(), // k
                         1,                  // alpha
                         d_A,
-                        1,                  // lda
+                        otherArray.rows(),  // lda
                         d_B,
-                        1,                  // ldb
+                        otherArray.columns(),          // ldb
                         0,                  // beta
                         d_C,
-                        1);                 // ldc
-                float[] C = new float[otherArray.rows() * columns()];
+                        rows());                 // ldc
+
+                double[] C = new double[length];
                 JCublas.cublasGetVector(
-                        otherArray.rows()*columns(),
-                        Sizeof.FLOAT,
+                        length,
+                        Sizeof.DOUBLE,
                         d_C,
                         1,
-                        Pointer.to(C),
+                        Pointer.to(resultArray.data),
                         1);
+                /*
                 System.err.printf("%d * %d matrix computed\n", resultArray.rows, resultArray.columns);
                 double[] d_ = resultArray.data();
                 System.err.printf("%f matrix result [0]\n", C[0]);
-                for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
+                for (int i = 0; i < C.length; i++) {System.out.print(" " + Double.toString(C[i]));}
                 System.out.println("");
+                */
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
             }
         }
 
+        System.out.println(cublasGetError());
         JCublas.cublasShutdown();
 
         return resultArray;
