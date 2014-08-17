@@ -3,7 +3,7 @@ layout: default
 ---
 
 *to run examples, go to our [quickstart](../quickstart.html)*
-#getting started
+#Getting Started
 
 1. DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
 
