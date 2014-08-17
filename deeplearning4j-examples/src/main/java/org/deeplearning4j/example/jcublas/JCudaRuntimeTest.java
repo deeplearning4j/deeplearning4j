@@ -14,40 +14,48 @@ import org.deeplearning4j.nn.linalg.NDArray;
 public class JCudaRuntimeTest {
     public static void main(String args[]) {
         Pointer pointer = new Pointer();
-        int n = 10;
-        int[] shape = new int[2];
-        shape[0] = n;
-        shape[1] = n;
-        double[] b = new double[n*n];
-        for (int i = 0; i < n*n; i++) {b[i] = 1;}
-        double[] c = new double[n*n];
-        for (int i = 0; i < n*n; i++) {c[i] = 2;}
+        int n = 5000;
+        int finagle = 1;
+        int nn = n * (n + finagle);
+        double[] b = new double[nn];
+        for (int i = 0; i < nn; i++) {b[i] = 1;}
+        double[] c = new double[nn];
+        for (int i = 0; i < nn; i++) {c[i] = 2;}
 
-        INDArray a0 = new JCublasNDArray(n,n,b);
-        INDArray a1 = new JCublasNDArray(n,n,c);
+        INDArray a0 = new JCublasNDArray(b,new int[]{n,n+finagle});
+        INDArray a1 = new JCublasNDArray(c,new int[]{n+finagle,n});
 
-        NDArray b0 = new NDArray(b,new int[]{n,n});
-        NDArray b1 = new NDArray(c,new int[]{n,n});
+        NDArray b0 = new NDArray(b,new int[]{n,n+finagle});
+        NDArray b1 = new NDArray(c,new int[]{n+finagle,n});
 
-        INDArray d1 = new JCublasNDArray(new double[]{1.0},new int[]{1,1});
-        INDArray d2 = new JCublasNDArray(new double[]{1.0},new int[]{1,1});
-        INDArray e1 = new JCublasNDArray(2,2,new double[]{1,2,3,4});
-        INDArray e2 = new JCublasNDArray(2,2,new double[]{1,2,3,4});
-        INDArray d0 = d1.mmul(d2);
+
+        INDArray d0;
         NDArray d3;
 
+        long start = System.nanoTime();
         d0 = a0.mmul(a1);
-        System.out.println("JCUBLAS finished");
-        d3 = b0.mmul(b1);
-        System.out.println("Native CPU finished");
+        long time = System.nanoTime() - start;
+        System.out.printf("JCUBLAS (%d x %d) finished in %,d ns%n", d0.rows(), d0.columns(), time);
 
-        System.out.println("JCUblas output:");
-        double[] d = d0.data();
-        for (int i = 0; i < d.length; i++) {System.out.print (" " + Double.toString(d[i]));}
-        System.out.println("\nNative CPU output:");
-        double[] d_ = d3.data();
-        for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
-        System.out.println("");
+        start = System.nanoTime();
+        d3 = b0.mmul(b1);
+        time = System.nanoTime() - start;
+        System.out.printf("Native CPU (%d x %d) finished %,d ns%n", d0.rows(), d0.columns(), time);
+
+        if (n < 20) {
+            System.out.println("JCUblas output:");
+            double[] d = d0.data();
+            for (int i = 0; i < d.length; i++) {
+                System.out.print(" " + Double.toString(d[i]));
+            }
+
+            System.out.println("\nNative CPU output:");
+            double[] d_ = d3.data();
+            for (int i = 0; i < d_.length; i++) {
+                System.out.print(" " + Double.toString(d_[i]));
+            }
+            System.out.println("");
+        }
 
 
 
