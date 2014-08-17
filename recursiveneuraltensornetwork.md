@@ -48,3 +48,5 @@ Finally, word vectors can be taken from Word2vec and substituted for the words i
 
 [Recursive Deep Models for Semantic Compositionality over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf); Richard Socher, Alex Perelygin, Jean Y. Wu, Jason Chuang,
 Christopher D. Manning, Andrew Y. Ng and Christopher Potts; 2013; Stanford University.
+
+*N.B. We'll be updating this page with code snippets from an example soon.*
