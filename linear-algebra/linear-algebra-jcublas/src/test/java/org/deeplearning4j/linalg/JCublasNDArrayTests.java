@@ -32,16 +32,21 @@ public class JCublasNDArrayTests {
 
     @Test
     public void testScalarOps() {
-        INDArray n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
-        assertEquals(27d,n.length(),1e-1);
-        n.checkDimensions(n.addi(JCublasNDArray.scalar(1d)));
-        n.checkDimensions(n.subi(JCublasNDArray.scalar(1.0d)));
-        n.checkDimensions(n.muli(JCublasNDArray.scalar(1.0d)));
-        n.checkDimensions(n.divi(JCublasNDArray.scalar(1.0d)));
 
+        JCublasNDArray n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
+
+        assertEquals(27d,n.length(),1e-1);
+
+        n.checkDimensions(n.addi(NDArrays.scalar(1d)));
+
+        n.checkDimensions(n.subi(NDArrays.scalar(1.0d)));
+        n.checkDimensions(n.muli(NDArrays.scalar(1.0d)));
+        n.checkDimensions(n.divi(NDArrays.scalar(1.0d)));
         n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
+
         assertEquals(27,(double) n.sum(Integer.MAX_VALUE).element(),1e-1);
-        INDArray a = n.slice(2);
+
+        JCublasNDArray a = n.slice(2);
         assertEquals(true,Arrays.equals(new int[]{3,3},a.shape()));
 
     }
@@ -71,7 +76,7 @@ public class JCublasNDArrayTests {
     public void testWrap() {
         int[] shape = {2,4};
         JCublasNDArray d = JCublasNDArray.linspace(1,8,8).reshape(shape[0],shape[1]);
-        INDArray n = JCublasNDArray.wrap(d);
+        JCublasNDArray n = JCublasNDArray.wrap(d);
         assertEquals(d.rows,n.rows());
         assertEquals(d.columns,n.columns());
 
@@ -86,8 +91,8 @@ public class JCublasNDArrayTests {
         JCublasNDArray row12 = JCublasNDArray.linspace(1,2,2).reshape(2,1);
         JCublasNDArray row22 = JCublasNDArray.linspace(3,4,2).reshape(1,2);
 
-        INDArray row122 = JCublasNDArray.wrap(row12);
-        INDArray row222 = JCublasNDArray.wrap(row22);
+        JCublasNDArray row122 = JCublasNDArray.wrap(row12);
+        JCublasNDArray row222 = JCublasNDArray.wrap(row22);
         assertEquals(row122.rows(),2);
         assertEquals(row122.columns(),1);
         assertEquals(row222.rows(),1);
@@ -339,8 +344,8 @@ public class JCublasNDArrayTests {
 
     @Test
     public void testPutSlice() {
-        INDArray n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
-        INDArray newSlice = JCublasNDArray.wrap(JCublasNDArray.zeros(3,3));
+        JCublasNDArray n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
+        JCublasNDArray newSlice = JCublasNDArray.wrap(JCublasNDArray.zeros(3,3));
         n.putSlice(0,newSlice);
         assertEquals(newSlice,n.slice(0));
 
@@ -365,7 +370,9 @@ public class JCublasNDArrayTests {
 
     @Test
     public void testSlice() {
+
         assertEquals(8,n.length());
+
         assertEquals(true,Arrays.equals(new int[]{2,2,2},n.shape()));
         INDArray slice = n.slice(0);
         assertEquals(true, Arrays.equals(new int[]{2, 2}, slice.shape()));
@@ -381,14 +388,9 @@ public class JCublasNDArrayTests {
         INDArray testSlice0 = arr.slice(0);
         INDArray testSlice1 = arr.slice(1);
 
-        assertEquals(slice0,testSlice0);
-        assertEquals(slice2,testSlice1);
-
-
-
-
-
-
+        assertEquals(slice0.equals(testSlice0), true);
+        assertEquals(slice2.equals(testSlice1), true);
+        assertEquals(slice2.equals(testSlice0), false);
 
     }
 

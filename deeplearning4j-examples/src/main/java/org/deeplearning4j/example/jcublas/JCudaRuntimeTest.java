@@ -31,6 +31,8 @@ public class JCudaRuntimeTest {
 
         INDArray d0;
         NDArray d3;
+        JCublasNDArray z;
+        z = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
 
         long start = System.nanoTime();
         d0 = a0.mmul(a1);

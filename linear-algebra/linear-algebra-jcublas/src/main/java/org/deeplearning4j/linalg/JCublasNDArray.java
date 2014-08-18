@@ -2444,4 +2444,66 @@ public class JCublasNDArray implements INDArray {
         this(len, 1, new double[len]);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        JCublasNDArray n = null;
+        if(o instanceof  JCublasNDArray && !(o instanceof JCublasNDArray)) {
+            JCublasNDArray d = (JCublasNDArray) o;
+            //chance for comparison of the matrices if the shape of this matrix is 2
+            if(shape().length > 2)
+                return false;
+
+            else
+                n = JCublasNDArray.wrap(d);
+
+
+        }
+        else if(!o.getClass().isAssignableFrom(JCublasNDArray.class))
+            return false;
+
+        if(n == null)
+            n = (JCublasNDArray) o;
+
+        //epsilon equals
+        if(isScalar() && n.isScalar()) {
+            double val = (double) element();
+            double val2 = (double) n.element();
+            return Math.abs(val - val2) < 1e-6;
+        }
+        else if(isVector() && n.isVector()) {
+            for(int i = 0; i < length; i++) {
+                double curr = (double) getScalar(i).element();
+                double comp = (double) n.getScalar(i).element();
+                if(Math.abs(curr - comp) > 1e-6)
+                    return false;
+            }
+
+            if(!Shape.shapeEquals(shape(),n.shape()))
+                return false;
+
+            return true;
+
+        }
+
+
+        if(!Shape.shapeEquals(shape(),n.shape()))
+            return false;
+
+
+
+        if(slices() != n.slices())
+            return false;
+
+        for (int i = 0; i < slices(); i++) {
+            JCublasNDArray slice = slice(i);
+            JCublasNDArray nSlice = n.slice(i);
+
+            if (!slice.equals(nSlice))
+                return false;
+        }
+
+        return true;
+
+
+    }
 }
