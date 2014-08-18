@@ -1,12 +1,12 @@
 package org.deeplearning4j.example.text;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.PosUimaTokenizerFactory;

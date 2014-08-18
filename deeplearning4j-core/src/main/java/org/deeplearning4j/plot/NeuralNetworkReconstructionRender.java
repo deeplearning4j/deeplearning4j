@@ -1,10 +1,10 @@
 package org.deeplearning4j.plot;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.jblas.DoubleMatrix;
 
 /**
  *
@@ -24,12 +24,12 @@ public class NeuralNetworkReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct =  network.reconstruct(first.getFirst());
+            INDArray reconstruct =  network.reconstruct(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
-                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = reconstructed2.mul(255);
+                INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);
+                INDArray reconstructed2 = reconstruct.getRow(j);
+                INDArray draw2 = reconstructed2.mul(255);
 
                 DrawReconstruction d = new DrawReconstruction(draw1);
                 d.title = "REAL";

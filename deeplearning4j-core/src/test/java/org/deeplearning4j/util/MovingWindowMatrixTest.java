@@ -1,5 +1,7 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,12 +19,12 @@ public class MovingWindowMatrixTest {
 
     @Test
     public void testMovingWindow() {
-        DoubleMatrix ones = DoubleMatrix.ones(4,4);
+        INDArray ones = NDArrays.ones(4, 4);
         MovingWindowMatrix m = new MovingWindowMatrix(ones,2,2);
-        List<DoubleMatrix> windows = m.windows();
+        List<INDArray> windows = m.windows();
         assertEquals(4,windows.size());
         MovingWindowMatrix m2 = new MovingWindowMatrix(ones,2,2,true);
-        List<DoubleMatrix> windowsRotate  = m2.windows();
+        List<INDArray> windowsRotate  = m2.windows();
         assertEquals(16,windowsRotate.size());
 
 

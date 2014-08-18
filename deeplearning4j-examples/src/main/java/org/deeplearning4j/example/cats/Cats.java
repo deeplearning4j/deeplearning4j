@@ -1,12 +1,12 @@
 package org.deeplearning4j.example.cats;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +33,10 @@ public class Cats {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             next.normalizeZeroMeanZeroUnitVariance();
-            dbn.pretrain(next.getFirst(), 1, 1e-1, 10000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1, 10000);
             FilterRenderer render = new FilterRenderer();
-            DoubleMatrix w = dbn.getLayers()[0].getW();
-            render.renderFilters(w, "currimg.png", (int)Math.sqrt(w.rows) , (int) Math.sqrt(w.rows),10);
+            INDArray w = dbn.getLayers()[0].getW();
+            render.renderFilters(w, "currimg.png", (int)Math.sqrt(w.rows()) , (int) Math.sqrt(w.rows()),10);
 
 
 

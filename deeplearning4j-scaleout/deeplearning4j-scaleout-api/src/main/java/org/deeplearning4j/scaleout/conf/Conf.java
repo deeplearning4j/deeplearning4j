@@ -5,20 +5,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.SerializationUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.OutputLayer;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.activation.Sigmoid;
-import org.deeplearning4j.nn.activation.SoftMax;
+
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.jblas.DoubleMatrix;
+
 
 /**
  * Conf used for distributed deep learning
@@ -56,8 +56,8 @@ public class Conf implements Serializable,Cloneable {
     private Map<Integer,Integer> renderEpochsByLayer = new HashMap<>();
     private int renderWeightEpochs = -1;
     private String masterAbsPath;
-    private DoubleMatrix columnMeans;
-    private DoubleMatrix columnStds;
+    private INDArray columnMeans;
+    private INDArray columnStds;
     private boolean useAdaGrad = false;
     private boolean useBackProp = true;
     private double dropOut;
@@ -368,16 +368,16 @@ public class Conf implements Serializable,Cloneable {
 
 
 
-    public synchronized DoubleMatrix getColumnMeans() {
+    public synchronized INDArray getColumnMeans() {
         return columnMeans;
     }
-    public synchronized void setColumnMeans(DoubleMatrix columnMeans) {
+    public synchronized void setColumnMeans(INDArray columnMeans) {
         this.columnMeans = columnMeans;
     }
-    public synchronized DoubleMatrix getColumnStds() {
+    public synchronized INDArray getColumnStds() {
         return columnStds;
     }
-    public synchronized void setColumnStds(DoubleMatrix columnStds) {
+    public synchronized void setColumnStds(INDArray columnStds) {
         this.columnStds = columnStds;
     }
     public void setLayerSizes(Integer[] layerSizes) {

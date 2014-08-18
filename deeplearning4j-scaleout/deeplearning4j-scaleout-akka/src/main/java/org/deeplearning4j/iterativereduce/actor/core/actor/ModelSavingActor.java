@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import akka.actor.Cancellable;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.core.ModelSaver;

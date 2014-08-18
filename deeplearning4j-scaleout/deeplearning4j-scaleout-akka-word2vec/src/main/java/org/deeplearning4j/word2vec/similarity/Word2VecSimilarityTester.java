@@ -7,12 +7,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.loader.Word2VecLoader;
 import org.deeplearning4j.word2vec.util.Util;
-import org.jblas.FloatMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,33 +61,32 @@ public class Word2VecSimilarityTester {
 				vocab.removeAll(remove);
 				Set<String> inter = SetUtils.intersection(d1.getWordCounts().keySet(), d2.getWordCounts().keySet());
 				inter.removeAll(remove);
-				
-				
-				List<String> wordList = new ArrayList<String>(vocab);
 
-				FloatMatrix a1Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
-				FloatMatrix a2Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
+				List<String> wordList = new ArrayList<>(vocab);
+
+				INDArray a1Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
+				INDArray a2Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
 
 				for(int i = 0; i < wordList.size(); i++) {
 					if(d1.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a1Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 					}
 					else 
-						a1Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
+						a1Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
 
 					if(d2.getWordCounts().getCount(wordList.get(i)) > 0) {
 						a2Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 
 					}
 					else 
-						a2Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
+						a2Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
 
 
 
 				}
 
 				double wordSim = (double) inter.size() / (double) wordList.size();
-				double finalScore  = MatrixUtil.cosineSim(a1Matrix, a2Matrix) * wordSim;
+				double finalScore  = Transforms.cosineSim(a1Matrix, a2Matrix) * wordSim;
 
 				if(finalScore >= 0.035) {
 					log.info(f1.getName() + " is similar to " + f2.getName() + " with score " + finalScore);

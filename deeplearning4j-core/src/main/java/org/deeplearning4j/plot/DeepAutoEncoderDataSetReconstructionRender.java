@@ -1,12 +1,12 @@
 package org.deeplearning4j.plot;
 
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
+
 
 /**
  * Iterates through a dataset and draws reconstructions
@@ -35,16 +35,16 @@ public class DeepAutoEncoderDataSetReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct = encoder.output(first.getFirst());
+            INDArray reconstruct = encoder.output(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
-                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
+                INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);
                 if(picDraw != null)
                     draw1 = picDraw.apply(draw1);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
+                INDArray reconstructed2 = reconstruct.getRow(j);
                 if(reconDraw != null)
                     reconstructed2 = reconDraw.apply(reconstructed2);
-                DoubleMatrix draw2 = reconstructed2.mul(255);
+                INDArray draw2 = reconstructed2.mul(255);
 
                 DrawReconstruction d = new DrawReconstruction(draw1.reshape(rows,columns));
                 d.title = "REAL";

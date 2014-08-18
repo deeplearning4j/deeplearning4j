@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.junit.Test;
 
 public class DataSetTest {
@@ -14,8 +15,8 @@ public class DataSetTest {
 		d.filterAndStrip(new int[]{2,4});
 		assertEquals(2,d.numOutcomes());
 		assertEquals(filtered.numExamples(),d.numExamples());
-		assertEquals(filtered.getFirst(),d.getFirst());
-        assertEquals(filtered.numExamples(),d.getSecond().rows);
+		assertEquals(filtered.getFeatureMatrix(),d.getFeatureMatrix());
+        assertEquals(filtered.numExamples(),d.getLabels().rows());
 		
 	
 	}

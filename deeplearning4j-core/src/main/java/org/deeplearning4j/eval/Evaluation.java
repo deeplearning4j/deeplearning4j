@@ -4,9 +4,8 @@ package org.deeplearning4j.eval;
 import java.util.Set;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 
 
 /**
@@ -31,15 +30,15 @@ public class Evaluation {
 	 * @param realOutcomes the real outcomes (usually binary)
 	 * @param guesses the guesses (usually a probability vector)
 	 */
-	public void eval(DoubleMatrix realOutcomes,DoubleMatrix guesses) {
-		if(realOutcomes.length != guesses.length)
+	public void eval(INDArray realOutcomes,INDArray guesses) {
+		if(realOutcomes.length() != guesses.length())
 			throw new IllegalArgumentException("Unable to evaluate. Outcome matrices not same length");
-		for(int i = 0; i < realOutcomes.rows; i++) {
-			DoubleMatrix currRow = realOutcomes.getRow(i);
-			DoubleMatrix guessRow = guesses.getRow(i);
+		for(int i = 0; i < realOutcomes.rows(); i++) {
+			INDArray currRow = realOutcomes.getRow(i);
+			INDArray guessRow = guesses.getRow(i);
 
-			int currMax = SimpleBlas.iamax(currRow);
-			int guessMax = SimpleBlas.iamax(guessRow);
+			int currMax = NDArrays.getBlasWrapper().iamax(currRow);
+			int guessMax = NDArrays.getBlasWrapper().iamax(guessRow);
 
 			addToConfusion(currMax,guessMax);
 

@@ -3,9 +3,11 @@ package org.deeplearning4j.datasets.fetchers;
 import au.com.bytecode.opencsv.CSV;
 import au.com.bytecode.opencsv.CSVReadProc;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -89,7 +91,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
     private void init() {
         final Set<Integer> labels = new HashSet<>();
         final List<Integer> rowLabels = new ArrayList<>();
-        final List<DoubleMatrix> features = new ArrayList<>();
+        final List<INDArray> features = new ArrayList<>();
         final AtomicInteger i1 = new AtomicInteger(-1);
         csv.read(is,new CSVReadProc() {
             @Override
@@ -103,7 +105,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
                 }
                 else if(values.length  - 1 != i1.get())
                     return;
-                Pair<DoubleMatrix,Integer> row = processRow(values);
+                Pair<INDArray,Integer> row = processRow(values);
                 rowLabels.add(row.getSecond());
                 labels.add(row.getSecond());
                 features.add(row.getFirst());
@@ -112,7 +114,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
 
         List<DataSet> l = new ArrayList<>();
         for(int i = 0; i < rowLabels.size(); i++) {
-            l.add(new DataSet(features.get(i),MatrixUtil.toOutcomeVector(rowLabels.get(i),labels.size())));
+            l.add(new DataSet(features.get(i), FeatureUtil.toOutcomeVector(rowLabels.get(i), labels.size())));
         }
 
         this.numOutcomes = labels.size();
@@ -122,7 +124,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
     }
 
 
-    private Pair<DoubleMatrix,Integer> processRow(String[] data) {
+    private Pair<INDArray,Integer> processRow(String[] data) {
 
         String label = data[labelColumn].replaceAll(".\".","");
         double labelDouble = Double.parseDouble(label);
@@ -137,7 +139,7 @@ public class CSVDataFetcher extends BaseDataFetcher {
             }
         }
         
-        DoubleMatrix d1 = new DoubleMatrix(d).reshape(1,d.length);
+        INDArray d1 = NDArrays.create(d).reshape(1,d.length);
         return new Pair<>(d1, labelVal);
     }
 

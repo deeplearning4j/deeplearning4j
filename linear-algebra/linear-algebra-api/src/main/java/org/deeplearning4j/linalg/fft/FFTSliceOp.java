@@ -1,12 +1,11 @@
 package org.deeplearning4j.linalg.fft;
 
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.DimensionSlice;
-import org.deeplearning4j.nn.linalg.NDArray;
-import org.deeplearning4j.nn.linalg.SliceOp;
-import org.jblas.ComplexDouble;
-import org.jblas.ComplexDoubleMatrix;
-import org.jblas.DoubleMatrix;
+
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrays;
 
 /**
  * FFT Slice operation
@@ -39,20 +38,46 @@ public class FFTSliceOp implements SliceOp {
      */
     @Override
     public void operate(DimensionSlice nd) {
-        if(nd.getResult() instanceof NDArray) {
-            NDArray a = (NDArray) nd.getResult();
+        if(nd.getResult() instanceof INDArray) {
+            INDArray a = (INDArray) nd.getResult();
 
-            int n = this.n < 1 ? a.length : this.n;
+            int n = this.n < 1 ? a.length() : this.n;
 
-            NDArray result = new VectorFFT(n).apply(new ComplexNDArray(a)).getReal();
-            for(int i = 0; i < result.length; i++)
-                a.put(i,result.get(i));
+            INDArray result = new VectorFFT(n).apply(NDArrays.createComplex(a)).getReal();
+            for(int i = 0; i < result.length(); i++)
+                a.put(i,result.getScalar(i));
         }
-        else if(nd.getResult() instanceof ComplexNDArray) {
-            ComplexNDArray a = (ComplexNDArray) nd.getResult();
-            ComplexNDArray result = new VectorFFT(n).apply(a);
-            for(int i = 0; i <result.length; i++) {
-                a.put(i,result.get(i));
+        else if(nd.getResult() instanceof IComplexNDArray) {
+            IComplexNDArray a = (IComplexNDArray) nd.getResult();
+            IComplexNDArray result = new VectorFFT(n).apply(a);
+            for(int i = 0; i <result.length(); i++) {
+                a.put(i,result.getScalar(i));
+            }
+
+        }
+    }
+
+    /**
+     * Operates on an ndarray slice
+     *
+     * @param nd the result to operate on
+     */
+    @Override
+    public void operate(INDArray nd) {
+        if(nd instanceof INDArray) {
+            INDArray a = nd;
+
+            int n = this.n < 1 ? a.length() : this.n;
+
+            INDArray result = new VectorFFT(n).apply(NDArrays.createComplex(a)).getReal();
+            for(int i = 0; i < result.length(); i++)
+                a.put(i,result.getScalar(i));
+        }
+        else if(nd instanceof IComplexNDArray) {
+            IComplexNDArray a = (IComplexNDArray) nd;
+            IComplexNDArray result = new VectorFFT(n).apply(a);
+            for(int i = 0; i <result.length(); i++) {
+                a.put(i,result.getScalar(i));
             }
 
         }

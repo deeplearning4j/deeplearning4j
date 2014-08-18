@@ -1,11 +1,11 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.util.MovingWindowMatrix;
-import org.jblas.DoubleMatrix;
-import org.jblas.ranges.RangeUtils;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +31,8 @@ public class MovingWindowDataSetFetcher extends BaseDataFetcher  {
         List<DataSet> list = data.asList();
         List<DataSet> flipped = new ArrayList<>();
         for(int i = 0; i < list.size(); i++) {
-            DoubleMatrix label = list.get(i).getSecond();
-            List<DoubleMatrix> windows = new MovingWindowMatrix(list.get(i).getFirst(),windowRows,windowColumns,true).windows(true);
+            INDArray label = list.get(i).getLabels();
+            List<INDArray> windows = new MovingWindowMatrix(list.get(i).getFeatureMatrix(),windowRows,windowColumns,true).windows(true);
             for(int j = 0; j < windows.size(); j++) {
                 flipped.add(new DataSet(windows.get(i),label));
             }
@@ -52,7 +52,7 @@ public class MovingWindowDataSetFetcher extends BaseDataFetcher  {
      */
     @Override
     public void fetch(int numExamples) {
-          initializeCurrFromList(data.get(MatrixUtil.toIndices(RangeUtils.interval(cursor,cursor + numExamples))).asList());
+          initializeCurrFromList(data.get(ArrayUtil.range(cursor, cursor + numExamples)).asList());
 
     }
 }

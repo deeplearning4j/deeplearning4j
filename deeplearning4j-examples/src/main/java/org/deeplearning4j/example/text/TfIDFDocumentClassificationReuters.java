@@ -1,8 +1,8 @@
 package org.deeplearning4j.example.text;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.ReutersNewsGroupsDataSetIterator;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
