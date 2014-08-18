@@ -81,6 +81,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
+
+
+
     /**
      * Cumulative sum along a dimension
      *
@@ -89,7 +92,42 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public INDArray cumsumi(int dimension) {
-        return null;
+        if(isVector()) {
+            double s = 0.0;
+            for (int i = 0; i < length; i++) {
+                s += (double) getScalar(i).element();
+                put(i, s);
+            }
+        }
+        else {
+            final AtomicInteger i = new AtomicInteger(0);
+            iterateOverDimension(dimension, new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray arr2 = (INDArray) nd.getResult();
+                    arr2.cumsum(0);
+
+                    i.incrementAndGet();
+                }
+
+                /**
+                 * Operates on an ndarray slice
+                 *
+                 * @param nd the result to operate on
+                 */
+                @Override
+                public void operate(INDArray nd) {
+                    INDArray arr2 = nd;
+                    arr2.cumsum(0);
+
+                    i.incrementAndGet();
+                }
+            }, false);
+
+        }
+
+
+        return this;
     }
 
     /**
@@ -100,7 +138,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public INDArray cumsum(int dimension) {
-        return null;
+        return dup().cumsumi(dimension);
     }
 
     /**
@@ -965,14 +1003,24 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
         else {
+            if(dimension == Integer.MAX_VALUE)  {
+                for(int i = 0; i < slices(); i++) {
+                    INDArray slice = slice(i);
+                    if(slice.isVector())
+                        op.operate(slice);
+                    else {
+                        slice.iterateOverDimension(dimension,op,modify);
+                    }
 
-            int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
-            int[] stride = ArrayUtil.reverseCopy(ArrayUtil.removeIndex(this.stride,dimension));
-            for(int currSlice = 0; currSlice < shape[0]; currSlice++) {
+                }
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(this.shape,0);
+                int[] stride =  ArrayUtil.removeIndex(this.stride,0);
                 NDArray ret = new NDArray(data,
                         shape,
                         stride,
-                        currSlice);
+                        offset);
                 for(int j = 0; j < ret.slices(); j++) {
                     NDArray slice = ret.slice(j);
                     if(slice.isVector())
@@ -986,7 +1034,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
                 }
 
+
             }
+
+
 
 
 
