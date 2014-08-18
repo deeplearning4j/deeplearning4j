@@ -14,16 +14,16 @@ import org.deeplearning4j.nn.linalg.NDArray;
 public class JCudaRuntimeTest {
     public static void main(String args[]) {
         Pointer pointer = new Pointer();
-        int n = 5000;
-        int finagle = 1;
+        int n = 500;
+        int finagle = 78;
         int nn = n * (n + finagle);
         double[] b = new double[nn];
         for (int i = 0; i < nn; i++) {b[i] = 1;}
         double[] c = new double[nn];
         for (int i = 0; i < nn; i++) {c[i] = 2;}
 
-        INDArray a0 = new JCublasNDArray(b,new int[]{n,n+finagle});
-        INDArray a1 = new JCublasNDArray(c,new int[]{n+finagle,n});
+        INDArray a0 = new JCublasNDArray(b,new int[]{n-finagle,n});
+        INDArray a1 = new JCublasNDArray(c,new int[]{n,n-finagle});
 
         NDArray b0 = new NDArray(b,new int[]{n,n+finagle});
         NDArray b1 = new NDArray(c,new int[]{n+finagle,n});
@@ -34,13 +34,23 @@ public class JCudaRuntimeTest {
 
         long start = System.nanoTime();
         d0 = a0.mmul(a1);
+        System.out.printf("JCUBLAS (%dx%d * %dx%d --> %dx%d) started",a0.rows(), a0.columns(),
+                a1.rows(), a1.columns(),
+                d0.rows(), d0.columns());
+
         long time = System.nanoTime() - start;
-        System.out.printf("JCUBLAS (%d x %d) finished in %,d ns%n", d0.rows(), d0.columns(), time);
+        System.out.printf("JCUBLAS (%dx%d * %dx%d --> %dx%d) finished in %,d ns%n",
+                a0.rows(), a0.columns(),
+                a1.rows(), a1.columns(),
+                d0.rows(), d0.columns(), time);
 
         start = System.nanoTime();
         d3 = b0.mmul(b1);
         time = System.nanoTime() - start;
-        System.out.printf("Native CPU (%d x %d) finished %,d ns%n", d0.rows(), d0.columns(), time);
+        System.out.printf("Native CPU (%dx%d * %dx%d --> %dx%d) finished %,d ns%n",
+                b0.rows(), b0.columns(),
+                b1.rows(), b1.columns(),
+                d3.rows(), d3.columns(), time);
 
         if (n < 20) {
             System.out.println("JCUblas output:");

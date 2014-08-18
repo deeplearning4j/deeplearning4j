@@ -985,7 +985,55 @@ public class JCublasNDArray implements INDArray {
         return data[idx];
     }
 
+    public static JCublasNDArray ones(int rows, int columns) {
+        JCublasNDArray m = new JCublasNDArray(rows, columns);
 
+        for (int i = 0; i < rows * columns; i++) {
+            m.put(i, 1.0);
+        }
+
+        return m;
+    }
+    public static JCublasNDArray ones(int length) {
+        return ones(length, 1);
+    }
+
+    public static JCublasNDArray linspace(int lower, int upper, int size) {
+        JCublasNDArray result = new JCublasNDArray(size);
+        for (int i = 0; i < size; i++) {
+            double t = (double) i / (size - 1);
+            result.put(i, lower * (1 - t) + t * upper);
+        }
+        return result;
+    }
+
+    public JCublasNDArray reshape(int newRows, int newColumns) {
+        if (length != newRows * newColumns) {
+            throw new IllegalArgumentException(
+                    "Number of elements must not change.");
+        }
+
+        rows = newRows;
+        columns = newColumns;
+
+        return this;
+    }
+
+    public double[] toArray() {
+        double[] array = new double[length];
+
+        System.arraycopy(data, 0, array, 0, length);
+
+        return array;
+    }
+    public static JCublasNDArray zeros(int rows, int columns) {
+        return new JCublasNDArray(rows, columns);
+    }
+
+    /** Creates a row vector of given length. */
+    public static JCublasNDArray zeros(int length) {
+        return zeros(length, 1);
+    }
     public double get(int i,int j) {
         if(isColumnVector()) {
             if(j > 0)
@@ -1077,37 +1125,46 @@ public class JCublasNDArray implements INDArray {
              */
             JCublasNDArray temp = new JCublasNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
 
+            Pointer d_A = new Pointer();
+            Pointer d_B = new Pointer();
+            Pointer d_C = new Pointer();
+
+            JCublas.cublasAlloc(rows()*columns(), Sizeof.DOUBLE, d_A);
+            JCublas.cublasAlloc(other.rows()*other.columns(), Sizeof.DOUBLE, d_B);
+            JCublas.cublasAlloc(rows()*other.columns(), Sizeof.DOUBLE, d_C);
+
             if (otherArray.columns() == 1) {
-                Pointer d_A = new Pointer();
-                Pointer d_B = new Pointer();
+
 
                 JCublas.cublasSetVector(
                         otherArray.length(),
                         Sizeof.FLOAT,
-                        Pointer.to(otherArray.data()),
+                        Pointer.to(data()),
                         1,
                         d_A,
                         1);
                 JCublas.cublasSetVector(
                         length(),
                         Sizeof.FLOAT,
-                        Pointer.to(data()),
+                        Pointer.to(otherArray.data()),
                         1,
                         d_B,
                         1);
 
                 JCublas.cublasDgemv(
-                        'n',
-                        otherArray.rows(),
-                        otherArray.columns(),
-                        1,
-                        d_A,
-                        1,
-                        d_A,
-                        1,
-                        1,
-                        d_B,
-                        1);
+                        'n', //trans
+                        temp.rows(),  // m
+                        temp.columns(), // n
+                        1f, //alpha
+                        d_A, // A
+                        rows(),  // lda
+                        d_B, // x
+                        1, // incx
+                        0.0f,  // beta
+                        d_C, // y
+                        1); // incy
+
+
 
                 JCublas.cublasGetVector(
                         length(),
@@ -1120,49 +1177,46 @@ public class JCublasNDArray implements INDArray {
                 //NDArrayBlas.gemv(1.0, this, otherArray, 0.0, temp);
             } else
             {
-                Pointer d_A = new Pointer();
-                Pointer d_B = new Pointer();
-                Pointer d_C = new Pointer();
 
-                JCublas.cublasSetMatrix(
-                        columns(),
-                        rows(),
-                        Sizeof.FLOAT,
-                        Pointer.to(data()),
+                JCublas.cublasSetVector(
+                        data.length,
+                        Sizeof.DOUBLE,
+                        Pointer.to(data),
                         1,
                         d_A,
                         1
-                        );
-                JCublas.cublasSetMatrix(
-                        other.columns(),
-                        other.rows(),
-                        Sizeof.FLOAT,
+                );
+                JCublas.cublasSetVector(
+                        other.data().length,
+                        Sizeof.DOUBLE,
                         Pointer.to(otherArray.data()),
                         1,
                         d_B,
                         1
                 );
-                JCublas.cublasSgemm(
+                JCublas.cublasDgemm(
                         'n',
                         'n',
-                        otherArray.rows(),
-                        columns(),
-                        otherArray.columns(),
-                        1,
+                        temp.rows(),  // m
+                        temp.columns(),   // n
+                        temp.columns(), // k
+                        1f,  // alpha
                         d_A,
-                        1,
+                        rows(),  // lda
                         d_B,
-                        1,
-                        0,
+                        otherArray.rows(), // ldb
+                        0.0f,  // beta
                         d_C,
-                        1);
+                        temp.rows());  // ldc
+
                 JCublas.cublasGetVector(
-                        length(),
-                        Sizeof.FLOAT,
+                        resultArray.length(),
+                        Sizeof.DOUBLE,
                         d_C,
                         1,
                         Pointer.to(temp.data),
                         1);
+
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, temp);
             }
 
@@ -1171,10 +1225,16 @@ public class JCublasNDArray implements INDArray {
 
         } else
         {
+            Pointer d_A = new Pointer();
+            Pointer d_B = new Pointer();
+            Pointer d_C = new Pointer();
+
+            JCublas.cublasAlloc(rows()*columns(), Sizeof.DOUBLE, d_A);
+            JCublas.cublasAlloc(otherArray.rows()*otherArray.columns(), Sizeof.DOUBLE, d_B);
+            JCublas.cublasAlloc(rows()*otherArray.columns(), Sizeof.DOUBLE, d_C);
+
             if (otherArray.columns() == 1) {
-                Pointer d_A = new Pointer();
-                Pointer d_B = new Pointer();
-                Pointer d_C = new Pointer();
+
 
                 JCublas.cublasSetVector(
                         otherArray.length(),
@@ -1192,17 +1252,18 @@ public class JCublasNDArray implements INDArray {
                         1);
 
                 JCublas.cublasDgemv(
-                        'n',
-                        otherArray.rows(),
-                        otherArray.columns(),
-                        1,
-                        d_A,
-                        1,
-                        d_B,
-                        1,
-                        1,
-                        d_C,
-                        1);
+                        'n', //trans
+                        resultArray.rows(),  // m
+                        resultArray.columns(), // n
+                        1f, //alpha
+                        d_A, // A
+                        rows(),  // lda
+                        d_B, // x
+                        1, // incx
+                        0.0f,  // beta
+                        d_C, // y
+                        1); // incy
+
 
                 JCublas.cublasGetVector(
                         length(),
@@ -1216,13 +1277,7 @@ public class JCublasNDArray implements INDArray {
             }
             else
             {
-                Pointer d_A = new Pointer();
-                Pointer d_B = new Pointer();
-                Pointer d_C = new Pointer();
 
-                JCublas.cublasAlloc(rows()*columns(), Sizeof.DOUBLE, d_A);
-                JCublas.cublasAlloc(other.rows()*other.columns(), Sizeof.DOUBLE, d_B);
-                JCublas.cublasAlloc(rows()*other.columns(), Sizeof.DOUBLE, d_C);
 
                 JCublas.cublasSetVector(
                         data.length,
@@ -1244,18 +1299,17 @@ public class JCublasNDArray implements INDArray {
                         'n',
                         'n',
                         resultArray.rows(),  // m
-                        resultArray.columns(),          // n
+                        resultArray.columns(),   // n
                         resultArray.columns(), // k
-                        1f,                  // alpha
+                        1f,  // alpha
                         d_A,
                         rows(),  // lda
                         d_B,
-                        otherArray.rows(),          // ldb
-                        0.0f,                  // beta
+                        otherArray.rows(), // ldb
+                        0.0f,  // beta
                         d_C,
-                        resultArray.rows());                 // ldc
+                        resultArray.rows());  // ldc
 
-                double[] C = new double[rows()*other.columns()];
                 JCublas.cublasGetVector(
                         resultArray.length(),
                         Sizeof.DOUBLE,
@@ -1264,17 +1318,17 @@ public class JCublasNDArray implements INDArray {
                         Pointer.to(resultArray.data),
                         1);
 
-                /*
-                JCublasNDArray ret = new JCublasNDArray(C);
-                resultArray = ret;
+
+                //JCublasNDArray ret = new JCublasNDArray(C);
+                //resultArray = ret;
                 System.err.printf("%d * %d matrix computed\n", resultArray.rows, resultArray.columns);
                 double[] d_ = resultArray.data();
-                System.err.printf("%f matrix result [0]\n", C[0]);
-                for (int i = 0; i < C.length; i++) {System.out.print(" " + Double.toString(C[i]));}
+                System.err.printf("%f matrix result [0]\n", resultArray.data[0]);
+                for (int i = 0; i < resultArray.length; i++) {System.out.print(" " + Double.toString(resultArray.data[i]));}
                 System.out.println("");
                 for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
                 System.out.println("");
-                */
+
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
             }
         }
