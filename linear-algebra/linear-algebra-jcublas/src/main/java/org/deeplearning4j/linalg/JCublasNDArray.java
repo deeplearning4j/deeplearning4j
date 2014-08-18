@@ -81,7 +81,7 @@ public class JCublasNDArray implements INDArray {
         initShape(new int[]{rows,columns});
 
         data = newData;
-        System.err.printf("%d * %d matrix created\n", rows, columns);
+        //System.err.printf("%d * %d matrix created\n", rows, columns);
     }
     public JCublasNDArray(double[] data,int[] shape,int[] stride,int offset) {
         if(offset >= data.length)
@@ -1012,11 +1012,7 @@ public class JCublasNDArray implements INDArray {
             throw new IllegalArgumentException(
                     "Number of elements must not change.");
         }
-
-        rows = newRows;
-        columns = newColumns;
-
-        return this;
+        return reshape(new int[]{newRows,newColumns});
     }
 
     public double[] toArray() {

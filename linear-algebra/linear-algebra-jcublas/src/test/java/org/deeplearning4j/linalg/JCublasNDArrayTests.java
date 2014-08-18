@@ -77,6 +77,7 @@ public class JCublasNDArrayTests {
         int[] shape = {2,4};
         JCublasNDArray d = JCublasNDArray.linspace(1,8,8).reshape(shape[0],shape[1]);
         JCublasNDArray n = JCublasNDArray.wrap(d);
+
         assertEquals(d.rows,n.rows());
         assertEquals(d.columns,n.columns());
 
@@ -97,9 +98,6 @@ public class JCublasNDArrayTests {
         assertEquals(row122.columns(),1);
         assertEquals(row222.rows(),1);
         assertEquals(row222.columns(),2);
-
-
-
     }
 
 
