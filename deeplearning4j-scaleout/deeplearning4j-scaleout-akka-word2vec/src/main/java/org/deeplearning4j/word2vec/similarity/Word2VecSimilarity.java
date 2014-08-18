@@ -5,12 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.util.Util;
-import org.jblas.DoubleMatrix;
-import org.jblas.FloatMatrix;
 
 
 /**
@@ -72,25 +72,25 @@ public class Word2VecSimilarity {
 		inter.removeAll(remove);
 		
 		//words to be processed: need indexing
-		List<String> wordList = new ArrayList<String>(vocab);
+		List<String> wordList = new ArrayList<>(vocab);
 
 		//the word embeddings (each row is a word)
-		FloatMatrix a1Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
-        FloatMatrix a2Matrix = new FloatMatrix(wordList.size(),vec.getLayerSize());
+		INDArray a1Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
+        INDArray a2Matrix = NDArrays.create(wordList.size(), vec.getLayerSize());
 
 		for(int i = 0; i < wordList.size(); i++) {
 			if(d1.getWordCounts().getCount(wordList.get(i)) > 0) {
 				a1Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 			}
 			else 
-				a1Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
+				a1Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
 
 			if(d2.getWordCounts().getCount(wordList.get(i)) > 0) {
 				a2Matrix.putRow(i,vec.getWordVectorMatrix(wordList.get(i)));
 
 			}
 			else 
-				a2Matrix.putRow(i, FloatMatrix.zeros(vec.getLayerSize()));
+				a2Matrix.putRow(i, NDArrays.zeros(vec.getLayerSize()));
 
 
 
@@ -99,7 +99,7 @@ public class Word2VecSimilarity {
 		//percent of words that overlap
 		float wordSim = (float) inter.size() / (float) wordList.size();
 		//cosine similarity of the word embeddings * percent of words that overlap (this is a weight to add a decision boundary)
-        float finalScore  = (float) MatrixUtil.cosineSim(a1Matrix, a2Matrix) * wordSim;
+        float finalScore  = (float) Transforms.cosineSim(a1Matrix, a2Matrix) * wordSim;
 		//threshold is >= 0.05 for any articles that are similar
 		distance = finalScore;
 	} 

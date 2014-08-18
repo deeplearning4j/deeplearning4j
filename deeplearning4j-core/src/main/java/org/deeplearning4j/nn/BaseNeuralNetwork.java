@@ -1,10 +1,7 @@
 package org.deeplearning4j.nn;
 
-import static org.deeplearning4j.util.MatrixUtil.log;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-import static org.deeplearning4j.util.MatrixUtil.sqrt;
-import static org.jblas.MatrixFunctions.pow;
+
+import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,13 +17,14 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.util.Dl4jReflection;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,15 +58,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      **/
     protected int nHidden;
     /* Weight matrix */
-    protected DoubleMatrix W;
+    protected INDArray W;
     /* hidden bias */
-    protected DoubleMatrix hBias;
+    protected INDArray hBias;
     /* visible bias */
-    protected DoubleMatrix vBias;
+    protected INDArray vBias;
     /* RNG for sampling. */
     protected RandomGenerator rng;
     /* input to the network */
-    protected DoubleMatrix input;
+    protected INDArray input;
     /* sparsity target */
     protected double sparsity = 0;
     /* momentum for learning */
@@ -89,15 +87,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     //use only when binary hidden layers are active
     protected boolean applySparsity = false;
     protected double dropOut = 0;
-    protected DoubleMatrix doMask;
-    protected DoubleMatrix gvMask;
+    protected INDArray doMask;
+    protected INDArray gvMask;
     protected OptimizationAlgorithm optimizationAlgo;
     protected LossFunction lossFunction;
     private static Logger log = LoggerFactory.getLogger(BaseNeuralNetwork.class);
     //cache input when training?
     protected boolean cacheInput;
     //previous gradient used for updates
-    protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
+    protected INDArray wGradient,vBiasGradient,hBiasGradient;
 
     protected int lastMiniBatchSize = 1;
 
@@ -122,11 +120,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param nVisible the number of outbound nodes
      * @param nHidden the number of nodes in the hidden layer
      * @param W the weights for this vector, maybe null, if so this will
-     * create a matrix with nHidden x nVisible dimensions.
+     * createComplex a matrix with nHidden x nVisible dimensions.
      * @param rng the rng, if not a seed of 1234 is used.
      */
     public BaseNeuralNetwork(int nVisible, int nHidden,
-                             DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn,dist);
 
     }
@@ -137,11 +135,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param nVisible the number of outbound nodes
      * @param nHidden the number of nodes in the hidden layer
      * @param W the weights for this vector, maybe null, if so this will
-     * create a matrix with nHidden x nVisible dimensions.
+     * createComplex a matrix with nHidden x nVisible dimensions.
      * @param rng the rng, if not a seed of 1234 is used.
      */
-    public BaseNeuralNetwork(DoubleMatrix input, int nVisible, int nHidden,
-                             DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+    public BaseNeuralNetwork(INDArray input, int nVisible, int nHidden,
+                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         this.nVisible = nVisible;
         if(dist != null)
             this.dist = dist;
@@ -157,16 +155,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             this.rng = rng;
         this.W = W;
         if(this.W != null)
-            this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+            this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
         this.vBias = vbias;
         if(this.vBias != null)
-            this.vBiasAdaGrad = new AdaGrad(this.vBias.rows,this.vBias.columns);
+            this.vBiasAdaGrad = new AdaGrad(this.vBias.rows(),this.vBias.columns());
 
 
         this.hBias = hbias;
         if(this.hBias != null)
-            this.hBiasAdaGrad = new AdaGrad(this.hBias.rows,this.hBias.columns);
+            this.hBiasAdaGrad = new AdaGrad(this.hBias.rows(),this.hBias.columns());
 
 
         initWeights();
@@ -186,7 +184,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public double l2RegularizedCoefficient() {
-        return (MatrixFunctions.pow(getW(),2).sum()/ 2.0)  * l2 + 1e-6;
+        return ((double) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0)  * l2 + 1e-6;
     }
 
     /**
@@ -221,17 +219,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 		 */
         if(this.W == null) {
 
-            this.W = DoubleMatrix.zeros(nVisible,nHidden);
+            this.W = NDArrays.zeros(nVisible,nHidden);
 
-            for(int i = 0; i < this.W.rows; i++)
-                this.W.putRow(i,new DoubleMatrix(dist.sample(this.W.columns)));
+            for(int i = 0; i < this.W.rows(); i++)
+                this.W.putRow(i,NDArrays.create(dist.sample(this.W.columns())));
 
         }
 
-        this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+        this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
         if(this.hBias == null) {
-            this.hBias = DoubleMatrix.zeros(nHidden);
+            this.hBias = NDArrays.zeros(nHidden);
 			/*
 			 * Encourage sparsity.
 			 * See Hinton's Practical guide to RBMs
@@ -239,21 +237,21 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             //this.hBias.subi(4);
         }
 
-        this.hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
+        this.hBiasAdaGrad = new AdaGrad(hBias.rows(),hBias.columns());
 
 
         if(this.vBias == null) {
             if(this.input != null) {
 
-                this.vBias = DoubleMatrix.zeros(nVisible);
+                this.vBias = NDArrays.zeros(nVisible);
 
 
             }
             else
-                this.vBias = DoubleMatrix.zeros(nVisible);
+                this.vBias = NDArrays.zeros(nVisible);
         }
 
-        this.vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
+        this.vBiasAdaGrad = new AdaGrad(vBias.rows(),vBias.columns());
 
 
     }
@@ -264,7 +262,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     @Override
     public void resetAdaGrad(double lr) {
         if(!firstTimeThrough) {
-            this.wAdaGrad = new AdaGrad(this.getW().rows,this.getW().columns,lr);
+            this.wAdaGrad = new AdaGrad(this.getW().rows(),this.getW().columns(),lr);
             firstTimeThrough = false;
         }
 
@@ -333,7 +331,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             if(plotIterations > 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 if(iterations % plotIterations == 0) {
-                    plotter.plotNetworkGradient(this,getGradient(extraParams),getInput().rows);
+                    plotter.plotNetworkGradient(this,getGradient(extraParams),getInput().rows());
                 }
             }
 
@@ -388,14 +386,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param hBiasGradient the hbias gradient to apply to
      * @param learningRate the learning rate used
      */
-    protected void applySparsity(DoubleMatrix hBiasGradient,double learningRate) {
+    protected void applySparsity(INDArray hBiasGradient,double learningRate) {
 
         if(useAdaGrad) {
-            DoubleMatrix change = this.hBiasAdaGrad.getLearningRates(hBias).neg().mul(sparsity).mul(hBiasGradient.mul(sparsity));
+            INDArray change = this.hBiasAdaGrad.getLearningRates(hBias).neg().mul(sparsity).mul(hBiasGradient.mul(sparsity));
             hBiasGradient.addi(change);
         }
         else {
-            DoubleMatrix change = hBiasGradient.mul(sparsity).mul(-learningRate * sparsity);
+            INDArray change = hBiasGradient.mul(sparsity).mul(-learningRate * sparsity);
             hBiasGradient.addi(change);
 
         }
@@ -418,10 +416,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param learningRate the learning rate for the current iteration
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
-        DoubleMatrix wGradient = gradient.getwGradient();
+        INDArray wGradient = gradient.getwGradient();
 
-        DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
-        DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
+        INDArray hBiasGradient = gradient.gethBiasGradient();
+        INDArray vBiasGradient = gradient.getvBiasGradient();
 
         //reset adagrad history
         if(iteration != 0 && resetAdaGradIterations > 0 &&  iteration % resetAdaGradIterations == 0) {
@@ -429,19 +427,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             hBiasAdaGrad.historicalGradient = null;
             vBiasAdaGrad.historicalGradient = null;
             if(this.W != null && this.wAdaGrad == null)
-                this.wAdaGrad = new AdaGrad(this.W.rows,this.W.columns);
+                this.wAdaGrad = new AdaGrad(this.W.rows(),this.W.columns());
 
             if(this.vBias != null && this.vBiasAdaGrad == null)
-                this.vBiasAdaGrad = new AdaGrad(this.vBias.rows,this.vBias.columns);
+                this.vBiasAdaGrad = new AdaGrad(this.vBias.rows(),this.vBias.columns());
 
 
             if(this.hBias != null && this.hBiasAdaGrad == null)
-                this.hBiasAdaGrad = new AdaGrad(this.hBias.rows,this.hBias.columns);
+                this.hBiasAdaGrad = new AdaGrad(this.hBias.rows(),this.hBias.columns());
 
             log.info("Resetting adagrad");
         }
 
-        DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
+        INDArray wLearningRates = wAdaGrad.getLearningRates(wGradient);
         //change up momentum after so many iterations if specified
         double momentum = this.momentum;
         if(momentumAfter != null && !momentumAfter.isEmpty()) {
@@ -505,9 +503,9 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
         if(constrainGradientToUnitNorm) {
-            wGradient.divi(wGradient.norm2());
-            vBiasGradient.divi(vBiasGradient.norm2());
-            hBiasGradient.divi(hBiasGradient.norm2());
+            wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
+            vBiasGradient.divi(vBiasGradient.norm2(Integer.MAX_VALUE));
+            hBiasGradient.divi(hBiasGradient.norm2(Integer.MAX_VALUE));
         }
 
 
@@ -571,7 +569,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             ret.setResetAdaGradIterations(resetAdaGradIterations);
             ret.setVBiasAdaGrad(hBiasAdaGrad);
             ret.sethBias(vBias.dup());
-            ret.setvBias(DoubleMatrix.zeros(hBias.rows,hBias.columns));
+            ret.setvBias(NDArrays.zeros(hBias.rows(),hBias.columns()));
             ret.setnHidden(getnVisible());
             ret.setnVisible(getnHidden());
             ret.setW(W.transpose());
@@ -633,7 +631,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public double mseRecon() {
-        return sqrt(pow(reconstruct(input).sub(input),2)).sum() / input.rows;
+        double recon = (double) sqrt(pow(reconstruct(input).subi(input),2)).sum(Integer.MAX_VALUE).element();
+        return recon / input.rows();
 
 
 
@@ -762,26 +761,26 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      */
     @Override
     public double negativeLogLikelihood() {
-        DoubleMatrix z = this.reconstruct(input);
+        INDArray z = this.reconstruct(input);
         if(this.useRegularization) {
-            double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+            double reg = (2 / l2) * (double) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
-            double ret = - input.mul(log(z)).add(
-                    oneMinus(input).mul(log(oneMinus(z)))).
-                    columnSums().mean() + reg;
+            double ret = - (double) input.mul(log(z)).add(
+                    input.rsub(1).muli(log(z.rsub(1)))).
+                    sum(1).mean(Integer.MAX_VALUE).element() + reg;
             if(this.normalizeByInputRows)
-                ret /= input.rows;
+                ret /= input.rows();
             return ret;
         }
 
 
 
-        double likelihood =  - input.mul(log(z)).add(
-                oneMinus(input).mul(log(oneMinus(z)))).
-                columnSums().mean();
+        double likelihood =  - (double) input.mul(log(z)).add(
+                input.rsub(1).muli(log(z.rsub(1)))).
+                sum(1).mean(Integer.MAX_VALUE).element();
 
         if(this.normalizeByInputRows)
-            likelihood /= input.rows;
+            likelihood /= input.rows();
 
 
         return likelihood;
@@ -794,19 +793,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return the negative log likelihood of the auto encoder
      * given the corruption level
      */
-    public double negativeLoglikelihood(DoubleMatrix input) {
-        DoubleMatrix z = this.reconstruct(input);
+    public double negativeLoglikelihood(INDArray input) {
+        INDArray z = this.reconstruct(input);
         if(this.useRegularization) {
-            double reg = (2 / l2) * MatrixFunctions.pow(this.W,2).sum();
+            double reg = (2 / l2) * (double) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
-            return - input.mul(log(z)).add(
-                    oneMinus(input).mul(log(oneMinus(z)))).
-                    columnSums().mean() + reg;
+            return - (double) input.mul(log(z)).add(
+                    input.rsub(1).muli(log(z.rsub(1)))).
+                    sum(1).mean(Integer.MAX_VALUE).element() + reg;
         }
 
-        return - input.mul(log(z)).add(
-                oneMinus(input).mul(log(oneMinus(z)))).
-                columnSums().mean();
+        return - (double) input.mul(log(z)).add(
+                input.rsub(1).muli(log(z.rsub(1)))).
+                sum(1).mean(Integer.MAX_VALUE).element();
     }
 
 
@@ -820,19 +819,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return reconstruction error
      */
     public double getReConstructionCrossEntropy() {
-        DoubleMatrix preSigH = input.mmul(W).addRowVector(hBias);
-        DoubleMatrix sigH = sigmoid(preSigH);
+        INDArray preSigH = input.mmul(W).addRowVector(hBias);
+        INDArray sigH = sigmoid(preSigH);
 
-        DoubleMatrix preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
-        DoubleMatrix sigV = sigmoid(preSigV);
-        DoubleMatrix inner =
+        INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
+        INDArray sigV = sigmoid(preSigV);
+        INDArray inner =
                 input.mul(log(sigV))
-                        .add(oneMinus(input)
-                                .mul(log(oneMinus(sigV))));
+                        .add(input.rsub(1)
+                                .mul(log(sigV.rsub(1))));
 
-        double ret =   inner.rowSums().mean();
+        double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
         if(normalizeByInputRows)
-            ret /= input.rows;
+            ret /= input.rows();
 
         return ret;
     }
@@ -878,15 +877,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @see org.deeplearning4j.nn.NeuralNetwork#getW()
      */
     @Override
-    public DoubleMatrix getW() {
+    public INDArray getW() {
         return W;
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setW(org.jblas.DoubleMatrix)
+     * @see org.deeplearning4j.nn.NeuralNetwork#setW(org.jblas.INDArray)
      */
     @Override
-    public void setW(DoubleMatrix w) {
+    public void setW(INDArray w) {
         W = w;
     }
 
@@ -894,15 +893,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @see org.deeplearning4j.nn.NeuralNetwork#gethBias()
      */
     @Override
-    public DoubleMatrix gethBias() {
+    public INDArray gethBias() {
         return hBias;
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#sethBias(org.jblas.DoubleMatrix)
+     * @see org.deeplearning4j.nn.NeuralNetwork#sethBias(org.jblas.INDArray)
      */
     @Override
-    public void sethBias(DoubleMatrix hBias) {
+    public void sethBias(INDArray hBias) {
         this.hBias = hBias;
     }
 
@@ -910,15 +909,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @see org.deeplearning4j.nn.NeuralNetwork#getvBias()
      */
     @Override
-    public DoubleMatrix getvBias() {
+    public INDArray getvBias() {
         return vBias;
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setvBias(org.jblas.DoubleMatrix)
+     * @see org.deeplearning4j.nn.NeuralNetwork#setvBias(org.jblas.INDArray)
      */
     @Override
-    public void setvBias(DoubleMatrix vBias) {
+    public void setvBias(INDArray vBias) {
         this.vBias = vBias;
     }
 
@@ -942,15 +941,15 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @see org.deeplearning4j.nn.NeuralNetwork#getInput()
      */
     @Override
-    public DoubleMatrix getInput() {
+    public INDArray getInput() {
         return input;
     }
 
     /* (non-Javadoc)
-     * @see org.deeplearning4j.nn.NeuralNetwork#setInput(org.jblas.DoubleMatrix)
+     * @see org.deeplearning4j.nn.NeuralNetwork#setInput(org.jblas.INDArray)
      */
     @Override
-    public void setInput(DoubleMatrix input) {
+    public void setInput(INDArray input) {
         this.input = input;
     }
 
@@ -1015,7 +1014,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     @Override
-    public DoubleMatrix output(DoubleMatrix x) {
+    public INDArray output(INDArray x) {
         return reconstruct(x);
     }
 
@@ -1028,7 +1027,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param x the input to reconstruct
      * @return the reconstructed input
      */
-    public abstract DoubleMatrix reconstruct(DoubleMatrix x);
+    public abstract INDArray reconstruct(INDArray x);
 
     /**
      * The loss function (cross entropy, reconstruction error,...)
@@ -1043,13 +1042,13 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
-    protected void applyDropOutIfNecessary(DoubleMatrix input) {
+    protected void applyDropOutIfNecessary(INDArray input) {
         if(dropOut > 0) {
-            this.doMask = DoubleMatrix.rand(input.rows, input.columns).gt(dropOut);
+            this.doMask = NDArrays.rand(input.rows(), input.columns()).gt(dropOut);
         }
 
         else
-            this.doMask = DoubleMatrix.ones(input.rows,input.columns);
+            this.doMask = NDArrays.ones(input.rows(),input.columns());
 
         //actually apply drop out
         input.muli(doMask);
@@ -1063,14 +1062,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public abstract void train(DoubleMatrix input,double lr,Object[] params);
+    public abstract void train(INDArray input,double lr,Object[] params);
 
     @Override
     public double squaredLoss() {
-        DoubleMatrix squaredDiff = pow(reconstruct(input).sub(input),2);
-        double loss = squaredDiff.columnSums().sum() / input.rows;
+        INDArray squaredDiff = pow(reconstruct(input).sub(input),2);
+        double loss = (double) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
         if(this.useRegularization) {
-            loss += 0.5 * l2 * MatrixFunctions.pow(W,2).sum();
+            loss += 0.5 * l2 * (double) pow(W,2).sum(Integer.MAX_VALUE).element();
         }
 
         return loss;
@@ -1079,22 +1078,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
     @Override
     public double mse() {
-        DoubleMatrix reconstructed = reconstruct(input);
-        DoubleMatrix diff = reconstructed.sub(input);
-        double sum = 0.5 * MatrixFunctions.pow(diff,2).columnSums().sum() / input.rows;
+        INDArray reconstructed = reconstruct(input);
+        INDArray diff = reconstructed.sub(input);
+        double sum = 0.5 * (double) pow(diff,2).sum(1).sum(Integer.MAX_VALUE).element() / input.rows();
         return sum;
     }
 
     @Override
-    public DoubleMatrix hBiasMean() {
-        DoubleMatrix hbiasMean = getInput().mmul(getW()).addRowVector(gethBias());
+    public INDArray hBiasMean() {
+        INDArray hbiasMean = getInput().mmul(getW()).addRowVector(gethBias());
         return hbiasMean;
     }
 
     //align input so it can be used in training
-    protected DoubleMatrix preProcessInput(DoubleMatrix input) {
+    protected INDArray preProcessInput(INDArray input) {
         if(concatBiases)
-            return DoubleMatrix.concatHorizontally(input,DoubleMatrix.ones(input.rows,1));
+            return NDArrays.concatHorizontally(input,NDArrays.ones(input.rows(),1));
         return input;
     }
 
@@ -1105,19 +1104,19 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return;
         if(epoch % plotEpochs == 0 || epoch == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows);
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows());
         }
     }
     public static class Builder<E extends BaseNeuralNetwork> {
         private E ret = null;
-        private DoubleMatrix W;
+        private INDArray W;
         protected Class<? extends NeuralNetwork> clazz;
-        private DoubleMatrix vBias;
-        private DoubleMatrix hBias;
+        private INDArray vBias;
+        private INDArray hBias;
         private int numVisible;
         private int numHidden;
         private RandomGenerator gen = new MersenneTwister(123);
-        private DoubleMatrix input;
+        private INDArray input;
         private double sparsity = 0.01;
         private double l2 = 0.01;
         private double momentum = 0.5;
@@ -1268,7 +1267,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return this;
         }
 
-        public Builder<E> withInput(DoubleMatrix input) {
+        public Builder<E> withInput(INDArray input) {
             this.input = input;
             return this;
         }
@@ -1279,17 +1278,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
 
-        public Builder<E> withWeights(DoubleMatrix W) {
+        public Builder<E> withWeights(INDArray W) {
             this.W = W;
             return this;
         }
 
-        public Builder<E> withVisibleBias(DoubleMatrix vBias) {
+        public Builder<E> withVisibleBias(INDArray vBias) {
             this.vBias = vBias;
             return this;
         }
 
-        public Builder<E> withHBias(DoubleMatrix hBias) {
+        public Builder<E> withHBias(INDArray hBias) {
             this.hBias = hBias;
             return this;
         }
@@ -1323,7 +1322,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 curr.setAccessible(true);
                 Class<?>[] classes = curr.getParameterTypes();
                 //input matrix found
-                if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(DoubleMatrix.class)) {
+                if(classes != null && classes.length > 0 && classes[0].isAssignableFrom(INDArray.class)) {
                     try {
                         ret = (E) curr.newInstance(input,numVisible, numHidden, W, hBias,vBias, gen,fanIn,dist);
                         ret.cacheInput = cacheInput;

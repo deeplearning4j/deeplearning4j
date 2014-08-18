@@ -1,8 +1,10 @@
 package org.deeplearning4j.word2vec.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
 import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
@@ -10,7 +12,6 @@ import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenc
 import org.deeplearning4j.word2vec.util.Window;
 import org.deeplearning4j.word2vec.util.WindowConverter;
 import org.deeplearning4j.word2vec.util.Windows;
-import org.jblas.DoubleMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,15 +163,15 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         if(windows.isEmpty())
             return null;
 
-        DoubleMatrix inputs = new DoubleMatrix(num,inputColumns());
-        for(int i = 0; i < inputs.rows; i++) {
+        INDArray inputs = NDArrays.create(num, inputColumns());
+        for(int i = 0; i < inputs.rows(); i++) {
             inputs.putRow(i, WindowConverter.asExampleMatrix(windows.get(i),vec));
         }
 
-        DoubleMatrix labelOutput = new DoubleMatrix(num,labels.size());
-        for(int i = 0; i < labelOutput.rows; i++) {
+        INDArray labelOutput =  NDArrays.create(num,labels.size());
+        for(int i = 0; i < labelOutput.rows(); i++) {
             String label = windows.get(i).getLabel();
-            labelOutput.putRow(i, MatrixUtil.toOutcomeVector(labels.indexOf(label),labels.size()));
+            labelOutput.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size()));
         }
 
         return new DataSet(inputs,labelOutput);

@@ -3,10 +3,10 @@ package org.deeplearning4j.word2vec.vectorizer;
 import java.io.InputStream;
 import java.io.File;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.vectorizer.Vectorizer;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 
 /**
  * Vectorizes text
@@ -51,6 +51,6 @@ public interface TextVectorizer extends Vectorizer {
      * @param text
      * @return
      */
-    DoubleMatrix transform(String text);
+    INDArray transform(String text);
 
 }

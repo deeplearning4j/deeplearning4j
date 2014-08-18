@@ -2,15 +2,18 @@ package org.deeplearning4j.dbn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.sampling.Sampling;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
+
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
     public DBN(int nIns, int[] hiddenLayerSizes, int nOuts, int nLayers,
-               RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
+               RandomGenerator rng, INDArray input,INDArray labels) {
         super(nIns, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
     }
 
@@ -62,11 +65,11 @@ public class DBN extends BaseMultiLayerNetwork {
      * Compute activations from input to output of the output layer
      * @return the list of activations for each layer
      */
-    public List<DoubleMatrix> feedForward() {
-        DoubleMatrix currInput = this.input;
-        if(this.input.columns != nIns)
+    public List<INDArray> feedForward() {
+        INDArray currInput = this.input;
+        if(this.input.columns() != nIns)
             throw new IllegalStateException("Illegal input length");
-        List<DoubleMatrix> activations = new ArrayList<>();
+        List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
         for(int i = 0; i < getnLayers(); i++) {
             NeuralNetwork layer = getLayers()[i];
@@ -120,7 +123,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * for generating weights
      * @return a hidden layer with the given paremters
      */
-    public HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,DoubleMatrix layerInput,RealDistribution dist) {
+    public HiddenLayer createHiddenLayer(int index,int nIn,int nOut,ActivationFunction activation,RandomGenerator rng,INDArray layerInput,RealDistribution dist) {
         return super.createHiddenLayer(index, nIn, nOut, activation, rng, layerInput, dist);
 
     }
@@ -138,7 +141,7 @@ public class DBN extends BaseMultiLayerNetwork {
     }
 
     @Override
-    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+    public void pretrain(INDArray input, Object[] otherParams) {
         int k = (Integer) otherParams[0];
         double lr = (Double) otherParams[1];
         int epochs = (Integer) otherParams[2];
@@ -160,13 +163,13 @@ public class DBN extends BaseMultiLayerNetwork {
     public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
 
 
-        DoubleMatrix layerInput;
+        INDArray layerInput;
 
         for(int i = 0; i < getnLayers(); i++) {
             if(i == 0) {
                 while(iter.hasNext()) {
                     DataSet next = iter.next();
-                    this.input = next.getFirst();
+                    this.input = next.getFeatureMatrix();
                       /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
                     if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
                         setInput(input);
@@ -179,12 +182,12 @@ public class DBN extends BaseMultiLayerNetwork {
                     if(isForceNumEpochs()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-                            getLayers()[i].train(next.getFirst(), realLearningRate,new Object[]{k,learningRate});
+                            getLayers()[i].train(next.getFeatureMatrix(), realLearningRate,new Object[]{k,learningRate});
                             getLayers()[i].iterationDone(epoch);
                         }
                     }
                     else
-                        getLayers()[i].trainTillConvergence(next.getFirst(), realLearningRate, new Object[]{k,realLearningRate,epochs});
+                        getLayers()[i].trainTillConvergence(next.getFeatureMatrix(), realLearningRate, new Object[]{k,realLearningRate,epochs});
 
                 }
 
@@ -195,7 +198,7 @@ public class DBN extends BaseMultiLayerNetwork {
                 boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    layerInput = next.getFirst();
+                    layerInput = next.getFeatureMatrix();
                     for(int j = 1; j <= i; j++) {
                         if(useRBMPropUpAsActivations) {
                             RBM r = (RBM) layers[i];
@@ -245,7 +248,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param learningRate the learning rate to use
      * @param epochs the number of epochs to train
      */
-    public void pretrain(DoubleMatrix input,int k,double learningRate,int epochs) {
+    public void pretrain(INDArray input,int k,double learningRate,int epochs) {
         if(isUseGaussNewtonVectorProductBackProp()) {
             log.warn("WARNING; Gauss newton back vector back propagation is primarily used for hessian free which does not involve pretrain; just finetune. Use this at your own risk");
         }
@@ -259,7 +262,7 @@ public class DBN extends BaseMultiLayerNetwork {
         else
             setInput(input);
 
-        DoubleMatrix layerInput = null;
+        INDArray layerInput = null;
 
         for(int i = 0; i < getnLayers(); i++) {
             if(i == 0)
@@ -270,7 +273,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     RBM r = (RBM) layers[i - 1];
                     layerInput = r.propUp(layerInput);
                     if(sampleFromHiddenActivations)
-                        layerInput = MatrixUtil.binomial(layerInput,1,getRng());
+                        layerInput = Sampling.binomial(layerInput, 1, getRng());
                 }
                 else if(activateOnly)
                     layerInput = getSigmoidLayers()[i - 1].activate(layerInput);
@@ -335,9 +338,9 @@ public class DBN extends BaseMultiLayerNetwork {
 
 
     @Override
-    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
-                                     int nHidden, DoubleMatrix W, DoubleMatrix hBias,
-                                     DoubleMatrix vBias, RandomGenerator rng,int index) {
+    public NeuralNetwork createLayer(INDArray input, int nVisible,
+                                     int nHidden, INDArray W, INDArray hBias,
+                                     INDArray vBias, RandomGenerator rng,int index) {
         RBM.HiddenUnit h = hiddenUnitByLayer.get(index) != null ? hiddenUnitByLayer.get(index) : hiddenUnit;
         RBM.VisibleUnit v =visibleUnitByLayer.get(index) != null ? visibleUnitByLayer.get(index) : visibleUnit;
         RBM ret = new RBM.Builder().constrainGradientToUnitNorm(constrainGradientToUnitNorm).weightInit(weightInitByLayer.get(index) != null ? weightInitByLayer.get(index) : weightInit)
@@ -816,13 +819,13 @@ public class DBN extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
 
         @Override
-        public Builder withLabels(DoubleMatrix labels) {
+        public Builder withLabels(INDArray labels) {
             super.withLabels(labels);
             return this;
         }
@@ -843,7 +846,7 @@ public class DBN extends BaseMultiLayerNetwork {
             ret.visibleUnit = visibleUnit;
             ret.visibleUnitByLayer.putAll(visibleUnitByLayer);
             ret.hiddenUnitByLayer.putAll(hiddenUnitByLayer);
-            ret.initializeLayers(DoubleMatrix.zeros(1,ret.getnIns()));
+            ret.initializeLayers(NDArrays.zeros(1, ret.getnIns()));
             return ret;
         }
     }

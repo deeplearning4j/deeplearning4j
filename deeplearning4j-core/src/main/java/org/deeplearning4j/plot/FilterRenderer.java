@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -23,9 +22,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.WindowConstants;
 
-import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,26 +50,26 @@ public class FilterRenderer {
 
     public FilterRenderer() { }
 
-    public void renderHiddenBiases(int heightOffset, int widthOffset, DoubleMatrix render_data, String filename) {
+    public void renderHiddenBiases(int heightOffset, int widthOffset, INDArray render_data, String filename) {
 
-        this.width = render_data.columns;
-        this.height = render_data.rows;
+        this.width = render_data.columns();
+        this.height = render_data.rows();
 
         img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         this.heightOffset = heightOffset;
         this.widthOffset = widthOffset;
         WritableRaster r = img.getRaster();
-        int[] equiv = new int[ render_data.length];
+        int[] equiv = new int[ render_data.length()];
 
         for (int i = 0; i < equiv.length; i++) {
 
             //equiv[i] = (int) Math.round( MatrixUtils.getElement(render_data, i) );
-            equiv[i] = (int) Math.round( render_data.get(i) * 256 );
+            equiv[i] = (int) Math.round( (double) render_data.getScalar(i).element() * 256 );
             log.debug( "> " + equiv[i] );
 
         }
 
-        log.debug( "hbias size: Cols: " + render_data.columns + ", Rows: " + render_data.rows  );
+        log.debug( "hbias size: Cols: " + render_data.columns() + ", Rows: " + render_data.rows()  );
 
         r.setDataElements(0, 0, width, height, equiv);
 
@@ -169,12 +167,12 @@ public class FilterRenderer {
      * @param numberBins
      * @return
      */
-    public Map<Integer, Integer> generateHistogramBuckets(DoubleMatrix data, int numberBins) {
+    public Map<Integer, Integer> generateHistogramBuckets(INDArray data, int numberBins) {
 
-        Map<Integer, Integer> mapHistory = new TreeMap<Integer, Integer>();
+        Map<Integer, Integer> mapHistory = new TreeMap<>();
 
-        double min = data.min();
-        double max = data.max();
+        double min = (double) data.min(Integer.MAX_VALUE).element();
+        double max = (double) data.max(Integer.MAX_VALUE).element();
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -188,11 +186,11 @@ public class FilterRenderer {
 		 */
         //stepSize = 1;
 
-        for ( int row = 0; row < data.rows; row++ ) {
+        for ( int row = 0; row < data.rows(); row++ ) {
 
-            for (int col = 0; col < data.columns; col++ ) {
+            for (int col = 0; col < data.columns(); col++ ) {
 
-                double matrix_value = data.get( row, col );
+                double matrix_value = (double) data.getScalar( row, col ).element();
 
                 // at this point we need round values into bins
 
@@ -211,9 +209,9 @@ public class FilterRenderer {
 
                 } else {
 
-                    // entry does not exit, create, insert
+                    // entry does not exit, createComplex, insert
 
-                    // create new key
+                    // createComplex new key
                     String bucket_label = buildBucketLabel(bucket_key, stepSize, min);
 
                     // new entry
@@ -245,12 +243,12 @@ public class FilterRenderer {
      * @param data
      * @param numberBins
      */
-    public void renderHistogram(DoubleMatrix data, String filename, int numberBins) {
+    public void renderHistogram(INDArray data, String filename, int numberBins) {
 
         Map<Integer, Integer> mapHistory = this.generateHistogramBuckets( data, numberBins );
 
-        double min = data.min(); //data.getFromOrigin(0, 0);
-        double max = data.max(); //data.getFromOrigin(0, 0);
+        double min = (double) data.min(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
+        double max = (double) data.max(Integer.MAX_VALUE).element(); //data.getFromOrigin(0, 0);
 
         double range = max - min;
         double stepSize = range / numberBins;
@@ -373,13 +371,13 @@ public class FilterRenderer {
      * @throws Exception
      *
      */
-    public BufferedImage renderFilters( DoubleMatrix data, String filename, int patchWidth, int patchHeight,int patchesPerRow) throws Exception {
+    public BufferedImage renderFilters( INDArray data, String filename, int patchWidth, int patchHeight,int patchesPerRow) throws Exception {
 
-        int[] equiv = new int[ data.length  ];
+        int[] equiv = new int[ data.length()  ];
 
 
 
-        int numberCols = data.columns;
+        int numberCols = data.columns();
 
 
 
@@ -408,7 +406,7 @@ public class FilterRenderer {
         // plot the learned filter (same dim as the input data)
 
 
-        outer:  for ( int col = 0; col < data.columns; col++ ) {
+        outer:  for ( int col = 0; col < data.columns(); col++ ) {
 
 
 
@@ -417,22 +415,22 @@ public class FilterRenderer {
             int curX = (col % patchesPerRow ) * (patchWidth + patchBorder );
             int curY = col / patchesPerRow * ( patchHeight + patchBorder );
 
-            DoubleMatrix column = data.getColumn(col);
+            INDArray column = data.getColumn(col);
 
-            double col_max = column.min();
-            double col_min = column.max();
+            double col_max = (double) column.min(Integer.MAX_VALUE).element();
+            double col_min = (double) column.max(Integer.MAX_VALUE).element();
 
             // now reshape the column into the shape of the filter patch
 
 
             // render the filter patch
 
-            log.debug("rendering " + column.length + " pixels in column " + col + " for filter patch " + patchWidth + " x " + patchHeight + ", total size: " + (patchWidth * patchHeight) + " at " + curX );
+            log.debug("rendering " + column.length() + " pixels in column " + col + " for filter patch " + patchWidth + " x " + patchHeight + ", total size: " + (patchWidth * patchHeight) + " at " + curX );
 
-            for (int i = 0; i < column.length; i++) {
+            for (int i = 0; i < column.length(); i++) {
 
                 //double patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
-                double patch_normal = ( column.get(i) - col_min ) / ( col_max - col_min + 0.000001 );
+                double patch_normal = ( (double) column.getScalar(i).element() - col_min ) / ( col_max - col_min + 0.000001 );
                 equiv[i] = (int) (255 * patch_normal);
 
             }
@@ -493,10 +491,10 @@ public class FilterRenderer {
 
 
 
-    public void renderActivations(int heightOffset, int widthOffset, DoubleMatrix activation_data, String filename, int scale ) {
+    public void renderActivations(int heightOffset, int widthOffset, INDArray activation_data, String filename, int scale ) {
 
-        this.width = activation_data.columns;
-        this.height = activation_data.rows;
+        this.width = activation_data.columns();
+        this.height = activation_data.rows();
 
 
         log.debug( "----- renderActivations ------" );
@@ -505,7 +503,7 @@ public class FilterRenderer {
         this.heightOffset = heightOffset;
         this.widthOffset = widthOffset;
         WritableRaster r = img.getRaster();
-        int[] equiv = new int[ activation_data.length ];
+        int[] equiv = new int[ activation_data.length() ];
 
         double max = 0.1 * scale; //MatrixUtils.max(render_data);
         double min = -0.1 * scale; //MatrixUtils.min(render_data);
@@ -514,12 +512,12 @@ public class FilterRenderer {
 
         for (int i = 0; i < equiv.length; i++) {
 
-            equiv[i] = (int) Math.round(activation_data.get(i) * 255 );
+            equiv[i] = (int) Math.round((double) activation_data.getScalar(i).element() * 255 );
 
         }
 
 
-        log.debug( "activations size: Cols: " + activation_data.columns + ", Rows: " + activation_data.rows  );
+        log.debug( "activations size: Cols: " + activation_data.columns() + ", Rows: " + activation_data.rows()  );
 
         r.setPixels(0, 0, width, height, equiv);
 

@@ -1,10 +1,8 @@
 package org.deeplearning4j.nn;
 
-import org.jblas.DoubleMatrix;
 
-import static org.deeplearning4j.util.MatrixUtil.log;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.jblas.MatrixFunctions.pow;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 
 /**
  * Central class for loss functions
@@ -36,34 +34,34 @@ public class LossFunctions {
      * @param useRegularization  whether to use regularization
      * @return the score for the given parameters
      */
-    public static double score(DoubleMatrix input,DoubleMatrix labels,LossFunction lossFunction,Output output,double l2,boolean useRegularization) {
+    public static double score(INDArray input,INDArray labels,LossFunction lossFunction,Output output,double l2,boolean useRegularization) {
         double ret = 0.0;
         double reg = 0.5 * l2;
-        DoubleMatrix z = output.output(input);
+        INDArray z = output.output(input);
         switch (lossFunction) {
             case MCXENT:
-                DoubleMatrix mcXEntLogZ = log(z);
-                ret = - labels.mul(mcXEntLogZ).columnSums().sum() / labels.rows;
+                INDArray mcXEntLogZ = Transforms.log(z);
+                ret = - (double) labels.mul(mcXEntLogZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case XENT:
-                DoubleMatrix xEntLogZ = log(z);
-                DoubleMatrix xEntOneMinusLabelsOut = oneMinus(labels);
-                DoubleMatrix xEntOneMinusLogOneMinusZ = oneMinus(log(z));
-                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
+                INDArray xEntLogZ = Transforms.log(z);
+                INDArray xEntOneMinusLabelsOut = labels.rsub(1);
+                INDArray xEntOneMinusLogOneMinusZ = Transforms.log(z).rsubi(1);
+                ret = -(double) labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case RMSE_XENT:
-                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = (double) Transforms.pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case MSE:
-                DoubleMatrix mseDelta = labels.sub(z);
-                ret = 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;
+                INDArray mseDelta = labels.sub(z);
+                ret = 0.5 * (double) Transforms.pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case EXPLL:
-                DoubleMatrix expLLLogZ = log(z);
-                ret = -z.sub(labels.mul(expLLLogZ)).columnSums().sum() / labels.rows;
+                INDArray expLLLogZ = Transforms.log(z);
+                ret =  - (double)z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case SQUARED_LOSS:
-                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = (double) Transforms.pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
 
 
         }

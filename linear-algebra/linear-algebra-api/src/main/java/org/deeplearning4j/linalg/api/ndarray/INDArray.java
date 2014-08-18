@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.api.ndarray;
 
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
@@ -9,9 +10,109 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  */
 public interface INDArray {
 
+    /**
+     * Cumulative sum along a dimension
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    public INDArray cumsumi(int dimension);
+    /**
+     * Cumulative sum along a dimension (in place)
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    public INDArray cumsum(int dimension);
 
+    /**
+     * Assign all of the elements in the given
+     * ndarray to this ndarray
+     * @param arr the elements to assign
+     * @return this
+     */
+    public INDArray assign(INDArray arr);
+
+    public INDArray putScalar(int i,Number value);
+
+    public INDArray putScalar(int[] i,Number value);
+
+    public INDArray lt(Number other);
+
+    public INDArray lti(Number other);
+
+    public INDArray eq(Number other);
+
+    public INDArray eqi(Number other);
+
+    public INDArray gt(Number other);
+
+    public INDArray gti(Number other);
+
+
+
+    public INDArray lt(INDArray other);
+
+    public INDArray lti(INDArray other);
+
+    public INDArray eq(INDArray other);
+
+    public INDArray eqi(INDArray other);
+
+    public INDArray gt(INDArray other);
+
+    public INDArray gti(INDArray other);
+
+    public INDArray neg();
+
+    public INDArray negi();
+
+    public INDArray rdiv(Number n);
+
+    public INDArray rdivi(Number n);
+
+    public INDArray rsub(Number n);
+
+    public INDArray rsubi(Number n);
+
+
+    public INDArray div(Number n);
+
+    public INDArray divi(Number n);
+
+
+    public INDArray mul(Number n);
+
+    public INDArray muli(Number n);
+
+
+    public INDArray sub(Number n);
+
+    public INDArray subi(Number n);
+
+    public INDArray add(Number n);
+
+    public INDArray addi(Number n);
+
+    /**
+     * Returns a subset of this array based on the specified
+     * indexes
+     * @param indexes the indexes in to the array
+     * @return a view of the array with the specified indices
+     */
+    public INDArray get(NDArrayIndex...indexes);
+
+
+    /**
+     * Get a list of specified columns
+     * @param columns
+     * @return
+     */
     INDArray getColumns(int[] columns);
 
+    /**
+     * Get a list of rows
+     * @param rows
+     * @return
+     */
     INDArray getRows(int[] rows);
 
     /**
@@ -195,6 +296,27 @@ public interface INDArray {
 
 
 
+    /**
+     * Returns the squared (Euclidean) distance.
+     */
+    public double squaredDistance(INDArray other);
+
+    /**
+     * Returns the (euclidean) distance.
+     */
+    public double distance2(INDArray other);
+
+    /**
+     * Returns the (1-norm) distance.
+     */
+    public double distance1(INDArray other);
+
+
+
+    public INDArray put(NDArrayIndex[] indices,INDArray element);
+
+
+    public INDArray put(NDArrayIndex[] indices,Number element);
 
     /**
      * Inserts the element at the specified index
@@ -214,6 +336,17 @@ public interface INDArray {
      * @return a scalar ndarray of the element at this index
      */
     public INDArray put(int i,int j,INDArray element);
+
+
+
+    /**
+     * Inserts the element at the specified index
+     * @param i the row insert into
+     * @param j the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    public INDArray put(int i,int j,Number element);
 
 
     /**
@@ -549,6 +682,14 @@ public interface INDArray {
 
 
     /**
+     * Returns the overall variance of this ndarray
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    public INDArray var(int dimension);
+
+
+    /**
      * Returns the overall max of this ndarray
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
@@ -632,6 +773,15 @@ public interface INDArray {
      * @return the reshaped ndarray
      */
     public INDArray reshape(int[] newShape);
+
+
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray)
+     * @param rows the rows of the matrix
+     * @param columns the columns of the matrix
+     * @return the reshaped ndarray
+     */
+    public INDArray reshape(int rows,int columns);
 
     /**
      * Flip the rows and columns of a matrix

@@ -3,16 +3,15 @@ package org.deeplearning4j.example.convnet.mnist;
 import cc.mallet.util.FileUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.plot.FilterRenderer;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.util.ImageLoader;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,10 +51,9 @@ public class MnistConvNet {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            log.info("Len " + next.getFirst().length);
-            log.info("This is a " + next.labelDistribution());
-            DoubleMatrix reshape = next.getFirst().reshape(rows,cols);
-            Tensor W = (Tensor) r.getW();
+            log.info("Len " + next.getFeatureMatrix().length());
+            INDArray reshape = next.getFeatureMatrix().reshape(rows,cols);
+            INDArray W = (INDArray) r.getW();
             log.info("W shape " + W.shape());
             r.trainTillConvergence(reshape, 5e-2, new Object[]{1, 5e-2, 20});
 
@@ -71,14 +69,14 @@ public class MnistConvNet {
 
 
 
-    public static void drawSample(ConvolutionalRBM r,int rows, int cols,DoubleMatrix input) throws Exception {
+    public static void drawSample(ConvolutionalRBM r,int rows, int cols,INDArray input) throws Exception {
 
-        DoubleMatrix draw = input.dup();
+        INDArray draw = input.dup();
         DrawReconstruction greyScale = new DrawReconstruction(input);
         greyScale.readjustToData();
         greyScale.draw();
 
-        log.info("Draw sum " + draw.sum());
+        log.info("Draw sum " + draw.sum(Integer.MAX_VALUE));
         BufferedImage img = ImageLoader.toImage(input);
         File write = new File("newtmpfile-pool.png");
 
@@ -104,12 +102,12 @@ public class MnistConvNet {
     }
 
     public static void drawFilters(ConvolutionalRBM r) throws Exception {
-        Tensor W = (Tensor) r.getW().dup();
+        INDArray W =  r.getW().dup();
 
-        DoubleMatrix draw =  W.reshape(W.rows() * W.columns(),W.slices());
+        INDArray draw =  W.reshape(W.rows() * W.columns(),W.slices());
         draw.muli(255);
         FilterRenderer render = new FilterRenderer();
-        BufferedImage img = render.renderFilters(draw,"tmpfile.png",draw.rows,draw.columns,W.slices());
+        BufferedImage img = render.renderFilters(draw,"tmpfile.png",draw.rows(),draw.columns(),W.slices());
         BufferedImage resizedImage = new BufferedImage(49, 49, img.getType());
         Graphics2D g = resizedImage.createGraphics();
         g.drawImage(img, 0, 0, 49, 49, null);

@@ -1,18 +1,19 @@
 package org.deeplearning4j.optimize;
 
-import org.jblas.DoubleMatrix;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
 public interface OptimizableByGradientValueMatrix {
 
 	public int getNumParameters ();
 
-	public DoubleMatrix getParameters ();
-	public double getParameter (int index);
+	public INDArray getParameters ();
+	public double getParameter(int index);
 
-	public void setParameters (DoubleMatrix params);
+	public void setParameters (INDArray params);
 	public void setParameter (int index, double value);
 
-	public DoubleMatrix getValueGradient (int iteration);
+	public INDArray getValueGradient (int iteration);
 	public double getValue ();
 
 

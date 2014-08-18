@@ -1,11 +1,11 @@
 package org.deeplearning4j.optimize;
 
 import cc.mallet.optimize.Optimizable;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.jblas.DoubleMatrix;
-import org.jblas.ranges.RangeUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +134,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public void getValueGradient(double[] buffer) {
-        System.arraycopy(network.getBackPropRGradient(network.params()).data,0,buffer,0,buffer.length);
+        System.arraycopy(network.getBackPropRGradient(network.params()).data(),0,buffer,0,buffer.length);
     }
 
     @Override
@@ -145,13 +145,13 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
     @Override
     public int getNumParameters() {
         if(length < 0)
-            length = getParameters().length;
+            length = getParameters().length();
         return length;
     }
 
     @Override
     public void getParameters(double[] buffer) {
-        System.arraycopy(getParameters().data,0,buffer,0,buffer.length);
+        System.arraycopy(getParameters().data(),0,buffer,0,buffer.length);
     }
 
     @Override
@@ -161,7 +161,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     @Override
     public void setParameters(double[] params) {
-        setParameters(new DoubleMatrix(params).reshape(1,params.length));
+        setParameters(NDArrays.create(params));
     }
 
     @Override
@@ -170,19 +170,19 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
     }
 
     @Override
-    public DoubleMatrix getParameters() {
+    public INDArray getParameters() {
         return network.params();
     }
 
     @Override
-    public void setParameters(DoubleMatrix params) {
+    public void setParameters(INDArray params) {
         network.setParameters(params);
 
 
     }
 
     @Override
-    public DoubleMatrix getValueGradient(int iteration) {
+    public INDArray getValueGradient(int iteration) {
         return network.getBackPropRGradient(network.params());
     }
 

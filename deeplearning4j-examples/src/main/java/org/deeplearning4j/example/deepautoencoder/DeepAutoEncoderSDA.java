@@ -3,22 +3,22 @@ package org.deeplearning4j.example.deepautoencoder;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.transformation.MatrixTransformations;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.WeightInit;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.sda.StackedDenoisingAutoEncoder;
-import org.deeplearning4j.transformation.MatrixTransformations;
 import org.deeplearning4j.util.RBMUtil;
 import org.deeplearning4j.util.SerializationUtils;
 import org.slf4j.Logger;
@@ -69,8 +69,8 @@ public class DeepAutoEncoderSDA {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            a.setInput(next.getFirst());
-            a.finetune(next.getFirst(),1e-1,50);
+            a.setInput(next.getFeatureMatrix());
+            a.finetune(next.getFeatureMatrix(),1e-1,50);
         }
 
         iter.reset();
@@ -80,9 +80,9 @@ public class DeepAutoEncoderSDA {
         while (iter.hasNext()) {
             DataSet data = iter.next();
 
-            DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),a,28,28);
-            r.setPicDraw(MatrixTransformations.multiplyScalar(255));
-            r.draw();
+            //DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),a,28,28);
+            //r.setPicDraw(MatrixTransformations.multiplyScalar(255));
+            //r.draw();
         }
     }
 }

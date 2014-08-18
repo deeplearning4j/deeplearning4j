@@ -1,6 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 

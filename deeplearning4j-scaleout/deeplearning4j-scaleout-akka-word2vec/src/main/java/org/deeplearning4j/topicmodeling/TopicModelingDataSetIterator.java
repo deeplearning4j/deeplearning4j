@@ -7,12 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.actor.core.SerializableFileIter;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 
 
 public class TopicModelingDataSetIterator implements DataSetIterator {
@@ -109,13 +109,13 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 		if(!hasNext())
 			throw new IllegalStateException("Unable to getFromOrigin next; no more data found");
 
-		List<DataSet> d = new ArrayList<DataSet>();
+		List<DataSet> d = new ArrayList<>();
 		while(files.hasNext() && curr  < batchSize) {
 			File next = files.next();
-			DoubleMatrix input = vocabCreator.getScoreMatrix(next);
-			if(input.sum() != 0) {
+			INDArray input = vocabCreator.getScoreMatrix(next);
+			if(input.sum(Integer.MAX_VALUE).element() != 0) {
 				String label = next.getParentFile().getName();
-				DoubleMatrix y = MatrixUtil.toOutcomeVector(labels.indexOf(label), labels.size());
+				INDArray y = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
 				d.add(new DataSet(input,y));
 				curr++;
 			}
@@ -177,13 +177,13 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 		if(!hasNext())
 			throw new IllegalStateException("Unable to getFromOrigin next; no more data found");
 
-		List<DataSet> d = new ArrayList<DataSet>();
+		List<DataSet> d = new ArrayList<>();
 		while(files.hasNext() && curr  < num) {
 			File next = files.next();
-			DoubleMatrix input = vocabCreator.getScoreMatrix(next);
-			if(input.sum() != 0) {
+			INDArray input = vocabCreator.getScoreMatrix(next);
+			if(input.sum(Integer.MAX_VALUE).element() != 0) {
 				String label = next.getParentFile().getName();
-				DoubleMatrix y = MatrixUtil.toOutcomeVector(labels.indexOf(label), labels.size());
+				INDArray y = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
 				d.add(new DataSet(input,y));
 				curr++;
 			}

@@ -7,18 +7,18 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.*;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.jblas.DoubleMatrix;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.deeplearning4j.util.MatrixUtil.assertNaN;
-import static org.jblas.MatrixFunctions.pow;
-import static org.jblas.MatrixFunctions.powi;
+
 
 
 /**
@@ -108,7 +108,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
      */
     @Override
-    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+    public void pretrain(INDArray input, Object[] otherParams) {
         throw new IllegalStateException("Not implemented");
 
     }
@@ -129,23 +129,23 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * @return a neural network layer such as {@link org.deeplearning4j.rbm.RBM}
      */
     @Override
-    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng, int index) {
+    public NeuralNetwork createLayer(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vBias, RandomGenerator rng, int index) {
         throw new IllegalStateException("Not implemented");
     }
 
 
     /* delta computation for back prop with the R operator */
     @Override
-    public  List<DoubleMatrix> computeDeltasR(DoubleMatrix v) {
-        List<DoubleMatrix> deltaRet = new ArrayList<>();
-        DoubleMatrix[] deltas = new DoubleMatrix[getnLayers() + 1];
-        List<DoubleMatrix> activations = feedForward();
-        List<DoubleMatrix> rActivations = feedForwardR(activations,v);
+    public  List<INDArray> computeDeltasR(INDArray v) {
+        List<INDArray> deltaRet = new ArrayList<>();
+        INDArray[] deltas = new INDArray[getnLayers() + 1];
+        List<INDArray> activations = feedForward();
+        List<INDArray> rActivations = feedForwardR(activations,v);
       /*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
-        List<DoubleMatrix> weights = new ArrayList<>();
-        List<DoubleMatrix> biases = new ArrayList<>();
+        List<INDArray> weights = new ArrayList<>();
+        List<INDArray> biases = new ArrayList<>();
         List<ActivationFunction> activationFunctions = new ArrayList<>();
 
 
@@ -160,7 +160,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         biases.add(getOutputLayer().getB());
         activationFunctions.add(outputLayer.getActivationFunction());
 
-        DoubleMatrix rix = rActivations.get(rActivations.size() - 1).div(input.rows);
+        INDArray rix = rActivations.get(rActivations.size() - 1).div(input.rows());
 
         //errors
         for(int i = getnLayers(); i >= 0; i--) {
@@ -178,7 +178,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
-                deltaRet.add(deltas[i].div(deltas[i].norm2()));
+                deltaRet.add(deltas[i].div(deltas[i].norm2(Integer.MAX_VALUE)));
 
             else
                 deltaRet.add(deltas[i]);
@@ -194,11 +194,11 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * @return the activations based on the r operator
      */
     @Override
-    public List<DoubleMatrix> feedForwardR(List<DoubleMatrix> acts,DoubleMatrix v) {
-        List<DoubleMatrix> R = new ArrayList<>();
-        R.add(DoubleMatrix.zeros(input.rows,input.columns));
-        List<Pair<DoubleMatrix,DoubleMatrix>> vWvB = unPack(v);
-        List<DoubleMatrix> W = weightMatrices();
+    public List<INDArray> feedForwardR(List<INDArray> acts,INDArray v) {
+        List<INDArray> R = new ArrayList<>();
+        R.add(NDArrays.zeros(input.rows(), input.columns()));
+        List<Pair<INDArray,INDArray>> vWvB = unPack(v);
+        List<INDArray> W = weightMatrices();
 
         for(int i = 0; i < layers.length; i++) {
             AutoEncoder a = (AutoEncoder) getLayers()[i];
@@ -219,10 +219,10 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * @return the list of activations for each layer
      */
     @Override
-    public  List<DoubleMatrix> feedForward() {
-        DoubleMatrix currInput = this.input;
+    public  List<INDArray> feedForward() {
+        INDArray currInput = this.input;
 
-        List<DoubleMatrix> activations = new ArrayList<>();
+        List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
         NeuralNetwork[] layers = getLayers();
         for(int i = 0; i < layers.length; i++) {
@@ -282,7 +282,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
      * Trains the decoder on the given input
      * @param input the given input to train on
      */
-    public void finetune(DoubleMatrix input,double lr,int iterations) {
+    public void finetune(INDArray input,double lr,int iterations) {
         this.input = input;
 
 
@@ -294,19 +294,19 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
     }
 
     /* delta computation for back prop with precon for SFH */
-    public  List<Pair<DoubleMatrix,DoubleMatrix>>  computeDeltas2() {
-        List<Pair<DoubleMatrix,DoubleMatrix>> deltaRet = new ArrayList<>();
-        List<DoubleMatrix> activations = feedForward();
-        DoubleMatrix[] deltas = new DoubleMatrix[activations.size() - 1];
-        DoubleMatrix[] preCons = new DoubleMatrix[activations.size() - 1];
+    public  List<Pair<INDArray,INDArray>>  computeDeltas2() {
+        List<Pair<INDArray,INDArray>> deltaRet = new ArrayList<>();
+        List<INDArray> activations = feedForward();
+        INDArray[] deltas = new INDArray[activations.size() - 1];
+        INDArray[] preCons = new INDArray[activations.size() - 1];
 
         //- y - h
-        DoubleMatrix ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows);
+        INDArray ix = activations.get(activations.size() - 1).sub(labels).divi(labels.rows());
        	/*
 		 * Precompute activations and z's (pre activation network outputs)
 		 */
-        List<DoubleMatrix> weights = new ArrayList<>();
-        List<DoubleMatrix> biases = new ArrayList<>();
+        List<INDArray> weights = new ArrayList<>();
+        List<INDArray> biases = new ArrayList<>();
 
         List<ActivationFunction> activationFunctions = new ArrayList<>();
         for(int j = 0; j < getLayers().length; j++) {
@@ -325,7 +325,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         //errors
         for(int i = weights.size() - 1; i >= 0; i--) {
             deltas[i] = activations.get(i).transpose().mmul(ix);
-            preCons[i] = powi(activations.get(i).transpose(),2).mmul(pow(ix, 2)).muli(labels.rows);
+            preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix.dup(), 2)).muli(labels.rows());
             applyDropConnectIfNecessary(deltas[i]);
 
             if(i > 0) {
@@ -336,7 +336,7 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
 
         for(int i = 0; i < deltas.length; i++) {
             if(constrainGradientToUnitNorm)
-                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2()),preCons[i]));
+                deltaRet.add(new Pair<>(deltas[i].divi(deltas[i].norm2(Integer.MAX_VALUE)),preCons[i]));
 
             else
                 deltaRet.add(new Pair<>(deltas[i],preCons[i]));
@@ -885,13 +885,13 @@ public class DeepAutoEncoder extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
 
         @Override
-        public Builder withLabels(DoubleMatrix labels) {
+        public Builder withLabels(INDArray labels) {
             super.withLabels(labels);
             return this;
         }

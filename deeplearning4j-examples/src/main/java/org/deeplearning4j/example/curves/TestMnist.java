@@ -1,12 +1,12 @@
 package org.deeplearning4j.example.curves;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.SerializationUtils;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +28,8 @@ public class TestMnist {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			DoubleMatrix predict = dbn.output(next.getFirst());
-			DoubleMatrix labels = next.getSecond();
+			INDArray predict = dbn.output(next.getFeatureMatrix());
+			INDArray labels = next.getLabels();
 			eval.eval(labels, predict);
 			log.info("Current stats " + eval.stats());
 		}

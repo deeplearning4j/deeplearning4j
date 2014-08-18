@@ -31,7 +31,7 @@ public class ClusterListener extends UntypedActor {
 		//replicate the network
 		mediator.tell(new DistributedPubSubMediator.Subscribe(TOPICS,getSelf()), getSelf());
 		log.info("Subscribed to cluster events");
-		/*topicTask = context().system().scheduler().schedule(Duration.create(10,TimeUnit.SECONDS), Duration.create(10,TimeUnit.SECONDS), new Runnable() {
+		/*topicTask = context().system().scheduler().schedule(Duration.createComplex(10,TimeUnit.SECONDS), Duration.createComplex(10,TimeUnit.SECONDS), new Runnable() {
 
 			@Override
 			public void run() {

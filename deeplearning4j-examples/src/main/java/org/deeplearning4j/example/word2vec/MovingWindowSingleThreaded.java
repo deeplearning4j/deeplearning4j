@@ -2,12 +2,14 @@ package org.deeplearning4j.example.word2vec;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.dataset.SplitTestAndTrain;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
@@ -18,7 +20,6 @@ import org.deeplearning4j.word2vec.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -27,6 +28,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -87,10 +89,10 @@ public class MovingWindowSingleThreaded {
         all.shuffle();
 
         int twentyPercent = (int) Math.round(0.2 * all.numExamples());
-        Pair<DataSet,DataSet> trainTest = all.splitTestAndTrain(twentyPercent);
-        iter = new ListDataSetIterator(trainTest.getFirst().asList(),1000);
+        SplitTestAndTrain trainTest = all.splitTestAndTrain(twentyPercent);
+        iter = new ListDataSetIterator(trainTest.getTrain().asList(),1000);
 
-        DataSetIterator testIter = trainTest.getSecond().iterator(1000);
+        Iterator<DataSet> testIter = trainTest.getTest().iterator();
 
         log.info("Training on num columns " + iter.inputColumns());
         if(!iter.hasNext())
@@ -106,8 +108,8 @@ public class MovingWindowSingleThreaded {
 
         while(iter.hasNext()) {
             DataSet d = iter.next();
-            dbn.setInput(d.getFirst());
-            dbn.finetune(d.getSecond(),1e-6,10000);
+            dbn.setInput(d.getFeatureMatrix());
+            dbn.finetune(d.getLabels(),1e-6,10000);
         }
 
         iter.reset();
@@ -116,8 +118,8 @@ public class MovingWindowSingleThreaded {
 
         while(testIter.hasNext()) {
             DataSet d = testIter.next();
-            DoubleMatrix probabilities = dbn.output(d.getFirst());
-            eval.eval(d.getSecond(),probabilities);
+            INDArray probabilities = dbn.output(d.getFeatureMatrix());
+            eval.eval(d.getLabels(),probabilities);
         }
 
         log.info(eval.stats());

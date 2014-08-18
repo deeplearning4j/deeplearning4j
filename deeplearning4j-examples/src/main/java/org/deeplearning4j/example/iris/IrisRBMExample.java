@@ -1,8 +1,8 @@
 package org.deeplearning4j.example.iris;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.rbm.RBM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +27,8 @@ public class IrisRBMExample {
 		.useAdaGrad(true)
 		.numHidden(10).normalizeByInputRows(false).useRegularization(false)
 		.build();
-		r.trainTillConvergence(next.getFirst(),1e-3, new Object[]{1,1e-3,2000});
-		log.info("\nData " + String.valueOf("\n" + next.getFirst()).replaceAll(";","\n"));
+		r.trainTillConvergence(next.getFeatureMatrix(),1e-3, new Object[]{1,1e-3,2000});
+		log.info("\nData " + String.valueOf("\n" + next.getFeatureMatrix()).replaceAll(";","\n"));
 		log.info("\nReconstruct " + String.valueOf("\n" + r.reconstruct(r.getInput())).replaceAll(";","\n"));
 		
 		

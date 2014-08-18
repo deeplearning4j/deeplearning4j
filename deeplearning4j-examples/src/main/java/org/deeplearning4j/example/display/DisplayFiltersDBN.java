@@ -3,16 +3,16 @@ package org.deeplearning4j.example.display;
 import java.io.File;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SerializationUtils;
-import org.jblas.DoubleMatrix;
 
 public class DisplayFiltersDBN {
 
@@ -35,12 +35,12 @@ public class DisplayFiltersDBN {
 			plotter.plotNetworkGradient(network.getLayers()[0], network.getLayers()[0].getGradient(Conf.getDefaultRbmParams()),10);
 
 			
-			DoubleMatrix reconstruct = network.reconstruct(first.getFirst(),0);
+			INDArray reconstruct = network.reconstruct(first.getFeatureMatrix(),0);
 			for(int j = 0; j < first.numExamples(); j++) {
 
-				DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-				DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+				INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);
+				INDArray reconstructed2 = reconstruct.getRow(j);
+				INDArray draw2 = Sampling.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
 
 				DrawReconstruction d = new DrawReconstruction(draw1);
 				d.title = "REAL";

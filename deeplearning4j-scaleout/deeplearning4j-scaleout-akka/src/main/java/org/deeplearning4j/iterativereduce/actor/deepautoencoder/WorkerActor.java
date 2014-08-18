@@ -5,12 +5,12 @@ import akka.actor.Props;
 import akka.contrib.pattern.DistributedPubSubMediator;
 import akka.contrib.pattern.DistributedPubSubMediator.Put;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.conf.Conf;
@@ -178,7 +178,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             d.normalizeZeroMeanZeroUnitVariance();
         if(conf.isScale())
             d.scale();
-        if(d.getFirst() == null || d.getSecond() == null)
+        if(d.getFeatureMatrix() == null || d.getLabels() == null)
             throw new IllegalStateException("Input cant be null");
 
         if(tracker.isPretrain()) {
@@ -187,11 +187,11 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             while(!done && numTries < 3) {
                 try {
                     log.info("Worker " + id + " pretraining");
-                    network.getEncoder().pretrain(d.getFirst(),conf.getDeepLearningParams());
+                    network.getEncoder().pretrain(d.getFeatureMatrix(),conf.getDeepLearningParams());
                     done = true;
                 }catch(Exception e) {
                     //diagnose what happened
-                    if(d.getFirst() == null) {
+                    if(d.getFeatureMatrix() == null) {
                         d = (DataSet) currentJob.getWork();
                     }
                     numTries++;
@@ -219,7 +219,7 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             boolean done = false;
             while(!done && numTries < 3) {
                 try {
-                    network.finetune(d.getFirst(),conf.getFinetuneLearningRate(),conf.getFinetuneEpochs());
+                    network.finetune(d.getFeatureMatrix(),conf.getFinetuneLearningRate(),conf.getFinetuneEpochs());
                     log.info("Worker " + id + " finetune");
                     done = true;
                 }catch(Exception e) {

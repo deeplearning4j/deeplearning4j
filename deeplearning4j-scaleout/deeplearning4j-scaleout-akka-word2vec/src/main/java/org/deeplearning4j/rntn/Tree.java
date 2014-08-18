@@ -1,6 +1,7 @@
 package org.deeplearning4j.rntn;
 
-import org.jblas.FloatMatrix;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,8 +13,8 @@ import java.util.List;
  */
 public class Tree implements Serializable {
 
-    private FloatMatrix vector;
-    private FloatMatrix prediction;
+    private INDArray vector;
+    private INDArray prediction;
     private List<Tree> children;
     private double error;
     private Tree parent;
@@ -336,19 +337,19 @@ public class Tree implements Serializable {
         return parent;
     }
 
-    public FloatMatrix vector() {
+    public INDArray vector() {
         return vector;
     }
 
-    public void setVector(FloatMatrix vector) {
+    public void setVector(INDArray vector) {
         this.vector = vector;
     }
 
-    public FloatMatrix prediction() {
+    public INDArray prediction() {
         return prediction;
     }
 
-    public void setPrediction(FloatMatrix prediction) {
+    public void setPrediction(INDArray prediction) {
         this.prediction = prediction;
     }
 

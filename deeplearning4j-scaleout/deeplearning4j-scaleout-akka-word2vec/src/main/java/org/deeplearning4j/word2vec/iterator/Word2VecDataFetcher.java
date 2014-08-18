@@ -9,14 +9,15 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.util.Window;
 import org.deeplearning4j.word2vec.util.WindowConverter;
 import org.deeplearning4j.word2vec.util.Windows;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,16 +51,16 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 
 	private DataSet fromCache() {
-		DoubleMatrix outcomes = null;
-		DoubleMatrix input = null;
-		input = new DoubleMatrix(batch,vec.getSyn1().columns * vec.getWindow());
-		outcomes = new DoubleMatrix(batch,labels.size());
+		INDArray outcomes = null;
+		INDArray input = null;
+		input =  NDArrays.create(batch, vec.getSyn1().columns() * vec.getWindow());
+		outcomes =NDArrays.create(batch, labels.size());
 		for(int i = 0; i < batch; i++) {
-			input.putRow(i,new DoubleMatrix(WindowConverter.asExample(cache.get(i), vec)));
+			input.putRow(i, NDArrays.create(WindowConverter.asExample(cache.get(i), vec)));
 			int idx = labels.indexOf(cache.get(i).getLabel());
 			if(idx < 0)
 				idx = 0;
-			outcomes.putRow(i,MatrixUtil.toOutcomeVector(idx, labels.size()));
+			outcomes.putRow(i, FeatureUtil.toOutcomeVector(idx, labels.size()));
 		}
 		return new DataSet(input,outcomes);
 
@@ -76,8 +77,8 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		File f = files.next();
 		try {
 			LineIterator lines = FileUtils.lineIterator(f);
-			DoubleMatrix outcomes = null;
-			DoubleMatrix input = null;
+			INDArray outcomes = null;
+			INDArray input = null;
 
 			while(lines.hasNext()) {
 				List<Window> windows = Windows.windows(lines.nextLine());
@@ -85,14 +86,14 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 		              continue;
 				
 				if(windows.size() < batch) {
-					input = new DoubleMatrix(windows.size(),vec.getSyn1().columns * vec.getWindow());
-					outcomes = new DoubleMatrix(batch,labels.size());
+					input = NDArrays.create(windows.size(),vec.getSyn1().columns() * vec.getWindow());
+					outcomes = NDArrays.create(batch,labels.size());
 					for(int i = 0; i < windows.size(); i++) {
-						input.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
+						input.putRow(i,NDArrays.create(WindowConverter.asExample(windows.get(i), vec)));
 						int idx = labels.indexOf(windows.get(i).getLabel());
 						if(idx < 0)
 							idx = 0;
-						DoubleMatrix outcomeRow = MatrixUtil.toOutcomeVector(idx, labels.size());
+						INDArray outcomeRow = FeatureUtil.toOutcomeVector(idx, labels.size());
 						outcomes.putRow(i,outcomeRow);
 					}
 					return new DataSet(input,outcomes);
@@ -100,14 +101,14 @@ public class Word2VecDataFetcher implements DataSetFetcher {
 
 				}
 				else {
-					input = new DoubleMatrix(batch,vec.getSyn1().columns * vec.getWindow());
-					outcomes = new DoubleMatrix(batch,labels.size());
+					input = NDArrays.create(batch,vec.getSyn1().columns() * vec.getWindow());
+					outcomes = NDArrays.create(batch,labels.size());
 					for(int i = 0; i < batch; i++) {
-						input.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
+						input.putRow(i,NDArrays.create(WindowConverter.asExample(windows.get(i), vec)));
 						int idx = labels.indexOf(windows.get(i).getLabel());
 						if(idx < 0)
 							idx = 0;
-						DoubleMatrix outcomeRow = MatrixUtil.toOutcomeVector(idx, labels.size());
+						INDArray outcomeRow = FeatureUtil.toOutcomeVector(idx, labels.size());
 						outcomes.putRow(i,outcomeRow);
 					}
 					//add left over to cache; need to ensure that only batch rows are returned

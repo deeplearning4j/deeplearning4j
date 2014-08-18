@@ -29,10 +29,10 @@ information, see the file `LICENSE' included with this distribution. */
  */
 
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.SimpleBlas;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.util.LinAlgExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,9 +88,9 @@ public class VectorizedBackTrackLineSearchMinimum
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (DoubleMatrix line, int lineSearchIteration,DoubleMatrix g,DoubleMatrix params)
+    public double optimize (INDArray line, int lineSearchIteration,INDArray g,INDArray params)
     {
-        DoubleMatrix x, oldParameters;
+        INDArray x, oldParameters;
         double slope, test, alamin, alam, alam2, tmplam;
         double rhs1, rhs2, a, b, disc, oldAlam;
         double f, fold, f2;
@@ -102,11 +102,11 @@ public class VectorizedBackTrackLineSearchMinimum
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLnSrch, value=" + fold +",\ndirection.oneNorm:"
-                    +	line.norm1() + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,MatrixFunctions.abs(line).max()));
+                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY, (double) Transforms.abs(line).max(Integer.MAX_VALUE).element()));
         }
 
-        assert (!MatrixUtil.isNaN(g));
-        double sum = line.norm2();
+        LinAlgExceptions.assertValidNum(g);
+        double sum = (double) line.norm2(Integer.MAX_VALUE).element();
 //        if(sum > stpmax) {
 //            logger.warn("attempted step too big. scaling: sum= " + sum +
 //                    ", stpmax= "+ stpmax);
@@ -114,22 +114,22 @@ public class VectorizedBackTrackLineSearchMinimum
 //        }
 
         //dot product
-        slope = SimpleBlas.dot(g, line);
+        slope = NDArrays.getBlasWrapper().dot(g, line);
         logger.debug("slope = " + slope);
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
         //  the largest step size that triggers this threshold is
         //  precomputed and saved in alamin
-        DoubleMatrix maxOldParams = new DoubleMatrix(line.length);
-        for(int i = 0;i < line.length; i++) {
-            maxOldParams.put(i,Math.max(Math.abs(oldParameters.get(i)), 1.0));
+        INDArray maxOldParams = NDArrays.create(line.length());
+        for(int i = 0;i < line.length(); i++) {
+            maxOldParams.putScalar(i,Math.max(Math.abs((double) oldParameters.getScalar(i).element()), 1.0));
 
         }
 
-        DoubleMatrix testMatrix = MatrixFunctions.abs(line).div(maxOldParams);
+        INDArray testMatrix = Transforms.abs(line).div(maxOldParams);
 
-        test = testMatrix.max();
+        test = (double) testMatrix.max(Integer.MAX_VALUE).element();
 
 
         alamin = relTolx / test;
@@ -144,7 +144,7 @@ public class VectorizedBackTrackLineSearchMinimum
             // initially, alam = 1.0, i.e. take full Newton step
             logger.trace("BackTrack loop iteration " + iteration +" : alam="+
                     alam+" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + params.norm1() +
+            logger.trace ("before step, x.1norm: " + params.norm1(Integer.MAX_VALUE) +
                     "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
@@ -152,7 +152,7 @@ public class VectorizedBackTrackLineSearchMinimum
 
             params.addi(line.mul(alam - oldAlam));  // step
 
-            logger.debug ("after step, x.1norm: " + params.norm1());
+            logger.debug ("after step, x.1norm: " + params.norm1(Integer.MAX_VALUE));
 
             // check for convergence
             //convergence on delta x
@@ -173,7 +173,7 @@ public class VectorizedBackTrackLineSearchMinimum
             // sufficient function increase (Wolf condition)
             if(f >= fold + ALF * alam * slope) {
 
-                logger.debug("EXITING BACKTRACK: value="+f);
+                logger.debug("EXITING BACKTRACK: value=" + f);
 
                 if (f<fold)
                     throw new IllegalStateException
@@ -234,11 +234,11 @@ public class VectorizedBackTrackLineSearchMinimum
     }
 
     // returns true iff we've converged based on absolute x difference
-    private boolean smallAbsDiff (DoubleMatrix x, DoubleMatrix xold)
+    private boolean smallAbsDiff (INDArray x, INDArray xold)
     {
 
-        for (int i = 0; i < x.length; i++) {
-            double comp = Math.abs (x.get(i) - xold.get(i));
+        for (int i = 0; i < x.length(); i++) {
+            double comp = Math.abs ((double) x.getScalar(i).sub(xold.getScalar(i)).element());
             if ( comp > absTolx) {
                 return false;
             }

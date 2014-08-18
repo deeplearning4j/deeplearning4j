@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn;
 
-import org.jblas.DoubleMatrix;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
 /**
  * Interface for outputting  a value
@@ -8,7 +9,7 @@ import org.jblas.DoubleMatrix;
  */
 public interface Output {
 
-    DoubleMatrix output(DoubleMatrix input);
+    INDArray output(INDArray input);
 
 
 }

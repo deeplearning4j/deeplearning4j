@@ -2,10 +2,11 @@ package org.deeplearning4j.datasets.vectorizer;
 
 import java.io.File;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.ImageLoader;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 /**
  * An image vectorizer takes an input image (RGB) and
  * transforms it in to a data applyTransformToDestination
@@ -71,19 +72,19 @@ public class ImageVectorizer implements Vectorizer {
 	@Override
 	public DataSet vectorize() {
 		try {
-			DoubleMatrix d = loader.asMatrix(image);
-			DoubleMatrix label2 = MatrixUtil.toOutcomeVector(label, numLabels);
+			INDArray d = loader.asMatrix(image);
+			INDArray label2 = FeatureUtil.toOutcomeVector(label, numLabels);
 			if(normalize) {
 				d = d.div(255);
 			}
 			else if(binarize) {
-				for(int i = 0; i < d.length; i++) {
-					double curr = d.get(i);
+				for(int i = 0; i < d.length(); i++) {
+					double curr = (double) d.getScalar(i).element();
 					if(curr > threshold) {
-						d.put(i,1);
+						d.putScalar(i, 1);
 					}
 					else 
-						d.put(i,0);
+						d.putScalar(i, 0);
 
 
 				}

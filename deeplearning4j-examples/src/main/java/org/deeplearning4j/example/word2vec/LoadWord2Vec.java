@@ -18,7 +18,7 @@ public class LoadWord2Vec {
 
     public static void main(String[] args) {
         Word2Vec vec = SerializationUtils.readObject(new File(args[0]));
-        log.info("Loaded word2vec with " + vec.getWordIndex().size() + " words and wordvectors of " + vec.getSyn0().rows);
+        log.info("Loaded word2vec with " + vec.getWordIndex().size() + " words and wordvectors of " + vec.getSyn0().rows());
         List<String> list = vec.similarWordsInVocabTo("Taiwan", 0.9);
         Collections.sort(list);
         log.info("Similarity of " + vec.similarity("China","nTaiwan"));
