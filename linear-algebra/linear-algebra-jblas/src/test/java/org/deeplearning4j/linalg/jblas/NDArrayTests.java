@@ -568,6 +568,21 @@ public class NDArrayTests {
     }
 
     @Test
+    public void testCumSum() {
+        INDArray n = NDArrays.create(new double[]{1,2,3,4}, new int[]{4});
+        INDArray cumSumAnswer = NDArrays.create(new double[]{1,3,6,10}, new int[]{4});
+        INDArray cumSumTest = n.cumsum(0);
+        assertEquals(cumSumAnswer,cumSumTest);
+
+        INDArray n2 = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
+        INDArray cumSumCorrect2 = NDArrays.create(new double[]{1,2,4,6,9,12,7,8,16,18,27,30,13,14,28,30,45,48,19,20,40,42,63,66},new int[]{4,3,2});
+        INDArray cumSumTest2 = n2.cumsumi(n2.shape().length - 1);
+        assertEquals(cumSumCorrect2,cumSumTest2);
+    }
+
+
+
+    @Test
     public void testGetScalar() {
         INDArray n = NDArrays.create(new double[]{1,2,3,4},new int[]{4});
         assertTrue(n.isVector());
@@ -654,7 +669,7 @@ public class NDArrayTests {
         INDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
         final AtomicInteger count = new AtomicInteger(0);
 
-        arr.iterateOverDimension(0,new SliceOp() {
+        arr.iterateOverDimension(arr.shape().length - 1,new SliceOp() {
             @Override
             public void operate(DimensionSlice nd) {
                 INDArray test =(NDArray) nd.getResult();
@@ -694,7 +709,34 @@ public class NDArrayTests {
              */
             @Override
             public void operate(INDArray nd) {
+                INDArray test =  nd;
+                if(count.get() == 0) {
+                    INDArray answer = new NDArray(new double[]{1,2},new int[]{2});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 1) {
+                    INDArray answer = new NDArray(new double[]{3,4},new int[]{2});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 2) {
+                    INDArray answer = new NDArray(new double[]{5,6},new int[]{2});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 3) {
+                    INDArray answer = new NDArray(new double[]{7,8},new int[]{2});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 4) {
+                    INDArray answer = new NDArray(new double[]{9,10},new int[]{2});
+                    assertEquals(answer,test);
+                }
+                else if(count.get() == 5) {
+                    INDArray answer = new NDArray(new double[]{11,12},new int[]{2});
+                    assertEquals(answer,test);
+                }
 
+
+                count.incrementAndGet();
             }
         },false);
     }
