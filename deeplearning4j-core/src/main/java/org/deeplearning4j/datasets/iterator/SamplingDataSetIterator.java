@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.dataset.DataSet;
 
 /**
  * A wrapper for a dataset to sample from.

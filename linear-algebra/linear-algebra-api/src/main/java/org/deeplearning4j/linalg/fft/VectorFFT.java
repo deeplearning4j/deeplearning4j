@@ -1,22 +1,23 @@
 package org.deeplearning4j.linalg.fft;
 
-import static  org.deeplearning4j.util.ComplexNDArrayUtil.exp;
-
 import com.google.common.base.Function;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.NDArray;
-import org.deeplearning4j.util.ComplexNDArrayUtil;
-import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.ComplexDouble;
+
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.ArrayOps;
+import org.deeplearning4j.linalg.ops.transforms.Exp;
+import org.deeplearning4j.linalg.util.ComplexNDArrayUtil;
+
 
 /**
  * Encapsulated vector operation
  *
  * @author Adam Gibson
  */
-public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
+public class VectorFFT implements Function<IComplexNDArray,IComplexNDArray> {
     private int n;
     private int originalN = -1;
     /**
@@ -31,13 +32,13 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
     }
 
     @Override
-    public ComplexNDArray apply(ComplexNDArray ndArray) {
+    public IComplexNDArray apply(IComplexNDArray ndArray) {
         double len = n;
 
-        int desiredElementsAlongDimension = ndArray.length;
+        int desiredElementsAlongDimension = ndArray.length();
 
         if(len > desiredElementsAlongDimension) {
-            ndArray = ComplexNDArrayUtil.padWithZeros(ndArray,new int[]{n});
+            ndArray = ComplexNDArrayUtil.padWithZeros(ndArray, new int[]{n});
         }
 
         else if(len < desiredElementsAlongDimension) {
@@ -45,16 +46,18 @@ public class VectorFFT implements Function<ComplexNDArray,ComplexNDArray> {
         }
 
 
-        ComplexDouble c2 = new ComplexDouble(0,-2).muli(FastMath.PI);
+        IComplexNumber c2 = NDArrays.createDouble(0, -2).muli(FastMath.PI);
         //row vector
-        //ComplexNDArray n = ComplexNDArray.wrap(MatrixUtil.arange(0d, this.n));
-        NDArray n = NDArray.arange(0,this.n);
+        //IComplexNDArray n = IComplexNDArray.wrap(MatrixUtil.arange(0d, this.n));
+        INDArray n = NDArrays.arange(0,this.n);
 
         //column vector
-        NDArray k = n.reshape(new int[]{n.length,1});
-        ComplexNDArray M = exp(k.mmul(n).mul(c2).divi(len));
-        ComplexNDArray reshaped = ndArray.reshape(new int[]{ndArray.length});
-        ComplexNDArray matrix = reshaped.mmul(M);
+        INDArray k = n.reshape(new int[]{n.length(),1});
+        IComplexNDArray M = NDArrays.createComplex(k.mmul(n).mul(NDArrays.scalar(c2)).divi(NDArrays.scalar(len)));
+        new ArrayOps().from(M).op(Exp.class).build().exec();
+
+        IComplexNDArray reshaped = ndArray.reshape(new int[]{ndArray.length()});
+        IComplexNDArray matrix = reshaped.mmul(M);
         if(originalN > 0) {
             matrix = ComplexNDArrayUtil.truncate(matrix, originalN, 0);
 

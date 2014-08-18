@@ -13,8 +13,66 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 public class ComplexUtil {
 
 
+
+    /**
+     * Return the  log value of the given complex number
+     * @param num the number to get the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber floor(IComplexNumber num) {
+        Complex c = new Complex(Math.floor(num.realComponent().doubleValue()),Math.floor(num.imaginaryComponent().doubleValue()));
+        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+    }
+
+
+
+    /**
+     * Return the  log value of the given complex number
+     * @param num the number to get the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber neg(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).negate();
+        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+    }
+
+
+
+    /**
+     * Return the  log value of the given complex number
+     * @param num the number to get the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber log(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).log();
+        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+    }
+
+
+    /**
+     * Return the absolute value of the given complex number
+     * @param num the number to get the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber sqrt(IComplexNumber num) {
+        Complex c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).sqrt();
+        return NDArrays.createDouble(c.getReal(),c.getImaginary());
+    }
+
+
+    /**
+     * Return the absolute value of the given complex number
+     * @param num the number to get the absolute value for
+     * @return the absolute value of this complex number
+     */
+    public static IComplexNumber abs(IComplexNumber num) {
+        double c = new Complex(num.realComponent().doubleValue(),num.imaginaryComponent().doubleValue()).abs();
+        return NDArrays.createDouble(c,0);
+    }
+
+
     public static IComplexNumber round(IComplexNumber num) {
-      return NDArrays.createDouble(Math.round(num.realComponent().doubleValue()),Math.round(num.realComponent().doubleValue()));
+        return NDArrays.createDouble(Math.round(num.realComponent().doubleValue()),Math.round(num.realComponent().doubleValue()));
     }
 
     /**

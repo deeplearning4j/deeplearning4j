@@ -1,6 +1,6 @@
 package org.deeplearning4j.linalg.dataset;
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet  implements Iterable<DataSet> {
+public class DataSet  implements Iterable<DataSet>,Serializable {
 
     private static final long serialVersionUID = 1935520764586513365L;
     private static Logger log = LoggerFactory.getLogger(DataSet.class);

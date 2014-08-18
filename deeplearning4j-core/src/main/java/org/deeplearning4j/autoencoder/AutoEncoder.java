@@ -4,12 +4,13 @@ package org.deeplearning4j.autoencoder;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
+
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.util.ArrayUtil;
-import org.jblas.DoubleMatrix;
 
 /**
  * Normal 2 layer back propagation network
@@ -25,14 +26,14 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param nVisible the number of outbound nodes
      * @param nHidden  the number of nodes in the hidden layer
      * @param W        the weights for this vector, maybe null, if so this will
-     *                 create a matrix with nHidden x nVisible dimensions.
+     *                 createComplex a matrix with nHidden x nVisible dimensions.
      * @param hbias
      * @param vbias
      * @param rng      the rng, if not a seed of 1234 is used.
      * @param fanIn
      * @param dist
      */
-    private AutoEncoder(int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
+    private AutoEncoder(int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
         super(nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
     }
 
@@ -41,14 +42,14 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param nVisible the number of outbound nodes
      * @param nHidden  the number of nodes in the hidden layer
      * @param W        the weights for this vector, maybe null, if so this will
-     *                 create a matrix with nHidden x nVisible dimensions.
+     *                 createComplex a matrix with nHidden x nVisible dimensions.
      * @param hbias
      * @param vbias
      * @param rng      the rng, if not a seed of 1234 is used.
      * @param fanIn
      * @param dist
      */
-    private AutoEncoder(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
+    private AutoEncoder(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
         super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
     }
 
@@ -62,7 +63,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @return the reconstructed input
      */
     @Override
-    public DoubleMatrix reconstruct(DoubleMatrix x) {
+    public INDArray reconstruct(INDArray x) {
         return act.apply(x.mmul(W).addiRowVector(hBias));
     }
 
@@ -85,7 +86,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public void train(DoubleMatrix input, double lr, Object[] params) {
+    public void train(INDArray input, double lr, Object[] params) {
         NeuralNetworkGradient gradient = getGradient(new Object[]{lr});
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
@@ -99,13 +100,13 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
 
         //feed forward
-        DoubleMatrix out = reconstruct(input);
+        INDArray out = reconstruct(input);
 
-        DoubleMatrix diff = input.sub(out);
+        INDArray diff = input.sub(out);
 
-        DoubleMatrix wGradient = diff.transpose().mmul(W);
-        DoubleMatrix hBiasGradient = wGradient.columnSums();
-        DoubleMatrix vBiasGradient = DoubleMatrix.zeros(vBias.rows,vBias.columns);
+        INDArray wGradient = diff.transpose().mmul(W);
+        INDArray hBiasGradient = wGradient.sum(1);
+        INDArray vBiasGradient = NDArrays.zeros(vBias.rows(), vBias.columns());
 
         NeuralNetworkGradient ret =  new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(ret, iterations,lr);
@@ -131,8 +132,8 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @return a pair with mean, sample
      */
     @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
-        DoubleMatrix out = reconstruct(v);
+    public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
+        INDArray out = reconstruct(v);
         return new Pair<>(out,out);
     }
 
@@ -144,8 +145,8 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @return a pair with mean, sample
      */
     @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-        DoubleMatrix out = reconstruct(h);
+    public Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h) {
+        INDArray out = reconstruct(h);
         return new Pair<>(out,out);
     }
 
@@ -157,7 +158,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param params the params (k,corruption level, max epochs,...)
      */
     @Override
-    public void trainTillConvergence(DoubleMatrix input, double lr, Object[] params) {
+    public void trainTillConvergence(INDArray input, double lr, Object[] params) {
         AutoEncoderOptimizer o = new AutoEncoderOptimizer(this,lr,params,optimizationAlgo,lossFunction);
         o.train(input);
     }

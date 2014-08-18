@@ -11,10 +11,11 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.datasets.DataSet;
+
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.PortTaken;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.*;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
 import org.deeplearning4j.optimize.TrainingEvaluator;

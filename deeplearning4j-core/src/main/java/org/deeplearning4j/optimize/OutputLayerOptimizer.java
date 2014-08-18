@@ -1,8 +1,9 @@
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
-import org.jblas.DoubleMatrix;
 
 import cc.mallet.optimize.Optimizable;
 
@@ -31,7 +32,7 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 
     @Override
 	public int getNumParameters() {
-		return logReg.getW().length + logReg.getB().length;
+		return logReg.getW().length() + logReg.getB().length();
 		
 	}
 
@@ -48,9 +49,9 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 
 	@Override
 	public double getParameter(int index) {
-		if(index >= logReg.getW().length)
-			return logReg.getB().get(index - logReg.getW().length);
-		return logReg.getW().get(index);
+		if(index >= logReg.getW().length())
+			return (double) logReg.getB().getScalar(index - logReg.getW().length()).element();
+		return (double) logReg.getW().getScalar(index).element();
 	}
 
 	@Override
@@ -62,20 +63,20 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 
 	@Override
 	public void setParameter(int index, double value) {
-		if(index >= logReg.getW().length)
-			logReg.getB().put(index - logReg.getW().length,value);
+		if(index >= logReg.getW().length())
+			logReg.getB().putScalar(index - logReg.getW().length(), value);
 		else
-			logReg.getW().put(index,value);
+			logReg.getW().putScalar(index, value);
 	}
 
 	@Override
 	public void getValueGradient(double[] buffer) {
 		OutputLayerGradient grad = logReg.getGradient(lr);
 		for(int i = 0; i < buffer.length; i++) {
-			if(i < logReg.getW().length)
-				buffer[i] = grad.getwGradient().get(i);
+			if(i < logReg.getW().length())
+				buffer[i] = (double) grad.getwGradient().getScalar(i).element();
 			else
-				buffer[i] = grad.getbGradient().get(i - logReg.getW().length);
+				buffer[i] = (double) grad.getbGradient().getScalar(i - logReg.getW().length()).element();
 			
 		}
 	}
@@ -86,38 +87,38 @@ public class OutputLayerOptimizer implements Optimizable.ByGradientValue,Optimiz
 	}
 
 	@Override
-	public DoubleMatrix getParameters() {
-		DoubleMatrix params = new DoubleMatrix(getNumParameters());
-		for(int i = 0; i < params.length; i++) {
-			params.put(i,getParameter(i));
+	public INDArray getParameters() {
+		INDArray params  = NDArrays.create(getNumParameters());
+		for(int i = 0; i < params.length(); i++) {
+			params.putScalar(i,getParameter(i));
 		}
 		return params;
 	}
 
 	@Override
-	public void setParameters(DoubleMatrix params) {
+	public void setParameters(INDArray params) {
         if(logReg.isConstrainGradientToUniNorm())
-              params.divi(params.normmax());
-		this.setParameters(params.toArray());
+              params.divi(params.normmax(Integer.MAX_VALUE));
+		this.setParameters(params.data());
 	}
 
 	@Override
-	public DoubleMatrix getValueGradient(int currIteration) {
+	public INDArray getValueGradient(int currIteration) {
         this.currIteration = currIteration;
 		OutputLayerGradient grad = logReg.getGradient(lr);
-		DoubleMatrix ret = new DoubleMatrix(getNumParameters());
-        if(logReg.getW().length != grad.getwGradient().length)
+		INDArray ret = NDArrays.create(getNumParameters());
+        if(logReg.getW().length() != grad.getwGradient().length())
             throw new IllegalStateException("Illegal length for gradient");
-        if(logReg.getB().length != grad.getbGradient().length)
+        if(logReg.getB().length() != grad.getbGradient().length())
             throw new IllegalStateException("Illegal length for gradient");
 
 
 
-        for(int i = 0; i < ret.length; i++) {
-			if(i < logReg.getW().length)
-				ret.put(i,grad.getwGradient().get(i));
+        for(int i = 0; i < ret.length(); i++) {
+			if(i < logReg.getW().length())
+				ret.put(i,grad.getwGradient().getScalar(i));
 			else
-				ret.put(i,grad.getbGradient().get(i - logReg.getW().length));
+				ret.put(i,grad.getbGradient().getScalar(i - logReg.getW().length()));
 			
 		}
 		return ret;

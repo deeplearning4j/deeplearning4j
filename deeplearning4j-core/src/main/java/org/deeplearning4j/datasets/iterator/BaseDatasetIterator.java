@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.dataset.DataSet;
+
 /**
  * Baseline implementation includes
  * control over the data fetcher and some basic

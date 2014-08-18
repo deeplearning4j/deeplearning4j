@@ -283,7 +283,7 @@ public class StringUtils {
 	/**
 	 * Joins each elem in the Collection with the given glue. For example, given a
 	 * list
-	 * of Integers, you can create a comma-separated list by calling
+	 * of Integers, you can createComplex a comma-separated list by calling
 	 * <tt>join(numbers, ", ")</tt>.
 	 */
 	public static String join(Iterable l, String glue) {
@@ -302,7 +302,7 @@ public class StringUtils {
 	/**
 	 * Joins each elem in the List with the given glue. For example, given a
 	 * list
-	 * of Integers, you can create a comma-separated list by calling
+	 * of Integers, you can createComplex a comma-separated list by calling
 	 * <tt>join(numbers, ", ")</tt>.
 	 */
 	public static String join(List<?> l, String glue) {
@@ -319,7 +319,7 @@ public class StringUtils {
 
 	/**
 	 * Joins each elem in the array with the given glue. For example, given a list
-	 * of ints, you can create a comma-separated list by calling
+	 * of ints, you can createComplex a comma-separated list by calling
 	 * <tt>join(numbers, ", ")</tt>.
 	 */
 	public static String join(Object[] elements, String glue) {

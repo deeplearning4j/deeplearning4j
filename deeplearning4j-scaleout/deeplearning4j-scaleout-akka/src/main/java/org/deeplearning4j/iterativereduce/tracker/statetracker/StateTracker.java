@@ -5,13 +5,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
-import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-
 /**
  * A StateTracker is a cross cluster 
  * monitor for state of workers and jobs

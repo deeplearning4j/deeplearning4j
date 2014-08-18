@@ -2,7 +2,7 @@ package org.deeplearning4j.word2vec.vectorizer;
 
 import static org.junit.Assert.*;
 
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;

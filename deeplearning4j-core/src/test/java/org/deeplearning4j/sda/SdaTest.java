@@ -4,12 +4,12 @@ package org.deeplearning4j.sda;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.util.MatrixUtil;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.jblas.DoubleMatrix;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,15 +63,15 @@ public class SdaTest {
 
         watch.start();
 
-        stackedDenoisingAutoEncoder.pretrain(d.getFirst(), 1, 1e-2, 300);
-        stackedDenoisingAutoEncoder.finetune(d.getSecond(), 1e-2, 100);
+        stackedDenoisingAutoEncoder.pretrain(d.getFeatureMatrix(), 1, 1e-2, 300);
+        stackedDenoisingAutoEncoder.finetune(d.getLabels(), 1e-2, 100);
 
         watch.stop();
 
         log.info("Took " + watch.getTime());
         Evaluation eval = new Evaluation();
-        DoubleMatrix predict = stackedDenoisingAutoEncoder.output(d.getFirst());
-        eval.eval(d.getSecond(), predict);
+        INDArray predict = stackedDenoisingAutoEncoder.output(d.getFeatureMatrix());
+        eval.eval(d.getLabels(), predict);
         log.info(eval.stats());
 
 

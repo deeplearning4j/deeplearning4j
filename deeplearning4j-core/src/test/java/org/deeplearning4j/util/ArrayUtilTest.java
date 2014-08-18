@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ public class ArrayUtilTest {
 
     @Test
     public void testRange() {
-        int[] range = ArrayUtil.range(0,2);
+        int[] range = ArrayUtil.range(0, 2);
         int[] test = {0,1};
         assertEquals(true, Arrays.equals(test,range));
 

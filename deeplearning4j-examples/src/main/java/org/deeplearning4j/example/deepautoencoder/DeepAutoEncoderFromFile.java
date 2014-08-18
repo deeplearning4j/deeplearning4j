@@ -1,22 +1,20 @@
 package org.deeplearning4j.example.deepautoencoder;
 
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.plot.FilterRenderer;
-import org.deeplearning4j.plot.MultiLayerNetworkReconstructionRender;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.util.MatrixUtil;
+
 import org.deeplearning4j.util.SerializationUtils;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,14 +60,14 @@ public class DeepAutoEncoderFromFile {
 
             FilterRenderer f2 = new FilterRenderer();
             f2.renderFilters(encoder.getOutputLayer().getW(), "outputlayer.png", 28, 28, next.numExamples());
-            DoubleMatrix recon =  encoder.output(next.getFirst());
+            INDArray recon =  encoder.output(next.getFeatureMatrix());
 
-            encoder.finetune(next.getFirst(),1e-3,10);
+            encoder.finetune(next.getFeatureMatrix(),1e-3,10);
 
             if(count % 10 == 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();
                 String[] layers = new String[encoder.getLayers().length];
-                DoubleMatrix[] weights = new DoubleMatrix[layers.length];
+                INDArray[] weights = new INDArray[layers.length];
                 for(int i = 0; i < encoder.getLayers().length; i++) {
                     layers[i] = "" + i;
                     weights[i] = encoder.getLayers()[i].getW();
@@ -79,8 +77,8 @@ public class DeepAutoEncoderFromFile {
 
                 FilterRenderer f = new FilterRenderer();
                 f.renderFilters(encoder.getOutputLayer().getW(), "outputlayer.png", 28, 28, next.numExamples());
-                DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(next.iterator(next.numExamples()),encoder,28,28);
-                render.draw();
+               // DeepAutoEncoderDataSetReconstructionRender render = new DeepAutoEncoderDataSetReconstructionRender(next.iterator(next.numExamples()),encoder,28,28);
+               // render.draw();
             }
 
             count++;

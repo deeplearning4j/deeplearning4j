@@ -1,22 +1,16 @@
 package org.deeplearning4j.linalg.fft;
 
 import com.google.common.base.Function;
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.NDArray;
-import org.deeplearning4j.util.ComplexNDArrayUtil;
-import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.ComplexDouble;
-import org.jblas.ComplexDoubleMatrix;
-
-import static org.deeplearning4j.util.MatrixUtil.exp;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ComplexNDArrayUtil;
 
 /**
  * Single ifft operation
  *
  * @author Adam Gibson
  */
-public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
+public class VectorIFFT implements Function<IComplexNDArray,IComplexNDArray> {
 
 
     private int n;
@@ -32,26 +26,12 @@ public class VectorIFFT implements Function<ComplexNDArray,ComplexNDArray> {
         this.n = n;
     }
 
-    /**
-     * Returns the result of applying this function to {@code input}. This method is <i>generally
-     * expected</i>, but not absolutely required, to have the following properties:
-     * <p/>
-     * <ul>
-     * <li>Its execution does not cause any observable side effects.
-     * <li>The computation is <i>consistent with equals</i>; that is, {@link Objects#equal
-     * Objects.equal}{@code (a, b)} implies that {@code Objects.equal(function.apply(a),
-     * function.apply(b))}.
-     * </ul>
-     *
-     * @param input
-     * @throws NullPointerException if {@code input} is null and this function does not accept null
-     *                              arguments
-     */
+
     @Override
-    public ComplexNDArray apply(ComplexNDArray ndArray) {
+    public IComplexNDArray apply(IComplexNDArray ndArray) {
         //ifft(x) = conj(fft(conj(x)) / length(x)
-        ComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(n);
-        return originalN > 0 ? ComplexNDArrayUtil.truncate(ret,originalN,0) : ret;
+        IComplexNDArray ret = new VectorFFT(n).apply(ndArray.conj()).conj().divi(NDArrays.scalar(n));
+        return originalN > 0 ? ComplexNDArrayUtil.truncate(ret, originalN, 0) : ret;
 
     }
 }

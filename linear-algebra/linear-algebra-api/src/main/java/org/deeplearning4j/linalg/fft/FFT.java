@@ -1,13 +1,10 @@
 package org.deeplearning4j.linalg.fft;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.linalg.ComplexNDArray;
-import org.deeplearning4j.nn.linalg.NDArray;
-import org.deeplearning4j.nn.linalg.Shape;
-import org.deeplearning4j.util.ArrayUtil;
-import org.deeplearning4j.util.ComplexNDArrayUtil;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.FloatMatrix;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.linalg.util.ComplexNDArrayUtil;
 
 
 /**
@@ -24,10 +21,10 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static ComplexNDArray fft(NDArray transform,int numElements) {
-        ComplexNDArray inputC = new ComplexNDArray(transform);
+    public static IComplexNDArray fft(INDArray transform,int numElements) {
+        IComplexNDArray inputC = NDArrays.createComplex(transform);
         if(inputC.isVector())
-            return  new VectorFFT(inputC.length).apply(inputC);
+            return  new VectorFFT(inputC.length()).apply(inputC);
         else {
             return rawfft(inputC,numElements,inputC.shape().length - 1);
         }
@@ -43,9 +40,9 @@ public class FFT {
      * @param inputC the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray fft(ComplexNDArray inputC) {
+    public static  IComplexNDArray fft(IComplexNDArray inputC) {
         if(inputC.isVector())
-            return  new VectorFFT(inputC.length).apply(inputC);
+            return  new VectorFFT(inputC.length()).apply(inputC);
         else {
             return rawfft(inputC,inputC.size(inputC.shape().length - 1),inputC.shape().length - 1);
         }
@@ -59,8 +56,8 @@ public class FFT {
      * @param input the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray fft(NDArray input) {
-        ComplexNDArray inputC = new ComplexNDArray(input);
+    public static  IComplexNDArray fft(INDArray input) {
+        IComplexNDArray inputC = NDArrays.createComplex(input);
         return fft(inputC);
     }
 
@@ -72,8 +69,8 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static ComplexNDArray fft(NDArray transform,int numElements,int dimension) {
-        ComplexNDArray inputC = new ComplexNDArray(transform);
+    public static IComplexNDArray fft(INDArray transform,int numElements,int dimension) {
+        IComplexNDArray inputC = NDArrays.createComplex(transform);
         if(inputC.isVector())
             return  new VectorFFT(numElements).apply(inputC);
         else {
@@ -90,7 +87,7 @@ public class FFT {
      * @param inputC the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements) {
+    public static  IComplexNDArray fft(IComplexNDArray inputC,int numElements) {
         return fft(inputC,numElements,inputC.shape().length - 1);
     }
 
@@ -103,7 +100,7 @@ public class FFT {
      * @param inputC the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray fft(ComplexNDArray inputC,int numElements,int dimension) {
+    public static  IComplexNDArray fft(IComplexNDArray inputC,int numElements,int dimension) {
         if(inputC.isVector())
             return  new VectorFFT(numElements).apply(inputC);
         else {
@@ -120,8 +117,8 @@ public class FFT {
      * @param dimension the dimension to do fft along
      * @return the iffted output
      */
-    public static ComplexNDArray ifft(NDArray transform,int numElements,int dimension) {
-        ComplexNDArray inputC = new ComplexNDArray(transform);
+    public static IComplexNDArray ifft(INDArray transform,int numElements,int dimension) {
+        IComplexNDArray inputC = NDArrays.createComplex(transform);
         if(inputC.isVector())
             return  new VectorIFFT(numElements).apply(inputC);
         else {
@@ -139,9 +136,9 @@ public class FFT {
      * @param inputC the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray ifft(ComplexNDArray inputC) {
+    public static  IComplexNDArray ifft(IComplexNDArray inputC) {
         if(inputC.isVector())
-            return  new VectorIFFT(inputC.length).apply(inputC);
+            return  new VectorIFFT(inputC.length()).apply(inputC);
         else {
             return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
         }
@@ -155,8 +152,8 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the ffted output
      */
-    public static ComplexNDArray ifft(NDArray transform,int numElements) {
-        ComplexNDArray inputC = new ComplexNDArray(transform);
+    public static IComplexNDArray ifft(INDArray transform,int numElements) {
+        IComplexNDArray inputC = NDArrays.createComplex(transform);
         if(inputC.isVector())
             return  new VectorIFFT(numElements).apply(inputC);
         else {
@@ -174,7 +171,7 @@ public class FFT {
      * @param inputC the input to applyTransformToOrigin
      * @return the the discrete fourier applyTransformToOrigin of the passed in input
      */
-    public static  ComplexNDArray ifft(ComplexNDArray inputC,int numElements,int dimension) {
+    public static  IComplexNDArray ifft(IComplexNDArray inputC,int numElements,int dimension) {
         if(inputC.isVector())
             return  new VectorIFFT(numElements).apply(inputC);
         else {
@@ -194,14 +191,14 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the reverse ifft of the passed in array
      */
-    public static ComplexNDArray ifftn(NDArray transform,int dimension,int numElements) {
-           return ifftn(new ComplexNDArray(transform),dimension,numElements);
+    public static IComplexNDArray ifftn(INDArray transform,int dimension,int numElements) {
+           return ifftn(NDArrays.createComplex(transform),dimension,numElements);
     }
 
 
-    public static ComplexNDArray irfftn(ComplexNDArray arr) {
+    public static IComplexNDArray irfftn(IComplexNDArray arr) {
         int[] shape = arr.shape();
-        ComplexNDArray ret = arr.dup();
+        IComplexNDArray ret = arr.dup();
         for(int i = 0; i < shape.length - 1; i++) {
             ret = FFT.ifftn(ret,i,shape[i]);
         }
@@ -212,11 +209,11 @@ public class FFT {
 
 
 
-    public static ComplexNDArray irfft(ComplexNDArray arr,int dimension) {
+    public static IComplexNDArray irfft(IComplexNDArray arr,int dimension) {
         return fftn(arr, arr.size(dimension), dimension);
     }
 
-    public static ComplexNDArray irfft(ComplexNDArray arr) {
+    public static IComplexNDArray irfft(IComplexNDArray arr) {
         return arr;
     }
 
@@ -227,19 +224,19 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the transformed array
      */
-    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension,int numElements) {
+    public static IComplexNDArray ifftn(IComplexNDArray transform,int dimension,int numElements) {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
         int[] axes = ArrayUtil.range(0, finalShape.length);
 
-        ComplexNDArray result = transform.dup();
+        IComplexNDArray result = transform.dup();
 
         int desiredElementsAlongDimension = result.size(dimension);
 
         if(numElements > desiredElementsAlongDimension) {
-            result = ComplexNDArrayUtil.padWithZeros(result,finalShape);
+            result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
         }
 
         else if(numElements < desiredElementsAlongDimension)
@@ -258,14 +255,14 @@ public class FFT {
      *                    along each dimension from each slice (note: each slice)
      * @return the transformed array
      */
-    public static ComplexNDArray fftn(ComplexNDArray transform,int dimension,int numElements) {
+    public static IComplexNDArray fftn(IComplexNDArray transform,int dimension,int numElements) {
         if(numElements < 1)
             throw new IllegalArgumentException("No elements specified");
 
         int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
         int[] axes = ArrayUtil.range(0, finalShape.length);
 
-        ComplexNDArray result = transform.dup();
+        IComplexNDArray result = transform.dup();
 
         int desiredElementsAlongDimension = result.size(dimension);
 
@@ -288,8 +285,8 @@ public class FFT {
      * @param numElements the desired number of elements in each fft
      * @return the fft of the specified ndarray
      */
-    public static ComplexNDArray fftn(NDArray transform,int dimension,int numElements) {
-        return fftn(new ComplexNDArray(transform),dimension,numElements);
+    public static IComplexNDArray fftn(INDArray transform,int dimension,int numElements) {
+        return fftn(NDArrays.createComplex(transform),dimension,numElements);
     }
 
     /**
@@ -297,7 +294,7 @@ public class FFT {
      * @param transform the matrix to applyTransformToOrigin
      * @return the ffted array
      */
-    public static ComplexNDArray fftn(NDArray transform) {
+    public static IComplexNDArray fftn(INDArray transform) {
         return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
     }
 
@@ -313,7 +310,7 @@ public class FFT {
      * @param transform the matrix to applyTransformToOrigin
      * @return the ffted array
      */
-    public static ComplexNDArray fftn(ComplexNDArray transform) {
+    public static IComplexNDArray fftn(IComplexNDArray transform) {
         return fftn(transform,transform.shape().length - 1,transform.shape()[transform.shape().length - 1]);
     }
 
@@ -322,17 +319,17 @@ public class FFT {
 
 
 
-    public static ComplexNDArray ifftn(ComplexNDArray transform,int dimension) {
+    public static IComplexNDArray ifftn(IComplexNDArray transform,int dimension) {
         return ifftn(transform, dimension, transform.shape()[dimension]);
     }
 
 
-    public static ComplexNDArray ifftn(ComplexNDArray transform) {
+    public static IComplexNDArray ifftn(IComplexNDArray transform) {
         return ifftn(transform, transform.shape().length - 1,transform.size(transform.shape().length - 1));
     }
 
 
-    public static ComplexNDArray ifftn(NDArray transform) {
+    public static IComplexNDArray ifftn(INDArray transform) {
         return ifftn(transform, transform.shape().length - 1, transform.size(transform.shape().length - 1));
     }
 
@@ -340,26 +337,14 @@ public class FFT {
 
 
 
-    public static Pair<int[],int[]> cookNdArgs(NDArray arr,int[] shape,int[] axes) {
-        if(shape == null)
-            shape = ArrayUtil.copy(arr.shape());
-        if(axes == null) {
-            axes = ArrayUtil.range(-shape.length,0);
-        }
-
-        if(shape.length != axes.length)
-            throw new IllegalArgumentException("Shape and axes must be same length");
-
-        return new Pair<>(shape,axes);
-    }
 
 
     //underlying ifftn
-    public static ComplexNDArray rawifftn(ComplexNDArray transform,int[] shape,int[] axes) {
+    public static IComplexNDArray rawifftn(IComplexNDArray transform,int[] shape,int[] axes) {
         assert shape.length > 0 : "Shape length must be > 0";
         assert shape.length == axes.length : "Axes and shape must be the same length";
 
-        ComplexNDArray result = transform.dup();
+        IComplexNDArray result = transform.dup();
 
 
 
@@ -372,8 +357,8 @@ public class FFT {
     }
 
     //underlying fftn
-    public static ComplexNDArray rawfftn(ComplexNDArray transform,int[] shape,int[] axes) {
-        ComplexNDArray result = transform.dup();
+    public static IComplexNDArray rawfftn(IComplexNDArray transform,int[] shape,int[] axes) {
+        IComplexNDArray result = transform.dup();
 
 
 
@@ -394,8 +379,8 @@ public class FFT {
      * @param dimension the dimension to do fft along
      * @return the transformed ndarray
      */
-    public static ComplexNDArray rawfft(ComplexNDArray transform,int n,int dimension) {
-        ComplexNDArray result = transform.dup();
+    public static IComplexNDArray rawfft(IComplexNDArray transform,int n,int dimension) {
+        IComplexNDArray result = transform.dup();
 
         if(transform.size(dimension) != n) {
             int[] shape = ArrayUtil.copy(result.shape());
@@ -424,8 +409,8 @@ public class FFT {
 
 
     //underlying fftn
-    public static ComplexNDArray rawifft(ComplexNDArray transform,int n,int dimension) {
-        ComplexNDArray result = transform.dup();
+    public static IComplexNDArray rawifft(IComplexNDArray transform,int n,int dimension) {
+        IComplexNDArray result = transform.dup();
 
         if(transform.size(dimension) != n) {
             int[] shape = ArrayUtil.copy(result.shape());
@@ -451,7 +436,7 @@ public class FFT {
     }
 
     //underlying fftn
-    public static ComplexNDArray rawifft(ComplexNDArray transform,int dimension) {
+    public static IComplexNDArray rawifft(IComplexNDArray transform,int dimension) {
         return rawifft(transform,transform.shape()[dimension],dimension);
     }
 

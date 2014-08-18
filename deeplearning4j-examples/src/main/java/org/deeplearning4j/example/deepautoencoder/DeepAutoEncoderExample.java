@@ -3,17 +3,17 @@ package org.deeplearning4j.example.deepautoencoder;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.autoencoder.DeepAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.transformation.MatrixTransformations;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.plot.DeepAutoEncoderDataSetReconstructionRender;
 import org.deeplearning4j.rbm.RBM;
-import org.deeplearning4j.transformation.MatrixTransformations;
 import org.deeplearning4j.util.RBMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,16 +75,6 @@ public class DeepAutoEncoderExample {
 
 
 
-
-        while (iter.hasNext()) {
-            DataSet data = iter.next();
-
-
-
-            DeepAutoEncoderDataSetReconstructionRender r = new DeepAutoEncoderDataSetReconstructionRender(data.iterator(data.numExamples()),encoder,28,28);
-            r.setPicDraw(MatrixTransformations.multiplyScalar(255));
-            r.draw();
-        }
 
 
 

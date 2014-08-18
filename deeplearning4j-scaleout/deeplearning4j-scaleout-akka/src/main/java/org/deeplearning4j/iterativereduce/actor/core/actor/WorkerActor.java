@@ -8,17 +8,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import akka.actor.*;
 import akka.dispatch.Futures;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.ClearWorker;
 import org.deeplearning4j.iterativereduce.actor.core.Job;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.conf.DeepLearningConfigurable;
 import org.deeplearning4j.scaleout.iterativereduce.ComputableWorker;
 import org.deeplearning4j.scaleout.iterativereduce.Updateable;
 
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.Future;
@@ -163,13 +164,13 @@ public abstract class WorkerActor<E extends Updateable<?>> extends UntypedActor 
             @Override
             public E call() throws Exception {
 
-                DoubleMatrix newInput = new DoubleMatrix(list.size(), list.get(0).getFirst().columns);
-                DoubleMatrix newOutput = new DoubleMatrix(list.size(), list.get(0).getSecond().columns);
+                INDArray newInput = NDArrays.create(list.size(), list.get(0).getFeatureMatrix().columns());
+                INDArray newOutput = NDArrays.create(list.size(), list.get(0).getLabels().columns());
 
 
                 for (int i = 0; i < list.size(); i++) {
-                    newInput.putRow(i, list.get(i).getFirst());
-                    newOutput.putRow(i, list.get(i).getSecond());
+                    newInput.putRow(i, list.get(i).getFeatureMatrix());
+                    newOutput.putRow(i, list.get(i).getLabels());
                 }
 
                 //flag that work has begun if not flagged already

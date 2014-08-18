@@ -4,18 +4,18 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.primitives.Doubles;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.Optimizable;
 
 /**
  * Performs basic beam search based on the network's loss function
@@ -77,11 +77,11 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
 
     @Override
-    public DoubleMatrix getParameters() {
-        return new DoubleMatrix(ArrayUtil.combine(network.getW().data,network.getvBias().data,network.gethBias().data));
+    public INDArray getParameters() {
+        return NDArrays.create(Doubles.concat(network.getW().data(), network.getvBias().data(), network.gethBias().data()));
     }
 
-    public void train(DoubleMatrix x) {
+    public void train(INDArray x) {
         if(opt == null) {
             createOptimizationAlgorithm();
         }
@@ -112,7 +112,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     @Override
     public int getNumParameters() {
         if(numParams < 0) {
-            numParams = network.getW().length + network.gethBias().length + network.getvBias().length;
+            numParams = network.getW().length() + network.gethBias().length() + network.getvBias().length();
             return numParams;
         }
 
@@ -125,18 +125,18 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
     @Override
     public double getParameter(int index) {
         //beyond weight matrix
-        if(index >= network.getW().length) {
+        if(index >= network.getW().length()) {
             int i = getAdjustedIndex(index);
             //beyond visible bias
-            if(index >= network.getvBias().length + network.getW().length) {
-                return network.gethBias().get(i);
+            if(index >= network.getvBias().length() + network.getW().length()) {
+                return (double) network.gethBias().getScalar(i).element();
             }
             else
-                return network.getvBias().get(i);
+                return (double) network.getvBias().getScalar(i).element();
 
         }
         else
-            return network.getW().get(index);
+            return (double) network.getW().getScalar(index).element();
 
 
 
@@ -144,38 +144,38 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
 
     @Override
-    public void setParameters(DoubleMatrix params) {
+    public void setParameters(INDArray params) {
         if(network.isConstrainGradientToUnitNorm())
-            params.divi(params.normmax());
-        for(int i = 0; i < params.length; i++)
-            setParameter(i, params.get(i));
+            params.divi(params.normmax(Integer.MAX_VALUE));
+        for(int i = 0; i < params.length(); i++)
+            setParameter(i, (double) params.getScalar(i).element());
     }
 
     @Override
     public void setParameter(int index, double value) {
         //beyond weight matrix
-        if(index >= network.getW().length) {
+        if(index >= network.getW().length()) {
             //beyond visible bias
-            if(index >= network.getvBias().length + network.getW().length)  {
+            if(index >= network.getvBias().length() + network.getW().length())  {
                 int i = getAdjustedIndex(index);
-                network.gethBias().put(i, value);
+                network.gethBias().putScalar(i, value);
             }
             else {
                 int i = getAdjustedIndex(index);
-                network.getvBias().put(i,value);
+                network.getvBias().putScalar(i, value);
 
             }
 
         }
         else {
-            network.getW().put(index,value);
+            network.getW().putScalar(index, value);
         }
     }
 
 
     private int getAdjustedIndex(int index) {
-        int wLength = network.getW().length;
-        int vBiasLength = network.getvBias().length;
+        int wLength = network.getW().length();
+        int vBiasLength = network.getvBias().length();
         if(index < wLength)
             return index;
         else if(index >= wLength + vBiasLength) {
@@ -190,7 +190,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
 
     @Override
-    public DoubleMatrix getValueGradient(int iteration) {
+    public INDArray getValueGradient(int iteration) {
         if(iteration >= 1)
             extraParams[extraParams.length - 1] = iteration;
         NeuralNetworkGradient g = network.getGradient(extraParams);
@@ -202,17 +202,17 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 		 * Hidden Bias
 		 */
         int idx = 0;
-        for (int i = 0; i < g.getwGradient().length; i++) {
-            buffer[idx++] = g.getwGradient().get(i);
+        for (int i = 0; i < g.getwGradient().length(); i++) {
+            buffer[idx++] = (double) g.getwGradient().getScalar(i).element();
         }
-        for (int i = 0; i < g.getvBiasGradient().length; i++) {
-            buffer[idx++] = g.getvBiasGradient().get(i);
+        for (int i = 0; i < g.getvBiasGradient().length(); i++) {
+            buffer[idx++] = (double) g.getvBiasGradient().getScalar(i).element();
         }
-        for (int i = 0; i < g.gethBiasGradient().length; i++) {
-            buffer[idx++] = g.gethBiasGradient().get(i);
+        for (int i = 0; i < g.gethBiasGradient().length(); i++) {
+            buffer[idx++] = (double) g.gethBiasGradient().getScalar(i).element();
         }
 
-        return new DoubleMatrix(buffer);
+        return NDArrays.create(buffer);
     }
 
 

@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.deeplearning4j.distancefunction.DistanceFunction;
-import org.deeplearning4j.distancefunction.EuclideanDistance;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
+
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.distancefunction.DistanceFunction;
+import org.deeplearning4j.linalg.distancefunction.EuclideanDistance;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +30,8 @@ public class KMeansClustering implements Serializable {
 	private static Logger log = LoggerFactory.getLogger(KMeansClustering.class);
 
 	private List<Long> counts = null;
-	private DoubleMatrix centroids;
-	private List<DoubleMatrix> initFeatures = new ArrayList<DoubleMatrix>();
+	private INDArray centroids;
+	private List<INDArray> initFeatures = new ArrayList<INDArray>();
 	private Class<DistanceFunction> clazz;
 
 	private Integer nbCluster;
@@ -44,7 +46,7 @@ public class KMeansClustering implements Serializable {
 	}
 
 
-	public Integer classify(DoubleMatrix features) {
+	public Integer classify(INDArray features) {
 		if (!this.isReady()) {
 			throw new IllegalStateException("KMeans is not ready yet");
 		}
@@ -55,10 +57,10 @@ public class KMeansClustering implements Serializable {
 	}
 
 
-	public Integer update(DoubleMatrix features) {
+	public Integer update(INDArray features) {
 		if (!this.isReady()) {
 			this.initIfPossible(features);
-			log.info("Initializing feature vector with length of " + features.length);
+			log.info("Initializing feature vector with length of " + features.length());
 			return null;
 		} else {
 			Integer nearestCentroid = this.classify(features);
@@ -67,7 +69,7 @@ public class KMeansClustering implements Serializable {
 			this.counts.set(nearestCentroid, this.counts.get(nearestCentroid) + 1);
 
 			// Move centroid
-			DoubleMatrix update = features.sub(this.centroids.getRow(nearestCentroid)).mul( 1.0 / this.counts.get(nearestCentroid));
+			INDArray update = features.sub(this.centroids.getRow(nearestCentroid)).mul( 1.0 / this.counts.get(nearestCentroid));
 			this.centroids.putRow(nearestCentroid,this.centroids.getRow(nearestCentroid).add(update));
 
 			return nearestCentroid;
@@ -75,44 +77,44 @@ public class KMeansClustering implements Serializable {
 	}
 
 
-	public DoubleMatrix distribution(DoubleMatrix features) {
+	public INDArray distribution(INDArray features) {
 		if (!this.isReady()) {
 			throw new IllegalStateException("KMeans is not ready yet");
 		}
 
-		DoubleMatrix distribution = new DoubleMatrix(1,this.nbCluster);
-		DoubleMatrix currentCentroid;
+		INDArray distribution = NDArrays.create(1,this.nbCluster);
+		INDArray currentCentroid;
 		for (int i = 0; i < this.nbCluster; i++) {
 			currentCentroid = this.centroids.getRow(i);
-			distribution.put(i,getDistance(currentCentroid,features));
+			distribution.putScalar(i,getDistance(currentCentroid,features));
 		}
 
 		return distribution;
 	}
 
 
-	private double getDistance(DoubleMatrix m1,DoubleMatrix m2) {
+	private double getDistance(INDArray m1,INDArray m2) {
 		DistanceFunction function;
 		try {
-			function = clazz.getConstructor(DoubleMatrix.class).newInstance(m1);
+			function = clazz.getConstructor(INDArray.class).newInstance(m1);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} 
 		return function.apply(m2);
 	}
 
-	public DoubleMatrix getCentroids() {
+	public INDArray getCentroids() {
 		return this.centroids;
 	}
 
-	protected Integer nearestCentroid(DoubleMatrix features) {
+	protected Integer nearestCentroid(INDArray features) {
 		// Find nearest centroid
 		Integer nearestCentroidIndex = 0;
 
 		Double minDistance = Double.MAX_VALUE;
-		DoubleMatrix currentCentroid;
+		INDArray currentCentroid;
 		Double currentDistance;
-		for (int i = 0; i < this.centroids.rows; i++) {
+		for (int i = 0; i < this.centroids.rows(); i++) {
 			currentCentroid = this.centroids.getRow(i);
 			if (currentCentroid != null) {
 				currentDistance = getDistance(currentCentroid,features);
@@ -132,9 +134,9 @@ public class KMeansClustering implements Serializable {
 		return countsReady && centroidsReady;
 	}
 
-	protected void initIfPossible(DoubleMatrix features) {
+	protected void initIfPossible(INDArray features) {
 		this.initFeatures.add(features);
-		log.info("Added feature vector of length " + features.length);
+		log.info("Added feature vector of length " + features.length());
 		// magic number : 10 ??!
 		if (this.initFeatures.size() >= 10 * this.nbCluster) {
 			this.initCentroids();
@@ -157,21 +159,21 @@ public class KMeansClustering implements Serializable {
 		Random random = new Random();
 
 		// Choose one centroid uniformly at random from among the data points.
-		final DoubleMatrix firstCentroid = this.initFeatures.remove(random.nextInt(this.initFeatures.size()));
-		this.centroids = new DoubleMatrix(this.nbCluster,firstCentroid.columns);
+		final INDArray firstCentroid = this.initFeatures.remove(random.nextInt(this.initFeatures.size()));
+		this.centroids = NDArrays.create(this.nbCluster,firstCentroid.columns());
 		this.centroids.putRow(0,firstCentroid);
 		log.info("Added initial centroid");
-		DoubleMatrix dxs;
+		INDArray dxs;
 
 		for (int j = 1; j < this.nbCluster; j++) {
 			// For each data point x, compute D(x)
 			dxs = this.computeDxs();
 
 			// Add one new data point as a center.
-			DoubleMatrix features;
-			double r = random.nextDouble() * dxs.get(dxs.length - 1);
-			for (int i = 0; i < dxs.length; i++) {
-				if (dxs.get(i) >= r) {
+			INDArray features;
+			double r = random.nextDouble() * (double) dxs.getScalar(dxs.length() - 1).element();
+			for (int i = 0; i < dxs.length(); i++) {
+				if ((double) dxs.getScalar(i).element() >= r) {
 					features = this.initFeatures.remove(i);
 					this.centroids.putRow(j,features);
 					break;
@@ -183,20 +185,20 @@ public class KMeansClustering implements Serializable {
 	}
 
 
-	protected DoubleMatrix computeDxs() {
-		DoubleMatrix dxs = new DoubleMatrix(this.initFeatures.size(),this.initFeatures.get(0).columns);
+	protected INDArray computeDxs() {
+		INDArray dxs = NDArrays.create(this.initFeatures.size(), this.initFeatures.get(0).columns());
 
 		int sum = 0;
-		DoubleMatrix features;
+		INDArray features;
 		int nearestCentroidIndex;
-		DoubleMatrix nearestCentroid;
+		INDArray nearestCentroid;
 
 		for (int i = 0; i < this.initFeatures.size(); i++) {
 			features = this.initFeatures.get(i);
 			nearestCentroidIndex = this.nearestCentroid(features);
 			nearestCentroid = this.centroids.getRow(nearestCentroidIndex);
-			sum += MatrixFunctions.pow(getDistance(features,nearestCentroid), 2);
-			dxs.put(i,sum);
+			sum += Math.pow(getDistance(features, nearestCentroid), 2);
+			dxs.putScalar(i,sum);
 		}
 
 		return dxs;

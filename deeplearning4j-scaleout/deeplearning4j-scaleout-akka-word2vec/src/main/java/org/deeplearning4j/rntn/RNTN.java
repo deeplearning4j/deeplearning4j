@@ -1,27 +1,25 @@
 package org.deeplearning4j.rntn;
 
-
-import static org.jblas.ranges.RangeUtils.interval;
-import static org.deeplearning4j.util.MatrixUtil.appendBias;
-
+import static org.deeplearning4j.linalg.indexing.NDArrayIndex.interval;
 
 import akka.actor.ActorSystem;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.linalg.FloatTensor;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.learning.AdaGradFloat;
+
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.parallel.Parallelization;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.MultiDimensionalSet;
 import org.deeplearning4j.word2vec.Word2Vec;
-import org.jblas.FloatMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.SimpleBlas;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Recursive Neural FloatTensor Network by Socher et. al
+ * Recursive Neural INDArray Network by Socher et. al
  *
  * This is a modified implementation of the sentiment analysis RNTN
  * from Stanford that is intended to work with more general purpose inputs (scene detection with images,
@@ -51,7 +49,7 @@ public class RNTN implements Serializable {
     //must be same size as word vectors
     private int numHidden = 25;
     private RandomGenerator rng;
-    private boolean useFloatTensors = true;
+    private boolean useINDArrays = true;
     private boolean combineClassification = true;
     private boolean simplifiedModel = true;
     private boolean randomFeatureVectors = true;
@@ -60,7 +58,7 @@ public class RNTN implements Serializable {
     private boolean lowerCasefeatureNames;
     protected ActivationFunction activationFunction = Activations.tanh();
     protected ActivationFunction outputActivation = Activations.softMaxRows();
-    protected AdaGradFloat paramAdaGrad;
+    protected AdaGrad paramAdaGrad;
 
     /** Regularization cost for the applyTransformToOrigin matrix  */
     private float regTransformMatrix = 0.001f;
@@ -78,30 +76,30 @@ public class RNTN implements Serializable {
      */
     private int adagradResetFrequency = 1;
 
-    /** Regularization cost for the applyTransformToOrigin FloatTensor  */
-    private float regTransformFloatTensor = 0.001f;
+    /** Regularization cost for the applyTransformToOrigin INDArray  */
+    private float regTransformINDArray = 0.001f;
 
     /**
      * Nx2N+1, where N is the size of the word vectors
      */
-    private MultiDimensionalMap<String, String, FloatMatrix> binaryTransform;
+    private MultiDimensionalMap<String, String, INDArray> binaryTransform;
 
     /**
      * 2Nx2NxN, where N is the size of the word vectors
      */
-    private MultiDimensionalMap<String, String, FloatTensor> binaryFloatTensors;
+    private MultiDimensionalMap<String, String, INDArray> binaryINDArrays;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
      */
-    private Map<String, FloatMatrix> unaryClassification;
+    private Map<String, INDArray> unaryClassification;
 
-    private Map<String, FloatMatrix> featureVectors;
+    private Map<String, INDArray> featureVectors;
 
     /**
      * CxN+1, where N = size of word vectors, C is the number of classes
      */
-    private MultiDimensionalMap<String, String, FloatMatrix> binaryClassification;
+    private MultiDimensionalMap<String, String, INDArray> binaryClassification;
 
 
     /**
@@ -112,8 +110,8 @@ public class RNTN implements Serializable {
 
     /** How many elements a transformation matrix has */
     private  int binaryTransformSize;
-    /** How many elements the binary transformation FloatTensors have */
-    private  int binaryFloatTensorSize;
+    /** How many elements the binary transformation INDArrays have */
+    private  int binaryINDArraySize;
     /** How many elements a classification matrix has */
     private  int binaryClassificationSize;
 
@@ -126,7 +124,7 @@ public class RNTN implements Serializable {
     /** How many elements a classification matrix has */
     private  int unaryClassificationSize;
 
-    private FloatMatrix identity;
+    private INDArray identity;
 
     private List<Tree> trainingTrees;
 
@@ -138,10 +136,10 @@ public class RNTN implements Serializable {
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
 
-    private RNTN(int numHidden, RandomGenerator rng, boolean useFloatTensors, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, float regTransformFloatTensor, Map<String, FloatMatrix> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryFloatTensorSize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
+    private RNTN(int numHidden, RandomGenerator rng, boolean useINDArrays, boolean combineClassification, boolean simplifiedModel, boolean randomFeatureVectors, float scalingForInit, boolean lowerCasefeatureNames, ActivationFunction activationFunction, int adagradResetFrequency, float regTransformINDArray, Map<String, INDArray> featureVectors, int numBinaryMatrices, int binaryTransformSize, int binaryINDArraySize, int binaryClassificationSize, int numUnaryMatrices, int unaryClassificationSize, Map<Integer, Float> classWeights) {
         this.numHidden = numHidden;
         this.rng = rng;
-        this.useFloatTensors = useFloatTensors;
+        this.useINDArrays = useINDArrays;
         this.combineClassification = combineClassification;
         this.simplifiedModel = simplifiedModel;
         this.randomFeatureVectors = randomFeatureVectors;
@@ -149,11 +147,11 @@ public class RNTN implements Serializable {
         this.lowerCasefeatureNames = lowerCasefeatureNames;
         this.activationFunction = activationFunction;
         this.adagradResetFrequency = adagradResetFrequency;
-        this.regTransformFloatTensor = regTransformFloatTensor;
+        this.regTransformINDArray = regTransformINDArray;
         this.featureVectors = featureVectors;
         this.numBinaryMatrices = numBinaryMatrices;
         this.binaryTransformSize = binaryTransformSize;
-        this.binaryFloatTensorSize = binaryFloatTensorSize;
+        this.binaryINDArraySize = binaryINDArraySize;
         this.binaryClassificationSize = binaryClassificationSize;
         this.numUnaryMatrices = numUnaryMatrices;
         this.unaryClassificationSize = unaryClassificationSize;
@@ -189,10 +187,10 @@ public class RNTN implements Serializable {
         }
 
 
-        identity = FloatMatrix.eye(numHidden);
+        identity = NDArrays.eye(numHidden);
 
         binaryTransform = MultiDimensionalMap.newTreeBackedMap();
-        binaryFloatTensors = MultiDimensionalMap.newTreeBackedMap();
+        binaryINDArrays = MultiDimensionalMap.newTreeBackedMap();
         binaryClassification = MultiDimensionalMap.newTreeBackedMap();
 
         // When making a flat model (no semantic untying) the
@@ -206,8 +204,8 @@ public class RNTN implements Serializable {
             }
 
             binaryTransform.put(left, right, randomTransformMatrix());
-            if (useFloatTensors) {
-                binaryFloatTensors.put(left, right, randomBinaryFloatTensor());
+            if (useINDArrays) {
+                binaryINDArrays.put(left, right, randomBinaryINDArray());
             }
 
             if (!combineClassification) {
@@ -218,10 +216,10 @@ public class RNTN implements Serializable {
         numBinaryMatrices = binaryTransform.size();
         binaryTransformSize = numHidden * (2 * numHidden + 1);
 
-        if (useFloatTensors) {
-            binaryFloatTensorSize = numHidden * numHidden * numHidden * 4;
+        if (useINDArrays) {
+            binaryINDArraySize = numHidden * numHidden * numHidden * 4;
         } else {
-            binaryFloatTensorSize = 0;
+            binaryINDArraySize = 0;
         }
 
         binaryClassificationSize = (combineClassification) ? 0 : numOuts * (numHidden + 1);
@@ -257,46 +255,44 @@ public class RNTN implements Serializable {
 
 
 
-    FloatTensor randomBinaryFloatTensor() {
+    INDArray randomBinaryINDArray() {
         float range = 1.0f / (4.0f * numHidden);
-        FloatTensor floatTensor = FloatTensor.rand(numHidden * 2, numHidden * 2, numHidden, -range, range, rng);
-        return floatTensor.scale(scalingForInit);
+        INDArray ret = NDArrays.rand(new int[]{numHidden * 2, numHidden * 2, numHidden}, -range, range, rng);
+        return ret.muli(scalingForInit);
     }
 
-    FloatMatrix randomTransformMatrix() {
-        FloatMatrix binary = new FloatMatrix(numHidden, numHidden * 2 + 1);
+    INDArray randomTransformMatrix() {
+        INDArray binary = NDArrays.create(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
-        FloatMatrix block = randomTransformBlock();
-        binary.put(interval(0,block.rows),interval(0,block.columns),block);
-        binary.put(interval(0,block.rows),interval(numHidden,numHidden + block.columns),randomTransformBlock());
-        return SimpleBlas.scal(scalingForInit,binary);
+        INDArray block = randomTransformBlock();
+        binary.put(new NDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())},block);
+        binary.put(new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())},randomTransformBlock());
+        return NDArrays.getBlasWrapper().scal(scalingForInit,binary);
     }
 
-    FloatMatrix randomTransformBlock() {
+    INDArray randomTransformBlock() {
         float range = 1.0f / (float) (Math.sqrt((float) numHidden) * 2.0f);
-        FloatMatrix ret = MatrixUtil.rand(numHidden,numHidden,-range,range,rng).add(identity);
+        INDArray ret = NDArrays.rand(numHidden,numHidden,-range,range,rng).add(identity);
         return ret;
     }
 
     /**
      * Returns matrices of the right size for either binary or unary (terminal) classification
      */
-    FloatMatrix randomClassificationMatrix() {
+    INDArray randomClassificationMatrix() {
         // Leave the bias column with 0 values
         float range = 1.0f / (float) (Math.sqrt((float) numHidden));
-        FloatMatrix ret = FloatMatrix.zeros(numOuts,numHidden + 1);
-        FloatMatrix insert = MatrixUtil.rand(numOuts,numHidden,-range,range,rng);
-        ret.put(interval(0,numOuts),interval(0,numHidden),insert);
-        return SimpleBlas.scal(scalingForInit,ret);
+        INDArray ret = NDArrays.zeros(numOuts,numHidden + 1);
+        INDArray insert = NDArrays.rand(numOuts,numHidden,-range,range,rng);
+        ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
+        return NDArrays.getBlasWrapper().scal(scalingForInit,ret);
     }
 
-    FloatMatrix randomWordVector() {
-        return randomWordVector(numHidden, rng);
+    INDArray randomWordVector() {
+        return NDArrays.rand(numHidden,1, rng);
     }
 
-    static FloatMatrix randomWordVector(int size, RandomGenerator rng) {
-        return MatrixUtil.uniformFloat(rng,1,size);
-    }
+
 
 
     /**
@@ -316,26 +312,26 @@ public class RNTN implements Serializable {
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
      */
-    public  void setParams(FloatMatrix theta, Iterator<? extends FloatMatrix> ... matrices) {
+    public  void setParams(INDArray theta, Iterator<? extends INDArray> ... matrices) {
         int index = 0;
-        for (Iterator<? extends FloatMatrix> matrixIterator : matrices) {
+        for (Iterator<? extends INDArray> matrixIterator : matrices) {
             while (matrixIterator.hasNext()) {
-                FloatMatrix matrix = matrixIterator.next();
-                for (int i = 0; i < matrix.length; ++i) {
-                    matrix.put(i, theta.get(index));
+                INDArray matrix = matrixIterator.next();
+                for (int i = 0; i < matrix.length(); ++i) {
+                    matrix.put(i, theta.getScalar(index));
                     ++index;
                 }
             }
         }
 
 
-        if (index != theta.length) {
+        if (index != theta.length()) {
             throw new AssertionError("Did not entirely use the theta vector");
         }
 
     }
 
-    public FloatMatrix getWForNode(Tree node) {
+    public INDArray getWForNode(Tree node) {
         if (node.children().size() == 2) {
             String leftLabel = node.children().get(0).value();
             String leftBasic = basicCategory(leftLabel);
@@ -349,16 +345,16 @@ public class RNTN implements Serializable {
         }
     }
 
-    public FloatTensor getFloatTensorForNode(Tree node) {
-        if (!useFloatTensors) {
-            throw new AssertionError("Not using FloatTensors");
+    public INDArray getINDArrayForNode(Tree node) {
+        if (!useINDArrays) {
+            throw new AssertionError("Not using INDArrays");
         }
         if (node.children().size() == 2) {
             String leftLabel = node.children().get(0).value();
             String leftBasic = basicCategory(leftLabel);
             String rightLabel = node.children().get(1).value();
             String rightBasic = basicCategory(rightLabel);
-            return binaryFloatTensors.get(leftBasic, rightBasic);
+            return binaryINDArrays.get(leftBasic, rightBasic);
         } else if (node.children().size() == 1) {
             throw new AssertionError("No unary applyTransformToOrigin matrices, only unary classification");
         } else {
@@ -366,7 +362,7 @@ public class RNTN implements Serializable {
         }
     }
 
-    public FloatMatrix getClassWForNode(Tree node) {
+    public INDArray getClassWForNode(Tree node) {
         if (combineClassification) {
             return unaryClassification.get("");
         } else if (node.children().size() == 2) {
@@ -386,20 +382,20 @@ public class RNTN implements Serializable {
 
 
 
-    private FloatTensor getFloatTensorGradient(FloatMatrix deltaFull, FloatMatrix leftVector, FloatMatrix rightVector) {
-        int size = deltaFull.length;
-        FloatTensor Wt_df = new FloatTensor(size*2, size*2, size);
-        FloatMatrix fullVector = FloatMatrix.concatHorizontally(leftVector, rightVector);
+    private INDArray getINDArrayGradient(INDArray deltaFull, INDArray leftVector, INDArray rightVector) {
+        int size = deltaFull.length();
+        INDArray Wt_df = NDArrays.create(new int[]{size*2, size*2, size});
+        INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            Wt_df.setSlice(slice, SimpleBlas.scal(deltaFull.get(slice),fullVector).mmul(fullVector.transpose()));
+            Wt_df.putSlice(slice, NDArrays.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector).mmul(fullVector.transpose()));
         }
         return Wt_df;
     }
 
 
 
-    public FloatMatrix getFeatureVector(String word) {
-        FloatMatrix ret = featureVectors.get(getVocabWord(word)).transpose();
+    public INDArray getFeatureVector(String word) {
+        INDArray ret = featureVectors.get(getVocabWord(word)).transpose();
         return ret;
     }
 
@@ -421,12 +417,12 @@ public class RNTN implements Serializable {
         throw new IllegalStateException("Only simplified model enabled");
     }
 
-    public FloatMatrix getUnaryClassification(String category) {
+    public INDArray getUnaryClassification(String category) {
         category = basicCategory(category);
         return unaryClassification.get(category);
     }
 
-    public FloatMatrix getBinaryClassification(String left, String right) {
+    public INDArray getBinaryClassification(String left, String right) {
         if (combineClassification) {
             return unaryClassification.get("");
         } else {
@@ -436,16 +432,16 @@ public class RNTN implements Serializable {
         }
     }
 
-    public FloatMatrix getBinaryTransform(String left, String right) {
+    public INDArray getBinaryTransform(String left, String right) {
         left = basicCategory(left);
         right = basicCategory(right);
         return binaryTransform.get(left, right);
     }
 
-    public FloatTensor getBinaryFloatTensor(String left, String right) {
+    public INDArray getBinaryINDArray(String left, String right) {
         left = basicCategory(left);
         right = basicCategory(right);
-        return binaryFloatTensors.get(left, right);
+        return binaryINDArrays.get(left, right);
     }
 
 
@@ -453,113 +449,113 @@ public class RNTN implements Serializable {
 
     public int getNumParameters() {
         int totalSize;
-        // binaryFloatTensorSize was applyTransformToDestination to 0 if useFloatTensors=false
-        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryFloatTensorSize;
+        // binaryINDArraySize was applyTransformToDestination to 0 if useINDArrays=false
+        totalSize = numBinaryMatrices * (binaryTransform.size() + binaryClassificationSize) + binaryINDArraySize;
         totalSize += numUnaryMatrices * unaryClassification.size();
         totalSize += featureVectors.size() * numHidden;
         return totalSize;
     }
 
 
-    public FloatMatrix getParameters() {
-        return MatrixUtil.toFlattenedFloat(getNumParameters(),
+    public INDArray getParameters() {
+        return NDArrays.toFlattened(getNumParameters(),
                 binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryFloatTensors.values().iterator(),
+                binaryINDArrays.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.values().iterator());
     }
 
 
-    float scaleAndRegularize(MultiDimensionalMap<String, String, FloatMatrix> derivatives,
-                             MultiDimensionalMap<String, String, FloatMatrix> currentMatrices,
+    float scaleAndRegularize(MultiDimensionalMap<String, String, INDArray> derivatives,
+                             MultiDimensionalMap<String, String, INDArray> currentMatrices,
                              float scale,
                              float regCost) {
 
         float cost = 0.0f; // the regularization cost
-        for (MultiDimensionalMap.Entry<String, String, FloatMatrix> entry : currentMatrices.entrySet()) {
-            FloatMatrix D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            D = SimpleBlas.scal(scale,D).add(SimpleBlas.scal(regCost,entry.getValue()));
+        for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
+            INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
+            D = NDArrays.getBlasWrapper().scal(scale,D).add(NDArrays.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += entry.getValue().mul(entry.getValue()).sum() * regCost / 2.0;
+            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
         return cost;
     }
 
-    float scaleAndRegularize(Map<String, FloatMatrix> derivatives,
-                             Map<String, FloatMatrix> currentMatrices,
+    float scaleAndRegularize(Map<String, INDArray> derivatives,
+                             Map<String, INDArray> currentMatrices,
                              float scale,
                              float regCost) {
 
         float cost = 0.0f; // the regularization cost
-        for (Map.Entry<String, FloatMatrix> entry : currentMatrices.entrySet()) {
-            FloatMatrix D = derivatives.get(entry.getKey());
-            D = SimpleBlas.scal(scale,D).add(SimpleBlas.scal(regCost,entry.getValue()));
+        for (Map.Entry<String, INDArray> entry : currentMatrices.entrySet()) {
+            INDArray D = derivatives.get(entry.getKey());
+            D = NDArrays.getBlasWrapper().scal(scale,D).add(NDArrays.getBlasWrapper().scal(regCost,entry.getValue()));
             derivatives.put(entry.getKey(), D);
-            cost += entry.getValue().mul(entry.getValue()).sum() * regCost / 2.0;
+            cost += (double) entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
         return cost;
     }
 
-    float scaleAndRegularizeFloatTensor(MultiDimensionalMap<String, String, FloatTensor> derivatives,
-                                        MultiDimensionalMap<String, String, FloatTensor> currentMatrices,
+    float scaleAndRegularizeINDArray(MultiDimensionalMap<String, String, INDArray> derivatives,
+                                        MultiDimensionalMap<String, String, INDArray> currentMatrices,
                                         float scale,
                                         float regCost) {
         float cost = 0.0f; // the regularization cost
-        for (MultiDimensionalMap.Entry<String, String, FloatTensor> entry : currentMatrices.entrySet()) {
-            FloatTensor D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
-            D = D.scale(scale).add(entry.getValue().scale(regCost));
+        for (MultiDimensionalMap.Entry<String, String, INDArray> entry : currentMatrices.entrySet()) {
+            INDArray D = derivatives.get(entry.getFirstKey(), entry.getSecondKey());
+            D = D.muli(scale).add(entry.getValue().muli(regCost));
             derivatives.put(entry.getFirstKey(), entry.getSecondKey(), D);
-            cost += entry.getValue().mul(entry.getValue()).sum() * regCost / 2.0;
+            cost += (double)  entry.getValue().mul(entry.getValue()).sum(Integer.MAX_VALUE).element() * regCost / 2.0;
         }
         return cost;
     }
 
     private void backpropDerivativesAndError(Tree tree,
-                                             MultiDimensionalMap<String, String, FloatMatrix> binaryTD,
-                                             MultiDimensionalMap<String, String, FloatMatrix> binaryCD,
-                                             MultiDimensionalMap<String, String, FloatTensor> binaryFloatTensorTD,
-                                             Map<String, FloatMatrix> unaryCD,
-                                             Map<String, FloatMatrix> wordVectorD) {
-        FloatMatrix delta = new FloatMatrix(numHidden, 1);
-        backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD, delta);
+                                             MultiDimensionalMap<String, String, INDArray> binaryTD,
+                                             MultiDimensionalMap<String, String, INDArray> binaryCD,
+                                             MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
+                                             Map<String, INDArray> unaryCD,
+                                             Map<String, INDArray> wordVectorD) {
+        INDArray delta = NDArrays.create(numHidden, 1);
+        backpropDerivativesAndError(tree, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, delta);
     }
 
     private void backpropDerivativesAndError(Tree tree,
-                                             MultiDimensionalMap<String, String, FloatMatrix> binaryTD,
-                                             MultiDimensionalMap<String, String, FloatMatrix> binaryCD,
-                                             MultiDimensionalMap<String, String, FloatTensor> binaryFloatTensorTD,
-                                             Map<String, FloatMatrix> unaryCD,
-                                             Map<String, FloatMatrix> wordVectorD,
-                                             FloatMatrix deltaUp) {
+                                             MultiDimensionalMap<String, String, INDArray> binaryTD,
+                                             MultiDimensionalMap<String, String, INDArray> binaryCD,
+                                             MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD,
+                                             Map<String, INDArray> unaryCD,
+                                             Map<String, INDArray> wordVectorD,
+                                             INDArray deltaUp) {
         if (tree.isLeaf()) {
             return;
         }
 
-        FloatMatrix currentVector = tree.vector();
+        INDArray currentVector = tree.vector();
         String category = tree.label();
         category = basicCategory(category);
 
         // Build a vector that looks like 0,0,1,0,0 with an indicator for the correct class
-        FloatMatrix goldLabel = new FloatMatrix(numOuts, 1);
+        INDArray goldLabel = NDArrays.create(numOuts, 1);
         int goldClass = tree.goldLabel();
         if (goldClass >= 0) {
-            goldLabel.put(goldClass, 1.0f);
+            goldLabel.putScalar(goldClass, 1.0f);
         }
 
         Float nodeWeight = classWeights.get(goldClass);
         if(nodeWeight == null)
             nodeWeight = 1.0f;
-        FloatMatrix predictions = tree.prediction();
+        INDArray predictions = tree.prediction();
 
         // If this is an unlabeled class, applyTransformToDestination deltaClass to 0.  We could
         // make this more efficient by eliminating various of the below
         // calculations, but this would be the easiest way to handle the
         // unlabeled class
-        FloatMatrix deltaClass = goldClass >= 0 ? SimpleBlas.scal(nodeWeight,predictions.sub(goldLabel)) : new FloatMatrix(predictions.rows, predictions.columns);
-        FloatMatrix localCD = deltaClass.mmul(appendBias(currentVector).transpose());
+        INDArray deltaClass = goldClass >= 0 ? NDArrays.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : NDArrays.create(predictions.rows(), predictions.columns());
+        INDArray localCD = deltaClass.mmul(NDArrays.appendBias(currentVector).transpose());
 
-        float error = -(MatrixFunctions.log(predictions).muli(goldLabel).sum());
+        float error = -(float) (Transforms.log(predictions).muli(goldLabel).sum(Integer.MAX_VALUE).element());
         error = error * nodeWeight;
         tree.setError(error);
 
@@ -570,10 +566,10 @@ public class RNTN implements Serializable {
             word = getVocabWord(word);
 
 
-            FloatMatrix currentVectorDerivative = activationFunction.apply(currentVector);
-            FloatMatrix deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
+            INDArray currentVectorDerivative = activationFunction.apply(currentVector);
+            INDArray deltaFromClass = getUnaryClassification(category).transpose().mmul(deltaClass);
             deltaFromClass = deltaFromClass.get(interval(0, numHidden),interval(0, 1)).mul(currentVectorDerivative);
-            FloatMatrix deltaFull = deltaFromClass.add(deltaUp);
+            INDArray deltaFull = deltaFromClass.add(deltaUp);
             wordVectorD.put(word, wordVectorD.get(word).add(deltaFull));
 
 
@@ -587,54 +583,54 @@ public class RNTN implements Serializable {
                 binaryCD.put(leftCategory, rightCategory, binaryCD.get(leftCategory, rightCategory).add(localCD));
             }
 
-            FloatMatrix currentVectorDerivative = activationFunction.applyDerivative(currentVector);
-            FloatMatrix deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
+            INDArray currentVectorDerivative = activationFunction.applyDerivative(currentVector);
+            INDArray deltaFromClass = getBinaryClassification(leftCategory, rightCategory).transpose().mmul(deltaClass);
 
-            FloatMatrix mult = deltaFromClass.get(interval(0, numHidden),interval(0, 1));
+            INDArray mult = deltaFromClass.get(interval(0, numHidden),interval(0, 1));
             deltaFromClass = mult.muli(currentVectorDerivative);
-            FloatMatrix deltaFull = deltaFromClass.add(deltaUp);
+            INDArray deltaFull = deltaFromClass.add(deltaUp);
 
-            FloatMatrix leftVector =tree.children().get(0).vector();
-            FloatMatrix rightVector = tree.children().get(1).vector();
+            INDArray leftVector =tree.children().get(0).vector();
+            INDArray rightVector = tree.children().get(1).vector();
 
-            FloatMatrix childrenVector = appendBias(leftVector,rightVector);
+            INDArray childrenVector = NDArrays.appendBias(leftVector,rightVector);
 
             //deltaFull 50 x 1, childrenVector: 50 x 2
-            FloatMatrix add = binaryTD.get(leftCategory, rightCategory);
+            INDArray add = binaryTD.get(leftCategory, rightCategory);
 
-            FloatMatrix W_df = deltaFromClass.mmul(childrenVector.transpose());
+            INDArray W_df = deltaFromClass.mmul(childrenVector.transpose());
             binaryTD.put(leftCategory, rightCategory, add.add(W_df));
 
-            FloatMatrix deltaDown;
-            if (useFloatTensors) {
-                FloatTensor Wt_df = getFloatTensorGradient(deltaFull, leftVector, rightVector);
-                binaryFloatTensorTD.put(leftCategory, rightCategory, binaryFloatTensorTD.get(leftCategory, rightCategory).add(Wt_df));
-                deltaDown = computeFloatTensorDeltaDown(deltaFull, leftVector, rightVector, getBinaryTransform(leftCategory, rightCategory), getBinaryFloatTensor(leftCategory, rightCategory));
+            INDArray deltaDown;
+            if (useINDArrays) {
+                INDArray Wt_df = getINDArrayGradient(deltaFull, leftVector, rightVector);
+                binaryINDArrayTD.put(leftCategory, rightCategory, binaryINDArrayTD.get(leftCategory, rightCategory).add(Wt_df));
+                deltaDown = computeINDArrayDeltaDown(deltaFull, leftVector, rightVector, getBinaryTransform(leftCategory, rightCategory), getBinaryINDArray(leftCategory, rightCategory));
             } else {
                 deltaDown = getBinaryTransform(leftCategory, rightCategory).transpose().mmul(deltaFull);
             }
 
-            FloatMatrix leftDerivative = activationFunction.apply(leftVector);
-            FloatMatrix rightDerivative = activationFunction.apply(rightVector);
-            FloatMatrix leftDeltaDown = deltaDown.get(interval(0, deltaFull.rows),interval( 0, 1));
-            FloatMatrix rightDeltaDown = deltaDown.get(interval(deltaFull.rows, deltaFull.rows * 2),interval( 0, 1));
-            backpropDerivativesAndError(tree.children().get(0), binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD, leftDerivative.mul(leftDeltaDown));
-            backpropDerivativesAndError(tree.children().get(1), binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD, rightDerivative.mul(rightDeltaDown));
+            INDArray leftDerivative = activationFunction.apply(leftVector);
+            INDArray rightDerivative = activationFunction.apply(rightVector);
+            INDArray leftDeltaDown = deltaDown.get(interval(0, deltaFull.rows()),interval( 0, 1));
+            INDArray rightDeltaDown = deltaDown.get(interval(deltaFull.rows(), deltaFull.rows() * 2),interval( 0, 1));
+            backpropDerivativesAndError(tree.children().get(0), binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, leftDerivative.mul(leftDeltaDown));
+            backpropDerivativesAndError(tree.children().get(1), binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD, rightDerivative.mul(rightDeltaDown));
         }
     }
 
-    private FloatMatrix computeFloatTensorDeltaDown(FloatMatrix deltaFull, FloatMatrix leftVector, FloatMatrix rightVector,
-                                                    FloatMatrix W, FloatTensor Wt) {
-        FloatMatrix WTDelta = W.transpose().mmul(deltaFull);
-        FloatMatrix WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows * 2));
-        int size = deltaFull.length;
-        FloatMatrix deltaFloatTensor = new FloatMatrix(size * 2, 1);
-        FloatMatrix fullVector = FloatMatrix.concatHorizontally(leftVector, rightVector);
+    private INDArray computeINDArrayDeltaDown(INDArray deltaFull, INDArray leftVector, INDArray rightVector,
+                                                INDArray W, INDArray Wt) {
+        INDArray WTDelta = W.transpose().mmul(deltaFull);
+        INDArray WTDeltaNoBias = WTDelta.get(interval( 0, 1),interval(0, deltaFull.rows() * 2));
+        int size = deltaFull.length();
+        INDArray deltaINDArray = NDArrays.create(size * 2, 1);
+        INDArray fullVector = NDArrays.concatHorizontally(leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            FloatMatrix scaledFullVector = SimpleBlas.scal(deltaFull.get(slice),fullVector);
-            deltaFloatTensor = deltaFloatTensor.add(Wt.getSlice(slice).add(Wt.getSlice(slice).transpose()).mmul(scaledFullVector));
+            INDArray scaledFullVector = NDArrays.getBlasWrapper().scal((double) deltaFull.getScalar(slice).element(),fullVector);
+            deltaINDArray = deltaINDArray.add(Wt.slice(slice).add(Wt.slice(slice).transpose()).mmul(scaledFullVector));
         }
-        return deltaFloatTensor.add(WTDeltaNoBias);
+        return deltaINDArray.add(WTDeltaNoBias);
     }
 
 
@@ -645,8 +641,8 @@ public class RNTN implements Serializable {
      * assigned to that subtree's node.
      */
     public void forwardPropagateTree(Tree tree) {
-        FloatMatrix nodeVector;
-        FloatMatrix classification;
+        INDArray nodeVector;
+        INDArray classification;
 
         if (tree.isLeaf()) {
             // We do nothing for the leaves.  The preterminals will
@@ -659,7 +655,7 @@ public class RNTN implements Serializable {
         else if (tree.isPreTerminal()) {
             classification = getUnaryClassification(tree.label());
             String word = tree.children().get(0).value();
-            FloatMatrix wordVector = getFeatureVector(word);
+            INDArray wordVector = getFeatureVector(word);
             if(wordVector == null) {
                 wordVector = featureVectors.get(UNKNOWN_FEATURE);
             }
@@ -675,20 +671,20 @@ public class RNTN implements Serializable {
 
             String leftCategory = tree.children().get(0).label();
             String rightCategory = tree.children().get(1).label();
-            FloatMatrix W = getBinaryTransform(leftCategory, rightCategory);
+            INDArray W = getBinaryTransform(leftCategory, rightCategory);
             classification = getBinaryClassification(leftCategory, rightCategory);
 
-            FloatMatrix leftVector = tree.children().get(0).vector();
-            FloatMatrix rightVector = tree.children().get(1).vector();
+            INDArray leftVector = tree.children().get(0).vector();
+            INDArray rightVector = tree.children().get(1).vector();
 
-            FloatMatrix childrenVector = appendBias(leftVector,rightVector);
+            INDArray childrenVector = NDArrays.appendBias(leftVector,rightVector);
 
 
-            if (useFloatTensors) {
-                FloatTensor floatT = getBinaryFloatTensor(leftCategory, rightCategory);
-                FloatMatrix floatTensorIn = FloatMatrix.concatHorizontally(leftVector, rightVector);
-                FloatMatrix floatTensorOut = floatT.bilinearProducts(floatTensorIn);
-                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(floatTensorOut));
+            if (useINDArrays) {
+                INDArray floatT = getBinaryINDArray(leftCategory, rightCategory);
+                INDArray INDArrayIn = NDArrays.concatHorizontally(leftVector, rightVector);
+                INDArray INDArrayOut = NDArrays.bilinearProducts(floatT,INDArrayIn);
+                nodeVector = activationFunction.apply(W.mmul(childrenVector).add(INDArrayOut));
             }
 
             else
@@ -698,9 +694,9 @@ public class RNTN implements Serializable {
             throw new AssertionError("Tree not correctly binarized");
         }
 
-        FloatMatrix inputWithBias  = appendBias(nodeVector);
-        FloatMatrix preAct = classification.mmul(inputWithBias);
-        FloatMatrix predictions = outputActivation.apply(preAct);
+        INDArray inputWithBias  = NDArrays.appendBias(nodeVector);
+        INDArray preAct = classification.mmul(inputWithBias);
+        INDArray predictions = outputActivation.apply(preAct);
 
         tree.setPrediction(predictions);
         tree.setVector(nodeVector);
@@ -712,8 +708,8 @@ public class RNTN implements Serializable {
      * @param trees the trees to predict
      * @return the prediction probabilities for each tree
      */
-    public List<FloatMatrix> output(List<Tree> trees) {
-        List<FloatMatrix> ret = new ArrayList<>();
+    public List<INDArray> output(List<Tree> trees) {
+        List<INDArray> ret = new ArrayList<>();
         for(Tree t : trees) {
             forwardPropagateTree(t);
             ret.add(t.prediction());
@@ -732,16 +728,16 @@ public class RNTN implements Serializable {
         List<Integer> ret = new ArrayList<>();
         for(Tree t : trees) {
             forwardPropagateTree(t);
-            ret.add(SimpleBlas.iamax(t.prediction()));
+            ret.add(NDArrays.getBlasWrapper().iamax(t.prediction()));
         }
 
         return ret;
     }
 
-    public void setParameters(FloatMatrix params) {
+    public void setParameters(INDArray params) {
         setParams(params,binaryTransform.values().iterator(),
                 binaryClassification.values().iterator(),
-                binaryFloatTensors.values().iterator(),
+                binaryINDArrays.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.values().iterator());
     }
@@ -749,60 +745,60 @@ public class RNTN implements Serializable {
 
 
 
-    public FloatMatrix getValueGradient(int iterations) {
+    public INDArray getValueGradient(int iterations) {
 
 
         // We use TreeMap for each of these so that they stay in a
         // canonical sorted order
         // TODO: factor out the initialization routines
         // binaryTD stands for Transform Derivatives
-        final MultiDimensionalMap<String, String, FloatMatrix> binaryTD = MultiDimensionalMap.newTreeBackedMap();
-        // the derivatives of the FloatTensors for the binary nodes
-        final MultiDimensionalMap<String, String, FloatTensor> binaryFloatTensorTD = MultiDimensionalMap.newTreeBackedMap();
+        final MultiDimensionalMap<String, String, INDArray> binaryTD = MultiDimensionalMap.newTreeBackedMap();
+        // the derivatives of the INDArrays for the binary nodes
+        final MultiDimensionalMap<String, String, INDArray> binaryINDArrayTD = MultiDimensionalMap.newTreeBackedMap();
         // binaryCD stands for Classification Derivatives
-        final MultiDimensionalMap<String, String, FloatMatrix> binaryCD = MultiDimensionalMap.newTreeBackedMap();
+        final MultiDimensionalMap<String, String, INDArray> binaryCD = MultiDimensionalMap.newTreeBackedMap();
 
         // unaryCD stands for Classification Derivatives
-        final Map<String, FloatMatrix> unaryCD = new TreeMap<>();
+        final Map<String, INDArray> unaryCD = new TreeMap<>();
 
         // word vector derivatives
-        final Map<String, FloatMatrix> wordVectorD = new TreeMap<>();
+        final Map<String, INDArray> wordVectorD = new TreeMap<>();
 
-        for (MultiDimensionalMap.Entry<String, String, FloatMatrix> entry : binaryTransform.entrySet()) {
-            int numRows = entry.getValue().rows;
-            int numCols = entry.getValue().columns;
+        for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryTransform.entrySet()) {
+            int numRows = entry.getValue().rows();
+            int numCols = entry.getValue().columns();
 
-            binaryTD.put(entry.getFirstKey(), entry.getSecondKey(), new FloatMatrix(numRows, numCols));
+            binaryTD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(numRows, numCols));
         }
 
         if (!combineClassification) {
-            for (MultiDimensionalMap.Entry<String, String, FloatMatrix> entry :  binaryClassification.entrySet()) {
-                int numRows = entry.getValue().rows;
-                int numCols = entry.getValue().columns;
+            for (MultiDimensionalMap.Entry<String, String, INDArray> entry :  binaryClassification.entrySet()) {
+                int numRows = entry.getValue().rows();
+                int numCols = entry.getValue().columns();
 
-                binaryCD.put(entry.getFirstKey(), entry.getSecondKey(), new FloatMatrix(numRows, numCols));
+                binaryCD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(numRows, numCols));
             }
         }
 
-        if (useFloatTensors) {
-            for (MultiDimensionalMap.Entry<String, String, FloatTensor> entry : binaryFloatTensors.entrySet()) {
+        if (useINDArrays) {
+            for (MultiDimensionalMap.Entry<String, String, INDArray> entry : binaryINDArrays.entrySet()) {
                 int numRows = entry.getValue().rows();
-                int numCols = entry.getValue().columns;
+                int numCols = entry.getValue().columns();
                 int numSlices = entry.getValue().slices();
 
-                binaryFloatTensorTD.put(entry.getFirstKey(), entry.getSecondKey(), new FloatTensor(numRows, numCols, numSlices));
+                binaryINDArrayTD.put(entry.getFirstKey(), entry.getSecondKey(), NDArrays.create(new int[]{numRows, numCols, numSlices}));
             }
         }
 
-        for (Map.Entry<String, FloatMatrix> entry : unaryClassification.entrySet()) {
-            int numRows = entry.getValue().rows;
-            int numCols = entry.getValue().columns;
-            unaryCD.put(entry.getKey(), new FloatMatrix(numRows, numCols));
+        for (Map.Entry<String, INDArray> entry : unaryClassification.entrySet()) {
+            int numRows = entry.getValue().rows();
+            int numCols = entry.getValue().columns();
+            unaryCD.put(entry.getKey(), NDArrays.create(numRows, numCols));
         }
-        for (Map.Entry<String, FloatMatrix> entry : featureVectors.entrySet()) {
-            int numRows = entry.getValue().rows;
-            int numCols = entry.getValue().columns;
-            wordVectorD.put(entry.getKey(), new FloatMatrix(numRows, numCols));
+        for (Map.Entry<String, INDArray> entry : featureVectors.entrySet()) {
+            int numRows = entry.getValue().rows();
+            int numCols = entry.getValue().columns();
+            wordVectorD.put(entry.getKey(), NDArrays.create(numRows, numCols));
         }
 
 
@@ -830,7 +826,7 @@ public class RNTN implements Serializable {
         Parallelization.iterateInParallel(forwardPropTrees,new Parallelization.RunnableWithParams<Tree>() {
 
             public void run(Tree currentItem, Object[] args) {
-                backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD);
+                backpropDerivativesAndError(currentItem, binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD);
                 error.addAndGet(currentItem.errorSum());
 
             }
@@ -838,7 +834,7 @@ public class RNTN implements Serializable {
 
             public void run(Tree currentItem, Object[] args) {
             }
-        },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryFloatTensorTD, unaryCD, wordVectorD});
+        },rnTnActorSystem,new Object[]{ binaryTD, binaryCD, binaryINDArrayTD, unaryCD, wordVectorD});
 
 
 
@@ -849,15 +845,15 @@ public class RNTN implements Serializable {
 
         value += scaleAndRegularize(binaryTD, binaryTransform, scale, regTransformMatrix);
         value += scaleAndRegularize(binaryCD, binaryClassification, scale, regClassification);
-        value += scaleAndRegularizeFloatTensor(binaryFloatTensorTD, binaryFloatTensors, scale, regTransformFloatTensor);
+        value += scaleAndRegularizeINDArray(binaryINDArrayTD, binaryINDArrays, scale, regTransformINDArray);
         value += scaleAndRegularize(unaryCD, unaryClassification, scale, regClassification);
         value += scaleAndRegularize(wordVectorD, featureVectors, scale, regWordVector);
 
-        FloatMatrix derivative = MatrixUtil.toFlattenedFloat(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryFloatTensorTD.values().iterator()
+        INDArray derivative = NDArrays.toFlattened(getNumParameters(), binaryTD.values().iterator(), binaryCD.values().iterator(), binaryINDArrayTD.values().iterator()
                 , unaryCD.values().iterator(), wordVectorD.values().iterator());
 
         if(paramAdaGrad == null)
-            paramAdaGrad = new AdaGradFloat(1,derivative.columns);
+            paramAdaGrad = new AdaGrad(1,derivative.columns());
 
         derivative.muli(paramAdaGrad.getLearningRates(derivative));
 
@@ -873,7 +869,7 @@ public class RNTN implements Serializable {
         //must be same size as word vectors
         private int numHidden;
         private RandomGenerator rng;
-        private boolean useFloatTensors;
+        private boolean useINDArrays;
         private boolean combineClassification = true;
         private boolean simplifiedModel = true;
         private boolean randomFeatureVectors;
@@ -882,11 +878,11 @@ public class RNTN implements Serializable {
         private ActivationFunction activationFunction = Activations.sigmoid(),
                 outputActivationFunction = Activations.softmax();
         private int adagradResetFrequency;
-        private float regTransformFloatTensor;
-        private Map<String, FloatMatrix> featureVectors;
+        private float regTransformINDArray;
+        private Map<String, INDArray> featureVectors;
         private int numBinaryMatrices;
         private int binaryTransformSize;
-        private int binaryFloatTensorSize;
+        private int binaryINDArraySize;
         private int binaryClassificationSize;
         private int numUnaryMatrices;
         private int unaryClassificationSize;
@@ -913,8 +909,8 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setUseTensors(boolean useFloatTensors) {
-            this.useFloatTensors = useFloatTensors;
+        public Builder setUseTensors(boolean useINDArrays) {
+            this.useINDArrays = useINDArrays;
             return this;
         }
 
@@ -955,12 +951,12 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setRegTransformFloatTensor(float regTransformFloatTensor) {
-            this.regTransformFloatTensor = regTransformFloatTensor;
+        public Builder setRegTransformINDArray(float regTransformINDArray) {
+            this.regTransformINDArray = regTransformINDArray;
             return this;
         }
 
-        public Builder setFeatureVectors(Map<String, FloatMatrix> featureVectors) {
+        public Builder setFeatureVectors(Map<String, INDArray> featureVectors) {
             this.featureVectors = featureVectors;
             return this;
         }
@@ -975,8 +971,8 @@ public class RNTN implements Serializable {
             return this;
         }
 
-        public Builder setBinaryFloatTensorSize(int binaryFloatTensorSize) {
-            this.binaryFloatTensorSize = binaryFloatTensorSize;
+        public Builder setBinaryINDArraySize(int binaryINDArraySize) {
+            this.binaryINDArraySize = binaryINDArraySize;
             return this;
         }
 
@@ -1001,7 +997,7 @@ public class RNTN implements Serializable {
         }
 
         public RNTN build() {
-            return new RNTN(numHidden, rng, useFloatTensors, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformFloatTensor, featureVectors, numBinaryMatrices, binaryTransformSize, binaryFloatTensorSize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
+            return new RNTN(numHidden, rng, useINDArrays, combineClassification, simplifiedModel, randomFeatureVectors, scalingForInit, lowerCasefeatureNames, activationFunction, adagradResetFrequency, regTransformINDArray, featureVectors, numBinaryMatrices, binaryTransformSize, binaryINDArraySize, binaryClassificationSize, numUnaryMatrices, unaryClassificationSize, classWeights);
         }
     }
 

@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.word2vec.VocabWord;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
-import org.jblas.FloatMatrix;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class Word2VecLoader {
 				rows = Integer.parseInt(split[0]);
 				vectorSize = Integer.parseInt(split[1]);
 				ret.setLayerSize(vectorSize);
-				ret.setSyn0(new FloatMatrix(rows - 1,vectorSize));
+				ret.setSyn0(NDArrays.create(rows - 1,vectorSize));
 				first = false;
 			}
 
@@ -80,7 +81,7 @@ public class Word2VecLoader {
 				while(tokenizer.hasMoreTokens()) {
 					vec[count++] = Float.parseFloat(tokenizer.nextToken());
 				}
-				ret.getSyn0().putRow(currRow, new FloatMatrix(vec));
+				ret.getSyn0().putRow(currRow, NDArrays.create(vec));
 				currRow++;
 
 			}
@@ -133,16 +134,16 @@ public class Word2VecLoader {
         float vector = 0;
         Word2Vec ret = new Word2Vec();
         Index wordIndex = new Index();
-        FloatMatrix wordVectors = null;
+        INDArray wordVectors = null;
         try {
             bis = new BufferedInputStream(path.endsWith(".gz") ? new GZIPInputStream(new FileInputStream(path)) : new FileInputStream(path));
             dis = new DataInputStream(bis);
-            Map<String,FloatMatrix> wordMap = new HashMap<>();
+            Map<String,INDArray> wordMap = new HashMap<>();
             //number of words
             int words = Integer.parseInt(readString(dis));
             //word vector size
             int size = Integer.parseInt(readString(dis));
-            wordVectors = new FloatMatrix(words,size);
+            wordVectors = NDArrays.create(words,size);
             String word;
             float[] vectors = null;
             for (int i = 0; i < words; i++) {
@@ -161,7 +162,7 @@ public class Word2VecLoader {
                     vectors[j] /= len;
                 }
                 wordIndex.add(word);
-                wordVectors.putRow(i, new FloatMatrix(vectors));
+                wordVectors.putRow(i, NDArrays.create(vectors));
             }
         } finally {
             bis.close();

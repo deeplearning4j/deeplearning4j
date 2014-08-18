@@ -4,15 +4,15 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.util.Collections;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.rbm.RBM;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class LFWExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), new Object[]{1, 1e-2, 1000, 1});
+            dbn.pretrain(next.getFeatureMatrix(), new Object[]{1, 1e-2, 1000, 1});
 
         }
 
@@ -57,8 +57,8 @@ public class LFWExample {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			dbn.setInput(next.getFirst());
-			dbn.finetune(next.getSecond(), 1e-3, 100);
+			dbn.setInput(next.getFeatureMatrix());
+			dbn.finetune(next.getLabels(), 1e-3, 100);
 		}
 		
 		
@@ -75,8 +75,8 @@ public class LFWExample {
 		
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			DoubleMatrix predict = dbn.output(next.getFirst());
-			DoubleMatrix labels = next.getSecond();
+			INDArray predict = dbn.output(next.getFeatureMatrix());
+            INDArray labels = next.getLabels();
 			eval.eval(labels, predict);
 		}
 		

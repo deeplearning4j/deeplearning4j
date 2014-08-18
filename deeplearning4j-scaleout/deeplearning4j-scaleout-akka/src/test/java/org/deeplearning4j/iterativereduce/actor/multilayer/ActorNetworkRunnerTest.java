@@ -7,11 +7,11 @@ import java.util.Collections;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
+import org.deeplearning4j.linalg.transformation.MultiplyScalar;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.test.TestDataSetIterator;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.deeplearning4j.transformation.MultiplyScalar;
-import org.junit.Ignore;
+
 import org.junit.Test;
 
 public class ActorNetworkRunnerTest {

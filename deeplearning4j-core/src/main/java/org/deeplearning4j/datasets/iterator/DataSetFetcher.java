@@ -1,8 +1,8 @@
 package org.deeplearning4j.datasets.iterator;
 
-import java.io.Serializable;
+import org.deeplearning4j.linalg.dataset.DataSet;
 
-import org.deeplearning4j.datasets.DataSet;
+import java.io.Serializable;
 
 /**
  * A low level interface for loading datasets in to memory.

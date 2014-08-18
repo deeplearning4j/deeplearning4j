@@ -2,10 +2,12 @@ package org.deeplearning4j.datasets.fetchers;
 
 import java.util.List;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetFetcher;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +35,8 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	 * @param numRows the number of examples
  	 * @return a feature vector
 	 */
-	protected DoubleMatrix createInputMatrix(int numRows) {
-		return new DoubleMatrix(numRows,inputColumns);
+	protected INDArray createInputMatrix(int numRows) {
+		return NDArrays.create(numRows, inputColumns);
 	}
 	
 	/**
@@ -43,12 +45,12 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	 * @return a binary vector where 1 is applyTransformToDestination to the
 	 * index specified by outcomeLabel
 	 */
-	protected DoubleMatrix createOutputVector(int outcomeLabel) {
-		return MatrixUtil.toOutcomeVector(outcomeLabel, numOutcomes);
+	protected INDArray createOutputVector(int outcomeLabel) {
+		return FeatureUtil.toOutcomeVector(outcomeLabel, numOutcomes);
 	}
 	
-	protected DoubleMatrix createOutputMatrix(int numRows) {
-		return new DoubleMatrix(numRows,numOutcomes);
+	protected INDArray createOutputMatrix(int numRows) {
+		return NDArrays.create(numRows,numOutcomes);
 	}
 	
 	/**
@@ -60,11 +62,11 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 		if(examples.isEmpty())
 			log.warn("Warning: empty dataset from the fetcher");
 		
-		DoubleMatrix inputs = createInputMatrix(examples.size());
-		DoubleMatrix labels = createOutputMatrix(examples.size());
+		INDArray inputs = createInputMatrix(examples.size());
+		INDArray labels = createOutputMatrix(examples.size());
 		for(int i = 0; i < examples.size(); i++) {
-			inputs.putRow(i, examples.get(i).getFirst());
-			labels.putRow(i,examples.get(i).getSecond());
+			inputs.putRow(i, examples.get(i).getFeatureMatrix());
+			labels.putRow(i,examples.get(i).getLabels());
 		}
 		curr = new DataSet(inputs,labels);
 

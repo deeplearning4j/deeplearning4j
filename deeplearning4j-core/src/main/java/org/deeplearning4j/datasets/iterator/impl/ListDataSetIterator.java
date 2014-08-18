@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.deeplearning4j.datasets.DataSet;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination collection
@@ -70,12 +71,12 @@ public class ListDataSetIterator implements DataSetIterator {
 
 	@Override
 	public int inputColumns() {
-		return list.get(0).getFirst().columns;
+		return list.get(0).getFeatureMatrix().columns();
 	}
 
 	@Override
 	public int totalOutcomes() {
-		return list.get(0).getSecond().columns;
+		return list.get(0).getLabels().columns();
 	}
 
 	@Override
@@ -102,7 +103,7 @@ public class ListDataSetIterator implements DataSetIterator {
 	public DataSet next(int num) {
 		int end = curr + num;
 
-		List<DataSet> r = new ArrayList<DataSet>();
+		List<DataSet> r = new ArrayList<>();
 		if(end >= list.size())
 			end = list.size();
 		for(; curr < end; curr++) {

@@ -5,14 +5,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.base.MnistFetcher;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.mnist.MnistManager;
-import org.deeplearning4j.util.ArrayUtil;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -86,15 +83,15 @@ public class MnistDataFetcher extends BaseDataFetcher {
             man.setCurrent(cursor);
             //note data normalization
             try {
-                DoubleMatrix in = MatrixUtil.toMatrix(ArrayUtil.flatten(man.readImage()));
+                INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
                 if(binarize)
-                    for(int d = 0; d < in.length; d++) {
+                    for(int d = 0; d < in.length(); d++) {
                         if(binarize) {
-                            if(in.get(d) > 30) {
-                                in.put(d,1);
+                            if((double) in.getScalar(d).element() > 30) {
+                                in.putScalar(d,1);
                             }
                             else
-                                in.put(d,0);
+                                in.putScalar(d,0);
 
                         }
 
@@ -104,10 +101,10 @@ public class MnistDataFetcher extends BaseDataFetcher {
                       in.divi(255);
 
 
-                DoubleMatrix out = createOutputVector(man.readLabel());
+                INDArray out = createOutputVector(man.readLabel());
                 boolean found = false;
-                for(int col = 0; col < out.length; col++) {
-                    if(out.get(col) > 0) {
+                for(int col = 0; col < out.length(); col++) {
+                    if((double) out.getScalar(col).element() > 0) {
                         found = true;
                         break;
                     }
