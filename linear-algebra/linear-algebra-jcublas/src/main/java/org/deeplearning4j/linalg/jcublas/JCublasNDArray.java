@@ -1,4 +1,4 @@
-package org.deeplearning4j.linalg;
+package org.deeplearning4j.linalg.jcublas;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;

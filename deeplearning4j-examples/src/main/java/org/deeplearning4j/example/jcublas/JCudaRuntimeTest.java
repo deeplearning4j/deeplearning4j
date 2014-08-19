@@ -3,7 +3,7 @@ package org.deeplearning4j.example.jcublas;
 
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
-import org.deeplearning4j.linalg.JCublasNDArray;
+import org.deeplearning4j.linalg.jcublas.JCublasNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.linalg.NDArray;
 
@@ -15,7 +15,7 @@ public class JCudaRuntimeTest {
     public static void main(String args[]) {
         Pointer pointer = new Pointer();
         int n = 500;
-        int finagle = 78;
+        int finagle = 0;
         int nn = n * (n + finagle);
         double[] b = new double[nn];
         for (int i = 0; i < nn; i++) {b[i] = 1;}
