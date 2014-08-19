@@ -232,7 +232,7 @@ public class NDArrayTests {
     @Test
     public void testSum() {
         INDArray n = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{2,2,2});
-        INDArray test = NDArrays.create(new double[]{6,8,10,12},new int[]{2,2});
+        INDArray test = NDArrays.create(new double[]{3,7,11,15},new int[]{2,2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test,sum);
     }
@@ -409,6 +409,7 @@ public class NDArrayTests {
 
 
 
+
     @Test
     public void testLinearIndex() {
         INDArray n = new NDArray(DoubleMatrix.linspace(1,8,8).data,new int[]{8});
@@ -430,6 +431,9 @@ public class NDArrayTests {
         INDArray expected = new NDArray(new double[]{1,2,3,4,5},new int[]{5});
         assertEquals(expected,test);
     }
+
+
+
 
 
     @Test
@@ -465,11 +469,11 @@ public class NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = nd;
                 if(count.get() == 0) {
-                    INDArray firstDimension = new NDArray(new double[]{1,3},new int[]{2});
+                    INDArray firstDimension = new NDArray(new double[]{1,2},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = new NDArray(new double[]{2,4},new int[]{2});
+                    INDArray firstDimension = new NDArray(new double[]{3,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -509,12 +513,61 @@ public class NDArrayTests {
              */
             @Override
             public void operate(INDArray nd) {
+                log.info("Operator " + nd);
+                INDArray test = nd;
+                if(count.get() == 0) {
+                    INDArray firstDimension = new NDArray(new double[]{1,3},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    INDArray firstDimension = new NDArray(new double[]{2,4},new int[]{2});
+                    assertEquals(firstDimension,test);
 
+                }
+
+                count.incrementAndGet();
             }
 
         },false);
 
 
+
+
+    }
+
+    @Test
+    public void testDimension() {
+        INDArray test = new NDArray(DoubleMatrix.linspace(1,4,4).data,new int[]{2,2});
+        //row
+        INDArray slice0 = test.slice(0,1);
+        INDArray slice02 = test.slice(1,1);
+
+        INDArray assertSlice0 = NDArrays.create(new double[]{1,2});
+        INDArray assertSlice02 = NDArrays.create(new double[]{3,4});
+        assertEquals(assertSlice0,slice0);
+        assertEquals(assertSlice02,slice02);
+
+        //column
+        INDArray assertSlice1 = NDArrays.create(new double[]{1,3});
+        INDArray assertSlice12 = NDArrays.create(new double[]{2,4});
+
+
+        INDArray slice1 = test.slice(0,0);
+        INDArray slice12 = test.slice(1,0);
+
+
+        assertEquals(assertSlice1,slice1);
+        assertEquals(assertSlice12,slice12);
+
+
+
+        INDArray arr = new NDArray(DoubleMatrix.linspace(1,24,24).data,new int[]{4,3,2});
+        INDArray firstSliceFirstDimension = arr.slice(0,1);
+        INDArray secondSliceFirstDimension = arr.slice(1,1);
+
+        INDArray firstSliceFirstDimensionAssert = NDArrays.create(new double[]{1,2,7,8,13,14,19,20});
+        INDArray secondSliceFirstDimension2Test = firstSliceFirstDimensionAssert.add(1);
+        assertEquals(secondSliceFirstDimension,secondSliceFirstDimension);
 
 
     }
@@ -575,11 +628,34 @@ public class NDArrayTests {
         assertEquals(cumSumAnswer,cumSumTest);
 
         INDArray n2 = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
-        INDArray cumSumCorrect2 = NDArrays.create(new double[]{1,2,4,6,9,12,7,8,16,18,27,30,13,14,28,30,45,48,19,20,40,42,63,66},new int[]{4,3,2});
-        INDArray cumSumTest2 = n2.cumsumi(n2.shape().length - 1);
+        INDArray cumSumCorrect2 = NDArrays.create(new double[]{1.0,3.0,6.0,10.0,15.0,21.0,28.0,36.0,45.0,55.0,66.0,78.0,91.0,105.0,120.0,136.0,153.0,171.0,190.0,210.0,231.0,253.0,276.0,300.0},new int[]{24});
+        INDArray cumSumTest2 = n2.cumsum(n2.shape().length - 1);
         assertEquals(cumSumCorrect2,cumSumTest2);
+
+        INDArray axis0assertion = NDArrays.create(new double[]{1,2,3,4,5,6,8,10,12,14,16,18,21,24,27,30,33,36,40,44,48,52,56,60},n2.shape());
+        INDArray axis0Test = n2.cumsum(0);
+        assertEquals(axis0assertion,axis0Test);
+
     }
 
+
+    @Test
+    public void testVectorAlongDimension() {
+        INDArray arr = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
+        INDArray test = arr.vectorAlongDimension(0,2);
+        INDArray assertion = NDArrays.create(new double[]{1,2}, new int[]{2});
+        assertEquals(assertion,test);
+        INDArray testColumn = NDArrays.create(new double[]{1,3,5});
+        INDArray testColumnAssertion = arr.vectorAlongDimension(0,1);
+        assertEquals(testColumnAssertion,testColumn);
+
+    }
+
+    @Test
+    public void testNumVectorsAlongDimension() {
+        INDArray arr = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
+        assertEquals(12,arr.vectorsAlongDimension(2));
+    }
 
 
     @Test

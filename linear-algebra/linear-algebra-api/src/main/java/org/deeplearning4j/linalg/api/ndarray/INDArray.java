@@ -11,6 +11,21 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 public interface INDArray {
 
     /**
+     * Returns the number of possible vectors for a given dimension
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    public int vectorsAlongDimension(int dimension);
+
+    /**
+     * Get the vector along a particular dimension
+     * @param index the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    public INDArray vectorAlongDimension(int index,int dimension);
+
+    /**
      * Cumulative sum along a dimension
      * @param dimension the dimension to perform cumulative sum along
      * @return the cumulative sum along the specified dimension
@@ -219,6 +234,7 @@ public interface INDArray {
      * @return the off sets for the beginning of each slice
      */
     public int[] endsForSlices();
+
 
     /**
      *
