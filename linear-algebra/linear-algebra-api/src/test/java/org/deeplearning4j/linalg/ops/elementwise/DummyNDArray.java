@@ -11,6 +11,29 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 public class DummyNDArray implements INDArray {
 
     /**
+     * Returns the number of possible vectors for a given dimension
+     *
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return 0;
+    }
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        return null;
+    }
+
+    /**
      * Cumulative sum along a dimension
      *
      * @param dimension the dimension to perform cumulative sum along

@@ -10,7 +10,15 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
-
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    IComplexNDArray vectorAlongDimension(int index, int dimension);
 
     /**
      * Assign all of the elements in the given
