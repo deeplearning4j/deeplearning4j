@@ -1134,14 +1134,14 @@ public class JCublasNDArray implements INDArray {
 
                 JCublas.cublasSetVector(
                         otherArray.length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         Pointer.to(data()),
                         1,
                         d_A,
                         1);
                 JCublas.cublasSetVector(
                         length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         Pointer.to(otherArray.data()),
                         1,
                         d_B,
@@ -1164,7 +1164,7 @@ public class JCublasNDArray implements INDArray {
 
                 JCublas.cublasGetVector(
                         length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         d_B,
                         1,
                         Pointer.to(temp.data),
@@ -1234,14 +1234,14 @@ public class JCublasNDArray implements INDArray {
 
                 JCublas.cublasSetVector(
                         otherArray.length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         Pointer.to(otherArray.data()),
                         1,
                         d_A,
                         1);
                 JCublas.cublasSetVector(
                         length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         Pointer.to(data()),
                         1,
                         d_B,
@@ -1263,7 +1263,7 @@ public class JCublasNDArray implements INDArray {
 
                 JCublas.cublasGetVector(
                         length(),
-                        Sizeof.FLOAT,
+                        Sizeof.DOUBLE,
                         d_C,
                         1,
                         Pointer.to(resultArray.data),
@@ -2224,7 +2224,7 @@ public class JCublasNDArray implements INDArray {
         Pointer d_A = new Pointer();
         JCublas.cublasSetVector(
                 x.length(),
-                Sizeof.FLOAT,
+                Sizeof.DOUBLE,
                 Pointer.to(x.data()),
                 1,
                 d_A,
@@ -2235,7 +2235,7 @@ public class JCublasNDArray implements INDArray {
         Pointer d_A = new Pointer();
         JCublas.cublasSetVector(
                 x.length(),
-                Sizeof.FLOAT,
+                Sizeof.DOUBLE,
                 Pointer.to(x.data()),
                 1,
                 d_A,
@@ -2246,7 +2246,7 @@ public class JCublasNDArray implements INDArray {
         Pointer d_A = new Pointer();
         JCublas.cublasSetVector(
                 x.length(),
-                Sizeof.FLOAT,
+                Sizeof.DOUBLE,
                 Pointer.to(x.data()),
                 1,
                 d_A,

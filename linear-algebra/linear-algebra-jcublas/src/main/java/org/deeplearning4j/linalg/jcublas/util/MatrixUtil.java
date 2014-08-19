@@ -11,7 +11,6 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.linalg.jcublas.JCublasNDArray;
-import org.deeplearning4j.linalg.jcublas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jcublas.complex.ComplexJCublasNDArray;
 
 import org.deeplearning4j.linalg.jblas.complex.*;
@@ -604,7 +603,7 @@ public class MatrixUtil {
     public static ComplexDoubleMatrix exp(ComplexDoubleMatrix input) {
         ComplexDoubleMatrix ret = new ComplexDoubleMatrix(input.rows, input.columns);
         for (int i = 0; i < ret.length; i++) {
-            org.deeplearning4j.linalg.jblas.complex.ComplexDouble d = (org.deeplearning4j.linalg.jblas.complex.ComplexDouble) ComplexUtil.exp(new org.deeplearning4j.linalg.jblas.complex.ComplexDouble(input.get(i)));
+            ComplexDouble d = (ComplexDouble) ComplexUtil.exp(new ComplexDouble(input.get(i)));
             ret.put(i, d);
         }
         return ret;
@@ -623,16 +622,16 @@ public class MatrixUtil {
     }
 
 
-    public static ComplexJCublasNDArray complexPadWithZeros(NDArray toPad,int[] newShape) {
-        ComplexJCublasNDArray ret = ComplexNDArray.zeros(newShape);
+    public static ComplexJCublasNDArray complexPadWithZeros(JCublasNDArray toPad,int[] newShape) {
+        ComplexJCublasNDArray ret = ComplexJCublasNDArray.zeros(newShape);
         for(int i = 0; i < toPad.length; i++)
             ret.put(i,toPad.getScalar(i));
         return ret;
     }
 
 
-    public static ComplexNDArray complexPadWithZeros(ComplexNDArray toPad,int[] newShape) {
-        ComplexNDArray ret = ComplexNDArray.zeros(newShape);
+    public static ComplexJCublasNDArray complexPadWithZeros(ComplexJCublasNDArray toPad,int[] newShape) {
+        ComplexJCublasNDArray ret = ComplexJCublasNDArray.zeros(newShape);
         for(int i = 0; i < toPad.length; i++)
             ret.put(i,toPad.get(i));
         return ret;
@@ -734,8 +733,8 @@ public class MatrixUtil {
         return createBasedOn(ret,toPad);
     }
 
-    public static ComplexDoubleMatrix numDivideMatrix(ComplexDouble div, ComplexDoubleMatrix toDiv) {
-        ComplexDoubleMatrix ret = new ComplexDoubleMatrix(toDiv.rows, toDiv.columns);
+    public static ComplexJCublasNDArray numDivideMatrix(ComplexDouble div, ComplexJCublasNDArray toDiv) {
+        ComplexJCublasNDArray ret = new ComplexJCublasNDArray(toDiv.rows, toDiv.columns);
 
         for (int i = 0; i < ret.length; i++) {
             //prevent numerical underflow
@@ -1775,7 +1774,7 @@ public class MatrixUtil {
     public static ComplexFloatMatrix exp(ComplexFloatMatrix input) {
         ComplexFloatMatrix ret = new ComplexFloatMatrix(input.rows, input.columns);
         for (int i = 0; i  < ret.length; i++) {
-            org.jblas.ComplexFloat f = (org.deeplearning4j.linalg.jblas.complex.ComplexFloat) ComplexUtil.exp(new org.deeplearning4j.linalg.jblas.complex.ComplexFloat(input.get(i)));
+            org.jblas.ComplexFloat f = (ComplexFloat) ComplexUtil.exp(new ComplexFloat(input.get(i)));
             ret.put(i, f);
         }
         return ret;

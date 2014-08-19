@@ -2553,6 +2553,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     }
 
+
     /**
      * Reshape the ndarray in to the specified dimensions,
      * possible errors being thrown for invalid shapes

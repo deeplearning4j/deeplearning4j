@@ -65,6 +65,11 @@
             <artifactId>jcusparse</artifactId>
             <version>${jcuda.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jblas</groupId>
+            <artifactId>jblas</artifactId>
+            <version>1.2.3</version>
+        </dependency>
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>

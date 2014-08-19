@@ -1,6 +1,6 @@
 package org.deeplearning4j.linalg.jcublas.complex;
 
-import org.deeplearning4j.linalg.jcublas.complex.ComplexDouble;
+//import org.deeplearning4j.linalg.jcublas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jcublas.complex.ComplexJCublasNDArray;
 import org.deeplearning4j.linalg.jcublas.util.MatrixUtil;
 import org.deeplearning4j.linalg.util.ArrayUtil;
