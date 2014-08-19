@@ -1314,9 +1314,7 @@ public class JCublasNDArray implements INDArray {
                         Pointer.to(resultArray.data),
                         1);
 
-
-                //JCublasNDArray ret = new JCublasNDArray(C);
-                //resultArray = ret;
+                /*
                 System.err.printf("%d * %d matrix computed\n", resultArray.rows, resultArray.columns);
                 double[] d_ = resultArray.data();
                 System.err.printf("%f matrix result [0]\n", resultArray.data[0]);
@@ -1324,7 +1322,7 @@ public class JCublasNDArray implements INDArray {
                 System.out.println("");
                 for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
                 System.out.println("");
-
+                */
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
             }
         }

@@ -35,8 +35,8 @@ public class JCublasNDArrayTests {
 
         INDArray n = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
         assertEquals(27d,n.length(),1e-1);
-        n.addi(JCublasNDArray.scalar(1d));
-/*
+        n.addi(NDArrays.scalar(1d));
+ /*
         n.checkDimensions(n.addi(JCublasNDArray.scalar(1d)));
         n.checkDimensions(n.subi(JCublasNDArray.scalar(1.0d)));
         n.checkDimensions(n.muli(JCublasNDArray.scalar(1.0d)));

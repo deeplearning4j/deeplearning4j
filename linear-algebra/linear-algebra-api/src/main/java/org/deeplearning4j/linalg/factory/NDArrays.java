@@ -49,6 +49,8 @@ public class NDArrays {
             clazz = (Class<? extends INDArray>) Class.forName(realType);
             complexClazz = (Class<? extends IComplexNDArray>) Class.forName(complexType);
         }catch(Exception e) {
+            System.err.printf("MJK: %s\n", e.getMessage());
+            System.err.printf("MJK: %s\n", e.getStackTrace());
             throw new RuntimeException(e);
         }
     }
