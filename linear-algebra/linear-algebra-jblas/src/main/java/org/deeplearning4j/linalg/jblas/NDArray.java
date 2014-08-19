@@ -81,8 +81,31 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
+    /**
+     * Returns the number of possible vectors for a given dimension
+     *
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return length / size(dimension);
+    }
 
-
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        return new NDArray(data,
+                new int[]{shape[dimension]}
+                ,new int[]{stride[dimension]},
+                offset + index);
+    }
 
     /**
      * Cumulative sum along a dimension
@@ -99,31 +122,27 @@ public class NDArray extends DoubleMatrix implements INDArray {
                 put(i, s);
             }
         }
+
+        else if(dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
+            INDArray flattened = ravel().dup();
+            double prevVal = (double) flattened.getScalar(0).element();
+            for(int i = 1; i < flattened.length(); i++) {
+                double d = prevVal + (double) flattened.getScalar(i).element();
+                flattened.putScalar(i,d);
+                prevVal = d;
+            }
+
+            return flattened;
+        }
+
+
+
         else {
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr2.cumsum(0);
+            for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
+                INDArray vec = vectorAlongDimension(i,dimension);
+                vec.cumsumi(0);
 
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    INDArray arr2 = nd;
-                    arr2.cumsum(0);
-
-                    i.incrementAndGet();
-                }
-            }, false);
-
+            }
         }
 
 
@@ -143,7 +162,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     /**
      * Assign all of the elements in the given
-     * ndarray to this nedarray
+     * ndarray to this ndarray
      *
      * @param arr the elements to assign
      * @return this
@@ -906,6 +925,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
+
+
     /**
      * Number of slices: aka shape[0]
      * @return the number of slices
@@ -1005,7 +1026,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         else {
             if(dimension == Integer.MAX_VALUE)  {
                 for(int i = 0; i < slices(); i++) {
-                    INDArray slice = slice(i);
+                    INDArray slice = slice(i,dimension);
                     if(slice.isVector())
                         op.operate(slice);
                     else {
@@ -1014,25 +1035,27 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
                 }
             }
-            else {
-                int[] shape = ArrayUtil.removeIndex(this.shape,0);
-                int[] stride =  ArrayUtil.removeIndex(this.stride,0);
-                NDArray ret = new NDArray(data,
-                        shape,
-                        stride,
-                        offset);
-                for(int j = 0; j < ret.slices(); j++) {
-                    NDArray slice = ret.slice(j);
-                    if(slice.isVector())
-                        op.operate(slice);
-                    else {
-                        for(int i = 0; i < slice.slices(); i++) {
-                            iterateOverDimension(dimension,op,modify);
-                        }
-                    }
-
+            else if(shape.length == 2) {
+                //column vector
+                if(dimension == 0) {
 
                 }
+                //rows
+                else if(dimension == 1) {
+
+                }
+            }
+
+
+            else {
+
+
+                for(int s = 0; s < this.shape[dimension]; s++) {
+                    NDArray ret = slice(s,dimension);
+                    op.operate(ret);
+
+                }
+
 
 
             }
@@ -1947,56 +1970,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
-    /**
-     * Returns the specified slice of this matrix.
-     * In matlab, this would be equivalent to (given a 2 x 2 x 2):
-     * A(x,:,:) where x is the slice you want to return.
-     *
-     * The slice is always relative to the final dimension of the matrix.
-     *
-     * @param dimension the slice to return
-     * @return the specified slice of this matrix
-     */
-    public NDArray dim(int dimension) {
-        int[] shape = ArrayUtil.copy(shape());
-        int[] stride = ArrayUtil.reverseCopy(this.stride);
-        if (shape.length == 0)
-            throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
-            //slice of a vector is a scalar
-        else if (shape.length == 1)
-            return new NDArray(data,new int[]{},new int[]{},offset + dimension * stride[0]);
 
-            //slice of a matrix is a vector
-        else if (shape.length == 2) {
-            int st = stride[0];
-            if (st == 1) {
-                return new NDArray(
-                        data,
-                        ArrayUtil.of(shape[1]),
-                        ArrayUtil.of(1),
-                        offset + dimension * stride[0]);
-            }
 
-            else {
-
-                return new NDArray(
-                        data,
-                        ArrayUtil.of(shape[1]),
-                        ArrayUtil.of(stride[1]),
-                        offset + dimension * stride[0]
-                );
-            }
-        }
-
-        else {
-            return new NDArray(data,
-                    shape,
-                    stride,
-                    offset + dimension * stride[0]);
-        }
-
-    }
 
 
     /**
@@ -2009,6 +1985,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param slice the slice to return
      * @return the specified slice of this matrix
      */
+    @Override
     public NDArray slice(int slice) {
 
         if (shape.length == 0)
@@ -2047,55 +2024,35 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @return the slice of this matrix from the specified dimension
      * and dimension
      */
+    @Override
     public NDArray slice(int slice, int dimension) {
-        if (slice == 0)
-            return slice(dimension);
-        if (shape.length == 2) {
-            if (slice != 1)
-                throw new IllegalArgumentException("Unable to retrieve dimension " + slice + " from a 2d array");
-            return new NDArray(data,
-                    ArrayUtil.of(shape[0]),
-                    ArrayUtil.of(stride[0]),
-                    offset + dimension * stride[1]
-            );
+        if(shape.length == 2) {
+            if(dimension == 1) {
+                return new NDArray(data,
+                        new int[]{1,columns()},
+                        ArrayUtil.removeIndex(stride,dimension),
+                        offset + slice * stride[dimension]);
+
+            }
+            else if(dimension == 0) {
+                return new NDArray(data,
+                        new int[]{rows(),1},
+                        ArrayUtil.removeIndex(stride,dimension),
+                        offset + slice * stride[dimension]);
+
+            }
         }
 
-        return new NDArray (
-                data,
+        if (slice == shape.length - 1)
+            return slice(dimension);
+
+        return new NDArray(data,
                 ArrayUtil.removeIndex(shape,dimension),
                 ArrayUtil.removeIndex(stride,dimension),
-                offset + dimension * stride[slice]
-        );
+                offset + slice * stride[dimension]);
     }
 
 
-    /**
-     * Iterate over a dimension. In the linear indexing context, we
-     * can think of this as the following:
-     * //number of operations per op
-     int num = from.shape()[dimension];
-
-     //how to isolate blocks from the matrix
-     double[] d = new double[num];
-     int idx = 0;
-     for(int k = 0; k < d.length; k++) {
-     d[k] = from.data[idx];
-     idx += num;
-     }
-
-     *
-     * With respect to a 4 3 2, if we are iterating over dimension 0
-     * bump the index by 4
-     *
-     * The output for this is a matrix of num slices by number of columns
-     *
-     * @param dim the dimension to iterate along
-     * @return the matrix containing the elements along
-     * this dimension
-     */
-    public NDArray dimension(int dim) {
-        return slice(1,dim);
-    }
 
     /**
      * Fetch a particular number on a multi dimensional scale.
@@ -3148,7 +3105,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
                 }
             }, false);
 
-            return arr.reshape(shape).transpose();
+            return arr.reshape(shape);
         }
     }
 

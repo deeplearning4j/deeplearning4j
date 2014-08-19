@@ -1571,33 +1571,6 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     }
 
 
-    /**
-     * Iterate over a dimension. In the linear indexing context, we
-     * can think of this as the following:
-     * //number of operations per op
-     int num = from.shape()[dimension];
-
-     //how to isolate blocks from the matrix
-     double[] d = new double[num];
-     int idx = 0;
-     for(int k = 0; k < d.length; k++) {
-     d[k] = from.data[idx];
-     idx += num;
-     }
-
-     *
-     * With respect to a 4 3 2, if we are iterating over dimension 0
-     * bump the index by 4
-     *
-     * The output for this is a matrix of num slices by number of columns
-     *
-     * @param dim the dimension to iterate along
-     * @return the matrix containing the elements along
-     * this dimension
-     */
-    public ComplexNDArray dimension(int dim) {
-        return slice(1,dim);
-    }
 
     /**
      * Fetch a particular number on a multi dimensional scale.
@@ -1757,6 +1730,33 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     @Override
     public IComplexNDArray putScalar(int i, IComplexNumber value) {
          return put(i, NDArrays.scalar(value));
+    }
+
+    /**
+     * Returns the number of possible vectors for a given dimension
+     *
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return length / size(dimension);
+    }
+
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public IComplexNDArray vectorAlongDimension(int index, int dimension) {
+        return new ComplexNDArray(data,
+                new int[]{shape[dimension]}
+                ,new int[]{stride[dimension]},
+                offset + index);
     }
 
     /**
