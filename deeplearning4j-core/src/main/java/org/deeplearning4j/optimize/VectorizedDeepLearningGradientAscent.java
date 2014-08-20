@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize;
 
 
+import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.util.OptimizerMatrix;
 import org.slf4j.Logger;
@@ -136,7 +137,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             try {
                 step = lineMaximizer.optimize (xi,iterations, step);
 
-            }catch(Exception e) {
+            }catch(InvalidStepException e) {
                 logger.warn("Error during computation",e);
                 continue;
 

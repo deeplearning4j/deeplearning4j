@@ -30,6 +30,7 @@ information, see the file `LICENSE' included with this distribution. */
 
 import org.apache.commons.math3.util.FastMath;
 
+import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
@@ -89,7 +90,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (INDArray line, int lineSearchIteration,double initialStep)
+    public double optimize (INDArray line, int lineSearchIteration,double initialStep) throws InvalidStepException
     {
         INDArray g, x, oldParameters;
         double slope, test, alamin, alam, alam2, tmplam;

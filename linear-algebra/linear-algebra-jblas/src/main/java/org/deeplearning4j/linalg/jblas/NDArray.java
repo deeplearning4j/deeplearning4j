@@ -1467,9 +1467,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
     public NDArray addiRowVector(INDArray rowVector) {
         assert rowVector.isRowVector() : "Must only add a row vector";
         assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int i = 0; i < rows(); i++) {
-            getRow(i).addi(rowVector);
-        }
+            for(int j = 0; j< rows(); j++) {
+                getRow(j).addi(rowVector);
+            }
         return this;
     }
 
