@@ -16,10 +16,6 @@ The first are preserialized datasets that can be downloaded directly for use wit
              d.load(bis);
              bis.close();
 
-* [Mnist dataset](https://drive.google.com/file/d/0B-O_wola53IsWDhCSEtJWXUwTjg/edit?usp=sharing)
-* Iris dataset (forthcoming)
-* Labeled Faces in the Wild (forthcoming)
-
 ### distribution
 
 The second download is pre-compiled binaries, or jar files. These consist of the actual classes themselves, and can be found on [Maven](http://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j). With the binaries, you run everything. 
