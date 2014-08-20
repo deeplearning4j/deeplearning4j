@@ -854,9 +854,15 @@ public class JCublasNDArray implements INDArray {
      */
     @Override
     public JCublasNDArray addi(INDArray other, INDArray result) {
-        new TwoArrayOps().from(this).other(other).op(AddOp.class)
-                .to(result).build().exec();
+        if(other.isScalar())
+            new TwoArrayOps().from(this).scalar(other).op(AddOp.class)
+                    .to(result).build().exec();
+
+        else
+            new TwoArrayOps().from(this).other(other).op(AddOp.class)
+                    .to(result).build().exec();
         return (JCublasNDArray) result;
+
     }
 
     public static JCublasNDArray scalar(double num) {
