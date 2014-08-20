@@ -28,7 +28,7 @@ public class Sigmoid extends BaseElementWiseOp {
             return NDArrays.scalar(NDArrays.createDouble(ret, 0));
 
         } else {
-            double val = 1 / 1 + Math.exp(-(double) input.element());
+            double val = 1 / (1 + Math.exp(-(double) input.element()));
             return NDArrays.scalar(val);
         }
     }

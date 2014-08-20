@@ -168,7 +168,7 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 
         }
         else {
-            network.getW().putScalar(index, value);
+            network.getW().ravel().putScalar(index, value);
         }
     }
 

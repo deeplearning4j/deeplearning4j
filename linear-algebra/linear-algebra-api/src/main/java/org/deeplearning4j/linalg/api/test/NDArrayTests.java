@@ -617,6 +617,15 @@ public abstract class NDArrayTests {
     }
 
     @Test
+    public void testMeans() {
+        INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
+        assertEquals(NDArrays.create(new double[]{2,3}),a.mean(0));
+        assertEquals(NDArrays.create(new double[]{1.5,3.5}),a.mean(1));
+
+    }
+
+
+    @Test
     public void testCumSum() {
         INDArray n = NDArrays.create(new double[]{1,2,3,4}, new int[]{4});
         INDArray cumSumAnswer = NDArrays.create(new double[]{1,3,6,10}, new int[]{4});
