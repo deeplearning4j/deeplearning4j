@@ -53,6 +53,8 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
     public DataSet(INDArray first, INDArray second) {
         if(first.rows() != second.rows())
             throw new IllegalStateException("Invalid data applyTransformToDestination; first and second do not have equal rows. First was " + first.rows() + " second was " + second.rows());
+        this.features = first;
+        this.labels = second;
     }
 
 
@@ -454,7 +456,7 @@ public class DataSet  implements Iterable<DataSet>,Serializable {
      * @return the labels for the dataset
      */
     public INDArray getLabels() {
-        return getLabels();
+        return labels;
     }
 
     /**

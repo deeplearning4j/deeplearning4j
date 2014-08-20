@@ -936,9 +936,16 @@ public interface INDArray {
      */
     public double[] data();
 
+
+    void setData(double[] data);
+
+
     /**
      * Returns a linear float array representation of this ndarray
      * @return the linear float array representation of this ndarray
      */
     public float[] floatData();
+
+
+    void setData(float[] data);
 }

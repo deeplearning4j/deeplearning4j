@@ -1404,6 +1404,11 @@ public class DummyNDArray implements INDArray {
         return new double[0];
     }
 
+    @Override
+    public void setData(double[] data) {
+
+    }
+
     /**
      * Returns a linear float array representation of this ndarray
      *
@@ -1412,6 +1417,11 @@ public class DummyNDArray implements INDArray {
     @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 }
 

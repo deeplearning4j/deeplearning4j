@@ -10,6 +10,25 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
+
+    /**
+     * Cumulative sum along a dimension
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    @Override
+    IComplexNDArray cumsumi(int dimension);
+
+    /**
+     * Cumulative sum along a dimension (in place)
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    @Override
+    IComplexNDArray cumsum(int dimension);
+
     /**
      * Get the vector along a particular dimension
      *
