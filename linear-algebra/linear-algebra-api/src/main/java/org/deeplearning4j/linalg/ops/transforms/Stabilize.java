@@ -17,6 +17,10 @@ import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
 public class Stabilize extends BaseElementWiseOp {
     private double k = 1;
 
+    public Stabilize(Double k) {
+        this.k = k;
+    }
+
     public Stabilize(double k) {
         this.k = k;
     }
@@ -55,6 +59,6 @@ public class Stabilize extends BaseElementWiseOp {
 
 
 
-        return null;
+        return value;
     }
 }

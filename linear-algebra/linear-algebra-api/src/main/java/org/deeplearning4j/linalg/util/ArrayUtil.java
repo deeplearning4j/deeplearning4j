@@ -138,6 +138,21 @@ public class ArrayUtil {
     }
 
 
+    public static double[] doubleCopyOf(float[] data) {
+        double[] ret = new double[data.length];
+        for(int i = 0;i < ret.length; i++)
+            ret[i] =  data[i];
+        return ret;
+    }
+
+    public static float[] floatCopyOf(double[] data) {
+        float[] ret = new float[data.length];
+        for(int i = 0;i < ret.length; i++)
+            ret[i] = (float) data[i];
+        return ret;
+    }
+
+
     /**
      * Returns a subset of an array from 0 to "to"
      * @param data the data to getFromOrigin a subset of

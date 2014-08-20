@@ -18,6 +18,14 @@ public class Pow extends BaseElementWiseOp {
     private double power;
     private IComplexNumber powComplex;
 
+    public Pow(Integer n) {
+        this.power = n;
+    }
+
+    public Pow(Double n) {
+        this.power = n;
+    }
+
     public Pow(double power, IComplexNumber powComplex) {
         this.power = power;
         this.powComplex = powComplex;

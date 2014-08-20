@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
 
 /**
  * Sigmoid operation
+ * @author Adam Gibson
  */
 public class Sigmoid extends BaseElementWiseOp {
     /**
@@ -19,15 +20,16 @@ public class Sigmoid extends BaseElementWiseOp {
      */
     @Override
     public INDArray apply(INDArray input, int i) {
-        if(input instanceof IComplexNDArray) {
+        if (input instanceof IComplexNDArray) {
             IComplexNumber number = (IComplexNumber) input.element();
             double arg = number.complexArgument().doubleValue();
-            double sigArg = 1  / 1 + (Math.exp(-arg)) - 1 + .5;
+            double sigArg = 1 / 1 + (Math.exp(-arg)) - 1 + .5;
             double ret = Math.exp(sigArg);
             return NDArrays.scalar(NDArrays.createDouble(ret, 0));
 
+        } else {
+            double val = 1 / 1 + Math.exp(-(double) input.element());
+            return NDArrays.scalar(val);
         }
-        else
-            return  NDArrays.scalar(1 / 1 + Math.exp(-(double) input.element()));
     }
 }
