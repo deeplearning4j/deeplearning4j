@@ -704,6 +704,8 @@ public class JCublasNDArray implements INDArray {
         );
     }
     public JCublasNDArray get(int[] indices) {
+        return (JCublasNDArray) getScalar(indices);
+/*
         JCublasNDArray result = new JCublasNDArray(data,new int[]{1,indices.length},stride,offset);
 
         for (int i = 0; i < indices.length; i++) {
@@ -711,6 +713,7 @@ public class JCublasNDArray implements INDArray {
         }
 
         return result;
+        */
     }
 
     public JCublasNDArray getScalar(int i) {
@@ -1826,6 +1829,17 @@ public class JCublasNDArray implements INDArray {
         return null;
     }
 
+    public void putRow(int r, JCublasNDArray v) {
+        JCublasNDArray n = JCublasNDArray.wrap(v);
+        if(n.isVector() && n.length != columns())
+            throw new IllegalArgumentException("Unable to put row, mis matched columns");
+        JCublasNDArray row = getRow(r);
+        for(int i = 0; i < v.length; i++)
+            row.put(i,v.get(i));
+
+
+    }
+
     @Override
     public JCublasNDArray putRow(int row, INDArray toPut) {
         JCublasNDArray put = (JCublasNDArray) toPut;
@@ -1838,6 +1852,17 @@ public class JCublasNDArray implements INDArray {
         JCublasNDArray put = (JCublasNDArray) toPut;
         putColumn(column, put);
         return this;
+    }
+
+    public void putColumn(int c, JCublasNDArray v) {
+        JCublasNDArray n = JCublasNDArray.wrap(v);
+        if(n.isVector() && n.length != rows())
+            throw new IllegalArgumentException("Unable to put row, mis matched columns");
+        JCublasNDArray column = getColumn(c);
+        for(int i = 0; i < v.length; i++)
+            column.put(i,v.get(i));
+
+
     }
 
     @Override
