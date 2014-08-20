@@ -49,7 +49,7 @@ public class Sampling {
      * with numbers between 0 and 1
      */
     public static INDArray  normal(RandomGenerator rng, INDArray mean, double sigma) {
-        INDArray iter = mean.reshape(new int[]{1,mean.length()}).dup();
+        INDArray iter = mean.ravel().dup();
         for(int i = 0; i < iter.length(); i++) {
             RealDistribution reals = new NormalDistribution(rng,(double) mean.getScalar(i).element(), FastMath.sqrt(sigma),NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
             iter.putScalar(i,reals.sample());
@@ -68,9 +68,10 @@ public class Sampling {
      * @return a binomial distribution based on the one n, the passed in p values, and rng
      */
     public static INDArray binomial(INDArray p,int n,RandomGenerator rng) {
-        INDArray ret = p.reshape(new int[]{1,p.length()}).dup();
+        INDArray ret = p.ravel().dup();
+        INDArray p2 = p.ravel();
         for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i, MathUtils.binomial(rng, n, (Double) p.getScalar(i).element()));
+            ret.putScalar(i, MathUtils.binomial(rng, n, (Double) p2.getScalar(i).element()));
         }
         return ret.reshape(p.shape());
     }

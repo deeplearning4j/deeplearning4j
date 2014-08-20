@@ -49,6 +49,52 @@ public class NDArray extends DoubleMatrix implements INDArray {
     private int[] stride;
     private int offset = 0;
 
+    /**
+     * Create an ndarray from the specified slices.
+     * This will go through and merge all of the
+     * data from each slice in to one ndarray
+     * which will then take the specified shape
+     * @param slices the slices to merge
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(List<INDArray> slices,int[] shape) {
+        List<double[]> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++)
+            list.add(slices.get(i).data());
+
+        this.data = ArrayUtil.combine(list);
+
+        initShape(shape);
+
+
+
+    }
+
+
+
+    public NDArray(double[] data,int[] shape,int[] stride) {
+        this(data,shape,stride,0);
+    }
+
+
+    public NDArray(double[] data,int[] shape,int[] stride,int offset) {
+        if(offset >= data.length)
+            throw new IllegalArgumentException("Invalid offset: must be < data.length");
+
+
+
+        this.offset = offset;
+        this.stride = stride;
+
+        initShape(shape);
+
+        if(data != null  && data.length > 0)
+            this.data = data;
+
+
+
+    }
+
 
     /**
      * Returns a linear float array representation of this ndarray
@@ -57,10 +103,12 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public float[] floatData() {
-        float[] ret = new float[data.length];
-        for(int i = 0; i < ret.length ;i++)
-            ret[i] = (float) data[i];
-        return ret;
+        return ArrayUtil.floatCopyOf(data());
+    }
+
+    @Override
+    public void setData(float[] data) {
+        this.data = ArrayUtil.doubleCopyOf(data);
     }
 
 
@@ -101,10 +149,41 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
+        assert dimension <= shape.length : "Invalid dimension " + dimension;
+        if(shape.length == 2) {
+            if(dimension == 1)
+                return new NDArray(data,
+                        new int[]{shape[dimension]}
+                        ,new int[]{stride[dimension]},
+                        offset + index * stride[0]);
+            else if(dimension == 0)
+                return new NDArray(data,
+                        new int[]{shape[dimension]}
+                        ,new int[]{stride[dimension]},
+                        offset + index);
+
+
+        }
+
+        if(dimension == shape.length - 1)
+            return new NDArray(data,
+                    new int[]{1,shape[dimension]}
+                    ,ArrayUtil.removeIndex(stride,0),
+                    offset + index * stride[dimension - 1]);
+
+        else if(dimension == 0)
+            return new NDArray(data,
+                    new int[]{shape[dimension],1}
+                    ,new int[]{stride[dimension],1},
+                    offset + index);
+
+
+
         return new NDArray(data,
-                new int[]{shape[dimension]}
-                ,new int[]{stride[dimension]},
-                offset + index);
+                new int[]{shape[dimension],1}
+                ,new int[]{stride[dimension],1},
+                offset + index * stride[0]);
+
     }
 
     /**
@@ -263,51 +342,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return (NDArray) Transforms.neg(this);
     }
 
-    /**
-     * Create an ndarray from the specified slices.
-     * This will go through and merge all of the
-     * data from each slice in to one ndarray
-     * which will then take the specified shape
-     * @param slices the slices to merge
-     * @param shape the shape of the ndarray
-     */
-    public NDArray(List<INDArray> slices,int[] shape) {
-        List<double[]> list = new ArrayList<>();
-        for(int i = 0; i < slices.size(); i++)
-            list.add(slices.get(i).data());
-
-        this.data = ArrayUtil.combine(list);
-
-        initShape(shape);
-
-
-
-    }
-
-
-
-    public NDArray(double[] data,int[] shape,int[] stride) {
-        this(data,shape,stride,0);
-    }
-
-
-    public NDArray(double[] data,int[] shape,int[] stride,int offset) {
-        if(offset >= data.length)
-            throw new IllegalArgumentException("Invalid offset: must be < data.length");
-
-
-
-        this.offset = offset;
-        this.stride = stride;
-
-        initShape(shape);
-
-        if(data != null  && data.length > 0)
-            this.data = data;
-
-
-
-    }
 
 
 
@@ -681,25 +715,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
 
-    //getFromOrigin one result along one dimension based on the given offset
-    public DimensionSlice vectorForDimensionAndOffsetPair(int dimension, int offset,int currOffsetForSlice) {
-        int count = 0;
-        NDArray ret = new NDArray(new int[]{shape[dimension]});
-        boolean newSlice = false;
-        List<Integer> indices = new ArrayList<>();
-        for(int j = offset; count < this.shape[dimension]; j+= this.stride[dimension]) {
-            double d = data[j];
-            ret.put(count++,d);
-            if(j >= currOffsetForSlice)
-                newSlice = true;
-            indices.add(j);
-
-        }
-
-
-
-        return new DimensionSlice(newSlice,ret,ArrayUtil.toArray(indices));
-    }
 
     //getFromOrigin one result along one dimension based on the given offset
     public DimensionSlice vectorForDimensionAndOffset(int dimension, int offset) {
@@ -919,6 +934,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return data;
     }
 
+    @Override
+    public void setData(double[] data) {
+        this.data = data;
+    }
+
 
     public NDArray subArray(int[] shape) {
         return subArray(offsetsForSlices(),shape);
@@ -1024,45 +1044,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
         else {
-            if(dimension == Integer.MAX_VALUE)  {
-                for(int i = 0; i < slices(); i++) {
-                    INDArray slice = slice(i,dimension);
-                    if(slice.isVector())
-                        op.operate(slice);
-                    else {
-                        slice.iterateOverDimension(dimension,op,modify);
-                    }
-
-                }
+            for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
+                INDArray vector = vectorAlongDimension(i,dimension);
+                op.operate(vector);
             }
-            else if(shape.length == 2) {
-                //column vector
-                if(dimension == 0) {
-
-                }
-                //rows
-                else if(dimension == 1) {
-
-                }
-            }
-
-
-            else {
-
-
-                for(int s = 0; s < this.shape[dimension]; s++) {
-                    NDArray ret = slice(s,dimension);
-                    op.operate(ret);
-
-                }
-
-
-
-            }
-
-
-
-
 
         }
 
@@ -1452,8 +1437,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addiColumnVector(INDArray columnVector) {
+        assert columnVector.isColumnVector() : "Must only add a column vector";
+        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
+
         for(int i = 0; i < columns(); i++) {
-            getColumn(i).addi(columnVector.getScalar(i));
+            getColumn(i).addi(columnVector);
         }
         return this;
     }
@@ -1477,8 +1465,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray addiRowVector(INDArray rowVector) {
+        assert rowVector.isRowVector() : "Must only add a row vector";
+        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
         for(int i = 0; i < rows(); i++) {
-            getRow(i).addi(rowVector.getScalar(i));
+            getRow(i).addi(rowVector);
         }
         return this;
     }
@@ -1747,6 +1737,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subi(INDArray other, INDArray result) {
+
         if(other.isScalar())
             new TwoArrayOps().from(this).scalar(other).op(SubtractOp.class)
                     .to(result).build().exec();
@@ -2027,20 +2018,16 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray slice(int slice, int dimension) {
         if(shape.length == 2) {
-            if(dimension == 1) {
-                return new NDArray(data,
-                        new int[]{1,columns()},
-                        ArrayUtil.removeIndex(stride,dimension),
-                        offset + slice * stride[dimension]);
+            //rows
+            if(dimension == 1)
+                return getRow(slice);
 
-            }
-            else if(dimension == 0) {
-                return new NDArray(data,
-                        new int[]{rows(),1},
-                        ArrayUtil.removeIndex(stride,dimension),
-                        offset + slice * stride[dimension]);
 
-            }
+            else if(dimension == 0)
+                return getColumn(slice);
+
+            else throw new IllegalAccessError("Illegal dimension for matrix");
+
         }
 
         if (slice == shape.length - 1)
@@ -2076,7 +2063,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public INDArray rdivi(Number n) {
-        return rdivi(NDArrays.scalar(n));
+        return rdivi(NDArrays.valueArrayOf(shape(), n.doubleValue()));
     }
 
     @Override
@@ -2086,7 +2073,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public INDArray rsubi(Number n) {
-        return rsubi(NDArrays.scalar(n));
+        return rsubi(NDArrays.valueArrayOf(shape(),n.doubleValue()));
     }
 
     @Override
@@ -3769,7 +3756,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
                 ||
                 shape.length == 1  && shape[0] == 1
                 ||
-                shape.length == 2 && (shape[0] == 1 || shape[1] == 1);
+                shape.length == 2 && (shape[0] == 1 || shape[1] == 1) && !isScalar();
     }
 
 

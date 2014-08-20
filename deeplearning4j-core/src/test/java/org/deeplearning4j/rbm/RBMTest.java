@@ -37,7 +37,7 @@ public class RBMTest  {
 		INDArray d =  NDArrays.create(data,new int[]{7,6});
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder().useAdaGrad(true)
+		RBM r = new RBM.Builder()
 				.numberOfVisible(d.columns()).numHidden(4).withRandom(g).build();
 
 		r.trainTillConvergence(d,  0.01,new Object[]{1,0.01,1000});

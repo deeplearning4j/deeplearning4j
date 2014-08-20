@@ -819,10 +819,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return reconstruction error
      */
     public double getReConstructionCrossEntropy() {
-        INDArray preSigH = input.mmul(W).addRowVector(hBias);
+        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
         INDArray sigH = sigmoid(preSigH);
 
-        INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
+        INDArray preSigV = sigH.mmul(W.transpose()).addiRowVector(vBias);
         INDArray sigV = sigmoid(preSigV);
         INDArray inner =
                 input.mul(log(sigV))

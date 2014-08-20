@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.ArrayOps;
 import org.deeplearning4j.linalg.ops.BaseElementWiseOp;
+import org.deeplearning4j.linalg.ops.ElementWiseOp;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 
 
@@ -269,15 +270,24 @@ public class Transforms {
 
     private static INDArray exec(INDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
 
-        new ArrayOps().from(indArray).op(clazz).extraArgs(extraArgs)
-                .build().exec();
-        return indArray;
+       ElementWiseOp ops = new ArrayOps().
+                from(indArray)
+                .op(clazz)
+                .extraArgs(extraArgs)
+                .build();
+        ops.exec();
+        return ops.from().reshape(indArray.shape());
     }
 
     private static IComplexNDArray exec(IComplexNDArray indArray,Class<? extends BaseElementWiseOp> clazz,Object[] extraArgs) {
 
-        new ArrayOps().from(indArray).op(clazz).extraArgs(extraArgs)
-                .build().exec();
-        return indArray;
+        ElementWiseOp ops = new ArrayOps().
+                from(indArray)
+                .op(clazz)
+                .extraArgs(extraArgs)
+                .build();
+        ops.exec();
+        IComplexNDArray n = (IComplexNDArray) ops.from();
+        return n.reshape(indArray.shape());
     }
 }

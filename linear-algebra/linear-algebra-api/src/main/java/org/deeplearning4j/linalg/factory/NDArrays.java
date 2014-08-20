@@ -653,6 +653,8 @@ public class NDArrays {
     }
 
 
+
+
     /**
      * Creates a row vector with the specified number of columns
      * @param rows the number of rows in the matrix
@@ -895,6 +897,31 @@ public class NDArrays {
     }
 
 
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride) {
+        return createComplex(data,shape,stride,0);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride) {
+        return createComplex(data,shape,stride,0);
+    }
+
+
+
     /**
      * Creates a complex ndarray with the specified shape
      * @param rows the rows of the ndarray
@@ -957,7 +984,19 @@ public class NDArrays {
     }
 
 
-
+    /**
+     * Creates an ndarray with the specified shape
+     * @param shape the shape of the ndarray
+       * @return the instance
+     */
+    public static INDArray create(List<INDArray> list,int[] shape) {
+        try {
+            Constructor c = clazz.getConstructor(List.class,int[].class);
+            return (INDArray) c.newInstance(list,shape);
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
 
@@ -1148,7 +1187,7 @@ public class NDArrays {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static INDArray complexScalar(Number value,int offset) {
+    public static IComplexNDArray complexScalar(Number value,int offset) {
         if(dtype.equals("double"))
             return scalar(createDouble(value.doubleValue(),0),offset);
         if(dtype.equals("float"))
@@ -1162,7 +1201,7 @@ public class NDArrays {
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
-    public static INDArray complexScalar(Number value) {
+    public static IComplexNDArray complexScalar(Number value) {
         return complexScalar(value,0);
     }
 

@@ -201,15 +201,20 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 		 * Visible Bias
 		 * Hidden Bias
 		 */
+
+        INDArray wGradientFlattened = g.getwGradient().ravel();
+        INDArray vBiasGradientFlattened = g.getvBiasGradient().ravel();
+        INDArray hBiasGradientFlattened = g.gethBiasGradient().ravel();
+
         int idx = 0;
         for (int i = 0; i < g.getwGradient().length(); i++) {
-            buffer[idx++] = (double) g.getwGradient().getScalar(i).element();
+            buffer[idx++] = (double) wGradientFlattened.getScalar(i).element();
         }
         for (int i = 0; i < g.getvBiasGradient().length(); i++) {
-            buffer[idx++] = (double) g.getvBiasGradient().getScalar(i).element();
+            buffer[idx++] = (double) vBiasGradientFlattened.getScalar(i).element();
         }
         for (int i = 0; i < g.gethBiasGradient().length(); i++) {
-            buffer[idx++] = (double) g.gethBiasGradient().getScalar(i).element();
+            buffer[idx++] = (double) hBiasGradientFlattened.getScalar(i).element();
         }
 
         return NDArrays.create(buffer);

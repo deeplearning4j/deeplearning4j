@@ -1729,7 +1729,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     @Override
     public IComplexNDArray putScalar(int i, IComplexNumber value) {
-         return put(i, NDArrays.scalar(value));
+        return put(i, NDArrays.scalar(value));
     }
 
     /**
@@ -1766,8 +1766,39 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @return the cumulative sum along the specified dimension
      */
     @Override
-    public INDArray cumsumi(int dimension) {
-        return null;
+    public IComplexNDArray cumsumi(int dimension) {
+        if(isVector()) {
+            IComplexNumber s = NDArrays.createDouble(0,0);
+            for (int i = 0; i < length; i++) {
+                s .addi((IComplexNumber) getScalar(i).element());
+                putScalar(i, s);
+            }
+        }
+
+        else if(dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
+            IComplexNDArray flattened = ravel().dup();
+            IComplexNumber prevVal = (IComplexNumber) flattened.getScalar(0).element();
+            for(int i = 1; i < flattened.length(); i++) {
+                IComplexNumber d = prevVal.add((IComplexNumber) flattened.getScalar(i).element());
+                flattened.putScalar(i,d);
+                prevVal = d;
+            }
+
+            return flattened;
+        }
+
+
+
+        else {
+            for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
+                IComplexNDArray vec = vectorAlongDimension(i,dimension);
+                vec.cumsumi(0);
+
+            }
+        }
+
+
+        return this;
     }
 
     /**
@@ -1777,8 +1808,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @return the cumulative sum along the specified dimension
      */
     @Override
-    public INDArray cumsum(int dimension) {
-        return null;
+    public IComplexNDArray cumsum(int dimension) {
+        return dup().cumsumi(dimension);
     }
 
     /**
@@ -3074,6 +3105,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         return ret;
     }
 
+    @Override
+    public void setData(double[] data) {
+        this.data = data;
+    }
+
     /**
      * Returns a linear float array representation of this ndarray
      *
@@ -3081,7 +3117,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public float[] floatData() {
-        return new float[0];
+        return ArrayUtil.floatCopyOf(data);
+    }
+
+    @Override
+    public void setData(float[] data) {
+        this.data = ArrayUtil.doubleCopyOf(data);
     }
 
 
@@ -4285,7 +4326,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
                 ||
                 shape.length == 1  && shape[0] == 1
                 ||
-                shape.length == 2 && (shape[0] == 1 || shape[1] == 1);
+                shape.length == 2 && (shape[0] == 1 || shape[1] == 1) && !isScalar();
     }
 
     /** Generate string representation of the matrix. */
