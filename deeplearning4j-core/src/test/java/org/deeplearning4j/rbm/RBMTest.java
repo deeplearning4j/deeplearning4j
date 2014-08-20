@@ -40,7 +40,11 @@ public class RBMTest  {
 		RBM r = new RBM.Builder()
 				.numberOfVisible(d.columns()).numHidden(4).withRandom(g).build();
 
+
+
 		r.trainTillConvergence(d,  0.01,new Object[]{1,0.01,1000});
+
+        double d5 = r.getReConstructionCrossEntropy();
 
 		INDArray v = new NDArray(new double[]
 				{1, 1, 0, 0, 0, 0,0, 0, 0, 1, 1, 0}, new int[]{2,6});

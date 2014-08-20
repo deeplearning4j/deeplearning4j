@@ -1117,7 +1117,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private int numHidden;
         private RandomGenerator gen = new MersenneTwister(123);
         private INDArray input;
-        private double sparsity = 0.01;
+        private double sparsity = 0;
         private double l2 = 0.01;
         private double momentum = 0.5;
         private int renderWeightsEveryNumEpochs = -1;

@@ -12,6 +12,7 @@
 package org.deeplearning4j.optimize;
 
 
+import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
@@ -140,7 +141,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             optimizable.setCurrentIteration(iterationCount);
             try {
                 step = lineMaximizer.optimize(xi, iterationCount,step);
-            } catch (Throwable e) {
+            } catch (InvalidStepException e) {
                 logger.warn("Breaking: negative slope");
             }
 
