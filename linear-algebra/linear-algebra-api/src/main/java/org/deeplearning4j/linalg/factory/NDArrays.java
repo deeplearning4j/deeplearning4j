@@ -365,7 +365,7 @@ public class NDArrays {
      */
     public static IComplexNDArray createComplex(IComplexNumber[] data,int[] shape) {
         try {
-            Constructor c = complexClazz.getConstructor(ReflectionUtil.classesFor(new Object[]{data,shape}));
+            Constructor c = complexClazz.getConstructor(IComplexNumber[].class,int[].class);
             return (IComplexNDArray) c.newInstance(data,shape);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -381,7 +381,7 @@ public class NDArrays {
      */
     public static IComplexNDArray createComplex(List<IComplexNDArray> arrs,int[] shape) {
         try {
-            Constructor c = complexClazz.getConstructor(ReflectionUtil.classesFor(new Object[]{arrs,shape}));
+            Constructor c = complexClazz.getConstructor(List.class,int[].class);
             return (IComplexNDArray) c.newInstance(arrs,shape);
         }catch (Exception e) {
             throw new RuntimeException(e);

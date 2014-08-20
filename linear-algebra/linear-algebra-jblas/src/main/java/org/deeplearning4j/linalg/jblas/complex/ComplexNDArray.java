@@ -135,7 +135,19 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     }
 
+    /**
+     * Create a complex ndarray with the given complex doubles.
+     * Note that this maybe an easier setup than the new double[]
+     * @param newData the new data for this array
+     * @param shape the shape of the ndarray
+     */
+    public ComplexNDArray(IComplexNumber[] newData,int[] shape) {
+        super(new double[ArrayUtil.prod(shape) * 2]);
+        initShape(shape);
+        for(int i = 0;i  < length; i++)
+            put(i,(ComplexDouble) newData[i].asDouble());
 
+    }
     /**
      * Create a complex ndarray with the given complex doubles.
      * Note that this maybe an easier setup than the new double[]
