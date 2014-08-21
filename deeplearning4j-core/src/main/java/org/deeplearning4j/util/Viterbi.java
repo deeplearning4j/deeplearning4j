@@ -72,7 +72,8 @@ public class Viterbi implements Persistable {
                 int maxVal = NDArrays.getBlasWrapper().iamax(rowLogProduct);
                 double argMax = (double) rowLogProduct.max(Integer.MAX_VALUE).element();
                 V.put(t,k,argMax);
-                if(k == outcomeSequence.getScalar(t).element())
+                int element = (int) outcomeSequence.getScalar(t).element();
+                if(k == element)
                     V.put(t,k,logPCorrect + maxVal);
                 else
                     V.put(t,k, logPIncorrect + maxVal);
