@@ -110,13 +110,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @param slices the slices of the ndarray
      * @param shape the final shape of the ndarray
      */
-    public ComplexNDArray(List<ComplexNDArray> slices,int[] shape) {
+    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape) {
         super(new double[ArrayUtil.prod(shape) * 2]);
         List<ComplexDouble> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++) {
-            ComplexNDArray flattened = slices.get(i).ravel();
-            for(int j = 0; j < flattened.length; j++)
-                list.add(flattened.get(j));
+            IComplexNDArray flattened = slices.get(i).ravel();
+            for(int j = 0; j < flattened.length(); j++)
+                list.add((ComplexDouble) flattened.getScalar(j).element());
         }
 
 
@@ -257,6 +257,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     public ComplexNDArray(int newRows, int newColumns) {
         this(new int[]{newRows,newColumns});
+    }
+
+
+
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
+        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
     }
 
     @Override

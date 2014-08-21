@@ -95,6 +95,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     }
 
+    public NDArray(float[] data, int[] shape, int[] stride, int offset) {
+    }
+
 
     /**
      * Returns a linear float array representation of this ndarray
