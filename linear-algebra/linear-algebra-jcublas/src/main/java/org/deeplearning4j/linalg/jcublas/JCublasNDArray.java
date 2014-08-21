@@ -627,6 +627,19 @@ public class JCublasNDArray implements INDArray {
         return ret;
     }
 
+    public JCublasNDArray(List<INDArray> slices,int[] shape) {
+        List<double[]> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++)
+            list.add(slices.get(i).data());
+
+        this.data = ArrayUtil.combine(list);
+
+        initShape(shape);
+
+
+
+    }
+
     /**
      * Flattens the array for linear indexing
      * @return the flattened version of this array

@@ -12,7 +12,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -417,7 +419,7 @@ public class JCublasNDArrayTests {
 
     @Test
     public void testSliceConstructor() {
-        /* TODO Fix the constructor with array slices
+
         List<INDArray> testList = new ArrayList<>();
         for(int i = 0; i < 5; i++)
             testList.add(JCublasNDArray.scalar(i + 1));
@@ -425,8 +427,7 @@ public class JCublasNDArrayTests {
         INDArray test = new JCublasNDArray(testList,new int[]{testList.size()});
         INDArray expected = new JCublasNDArray(new double[]{1,2,3,4,5},new int[]{5});
         assertEquals(expected,test);
-        */
-        assertEquals(true,true);
+
     }
 
 

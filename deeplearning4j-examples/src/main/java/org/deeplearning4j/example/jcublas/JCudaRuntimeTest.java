@@ -12,7 +12,29 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
  * Taken from http://www.jcuda.org/tutorial/TutorialIndex.html
  */
 public class JCudaRuntimeTest {
+
     public static void main(String args[]) {
+
+
+
+    }
+    public void slices() {
+        double[] data = JCublasNDArray.linspace(1,10,10).data;
+
+        INDArray testMatrix = new JCublasNDArray(data,new int[]{5,2});
+        INDArray row1 = testMatrix.getRow(0).transpose();
+        INDArray row2 = testMatrix.getRow(1);
+        JCublasNDArray row12 = JCublasNDArray.linspace(1,2,2).reshape(2,1);
+        JCublasNDArray row22 = JCublasNDArray.linspace(3,4,2).reshape(1,2);
+        JCublasNDArray rowResult = row12.mmul(row22);
+
+        INDArray row122 = JCublasNDArray.wrap(row12);
+        INDArray row222 = JCublasNDArray.wrap(row22);
+        INDArray rowResult2 = row122.mmul(row222);
+
+        INDArray mmul = row1.mmul(row2);
+    }
+    public void mmul() {
         Pointer pointer = new Pointer();
         int n = 500;
         int finagle = 0;
