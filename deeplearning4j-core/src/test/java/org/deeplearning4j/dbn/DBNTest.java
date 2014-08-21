@@ -4,15 +4,18 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
-import org.deeplearning4j.datasets.DataSet;
+
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.jblas.NDArray;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -47,10 +50,10 @@ public class DBNTest {
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();
 
-        DoubleMatrix params = dbn.params();
-        assertEquals(1,params.rows);
-        assertEquals(params.columns,params.length);
-        dbn.setLabels(new DoubleMatrix(1,nOuts));
+        INDArray params = dbn.params();
+        assertEquals(1,params.rows());
+        assertEquals(params.columns(),params.length());
+        dbn.setLabels(new NDArray(new DoubleMatrix(1,nOuts)));
         assertEquals(RBM.HiddenUnit.RECTIFIED,dbn.getHiddenUnit());
         assertEquals(RBM.VisibleUnit.GAUSSIAN,dbn.getVisibleUnit());
         RBM r = (RBM) dbn.getLayers()[0];
@@ -77,8 +80,8 @@ public class DBNTest {
                 .build();
 
 
-        DoubleMatrix params = dbn.params();
-        List<Pair<DoubleMatrix,DoubleMatrix>> unpacked = dbn.unPack(params);
+        INDArray params = dbn.params();
+        List<Pair<INDArray,INDArray>> unpacked = dbn.unPack(params);
 
 
     }
@@ -109,7 +112,7 @@ public class DBNTest {
         DataSet next = iter.next(150);
         next.shuffle();
         dbn.init();
-        dbn.feedForward(next.getFirst());
+        dbn.feedForward(next.getFeatureMatrix());
 
         for(int i = 0; i < dbn.getnLayers(); i++) {
             assertEquals(dbn.getLayers()[i].gethBias(),dbn.getSigmoidLayers()[i].getB());
@@ -130,14 +133,14 @@ public class DBNTest {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), 1, 1e-5, 1000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-5, 1000);
         }
 
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-4, 1000);
+            dbn.setInput(next.getFeatureMatrix());
+            dbn.finetune(next.getLabels(), 1e-4, 1000);
         }
 
 
@@ -148,8 +151,8 @@ public class DBNTest {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            DoubleMatrix predict = dbn.output(next.getFirst());
-            DoubleMatrix labels = next.getSecond();
+            INDArray predict = dbn.output(next.getFeatureMatrix());
+            INDArray labels = next.getLabels();
             eval.eval(labels, predict);
         }
 
@@ -201,7 +204,7 @@ public class DBNTest {
 
         for(int i = 0; i < miniBatches.size(); i++) {
             DataSet curr = miniBatches.get(i);
-            dbn.pretrain(curr.getFirst(), k, preTrainLr, preTrainEpochs);
+            dbn.pretrain(curr.getFeatureMatrix(), k, preTrainLr, preTrainEpochs);
 
         }
 
@@ -214,8 +217,8 @@ public class DBNTest {
 
         for(int i = 0; i < miniBatches.size(); i++) {
             DataSet curr = miniBatches.get(i);
-            dbn.setInput(curr.getFirst());
-            dbn.finetune(curr.getSecond(),fineTuneLr, fineTuneEpochs);
+            dbn.setInput(curr.getFeatureMatrix());
+            dbn.finetune(curr.getLabels(),fineTuneLr, fineTuneEpochs);
 
         }
 
@@ -226,8 +229,8 @@ public class DBNTest {
 
         for(int i = 0; i < miniBatches.size(); i++) {
             DataSet test = miniBatches.get(i);
-            DoubleMatrix predicted = dbn.output(test.getFirst());
-            DoubleMatrix real = test.getSecond();
+            INDArray predicted = dbn.output(test.getFeatureMatrix());
+            INDArray real = test.getLabels();
 
 
             eval.eval(real, predicted);
@@ -261,15 +264,15 @@ public class DBNTest {
 
         watch.start();
 
-        dbn.pretrain(d.getFirst(), 1, 1e-2, 300);
-        dbn.finetune(d.getSecond(), 1e-2, 100);
+        dbn.pretrain(d.getFeatureMatrix(), 1, 1e-2, 300);
+        dbn.finetune(d.getLabels(), 1e-2, 100);
 
         watch.stop();
 
         log.info("Took " + watch.getTime());
         Evaluation eval = new Evaluation();
-        DoubleMatrix predict = dbn.output(d.getFirst());
-        eval.eval(d.getSecond(), predict);
+        INDArray predict = dbn.output(d.getFeatureMatrix());
+        eval.eval(d.getLabels(), predict);
         log.info(eval.stats());
     }
 
@@ -287,10 +290,10 @@ public class DBNTest {
                 .numberOfOutPuts(2)
                 .build();
 
-        dbn.setInput(d.getFirst());
-        DoubleMatrix params = dbn.params();
-        List<DoubleMatrix> activations = dbn.feedForwardR(params);
-        List<DoubleMatrix> activationsNorm = dbn.feedForward();
+        dbn.setInput(d.getFeatureMatrix());
+        INDArray params = dbn.params();
+        List<INDArray> activations = dbn.feedForwardR(params);
+        List<INDArray> activationsNorm = dbn.feedForward();
         assertEquals(activations.size(),activationsNorm.size());
     }
 

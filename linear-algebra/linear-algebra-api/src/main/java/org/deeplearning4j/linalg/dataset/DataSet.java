@@ -1,6 +1,6 @@
 package org.deeplearning4j.linalg.dataset;
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
  * @author Adam Gibson
  *
  */
-public class DataSet  implements Iterable<DataSet> {
+public class DataSet  implements Iterable<DataSet>,Serializable {
 
     private static final long serialVersionUID = 1935520764586513365L;
     private static Logger log = LoggerFactory.getLogger(DataSet.class);
@@ -53,6 +53,8 @@ public class DataSet  implements Iterable<DataSet> {
     public DataSet(INDArray first, INDArray second) {
         if(first.rows() != second.rows())
             throw new IllegalStateException("Invalid data applyTransformToDestination; first and second do not have equal rows. First was " + first.rows() + " second was " + second.rows());
+        this.features = first;
+        this.labels = second;
     }
 
 
@@ -454,7 +456,7 @@ public class DataSet  implements Iterable<DataSet> {
      * @return the labels for the dataset
      */
     public INDArray getLabels() {
-        return getLabels();
+        return labels;
     }
 
     /**

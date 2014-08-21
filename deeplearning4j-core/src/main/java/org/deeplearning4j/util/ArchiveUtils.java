@@ -48,7 +48,7 @@ public class ArchiveUtils {
 
                 log.info("file unzip : "+ newFile.getAbsoluteFile());
 
-                //create all non exists folders
+                //createComplex all non exists folders
                 //else you will hit FileNotFoundException for compressed folder
                 new File(newFile.getParent()).mkdirs();
 
@@ -85,7 +85,7 @@ public class ArchiveUtils {
 
                 log.info("Extracting: " + entry.getName());
 
-                /** If the entry is a directory, create the directory. **/
+                /** If the entry is a directory, createComplex the directory. **/
 
                 if (entry.isDirectory()) {
 

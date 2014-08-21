@@ -1,34 +1,26 @@
 package org.deeplearning4j.dbn;
 
-import static org.deeplearning4j.util.MatrixUtil.downSample;
-import static org.deeplearning4j.util.MatrixUtil.createBasedOn;
-import static org.deeplearning4j.util.MatrixUtil.prod;
-import static org.deeplearning4j.util.MatrixUtil.toMatrix;
-
-import static org.deeplearning4j.util.Convolution.*;
-
-import static org.deeplearning4j.util.MatrixUtil.rot;
-import static org.jblas.ranges.RangeUtils.interval;
-
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.convolution.Convolution;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.nn.*;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
-import org.deeplearning4j.nn.linalg.FourDTensor;
-import org.deeplearning4j.nn.linalg.Tensor;
+
+
+import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.rbm.ConvolutionalRBM;
 import org.deeplearning4j.rng.SynchronizedRandomGenerator;
-import org.deeplearning4j.util.Convolution;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.ranges.RangeUtils;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +63,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
         super(nIns, hiddenLayerSizes, nOuts, nLayers, rng);
     }
 
-    protected ConvolutionalDBN(int nIn, int[] hiddenLayerSizes, int nOuts, int nLayers, RandomGenerator rng, DoubleMatrix input, DoubleMatrix labels) {
+    protected ConvolutionalDBN(int nIn, int[] hiddenLayerSizes, int nOuts, int nLayers, RandomGenerator rng, INDArray input, INDArray labels) {
         super(nIn, hiddenLayerSizes, nOuts, nLayers, rng, input, labels);
     }
 
@@ -84,7 +76,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @param otherParams the other parameters for child classes (algorithm specific parameters such as corruption level for SDA)
      */
     @Override
-    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+    public void pretrain(INDArray input, Object[] otherParams) {
 
     }
 
@@ -107,30 +99,27 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @return the list of activations for each layer
      */
     @Override
-    public List<DoubleMatrix> feedForward(DoubleMatrix input) {
+    public List<INDArray> feedForward(INDArray input) {
         /* Number of tensors is equivalent to the number of mini batches */
-        FourDTensor tensor = new FourDTensor(input,inputSize[0],inputSize[1],  input.rows / inputSize[0],input.rows / input.length);
-        FourDTensor curr = tensor;
-        List<DoubleMatrix> activations = new ArrayList<>();
+        INDArray tensor = NDArrays.create(new int[]{inputSize[0],inputSize[1],  input.rows() / inputSize[0],input.rows() / input.length()});
+        INDArray curr = tensor;
+        List<INDArray> activations = new ArrayList<>();
         for(int i = 0; i < getnLayers(); i++) {
             ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[i];
             DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[i];
             for(int j = 0; j < r.getNumFilters()[0]; j++) {
 
-                int nInY = curr.rows();
-                int nInX = curr.columns();
-                int nInFm = curr.slices();
-                int nObs = curr.getNumTensor();
+              int nObs = curr.slices();
                 //equivalent to a 3d tensor: only one tensor
-                FourDTensor featureMap = FourDTensor.zeros(r.getFmSize()[0],r.getFmSize()[1],1,nObs);
+                INDArray featureMap = NDArrays.zeros(new int[]{r.getFmSize()[0],r.getFmSize()[1],1,nObs});
                 for(int k = 0; j < r.getNumFilters()[0]; j++) {
-                    featureMap.addi(conv2d(featureMap.getTensor(i),r.getW().getSliceOfTensor(j,i), Convolution.Type.VALID));
+                    featureMap.addi(Convolution.convn(featureMap.slice(i), r.getW().slice(j, i), Convolution.Type.VALID));
                 }
-                featureMap.addi(r.gethBias().get(i));
-                r.getFeatureMap().setSlice(j,d.activate(featureMap));
+                featureMap.addi(r.gethBias().getScalar(i));
+                r.getFeatureMap().putSlice(j, d.activate(featureMap));
 
                 //put the down sampled
-                d.getFeatureMap().setTensor(j,downSample(r.getFeatureMap().getTensor(j), MatrixUtil.toMatrix(r.getStride())));
+                d.getFeatureMap().putSlice(j, Transforms.downSample(r.getFeatureMap().slice(j),r.getStride()));
 
 
             }
@@ -151,42 +140,41 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @return the list of activations for each layer
      */
     @Override
-    public List<DoubleMatrix> feedForward() {
+    public List<INDArray> feedForward() {
         return feedForward(input);
     }
 
     @Override
-    protected void computeDeltas(List<DoubleMatrix> deltaRet) {
+    protected void computeDeltas(List<INDArray> deltaRet) {
         ActivationFunction a = getSigmoidLayers()[0].getActivationFunction();
-        ActivationFunction softMaxDerivative = Activations.softmax();
-        List<DoubleMatrix> activations = feedForward();
+        ActivationFunction softMaxDerivative = Activations.softMaxRows();
+        List<INDArray> activations = feedForward();
 
         /**
          * Prediction will actually be a tensor, need to map this out
          */
-        DoubleMatrix error = labels.sub(activations.get(activations.size() - 1)).neg().mul(softMaxDerivative.applyDerivative(activations.get(activations.size() - 1)));
+        INDArray error = labels.sub(activations.get(activations.size() - 1)).neg().mul(softMaxDerivative.applyDerivative(activations.get(activations.size() - 1)));
         //should this be a 4d tensor?
-        DoubleMatrix es = outputLayer.getW().transpose().mmul(error);
+        INDArray es = outputLayer.getW().transpose().mmul(error);
         DownSamplingLayer d = (DownSamplingLayer) getSigmoidLayers()[getSigmoidLayers().length - 1];
-        DoubleMatrix shape = d.getFeatureMap().shape();
         ConvolutionalRBM rbm = (ConvolutionalRBM) getLayers()[getnLayers() - 1];
-        DoubleMatrix[] errorSignals = new DoubleMatrix[getnLayers()];
-        DoubleMatrix[] biasGradients = new DoubleMatrix[getnLayers()];
+        INDArray[] errorSignals = new INDArray[getnLayers()];
+        INDArray[] biasGradients = new INDArray[getnLayers()];
 
-        FourDTensor layerErrorSignal = FourDTensor.zeros((int) shape.get(0),(int) shape.get(1),(int) shape.get(2),(int) shape.get(3));
+        INDArray layerErrorSignal = NDArrays.zeros(d.getFeatureMap().shape());
         errorSignals[errorSignals.length - 1] = es;
         //initial hidden layer error signal
 
-        int nMap = (int) shape.get(0) * (int) shape.get(1);
+        int nMap = layerErrorSignal.size(0)*  layerErrorSignal.size(1);
 
         //translate in to a 2d feature map
         for(int i = 0; i < rbm.getNumFilters()[0]; i++) {
            /*
              These will be different slices of the tensor
             */
-            DoubleMatrix subSlice = es.get(RangeUtils.interval(i * nMap,(i + 1)* nMap),RangeUtils.interval(0,es.columns));
-            Tensor reshaped = MatrixUtil.reshape(subSlice,(int)shape.get(0),(int)shape.get(1),(int) shape.get(3));
-            layerErrorSignal.setTensor(i,reshaped);
+            INDArray subSlice = es.get(NDArrayIndex.interval(i * nMap, (i + 1) * nMap),NDArrayIndex.interval(0,es.columns()));
+            INDArray reshaped = subSlice.reshape(d.getFeatureMap().shape());
+            layerErrorSignal.putSlice(i, reshaped);
 
         }
 
@@ -194,31 +182,31 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
         for(int i = getnLayers() -2; i >= 0; i--) {
             DownSamplingLayer layer = (DownSamplingLayer) getSigmoidLayers()[i];
-            DoubleMatrix shape2 = d.getFeatureMap().shape();
             ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
             DownSamplingLayer forwardDownSamplingLayer = (DownSamplingLayer) getSigmoidLayers()[i + 1];
             ConvolutionalRBM forwardRBM = (ConvolutionalRBM) getLayers()[i + 1];
             int[] stride = forwardRBM.getStride();
 
-            FourDTensor propErrorSignal = FourDTensor.zeros((int) shape2.get(0),(int) shape2.get(1),(int) shape2.get(2),(int) shape2.get(3));
+            INDArray propErrorSignal = NDArrays.zeros(d.getFeatureMap().shape());
 
             //handle subsampling layer first
             for(int k = 0; k < layer.getNumFeatureMaps(); k++) {
-                DoubleMatrix rotFilter = rot(forwardRBM.getW().getSliceOfTensor(i,k));
-                FourDTensor tensor = (FourDTensor) errorSignals[i + 1];
-                Tensor currEs = tensor.getTensor(k);
-                propErrorSignal.addi(conv2d(currEs,rotFilter,Type.FULL));
+                INDArray rotFilter = NDArrays.rot(forwardRBM.getW().slice(i).slice(k));
+                INDArray tensor =   errorSignals[i + 1];
+                INDArray currEs = tensor.slice(k);
+                propErrorSignal.addi(Convolution.convn(currEs, rotFilter, Convolution.Type.FULL));
 
             }
 
 
             errorSignals[i] = propErrorSignal;
 
-            DoubleMatrix mapSize = forwardRBM.getFeatureMap().shape();
-            FourDTensor rbmEs = FourDTensor.zeros((int) mapSize.get(0),(int) mapSize.get(1),(int) mapSize.get(2),(int) mapSize.get(3));
+            INDArray mapSize = forwardRBM.getFeatureMap();
+            INDArray rbmEs = NDArrays.zeros(mapSize.shape());
             for(int k = 0; k < rbm.getNumFilters()[0]; k++) {
-                Tensor propEs = MatrixUtil.upSample(forwardDownSamplingLayer.getFeatureMap().getTensor(k),new Tensor(toMatrix(new int[]{stride[0],stride[1],1,1}).div(prod(toMatrix(stride)))));
-                rbmEs.setTensor(k,propEs);
+                INDArray propEs = Transforms.upSample(forwardDownSamplingLayer.getFeatureMap().slice(k),
+                        ArrayUtil.toNDArray(new int[]{stride[0],stride[1],1,1})).divi(ArrayUtil.prod(stride));
+                rbmEs.putSlice(k, propEs);
             }
 
             errorSignals[i - 1] = rbmEs;
@@ -235,20 +223,20 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             ConvolutionalRBM r2 = (ConvolutionalRBM) getLayers()[i];
             ConvolutionalRBM prevRBM = (ConvolutionalRBM) getLayers()[i - 1];
 
-            FourDTensor errorSignal = (FourDTensor) errorSignals[i - 1];
-            DoubleMatrix biasGradient = new DoubleMatrix(1,r2.getNumFilters()[0]);
+            INDArray errorSignal = errorSignals[i - 1];
+            INDArray biasGradient = NDArrays.create(1,r2.getNumFilters()[0]);
             for(int j = 0; j < r2.getNumFilters()[0]; j++) {
-                Tensor es2 = errorSignal.getTensor(j);
+                INDArray es2 = errorSignal.slice(j);
                 for(int k = 0; k < prevRBM.getNumFilters()[0]; k++)  {
 
                     //figure out what to do wrt error signal for each neural net here.
-                    Tensor flipped = MatrixUtil.flipDimMultiDim(prevRBM.getFeatureMap().getTensor(k));
+                    INDArray flipped = NDArrays.reverse(prevRBM.getFeatureMap().slice(k));
 
-                    DoubleMatrix dedFilter = conv2d(flipped,es2,Type.VALID);
+                    INDArray dedFilter = Convolution.convn(flipped, es2, Convolution.Type.VALID);
                     r2.getdWeights().put(j,k,dedFilter);
                 }
 
-                biasGradient.put(j,es.columnSums().div(errorSignal.numTensors()).sum());
+                biasGradient.put(j, es.sum(1).div(errorSignal.slices()).sum(Integer.MAX_VALUE));
 
             }
             biasGradients[i] = biasGradient;
@@ -283,7 +271,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
         //precompute deltas
-        List<DoubleMatrix> deltas = new ArrayList<>();
+        List<INDArray> deltas = new ArrayList<>();
         //compute derivatives and gradients given activations
         computeDeltas(deltas);
 
@@ -292,37 +280,34 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[l];
             ConvolutionalRBM prevR = (ConvolutionalRBM) getLayers()[l - 1];
 
-            FourDTensor wGradient =  (FourDTensor) deltas.get(l);
-            DoubleMatrix biasGradient =  deltas.get(l).columnMeans();
-            FourDTensorAdaGrad wAdaGrad = (FourDTensorAdaGrad) r.getAdaGrad();
-            DoubleMatrix biasLearningRates = null;
+            INDArray wGradient =   deltas.get(l);
+            INDArray biasGradient =  deltas.get(l).mean(1);
+
+            INDArray biasLearningRates = null;
+            AdaGrad wAdaGrad= r.getAdaGrad();
             if(useAdaGrad)
                 biasLearningRates = layers[l].gethBiasAdaGrad().getLearningRates(biasGradient);
 
 
             for(int m = 0; m < r.getNumFilters()[0]; m++) {
                 if(useAdaGrad)
-                    biasGradient.put(m,biasLearningRates.get(m) *  r.gethBias().get(m));
+                    biasGradient.put(m,biasLearningRates.getScalar(m).muli(r.gethBias().getScalar(m)));
 
                 else
-                    biasGradient.put(m,lr *  r.gethBias().get(m));
+                    biasGradient.put(m,r.gethBias().getScalar(m).muli(lr));
                 for(int n = 0; n < prevR.getNumFilters()[0]; n++) {
                     if(useRegularization)  {
-                        DoubleMatrix penalty = r.getFeatureMap().getSliceOfTensor(m,n).mul(l2) ;
+                        INDArray penalty = r.getFeatureMap().slice(m, n).mul(l2) ;
                         if(useAdaGrad) {
-                            DoubleMatrix learningRates = wAdaGrad.getLearningRates(m,n,wGradient.getSliceOfTensor(m,n));
+                            INDArray learningRates = wAdaGrad.getLearningRates(wGradient.slice(m).slice(n));
                             penalty.muli(learningRates);
 
                         }
                         else
                             penalty.muli(lr);
-                        wGradient.put(m,n,wGradient.getSliceOfTensor(m,n).mul(penalty));
+                        wGradient.put(m, n, wGradient.slice(m).slice(n).mul(penalty));
 
                     }
-                    //hmm: https://github.com/agibsonccc/medal/blob/master/models/mlcnn.m#L422
-                    // wGradient.subi()
-
-                    //r.getW().put(m,n,r.getW().getSliceOfTensor(m,n).sub(wGradient.getSliceOfTensor(m,n)));
 
                 }
 
@@ -330,7 +315,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             }
 
 
-            DoubleMatrix gradientChange = deltas.get(l);
+            INDArray gradientChange = deltas.get(l);
             //getFromOrigin the gradient
             if(isUseAdaGrad())
                 gradientChange.muli(getLayers()[l].getAdaGrad().getLearningRates(gradientChange));
@@ -346,7 +331,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
                 gradientChange.muli(momentum);
 
             if(isNormalizeByInputRows())
-                gradientChange.divi(input.rows);
+                gradientChange.divi(input.rows());
 
             //update W
             getLayers()[l].getW().subi(gradientChange);
@@ -354,10 +339,10 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
 
             //update hidden bias
-            DoubleMatrix deltaColumnSums = deltas.get(l).columnMeans();
+            INDArray deltaColumnSums = deltas.get(l).mean(1);
 
             if(sparsity != 0)
-                deltaColumnSums = MatrixUtil.scalarMinus(sparsity, deltaColumnSums);
+                deltaColumnSums = deltaColumnSums.rsubi(sparsity);
 
             if(useAdaGrad)
                 deltaColumnSums.muli(layers[l].gethBiasAdaGrad().getLearningRates(deltaColumnSums));
@@ -368,15 +353,15 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
                 deltaColumnSums.muli(momentum);
 
             if(isNormalizeByInputRows())
-                deltaColumnSums.divi(input.rows);
+                deltaColumnSums.divi(input.rows());
 
 
             getLayers()[l].gethBias().subi(deltaColumnSums);
             getSigmoidLayers()[l].setB(getLayers()[l].gethBias());
         }
 
-        DoubleMatrix logLayerGradient = deltas.get(getnLayers());
-        DoubleMatrix biasGradient = deltas.get(getnLayers()).columnMeans();
+        INDArray logLayerGradient = deltas.get(getnLayers());
+        INDArray biasGradient = deltas.get(getnLayers()).mean(1);
 
         if(momentum != 0)
             logLayerGradient.muli(momentum);
@@ -390,7 +375,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             logLayerGradient.muli(lr);
 
         if(isNormalizeByInputRows())
-            logLayerGradient.divi(input.rows);
+            logLayerGradient.divi(input.rows());
 
 
 
@@ -403,15 +388,15 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             biasGradient.muli(lr);
 
         if(isNormalizeByInputRows())
-            biasGradient.divi(input.rows);
+            biasGradient.divi(input.rows());
 
 
         getOutputLayer().getW().subi(logLayerGradient);
 
-        if(getOutputLayer().getB().length == biasGradient.length)
+        if(getOutputLayer().getB().length() == biasGradient.length())
             getOutputLayer().getB().subi(biasGradient);
         else
-            getOutputLayer().getB().subi(biasGradient.mean());
+            getOutputLayer().getB().subi(biasGradient.mean(Integer.MAX_VALUE));
     }
 
 
@@ -426,28 +411,28 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     @Override
-    public DoubleMatrix output(DoubleMatrix x) {
+    public INDArray output(INDArray x) {
         DownSamplingLayer d = (DownSamplingLayer)  getSigmoidLayers()[getSigmoidLayers().length - 1];
-        FourDTensor lastLayer = d.getFeatureMap();
-        int nY = lastLayer.getRows();
-        int nX = lastLayer.getColumns();
-        int nM = lastLayer.slices();
-        int noBs = lastLayer.getNumTensor();
+        INDArray lastLayer = d.getFeatureMap();
+        int nY = lastLayer.shape()[3];
+        int nX = lastLayer.shape()[2];
+        int nM = lastLayer.shape()[1];
+        int noBs = lastLayer.slices();
 
         int nMap = nY * nX;
 
-        DoubleMatrix features = new DoubleMatrix(nMap * nM,noBs);
+        INDArray features = NDArrays.create(nMap * nM, noBs);
 
 
         for(int j = 0; j < d.getNumFeatureMaps(); j++) {
-            Tensor map = d.getFeatureMap().getTensor(j);
-            features.put(interval(j * nMap + 1,j * nMap),interval(0,features.columns),map.reshape(nMap,noBs));
+            INDArray map = d.getFeatureMap().slice(j);
+            features.put(new NDArrayIndex[] { NDArrayIndex.interval(j * nMap + 1, j * nMap),NDArrayIndex.interval(0, features.columns())},map.reshape(nMap,noBs));
         }
 
 
 
 
-        return createBasedOn(outputLayer.output(features),features);
+        return outputLayer.output(features);
     }
 
     /**
@@ -463,11 +448,10 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
     @Override
     public void init() {
-        Tensor input = (Tensor) this.input;
         if(!(rng instanceof SynchronizedRandomGenerator))
             rng = new SynchronizedRandomGenerator(rng);
         if(getnLayers() < 1)
-            throw new IllegalStateException("Unable to create network layers; number specified is less than 1");
+            throw new IllegalStateException("Unable to createComplex network layers; number specified is less than 1");
 
         if(this.dist == null)
             dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
@@ -492,23 +476,23 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             }
 
             nFm = this.nFm[i];
-            DoubleMatrix filterSize = MatrixUtil.toMatrix(this.filterSizes[i]);
-            DoubleMatrix fmSize = MatrixUtil.toMatrix(new int[]{nInY,nInX}).sub(filterSize).add(1);
-            double prodFilterSize = MatrixUtil.prod(filterSize);
-            DoubleMatrix stride = MatrixUtil.toMatrix(this.stride[i]);
+            INDArray filterSize = ArrayUtil.toNDArray(this.filterSizes[i]);
+            INDArray fmSize = ArrayUtil.toNDArray(new int[]{nInY,nInX}).sub(filterSize).add(1);
+            double prodFilterSize = ArrayUtil.prod(this.filterSizes[i]);
+            INDArray stride = ArrayUtil.toNDArray(this.stride[i]);
             double fanIn = nInFM * prodFilterSize;
             double fanOut = nFm * prodFilterSize;
 
             double range = 2 * FastMath.sqrt(6 / fanIn + fanOut);
-            FourDTensor W = FourDTensor.rand((int) filterSize.get(0),(int) filterSize.get(1),nInFM,nFm,dist).mul(range);
+            INDArray W = NDArrays.rand(new int[]{(int) filterSize.getScalar(0).element(),(int) filterSize.getScalar(1).element(),nInFM,nFm},dist).mul(range);
 
             ConvolutionalRBM r = new ConvolutionalRBM.Builder().withDistribution(getDist())
                     .withDropOut(getDropOut()).withOptmizationAlgo(getOptimizationAlgorithm())
-                    .withFilterSize(MatrixUtil.toInts(filterSize)).withInput(input).numberOfVisible(1)
+                    .withFilterSize(ArrayUtil.toInts(filterSize)).withInput(input).numberOfVisible(1)
                     .useAdaGrad(isUseAdaGrad()).normalizeByInputRows(normalizeByInputRows)
-                    .numHidden(1).withHBias(DoubleMatrix.zeros(nFm,1)).withMomentum(getMomentum())
+                    .numHidden(1).withHBias(NDArrays.zeros(nFm,1)).withMomentum(getMomentum())
                     .withL2(getL2()).useRegularization(isUseRegularization())
-                    .withRandom(rng).withLossFunction(getLossFunction()).withFmSize(MatrixUtil.toInts(fmSize))
+                    .withRandom(rng).withLossFunction(getLossFunction()).withFmSize(ArrayUtil.toInts(fmSize))
                     .withStride(this.stride[i]).withNumFilters(new int[]{nFm,nFm})
                     .withSparseGain(sparseGain).withSparsity(getSparsity())
                     .withWeights(W).build();
@@ -517,7 +501,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
 
             DownSamplingLayer d = new DownSamplingLayer.Builder()
                     .dist(dist).withStride(this.stride[i])
-                    .withFmSize(MatrixUtil.floor(MatrixUtil.toMatrix(r.getFmSize()).div(stride)))
+                    .withFmSize(Transforms.floor(ArrayUtil.toNDArray(r.getFmSize()).div(stride)))
                     .numFeatureMaps(nFm).withBias(r.gethBias())
                     .withRng(rng).build();
 
@@ -564,10 +548,10 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @return a hidden layer with the given parameters
      */
     @Override
-    public DownSamplingLayer createHiddenLayer(int index, int nIn, int nOut, ActivationFunction activation, RandomGenerator rng, DoubleMatrix layerInput, RealDistribution dist) {
+    public DownSamplingLayer createHiddenLayer(int index, int nIn, int nOut, ActivationFunction activation, RandomGenerator rng, INDArray layerInput, RealDistribution dist) {
         ConvolutionalRBM r = (ConvolutionalRBM) getLayers()[index - 1];
         DownSamplingLayer layer = new DownSamplingLayer.Builder().dist(dist).withInput(layerInput)
-                .withFmSize(MatrixFunctions.floor(MatrixUtil.toMatrix(r.getFmSize())).div(MatrixUtil.toMatrix(stride[index])))
+                .withFmSize(Transforms.floor(ArrayUtil.toNDArray(r.getFmSize())).div(ArrayUtil.toNDArray(stride[index])))
                 .numFeatureMaps(nFm[index])
                 .nIn(nIn).nOut(nOut).withActivation(activation).build();
         return layer;
@@ -594,7 +578,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @return a neural network layer such as {@link org.deeplearning4j.rbm.RBM}
      */
     @Override
-    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng, int index) {
+    public NeuralNetwork createLayer(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vBias, RandomGenerator rng, int index) {
         ConvolutionalRBM r = new ConvolutionalRBM.Builder().withDistribution(getDist())
                 .withDropOut(getDropOut()).withOptmizationAlgo(getOptimizationAlgorithm())
                 .withFilterSize(filterSizes[index]).withInput(input).numberOfVisible(nVisible)

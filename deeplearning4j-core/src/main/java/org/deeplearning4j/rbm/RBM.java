@@ -1,23 +1,26 @@
 package org.deeplearning4j.rbm;
 
 
+import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
+
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.RBMUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 
 import java.util.Map;
 
-import static org.deeplearning4j.util.MatrixUtil.*;
 
 
 /**
@@ -67,7 +70,7 @@ public class RBM extends BaseNeuralNetwork {
     protected NeuralNetworkOptimizer optimizer;
     protected VisibleUnit visibleType = VisibleUnit.BINARY;
     protected HiddenUnit  hiddenType = HiddenUnit.BINARY;
-    protected DoubleMatrix sigma,hiddenSigma;
+    protected INDArray sigma,hiddenSigma;
 
 
 
@@ -76,8 +79,8 @@ public class RBM extends BaseNeuralNetwork {
 
 
 
-    protected RBM(DoubleMatrix input, int nVisible, int nHidden, DoubleMatrix W,
-                  DoubleMatrix hBias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+    protected RBM(INDArray input, int nVisible, int nHidden, INDArray W,
+                  INDArray hBias, INDArray vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn,dist);
 
     }
@@ -88,11 +91,11 @@ public class RBM extends BaseNeuralNetwork {
      * @param k
      * @param input
      */
-    public void trainTillConvergence(double learningRate,int k,DoubleMatrix input) {
+    public void trainTillConvergence(double learningRate,int k,INDArray input) {
         if(input != null && cacheInput)
             this.input = input;
         if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+            this.sigma = input.var(1).divi(input.rows());
 
         optimizer = new RBMOptimizer(this, learningRate, new Object[]{k,learningRate}, optimizationAlgo, lossFunction);
         optimizer.train(input);
@@ -114,10 +117,10 @@ public class RBM extends BaseNeuralNetwork {
      * @param k the number of iterations to do
      * @param input the input to sample from
      */
-    public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input) {
+    public void contrastiveDivergence(double learningRate,int k,INDArray input) {
         if(input != null && cacheInput)
             this.input = input;
-        this.lastMiniBatchSize = input.rows;
+        this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,-1});
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
@@ -141,10 +144,10 @@ public class RBM extends BaseNeuralNetwork {
      * @param input the input to sample from
      * @param iteration  the iteration to use
      */
-    public void contrastiveDivergence(double learningRate,int k,DoubleMatrix input,int iteration) {
+    public void contrastiveDivergence(double learningRate,int k,INDArray input,int iteration) {
         if(input != null && cacheInput)
             this.input = input;
-        this.lastMiniBatchSize = input.rows;
+        this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{k,learningRate,iteration});
         getW().addi(gradient.getwGradient());
         gethBias().addi(gradient.gethBiasGradient());
@@ -175,27 +178,27 @@ public class RBM extends BaseNeuralNetwork {
 		 */
 
         //POSITIVE PHASE
-        Pair<DoubleMatrix,DoubleMatrix> probHidden = sampleHiddenGivenVisible(input);
+        Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input);
 
 		/*
 		 * Start the gibbs sampling.
 		 */
-        DoubleMatrix chainStart = probHidden.getSecond();
+        INDArray chainStart = probHidden.getSecond();
 
 		/*
 		 * Note that at a later date, we can explore alternative methods of 
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
-        Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> matrices;
+        Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> matrices;
         //negative visible means or expected values
-        DoubleMatrix nvMeans = null;
+        INDArray nvMeans = null;
         //negative value samples
-        DoubleMatrix nvSamples = null;
+        INDArray nvSamples = null;
         //negative hidden means or expected values
-        DoubleMatrix nhMeans = null;
+        INDArray nhMeans = null;
         //negative hidden samples
-        DoubleMatrix nhSamples = null;
+        INDArray nhSamples = null;
 
 		/*
 		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
@@ -224,26 +227,26 @@ public class RBM extends BaseNeuralNetwork {
 		/*
 		 * Update gradient parameters
 		 */
-        DoubleMatrix wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
+        INDArray wGradient = input.transpose().mmul(probHidden.getSecond()).sub(
                 nvSamples.transpose().mmul(nhMeans)
         );
 
 
 
-        DoubleMatrix hBiasGradient;
+        INDArray hBiasGradient;
 
         if(sparsity != 0)
             //all hidden units must stay around this number
-            hBiasGradient = mean(scalarMinus(sparsity,probHidden.getSecond()),0);
+            hBiasGradient = probHidden.getSecond().rsubi(sparsity).mean(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-            hBiasGradient = mean(probHidden.getSecond().sub(nhMeans), 0);
+            hBiasGradient = probHidden.getSecond().sub(nhMeans).mean(0);
 
 
 
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        DoubleMatrix  vBiasGradient = mean(input.sub(nvSamples), 0);
+        INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
         updateGradientAccordingToParams(ret, iteration,learningRate);
@@ -286,10 +289,10 @@ public class RBM extends BaseNeuralNetwork {
      * @param visibleSample the sample to test on
      * @return the free energy for this sample
      */
-    public double freeEnergy(DoubleMatrix visibleSample) {
-        DoubleMatrix wxB = visibleSample.mmul(W).addiRowVector(hBias);
-        double vBiasTerm = SimpleBlas.dot(visibleSample, vBias);
-        double hBiasTerm = log(exp(wxB).add(1)).sum();
+    public double freeEnergy(INDArray visibleSample) {
+        INDArray wxB = visibleSample.mmul(W).addiRowVector(hBias);
+        double vBiasTerm = NDArrays.getBlasWrapper().dot(visibleSample, vBias);
+        double hBiasTerm = (double) log(exp(wxB).add(1)).sum(Integer.MAX_VALUE).element();
         return -hBiasTerm - vBiasTerm;
     }
 
@@ -300,17 +303,17 @@ public class RBM extends BaseNeuralNetwork {
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-    public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+    public Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
         if(hiddenType == HiddenUnit.RECTIFIED) {
-            DoubleMatrix h1Mean = propUp(v);
-            DoubleMatrix sigH1Mean = sigmoid(h1Mean);
+            INDArray h1Mean = propUp(v);
+            INDArray sigH1Mean = sigmoid(h1Mean);
 		/*
 		 * Rectified linear part
 		 */
-            DoubleMatrix sqrtSigH1Mean = sqrt(sigH1Mean);
+            INDArray sqrtSigH1Mean = sqrt(sigH1Mean);
             //NANs here with Word2Vec
-            DoubleMatrix h1Sample = h1Mean.addi(normal(getRng(), h1Mean,1).mul(sqrtSigH1Mean));
-            MatrixUtil.max(0.0, h1Sample);
+            INDArray h1Sample = h1Mean.addi(Sampling.normal(getRng(), h1Mean,1).mul(sqrtSigH1Mean));
+            h1Sample = Transforms.max(h1Sample);
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
 
@@ -320,10 +323,10 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(hiddenType == HiddenUnit.GAUSSIAN) {
-            DoubleMatrix h1Mean = propUp(v);
-            this.hiddenSigma = columnVariance(h1Mean);
+            INDArray h1Mean = propUp(v);
+            this.hiddenSigma = h1Mean.var(1);
 
-            DoubleMatrix h1Sample =  h1Mean.addi(normal(getRng(),h1Mean,this.hiddenSigma));
+            INDArray h1Sample =  h1Mean.addi(Sampling.normal(getRng(),h1Mean,this.hiddenSigma));
 
             //apply dropout
             applyDropOutIfNecessary(h1Sample);
@@ -331,8 +334,8 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(hiddenType == HiddenUnit.SOFTMAX) {
-            DoubleMatrix h1Mean = propUp(v);
-            DoubleMatrix h1Sample = softmax(h1Mean);
+            INDArray h1Mean = propUp(v);
+            INDArray h1Sample = Activations.softMaxRows().apply(h1Mean);
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -340,8 +343,8 @@ public class RBM extends BaseNeuralNetwork {
 
 
         else if(hiddenType == HiddenUnit.BINARY) {
-            DoubleMatrix h1Mean = propUp(v);
-            DoubleMatrix h1Sample = binomial(h1Mean, 1, rng);
+            INDArray h1Mean = propUp(v);
+            INDArray h1Sample = Sampling.binomial(h1Mean, 1, rng);
             applyDropOutIfNecessary(h1Sample);
             return new Pair<>(h1Mean,h1Sample);
         }
@@ -358,12 +361,12 @@ public class RBM extends BaseNeuralNetwork {
      * @return the expected values and samples of both the visible samples given the hidden
      * and the new hidden input and expected values
      */
-    public Pair<Pair<DoubleMatrix,DoubleMatrix>,Pair<DoubleMatrix,DoubleMatrix>> gibbhVh(DoubleMatrix h) {
+    public Pair<Pair<INDArray,INDArray>,Pair<INDArray,INDArray>> gibbhVh(INDArray h) {
 
-        Pair<DoubleMatrix,DoubleMatrix> v1MeanAndSample = sampleVisibleGivenHidden(h);
-        DoubleMatrix vSample = v1MeanAndSample.getSecond();
+        Pair<INDArray,INDArray> v1MeanAndSample = sampleVisibleGivenHidden(h);
+        INDArray vSample = v1MeanAndSample.getSecond();
 
-        Pair<DoubleMatrix,DoubleMatrix> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
+        Pair<INDArray,INDArray> h1MeanAndSample = sampleHiddenGivenVisible(vSample);
         return new Pair<>(v1MeanAndSample,h1MeanAndSample);
     }
 
@@ -375,27 +378,27 @@ public class RBM extends BaseNeuralNetwork {
      * passed in
      */
     @Override
-    public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-        DoubleMatrix v1Mean = propDown(h);
+    public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
+        INDArray v1Mean = propDown(h);
 
         if(visibleType == VisibleUnit.GAUSSIAN) {
-            DoubleMatrix v1Sample = v1Mean.add(MatrixUtil.randn(rng,v1Mean.rows,v1Mean.columns));
+            INDArray v1Sample = v1Mean.add(NDArrays.randn(v1Mean.rows(),v1Mean.columns(),rng));
             return new Pair<>(v1Mean,v1Sample);
 
         }
 
         else if(visibleType == VisibleUnit.LINEAR) {
-            DoubleMatrix v1Sample = normal(getRng(),v1Mean,1);
+            INDArray v1Sample = Sampling.normal(getRng(),v1Mean,1);
             return new Pair<>(v1Mean,v1Sample);
         }
 
         else if(visibleType == VisibleUnit.SOFTMAX) {
-            DoubleMatrix v1Sample = softmax(v1Mean);
+            INDArray v1Sample = Activations.softMaxRows().apply(v1Mean);
             return new Pair<>(v1Mean,v1Sample);
         }
 
         else if(visibleType == VisibleUnit.BINARY) {
-            DoubleMatrix v1Sample = binomial(v1Mean, 1, rng);
+            INDArray v1Sample = Sampling.binomial(v1Mean, 1, rng);
             return new Pair<>(v1Mean,v1Sample);
         }
 
@@ -410,24 +413,24 @@ public class RBM extends BaseNeuralNetwork {
      * @param v the visible layer
      * @return the approximated activations of the visible layer
      */
-    public DoubleMatrix propUp(DoubleMatrix v) {
+    public INDArray propUp(INDArray v) {
         if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = columnVariance(v).divi(input.rows);
+            this.sigma = v.var(1).divi(input.rows());
 
-        DoubleMatrix preSig = v.mmul(W);
+        INDArray preSig = v.mmul(W);
         if(concatBiases)
-            preSig = DoubleMatrix.concatHorizontally(preSig,hBias);
+            preSig = NDArrays.concatHorizontally(preSig,hBias);
         else
             preSig.addiRowVector(hBias);
 
 
         if(hiddenType == HiddenUnit.RECTIFIED) {
-            max(0, preSig);
+            preSig = Transforms.max(preSig);
             return preSig;
         }
 
         else if(hiddenType == HiddenUnit.GAUSSIAN) {
-            DoubleMatrix add =  preSig.add(MatrixUtil.randn(rng, preSig.rows, preSig.columns));
+            INDArray add =  preSig.add(NDArrays.randn(preSig.rows(), preSig.columns(),rng));
             preSig.addi(add);
             return preSig;
         }
@@ -437,7 +440,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(hiddenType == HiddenUnit.SOFTMAX)
-            return softmax(preSig);
+            return Activations.softMaxRows().apply(preSig);
 
         throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
 
@@ -451,7 +454,7 @@ public class RBM extends BaseNeuralNetwork {
             return;
         if(epoch % plotEpochs == 0 || epoch == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows);
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{1,0.001,1000}),getInput().rows());
         }
     }
 
@@ -461,19 +464,19 @@ public class RBM extends BaseNeuralNetwork {
      * @param h the hidden layer
      * @return the approximated output of the hidden layer
      */
-    public DoubleMatrix propDown(DoubleMatrix h) {
-        DoubleMatrix vMean = h.mmul(W.transpose());
+    public INDArray propDown(INDArray h) {
+        INDArray vMean = h.mmul(W.transpose());
         if(concatBiases)
-            vMean = DoubleMatrix.concatHorizontally(vMean,vBias);
+            vMean = NDArrays.concatHorizontally(vMean, vBias);
         else
             vMean.addiRowVector(vBias);
 
         if(visibleType  == VisibleUnit.GAUSSIAN) {
-            vMean.addi(normal(rng,vMean,1.0));
+            vMean.addi(Sampling.normal(rng, vMean, 1.0));
             return vMean;
         }
         else if(visibleType == VisibleUnit.LINEAR) {
-             vMean = normal(getRng(),vMean,1);
+             vMean = Sampling.normal(getRng(),vMean,1);
             return vMean;
         }
 
@@ -482,7 +485,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         else if(visibleType == VisibleUnit.SOFTMAX) {
-            return softmax(vMean);
+            return Activations.softMaxRows().apply(vMean);
         }
 
 
@@ -497,7 +500,7 @@ public class RBM extends BaseNeuralNetwork {
      * @return the reconstruction of the visible input
      */
     @Override
-    public DoubleMatrix reconstruct(DoubleMatrix v) {
+    public INDArray reconstruct(INDArray v) {
         //reconstructed: propUp ----> hidden propDown to reconstruct
         return propDown(propUp(v));
     }
@@ -508,16 +511,16 @@ public class RBM extends BaseNeuralNetwork {
      * Note: k is the first input in params.
      */
     @Override
-    public void trainTillConvergence(DoubleMatrix input, double lr,
+    public void trainTillConvergence(INDArray input, double lr,
                                      Object[] params) {
         if(input != null && cacheInput)
-            this.input = MatrixUtil.stabilizeInput(input,1);
-        this.lastMiniBatchSize = input.rows;
+            this.input = Transforms.stabilize(input, 1);
+        this.lastMiniBatchSize = input.rows();
 
         if(visibleType == VisibleUnit.GAUSSIAN) {
-            this.sigma = MatrixUtil.columnVariance(input);
+            this.sigma = input.var(1);
             if(normalizeByInputRows)
-                this.sigma.divi(input.rows);
+                this.sigma.divi(input.rows());
         }
 
         optimizer = new RBMOptimizer(this, lr, params, optimizationAlgo, lossFunction);
@@ -558,9 +561,9 @@ public class RBM extends BaseNeuralNetwork {
     }
 
     @Override
-    public void train(DoubleMatrix input,double lr, Object[] params) {
+    public void train(INDArray input,double lr, Object[] params) {
         if(visibleType == VisibleUnit.GAUSSIAN)
-            this.sigma = MatrixUtil.columnVariance(input).divi(input.rows);
+            this.sigma = input.var(1).divi(input.rows());
 
 
         int k = (int) params[0];
@@ -711,7 +714,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
@@ -723,19 +726,19 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             super.withWeights(W);
             return this;
         }
 
         @Override
-        public Builder withVisibleBias(DoubleMatrix vBias) {
+        public Builder withVisibleBias(INDArray vBias) {
             super.withVisibleBias(vBias);
             return this;
         }
 
         @Override
-        public Builder withHBias(DoubleMatrix hBias) {
+        public Builder withHBias(INDArray hBias) {
             super.withHBias(hBias);
             return this;
         }

@@ -2,6 +2,7 @@ package org.deeplearning4j.linalg.api.complex;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
@@ -10,11 +11,153 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  */
 public interface IComplexNDArray extends INDArray {
 
+    /**
+     * Cumulative sum along a dimension
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
     @Override
-    INDArray getColumns(int[] columns);
+    IComplexNDArray cumsumi(int dimension);
+
+    /**
+     * Cumulative sum along a dimension (in place)
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    @Override
+    IComplexNDArray cumsum(int dimension);
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    IComplexNDArray vectorAlongDimension(int index, int dimension);
+
+    /**
+     * Assign all of the elements in the given
+     * ndarray to this nedarray
+     * @param arr the elements to assign
+     * @return this
+     */
+    public IComplexNDArray assign(IComplexNDArray arr);
+
+
+    public IComplexNDArray put(NDArrayIndex[] indices,IComplexNumber element);
+
+
+    public IComplexNDArray put(NDArrayIndex[] indices,IComplexNDArray element);
+
+
+    public IComplexNDArray put(NDArrayIndex[] indices,Number element);
+
+
+
+    public IComplexNDArray putScalar(int i,IComplexNumber value);
+
+
+
+    public IComplexNDArray putScalar(int i,Number value);
+
 
     @Override
-    INDArray getRows(int[] rows);
+    IComplexNDArray lt(Number other);
+
+    @Override
+    IComplexNDArray lti(Number other);
+
+    @Override
+    IComplexNDArray eq(Number other);
+
+    @Override
+    IComplexNDArray eqi(Number other);
+
+    @Override
+    IComplexNDArray gt(Number other);
+
+    @Override
+    IComplexNDArray gti(Number other);
+
+    @Override
+    IComplexNDArray lt(INDArray other);
+
+    @Override
+    IComplexNDArray lti(INDArray other);
+
+    @Override
+    IComplexNDArray eq(INDArray other);
+
+    @Override
+    IComplexNDArray eqi(INDArray other);
+
+    @Override
+    IComplexNDArray gt(INDArray other);
+
+    @Override
+    IComplexNDArray gti(INDArray other);
+
+    @Override
+    IComplexNDArray neg();
+
+    @Override
+    IComplexNDArray negi();
+
+    @Override
+    IComplexNDArray rdiv(Number n);
+
+    @Override
+    IComplexNDArray rdivi(Number n);
+
+    @Override
+    IComplexNDArray rsub(Number n);
+
+    @Override
+    IComplexNDArray rsubi(Number n);
+
+    @Override
+    IComplexNDArray div(Number n);
+
+    @Override
+    IComplexNDArray divi(Number n);
+
+    @Override
+    IComplexNDArray mul(Number n);
+
+    @Override
+    IComplexNDArray muli(Number n);
+
+    @Override
+    IComplexNDArray sub(Number n);
+
+    @Override
+    IComplexNDArray subi(Number n);
+
+    @Override
+    IComplexNDArray add(Number n);
+
+    @Override
+    IComplexNDArray addi(Number n);
+
+    /**
+     * Returns a subset of this array based on the specified
+     * indexes
+     *
+     * @param indexes the indexes in to the array
+     * @return a view of the array with the specified indices
+     */
+    @Override
+    IComplexNDArray get(NDArrayIndex... indexes);
+
+    @Override
+    IComplexNDArray getColumns(int[] columns);
+
+    @Override
+    IComplexNDArray getRows(int[] rows);
 
     /**
      * Returns the overall min of this ndarray

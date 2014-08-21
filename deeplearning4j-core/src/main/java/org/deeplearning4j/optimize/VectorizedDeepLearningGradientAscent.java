@@ -1,8 +1,9 @@
 package org.deeplearning4j.optimize;
 
 
+import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.util.OptimizerMatrix;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,14 +122,14 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
         int iterations;
         double fret;
         double fp = optimizable.getValue ();
-        DoubleMatrix xi = optimizable.getValueGradient(0);
+        INDArray xi = optimizable.getValueGradient(0);
 
         for (iterations = 0; iterations < numIterations; iterations++) {
-            logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = "+step+", gradient infty-norm = "+ xi.normmax());
+            logger.info ("At iteration "+ iterations +", cost = "+ fp  +", scaled = "+ maxStep +" step = "+step+", gradient infty-norm = "+ xi.normmax(Integer.MAX_VALUE));
             boolean calledEpochDone = false;
             // Ensure step not too large
             optimizable.setCurrentIteration(iterations);
-            double sum = xi.norm2();
+            double sum = (double) xi.norm2(Integer.MAX_VALUE).element();
             if (sum > stpmax) {
                 logger.info ("*** Step 2-norm "+sum+" greater than max " + stpmax + "  Scaling...");
                 xi.muli(stpmax / sum);
@@ -136,7 +137,7 @@ public class VectorizedDeepLearningGradientAscent implements OptimizerMatrix {
             try {
                 step = lineMaximizer.optimize (xi,iterations, step);
 
-            }catch(Exception e) {
+            }catch(InvalidStepException e) {
                 logger.warn("Error during computation",e);
                 continue;
 

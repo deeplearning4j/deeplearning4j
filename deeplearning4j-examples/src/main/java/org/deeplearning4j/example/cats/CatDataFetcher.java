@@ -1,11 +1,12 @@
 package org.deeplearning4j.example.cats;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.ImageLoader;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 
 import java.io.File;
 import java.util.ArrayList;
@@ -65,9 +66,9 @@ public class CatDataFetcher extends BaseDataFetcher {
             if(!hasMore())
                 break;
             try {
-                DoubleMatrix load = loader.asMatrix(fileIterator.next());
-                load = load.reshape(1,load.length);
-                toConvert.add(new DataSet(load, MatrixUtil.toOutcomeVector(1, 2)));
+                INDArray load = loader.asMatrix(fileIterator.next());
+                load = load.reshape(1,load.length());
+                toConvert.add(new DataSet(load, FeatureUtil.toOutcomeVector(1, 2)));
 
             }catch(Exception e) {
                throw new RuntimeException(e);

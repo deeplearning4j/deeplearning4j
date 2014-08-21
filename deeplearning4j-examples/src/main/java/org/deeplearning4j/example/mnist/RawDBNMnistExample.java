@@ -3,13 +3,13 @@ package org.deeplearning4j.example.mnist;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.RawMnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.rbm.RBM;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class RawDBNMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			next.normalizeZeroMeanZeroUnitVariance();
-			dbn.pretrain(next.getFirst(), 1, 0.0001, 10000);
+			dbn.pretrain(next.getFeatureMatrix(), 1, 0.0001, 10000);
 		}
 
 		iter.reset();
@@ -44,8 +44,8 @@ public class RawDBNMnistExample {
 			DataSet next = iter.next();
 			next.normalizeZeroMeanZeroUnitVariance();
 
-			dbn.setInput(next.getFirst());
-			dbn.finetune(next.getSecond(), 0.001, 10000);
+			dbn.setInput(next.getFeatureMatrix());
+			dbn.finetune(next.getLabels(), 0.001, 10000);
 		}
 
 
@@ -62,8 +62,8 @@ public class RawDBNMnistExample {
 
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
-			DoubleMatrix predict = dbn.output(next.getFirst());
-			DoubleMatrix labels = next.getSecond();
+			INDArray predict = dbn.output(next.getFeatureMatrix());
+            INDArray labels = next.getLabels();
 			eval.eval(labels, predict);
 		}
 

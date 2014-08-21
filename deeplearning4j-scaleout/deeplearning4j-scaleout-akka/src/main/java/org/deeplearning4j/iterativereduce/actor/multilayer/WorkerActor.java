@@ -5,17 +5,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.iterativereduce.actor.core.*;
 import org.deeplearning4j.iterativereduce.actor.core.actor.MasterActor;
 import org.deeplearning4j.iterativereduce.actor.util.ActorRefUtils;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.optimize.TrainingEvaluator;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,25 +187,25 @@ public class WorkerActor extends org.deeplearning4j.iterativereduce.actor.core.a
             d.normalizeZeroMeanZeroUnitVariance();
         if(conf.isScale())
             d.scale();
-        if(d.getFirst() == null || d.getSecond() == null)
+        if(d.getFeatureMatrix() == null || d.getLabels() == null)
             throw new IllegalStateException("Input cant be null");
 
         if(tracker.isPretrain()) {
             log.info("Worker " + id + " pretraining");
-            network.pretrain(d.getFirst(), conf.getDeepLearningParams());
+            network.pretrain(d.getFeatureMatrix(), conf.getDeepLearningParams());
         }
 
         else {
 
-            network.setInput(d.getFirst());
+            network.setInput(d.getFeatureMatrix());
             log.info("Worker " + id + " finetune");
             if(tracker.testSet() != null) {
                 TrainingEvaluator eval = tracker.create(network);
-                network.finetune(d.getSecond(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),eval);
+                network.finetune(d.getLabels(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),eval);
 
             }
             else
-                network.finetune(d.getSecond(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),null);
+                network.finetune(d.getLabels(), conf.getFinetuneLearningRate(), conf.getFinetuneEpochs(),null);
 
         }
 

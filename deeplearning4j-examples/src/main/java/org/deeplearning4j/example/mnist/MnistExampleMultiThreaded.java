@@ -6,9 +6,7 @@ import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.scaleout.conf.Conf;
-import org.deeplearning4j.transformation.MatrixTransformations;
 import org.deeplearning4j.util.SerializationUtils;
 
 import java.io.File;

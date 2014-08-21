@@ -1,7 +1,8 @@
 package org.deeplearning4j.rbm;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.jblas.DoubleMatrix;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,7 +29,7 @@ public class ConvRBMTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         fetcher.fetch(1);
         DataSet d = fetcher.next();
-        DoubleMatrix train = d.getFirst().reshape(28,28);
+        INDArray train = d.getFeatureMatrix().reshape(28,28);
 
        rbm.trainTillConvergence(train,1e-2,new Object[]{1,1e-2,100});
 

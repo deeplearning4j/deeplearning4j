@@ -2,7 +2,7 @@ package org.deeplearning4j.example.text;
 
 import net.didion.jwnl.data.Word;
 import org.apache.commons.lang.StringUtils;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.rntn.RNTN;
 import org.deeplearning4j.rntn.RNTNEval;
 import org.deeplearning4j.rntn.Tree;
@@ -19,7 +19,6 @@ import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareFileSen
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;

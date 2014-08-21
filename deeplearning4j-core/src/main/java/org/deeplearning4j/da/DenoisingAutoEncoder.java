@@ -1,20 +1,20 @@
 package org.deeplearning4j.da;
 
 import static org.deeplearning4j.util.MathUtils.binomial;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
 
 import java.io.Serializable;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.WeightInit;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.deeplearning4j.sda.DenoisingAutoEncoderOptimizer;
-import org.jblas.DoubleMatrix;
 
 
 /**
@@ -33,8 +33,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     private DenoisingAutoEncoder() {}
 
 
-    private DenoisingAutoEncoder(DoubleMatrix input, int nVisible, int nHidden,
-                                 DoubleMatrix W, DoubleMatrix hbias, DoubleMatrix vbias,
+    private DenoisingAutoEncoder(INDArray input, int nVisible, int nHidden,
+                                 INDArray W, INDArray hbias, INDArray vbias,
                                  RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, nHidden, W, hbias, vbias, rng,fanIn,dist);
     }
@@ -46,12 +46,12 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption value
      * @return the binomial sampled corrupted input
      */
-    public DoubleMatrix getCorruptedInput(DoubleMatrix x, double corruptionLevel) {
-        DoubleMatrix tilde_x = DoubleMatrix.zeros(x.rows,x.columns);
-        for(int i = 0; i < x.rows; i++)
-            for(int j = 0; j < x.columns; j++)
+    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
+        INDArray tilde_x = NDArrays.zeros(x.rows(), x.columns());
+        for(int i = 0; i < x.rows(); i++)
+            for(int j = 0; j < x.columns(); j++)
                 tilde_x.put(i,j,binomial(rng,1,1 - corruptionLevel));
-        DoubleMatrix  ret = tilde_x.mul(x);
+        INDArray  ret = tilde_x.mul(x);
         return ret;
     }
 
@@ -59,17 +59,17 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleHiddenGivenVisible(
-            DoubleMatrix v) {
-        DoubleMatrix ret = getHiddenValues(v);
+    public Pair<INDArray, INDArray> sampleHiddenGivenVisible(
+            INDArray v) {
+        INDArray ret = getHiddenValues(v);
         return new Pair<>(ret,ret);
     }
 
 
     @Override
-    public Pair<DoubleMatrix, DoubleMatrix> sampleVisibleGivenHidden(
-            DoubleMatrix h) {
-        DoubleMatrix ret = getReconstructedInput(h);
+    public Pair<INDArray, INDArray> sampleVisibleGivenHidden(
+            INDArray h) {
+        INDArray ret = getReconstructedInput(h);
         return new Pair<>(ret,ret);
     }
 
@@ -77,32 +77,32 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     // Encode
-    public DoubleMatrix getHiddenValues(DoubleMatrix x) {
-        DoubleMatrix preAct;
+    public INDArray getHiddenValues(INDArray x) {
+        INDArray preAct;
         if(concatBiases) {
-            DoubleMatrix concat = DoubleMatrix.concatVertically(W,hBias.transpose());
+            INDArray concat = NDArrays.concatVertically(W,hBias.transpose());
             preAct =  x.mmul(concat);
 
         }
         else
             preAct = x.mmul(W).addiRowVector(hBias);
-        DoubleMatrix ret = sigmoid(preAct);
+        INDArray ret = Transforms.sigmoid(preAct);
         applyDropOutIfNecessary(ret);
         return ret;
     }
 
     // Decode
-    public DoubleMatrix getReconstructedInput(DoubleMatrix y) {
+    public INDArray getReconstructedInput(INDArray y) {
         if(concatBiases) {
             //row already accounted for earlier
-            DoubleMatrix preAct = y.mmul(W.transpose());
-            preAct = DoubleMatrix.concatHorizontally(preAct,DoubleMatrix.ones(preAct.rows,1));
-            return sigmoid(preAct);
+            INDArray preAct = y.mmul(W.transpose());
+            preAct = NDArrays.concatHorizontally(preAct,NDArrays.ones(preAct.rows(),1));
+            return Transforms.sigmoid(preAct);
         }
         else {
-            DoubleMatrix preAct = y.mmul(W.transpose());
+            INDArray preAct = y.mmul(W.transpose());
             preAct.addiRowVector(vBias);
-            return sigmoid(preAct);
+            return Transforms.sigmoid(preAct);
         }
 
     }
@@ -115,10 +115,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption level
      * @param iterations to run
      */
-    public void trainTillConvergence(DoubleMatrix x, double lr,double corruptionLevel,int iterations) {
+    public void trainTillConvergence(INDArray x, double lr,double corruptionLevel,int iterations) {
         if(x != null)
             input = preProcessInput(x);
-        this.lastMiniBatchSize = x.rows;
+        this.lastMiniBatchSize = x.rows();
         optimizer = new DenoisingAutoEncoderOptimizer(this,lr,new Object[]{corruptionLevel,lr,iterations}, optimizationAlgo, lossFunction);
         optimizer.train(x);
     }
@@ -130,10 +130,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption level to train with
      * @param iteration the current iteration
      */
-    public void train(DoubleMatrix x,double lr,double corruptionLevel,int iteration) {
+    public void train(INDArray x,double lr,double corruptionLevel,int iteration) {
         if(x != null && cacheInput)
             this.input = x;
-        this.lastMiniBatchSize = x.rows;
+        this.lastMiniBatchSize = x.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr,iteration});
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
@@ -142,8 +142,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     }
 
     @Override
-    public DoubleMatrix reconstruct(DoubleMatrix x) {
-        DoubleMatrix y = getHiddenValues(x);
+    public INDArray reconstruct(INDArray x) {
+        INDArray y = getHiddenValues(x);
         return getReconstructedInput(y);
     }
 
@@ -275,7 +275,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
@@ -283,19 +283,19 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
         @Override
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             super.withWeights(W);
             return this;
         }
 
         @Override
-        public Builder withVisibleBias(DoubleMatrix vBias) {
+        public Builder withVisibleBias(INDArray vBias) {
             super.withVisibleBias(vBias);
             return this;
         }
 
         @Override
-        public Builder withHBias(DoubleMatrix hBias) {
+        public Builder withHBias(INDArray hBias) {
             super.withHBias(hBias);
             return this;
         }
@@ -323,10 +323,10 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params) {
+    public void trainTillConvergence(INDArray input,double lr,Object[] params) {
         if(input != null && cacheInput)
             this.input = input;
-        this.lastMiniBatchSize = input.rows;
+        this.lastMiniBatchSize = input.rows();
         optimizer = new DenoisingAutoEncoderOptimizer(this,lr, params, optimizationAlgo, lossFunction);
         optimizer.train(input);
     }
@@ -343,11 +343,11 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public void train(DoubleMatrix input,double lr,Object[] params) {
+    public void train(INDArray input,double lr,Object[] params) {
         double corruptionLevel = (double) params[0];
         if(input != null && cacheInput)
             this.input = preProcessInput(input);
-        this.lastMiniBatchSize = input.rows;
+        this.lastMiniBatchSize = input.rows();
         NeuralNetworkGradient gradient = getGradient(new Object[]{corruptionLevel,lr,0});
 
         vBias.addi(gradient.getvBiasGradient());
@@ -364,7 +364,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
             return;
         if(epoch % plotEpochs == 0 || epoch == 0) {
             NeuralNetPlotter plotter = new NeuralNetPlotter();
-            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{0.3,0.001,1000}),getInput().rows);
+            plotter.plotNetworkGradient(this,this.getGradient(new Object[]{0.3,0.001,1000}),getInput().rows());
         }
     }
 
@@ -383,18 +383,18 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
             vBiasAdaGrad.setMasterStepSize(lr);
 
 
-        DoubleMatrix corruptedX = getCorruptedInput(input, corruptionLevel);
-        DoubleMatrix y = getHiddenValues(corruptedX);
+        INDArray corruptedX = getCorruptedInput(input, corruptionLevel);
+        INDArray y = getHiddenValues(corruptedX);
 
-        DoubleMatrix z = getReconstructedInput(y);
-        DoubleMatrix visibleLoss =  input.sub(z);
-        DoubleMatrix hiddenLoss = sparsity == 0 ? visibleLoss.mmul(W).mul(y).mul(oneMinus(y)) : visibleLoss.mmul(W).mul(y).mul(y.add(- sparsity));
+        INDArray z = getReconstructedInput(y);
+        INDArray visibleLoss =  input.sub(z);
+        INDArray hiddenLoss = sparsity == 0 ? visibleLoss.mmul(W).mul(y).mul(y.rsub(1)) : visibleLoss.mmul(W).mul(y).mul(y.add(- sparsity));
 
 
-        DoubleMatrix wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
+        INDArray wGradient = corruptedX.transpose().mmul(hiddenLoss).add(visibleLoss.transpose().mmul(y));
 
-        DoubleMatrix hBiasGradient = hiddenLoss.columnMeans();
-        DoubleMatrix vBiasGradient = visibleLoss.columnMeans();
+        INDArray hBiasGradient = hiddenLoss.mean(1);
+        INDArray vBiasGradient = visibleLoss.mean(1);
 
         NeuralNetworkGradient gradient = new NeuralNetworkGradient(wGradient,vBiasGradient,hBiasGradient);
         updateGradientAccordingToParams(gradient,iteration, lr);

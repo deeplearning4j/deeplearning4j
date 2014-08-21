@@ -1,15 +1,17 @@
 package org.deeplearning4j.nn.gradient;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+
 import java.io.Serializable;
 
-import org.jblas.DoubleMatrix;
 
 public class OutputLayerGradient implements Serializable {
 
 	
 	private static final long serialVersionUID = -2843336269630396562L;
-	private DoubleMatrix wGradient;
-	private DoubleMatrix bGradient;
+	private INDArray wGradient;
+	private INDArray bGradient;
 	
 	
 	
@@ -18,8 +20,8 @@ public class OutputLayerGradient implements Serializable {
 	 * @param num the number to divide by
 	 */
 	public void div(int num) {
-		wGradient.divi(num);
-		bGradient.divi(num);
+		wGradient.divi(NDArrays.scalar(num));
+		bGradient.divi(NDArrays.scalar(num));
 	}
 	
 	/**
@@ -62,22 +64,26 @@ public class OutputLayerGradient implements Serializable {
 			return false;
 		return true;
 	}
-	public OutputLayerGradient(DoubleMatrix wGradient,
-                               DoubleMatrix bGradient) {
+	public OutputLayerGradient(INDArray wGradient,
+                               INDArray bGradient) {
 		super();
 		this.wGradient = wGradient;
 		this.bGradient = bGradient;
 	}
-	public DoubleMatrix getwGradient() {
+
+    public INDArray getwGradient() {
 		return wGradient;
 	}
-	public void setwGradient(DoubleMatrix wGradient) {
+
+    public void setwGradient(INDArray wGradient) {
 		this.wGradient = wGradient;
 	}
-	public DoubleMatrix getbGradient() {
-		return bGradient.columnMeans();
+
+    public INDArray getbGradient() {
+		return bGradient.mean(1);
 	}
-	public void setbGradient(DoubleMatrix bGradient) {
+
+    public void setbGradient(INDArray bGradient) {
 		this.bGradient = bGradient;
 	}
 	

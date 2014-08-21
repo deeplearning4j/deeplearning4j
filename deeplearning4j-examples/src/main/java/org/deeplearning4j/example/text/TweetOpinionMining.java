@@ -1,11 +1,11 @@
 package org.deeplearning4j.example.text;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
@@ -63,20 +63,20 @@ public class TweetOpinionMining {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(), 1, 1e-1, 10000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1, 10000);
         }
 
         iter.reset();
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.setInput(next.getFirst());
-            dbn.finetune(next.getSecond(), 1e-1, 10000);
+            dbn.setInput(next.getFeatureMatrix());
+            dbn.finetune(next.getLabels(), 1e-1, 10000);
         }
 
 
         Evaluation eval = new Evaluation();
-        eval.eval(data.getSecond(),dbn.output(data.getFirst()));
+        eval.eval(data.getLabels(),dbn.output(data.getFeatureMatrix()));
         log.info(eval.stats());
         log.info("Example tweets " + data.numExamples());
 

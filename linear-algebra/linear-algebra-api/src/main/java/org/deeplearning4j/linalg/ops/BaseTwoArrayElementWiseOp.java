@@ -27,10 +27,10 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public void applyTransformToDestination(int i) {
-        if(scalarValue == null) {
+        if(scalarValue == null)
             to.put(i,apply(getFromDestination(i),i));
 
-        }
+
         else {
             to.put(i,apply(scalarValue,i));
 
@@ -43,9 +43,9 @@ public abstract  class BaseTwoArrayElementWiseOp extends BaseElementWiseOp imple
      */
     @Override
     public void exec() {
-        if(from != null && to != null)
+        if(from != null && to != null && !from.isScalar() && !to.isScalar())
             assert from.length() == to.length() : "From and to must be same length";
-        if(from != null && other != null)
+        if(from != null && other != null && !from.isScalar() && !to.isScalar())
             assert from.length() == other.length() : "From and other must be the same length";
 
         if(to == null) {

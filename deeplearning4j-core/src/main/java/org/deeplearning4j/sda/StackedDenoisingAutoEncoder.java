@@ -3,15 +3,15 @@ package org.deeplearning4j.sda;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.da.DenoisingAutoEncoder;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.transformation.MatrixTransform;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.deeplearning4j.nn.OutputLayer;
 import org.deeplearning4j.nn.WeightInit;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.transformation.MatrixTransform;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
     private StackedDenoisingAutoEncoder() {}
 
     private StackedDenoisingAutoEncoder(int n_ins, int[] hiddenLayerSizes, int nOuts,
-                                        int nLayers, RandomGenerator rng, DoubleMatrix input,DoubleMatrix labels) {
+                                        int nLayers, RandomGenerator rng, INDArray input,INDArray labels) {
         super(n_ins, hiddenLayerSizes, nOuts, nLayers, rng, input,labels);
 
     }
@@ -82,13 +82,13 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      */
     public void pretrain(DataSetIterator iter,double corruptionLevel,double lr,int iterations) {
 
-        DoubleMatrix layerInput;
+        INDArray layerInput;
 
         for (int i = 0; i < getnLayers(); i++) {
             if (i == 0) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    this.input = next.getFirst();
+                    this.input = next.getFeatureMatrix();
                       /*During pretrain, feed forward expected activations of network, use activation functions during pretrain  */
                     if(this.getInput() == null || this.getLayers() == null || this.getLayers()[0] == null || this.getSigmoidLayers() == null || this.getSigmoidLayers()[0] == null) {
                         setInput(input);
@@ -101,11 +101,11 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                     if (isForceNumEpochs()) {
                         for (int iteration = 0; iteration < iterations; iteration++) {
                             log.info("Error on iteration " + iteration + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
-                            getLayers()[i].train(next.getFirst(), realLearningRate, new Object[]{corruptionLevel, lr});
+                            getLayers()[i].train(next.getFeatureMatrix(), realLearningRate, new Object[]{corruptionLevel, lr});
                             getLayers()[i].iterationDone(iteration);
                         }
                     } else
-                        getLayers()[i].trainTillConvergence(next.getFirst(), realLearningRate, new Object[]{corruptionLevel, realLearningRate, iterations});
+                        getLayers()[i].trainTillConvergence(next.getFeatureMatrix(), realLearningRate, new Object[]{corruptionLevel, realLearningRate, iterations});
 
                 }
 
@@ -118,7 +118,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
                 boolean activateOnly = getSampleOrActivate() != null && getSampleOrActivate().get(i) != null ? getSampleOrActivate().get(i) : !sampleFromHiddenActivations;
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    layerInput = next.getFirst();
+                    layerInput = next.getFeatureMatrix();
                     for(int j = 1; j <= i; j++) {
                         if(activateOnly)
                             layerInput = getSigmoidLayers()[j - 1].activate(layerInput);
@@ -155,7 +155,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
     }
 
     @Override
-    public void pretrain(DoubleMatrix input, Object[] otherParams) {
+    public void pretrain(INDArray input, Object[] otherParams) {
         if(otherParams == null) {
             otherParams = new Object[]{0.01,0.3,1000};
         }
@@ -177,7 +177,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
      * corruption level should be) the percent of inputs to corrupt
      * @param iterations the number of iterations to run
      */
-    public void pretrain(DoubleMatrix input,double lr,  double corruptionLevel,  int iterations) {
+    public void pretrain(INDArray input,double lr,  double corruptionLevel,  int iterations) {
         if(this.getInput() == null)
             initializeLayers(input.dup());
 
@@ -186,7 +186,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
         this.input = input;
 
-        DoubleMatrix layerInput = null;
+        INDArray layerInput = null;
 
         for(int i = 0; i < this.getnLayers(); i++) {  // layer-wise
             //input layer
@@ -211,9 +211,9 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
 
 
     @Override
-    public NeuralNetwork createLayer(DoubleMatrix input, int nVisible,
-                                     int nHidden, DoubleMatrix W, DoubleMatrix hbias,
-                                     DoubleMatrix vBias, RandomGenerator rng,int index) {
+    public NeuralNetwork createLayer(INDArray input, int nVisible,
+                                     int nHidden, INDArray W, INDArray hbias,
+                                     INDArray vBias, RandomGenerator rng,int index) {
         DenoisingAutoEncoder ret = new DenoisingAutoEncoder.Builder()
                 .withDropOut(dropOut).constrainGradientToUnitNorm(constrainGradientToUnitNorm).weightInit(weightInitByLayer.get(index) != null ? weightInitByLayer.get(index) : weightInit)
                 .withLossFunction(lossFunctionByLayer.get(index) != null ? lossFunctionByLayer.get(index) : getLossFunction())
@@ -604,7 +604,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
@@ -658,7 +658,7 @@ public class StackedDenoisingAutoEncoder extends BaseMultiLayerNetwork  {
             return this;
         }
 
-        public Builder withLabels(DoubleMatrix labels) {
+        public Builder withLabels(INDArray labels) {
             super.withLabels(labels);
             return this;
         }

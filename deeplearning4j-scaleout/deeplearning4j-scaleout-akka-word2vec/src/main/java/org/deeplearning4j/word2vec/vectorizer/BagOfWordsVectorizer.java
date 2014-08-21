@@ -3,14 +3,15 @@ package org.deeplearning4j.word2vec.vectorizer;
 import org.apache.commons.io.IOUtils;
 import org.apache.uima.util.FileUtils;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.stopwords.StopWords;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 
 import java.io.File;
 import java.io.InputStream;
@@ -105,14 +106,14 @@ public class BagOfWordsVectorizer implements TextVectorizer {
     public DataSet vectorize(String text, String label) {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
-        DoubleMatrix input = new DoubleMatrix(1,vocab.size());
+        INDArray input = NDArrays.create(1,vocab.size());
         for(int i = 0; i < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(vocab.indexOf(tokens.get(i)) >= 0)
-                input.put(idx,wordCounts.getCount(tokens.get(i)));
+                input.putScalar(idx,wordCounts.getCount(tokens.get(i)));
         }
 
-        DoubleMatrix labelMatrix = MatrixUtil.toOutcomeVector(labels.indexOf(label),labels.size());
+        INDArray labelMatrix = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
         return new DataSet(input,labelMatrix);
     }
 
@@ -163,14 +164,14 @@ public class BagOfWordsVectorizer implements TextVectorizer {
      * @return
      */
     @Override
-    public DoubleMatrix transform(String text) {
+    public INDArray transform(String text) {
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
-        DoubleMatrix input = new DoubleMatrix(1,vocab.size());
+        INDArray input = NDArrays.create(1, vocab.size());
         for(int i = 0; i < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(vocab.indexOf(tokens.get(i)) >= 0)
-                input.put(idx,wordCounts.getCount(tokens.get(i)));
+                input.putScalar(idx, wordCounts.getCount(tokens.get(i)));
         }
         return input;
     }

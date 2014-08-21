@@ -1,8 +1,8 @@
 package org.deeplearning4j.datasets.loader;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.ArchiveUtils;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;

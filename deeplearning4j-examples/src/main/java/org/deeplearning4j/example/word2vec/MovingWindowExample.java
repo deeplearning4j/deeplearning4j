@@ -3,13 +3,15 @@ package org.deeplearning4j.example.word2vec;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
@@ -23,7 +25,6 @@ import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareListSen
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -109,12 +110,12 @@ public class MovingWindowExample {
         iterator.reset();
 
         //viterbi optimization
-        Viterbi viterbi = new Viterbi(new DoubleMatrix(new double[]{0,1}));
+        Viterbi viterbi = new Viterbi(NDArrays.create(new double[]{0, 1}));
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
 
-            Pair<Double,DoubleMatrix> decoded = viterbi.decode(next.getSecond());
+            Pair<Double,INDArray> decoded = viterbi.decode(next.getLabels());
             log.info("Pair " + decoded.getSecond());
         }
 

@@ -12,11 +12,13 @@
 package org.deeplearning4j.optimize;
 
 
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.util.OptimizerMatrix;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.SimpleBlas;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +51,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
 
     // The state of a conjugate gradient search
     double fp, gg, gam, dgg, step, fret;
-    DoubleMatrix xi, g, h;
+    INDArray xi, g, h;
     int j, iterations;
 
 
@@ -139,7 +141,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             optimizable.setCurrentIteration(iterationCount);
             try {
                 step = lineMaximizer.optimize(xi, iterationCount,step);
-            } catch (Throwable e) {
+            } catch (InvalidStepException e) {
                 logger.warn("Breaking: negative slope");
             }
 
@@ -157,7 +159,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             fp = fret;
 
             // This termination provided by McCallum
-            double twoNorm = xi.norm2();
+            double twoNorm = (double) xi.norm2(Integer.MAX_VALUE).element();
             if (twoNorm < gradientTolerance) {
                 logger.info("ConjugateGradient converged: gradient two norm " + twoNorm + ", less than "
                         + gradientTolerance);
@@ -169,8 +171,8 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             }
 
             dgg = gg = 0.0;
-            gg = MatrixFunctions.pow(g, 2).sum();
-            dgg = xi.mul(xi.sub(g)).sum();
+            gg = (double) Transforms.pow(g, 2).sum(Integer.MAX_VALUE).element();
+            dgg = (double) xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).element();
             gam = dgg / gg;
 
 
@@ -178,7 +180,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             h = xi.dup().add(h.mul(gam));
 
 
-            assert (!MatrixUtil.isNaN(h));
+            LinAlgExceptions.assertValidNum(h);
 
             // gdruck
             // Mallet line search algorithms stop search whenever
@@ -189,7 +191,7 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
             // direction suggested by CG was downhill. Consequently, here I am
             // setting the search direction to the gradient if the slope is
             // negative or 0.
-            if (SimpleBlas.dot(xi, h) > 0) {
+            if (NDArrays.getBlasWrapper().dot(xi, h) > 0) {
                 xi = h.dup();
             } else {
                 logger.warn("Reverting back to GA");
@@ -242,27 +244,27 @@ public class VectorizedNonZeroStoppingConjugateGradient implements OptimizerMatr
         this.maxIterations = maxIterations;
     }
 
-    public DoubleMatrix getH() {
+    public INDArray getH() {
         return h;
     }
 
-    public void setH(DoubleMatrix h) {
+    public void setH(INDArray h) {
         this.h = h;
     }
 
-    public DoubleMatrix getG() {
+    public INDArray getG() {
         return g;
     }
 
-    public void setG(DoubleMatrix g) {
+    public void setG(INDArray g) {
         this.g = g;
     }
 
-    public DoubleMatrix getXi() {
+    public INDArray getXi() {
         return xi;
     }
 
-    public void setXi(DoubleMatrix xi) {
+    public void setXi(INDArray xi) {
         this.xi = xi;
     }
 

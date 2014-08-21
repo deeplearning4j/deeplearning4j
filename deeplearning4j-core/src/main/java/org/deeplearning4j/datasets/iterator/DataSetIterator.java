@@ -1,9 +1,11 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.linalg.dataset.DataSet;
+
 import java.io.Serializable;
 import java.util.Iterator;
 
-import org.deeplearning4j.datasets.DataSet;
+
 
 /**
  * A DataSetIterator handles

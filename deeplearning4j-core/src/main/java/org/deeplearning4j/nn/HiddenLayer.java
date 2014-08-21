@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn;
 
-import static org.deeplearning4j.util.MatrixUtil.stabilizeInput;
 
 import java.io.Serializable;
 
@@ -8,9 +7,11 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Sigmoid;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 
 
 /**
@@ -23,31 +24,31 @@ public class HiddenLayer implements Serializable {
     protected static final long serialVersionUID = 915783367350830495L;
     protected int nIn;
     protected int nOut;
-    protected DoubleMatrix W;
-    protected DoubleMatrix b;
+    protected INDArray W;
+    protected INDArray b;
     protected RandomGenerator rng;
-    protected DoubleMatrix input;
-    protected ActivationFunction activationFunction = new Sigmoid();
+    protected INDArray input;
+    protected ActivationFunction activationFunction = Activations.sigmoid();
     protected RealDistribution dist;
     protected boolean concatBiases = false;
     protected WeightInit weightInit;
     protected HiddenLayer() {}
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,ActivationFunction activationFunction) {
         this(nIn,nOut,W,b,rng,input,activationFunction,null);
     }
 
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input) {
         this(nIn,nOut,W,b,rng,input,null,null,null);
     }
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,WeightInit weightInit) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,WeightInit weightInit) {
         this(nIn,nOut,W,b,rng,input,null,null,weightInit);
     }
 
 
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction,RealDistribution dist,WeightInit weightInit) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,ActivationFunction activationFunction,RealDistribution dist,WeightInit weightInit) {
         this.nIn = nIn;
         this.nOut = nOut;
         this.input = input;
@@ -67,10 +68,10 @@ public class HiddenLayer implements Serializable {
 
         if(W == null) {
 
-            this.W = DoubleMatrix.zeros(nIn,nOut);
+            this.W = NDArrays.zeros(nIn, nOut);
 
-            for(int i = 0; i < this.W.rows; i++)
-                this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
+            for(int i = 0; i < this.W.rows(); i++)
+                this.W.putRow(i,NDArrays.create(this.dist.sample(this.W.columns())));
         }
 
         else
@@ -78,13 +79,13 @@ public class HiddenLayer implements Serializable {
 
 
         if(b == null)
-            this.b = DoubleMatrix.zeros(nOut);
+            this.b = NDArrays.zeros(nOut);
         else
             this.b = b;
     }
 
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,RealDistribution dist,WeightInit weightInit) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,RealDistribution dist,WeightInit weightInit) {
         this.nIn = nIn;
         this.nOut = nOut;
         this.input = input;
@@ -106,10 +107,10 @@ public class HiddenLayer implements Serializable {
                 this.W = WeightInitUtil.initWeights(nIn,nOut,this.weightInit,activationFunction);
             }
             else {
-                this.W = DoubleMatrix.zeros(nIn,nOut);
+                this.W = NDArrays.zeros(nIn,nOut);
 
-                for(int i = 0; i < this.W.rows; i++)
-                    this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
+                for(int i = 0; i < this.W.rows(); i++)
+                    this.W.putRow(i,NDArrays.create(this.dist.sample(this.W.columns())));
 
             }
         }
@@ -119,14 +120,14 @@ public class HiddenLayer implements Serializable {
 
 
         if(b == null)
-            this.b = DoubleMatrix.zeros(nOut);
+            this.b = NDArrays.zeros(nOut);
         else
             this.b = b;
     }
 
 
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,ActivationFunction activationFunction,RealDistribution dist) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,ActivationFunction activationFunction,RealDistribution dist) {
         this.nIn = nIn;
         this.nOut = nOut;
         this.input = input;
@@ -146,10 +147,10 @@ public class HiddenLayer implements Serializable {
 
         if(W == null) {
 
-            this.W = DoubleMatrix.zeros(nIn,nOut);
+            this.W = NDArrays.zeros(nIn,nOut);
 
-            for(int i = 0; i < this.W.rows; i++)
-                this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
+            for(int i = 0; i < this.W.rows(); i++)
+                this.W.putRow(i,NDArrays.create(this.dist.sample(this.W.columns())));
         }
 
         else
@@ -157,13 +158,13 @@ public class HiddenLayer implements Serializable {
 
 
         if(b == null)
-            this.b = DoubleMatrix.zeros(nOut);
+            this.b = NDArrays.zeros(nOut);
         else
             this.b = b;
     }
 
 
-    public HiddenLayer(int nIn, int nOut, DoubleMatrix W, DoubleMatrix b, RandomGenerator rng,DoubleMatrix input,RealDistribution dist) {
+    public HiddenLayer(int nIn, int nOut, INDArray W, INDArray b, RandomGenerator rng,INDArray input,RealDistribution dist) {
         this.nIn = nIn;
         this.nOut = nOut;
         this.input = input;
@@ -185,10 +186,10 @@ public class HiddenLayer implements Serializable {
                 this.W = WeightInitUtil.initWeights(nIn,nOut,this.weightInit,activationFunction);
             }
             else {
-                this.W = DoubleMatrix.zeros(nIn,nOut);
+                this.W = NDArrays.zeros(nIn,nOut);
 
-                for(int i = 0; i < this.W.rows; i++)
-                    this.W.putRow(i,new DoubleMatrix(this.dist.sample(this.W.columns)));
+                for(int i = 0; i < this.W.rows(); i++)
+                    this.W.putRow(i,NDArrays.create(this.dist.sample(this.W.columns())));
 
             }
         }
@@ -198,7 +199,7 @@ public class HiddenLayer implements Serializable {
 
 
         if(b == null)
-            this.b = DoubleMatrix.zeros(nOut);
+            this.b = NDArrays.zeros(nOut);
         else
             this.b = b;
     }
@@ -227,19 +228,19 @@ public class HiddenLayer implements Serializable {
         this.nOut = nOut;
     }
 
-    public  DoubleMatrix getW() {
+    public  INDArray getW() {
         return W;
     }
 
-    public  void setW(DoubleMatrix w) {
+    public  void setW(INDArray w) {
         W = w;
     }
 
-    public  DoubleMatrix getB() {
+    public  INDArray getB() {
         return b;
     }
 
-    public  void setB(DoubleMatrix b) {
+    public  void setB(INDArray b) {
         this.b = b;
     }
 
@@ -251,11 +252,11 @@ public class HiddenLayer implements Serializable {
         this.rng = rng;
     }
 
-    public  DoubleMatrix getInput() {
+    public  INDArray getInput() {
         return input;
     }
 
-    public  void setInput(DoubleMatrix input) {
+    public  void setInput(INDArray input) {
         this.input = input;
     }
 
@@ -322,8 +323,8 @@ public class HiddenLayer implements Serializable {
      * Trigger an activation with the last specified input
      * @return the activation of the last specified input
      */
-    public  DoubleMatrix activate() {
-        DoubleMatrix activation =  getActivationFunction().apply(getInput().mmul(getW()).addRowVector(getB()));
+    public  INDArray activate() {
+        INDArray activation =  getActivationFunction().apply(getInput().mmul(getW()).addRowVector(getB()));
         return activation;
     }
 
@@ -334,9 +335,9 @@ public class HiddenLayer implements Serializable {
      * @param input the input to use
      * @return
      */
-    public  DoubleMatrix activate(DoubleMatrix input) {
+    public  INDArray activate(INDArray input) {
         if(input != null)
-            this.input = stabilizeInput(input.dup(),1);
+            this.input = Transforms.stabilize(input.dup(), 1);
         return activate();
     }
 
@@ -344,11 +345,11 @@ public class HiddenLayer implements Serializable {
     public static class Builder {
         protected int nIn;
         protected int nOut;
-        protected DoubleMatrix W;
-        protected DoubleMatrix b;
+        protected INDArray W;
+        protected INDArray b;
         protected RandomGenerator rng;
-        protected DoubleMatrix input;
-        protected ActivationFunction activationFunction = new Sigmoid();
+        protected INDArray input;
+        protected ActivationFunction activationFunction = Activations.sigmoid();
         protected RealDistribution dist;
         protected boolean concatBiases = false;
         protected WeightInit weightInit;
@@ -379,7 +380,7 @@ public class HiddenLayer implements Serializable {
             return this;
         }
 
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             this.W = W;
             return this;
         }
@@ -394,12 +395,12 @@ public class HiddenLayer implements Serializable {
             return this;
         }
 
-        public Builder withBias(DoubleMatrix b) {
+        public Builder withBias(INDArray b) {
             this.b = b;
             return this;
         }
 
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             this.input = input;
             return this;
         }

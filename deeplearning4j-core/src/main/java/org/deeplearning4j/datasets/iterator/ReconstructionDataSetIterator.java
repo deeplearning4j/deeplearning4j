@@ -1,7 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.dataset.DataSet;
 
 /**
  * Wraps a data applyTransformToDestination iterator setting the first (feature matrix) as
@@ -27,7 +27,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next(int num) {
         DataSet ret = iter.next(num);
-        ret.setSecond(ret.getSecond());
+        ret.setLabels(ret.getFeatureMatrix());
         return ret;
     }
 
@@ -119,7 +119,7 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public DataSet next() {
         DataSet next = iter.next();
-        next.setSecond(next.getFirst());
+        next.setLabels(next.getFeatureMatrix());
         return next;
     }
 

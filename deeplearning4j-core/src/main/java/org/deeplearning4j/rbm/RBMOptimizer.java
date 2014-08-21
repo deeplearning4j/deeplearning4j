@@ -1,11 +1,10 @@
 package org.deeplearning4j.rbm;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
 import org.deeplearning4j.nn.NeuralNetwork.LossFunction;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
-import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
-import org.jblas.DoubleMatrix;
 
 /**
  * Optimizes an RBM.
@@ -31,7 +30,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 
 
     @Override
-    public DoubleMatrix getValueGradient(int iteration) {
+    public INDArray getValueGradient(int iteration) {
         int k = (int) extraParams[0];
 
         numTimesIterated++;

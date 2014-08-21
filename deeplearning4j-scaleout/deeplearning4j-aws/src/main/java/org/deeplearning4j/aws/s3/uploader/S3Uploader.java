@@ -34,7 +34,7 @@ public class S3Uploader extends BaseS3 {
 				return;
 			}
 		
-		//bucket didn't exist: create it
+		//bucket didn't exist: createComplex it
 		client.createBucket(bucketName);
 		client.putObject(bucketName, file.getName(), file);
 		
@@ -65,7 +65,7 @@ public class S3Uploader extends BaseS3 {
 				return;
 			}
 		
-		//bucket didn't exist: create it
+		//bucket didn't exist: createComplex it
 		client.createBucket(bucketName);
 		client.putObject(bucketName, name, is, med);
 

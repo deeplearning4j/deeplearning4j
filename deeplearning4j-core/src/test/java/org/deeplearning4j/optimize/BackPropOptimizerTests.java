@@ -1,11 +1,12 @@
 package org.deeplearning4j.optimize;
 
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork.ParamRange;
 
 import org.deeplearning4j.dbn.DBN;
-import org.deeplearning4j.nn.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
-import org.jblas.DoubleMatrix;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -44,40 +45,40 @@ public class BackPropOptimizerTests {
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .build();
 
-        DoubleMatrix params = dbn.params();
-        assertEquals(1,params.rows);
-        assertEquals(params.columns,params.length);
-        dbn.setLabels(new DoubleMatrix(1,nOuts));
+        INDArray params = dbn.params();
+        assertEquals(1,params.rows());
+        assertEquals(params.columns(),params.length());
+        dbn.setLabels(NDArrays.create(1, nOuts));
 
 
         BackPropOptimizer op = new BackPropOptimizer(dbn,1e-1,1000);
-        DoubleMatrix layerParams = op.getParameters();
+        INDArray layerParams = op.getParameters();
 
         ParamRange r = dbn.startIndexForLayer(0);
-        double firstWeightForParam = layerParams.get(r.getwStart() + 1);
-        double firstWeightInNetwork = dbn.getLayers()[0].getW().get(1);
+        double firstWeightForParam = (double) layerParams.getScalar(r.getwStart() + 1).element();
+        double firstWeightInNetwork = (double) dbn.getLayers()[0].getW().getScalar(1).element();
         assertEquals(0,r.getwStart());
-        int len = dbn.getLayers()[0].getW().length;
+        int len = dbn.getLayers()[0].getW().length();
         assertEquals(len,r.getwEnd());
-        assertEquals(dbn.getLayers()[0].gethBias().length,Math.abs(r.getBiasStart() - r.getBiasEnd()));
+        assertEquals(dbn.getLayers()[0].gethBias().length(),Math.abs(r.getBiasStart() - r.getBiasEnd()));
 
         ParamRange r2 = dbn.startIndexForLayer(1);
-        assertEquals(dbn.getLayers()[0].getW().length + dbn.getLayers()[0].gethBias().length,r2.getwStart());
+        assertEquals(dbn.getLayers()[0].getW().length() + dbn.getLayers()[0].gethBias().length(),r2.getwStart());
 
 
-        double secondWeightForParam = layerParams.get(r2.getwStart() + 1);
-        double secondWeightInNetwork = dbn.getLayers()[1].getW().get(1);
+        double secondWeightForParam = (double) layerParams.getScalar(r2.getwStart() + 1).element();
+        double secondWeightInNetwork = (double) dbn.getLayers()[1].getW().getScalar(1).element();
 
 
         assertEquals(true,firstWeightForParam == firstWeightInNetwork);
         assertEquals(true,secondWeightForParam == secondWeightInNetwork);
 
-        assertEquals(op.getNumParameters(),op.getParameters().length);
-        assertEquals(op.getNumParameters(),op.getValueGradient(0).length);
-        assertEquals(op.getParameters().length,op.getValueGradient(0).length);
+        assertEquals(op.getNumParameters(),op.getParameters().length());
+        assertEquals(op.getNumParameters(),op.getValueGradient(0).length());
+        assertEquals(op.getParameters().length(),op.getValueGradient(0).length());
 
 
-        assertEquals(dbn.getLayers()[1].gethBias().length,Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
+        assertEquals(dbn.getLayers()[1].gethBias().length(),Math.abs(r2.getBiasStart() - r2.getBiasEnd()));
 
     }
 

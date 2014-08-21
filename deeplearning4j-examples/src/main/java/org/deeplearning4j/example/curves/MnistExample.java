@@ -2,13 +2,13 @@ package org.deeplearning4j.example.curves;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +59,8 @@ public class MnistExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            DoubleMatrix predict = dbn.output(next.getFirst());
-            DoubleMatrix labels = next.getSecond();
+            INDArray predict = dbn.output(next.getFeatureMatrix());
+            INDArray labels = next.getLabels();
             eval.eval(labels, predict);
         }
 

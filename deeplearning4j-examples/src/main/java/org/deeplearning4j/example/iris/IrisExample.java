@@ -2,16 +2,15 @@ package org.deeplearning4j.example.iris;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.activation.Activations;
-import org.deeplearning4j.rbm.RBM;
+
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.util.SerializationUtils;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,20 +43,20 @@ public class IrisExample {
         next.scale();
 
         dbn.setInput(next.getFeatureMatrix());
-        dbn.pretrain(next.getFirst(),1,1e-1,100);
+        dbn.pretrain(next.getFeatureMatrix(),1,1e-1,100);
 
 
 
-        //log.info(Info.activationsFor(next.getFirst(),dbn));
-        dbn.finetune(next.getSecond(),1e-1,100);
+        //log.info(Info.activationsFor(next.getFeatureMatrix(),dbn));
+        dbn.finetune(next.getLabels(),1e-1,100);
 
 
 
 
 
         Evaluation eval = new Evaluation();
-        DoubleMatrix predict = dbn.output(next.getFirst());
-        eval.eval(predict,next.getSecond());
+        INDArray predict = dbn.output(next.getFeatureMatrix());
+        eval.eval(predict,next.getLabels());
 
         double f1 = eval.f1();
         if(f1 >= 0.9) {

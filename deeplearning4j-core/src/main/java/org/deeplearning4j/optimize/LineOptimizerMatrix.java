@@ -1,6 +1,8 @@
 package org.deeplearning4j.optimize;
 
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+
 /**
  * Line optimizer interface adapted from mallet
  * @author Adam Gibson
@@ -8,10 +10,10 @@ import org.jblas.DoubleMatrix;
  */
 public interface LineOptimizerMatrix {
 	/** Returns the last step size used. */
-	public double optimize (DoubleMatrix line, int iteration,double initialStep);
+	public double optimize (INDArray line, int iteration,double initialStep) throws InvalidStepException;
 
 	public interface ByGradient	{
 		/** Returns the last step size used. */
-		public double optimize (DoubleMatrix line, int iteration,double initialStep);
+		public double optimize (INDArray line, int iteration,double initialStep) throws InvalidStepException;
 	}
 }

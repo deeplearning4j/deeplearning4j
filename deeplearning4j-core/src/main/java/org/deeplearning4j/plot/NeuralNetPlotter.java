@@ -7,11 +7,10 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -37,7 +36,7 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    public void renderFilter(DoubleMatrix w,int r,int c,long length) {
+    public void renderFilter(INDArray w,int r,int c,long length) {
         try {
             String filePath = writeMatrix(w);
             Process is = Runtime.getRuntime().exec("python /tmp/plot.py filter " + filePath + " " + r + " " + c + " " + length);
@@ -58,7 +57,7 @@ public class NeuralNetPlotter implements Serializable {
         histogram(
                 new String[]{"W", "hbias", "vbias", "w-gradient", "hbias-gradient", "vbias-gradient"},
 
-                new DoubleMatrix[]{
+                new INDArray[]{
                         network.getW(),
                         network.gethBias(),
                         network.getvBias(),
@@ -71,14 +70,14 @@ public class NeuralNetPlotter implements Serializable {
 
         FilterRenderer render = new FilterRenderer();
         try {
-            if(network.getW() instanceof Tensor) {
-                Tensor w = (Tensor) network.getW().dup();
-                DoubleMatrix render2 = w.reshape(w.rows() * w.columns(),w.slices());
+            if(network.getW().shape().length > 2) {
+                INDArray w = (INDArray) network.getW().dup();
+                INDArray render2 = w.transpose();
                 render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
 
             }
             else
-                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows) , (int) Math.sqrt( network.getW().rows),patchesPerRow);
+                render.renderFilters(network.getW().dup(), "currimg.png", (int)Math.sqrt(network.getW().rows()) , (int) Math.sqrt( network.getW().rows()),patchesPerRow);
 
 
         } catch (Exception e) {
@@ -94,7 +93,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
-    public void scatter(String[] titles, DoubleMatrix[] matrices) {
+    public void scatter(String[] titles, INDArray[] matrices) {
         String[] path = new String[matrices.length * 2];
         try {
             if(titles.length != matrices.length)
@@ -102,7 +101,7 @@ public class NeuralNetPlotter implements Serializable {
 
 
             for(int i = 0; i < path.length - 1; i+=2) {
-                path[i] = writeMatrix(MatrixUtil.unroll(matrices[i / 2]));
+                path[i] = writeMatrix(matrices[i / 2].ravel());
                 path[i + 1] = titles[i / 2];
             }
             String paths = StringUtils.join(path,",");
@@ -126,7 +125,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
-    public void histogram(String[] titles, DoubleMatrix[] matrices) {
+    public void histogram(String[] titles, INDArray[] matrices) {
         String[] path = new String[matrices.length * 2];
         try {
             if(titles.length != matrices.length)
@@ -134,7 +133,7 @@ public class NeuralNetPlotter implements Serializable {
 
 
             for(int i = 0; i < path.length - 1; i+=2) {
-                path[i] = writeMatrix(MatrixUtil.unroll(matrices[i / 2]));
+                path[i] = writeMatrix(matrices[i / 2].ravel());
                 path[i + 1] = titles[i / 2];
             }
             String paths = StringUtils.join(path,",");
@@ -154,17 +153,17 @@ public class NeuralNetPlotter implements Serializable {
 
 
 
-    protected String writeMatrix(DoubleMatrix matrix) throws IOException {
+    protected String writeMatrix(INDArray matrix) throws IOException {
         String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
         File write = new File(filePath);
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
         write.deleteOnExit();
-        for(int i = 0; i < matrix.rows; i++) {
-            DoubleMatrix row = matrix.getRow(i);
+        for(int i = 0; i < matrix.rows(); i++) {
+            INDArray row = matrix.getRow(i);
             StringBuffer sb = new StringBuffer();
-            for(int j = 0; j < row.length; j++) {
-                sb.append(String.format("%.10f", row.get(j)));
-                if(j < row.length - 1)
+            for(int j = 0; j < row.length(); j++) {
+                sb.append(String.format("%.10f", row.getScalar(j)));
+                if(j < row.length() - 1)
                     sb.append(",");
             }
             sb.append("\n");
@@ -184,7 +183,7 @@ public class NeuralNetPlotter implements Serializable {
             if(network.getInput() == null)
                 throw new IllegalStateException("Unable to plot; missing input");
 
-            DoubleMatrix hbiasMean = network.hBiasMean();
+            INDArray hbiasMean = network.hBiasMean();
 
 
             String filePath = writeMatrix(hbiasMean);

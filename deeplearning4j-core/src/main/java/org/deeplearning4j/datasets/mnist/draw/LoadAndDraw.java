@@ -4,11 +4,12 @@ import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 
 import org.apache.commons.math3.random.MersenneTwister;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 
 
 public class LoadAndDraw {
@@ -26,12 +27,11 @@ public class LoadAndDraw {
 		
 		DataSet test = null;
 		while(iter.hasNext()) {
-			test = iter.next();
-			DoubleMatrix reconstructed = network.reconstruct(test.getFirst());
+			INDArray reconstructed = network.reconstruct(test.getFeatureMatrix());
 			for(int i = 0; i < test.numExamples(); i++) {
-				DoubleMatrix draw1 = test.get(i).getFirst().mul(255);
-				DoubleMatrix reconstructed2 = reconstructed.getRow(i);
-				DoubleMatrix draw2 = MatrixUtil.binomial(reconstructed2,1,new MersenneTwister(123)).mul(255);
+				INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
+				INDArray reconstructed2 = reconstructed.getRow(i);
+				INDArray draw2 = Sampling.binomial(reconstructed2, 1, new MersenneTwister(123)).mul(255);
 
 				DrawReconstruction d = new DrawReconstruction(draw1);
 				d.title = "REAL";

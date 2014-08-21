@@ -22,7 +22,7 @@ public class TwoArrayOps  {
 
 
     public TwoArrayOps other(INDArray other) {
-        this.other = other;
+        this.other = other.reshape(new int[]{1,other.length()});
         return this;
     }
 

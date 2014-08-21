@@ -1,10 +1,8 @@
 package org.deeplearning4j.base;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -14,12 +12,14 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.util.ArchiveUtils;
-import org.deeplearning4j.util.ArrayUtil;
 import org.deeplearning4j.util.ImageLoader;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,12 +104,12 @@ public class LFWLoader {
 
 
     public DataSet convertListPairs(List<DataSet> images) {
-        DoubleMatrix inputs = new DoubleMatrix(images.size(),numPixelColumns);
-        DoubleMatrix outputs = new DoubleMatrix(images.size(),numNames);
+        INDArray inputs = NDArrays.create(images.size(), numPixelColumns);
+        INDArray outputs = NDArrays.create(images.size(),numNames);
 
         for(int i = 0; i < images.size(); i++) {
-            inputs.putRow(i,images.get(i).getFirst());
-            outputs.putRow(i,images.get(i).getSecond());
+            inputs.putRow(i,images.get(i).getFeatureMatrix());
+            outputs.putRow(i,images.get(i).getLabels());
         }
         return new DataSet(inputs,outputs);
     }
@@ -120,7 +120,7 @@ public class LFWLoader {
         File image = new File(images.get(i));
         int outcome = outcomes.indexOf(image.getParentFile().getAbsolutePath());
         try {
-            return new DataSet(loader.asRowVector(image),MatrixUtil.toOutcomeVector(outcome, outcomes.size()));
+            return new DataSet(loader.asRowVector(image), FeatureUtil.toOutcomeVector(outcome, outcomes.size()));
         } catch (Exception e) {
             throw new IllegalStateException("Unable to getFromOrigin data for image " + i + " for path " + images.get(i));
         }
@@ -132,7 +132,7 @@ public class LFWLoader {
      * @return
      * @throws Exception
      */
-    public List<DataSet> getFirst(int num) throws Exception {
+    public List<DataSet> getFeatureMatrix(int num) throws Exception {
         List<DataSet> ret = new ArrayList<>(num);
         File[] files = lfwDir.listFiles();
         int label = 0;
@@ -176,8 +176,8 @@ public class LFWLoader {
 
 
     public DataSet fromImageFile(int label,File image) throws Exception {
-        DoubleMatrix outcome = MatrixUtil.toOutcomeVector(label, numNames);
-        DoubleMatrix image2 = MatrixUtil.toMatrix(loader.flattenedImageFromFile(image));
+        INDArray outcome = FeatureUtil.toOutcomeVector(label, numNames);
+        INDArray image2 = ArrayUtil.toNDArray(loader.flattenedImageFromFile(image));
         return new DataSet(image2,outcome);
     }
 

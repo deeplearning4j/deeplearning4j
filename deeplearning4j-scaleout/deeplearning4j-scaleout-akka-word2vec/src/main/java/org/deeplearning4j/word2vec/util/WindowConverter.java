@@ -2,9 +2,10 @@ package org.deeplearning4j.word2vec.util;
 
 import java.util.List;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.word2vec.Word2Vec;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
-import org.jblas.DoubleMatrix;
 
 
 /**
@@ -39,7 +40,7 @@ public class WindowConverter {
 		int count = 0;
 		for(int i = 0; i < words.size(); i++) {
 			String word = new InputHomogenization(words.get(i)).transform();
-			float[] vec2 = vec.getWordVectorMatrixNormalized(word).data;
+			float[] vec2 = vec.getWordVectorMatrixNormalized(word).floatData();
 			if(vec2 == null)
 				vec2 = vec.getOob();
             for(int j = 0; j < vec2.length; j++) {
@@ -56,8 +57,8 @@ public class WindowConverter {
 
 	
 	
-	public static DoubleMatrix asExampleMatrix(Window window,Word2Vec vec) {
-		return new DoubleMatrix(asExample(window,vec));
+	public static INDArray asExampleMatrix(Window window,Word2Vec vec) {
+		return NDArrays.create(asExample(window, vec));
 	}
 
 }

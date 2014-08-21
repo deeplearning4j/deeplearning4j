@@ -4,8 +4,11 @@ import static org.junit.Assert.assertEquals;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.jblas.NDArray;
 import org.deeplearning4j.nn.NeuralNetwork;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -20,28 +23,31 @@ public class RBMTest  {
 
 	@Test
 	public void testBasic() {
-		double[][] data = new double[][]
+		double[] data = new double[]
 				{
-				{1,1,1,0,0,0},
-				{1,0,1,0,0,0},
-				{1,1,1,0,0,0},
-				{0,0,1,1,1,0},
-				{0,0,1,1,0,0},
-				{0,0,1,1,1,0},
-				{0,0,1,1,1,0}
+				1,1,1,0,0,0,
+				1,0,1,0,0,0,
+				1,1,1,0,0,0,
+				0,0,1,1,1,0,
+				0,0,1,1,0,0,
+				0,0,1,1,1,0,
+				0,0,1,1,1,0
 				};
 
-		DoubleMatrix d = new DoubleMatrix(data);
+		INDArray d =  NDArrays.create(data,new int[]{7,6});
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder().useAdaGrad(true)
-				.numberOfVisible(d.columns).numHidden(4).withRandom(g).build();
+		RBM r = new RBM.Builder()
+				.numberOfVisible(d.columns()).numHidden(4).withRandom(g).build();
+
+
 
 		r.trainTillConvergence(d,  0.01,new Object[]{1,0.01,1000});
 
-		DoubleMatrix v = new DoubleMatrix(new double[][]
-				{{1, 1, 0, 0, 0, 0},
-				{0, 0, 0, 1, 1, 0}});	
+        double d5 = r.getReConstructionCrossEntropy();
+
+		INDArray v = new NDArray(new double[]
+				{1, 1, 0, 0, 0, 0,0, 0, 0, 1, 1, 0}, new int[]{2,6});
 
 		log.info("Reconstruction " + r.reconstruct(v).toString());
 
@@ -74,7 +80,7 @@ public class RBMTest  {
 		
 
 		
-		r.trainTillConvergence(d.getFirst() ,1e-2,new Object[]{1,1e-1,100});
+		r.trainTillConvergence(d.getFeatureMatrix() ,1e-2,new Object[]{1,1e-1,100});
 
 
 
