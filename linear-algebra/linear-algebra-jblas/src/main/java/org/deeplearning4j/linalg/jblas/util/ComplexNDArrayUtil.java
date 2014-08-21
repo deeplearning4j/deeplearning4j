@@ -1,5 +1,6 @@
 package org.deeplearning4j.linalg.jblas.util;
 
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
@@ -182,7 +183,7 @@ public class ComplexNDArrayUtil {
 
 
             if (dimension == 0) {
-                List<ComplexNDArray> slices = new ArrayList<>();
+                List<IComplexNDArray> slices = new ArrayList<>();
                 for (int i = 0; i < n; i++) {
                     ComplexNDArray slice = nd.slice(i);
                     slices.add(slice);
