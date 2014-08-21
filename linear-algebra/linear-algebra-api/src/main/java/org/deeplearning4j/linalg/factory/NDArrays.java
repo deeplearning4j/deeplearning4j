@@ -40,6 +40,8 @@ public class NDArrays {
     public final static String BLAS_OPS = "blas.ops";
     public static String dtype;
     private static Properties props = new Properties();
+    private static Map<String,Constructor> constructors = new HashMap<>();
+    private static Map<String,Constructor> complexConstructors = new HashMap<>();
 
 
     static {
@@ -250,7 +252,7 @@ public class NDArrays {
      */
     public static IComplexFloat createFloat(float real,float imag) {
         try {
-            Constructor c = complexDoubleClazz.getConstructor(double.class,double.class);
+            Constructor c = complexDoubleClazz.getConstructor(float.class,float.class);
             return (IComplexFloat) c.newInstance(real,imag);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -351,7 +353,7 @@ public class NDArrays {
      */
     public static IComplexNDArray createComplex(INDArray arr) {
         try {
-            Constructor c = complexClazz.getConstructor(INDArray.class);
+            Constructor c = retrieveComplexConstructor(INDArray.class);
             return (IComplexNDArray) c.newInstance(arr);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -831,7 +833,7 @@ public class NDArrays {
      */
     public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset) {
         try {
-            Constructor c = complexClazz.getConstructor(float[].class,int[].class,int[].class,int.class);
+            Constructor c = retrieveComplexConstructor(float[].class,int[].class,int[].class,int.class);
             return (IComplexNDArray) c.newInstance(data,shape,stride,offset);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -850,7 +852,7 @@ public class NDArrays {
      */
     public static INDArray create(float[] data,int[] shape,int[] stride,int offset) {
         try {
-            Constructor c = clazz.getConstructor(float[].class,int[].class,int[].class,int.class);
+            Constructor c = retrieveConstructor(float[].class,int[].class,int[].class,int.class);
             return (INDArray) c.newInstance(data,shape,stride,offset);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -961,7 +963,7 @@ public class NDArrays {
      */
     public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,int offset) {
         try {
-            Constructor c = complexClazz.getConstructor(double[].class,int[].class,int[].class,int.class);
+            Constructor c = retrieveComplexConstructor(double[].class,int[].class,int[].class,int.class);
             return (IComplexNDArray) c.newInstance(data,shape,stride,offset);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -978,7 +980,7 @@ public class NDArrays {
      */
     public static INDArray create(double[] data,int[] shape,int[] stride,int offset) {
         try {
-            Constructor c = clazz.getConstructor(double[].class,int[].class,int[].class,int.class);
+            Constructor c = retrieveConstructor(double[].class,int[].class,int[].class,int.class);
             return (INDArray) c.newInstance(data,shape,stride,offset);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -993,7 +995,7 @@ public class NDArrays {
      */
     public static INDArray create(List<INDArray> list,int[] shape) {
         try {
-            Constructor c = clazz.getConstructor(List.class,int[].class);
+            Constructor c = retrieveConstructor(List.class,int[].class);
             return (INDArray) c.newInstance(list,shape);
         }catch (Exception e) {
             throw new RuntimeException(e);
@@ -1338,6 +1340,26 @@ public class NDArrays {
         return createComplex(new double[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},offset);
 
     }
+
+    private static Constructor retrieveComplexConstructor(Class<?>...args) throws Exception {
+        Constructor ret = complexConstructors.get(Arrays.toString(args));
+        if(ret == null) {
+            ret = complexClazz.getConstructor(args);
+            complexConstructors.put(Arrays.toString(args),ret);
+        }
+        return ret;
+    }
+
+    private static Constructor retrieveConstructor(Class<?>...args) throws Exception {
+        Constructor ret = constructors.get(Arrays.toString(args));
+        if(ret == null) {
+            ret = clazz.getConstructor(args);
+            constructors.put(Arrays.toString(args),ret);
+        }
+        return ret;
+    }
+
+
 
 
 
