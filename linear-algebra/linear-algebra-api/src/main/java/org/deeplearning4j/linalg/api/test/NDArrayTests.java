@@ -616,11 +616,27 @@ public abstract class NDArrayTests {
 
     }
 
+
+
+
+
     @Test
     public void testMeans() {
         INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
         assertEquals(NDArrays.create(new double[]{2,3}),a.mean(0));
         assertEquals(NDArrays.create(new double[]{1.5,3.5}),a.mean(1));
+        assertEquals(2.5,(double) a.mean(Integer.MAX_VALUE).element(),1e-1);
+
+    }
+
+
+    @Test
+    public void testSums() {
+        INDArray a = NDArrays.linspace(1,4,4).reshape(2,2);
+        assertEquals(NDArrays.create(new double[]{4,6}),a.sum(0));
+        assertEquals(NDArrays.create(new double[]{3,7}),a.sum(1));
+        assertEquals(10,(double) a.sum(Integer.MAX_VALUE).element(),1e-1);
+
 
     }
 

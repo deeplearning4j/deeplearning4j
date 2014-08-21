@@ -8,54 +8,26 @@ import org.deeplearning4j.linalg.api.complex.IComplexFloat;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.springframework.core.io.ClassPathResource;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
- *
- * Creation of ndarrays via classpath discovery.
- *
- *
+ * Base NDArrayFactory class
+ * 
  * @author Adam Gibson
  */
-public class NDArrays  {
-
-    private static Class<? extends BlasWrapper> blasWrapperClazz;
-    private static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
-
-    private static BlasWrapper BLAS_WRAPPER_INSTANCE;
-    public final static String LINALG_PROPS = "/dl4j-linalg.properties";
-    public final static String REAL_CLASS_PROP = "real.class";
-    public final static String COMPLEX_CLASS_PROP = "complex.class";
-    public final static String DTYPE = "dtype";
-    public final static String BLAS_OPS = "blas.ops";
-    public static String dtype;
-    public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    private static NDArrayFactory INSTANCE;
-    private static Properties props = new Properties();
+public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
-    static {
-        try {
-            ClassPathResource c = new ClassPathResource(LINALG_PROPS);
-            props.load(c.getInputStream());
-            dtype = props.get(DTYPE).toString();
-            ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(props.get(NDARRAY_FACTORY_CLASS).toString());
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(String.class);
-            INSTANCE = (NDArrayFactory) c2.newInstance(dtype);
-            blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
-            BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-        }catch(Exception e) {
-            throw new RuntimeException(e);
-        }
+    protected String dtype;
+
+    protected BaseNDArrayFactory(String dtype) {
+        this.dtype = dtype;
     }
 
 
-    public static BlasWrapper getBlasWrapper() {
-        return BLAS_WRAPPER_INSTANCE;
-    }
 
 
     /**
@@ -65,20 +37,52 @@ public class NDArrays  {
      * @param num the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(int lower,int upper,int num) {
-        return INSTANCE.linspace(lower,upper,num);
+    public INDArray linspace(int lower,int upper,int num) {
+        double[] length = new double[num];
+        for (int i = 0; i < num; i++) {
+            double t = (double) i / (num - 1);
+            length[i]  =  lower * (1 - t) + t * upper;
+
+        }
+        return create(length);
     }
 
 
 
-    public static INDArray toFlattened(Collection<INDArray> matrices) {
-        return INSTANCE.toFlattened(matrices);
+    public INDArray toFlattened(Collection<INDArray> matrices) {
+        int length = 0;
+        for(INDArray m : matrices)  length += m.length();
+        INDArray ret = NDArrays.create(length);
+        int linearIndex = 0;
+        for(INDArray d : matrices) {
+            for(int i = 0; i < d.length(); i++) {
+                ret.put(linearIndex++,d.getScalar(i));
+            }
+        }
+
+        return ret;
 
     }
 
 
-    public static INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
-        return INSTANCE.toFlattened(length,matrices);
+    public INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
+
+        INDArray ret = NDArrays.create(length);
+        int linearIndex = 0;
+
+        List<double[]> gradient = new ArrayList<>();
+        for(Iterator<? extends INDArray> iter : matrices) {
+            while(iter.hasNext()) {
+                INDArray d = iter.next();
+                gradient.add(d.data());
+            }
+        }
+
+
+
+
+        INDArray ret2 = NDArrays.create(ArrayUtil.combine(gradient));
+        return ret2.reshape(1,ret2.length());
     }
 
 
@@ -86,13 +90,40 @@ public class NDArrays  {
      * Returns a column vector where each entry is the nth bilinear
      * product of the nth slices of the two tensors.
      */
-    public static INDArray bilinearProducts(INDArray curr,INDArray in) {
-        return INSTANCE.bilinearProducts(curr,in);
+    public INDArray bilinearProducts(INDArray curr,INDArray in) {
+        if (in.columns() != 1) {
+            throw new AssertionError("Expected a column vector");
+        }
+        if (in.rows() != curr.columns()) {
+            throw new AssertionError("Number of rows in the input does not match number of columns in tensor");
+        }
+        if (curr.rows() != curr.columns()) {
+            throw new AssertionError("Can only perform this operation on a SimpleTensor with square slices");
+        }
+
+        INDArray inT = in.transpose();
+        INDArray out = NDArrays.create(curr.slices(), 1);
+        for (int slice = 0; slice < curr.slices(); ++slice) {
+            float result = (float) inT.mul(curr.slice(slice)).mul(in).getScalar(0).element();
+            out.putScalar(slice, result);
+        }
+
+        return out;
     }
 
 
-    public static INDArray toFlattened(INDArray...matrices) {
-        return INSTANCE.toFlattened(matrices);
+    public INDArray toFlattened(INDArray...matrices) {
+        int length = 0;
+        for(INDArray m : matrices)  length += m.length();
+        INDArray ret = NDArrays.create(1,length);
+        int linearIndex = 0;
+        for(INDArray d : matrices) {
+            for(int i = 0; i < d.length(); i++) {
+                ret.put(linearIndex++,d.getScalar(i));
+            }
+        }
+
+        return ret;
     }
 
 
@@ -101,8 +132,14 @@ public class NDArrays  {
      * @param n the number for the identity
      * @return
      */
-    public static INDArray eye(int n) {
-        return INSTANCE.eye(n);
+    public INDArray eye(int n) {
+        INDArray ret = NDArrays.create((int) Math.pow(n,2));
+
+        for (int i = 0; i < n; i++) {
+            ret.put(i, i, 1.0);
+        }
+
+        return ret.reshape(n,n);
 
     }
 
@@ -111,8 +148,13 @@ public class NDArrays  {
      * @param toRotate the matrix to rotate
      * @return the rotated matrix
      */
-    public static void rot90(INDArray toRotate) {
-        INSTANCE.rot90(toRotate);
+    public void rot90(INDArray toRotate) {
+        if(!toRotate.isMatrix())
+            throw new IllegalArgumentException("Only rotating matrices");
+
+        INDArray start = toRotate.transpose();
+        for(int i = 0; i < start.rows(); i++)
+            start.putRow(i,reverse(start.getRow(i)));
 
     }
 
@@ -121,8 +163,16 @@ public class NDArrays  {
      * @param reverse the matrix to reverse
      * @return the reversed matrix
      */
-    public static INDArray rot(INDArray reverse) {
-        return INSTANCE.rot(reverse);
+    public INDArray rot(INDArray reverse) {
+        INDArray ret = NDArrays.create(reverse.shape());
+        if(reverse.isVector())
+            return reverse(reverse);
+        else {
+            for(int i = 0; i < reverse.slices(); i++) {
+                ret.putSlice(i,reverse(reverse.slice(i)));
+            }
+        }
+        return ret.reshape(reverse.shape());
     }
 
     /**
@@ -130,8 +180,16 @@ public class NDArrays  {
      * @param reverse the matrix to reverse
      * @return the reversed matrix
      */
-    public static INDArray reverse(INDArray reverse) {
-        return INSTANCE.reverse(reverse);
+    public INDArray reverse(INDArray reverse) {
+        INDArray rev = reverse.ravel();
+        INDArray ret = NDArrays.create(rev.shape());
+        int count = 0;
+        for(int i = rev.length() - 1; i >= 0; i--) {
+            ret.put(count++,rev.getScalar(i));
+
+        }
+
+        return ret.reshape(reverse.shape());
     }
 
 
@@ -141,8 +199,8 @@ public class NDArrays  {
      * @param end the end of the range
      * @return the range vector
      */
-    public static INDArray arange(double begin, double end) {
-        return INSTANCE.arange(begin,end);
+    public INDArray arange(double begin, double end) {
+        return NDArrays.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end))).transpose();
     }
 
 
@@ -152,9 +210,7 @@ public class NDArrays  {
      * @param imag imag component
      * @return
      */
-    public static IComplexFloat createFloat(float real,float imag) {
-        return INSTANCE.createFloat(real,imag);
-    }
+    public abstract IComplexFloat createFloat(float real,float imag);
 
 
     /**
@@ -163,18 +219,19 @@ public class NDArrays  {
      * @param imag the imaginary component
      * @return a new imaginary double with the specified real and imaginary components
      */
-    public static IComplexDouble createDouble(double real,double imag) {
-        return INSTANCE.createDouble(real,imag);
-    }
-
+    public abstract IComplexDouble createDouble(double real,double imag);
 
     /**
      * Copy a to b
      * @param a the origin matrix
      * @param b the destination matrix
      */
-    public static void copy(INDArray a,INDArray b) {
-        INSTANCE.copy(a,b);
+    public void copy(INDArray a,INDArray b) {
+        a = a.reshape(new int[]{1,a.length()});
+        b = b.reshape(new int[]{1,b.length()});
+        for(int i = 0; i < a.length(); i++) {
+            b.put(i,a.getScalar(i));
+        }
     }
 
 
@@ -186,10 +243,14 @@ public class NDArrays  {
      * @param rng the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
-        return INSTANCE.rand(shape,min,max,rng);
+    public INDArray rand(int[] shape,float min,float max,RandomGenerator rng) {
+        INDArray ret = NDArrays.create(shape).ravel();
+        float r = max - min;
+        for(int i = 0; i < ret.length(); i++) {
+            ret.putScalar(i, r * rng.nextFloat() + min);
+        }
+        return ret.reshape(shape);
     }
-
     /**
      * Generates a random matrix between min and max
      * @param rows the number of rows of the matrix
@@ -199,13 +260,33 @@ public class NDArrays  {
      * @param rng the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns,float min,float max,RandomGenerator rng) {
-        return INSTANCE.rand(rows,columns,min,max,rng);
+    public INDArray rand(int rows, int columns,float min,float max,RandomGenerator rng) {
+        INDArray ret = NDArrays.create(rows, columns).ravel();
+        float r = max - min;
+        for(int i = 0; i < ret.length(); i++) {
+            ret.putScalar(i, r * rng.nextFloat() + min);
+        }
+        return ret.reshape(rows,columns);
     }
 
 
-    public static INDArray appendBias(INDArray...vectors) {
-        return INSTANCE.appendBias(vectors);
+    public INDArray appendBias(INDArray...vectors) {
+        int size = 0;
+        for (INDArray vector : vectors) {
+            size += vector.rows();
+        }
+        // one extra for the bias
+        size++;
+
+        INDArray result = NDArrays.create(size, 1);
+        int index = 0;
+        for (INDArray vector : vectors) {
+            result.put(new NDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows()),NDArrayIndex.interval(0,result.columns())},vector);
+            index += vector.rows();
+        }
+
+        result.put(new NDArrayIndex[] {NDArrayIndex.interval(index,result.rows()),NDArrayIndex.interval(0,result.columns())},NDArrays.ones(1,result.columns()));
+        return result;
     }
 
 
@@ -215,9 +296,7 @@ public class NDArrays  {
      * @return the complex ndarray with the specified ndarray as the
      * real components
      */
-    public static IComplexNDArray createComplex(INDArray arr) {
-        return INSTANCE.createComplex(arr);
-    }
+    public abstract IComplexNDArray createComplex(INDArray arr);
 
 
     /**
@@ -226,9 +305,7 @@ public class NDArrays  {
      * @return the complex ndarray with the specified ndarray as the
      * real components
      */
-    public static IComplexNDArray createComplex(IComplexNumber[] data,int[] shape) {
-        return INSTANCE.createComplex(data, shape);
-    }
+    public abstract IComplexNDArray createComplex(IComplexNumber[] data,int[] shape);
 
 
     /**
@@ -237,10 +314,7 @@ public class NDArrays  {
      * @return the complex ndarray with the specified ndarray as the
      * real components
      */
-    public static IComplexNDArray createComplex(List<IComplexNDArray> arrs,int[] shape) {
-        return INSTANCE.createComplex(arrs,shape);
-    }
-
+    public abstract IComplexNDArray createComplex(List<IComplexNDArray> arrs,int[] shape);
 
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -249,8 +323,8 @@ public class NDArrays  {
      * @param r the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows,int columns,RandomGenerator r) {
-        return INSTANCE.rand(rows,columns,r);
+    public INDArray rand(int rows,int columns,RandomGenerator r) {
+        return rand(new int[]{rows,columns},r);
     }
 
     /**
@@ -260,8 +334,9 @@ public class NDArrays  {
      * @param seed the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows,int columns,long seed) {
-        return INSTANCE.rand(rows,columns,seed);
+    public INDArray rand(int rows,int columns,long seed) {
+
+        return randn(new int[]{rows,columns}, new MersenneTwister(seed));
     }
     /**
      * Create a random ndarray with the given shape using
@@ -270,8 +345,8 @@ public class NDArrays  {
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows,int columns) {
-        return INSTANCE.rand(rows,columns);
+    public INDArray rand(int rows,int columns) {
+        return randn(new int[]{rows,columns}, System.currentTimeMillis());
     }
 
     /**
@@ -281,8 +356,8 @@ public class NDArrays  {
      * @param r the random generator to use
      * @return
      */
-    public static INDArray randn(int rows,int columns,RandomGenerator r) {
-        return INSTANCE.randn(rows,columns,r);
+    public INDArray randn(int rows,int columns,RandomGenerator r) {
+        return randn(new int[]{rows,columns},r);
     }
 
     /**
@@ -292,8 +367,8 @@ public class NDArrays  {
      * @param columns the number of columns in the matrix
      * @return
      */
-    public static INDArray randn(int rows,int columns) {
-        return INSTANCE.rand(rows,columns);
+    public INDArray randn(int rows,int columns) {
+        return randn(new int[]{rows,columns}, System.currentTimeMillis());
     }
 
     /**
@@ -302,8 +377,8 @@ public class NDArrays  {
      * @param columns the number of columns in the matrix
      * @return
      */
-    public static INDArray randn(int rows,int columns,long seed) {
-        return INSTANCE.randn(rows, columns, seed);
+    public INDArray randn(int rows,int columns,long seed) {
+        return randn(new int[]{rows,columns}, new MersenneTwister(seed));
     }
 
 
@@ -316,8 +391,11 @@ public class NDArrays  {
      * @param r the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape,RealDistribution r) {
-        return INSTANCE.rand(shape,r);
+    public INDArray rand(int[] shape,RealDistribution r) {
+        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        for(int i = 0; i < ret.length(); i++)
+            ret.put(i,NDArrays.scalar(r.sample()));
+        return ret.reshape(shape);
     }
     /**
      * Create a random ndarray with the given shape using the given rng
@@ -325,8 +403,11 @@ public class NDArrays  {
      * @param r the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape,RandomGenerator r) {
-        return INSTANCE.rand(shape,r);
+    public INDArray rand(int[] shape,RandomGenerator r) {
+        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        for(int i = 0; i < ret.length(); i++)
+            ret.put(i,NDArrays.scalar(r.nextDouble()));
+        return ret.reshape(shape);
     }
 
     /**
@@ -335,8 +416,8 @@ public class NDArrays  {
      * @param seed the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape,long seed) {
-        return INSTANCE.rand(shape,seed);
+    public INDArray rand(int[] shape,long seed) {
+        return randn(shape, new MersenneTwister(seed));
     }
     /**
      * Create a random ndarray with the given shape using
@@ -344,8 +425,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape) {
-        return INSTANCE.rand(shape);
+    public INDArray rand(int[] shape) {
+        return randn(shape, System.currentTimeMillis());
     }
 
     /**
@@ -354,8 +435,11 @@ public class NDArrays  {
      * @param r the random generator to use
      * @return
      */
-    public static INDArray randn(int[] shape,RandomGenerator r) {
-        return INSTANCE.randn(shape, r);
+    public INDArray randn(int[] shape,RandomGenerator r) {
+        INDArray ret = create(new int[]{1,ArrayUtil.prod(shape)});
+        for(int i = 0; i < ret.length(); i++)
+            ret.put(i,NDArrays.scalar(r.nextGaussian()));
+        return ret.reshape(shape);
     }
 
     /**
@@ -364,8 +448,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return
      */
-    public static INDArray randn(int[] shape) {
-        return INSTANCE.randn(shape);
+    public INDArray randn(int[] shape) {
+        return randn(shape, System.currentTimeMillis());
     }
 
     /**
@@ -373,7 +457,7 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return
      */
-    public static INDArray randn(int[] shape,long seed) {
+    public INDArray randn(int[] shape,long seed) {
         return randn(shape, new MersenneTwister(seed));
     }
 
@@ -384,8 +468,8 @@ public class NDArrays  {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(double[] data) {
-        return INSTANCE.create(data);
+    public INDArray create(double[] data) {
+        return create(data,new int[]{data.length});
     }
 
     /**
@@ -393,8 +477,8 @@ public class NDArrays  {
      * @param data the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(float[] data) {
-        return INSTANCE.create(data);
+    public INDArray create(float[] data) {
+        return create(data,new int[]{data.length});
     }
 
     /**
@@ -402,8 +486,9 @@ public class NDArrays  {
      * @param data the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray createComplex(double[] data) {
-        return INSTANCE.createComplex(data);
+    public INDArray createComplex(double[] data) {
+        assert data.length % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
+        return createComplex(data,new int[]{data.length / 2});
     }
 
 
@@ -413,8 +498,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray create(int columns) {
-        return INSTANCE.create(columns);
+    public INDArray create(int columns) {
+        return create(new int[]{columns});
     }
 
     /**
@@ -422,8 +507,8 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray createComplex(int columns) {
-        return INSTANCE.createComplex(columns);
+    public INDArray createComplex(int columns) {
+        return createComplex(new int[]{columns});
     }
 
 
@@ -433,8 +518,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray zeros(int rows,int columns) {
-        return INSTANCE.zeros(rows, columns);
+    public INDArray zeros(int rows,int columns) {
+        return zeros(new int[]{rows, columns});
     }
 
     /**
@@ -443,8 +528,8 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexZeros(int rows,int columns) {
-        return INSTANCE.complexZeros(rows,columns);
+    public INDArray complexZeros(int rows,int columns) {
+        return createComplex(new int[]{rows,columns});
     }
 
 
@@ -453,8 +538,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray zeros(int columns) {
-        return INSTANCE.zeros(columns);
+    public INDArray zeros(int columns) {
+        return zeros(new int[]{columns});
     }
 
     /**
@@ -462,8 +547,8 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexZeros(int columns) {
-        return INSTANCE.complexZeros(columns);
+    public INDArray complexZeros(int columns) {
+        return createComplex(new int[]{columns});
     }
 
 
@@ -474,8 +559,10 @@ public class NDArrays  {
      * @param value the value to assign
      * @return  the created ndarray
      */
-    public static INDArray valueArrayOf(int[] shape,double value) {
-        return INSTANCE.valueArrayOf(shape,value);
+    public INDArray valueArrayOf(int[] shape,double value) {
+        INDArray create = create(shape);
+        create.assign(value);
+        return create;
     }
 
 
@@ -486,8 +573,10 @@ public class NDArrays  {
      * @param value the value to assign
      * @return  the created ndarray
      */
-    public static INDArray valueArrayOf(int rows,int columns,double value) {
-        return INSTANCE.valueArrayOf(rows, columns, value);
+    public INDArray valueArrayOf(int rows,int columns,double value) {
+        INDArray create = create(rows,columns);
+        create.assign(value);
+        return create;
     }
 
 
@@ -499,8 +588,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray ones(int rows,int columns) {
-        return INSTANCE.ones(rows,columns);
+    public INDArray ones(int rows,int columns) {
+        return ones(new int[]{rows,columns});
     }
 
 
@@ -510,8 +599,8 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexOnes(int rows,int columns) {
-        return INSTANCE.complexOnes(rows, columns);
+    public INDArray complexOnes(int rows,int columns) {
+        return createComplex(new int[]{rows,columns});
     }
 
     /**
@@ -519,8 +608,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return  the created ndarray
      */
-    public static INDArray ones(int columns) {
-        return INSTANCE.ones(columns);
+    public INDArray ones(int columns) {
+        return ones(new int[]{columns});
     }
 
     /**
@@ -528,8 +617,8 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexOnes(int columns) {
-        return INSTANCE.complexOnes(columns);
+    public INDArray complexOnes(int columns) {
+        return createComplex(new int[]{columns});
     }
 
 
@@ -537,21 +626,41 @@ public class NDArrays  {
     /**
      * Concatenates two matrices horizontally. Matrices must have identical
      * numbers of rows.
-     * @param A the first matrix to concat
-     * @param B  the second matrix to concat
      */
-    public static INDArray concatHorizontally(INDArray A, INDArray B) {
-        return INSTANCE.concatHorizontally(A,B);
+    public INDArray concatHorizontally(INDArray A, INDArray B) {
+        if (A.rows() != B.rows()) {
+            throw new IllegalArgumentException("Matrices don't have same number of rows.");
+        }
+
+        INDArray result = NDArrays.create(A.rows(), A.columns() + B.columns());
+        copy(A,result);
+
+        int count = 0;
+
+        for(int i = A.rows(); i < B.rows(); i++) {
+            result.putRow(i,B.getRow(count++));
+        }
+        return result;
     }
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical
      * numbers of columns.
-     * @param A
-     * @param B
      */
-    public static INDArray concatVertically(INDArray A, INDArray B) {
-        return INSTANCE.concatVertically(A,B);
+    public INDArray concatVertically(INDArray A, INDArray B) {
+        if (A.columns() != B.columns()) {
+            throw new IllegalArgumentException("Matrices don't have same number of columns (" + A.columns() + " != " + B.columns() + ".");
+        }
+
+        INDArray result = NDArrays.create(A.rows() + B.rows(), A.columns());
+        copy(A,result);
+
+        int count = 0;
+
+        for(int i = A.columns(); i < B.columns(); i++) {
+            result.putColumn(i,B.getColumn(count++));
+        }
+        return result;
     }
 
 
@@ -565,30 +674,9 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static INDArray zeros(int[] shape) {
-        return INSTANCE.zeros(shape);
-
-
-    }
-
-    /**
-     * Create an ndarray of ones
-     * @param shape the shape of the ndarray
-     * @return an ndarray with ones filled in
-     */
-    public static IComplexNDArray complexZeros(int[] shape) {
-        return INSTANCE.complexZeros(shape);
-
-    }
-
-
-    /**
-     * Create an ndarray of ones
-     * @param shape the shape of the ndarray
-     * @return an ndarray with ones filled in
-     */
-    public static INDArray ones(int[] shape) {
-        return INSTANCE.ones(shape);
+    public INDArray zeros(int[] shape) {
+        INDArray ret = create(shape);
+        return ret;
 
     }
 
@@ -597,8 +685,34 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static IComplexNDArray complexOnes(int[] shape) {
-        return INSTANCE.complexOnes(shape);
+    public IComplexNDArray complexZeros(int[] shape) {
+        IComplexNDArray ret = createComplex(shape);
+        return ret;
+
+    }
+
+
+    /**
+     * Create an ndarray of ones
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public INDArray ones(int[] shape) {
+        INDArray ret = create(shape);
+        ret.assign(1);
+        return ret;
+
+    }
+
+    /**
+     * Create an ndarray of ones
+     * @param shape the shape of the ndarray
+     * @return an ndarray with ones filled in
+     */
+    public IComplexNDArray complexOnes(int[] shape) {
+        IComplexNDArray ret = createComplex(shape);
+        ret.assign(1);
+        return ret;
 
     }
 
@@ -612,8 +726,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data,int rows,int columns,int[] stride,int offset) {
-        return INSTANCE.createComplex(data, rows, columns, stride, offset);
+    public IComplexNDArray createComplex(float[] data,int rows,int columns,int[] stride,int offset) {
+        return createComplex(data,new int[]{rows,columns},stride,offset);
     }
 
 
@@ -626,8 +740,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data,int rows,int columns,int[] stride,int offset) {
-        return INSTANCE.create(data, rows, columns, stride, offset);
+    public INDArray create(float[] data,int rows,int columns,int[] stride,int offset) {
+        return create(data,new int[]{rows,columns},stride,offset);
     }
 
 
@@ -640,10 +754,7 @@ public class NDArrays  {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset) {
-        return INSTANCE.createComplex(data, shape, stride, offset);
-    }
-
+    public abstract IComplexNDArray createComplex(float[] data,int[] shape,int[] stride,int offset);
 
 
 
@@ -654,9 +765,7 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(float[] data,int[] shape,int[] stride,int offset) {
-        return INSTANCE.create(data,shape,stride,offset);
-    }
+    public abstract INDArray create(float[] data,int[] shape,int[] stride,int offset);
 
 
     /**
@@ -665,8 +774,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(double[] data,int[] shape) {
-        return  INSTANCE.create(data,shape);
+    public INDArray create(double[] data,int[] shape) {
+        return create(data,shape,ArrayUtil.calcStrides(shape),0);
     }
 
     /**
@@ -675,8 +784,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(float[] data,int[] shape) {
-        return INSTANCE.create(data,shape);
+    public INDArray create(float[] data,int[] shape) {
+        return create(data,shape,ArrayUtil.calcStrides(shape),0);
     }
 
     /**
@@ -685,8 +794,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape) {
-        return INSTANCE.createComplex(data,shape);
+    public IComplexNDArray createComplex(double[] data,int[] shape) {
+        return createComplex(data,shape,ArrayUtil.calcStrides(shape,2),0);
     }
 
     /**
@@ -695,22 +804,11 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape) {
-        return INSTANCE.createComplex(data,shape);
+    public IComplexNDArray createComplex(float[] data,int[] shape) {
+        return createComplex(data,shape,ArrayUtil.calcStrides(shape,2),0);
     }
 
 
-
-    /**
-     * Create an ndrray with the specified shape
-     * @param data the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride) {
-        return INSTANCE.createComplex(data, shape, stride);
-    }
 
     /**
      * Create an ndrray with the specified shape
@@ -719,8 +817,19 @@ public class NDArrays  {
      * @param stride the stride for the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(float[] data,int[] shape,int[] stride) {
-        return INSTANCE.createComplex(data,shape,stride);
+    public IComplexNDArray createComplex(double[] data,int[] shape,int[] stride) {
+        return createComplex(data,shape,stride,0);
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     * @param data the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public IComplexNDArray createComplex(float[] data,int[] shape,int[] stride) {
+        return createComplex(data,shape,stride,0);
     }
 
 
@@ -733,8 +842,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data,int rows,int columns,int[] stride,int offset) {
-        return INSTANCE.createComplex(data,rows,columns,stride,offset);
+    public IComplexNDArray createComplex(double[] data,int rows,int columns,int[] stride,int offset) {
+        return createComplex(data,new int[]{rows,columns},stride,offset);
     }
 
 
@@ -747,8 +856,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data,int rows,int columns,int[] stride,int offset) {
-        return  INSTANCE.create(data,rows,columns,stride,offset);
+    public INDArray create(double[] data,int rows,int columns,int[] stride,int offset) {
+        return create(data,new int[]{rows,columns},stride,offset);
     }
 
 
@@ -760,9 +869,7 @@ public class NDArrays  {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,int offset) {
-        return INSTANCE.createComplex(data,shape,stride,offset);
-    }
+    public abstract IComplexNDArray createComplex(double[] data,int[] shape,int[] stride,int offset);
 
 
     /**
@@ -772,19 +879,14 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(double[] data,int[] shape,int[] stride,int offset) {
-        return INSTANCE.create(data,shape,stride,offset);
-    }
-
+    public abstract INDArray create(double[] data,int[] shape,int[] stride,int offset);
 
     /**
      * Creates an ndarray with the specified shape
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static INDArray create(List<INDArray> list,int[] shape) {
-        return INSTANCE.create(list,shape);
-    }
+    public abstract INDArray create(List<INDArray> list,int[] shape);
 
 
 
@@ -796,8 +898,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int rows,int columns,int[] stride,int offset) {
-        return INSTANCE.createComplex(rows,columns,stride,offset);
+    public IComplexNDArray createComplex(int rows,int columns,int[] stride,int offset) {
+        if(dtype.equals("double"))
+            return createComplex(new double[rows * columns * 2],new int[]{rows,columns},stride,offset);
+        if(dtype.equals("float"))
+            return createComplex(new float[rows * columns * 2],new int[]{rows,columns},stride,offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
 
@@ -809,8 +915,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int rows,int columns,int[] stride,int offset) {
-        return INSTANCE.create(rows, columns, stride, offset);
+    public INDArray create(int rows,int columns,int[] stride,int offset) {
+        if(dtype.equals("double"))
+            return create(new double[rows * columns],new int[]{rows,columns},stride,offset);
+        if(dtype.equals("float"))
+            return create(new float[rows * columns],new int[]{rows,columns},stride,offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
 
@@ -822,8 +932,13 @@ public class NDArrays  {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape,int[] stride,int offset) {
-        return INSTANCE.createComplex(shape, stride, offset);
+    public IComplexNDArray createComplex(int[] shape,int[] stride,int offset) {
+        if(dtype.equals("double"))
+            return createComplex(new double[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+        if(dtype.equals("float"))
+            return createComplex(new float[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
+
     }
 
 
@@ -834,8 +949,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape,int[] stride,int offset) {
-        return INSTANCE.create(shape,stride,offset);
+    public INDArray create(int[] shape,int[] stride,int offset) {
+        if(dtype.equals("double"))
+            return create(new double[ArrayUtil.prod(shape)],shape,stride,offset);
+        if(dtype.equals("float"))
+            return create(new float[ArrayUtil.prod(shape)],shape,stride,offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
 
     }
 
@@ -852,8 +971,8 @@ public class NDArrays  {
      * @param stride the stride for the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int rows,int columns,int[] stride) {
-        return INSTANCE.createComplex(rows, columns, stride);
+    public IComplexNDArray createComplex(int rows,int columns,int[] stride) {
+        return createComplex(new int[]{rows,columns},stride);
     }
 
 
@@ -864,8 +983,8 @@ public class NDArrays  {
      * @param stride the stride for the ndarray
      * @return the instance
      */
-    public static INDArray create(int rows,int columns,int[] stride) {
-        return INSTANCE.create(rows, columns, stride);
+    public INDArray create(int rows,int columns,int[] stride) {
+        return create(new int[]{rows,columns},stride);
     }
 
 
@@ -876,7 +995,7 @@ public class NDArrays  {
      * @param stride the stride for the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape,int[] stride) {
+    public IComplexNDArray createComplex(int[] shape,int[] stride) {
         return createComplex(shape,stride,0);
     }
 
@@ -887,8 +1006,8 @@ public class NDArrays  {
      * @param stride the stride for the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape,int[] stride) {
-        return INSTANCE.create(shape,stride);
+    public INDArray create(int[] shape,int[] stride) {
+        return create(shape,stride,0);
     }
 
 
@@ -900,8 +1019,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int rows,int columns) {
-        return INSTANCE.createComplex(rows,columns);
+    public IComplexNDArray createComplex(int rows,int columns) {
+        return createComplex(new int[]{rows, columns});
     }
 
 
@@ -911,8 +1030,8 @@ public class NDArrays  {
      * @param columns the columns of the ndarray
      * @return the instance
      */
-    public static INDArray create(int rows,int columns) {
-        return INSTANCE.create(rows,columns);
+    public INDArray create(int rows,int columns) {
+        return create(new int[]{rows,columns});
     }
 
 
@@ -922,8 +1041,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static IComplexNDArray createComplex(int[] shape) {
-        return INSTANCE.createComplex(shape);
+    public IComplexNDArray createComplex(int[] shape) {
+        return createComplex(shape, ArrayUtil.calcStrides(shape,2),0);
     }
 
 
@@ -932,8 +1051,8 @@ public class NDArrays  {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static INDArray create(int[] shape) {
-        return INSTANCE.create(shape);
+    public INDArray create(int[] shape) {
+        return create(shape,ArrayUtil.calcStrides(shape),0);
     }
 
 
@@ -943,8 +1062,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static INDArray scalar(Number value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public INDArray scalar(Number value,int offset) {
+        if(dtype.equals("double"))
+            return scalar(value.doubleValue(),offset);
+        if(dtype.equals("float"))
+            return scalar(value.floatValue(),offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
 
@@ -954,8 +1077,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray complexScalar(Number value,int offset) {
-        return INSTANCE.complexScalar(value,offset);
+    public IComplexNDArray complexScalar(Number value,int offset) {
+        if(dtype.equals("double"))
+            return scalar(createDouble(value.doubleValue(),0),offset);
+        if(dtype.equals("float"))
+            return scalar(createFloat(value.floatValue(),0),offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
 
@@ -964,8 +1091,8 @@ public class NDArrays  {
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
-    public static IComplexNDArray complexScalar(Number value) {
-        return INSTANCE.complexScalar(value);
+    public IComplexNDArray complexScalar(Number value) {
+        return complexScalar(value,0);
     }
 
 
@@ -977,8 +1104,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(float value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public INDArray scalar(float value,int offset) {
+        return create(new float[]{value},new int[]{1},new int[]{1},offset);
     }
 
     /**
@@ -987,8 +1114,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static INDArray scalar(double value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public INDArray scalar(double value,int offset) {
+        return create(new double[]{value},new int[]{1},new int[]{1},offset);
 
     }
 
@@ -999,8 +1126,12 @@ public class NDArrays  {
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
-    public static INDArray scalar(Number value) {
-        return INSTANCE.scalar(value);
+    public INDArray scalar(Number value) {
+        if(dtype.equals("double"))
+            return scalar(value.doubleValue(),0);
+        if(dtype.equals("float"))
+            return scalar(value.floatValue(),0);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
     /**
@@ -1008,8 +1139,11 @@ public class NDArrays  {
      * @param value the value of the scalar
     =     * @return the scalar nd array
      */
-    public static INDArray scalar(float value) {
-        return INSTANCE.scalar(value);
+    public INDArray scalar(float value) {
+        if(dtype.equals("float"))
+            return create(new float[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((double) value);
     }
 
     /**
@@ -1017,8 +1151,11 @@ public class NDArrays  {
      * @param value the value of the scalar
     =     * @return the scalar nd array
      */
-    public static INDArray scalar(double value) {
-        return INSTANCE.scalar(value);
+    public INDArray scalar(double value) {
+        if(dtype.equals("double"))
+            return create(new double[]{value},new int[]{1},new int[]{1},0);
+        else
+            return scalar((float) value);
     }
 
 
@@ -1028,8 +1165,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the created ndarray
      */
-    public static IComplexNDArray scalar(IComplexNumber value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public IComplexNDArray scalar(IComplexNumber value,int offset) {
+        if(dtype.equals("double"))
+            return scalar(value.asDouble(),offset);
+        if(dtype.equals("float"))
+            return scalar(value.asFloat(),offset);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
     /**
@@ -1037,8 +1178,8 @@ public class NDArrays  {
      * @param value the value of the scalar
      * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexFloat value) {
-        return INSTANCE.scalar(value);
+    public IComplexNDArray scalar(IComplexFloat value) {
+        return createComplex(new float[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},0);
     }
 
     /**
@@ -1046,8 +1187,8 @@ public class NDArrays  {
      * @param value the value of the scalar
     =     * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexDouble value) {
-        return INSTANCE.scalar(value);
+    public IComplexNDArray scalar(IComplexDouble value) {
+        return createComplex(new double[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},0);
 
     }
 
@@ -1057,8 +1198,12 @@ public class NDArrays  {
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
-    public static IComplexNDArray scalar(IComplexNumber value) {
-        return INSTANCE.scalar(value);
+    public IComplexNDArray scalar(IComplexNumber value) {
+        if(dtype.equals("double"))
+            return scalar(value.asDouble(),0);
+        if(dtype.equals("float"))
+            return scalar(value.asFloat(),0);
+        throw new IllegalStateException("Illegal data type " + dtype);
     }
 
     /**
@@ -1067,8 +1212,8 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexFloat value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public IComplexNDArray scalar(IComplexFloat value,int offset) {
+        return createComplex(new float[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},offset);
     }
 
     /**
@@ -1077,15 +1222,12 @@ public class NDArrays  {
      * @param offset the offset of the ndarray
      * @return the scalar nd array
      */
-    public static IComplexNDArray scalar(IComplexDouble value,int offset) {
-        return INSTANCE.scalar(value,offset);
+    public IComplexNDArray scalar(IComplexDouble value,int offset) {
+        return createComplex(new double[]{value.realComponent(),value.imaginaryComponent()},new int[]{1},new int[]{1},offset);
 
     }
 
-
-
-
-
+  
 
 
 }
