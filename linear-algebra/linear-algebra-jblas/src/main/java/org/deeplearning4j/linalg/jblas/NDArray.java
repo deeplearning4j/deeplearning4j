@@ -1467,9 +1467,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
     public NDArray addiRowVector(INDArray rowVector) {
         assert rowVector.isRowVector() : "Must only add a row vector";
         assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-            for(int j = 0; j< rows(); j++) {
-                getRow(j).addi(rowVector);
-            }
+        for(int j = 0; j< rows(); j++) {
+            getRow(j).addi(rowVector);
+        }
         return this;
     }
 
@@ -3437,15 +3437,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray ravel() {
-        NDArray ret = new NDArray(new int[]{1,length});
-        List<NDArray> list = new ArrayList<>();
-        sliceVectors(list);
-        int count = 0;
-        for(int i = 0; i < list.size(); i++) {
-            for(int j = 0; j < list.get(i).length; j++)
-                ret.put(count++,list.get(i).getScalar(j));
-        }
-        return ret;
+        return reshape(new int[]{1,length()});
     }
 
     /**

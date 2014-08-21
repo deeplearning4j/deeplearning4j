@@ -122,10 +122,10 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         logger.debug("slope = " + slope);
 
         if (slope < 0) {
-            throw new IllegalStateException("Slope = " + slope + " is negative");
+            throw new InvalidStepException("Slope = " + slope + " is negative");
         }
         if (slope == 0)
-            throw new IllegalStateException ("Slope = " + slope + " is zero");
+            throw new InvalidStepException ("Slope = " + slope + " is zero");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.

@@ -800,6 +800,11 @@ public abstract class NDArrayTests {
         INDArray nFlattened = n.ravel();
         assertTrue(nFlattened.isVector());
 
+        INDArray n1 = NDArrays.linspace(1,24,24);
+        assertEquals(n1,NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2}).ravel());
+
+
+
     }
 
     @Test
