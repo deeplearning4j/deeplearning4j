@@ -67,10 +67,13 @@ public class SimpleJCublas {
 
         return C;
     }
-    public static JCublasNDArray gemm(JCublasNDArray A, JCublasNDArray B, double alpha, double beta) {
+    public static JCublasNDArray gemm(JCublasNDArray A_, JCublasNDArray B_, double alpha, double beta) {
 
         JCublas.cublasInit();
         JCublas.setExceptionsEnabled(true);
+
+        JCublasNDArray A = new JCublasNDArray(A_.rows(), A_.columns(),A_.getOffsetData());
+        JCublasNDArray B = new JCublasNDArray(B_.rows(),B_.columns(),B_.getOffsetData());
 
         JCublasNDArray C = new JCublasNDArray(A.rows(), B.columns());
 

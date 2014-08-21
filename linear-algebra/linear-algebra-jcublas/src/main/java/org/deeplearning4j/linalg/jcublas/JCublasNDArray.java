@@ -2078,7 +2078,9 @@ public class JCublasNDArray implements INDArray {
         return permute(shape);
     }
 
-
+    public double[] getOffsetData() {
+        return Arrays.copyOfRange(data, offset, offset+length);
+    }
     @Override
     public int slices() {
         if(shape.length < 1)
