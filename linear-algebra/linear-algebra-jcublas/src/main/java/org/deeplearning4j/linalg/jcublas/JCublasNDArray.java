@@ -5,19 +5,20 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
-import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
-import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.api.ndarray.SizeException;
-import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.api.ndarray.*;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.jcublas.util.JCublasNDArrayBlas;
 import org.deeplearning4j.linalg.ops.TwoArrayOps;
 import org.deeplearning4j.linalg.ops.elementwise.AddOp;
 import org.deeplearning4j.linalg.ops.elementwise.DivideOp;
 import org.deeplearning4j.linalg.ops.elementwise.MultiplyOp;
 import org.deeplearning4j.linalg.ops.elementwise.SubtractOp;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.IterationResult;
+import org.deeplearning4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.linalg.util.Shape;
 
 import java.util.ArrayList;
@@ -25,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static jcuda.jcublas.JCublas.cublasGetError;
 import static org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
 import static org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
 
@@ -496,6 +496,11 @@ public class JCublasNDArray implements INDArray {
     }
 
     @Override
+    public INDArray var(int dimension) {
+        return null;
+    }
+
+    @Override
     public INDArray max(int dimension) {
         return null;
     }
@@ -724,6 +729,31 @@ public class JCublasNDArray implements INDArray {
     }
 
     @Override
+    public double squaredDistance(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public double distance2(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public double distance1(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public INDArray put(NDArrayIndex[] indices, INDArray element) {
+        return null;
+    }
+
+    @Override
+    public INDArray put(NDArrayIndex[] indices, Number element) {
+        return null;
+    }
+
+    @Override
     public JCublasNDArray put(int[] indices, INDArray element) {
         if(!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
@@ -747,6 +777,11 @@ public class JCublasNDArray implements INDArray {
         }
     }
 
+    @Override
+    public INDArray put(int i, int j, Number element) {
+        return null;
+    }
+
     //@Override
     public JCublasNDArray put(int i, INDArray element) {
             if(element == null)
@@ -755,6 +790,245 @@ public class JCublasNDArray implements INDArray {
 
             put(i,(double) element.element());
             return this;
+    }
+
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return length / size(dimension);
+    }
+
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        assert dimension <= shape.length : "Invalid dimension " + dimension;
+        if (shape.length == 2) {
+            if (dimension == 1)
+                return new JCublasNDArray(data,
+                        new int[]{shape[dimension]}
+                        , new int[]{stride[dimension]},
+                        offset + index * stride[0]);
+            else if (dimension == 0)
+                return new JCublasNDArray(data,
+                        new int[]{shape[dimension]}
+                        , new int[]{stride[dimension]},
+                        offset + index);
+        }
+        if(dimension == shape.length - 1)
+            return new JCublasNDArray(data,
+                    new int[]{1,shape[dimension]}
+                    ,ArrayUtil.removeIndex(stride,0),
+                    offset + index * stride[dimension - 1]);
+
+        else if(dimension == 0)
+            return new JCublasNDArray(data,
+                    new int[]{shape[dimension],1}
+                    ,new int[]{stride[dimension],1},
+                    offset + index);
+
+        return new JCublasNDArray(data,
+                new int[]{shape[dimension],1}
+                ,new int[]{stride[dimension],1},
+                offset + index * stride[0]);
+
+    }
+
+    @Override
+    public INDArray cumsumi(int dimension) {
+        if(isVector()) {
+            double s = 0.0;
+            for (int i = 0; i < length; i++) {
+                s += (double) getScalar(i).element();
+                put(i, s);
+            }
+        }
+
+        else if(dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
+            INDArray flattened = ravel().dup();
+            double prevVal = (double) flattened.getScalar(0).element();
+            for(int i = 1; i < flattened.length(); i++) {
+                double d = prevVal + (double) flattened.getScalar(i).element();
+                flattened.putScalar(i,d);
+                prevVal = d;
+            }
+
+            return flattened;
+        }
+
+
+
+        else {
+            for(int i = 0; i < vectorsAlongDimension(dimension); i++) {
+                INDArray vec = vectorAlongDimension(i,dimension);
+                vec.cumsumi(0);
+
+            }
+        }
+
+
+        return this;
+    }
+
+    @Override
+    public INDArray cumsum(int dimension) {
+        return dup().cumsumi(dimension);
+    }
+
+    @Override
+    public INDArray assign(INDArray arr) {
+        LinAlgExceptions.assertSameShape(this, arr);
+        INDArray other = arr.ravel();
+        INDArray thisArr = ravel();
+        for(int i = 0; i < other.length(); i++)
+            thisArr.put(i, other.getScalar(i));
+        return this;
+    }
+
+    @Override
+    public INDArray putScalar(int i, Number value) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(int[] i, Number value) {
+        return put(i,NDArrays.scalar(value));
+    }
+
+    @Override
+    public INDArray lt(Number other) {
+        return dup().lti(other);
+    }
+
+    @Override
+    public INDArray lti(Number other) {
+        return lti(NDArrays.scalar(other));
+    }
+
+    @Override
+    public INDArray eq(Number other) {
+        return dup().eqi(other);
+    }
+
+    @Override
+    public INDArray eqi(Number other) {
+        return eqi(NDArrays.scalar(other));
+    }
+
+    @Override
+    public INDArray gt(Number other) {
+        return dup().gti(other);
+    }
+
+    @Override
+    public INDArray gti(Number other) {
+        return gti(NDArrays.scalar(other));
+    }
+
+    @Override
+    public INDArray lt(INDArray other) {
+        return dup().lti(other);
+    }
+
+    @Override
+    public INDArray lti(INDArray other) {
+        return Transforms.lt(other);
+    }
+
+    @Override
+    public INDArray eq(INDArray other) {
+        return dup().eqi(other);
+    }
+
+    @Override
+    public INDArray eqi(INDArray other) {
+        return Transforms.eq(other);
+    }
+
+    @Override
+    public INDArray gt(INDArray other) {
+        return dup().gti(other);
+    }
+
+    @Override
+    public INDArray gti(INDArray other) {
+        return Transforms.gt(other);
+    }
+
+    @Override
+    public INDArray neg() {
+        return dup().negi();
+    }
+
+    @Override
+    public INDArray negi() {
+        return (JCublasNDArray) Transforms.neg(this);
+    }
+
+    @Override
+    public INDArray rdiv(Number n) {
+        return dup().rdivi(n);
+    }
+
+    @Override
+    public INDArray rdivi(Number n) {
+        return rdivi(NDArrays.valueArrayOf(shape(), n.doubleValue()));
+    }
+
+    @Override
+    public INDArray rsub(Number n) {
+        return dup().rsubi(n);
+    }
+
+    @Override
+    public INDArray rsubi(Number n) {
+        return rsubi(NDArrays.valueArrayOf(shape(),n.doubleValue()));
+    }
+
+    @Override
+    public INDArray div(Number n) {
+        return dup().divi(n);
+    }
+
+    @Override
+    public INDArray divi(Number n) {
+        return divi(NDArrays.scalar(n));
+    }
+
+    @Override
+    public INDArray mul(Number n) {
+        return dup().muli(n);
+    }
+
+    @Override
+    public INDArray muli(Number n) {
+        return muli(NDArrays.scalar(n));
+    }
+
+    @Override
+    public INDArray sub(Number n) {
+        return dup().subi(n);
+    }
+
+    @Override
+    public INDArray subi(Number n) {
+        return subi(NDArrays.scalar(n));
+    }
+
+    @Override
+    public INDArray add(Number n) {
+        return dup().addi(n);
+    }
+
+    @Override
+    public INDArray addi(Number n) {
+        return addi(NDArrays.scalar(n));
+    }
+
+    @Override
+    public INDArray get(NDArrayIndex... indexes) {
+        if(indexes.length < shape().length) {
+
+        }
+
+        return null;
     }
 
     @Override
@@ -1035,26 +1309,16 @@ public class JCublasNDArray implements INDArray {
         return new JCublasNDArray(rows, columns);
     }
 
+    public int index(int rowIndex, int columnIndex) {
+        return rowIndex + rows * columnIndex;
+    }
+
     /** Creates a row vector of given length. */
     public static JCublasNDArray zeros(int length) {
         return zeros(length, 1);
     }
     public double get(int i,int j) {
-        if(isColumnVector()) {
-            if(j > 0)
-                throw new IllegalArgumentException("Trying to access column > " + columns() + " at " + j);
-            return get(i);
-
-        }
-        else if(isRowVector()) {
-            if(i > 0)
-                throw new IllegalArgumentException("Trying to access row > " + rows() + " at " + i);
-            return get(j);
-        }
-
-
-        return (double) get(new int[]{i,j}).element();
-
+        return data[index(i, j)];
     }
 
     @Override
@@ -1120,224 +1384,32 @@ public class JCublasNDArray implements INDArray {
 
         /* check sizes and resize if necessary */
         assertMultipliesWith(otherArray);
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
-
 
         if (result == this || result == other) {
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            JCublasNDArray temp = new JCublasNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
-
-            Pointer d_A = new Pointer();
-            Pointer d_B = new Pointer();
-            Pointer d_C = new Pointer();
-
-            JCublas.cublasAlloc(rows()*columns(), Sizeof.DOUBLE, d_A);
-            JCublas.cublasAlloc(other.rows()*other.columns(), Sizeof.DOUBLE, d_B);
-            JCublas.cublasAlloc(rows()*other.columns(), Sizeof.DOUBLE, d_C);
-
             if (otherArray.columns() == 1) {
-
-
-                JCublas.cublasSetVector(
-                        otherArray.length(),
-                        Sizeof.DOUBLE,
-                        Pointer.to(data()),
-                        1,
-                        d_A,
-                        1);
-                JCublas.cublasSetVector(
-                        length(),
-                        Sizeof.DOUBLE,
-                        Pointer.to(otherArray.data()),
-                        1,
-                        d_B,
-                        1);
-
-                JCublas.cublasDgemv(
-                        'n', //trans
-                        temp.rows(),  // m
-                        temp.columns(), // n
-                        1f, //alpha
-                        d_A, // A
-                        rows(),  // lda
-                        d_B, // x
-                        1, // incx
-                        0.0f,  // beta
-                        d_C, // y
-                        1); // incy
-
-
-
-                JCublas.cublasGetVector(
-                        length(),
-                        Sizeof.DOUBLE,
-                        d_B,
-                        1,
-                        Pointer.to(temp.data),
-                        1);
-
+                resultArray = JCublasNDArrayBlas.gemm(1.0f,this,otherArray,0.0,resultArray);
                 //NDArrayBlas.gemv(1.0, this, otherArray, 0.0, temp);
             } else
             {
-
-                JCublas.cublasSetVector(
-                        data.length,
-                        Sizeof.DOUBLE,
-                        Pointer.to(data),
-                        1,
-                        d_A,
-                        1
-                );
-                JCublas.cublasSetVector(
-                        other.data().length,
-                        Sizeof.DOUBLE,
-                        Pointer.to(otherArray.data()),
-                        1,
-                        d_B,
-                        1
-                );
-                JCublas.cublasDgemm(
-                        'n',
-                        'n',
-                        temp.rows(),  // m
-                        temp.columns(),   // n
-                        temp.columns(), // k
-                        1f,  // alpha
-                        d_A,
-                        rows(),  // lda
-                        d_B,
-                        otherArray.rows(), // ldb
-                        0.0f,  // beta
-                        d_C,
-                        temp.rows());  // ldc
-
-                JCublas.cublasGetVector(
-                        resultArray.length(),
-                        Sizeof.DOUBLE,
-                        d_C,
-                        1,
-                        Pointer.to(temp.data),
-                        1);
-
+                resultArray = JCublasNDArrayBlas.gemm(1.0f,this,otherArray,0.0,resultArray);
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, temp);
             }
-
-            resultArray = copy(temp);
-
-
         } else
         {
-            Pointer d_A = new Pointer();
-            Pointer d_B = new Pointer();
-            Pointer d_C = new Pointer();
-
-            JCublas.cublasAlloc(rows()*columns(), Sizeof.DOUBLE, d_A);
-            JCublas.cublasAlloc(otherArray.rows()*otherArray.columns(), Sizeof.DOUBLE, d_B);
-            JCublas.cublasAlloc(rows()*otherArray.columns(), Sizeof.DOUBLE, d_C);
-
             if (otherArray.columns() == 1) {
-
-
-                JCublas.cublasSetVector(
-                        otherArray.length(),
-                        Sizeof.DOUBLE,
-                        Pointer.to(otherArray.data()),
-                        1,
-                        d_A,
-                        1);
-                JCublas.cublasSetVector(
-                        length(),
-                        Sizeof.DOUBLE,
-                        Pointer.to(data()),
-                        1,
-                        d_B,
-                        1);
-
-                JCublas.cublasDgemv(
-                        'n', //trans
-                        resultArray.rows(),  // m
-                        resultArray.columns(), // n
-                        1f, //alpha
-                        d_A, // A
-                        rows(),  // lda
-                        d_B, // x
-                        1, // incx
-                        0.0f,  // beta
-                        d_C, // y
-                        1); // incy
-
-
-                JCublas.cublasGetVector(
-                        length(),
-                        Sizeof.DOUBLE,
-                        d_C,
-                        1,
-                        Pointer.to(resultArray.data),
-                        1);
-
+                resultArray = JCublasNDArrayBlas.gemm(1.0f,this,otherArray,0.0,resultArray);
                 //NDArrayBlas.gemv(1.0, this, otherArray, 0.0, resultArray);
             }
             else
             {
-
-
-                JCublas.cublasSetVector(
-                        data.length,
-                        Sizeof.DOUBLE,
-                        Pointer.to(data),
-                        1,
-                        d_A,
-                        1
-                );
-                JCublas.cublasSetVector(
-                        other.data().length,
-                        Sizeof.DOUBLE,
-                        Pointer.to(otherArray.data()),
-                        1,
-                        d_B,
-                        1
-                );
-                JCublas.cublasDgemm(
-                        'n',
-                        'n',
-                        resultArray.rows(),  // m
-                        resultArray.columns(),   // n
-                        resultArray.columns(), // k
-                        1f,  // alpha
-                        d_A,
-                        rows(),  // lda
-                        d_B,
-                        otherArray.rows(), // ldb
-                        0.0f,  // beta
-                        d_C,
-                        resultArray.rows());  // ldc
-
-                JCublas.cublasGetVector(
-                        resultArray.length(),
-                        Sizeof.DOUBLE,
-                        d_C,
-                        1,
-                        Pointer.to(resultArray.data),
-                        1);
-
-                /*
-                System.err.printf("%d * %d matrix computed\n", resultArray.rows, resultArray.columns);
-                double[] d_ = resultArray.data();
-                System.err.printf("%f matrix result [0]\n", resultArray.data[0]);
-                for (int i = 0; i < resultArray.length; i++) {System.out.print(" " + Double.toString(resultArray.data[i]));}
-                System.out.println("");
-                for (int i = 0; i < d_.length; i++) {System.out.print(" " + Double.toString(d_[i]));}
-                System.out.println("");
-                */
+                resultArray = JCublasNDArrayBlas.gemm(1.0f,this,otherArray,0.0,resultArray);
                 //NDArrayBlas.gemm(1.0, this, otherArray, 0.0, resultArray);
             }
         }
 
-        System.out.println(cublasGetError());
-        JCublas.cublasShutdown();
 
         return resultArray;
     }
@@ -1375,6 +1447,11 @@ public class JCublasNDArray implements INDArray {
             data[count++] = (double) linear.getScalar(i).element();
         }
         return data;
+    }
+
+    @Override
+    public void setData(double[] data) {
+
     }
 
     public Object element() {
@@ -1470,6 +1547,11 @@ public class JCublasNDArray implements INDArray {
         for(int i = 0; i < ret.length ;i++)
             ret[i] = (float) data[i];
         return ret;
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 
     public JCublasNDArray diviRowVector(INDArray rowVector) {

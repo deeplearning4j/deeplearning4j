@@ -5,7 +5,7 @@ import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import org.deeplearning4j.linalg.jcublas.JCublasNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.nn.linalg.NDArray;
+
 
 /**
  * Hello, World in JCuda
@@ -25,12 +25,12 @@ public class JCudaRuntimeTest {
         INDArray a0 = new JCublasNDArray(b,new int[]{n-finagle,n});
         INDArray a1 = new JCublasNDArray(c,new int[]{n,n-finagle});
 
-        NDArray b0 = new NDArray(b,new int[]{n,n+finagle});
-        NDArray b1 = new NDArray(c,new int[]{n+finagle,n});
+        JCublasNDArray b0 = new JCublasNDArray(b,new int[]{n,n+finagle});
+        JCublasNDArray b1 = new JCublasNDArray(c,new int[]{n+finagle,n});
 
 
         INDArray d0;
-        NDArray d3;
+        JCublasNDArray d3;
         JCublasNDArray z;
         z = new JCublasNDArray(JCublasNDArray.ones(27).data,new int[]{3,3,3});
 

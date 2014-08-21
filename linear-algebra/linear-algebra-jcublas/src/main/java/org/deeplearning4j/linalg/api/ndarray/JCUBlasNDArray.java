@@ -10,6 +10,16 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 public class JCUBlasNDArray  implements INDArray  {
 
 
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return 0;
+    }
+
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        return null;
+    }
+
     /**
      * Cumulative sum along a dimension
      *
@@ -1376,6 +1386,11 @@ public class JCUBlasNDArray  implements INDArray  {
         return new double[0];
     }
 
+    @Override
+    public void setData(double[] data) {
+
+    }
+
     /**
      * Returns a linear float array representation of this ndarray
      *
@@ -1384,5 +1399,10 @@ public class JCUBlasNDArray  implements INDArray  {
     @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 }

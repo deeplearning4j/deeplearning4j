@@ -1,8 +1,10 @@
 package org.deeplearning4j.linalg.jcublas.complex;
 
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
@@ -11,14 +13,210 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 public class JCublasComplexNDArray implements IComplexNDArray {
 
     @Override
-    public INDArray getColumns(int[] columns) {
+    public IComplexNDArray cumsumi(int dimension) {
         return null;
     }
 
     @Override
-    public INDArray getRows(int[] rows) {
+    public IComplexNDArray cumsum(int dimension) {
         return null;
     }
+
+    @Override
+    public INDArray assign(INDArray arr) {
+        return null;
+    }
+
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return 0;
+    }
+
+    @Override
+    public IComplexNDArray vectorAlongDimension(int index, int dimension) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray assign(IComplexNDArray arr) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray put(NDArrayIndex[] indices, Number element) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray putScalar(int i, IComplexNumber value) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray putScalar(int i, Number value) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(int[] i, Number value) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray lt(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray lti(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray eq(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray eqi(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray gt(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray gti(Number other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray lt(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray lti(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray eq(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray eqi(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray gt(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray gti(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray neg() {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray negi() {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rdiv(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rdivi(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsub(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray rsubi(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray div(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray divi(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray mul(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray muli(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray sub(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray subi(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray add(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray addi(Number n) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray get(NDArrayIndex... indexes) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray getColumns(int[] columns) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray getRows(int[] rows) {
+        return null;
+    }
+
 
     @Override
     public IComplexNDArray min(int dimension) {
@@ -32,6 +230,11 @@ public class JCublasComplexNDArray implements IComplexNDArray {
 
     @Override
     public IComplexNDArray put(int i, int j, INDArray element) {
+        return null;
+    }
+
+    @Override
+    public INDArray put(int i, int j, Number element) {
         return null;
     }
 
@@ -167,6 +370,26 @@ public class JCublasComplexNDArray implements IComplexNDArray {
 
     @Override
     public IComplexNDArray getScalar(int i) {
+        return null;
+    }
+
+    @Override
+    public double squaredDistance(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public double distance2(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public double distance1(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public INDArray put(NDArrayIndex[] indices, INDArray element) {
         return null;
     }
 
@@ -386,6 +609,11 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     }
 
     @Override
+    public INDArray var(int dimension) {
+        return null;
+    }
+
+    @Override
     public IComplexNDArray sum(int dimension) {
         return null;
     }
@@ -427,6 +655,11 @@ public class JCublasComplexNDArray implements IComplexNDArray {
 
     @Override
     public IComplexNDArray reshape(int[] newShape) {
+        return null;
+    }
+
+    @Override
+    public INDArray reshape(int rows, int columns) {
         return null;
     }
 
@@ -531,7 +764,17 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     }
 
     @Override
+    public void setData(double[] data) {
+
+    }
+
+    @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 }
