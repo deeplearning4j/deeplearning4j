@@ -31,6 +31,12 @@ layout: default
 
          mvn clean install -DskipTests
 
+3.5 After you run mvn clean, a zip and tar file will be installed in the local folder
+
+	*/java-deeplearning/deeplearning4j-distribution/target
+	
+This is where you will find the jar files and where compiling happens. 
+
 4. Use this repo in your POM:
 
          <repositories>
