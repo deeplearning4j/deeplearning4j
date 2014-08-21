@@ -33,7 +33,7 @@ layout: default
 
 3.5 After you run mvn clean, a zip and tar file will be installed in the local folder
 
-	*/java-deeplearning/deeplearning4j-distribution/target
+		*/java-deeplearning/deeplearning4j-distribution/target
 	
 This is where you will find the jar files and where compiling happens. 
 
