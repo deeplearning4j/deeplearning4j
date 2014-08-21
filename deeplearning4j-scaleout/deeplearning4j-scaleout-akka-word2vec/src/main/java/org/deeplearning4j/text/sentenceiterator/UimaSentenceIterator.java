@@ -58,7 +58,7 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
 
 				reader.getNext(cas);
 				engine.process(cas);
-				List<String> list = new ArrayList<String>();
+				List<String> list = new ArrayList<>();
 				for(Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
 					list.add(sentence.getCoveredText());
 				}
