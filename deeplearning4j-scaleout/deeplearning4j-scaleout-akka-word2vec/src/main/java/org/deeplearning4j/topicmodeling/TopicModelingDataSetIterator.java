@@ -113,7 +113,8 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 		while(files.hasNext() && curr  < batchSize) {
 			File next = files.next();
 			INDArray input = vocabCreator.getScoreMatrix(next);
-			if(input.sum(Integer.MAX_VALUE).element() != 0) {
+            int comp = (int) input.sum(Integer.MAX_VALUE).element();
+			if(comp != 0) {
 				String label = next.getParentFile().getName();
 				INDArray y = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
 				d.add(new DataSet(input,y));
@@ -181,7 +182,8 @@ public class TopicModelingDataSetIterator implements DataSetIterator {
 		while(files.hasNext() && curr  < num) {
 			File next = files.next();
 			INDArray input = vocabCreator.getScoreMatrix(next);
-			if(input.sum(Integer.MAX_VALUE).element() != 0) {
+            int comp = (int) input.sum(Integer.MAX_VALUE).element();
+			if(comp != 0) {
 				String label = next.getParentFile().getName();
 				INDArray y = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
 				d.add(new DataSet(input,y));
