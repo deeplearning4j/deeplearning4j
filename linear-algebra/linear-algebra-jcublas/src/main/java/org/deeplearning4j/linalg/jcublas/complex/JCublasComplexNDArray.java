@@ -1,6 +1,8 @@
 package org.deeplearning4j.linalg.jcublas.complex;
 
 import org.apache.commons.math3.stat.StatUtils;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.deeplearning4j.linalg.api.complex.IComplexDouble;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
@@ -19,12 +21,10 @@ import org.deeplearning4j.linalg.ops.elementwise.SubtractOp;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.ops.transforms.Transforms;
 import org.deeplearning4j.linalg.util.*;
-import org.jblas.ComplexDouble;
-import org.jblas.JCublasComplexDouble;
-import org.jblas.ComplexDoubleMatrix;
-import org.jblas.DoubleMatrix;
-import org.jblas.NativeBlas;
+import org.jblas.*;
+import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexDouble;
 import org.jblas.exceptions.SizeException;
+import sun.java2d.pipe.SpanShapeRenderer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -131,7 +131,7 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     public JCublasComplexNDArray(int len) {
         this(len, 1, new double[2 * len]);
     }
-
+    public JCublasComplexNDArray(double[] data,int[] shape) {this(data,shape,0);}
     public JCublasComplexNDArray(int[] shape,int offset) {
         this(shape,calcStrides(shape,2),offset);
     }
@@ -620,6 +620,9 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     public static JCublasComplexNDArray scalar(JCublasComplexNDArray from,int index) {
         return new JCublasComplexNDArray(from.data,new int[]{1},new int[]{1},index);
     }
+    public static JCublasComplexNDArray scalar(JCublasComplexNDArray from) {
+        return scalar(from,0);
+    }
     public static JCublasComplexNDArray scalar(double num) {
         return new JCublasComplexNDArray(new double[]{num,0},new int[]{1},new int[]{1},0);
     }
@@ -788,6 +791,72 @@ public class JCublasComplexNDArray implements IComplexNDArray {
 
         }
     }
+
+    public JCublasComplexNDArray _columnSums() {
+        JCublasComplexNDArray v =
+                new JCublasComplexNDArray(1, columns);
+
+        for (int c = 0; c < columns; c++)
+            v.put(c, getColumn(c).sum());
+
+        return v;
+    }
+    //@Override
+    public JCublasComplexNDArray columnSums() {
+        if(shape().length == 2) {
+            return JCublasComplexNDArray.wrap(this._columnSums());
+
+        }
+        else
+            return JCublasComplexNDArrayUtil.doSliceWise(JCublasComplexNDArrayUtil.MatrixOp.COLUMN_SUM,this);
+
+    }
+
+    public JCublasComplexNDArray _columnMeans() {
+        return _columnSums().divi(rows);
+    }
+
+    public JCublasComplexNDArray columnMeans() {
+        if(shape().length == 2) {
+            return JCublasComplexNDArray.wrap(this._columnMeans());
+
+        }
+
+        else
+            return JCublasComplexNDArrayUtil.doSliceWise(JCublasComplexNDArrayUtil.MatrixOp.COLUMN_MEAN,this);
+
+    }
+
+    public JCublasComplexNDArray _rowSums() {
+        JCublasComplexNDArray v = new JCublasComplexNDArray(rows);
+
+        for (int r = 0; r < rows; r++)
+            v.put(r, getRow(r).sum());
+
+        return v;
+    }
+
+    //@Override
+    public JCublasComplexNDArray rowSums() {
+        if(shape().length == 2) {
+            return JCublasComplexNDArray.wrap(this._rowSums());
+
+        }
+
+        else
+            return JCublasComplexNDArrayUtil.doSliceWise(JCublasComplexNDArrayUtil.MatrixOp.ROW_SUM,this);
+
+    }
+    //@Override
+    public double normmax() {
+        if(isVector() ) {
+            int i = SimpleJCublas.iamax(this);
+            return get(i).abs();
+        }
+        return JCublasComplexNDArrayUtil.doSliceWise(JCublasComplexNDArrayUtil.ScalarOp.NORM_MAX,this).real();
+
+    }
+
     private JCublasComplexDouble reduceVector(Ops.DimensionOp op,JCublasComplexNDArray vector) {
 
         switch(op) {
@@ -1035,6 +1104,14 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         return (IComplexNDArray) other.subi(this, result);
     }
 
+    //@Override
+    public JCublasComplexNDArray put(int rowIndex, int columnIndex, JCublasComplexDouble value) {
+        int i =  index(rowIndex, columnIndex);
+        data[i] = value.real();
+        data[i+1] = value.imag();
+        return this;
+    }
+
     @Override
     public IComplexNDArray hermitian() {
         JCublasComplexNDArray result = new JCublasComplexNDArray(shape());
@@ -1066,9 +1143,11 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         return rows * columnIndex + rowIndex;
     }
 
+
+
     @Override
     public IComplexNDArray conji() {
-        JCublasComplexDouble reshaped = reshape(1,length);
+        JCublasComplexNDArray reshaped = reshape(1,length);
         JCublasComplexDouble c = new JCublasComplexDouble(0.0);
         for (int i = 0; i < length; i++)
             reshaped.put(i, reshaped.get(i, c).conji());
@@ -1134,7 +1213,13 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         JCublasComplexNDArray n = (JCublasComplexNDArray) toPut;
         JCublasComplexNDArray n2 = n;
         putColumn(column,n2);
-        return this;    }
+        return this;
+    }
+    //@Override
+    public JCublasComplexDouble get(int rowIndex, int columnIndex) {
+        int index = offset +  index(rowIndex,columnIndex);
+        return new JCublasComplexDouble(data[index],data[index + 1]);
+    }
 
     @Override
     public IComplexNDArray getScalar(int row, int column) {
@@ -1186,7 +1271,16 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         }
         else
             put(i,(double) element.element());
-        return this;    }
+        return this;
+    }
+
+    public IComplexNDArray put(int i, double v) {
+        if(!isVector() && !isScalar())
+            throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
+
+        data[linearIndex(i)] = v;
+        return this;
+    }
 
     @Override
     public IComplexNDArray diviColumnVector(INDArray columnVector) {
@@ -1365,6 +1459,22 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     public JCublasComplexNDArray(int[] shape,int[] stride){
         this(shape,stride,0);
     }
+    public JCublasComplexNDArray copy(JCublasComplexNDArray a) {
+        if (!sameSize(a))
+            resize(a.rows, a.columns);
+
+        SimpleJCublas.copy(a, this);
+        return a;
+    }
+    public boolean sameSize(JCublasComplexNDArray a) {
+        return rows == a.rows && columns == a.columns;
+    }
+    public void resize(int newRows, int newColumns) {
+        rows = newRows;
+        columns = newColumns;
+        length = newRows * newColumns;
+        data = new double[2 * rows * columns];
+    }
     @Override
     public IComplexNDArray mmuli(INDArray other, INDArray result) {
         if (other.isScalar())
@@ -1388,7 +1498,7 @@ public class JCublasComplexNDArray implements IComplexNDArray {
             JCublasComplexNDArray temp = new JCublasComplexNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
             temp = SimpleJCublas.gemm(this, otherArray, 1, 0);
 
-            JCublasNDArray.copy(temp, resultArray);
+            temp.copy(resultArray);
 
         }
         else {
@@ -1465,7 +1575,9 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         else
             new TwoArrayOps().from(this).other(other).op(AddOp.class)
                     .to(result).build().exec();
-        return (IComplexNDArray) result;    }
+        return (IComplexNDArray) result;
+    }
+
 
     @Override
     public IComplexNDArray normmax(int dimension) {
@@ -1570,6 +1682,14 @@ public class JCublasComplexNDArray implements IComplexNDArray {
             return arr.reshape(shape);
         }    }
 
+    public JCublasComplexDouble std() {
+        StandardDeviation dev = new StandardDeviation();
+        INDArray real = getReal();
+        JCublasNDArray imag = imag();
+        double std = dev.evaluate(real.data());
+        double std2 = dev.evaluate(imag.data());
+        return new JCublasComplexDouble(std,std2);
+    }
     @Override
     public INDArray std(int dimension) {
         if(dimension == Integer.MAX_VALUE)
@@ -1604,7 +1724,26 @@ public class JCublasComplexNDArray implements IComplexNDArray {
             return arr.reshape(shape);
         }
     }
+    public JCublasComplexNDArray prod() {
+        JCublasComplexNDArray d = new JCublasComplexNDArray(1);
 
+        if(isVector()) {
+            for(int i = 0; i < length(); i++) {
+                JCublasComplexNDArray d2 = (JCublasComplexNDArray) getScalar(i).element();
+                d.muli(d2);
+            }
+        }
+        else {
+            JCublasComplexNDArray reshape = reshape(new int[]{1,length()});
+            for(int i = 0; i < reshape.length(); i++) {
+                JCublasComplexNDArray d2 = (JCublasComplexNDArray) reshape.getScalar(i).element();
+                d.muli(d2);
+            }
+        }
+
+        return d;
+
+    }
     @Override
     public IComplexNDArray prod(int dimension) {
         if(dimension == Integer.MAX_VALUE) {
@@ -1973,7 +2112,7 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     }
 
     @Override
-    public INDArray reshape(int rows, int columns) {
+    public JCublasComplexNDArray reshape(int rows, int columns) {
         return reshape(new int[]{rows,columns});
     }
     public JCublasComplexNDArray(double[] data,int[] shape,int offset) {

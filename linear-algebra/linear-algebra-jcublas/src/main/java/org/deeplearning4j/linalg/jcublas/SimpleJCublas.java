@@ -265,4 +265,12 @@ public class SimpleJCublas {
     public static double nrm2(JCublasComplexNDArray jCublasComplexNDArray) {
         return 0;
     }
+
+    public static void copy(JCublasComplexNDArray a, JCublasComplexNDArray jCublasComplexNDArray) {
+
+    }
+
+    public static int iamax(JCublasComplexNDArray jCublasComplexNDArray) {
+        return 0;
+    }
 }
