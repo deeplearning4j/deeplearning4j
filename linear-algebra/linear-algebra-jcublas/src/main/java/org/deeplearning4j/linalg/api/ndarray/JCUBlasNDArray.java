@@ -11,6 +11,29 @@ public class JCUBlasNDArray  implements INDArray  {
 
 
     /**
+     * Returns the number of possible vectors for a given dimension
+     *
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return 0;
+    }
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to get
+     * @param dimension the dimension to get the vector from
+     * @return the vector along a particular dimension
+     */
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        return null;
+    }
+
+    /**
      * Cumulative sum along a dimension
      *
      * @param dimension the dimension to perform cumulative sum along
@@ -1066,6 +1089,16 @@ public class JCUBlasNDArray  implements INDArray  {
         return null;
     }
 
+    @Override
+    public void setStride(int[] stride) {
+
+    }
+
+    @Override
+    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+        return null;
+    }
+
     /**
      * Returns the elements at the the specified indices
      *
@@ -1376,6 +1409,11 @@ public class JCUBlasNDArray  implements INDArray  {
         return new double[0];
     }
 
+    @Override
+    public void setData(double[] data) {
+
+    }
+
     /**
      * Returns a linear float array representation of this ndarray
      *
@@ -1384,5 +1422,10 @@ public class JCUBlasNDArray  implements INDArray  {
     @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 }

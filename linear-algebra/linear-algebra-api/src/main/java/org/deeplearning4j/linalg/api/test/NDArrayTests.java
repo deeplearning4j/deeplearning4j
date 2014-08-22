@@ -362,6 +362,19 @@ public abstract class NDArrayTests {
         INDArray columnVector = rowVector.transpose();
         assertTrue(columnVector.isColumnVector());
 
+
+        INDArray linspaced = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray transposed = NDArrays.create(new double[]{1,3,2,4},new int[]{2,2});
+        assertEquals(transposed,linspaced.transpose());
+
+        NDArrays.factory().setOrder('f');
+        linspaced = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray transposed2 = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        transposed = linspaced.transpose();
+        assertEquals(transposed,transposed2);
+        NDArrays.factory().setOrder('c');
+
+
     }
 
     @Test

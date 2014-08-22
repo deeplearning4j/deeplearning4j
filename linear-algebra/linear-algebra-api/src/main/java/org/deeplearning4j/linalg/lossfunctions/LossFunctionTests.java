@@ -20,6 +20,7 @@ public abstract class LossFunctionTests {
 
     @Test
     public void testReconEntropy() {
+        NDArrays.factory().setOrder('f');
         INDArray input = NDArrays.create(
                 new double[]{1.0,1.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0},new int[]{7,6});
         INDArray w = NDArrays.create(
@@ -28,6 +29,7 @@ public abstract class LossFunctionTests {
                 new double[]{0.0,0.0,0.0,0.0,0.0,0.0},new int[]{6});
         INDArray hBias = NDArrays.create(
                 new double[]{0.0,0.0,0.0,0.0},new int[]{4});
+        INDArray transposed = w.transpose();
         INDArray inputTimesWeights = input.mmul(w);
         double reconEntropy = LossFunctions.reconEntropy(input,hBias,vBias,w);
         double assertion = -0.5937198421625942;
