@@ -54,6 +54,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     private int[] shape;
     private int[] stride;
     private int offset = 0;
+    private char ordering;
 
 
 
@@ -3320,6 +3321,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
         }
 
+        this.ordering = NDArrays.order();
     }
 
 

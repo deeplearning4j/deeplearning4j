@@ -51,6 +51,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
     private int offset = 0;
     private boolean changedStride = false;
     private int[] oldStride;
+    private char ordering;
 
     /**
      * Create an ndarray from the specified slices.
@@ -1263,6 +1264,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
             this.stride = ArrayUtil.calcStrides(this.shape);
         }
 
+        this.ordering = NDArrays.factory().order();
+
     }
 
 
@@ -1535,7 +1538,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         boolean switchedOrder = false;
         if(order != NDArrayFactory.FORTRAN) {
             NDArrays.factory().setOrder(NDArrayFactory.C);
-           switchedOrder = true;
+            switchedOrder = true;
         }
 
         INDArray result = NDArrays.create(shape);
@@ -1993,7 +1996,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        if(oldStride != null)
+        if(ordering == NDArrayFactory.FORTRAN)
             return offset + i;
         int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
@@ -2636,8 +2639,19 @@ public class NDArray extends DoubleMatrix implements INDArray {
             return new NDArray(data,new int[]{shape[0],1},offset);
         else if(isColumnVector())
             return new NDArray(data,new int[]{shape[0]},offset);
-        NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
-        return n;
+        if(ordering == NDArrayFactory.C) {
+            NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
+            return n;
+        }
+        else if(ordering == NDArrayFactory.FORTRAN) {
+            int[] reverseShape = reverseCopy(shape);
+            int[] newStrides = ArrayUtil.calcStridesFortran(reverseShape);
+            NDArray n = new NDArray(data,reverseShape,newStrides,offset);
+            return n;
+        }
+
+
+        throw new IllegalArgumentException("Illegal ordering " + ordering);
 
     }
 
