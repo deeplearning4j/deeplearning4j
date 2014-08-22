@@ -715,7 +715,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
             //iterating along the dimension is relative to the number of slices
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
-            for(int offset = this.offset; offset < numTimes; offset++) {
+            
+
+            for(int offset = this.offset; offset < numTimes; ) {
                 if(dataIter >= data2.length || currOffset >= sliceIndices.length)
                     break;
 
@@ -792,10 +794,15 @@ public class NDArray extends DoubleMatrix implements INDArray {
         int count = 0;
         boolean newSlice = false;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
-            double d = data[j];
+        	  
+        	if(j >= currOffsetForSlice){
+                  newSlice = true;
+                  break;
+        	}
+        	
+        	double d = data[j];
             dim[count++] = d;
-            if(j >= currOffsetForSlice)
-                newSlice = true;
+          
         }
 
         return new IterationResult(reduceVector(op,new DoubleMatrix(dim)),newSlice);
@@ -2063,11 +2070,16 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
         }
 
-        else
-            return new NDArray(data,
+        else{
+       
+        	int[] strides = Arrays.copyOfRange(stride, 1, stride.length);
+        	strides[0] = shape[shape.length -1];
+        	return new NDArray(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
-                    Arrays.copyOfRange(stride, 1, stride.length),
+                   strides,
                     offset + (slice * stride[0]));
+        }
+            
 
     }
 
@@ -2113,8 +2125,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public INDArray getScalar(int... indexes) {
         int ix = offset;
-        for (int i = 0; i < shape.length; i++) {
-            ix += indexes[i] * stride[i];
+        int trackStride = shape[0];
+        ix += indexes[0] * stride[shape.length - 1];
+        for (int i = 1; i < shape.length; i++) {
+        	int firstTerm = (indexes[i]);
+        	int strideVal = stride[shape.length - 1 -i];
+            ix +=  firstTerm * (trackStride) ;
+        	trackStride *= strideVal;
         }
         return NDArrays.scalar(data[ix]);
     }
