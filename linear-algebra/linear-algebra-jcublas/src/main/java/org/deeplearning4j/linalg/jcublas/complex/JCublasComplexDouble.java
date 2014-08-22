@@ -7,6 +7,13 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
  * Created by mjk on 8/20/14.
  */
 public class JCublasComplexDouble implements IComplexDouble  {
+    public JCublasComplexDouble(double real, double imag) {
+
+    }
+
+    public JCublasComplexDouble(JCublasComplexDouble jCublasComplexDouble) {
+    }
+
     @Override
     public IComplexNumber set(Number real, Number imag) {
         return null;

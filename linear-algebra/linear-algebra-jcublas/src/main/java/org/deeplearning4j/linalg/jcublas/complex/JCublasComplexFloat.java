@@ -8,6 +8,10 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
  * Created by mjk on 8/20/14.
  */
 public class JCublasComplexFloat implements IComplexFloat {
+    public JCublasComplexFloat(float real, float imag) {
+
+    }
+
     @Override
     public IComplexNumber set(Number real, Number imag) {
         return null;

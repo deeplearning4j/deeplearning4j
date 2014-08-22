@@ -41,6 +41,42 @@ public class JCublasNDArray implements INDArray {
     /** The actual data stored by rows (that is, row 0, row 1...). */
     public double[] data = null; // rows are contiguous
 
+    @Override
+    public String toString() {
+        if (isScalar()) {
+            return element().toString();
+        }
+        else if(isVector()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            for(int i = 0; i < length; i++) {
+                sb.append(getScalar(i));
+                if(i < length - 1)
+                    sb.append(',');
+            }
+
+            sb.append("]\n");
+            return sb.toString();
+        }
+
+
+
+        StringBuilder sb = new StringBuilder();
+        int length= shape[0];
+        sb.append("[");
+        if (length > 0) {
+            sb.append(slice(0).toString());
+            for (int i = 1; i < slices(); i++) {
+                sb.append(slice(i).toString());
+                if(i < length - 1)
+                    sb.append(',');
+
+            }
+        }
+        sb.append("]\n");
+        return sb.toString();
+    }
+
     public void checkDimensions(JCublasNDArray other) {
         assert Arrays.equals(shape,other.shape()) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape());
         assert Arrays.equals(stride,other.stride()) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride());

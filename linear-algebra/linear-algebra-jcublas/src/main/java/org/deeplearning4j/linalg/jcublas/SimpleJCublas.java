@@ -71,10 +71,17 @@ public class SimpleJCublas {
 
         JCublas.cublasInit();
         JCublas.setExceptionsEnabled(true);
-
+        /*
         JCublasNDArray A = new JCublasNDArray(A_.rows(), A_.columns(),A_.getOffsetData());
         JCublasNDArray B = new JCublasNDArray(B_.rows(),B_.columns(),B_.getOffsetData());
+        */
+        JCublasNDArray A = A_;
+        JCublasNDArray B = B_;
 
+        /*
+        JCublasNDArray A = new JCublasNDArray(new int[]{A_.rows(),A_.columns()}, A_.stride(), A_.offset());
+        JCublasNDArray B = new JCublasNDArray(new int[]{B_.rows(),B_.columns()}, B_.stride(), B_.offset());
+        */
         JCublasNDArray C = new JCublasNDArray(A.rows(), B.columns());
 
         Pointer d_A = new Pointer();
@@ -85,12 +92,17 @@ public class SimpleJCublas {
         JCublas.cublasAlloc(B.rows()*B.columns(), Sizeof.DOUBLE, d_B);
         JCublas.cublasAlloc(A.rows()*B.columns(), Sizeof.DOUBLE, d_C);
 
+        Pointer _a = new Pointer();
+        Pointer _b = new Pointer();
+        _a = _a.to(A.data);
+        _b = _b.to(B.data);
+
         int ret;
         ret = JCublas.cublasSetMatrix(
                 A.rows(),
                 A.columns(),
                 Sizeof.DOUBLE,
-                Pointer.to(A.data),
+                _a,//.withByteOffset(A.offset()),
                 A.rows(),
                 d_A,
                 A.rows()
@@ -99,7 +111,7 @@ public class SimpleJCublas {
                 B.rows(),
                 B.columns(),
                 Sizeof.DOUBLE,
-                Pointer.to(B.data),
+                _b,//.withByteOffset(B.offset()),
                 B.rows(),
                 d_B,
                 B.rows()
