@@ -40,6 +40,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * NDArray: (think numpy)
+ *
+ * A few things of note.
+ *
+ * An NDArray can have any number of dimensions.
+ *
+ * An NDArray is accessed via strides.
+ *
+ * Strides are how to index over
+ * a contiguous block of data.
+ *
+ * This block of data has 2 orders(as of right now):
+ * fortran and c
+ *
+ *
+ *
  * @author Adam Gibson
  */
 public class NDArray extends DoubleMatrix implements INDArray {
@@ -49,9 +64,217 @@ public class NDArray extends DoubleMatrix implements INDArray {
     private int[] shape;
     private int[] stride;
     private int offset = 0;
-    private boolean changedStride = false;
-    private int[] oldStride;
     private char ordering;
+
+
+
+
+
+
+
+    /**
+     * Create this ndarray with the given data and shape and 0 offset
+     * @param data the data to use
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(double[] data,int[] shape,char ordering) {
+        this(data,shape,0,ordering);
+    }
+
+    /**
+     *
+     * @param data the data to use
+     * @param shape the shape of the ndarray
+     * @param offset the desired offset
+     * @param ordering the ordering of the ndarray
+     */
+    public NDArray(double[] data,int[] shape,int offset,char ordering) {
+        this(data,shape,ordering == NDArrayFactory.C ? calcStrides(shape) : calcStridesFortran(shape),offset);
+
+    }
+
+
+    /**
+     * Construct an ndarray of the specified shape
+     * with an empty data array
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param offset the desired offset
+     * @param ordering the ordering of the ndarray
+     */
+    public NDArray(int[] shape,int[] stride,int offset,char ordering) {
+        this(new double[ArrayUtil.prod(shape)],shape,stride,offset,ordering);
+    }
+
+
+    /**
+     * Create the ndarray with
+     * the specified shape and stride and an offset of 0
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param ordering the ordering of the ndarray
+     */
+    public NDArray(int[] shape,int[] stride,char ordering){
+        this(shape,stride,0,ordering);
+    }
+
+    public NDArray(int[] shape,int offset,char ordering) {
+        this(shape,ordering == NDArrayFactory.C ? calcStrides(shape) : calcStridesFortran(shape),offset,ordering);
+    }
+
+
+    public NDArray(int[] shape) {
+        this(shape,0,NDArrays.order());
+    }
+
+
+
+
+    /**
+     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     *
+     * @param newRows    the number of rows (<i>n</i>) of the new matrix.
+     * @param newColumns the number of columns (<i>m</i>) of the new matrix.
+     */
+    public NDArray(int newRows, int newColumns,char ordering) {
+        super(newRows, newColumns);
+        this.ordering = ordering;
+        initShape(new int[]{newRows,newColumns});
+    }
+
+
+    /**
+     * Create an ndarray from the specified slices.
+     * This will go through and merge all of the
+     * data from each slice in to one ndarray
+     * which will then take the specified shape
+     * @param slices the slices to merge
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(List<INDArray> slices,int[] shape,char ordering) {
+        List<double[]> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++)
+            list.add(slices.get(i).data());
+        this.ordering = ordering;
+        this.data = ArrayUtil.combine(list);
+
+        initShape(shape);
+
+
+
+    }
+
+
+    /**
+     * Create an ndarray from the specified slices.
+     * This will go through and merge all of the
+     * data from each slice in to one ndarray
+     * which will then take the specified shape
+     * @param slices the slices to merge
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(List<INDArray> slices,int[] shape,int[] stride,char ordering) {
+        List<double[]> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++)
+            list.add(slices.get(i).data());
+        this.ordering = ordering;
+        this.data = ArrayUtil.combine(list);
+        this.stride = stride;
+        initShape(shape);
+
+
+
+    }
+
+
+    public NDArray(double[] data,int[] shape,int[] stride,char ordering) {
+        this(data,shape,stride,0,ordering);
+    }
+
+
+    public NDArray(double[] data,int[] shape,int[] stride,int offset,char ordering) {
+        if(offset >= data.length)
+            throw new IllegalArgumentException("Invalid offset: must be < data.length");
+
+
+
+        this.offset = offset;
+        this.stride = stride;
+        this.ordering = ordering;
+        initShape(shape);
+
+        if(data != null  && data.length > 0)
+            this.data = data;
+
+
+
+    }
+
+    public NDArray(float[] data, int[] shape, int[] stride, int offset,char ordering) {
+        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
+    }
+
+
+
+
+
+    /**
+     * Create this ndarray with the given data and shape and 0 offset
+     * @param data the data to use
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(double[] data,int[] shape) {
+        this(data,shape,0);
+    }
+
+    public NDArray(double[] data,int[] shape,int offset) {
+        this(data,shape,offset,NDArrays.order());
+
+    }
+
+
+    /**
+     * Construct an ndarray of the specified shape
+     * with an empty data array
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param offset the desired offset
+     */
+    public NDArray(int[] shape,int[] stride,int offset) {
+        this(new double[ArrayUtil.prod(shape)],shape,stride,offset,NDArrays.order());
+    }
+
+
+    /**
+     * Create the ndarray with
+     * the specified shape and stride and an offset of 0
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     */
+    public NDArray(int[] shape,int[] stride){
+        this(shape,stride,0);
+    }
+
+    public NDArray(int[] shape,int offset) {
+        this(shape,calcStrides(shape),offset);
+    }
+
+
+    public NDArray(int[] shape,char ordering) {
+        this(shape,0,ordering);
+    }
+
+
+    /**
+     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
+     *
+     * @param newRows    the number of rows (<i>n</i>) of the new matrix.
+     * @param newColumns the number of columns (<i>m</i>) of the new matrix.
+     */
+    public NDArray(int newRows, int newColumns) {
+       this(newRows,newColumns,NDArrays.order());
+    }
+
 
     /**
      * Create an ndarray from the specified slices.
@@ -62,16 +285,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param shape the shape of the ndarray
      */
     public NDArray(List<INDArray> slices,int[] shape) {
-        List<double[]> list = new ArrayList<>();
-        for(int i = 0; i < slices.size(); i++)
-            list.add(slices.get(i).data());
-
-        this.data = ArrayUtil.combine(list);
-
-        initShape(shape);
-
-
-
+         this(slices,shape,NDArrays.order());
     }
 
 
@@ -84,44 +298,35 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param shape the shape of the ndarray
      */
     public NDArray(List<INDArray> slices,int[] shape,int[] stride) {
-        List<double[]> list = new ArrayList<>();
-        for(int i = 0; i < slices.size(); i++)
-            list.add(slices.get(i).data());
-
-        this.data = ArrayUtil.combine(list);
-        this.stride = stride;
-        initShape(shape);
-
-
+         this(slices,shape,stride,NDArrays.order());
 
     }
 
 
     public NDArray(double[] data,int[] shape,int[] stride) {
-        this(data,shape,stride,0);
+        this(data,shape,stride,NDArrays.order());
     }
 
 
     public NDArray(double[] data,int[] shape,int[] stride,int offset) {
-        if(offset >= data.length)
-            throw new IllegalArgumentException("Invalid offset: must be < data.length");
-
-
-
-        this.offset = offset;
-        this.stride = stride;
-
-        initShape(shape);
-
-        if(data != null  && data.length > 0)
-            this.data = data;
-
-
+        this(data,shape,stride,offset,NDArrays.order());
 
     }
 
     public NDArray(float[] data, int[] shape, int[] stride, int offset) {
-        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
+        this(data,shape,stride,offset,NDArrays.order());
+    }
+
+    /**
+     * Create a new matrix with <i>newRows</i> rows, <i>newColumns</i> columns
+     * using <i>newData></i> as the data. The length of the data is not checked!
+     *
+     * @param newRows
+     * @param newColumns
+     * @param newData
+     */
+    public NDArray(int newRows, int newColumns, double... newData) {
+        super(newRows, newColumns, newData);
     }
 
 
@@ -143,18 +348,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     public NDArray(DoubleMatrix d) {
         this(d.data,new int[]{d.rows,d.columns});
-    }
-
-    /**
-     * Create a new matrix with <i>newRows</i> rows, <i>newColumns</i> columns
-     * using <i>newData></i> as the data. The length of the data is not checked!
-     *
-     * @param newRows
-     * @param newColumns
-     * @param newData
-     */
-    public NDArray(int newRows, int newColumns, double... newData) {
-        super(newRows, newColumns, newData);
     }
 
 
@@ -389,69 +582,12 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return get(new int[]{row,column});
     }
 
-    /**
-     * Create this ndarray with the given data and shape and 0 offset
-     * @param data the data to use
-     * @param shape the shape of the ndarray
-     */
-    public NDArray(double[] data,int[] shape) {
-        this(data,shape,0);
-    }
-
-    public NDArray(double[] data,int[] shape,int offset) {
-        this(data,shape,calcStrides(shape),offset);
-
-    }
-
-
-    /**
-     * Construct an ndarray of the specified shape
-     * with an empty data array
-     * @param shape the shape of the ndarray
-     * @param stride the stride of the ndarray
-     * @param offset the desired offset
-     */
-    public NDArray(int[] shape,int[] stride,int offset) {
-        this(new double[ArrayUtil.prod(shape)],shape,stride,offset);
-    }
-
-
-    /**
-     * Create the ndarray with
-     * the specified shape and stride and an offset of 0
-     * @param shape the shape of the ndarray
-     * @param stride the stride of the ndarray
-     */
-    public NDArray(int[] shape,int[] stride){
-        this(shape,stride,0);
-    }
-
-    public NDArray(int[] shape,int offset) {
-        this(shape,calcStrides(shape),offset);
-    }
-
-
-    public NDArray(int[] shape) {
-        this(shape,0);
-    }
-
-
-    /**
-     * Creates a new <i>n</i> times <i>m</i> <tt>DoubleMatrix</tt>.
-     *
-     * @param newRows    the number of rows (<i>n</i>) of the new matrix.
-     * @param newColumns the number of columns (<i>m</i>) of the new matrix.
-     */
-    public NDArray(int newRows, int newColumns) {
-        super(newRows, newColumns);
-        initShape(new int[]{newRows,newColumns});
-    }
 
     @Override
     public NDArray dup() {
         double[] dupData = new double[data.length];
         System.arraycopy(data,0,dupData,0,dupData.length);
-        NDArray ret = new NDArray(dupData,shape,stride,offset);
+        NDArray ret = new NDArray(dupData,shape,stride,offset,ordering);
         return ret;
     }
 
@@ -1101,7 +1237,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public void setStride(int[] stride) {
-        this.oldStride = ArrayUtil.copy(this.stride);
         this.stride = stride;
     }
 
@@ -1253,18 +1388,26 @@ public class NDArray extends DoubleMatrix implements INDArray {
             rows = 1;
         }
 
-
+        //null character
+        if(this.ordering == '\u0000')
+            this.ordering = NDArrays.order();
 
         this.length = ArrayUtil.prod(this.shape);
-        if(this.stride == null)
-            this.stride = ArrayUtil.calcStrides(this.shape);
+        if(this.stride == null) {
+            if(ordering == NDArrayFactory.FORTRAN)
+                this.stride = ArrayUtil.calcStridesFortran(shape);
+            else
+                this.stride = ArrayUtil.calcStrides(this.shape);
+        }
 
         //recalculate stride: this should only happen with row vectors
         if(this.stride.length != this.shape.length) {
-            this.stride = ArrayUtil.calcStrides(this.shape);
+            if(ordering == NDArrayFactory.FORTRAN)
+                this.stride = ArrayUtil.calcStridesFortran(shape);
+            else
+                this.stride = ArrayUtil.calcStrides(this.shape);
         }
 
-        this.ordering = NDArrays.factory().order();
 
     }
 
@@ -1508,8 +1651,9 @@ public class NDArray extends DoubleMatrix implements INDArray {
     public NDArray addiRowVector(INDArray rowVector) {
         assert rowVector.isRowVector() : "Must only add a row vector";
         assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
-        for(int j = 0; j< rows(); j++) {
-            getRow(j).addi(rowVector);
+        for(int j = 0; j < rows(); j++) {
+            INDArray row = getRow(j);
+            row.addi(rowVector);
         }
         return this;
     }
@@ -1537,7 +1681,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         char order = NDArrays.factory().order();
         boolean switchedOrder = false;
         if(order != NDArrayFactory.FORTRAN) {
-            NDArrays.factory().setOrder(NDArrayFactory.C);
+            NDArrays.factory().setOrder(NDArrayFactory.FORTRAN);
             switchedOrder = true;
         }
 
@@ -1871,15 +2015,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
 
-    /**
-     * Linear getScalar ignoring linear restrictions
-     * @param i the index of the element to getScalar
-     * @return the item at the given index
-     */
-    public double unSafeGet(int i) {
-        int idx = unSafeLinearIndex(i);
-        return data[idx];
-    }
 
 
 
@@ -2006,24 +2141,14 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
     private int getRealStrideForLinearIndex() {
-        if(oldStride != null) {
-            if(oldStride == null || oldStride.length < 1)
-                return 1;
-            if(oldStride.length == 2 && shape[0] == 1)
-                return stride[1];
-            if(stride().length == 2 && oldStride[1] == 1)
-                return oldStride[0];
-            return oldStride[0];
-        }
-        else {
-            if(stride == null || stride().length < 1)
-                return 1;
-            if(stride.length == 2 && shape[0] == 1)
-                return stride[1];
-            if(stride().length == 2 && shape[1] == 1)
-                return stride[0];
+        if(stride == null || stride().length < 1)
+            return 1;
+        if(stride.length == 2 && shape[0] == 1)
+            return stride[1];
+        if(stride().length == 2 && shape[1] == 1)
             return stride[0];
-        }
+        return stride[0];
+
 
     }
 
@@ -2060,18 +2185,19 @@ public class NDArray extends DoubleMatrix implements INDArray {
                     data,
                     ArrayUtil.of(shape[1]),
                     Arrays.copyOfRange(stride,1,stride.length),
-                    offset + slice * stride[0]
+                    offset + slice * stride[0],ordering
             );
             return slice2;
 
         }
 
-        else
-            return new NDArray(data,
+        else {
+            NDArray ret =  new NDArray(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
                     Arrays.copyOfRange(stride, 1, stride.length),
-                    offset + (slice * stride[0]));
-
+                    offset + (slice * stride[0]),ordering);
+            return ret;
+        }
     }
 
 
@@ -2100,10 +2226,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
         if (slice == shape.length - 1)
             return slice(dimension);
 
-        return new NDArray(data,
+        NDArray ret =  new NDArray(data,
                 ArrayUtil.removeIndex(shape,dimension),
                 ArrayUtil.removeIndex(stride,dimension),
-                offset + slice * stride[dimension]);
+                offset + slice * stride[dimension],ordering);
+        return ret;
     }
 
 
@@ -2226,6 +2353,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
             }
         }
 
+        NDArray ret = (NDArray) result;
+        ret.ordering = ordering;
         return (NDArray) result;
     }
 
@@ -2640,13 +2769,13 @@ public class NDArray extends DoubleMatrix implements INDArray {
         else if(isColumnVector())
             return new NDArray(data,new int[]{shape[0]},offset);
         if(ordering == NDArrayFactory.C) {
-            NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset);
+            NDArray n = new NDArray(data,reverseCopy(shape),reverseCopy(stride),offset,ordering);
             return n;
         }
         else if(ordering == NDArrayFactory.FORTRAN) {
             int[] reverseShape = reverseCopy(shape);
             int[] newStrides = ArrayUtil.calcStridesFortran(reverseShape);
-            NDArray n = new NDArray(data,reverseShape,newStrides,offset);
+            NDArray n = new NDArray(data,reverseShape,newStrides,offset,ordering);
             return n;
         }
 
@@ -2676,7 +2805,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        NDArray ndArray = new NDArray(data,shape,stride,offset);
+        NDArray ndArray = new NDArray(data,shape,stride,offset,ordering);
         return ndArray;
 
     }
@@ -2750,28 +2879,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return mmuli(a,new NDArray(shape));
     }
 
-
-    public DoubleMatrix sliceDot(DoubleMatrix a) {
-        int dims = shape.length;
-        switch (dims) {
-
-            case 1: {
-                return DoubleMatrix.scalar(SimpleBlas.dot(this,a));
-            }
-            case 2: {
-                return DoubleMatrix.scalar(SimpleBlas.dot(this, a));
-            }
-        }
-
-
-        int sc = shape[0];
-        DoubleMatrix d = new DoubleMatrix(1,sc);
-
-        for (int i = 0; i < sc; i++)
-            d.put(i, slice(i).dot(a));
-
-        return d;
-    }
 
 
     @Override
@@ -3105,7 +3212,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         }
         else {
             int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+            final NDArray arr = (NDArray) NDArrays.create(new int[]{ArrayUtil.prod(shape)});
             final AtomicInteger i = new AtomicInteger(0);
             iterateOverDimension(dimension, new SliceOp() {
                 @Override
@@ -3550,21 +3657,17 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray getColumn(int c) {
-        if(shape.length == 2)
-            if(oldStride == null)
-                return new NDArray(
-                        data,
-                        new int[]{shape[0]},
-                        new int[]{stride[0]},
-                        offset + c
-                );
-            else
-                return new NDArray(
-                        data,
-                        new int[]{shape[0]},
-                        new int[]{oldStride[0]},
-                        offset + c
-                );
+        if(shape.length == 2) {
+            NDArray ret = new NDArray(
+                    data,
+                    new int[]{shape[0]},
+                    new int[]{stride[0]},
+                    offset + c,ordering
+            );
+
+            return ret;
+        }
+
         else
             throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
     }
@@ -3620,21 +3723,16 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray getRow(int r) {
-        if(shape.length == 2)
-            if(oldStride == null)
-                return new NDArray(
-                        data,
-                        new int[]{shape[1]},
-                        new int[]{stride[1]},
-                        offset +  r * columns()
-                );
-            else
-                return new NDArray(
-                        data,
-                        new int[]{shape[1]},
-                        new int[]{oldStride[1]},
-                        offset +  r * columns()
-                );
+        if(shape.length == 2) {
+            NDArray ret = new NDArray(
+                    data,
+                    new int[]{shape[1]},
+                    new int[]{stride[1]},
+                    offset + r * columns(),
+                    ordering
+            );
+            return ret;
+        }
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
     }
@@ -3722,13 +3820,20 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * Returns the stride(indices along the linear index for which each slice is accessed) of this array
      * @return the stride of this array
      */
+    @Override
     public int[] stride() {
         return stride;
     }
 
 
+    @Override
     public int offset() {
         return offset;
+    }
+
+    @Override
+    public char ordering() {
+        return ordering;
     }
 
     /**
@@ -3737,6 +3842,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param dimension the dimension to return from
      * @return the shape of the specified dimension
      */
+    @Override
     public int size(int dimension) {
         if(isScalar()) {
             if(dimension == 0)
@@ -3793,6 +3899,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
+    @Override
     public NDArray permute(int[] rearrange) {
         checkArrangeArray(rearrange);
 
@@ -4037,16 +4144,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return ret;
     }
 
-
-
-    public static NDArray linspace(int lower,int upper,int num) {
-        return new NDArray(DoubleMatrix.linspace(lower,upper,num).data,new int[]{num});
-    }
-
-
-    public static NDArray arange(double begin, double end) {
-        return NDArray.wrap(new DoubleMatrix(ArrayUtil.toDoubles(ArrayUtil.range((int) begin,(int)end))).transpose());
-    }
 
 
 
