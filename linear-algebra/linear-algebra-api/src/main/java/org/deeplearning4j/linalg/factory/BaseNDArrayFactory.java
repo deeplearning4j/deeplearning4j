@@ -88,13 +88,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the linearly spaced vector
      */
     public INDArray linspace(int lower,int upper,int num) {
+        INDArray ret = create(num);
         double[] length = new double[num];
         for (int i = 0; i < num; i++) {
             double t = (double) i / (num - 1);
-            length[i]  =  lower * (1 - t) + t * upper;
+          ret.putScalar(i,lower * (1 - t) + t * upper);
 
         }
-        return create(length);
+        return ret;
     }
 
 
