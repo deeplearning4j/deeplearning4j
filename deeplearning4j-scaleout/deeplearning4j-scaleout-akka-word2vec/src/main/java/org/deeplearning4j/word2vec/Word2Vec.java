@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -314,10 +315,18 @@ public class Word2Vec implements Persistable {
 
     }
 
+    /**
+     * Returns true if the model has this word in the vocab
+     * @param word the word to test for
+     * @return true if the model has the word in the vocab
+     */
     public boolean hasWord(String word) {
         return wordIndex.indexOf(word) >= 0;
     }
 
+    /**
+     * Train the model
+     */
     public void train(){
         if(trainingSystem == null) {
             trainingSystem = ActorSystem.create();
@@ -518,6 +527,9 @@ public class Word2Vec implements Persistable {
     }
 
 
+    /**
+     * Builds the vocabulary for training
+     */
     public void buildVocab() {
         readStopWords();
 
@@ -528,23 +540,53 @@ public class Word2Vec implements Persistable {
 
         final Counter<String> rawVocab = Util.parallelCounter();
         final AtomicLong semaphore = new AtomicLong(System.currentTimeMillis());
-        int queued = 0;
+        final AtomicInteger queued = new AtomicInteger(0);
 
         final ActorRef vocabActor = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(Props.create(VocabActor.class,tokenizerFactory,wordIndex,minWordFrequency,vocab,layerSize,stopWords,rawVocab,semaphore)));
 
 		/* all words; including those not in the actual ending index */
-        while(getSentenceIter().hasNext()) {
-            String sentence = getSentenceIter().nextSentence();
-            if(sentence == null)
-                continue;
+        int numCores = Runtime.getRuntime().availableProcessors();
 
-            vocabActor.tell(sentence, vocabActor);
-            queued++;
-            log.info("Sent " + queued);
+        final CountDownLatch latch = new CountDownLatch(numCores);
+
+        for(int i = 0; i < numCores; i++) {
+
+            Future<Void> f =  Futures.future(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    while(getSentenceIter().hasNext()) {
+                        String sentence = getSentenceIter().nextSentence();
+                        if(sentence == null)
+                            return null;
+
+                        vocabActor.tell(sentence, vocabActor);
+                        queued.incrementAndGet();
+                        log.info("Sent " + queued);
 
 
+                    }
+
+                    return null;
+                }
+            },trainingSystem.dispatcher());
+
+
+            f.onComplete(new OnComplete<Void>() {
+                @Override
+                public void onComplete(Throwable failure, Void success) throws Throwable {
+                    latch.countDown();
+                }
+            },trainingSystem.dispatcher());
 
         }
+
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
 
         boolean done = false;
         long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
@@ -584,6 +626,7 @@ public class Word2Vec implements Persistable {
                     continue;
                 }
             }
+
             nextRandom = nextRandom * 25214903917L + 11;
             int b = (int) nextRandom % window;
             skipGram(i,sentence,b);
@@ -641,11 +684,11 @@ public class Word2Vec implements Persistable {
         INDArray ga = NDArrays.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).sub(fa).mul(alpha.floatValue());
         INDArray outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
-            INDArray toAdd = l2a.getRow(i).add(outer.getRow(i));
+            INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
             syn1.putRow(w1.getPoints()[i],toAdd);
         }
 
-        INDArray updatedInput = l1.add(ga.mmul(l2a));
+        INDArray updatedInput = l1.addi(ga.mmul(l2a));
         syn0.putRow(w2.getIndex(),updatedInput);
     }
 
@@ -654,7 +697,7 @@ public class Word2Vec implements Persistable {
 
     /* Builds the binary tree for the word relationships */
     private void buildBinaryTree() {
-        PriorityQueue<VocabWord> heap = new PriorityQueue<VocabWord>(vocab.values());
+        PriorityQueue<VocabWord> heap = new PriorityQueue<>(vocab.values());
         int i = 0;
         while(heap.size() > 1) {
             VocabWord min1 = heap.poll();
