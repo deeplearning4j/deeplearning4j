@@ -361,34 +361,62 @@ public class Word2Vec implements Persistable {
             throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
 
-        while(getSentenceIter().hasNext()) {
-            final String sentence = sentenceIter.nextSentence();
-            if(sentence != null && !sentence.isEmpty()) {
-                Future<Void> f = Futures.future(new Callable<Void>() {
+        int numCores = Runtime.getRuntime().availableProcessors();
 
-                    @Override
-                    public Void call() throws Exception {
-                        processSentence(sentence, totalWords);
-                        return null;
+        final CountDownLatch latch = new CountDownLatch(numCores);
+
+
+        for(int i = 0; i < numCores; i++) {
+            Future<Void> f = Futures.future(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    while(getSentenceIter().hasNext()) {
+
+                        final String sentence = sentenceIter.nextSentence();
+                        if(sentence != null && !sentence.isEmpty()) {
+                            Future<Void> f = Futures.future(new Callable<Void>() {
+
+                                @Override
+                                public Void call() throws Exception {
+                                    processSentence(sentence, totalWords);
+                                    return null;
+                                }
+
+                            },trainingSystem.dispatcher());
+                            f.onComplete(new OnComplete<Void>() {
+
+                                @Override
+                                public void onComplete(Throwable arg0, Void arg1)
+                                        throws Throwable {
+                                    if(arg0 != null)
+                                        throw arg0;
+                                    numSentencesProcessed.incrementAndGet();
+                                    changed.set(System.currentTimeMillis());
+
+                                }
+
+                            }, trainingSystem.dispatcher());
+
+                        }
+
                     }
+                    return null;
+                }
+            },trainingSystem.dispatcher());
+            f.onComplete(new OnComplete<Void>() {
+                @Override
+                public void onComplete(Throwable failure, Void success) throws Throwable {
+                     latch.countDown();
+                }
+            },trainingSystem.dispatcher());
+        }
 
-                },trainingSystem.dispatcher());
-                f.onComplete(new OnComplete<Void>() {
 
-                    @Override
-                    public void onComplete(Throwable arg0, Void arg1)
-                            throws Throwable {
-                        if(arg0 != null)
-                            throw arg0;
-                        numSentencesProcessed.incrementAndGet();
-                        changed.set(System.currentTimeMillis());
-
-                    }
-
-                }, trainingSystem.dispatcher());
-
-            }
-
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            
         }
 
 
