@@ -1,7 +1,9 @@
 package org.deeplearning4j.linalg.jblas.util;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.deeplearning4j.linalg.jblas.NDArray;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.jblas.ComplexDouble;
 import org.jblas.DoubleMatrix;
 import org.jblas.JavaBlas;
@@ -17,6 +19,7 @@ import org.jblas.NativeBlas;
  */
 public class NDArrayBlas {
 
+
     /**
      * Compute y <- alpha * x + y (elementwise addition)
      */
@@ -28,6 +31,23 @@ public class NDArrayBlas {
     }
 
     /**
+     * Sets the stride for a matrix to be the same layout
+     * as jblas.
+     * This is primarily for interop with the native matrix operations.
+     * This should only be used by the library itself.
+     *
+     * This is for operations where the data layout
+     * @param indArray the ndarray to set the strides for
+     *
+     */
+    public static void setStrideForJblas(INDArray indArray) {
+        assert indArray.isMatrix() : "Only allowed stride for matrices";
+        indArray.setStride(new int[]{1,indArray.rows()});
+    }
+
+
+
+    /**
      * Compute c <- a*b + beta * c (general matrix matrix
      * multiplication)
      */
@@ -35,6 +55,8 @@ public class NDArrayBlas {
                                NDArray b, double beta, NDArray c) {
         NativeBlas.dgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset(),
                 a.rows(), b.data, b.offset(), b.rows(), beta, c.data, c.offset(), c.rows());
+        //data is in wrong order update the strides appropriately
+        setStrideForJblas(c);
         return c;
     }
 

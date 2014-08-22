@@ -727,8 +727,9 @@ public interface INDArray {
     public INDArray sum(int dimension);
 
 
+    public void setStride(int[] stride);
 
-
+    public INDArray subArray(int[] offsets, int[] shape,int[] stride);
 
     /**
      * Returns the elements at the the specified indices

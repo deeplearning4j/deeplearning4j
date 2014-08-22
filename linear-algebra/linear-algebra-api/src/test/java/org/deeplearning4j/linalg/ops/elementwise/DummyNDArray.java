@@ -1092,6 +1092,15 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
+    @Override
+    public void setStride(int[] stride) {
+
+    }
+
+    @Override
+    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+        return null;
+    }
 
 
     /**

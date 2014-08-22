@@ -14,7 +14,10 @@ import static org.jblas.util.Functions.max;
 import static org.jblas.util.Functions.min;
 
 /**
- * Created by agibsonccc on 8/16/14.
+ * Copy of SimpleBlas to handle offsets implementing
+ * an interface for library neutral
+ * jblas operations
+ * @author Adam Gibson
  */
 public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrapper<NDArray,ComplexNDArray,IComplexDouble> {
     /***************************************************************************

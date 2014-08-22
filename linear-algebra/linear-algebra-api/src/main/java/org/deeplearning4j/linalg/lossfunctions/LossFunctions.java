@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn;
+package org.deeplearning4j.linalg.lossfunctions;
 
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
@@ -36,7 +36,6 @@ public class LossFunctions {
 
     /**
      * Generic scoring function
-     * @param input the inputs to score
      * @param labels the labels to score
      * @param lossFunction the loss function to use
      * @param output the output function
@@ -44,10 +43,10 @@ public class LossFunctions {
      * @param useRegularization  whether to use regularization
      * @return the score for the given parameters
      */
-    public static double score(INDArray input,INDArray labels,LossFunction lossFunction,Output output,double l2,boolean useRegularization) {
+    public static double score(INDArray labels,LossFunction lossFunction,INDArray output,double l2,boolean useRegularization) {
         double ret = 0.0;
         double reg = 0.5 * l2;
-        INDArray z = output.output(input);
+        INDArray z = output;
         switch (lossFunction) {
             case MCXENT:
                 INDArray mcXEntLogZ = Transforms.log(z);
@@ -84,6 +83,14 @@ public class LossFunctions {
 
     }
 
+    /**
+     * Reconstruction entropy for Denoising AutoEncoders and RBMs
+     * @param input the input ndarray
+     * @param hBias the hidden bias of the neural network
+     * @param vBias the visible bias of the neural network
+     * @param W the weight matrix of the neural network
+     * @return the reconstruction cross entropy for the given parameters
+     */
     public static double reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
         INDArray preSigH = input.mmul(W).addiRowVector(hBias);
         INDArray sigH = sigmoid(preSigH);
@@ -92,8 +99,8 @@ public class LossFunctions {
         INDArray sigV = sigmoid(preSigV);
         INDArray inner =
                 input.mul(log(sigV))
-                        .add(input.rsub(1)
-                                .mul(log(sigV.rsub(1))));
+                        .addi(input.rsub(1)
+                                .muli(log(sigV.rsub(1))));
 
         double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
 

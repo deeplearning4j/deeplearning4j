@@ -10,6 +10,7 @@ import org.deeplearning4j.linalg.factory.BaseNDArrayFactory;
 import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexFloat;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 
 import java.util.List;
 
@@ -19,8 +20,8 @@ import java.util.List;
  */
 public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
-    public JblasNDArrayFactory(String dtype) {
-        super(dtype);
+    public JblasNDArrayFactory(String dtype,Character order) {
+        super(dtype,order);
     }
 
     /**
@@ -69,7 +70,10 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
-        return new ComplexNDArray(data,shape);
+        if(order == FORTRAN)
+            return new ComplexNDArray(data,shape,ArrayUtil.calcStridesFortran(shape));
+        else
+            return new ComplexNDArray(data,shape);
     }
 
     /**
@@ -82,6 +86,9 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
+        if(order == FORTRAN)
+            return new ComplexNDArray(arrs,shape,ArrayUtil.calcStridesFortran(shape));
+
         return new ComplexNDArray(arrs,shape);
     }
 
@@ -150,6 +157,9 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray create(List<INDArray> list, int[] shape) {
-        return new NDArray(list,shape);
+        if(order == FORTRAN)
+            return new NDArray(list,shape, ArrayUtil.calcStridesFortran(shape));
+        else
+            return new NDArray(list,shape);
     }
 }

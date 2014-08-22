@@ -94,7 +94,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     /** Construct a complex matrix from a realComponent matrix. */
     public ComplexNDArray(INDArray m) {
-        this(m.shape());
+        this(m,ArrayUtil.calcStrides(m.shape()));
+    }
+
+
+    public ComplexNDArray(INDArray m,int[] stride) {
+        this(m.shape(),stride);
         //NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
         INDArray flattened = m.reshape(new int[]{1,m.length()});
         ComplexNDArray flatten = reshape(1,length);
@@ -103,14 +108,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         }
     }
 
-
     /**
      * Create an ndarray from the specified slices
      * and the given shape
      * @param slices the slices of the ndarray
      * @param shape the final shape of the ndarray
+     * @param stride the stride of the ndarray
      */
-    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape) {
+    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride) {
         super(new double[ArrayUtil.prod(shape) * 2]);
         List<ComplexDouble> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++) {
@@ -121,7 +126,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
 
         this.data = new double[ArrayUtil.prod(shape) * 2 ];
-
+        this.stride = stride;
         int count = 0;
         for (int i = 0; i < list.size(); i++) {
             data[count] = list.get(i).realComponent();
@@ -131,6 +136,19 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
         initShape(shape);
 
+
+
+    }
+
+
+    /**
+     * Create an ndarray from the specified slices
+     * and the given shape
+     * @param slices the slices of the ndarray
+     * @param shape the final shape of the ndarray
+     */
+    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape) {
+        this(slices,shape,ArrayUtil.calcStrides(shape,2));
 
 
     }
@@ -148,6 +166,23 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
             put(i,(ComplexDouble) newData[i].asDouble());
 
     }
+
+    /**
+     * Create a complex ndarray with the given complex doubles.
+     * Note that this maybe an easier setup than the new double[]
+     * @param newData the new data for this array
+     * @param shape the shape of the ndarray
+     */
+    public ComplexNDArray(IComplexNumber[] newData,int[] shape,int[] stride) {
+        super(new double[ArrayUtil.prod(shape) * 2]);
+        this.stride = stride;
+        initShape(shape);
+        for(int i = 0;i  < length; i++)
+            put(i,(ComplexDouble) newData[i].asDouble());
+
+    }
+
+
     /**
      * Create a complex ndarray with the given complex doubles.
      * Note that this maybe an easier setup than the new double[]
@@ -3755,6 +3790,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
             return arr.reshape(shape);
         }
+    }
+
+    @Override
+    public void setStride(int[] stride) {
+        this.stride = stride;
     }
 
     /**
