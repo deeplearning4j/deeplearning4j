@@ -32,6 +32,8 @@ public class NDArrays  {
     public final static String DTYPE = "dtype";
     public final static String BLAS_OPS = "blas.ops";
     public static String dtype;
+    public static char ORDER = 'c';
+    public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     private static NDArrayFactory INSTANCE;
     private static Properties props = new Properties();
@@ -42,9 +44,11 @@ public class NDArrays  {
             ClassPathResource c = new ClassPathResource(LINALG_PROPS);
             props.load(c.getInputStream());
             dtype = props.get(DTYPE).toString();
+            ORDER = props.getProperty(ORDER_KEY,"c").toString().charAt(0);
+
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(props.get(NDARRAY_FACTORY_CLASS).toString());
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(String.class);
-            INSTANCE = (NDArrayFactory) c2.newInstance(dtype);
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(String.class,Character.class);
+            INSTANCE = (NDArrayFactory) c2.newInstance(dtype,ORDER);
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
         }catch(Exception e) {
@@ -52,6 +56,29 @@ public class NDArrays  {
         }
     }
 
+
+    public static NDArrayFactory factory() {
+        return INSTANCE;
+    }
+
+
+
+
+    /**
+     * Returns the ordering of the ndarrays
+     * @return the ordering of the ndarrays
+     */
+    public static Character order() {
+        return ORDER;
+    }
+
+    /**
+     * Returns the data type used for the runtime
+     * @return the datatype used for the runtime
+     */
+    public static String dataType() {
+        return dtype;
+    }
 
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;

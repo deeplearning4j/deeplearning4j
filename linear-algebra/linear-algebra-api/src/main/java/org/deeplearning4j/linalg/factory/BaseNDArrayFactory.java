@@ -14,21 +14,71 @@ import org.deeplearning4j.linalg.util.ArrayUtil;
 import java.util.*;
 
 /**
- * Base NDArrayFactory class
- * 
+ * Base NDArrayFactory class.
+ *
+ * Allows specification or data type and row (c) or column(fortran) major order
+ *
  * @author Adam Gibson
  */
 public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
     protected String dtype;
+    protected Character order;
 
-    protected BaseNDArrayFactory(String dtype) {
+
+
+    protected BaseNDArrayFactory(String dtype,Character order) {
         this.dtype = dtype;
+        if(Character.toLowerCase(order) != 'c' && Character.toLowerCase(order) != 'f')
+            throw new IllegalArgumentException("Order must either be c or f");
+
+        this.order = order;
+    }
+
+    /**
+     * Sets the order. Primarily for testing purposes
+     *
+     * @param order
+     */
+    @Override
+    public void setOrder(char order) {
+        assert order == 'c' || order == 'f' : "Order specified must be either c or f";
+        this.order = order;
     }
 
 
 
+    /**
+     * Sets the data type
+     *
+     * @param dtype
+     */
+    @Override
+    public void setDType(String dtype) {
+        assert dtype.equals("double") || dtype.equals("float") : "Invalid type passed, must be float or double";
+        this.dtype = dtype;
+    }
+
+    /**
+     * Returns the order for this ndarray for internal data storage
+     *
+     * @return the order (c or f)
+     */
+    @Override
+    public char order() {
+        return order;
+    }
+
+    /**
+     * Returns the data type for this ndarray
+     *
+     * @return the data type for this ndarray
+     */
+    @Override
+    public String dtype() {
+        return dtype;
+    }
 
     /**
      * Generate a linearly spaced vector
@@ -48,7 +98,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
 
-
+    /**
+     * Returns a vector with all of the el
+     * @param matrices
+     * @return
+     */
     public INDArray toFlattened(Collection<INDArray> matrices) {
         int length = 0;
         for(INDArray m : matrices)  length += m.length();
@@ -775,6 +829,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the created ndarray
      */
     public INDArray create(double[] data,int[] shape) {
+        if(order == FORTRAN)
+            return create(data,shape,ArrayUtil.calcStridesFortran(shape),0);
+
         return create(data,shape,ArrayUtil.calcStrides(shape),0);
     }
 
@@ -1227,7 +1284,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     }
 
-  
+
 
 
 }
