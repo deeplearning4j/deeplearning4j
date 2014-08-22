@@ -2,6 +2,7 @@ package org.deeplearning4j.linalg.jblas.complex;
 
 
 import static  org.deeplearning4j.linalg.util.ArrayUtil.calcStrides;
+import static org.deeplearning4j.linalg.util.ArrayUtil.calcStridesFortran;
 import static  org.deeplearning4j.linalg.util.ArrayUtil.reverseCopy;
 
 import org.apache.commons.math3.stat.StatUtils;
@@ -11,6 +12,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.jblas.NDArray;
@@ -54,22 +56,11 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     private int[] shape;
     private int[] stride;
     private int offset = 0;
+    private char ordering;
 
 
 
-    /**
-     * Create a new matrix with <i>newRows</i> rows, <i>newColumns</i> columns
-     * using <i>newData></i> as the data. The length of the data is not checked!
-     *
-     * @param newRows
-     * @param newColumns
-     * @param newData
-     */
-    public ComplexNDArray(int newRows, int newColumns, double... newData) {
-        super(newRows, newColumns, newData);
-    }
-
-    /**
+      /**
      * Creates a new <tt>ComplexDoubleMatrix</tt> of size 0 times 0.
      */
     public ComplexNDArray() {
@@ -80,9 +71,39 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     }
 
 
+
     /** Construct a complex matrix from a realComponent matrix. */
     public ComplexNDArray(NDArray m) {
-        this(m.shape());
+        this(m,NDArrays.order());
+    }
+
+
+    /** Construct a complex matrix from a realComponent matrix. */
+    public ComplexNDArray(INDArray m,char ordering) {
+        this(m,ordering == NDArrayFactory.C ? ArrayUtil.calcStrides(m.shape(),2) : ArrayUtil.calcStridesFortran(m.shape(),2),ordering);
+    }
+
+
+    /**
+     * Initialize the given ndarray as the real component
+     * @param m the real component
+     * @param stride the stride of the ndarray
+     * @param ordering the ordering for the ndarray
+     */
+    public ComplexNDArray(INDArray m,int[] stride,char ordering) {
+        this(m.shape(),stride,ordering);
+        //NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
+        INDArray flattened = m.reshape(new int[]{1,m.length()});
+        ComplexNDArray flatten = reshape(1,length);
+        for(int i = 0; i < length; i++) {
+            flatten.put(i, flattened.getScalar(i));
+        }
+    }
+
+
+    /** Construct a complex matrix from a realComponent matrix. */
+    public ComplexNDArray(NDArray m,char ordering) {
+        this(m.shape(),ordering);
         //NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
         NDArray flattened = m.reshape(new int[]{1,m.length});
         ComplexNDArray flatten = reshape(1,length);
@@ -94,18 +115,17 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     /** Construct a complex matrix from a realComponent matrix. */
     public ComplexNDArray(INDArray m) {
-        this(m,ArrayUtil.calcStrides(m.shape()));
+        this(m,NDArrays.order());
     }
 
-
+    /**
+     * Create with the specified ndarray as the real component
+     * and the given stride
+     * @param m the ndarray to use as the stride
+     * @param stride the stride of the ndarray
+     */
     public ComplexNDArray(INDArray m,int[] stride) {
-        this(m.shape(),stride);
-        //NativeBlas.dcopy(m.length, m.data, m.offset(), 1, data, offset, 2);
-        INDArray flattened = m.reshape(new int[]{1,m.length()});
-        ComplexNDArray flatten = reshape(1,length);
-        for(int i = 0; i < length; i++) {
-            flatten.put(i, flattened.getScalar(i));
-        }
+        this(m,stride,NDArrays.order());
     }
 
     /**
@@ -116,6 +136,21 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @param stride the stride of the ndarray
      */
     public ComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride) {
+        this(slices,shape,stride,NDArrays.order());
+    }
+
+
+
+    /**
+     * Create an ndarray from the specified slices
+     * and the given shape
+     * @param slices the slices of the ndarray
+     * @param shape the final shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param ordering the ordering for the ndarray
+     *
+     */
+    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride,char ordering) {
         super(new double[ArrayUtil.prod(shape) * 2]);
         List<ComplexDouble> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++) {
@@ -125,6 +160,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         }
 
 
+        this.ordering = ordering;
         this.data = new double[ArrayUtil.prod(shape) * 2 ];
         this.stride = stride;
         int count = 0;
@@ -140,6 +176,18 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
     }
 
+    /**
+     * Create an ndarray from the specified slices
+     * and the given shape
+     * @param slices the slices of the ndarray
+     * @param shape the final shape of the ndarray
+     * @param ordering the ordering of the ndarray
+     */
+    public ComplexNDArray(List<IComplexNDArray> slices,int[] shape,char ordering) {
+        this(slices,shape,ordering == NDArrayFactory.C ? ArrayUtil.calcStrides(shape,2) : ArrayUtil.calcStridesFortran(shape,2),ordering);
+
+
+    }
 
     /**
      * Create an ndarray from the specified slices
@@ -148,7 +196,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @param shape the final shape of the ndarray
      */
     public ComplexNDArray(List<IComplexNDArray> slices,int[] shape) {
-        this(slices,shape,ArrayUtil.calcStrides(shape,2));
+        this(slices,shape,NDArrays.order());
 
 
     }
@@ -205,25 +253,50 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @param shape the shape of the ndarray
      */
     public ComplexNDArray(ComplexDouble[] newData,int[] shape) {
+        this(newData,shape,NDArrays.order());
+
+    }
+
+    /**
+     * Create a complex ndarray with the given complex doubles.
+     * Note that this maybe an easier setup than the new double[]
+     * @param newData the new data for this array
+     * @param shape the shape of the ndarray
+     * @param ordering the ordering for the ndarray
+     */
+    public ComplexNDArray(ComplexDouble[] newData,int[] shape,char ordering) {
         super(new double[ArrayUtil.prod(shape) * 2]);
+        this.ordering = ordering;
         initShape(shape);
         for(int i = 0;i  < length; i++)
             put(i,newData[i]);
 
     }
 
+    /**
+     * Initialize with the given data,shape and stride
+     * @param data the data to use
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     */
     public ComplexNDArray(double[] data,int[] shape,int[] stride) {
-        this(data,shape,stride,0);
+        this(data,shape,stride,0,NDArrays.order());
     }
 
 
-
-
-    public ComplexNDArray(double[] data,int[] shape,int[] stride,int offset) {
+    /**
+     * THe ordering of the ndarray
+     * @param data the data to use
+     * @param shape the final shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param offset the offset
+     * @param ordering the ordering
+     */
+    public ComplexNDArray(double[] data,int[] shape,int[] stride,int offset,char ordering) {
         super(data);
         if(offset >= data.length)
             throw new IllegalArgumentException("Invalid offset: must be < data.length");
-
+        this.ordering = ordering;
         this.stride = stride;
         initShape(shape);
 
@@ -239,12 +312,23 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
 
 
+    public ComplexNDArray(double[] data,int[] shape,int[] stride,int offset) {
+         this(data,shape,stride,offset,NDArrays.order());
+    }
+
+
+
     public ComplexNDArray(double[] data,int[] shape) {
         this(data,shape,0);
     }
 
+
+    public ComplexNDArray(double[] data,int[] shape,int offset,char ordering) {
+        this(data,shape,ordering == NDArrayFactory.C ? calcStrides(shape,2) : calcStridesFortran(shape,2),offset,ordering);
+    }
+
     public ComplexNDArray(double[] data,int[] shape,int offset) {
-        this(data,shape,calcStrides(shape,2),offset);
+         this(data,shape,offset,NDArrays.order());
     }
 
 
@@ -259,6 +343,30 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         this(new double[ArrayUtil.prod(shape) * 2],shape,stride,offset);
     }
 
+    /**
+     * Construct an ndarray of the specified shape
+     * with an empty data array
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     * @param offset the desired offset
+     * @param ordering the ordering for the ndarray
+     */
+    public ComplexNDArray(int[] shape,int[] stride,int offset,char ordering) {
+        this(new double[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+    }
+
+
+
+    /**
+     * Create the ndarray with
+     * the specified shape and stride and an offset of 0
+     * @param shape the shape of the ndarray
+     * @param stride the stride of the ndarray
+     */
+    public ComplexNDArray(int[] shape,int[] stride,char ordering){
+        this(shape,stride,0,ordering);
+    }
+
 
     /**
      * Create the ndarray with
@@ -270,9 +378,21 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         this(shape,stride,0);
     }
 
+    /**
+     *
+     * @param shape
+     * @param offset
+     */
     public ComplexNDArray(int[] shape,int offset) {
-        this(shape,calcStrides(shape,2),offset);
+        this(shape,offset,NDArrays.order());
     }
+
+
+
+    public ComplexNDArray(int[] shape,int offset,char ordering) {
+        this(shape,ordering == NDArrayFactory.C ? calcStrides(shape,2) : calcStridesFortran(shape,2),offset,ordering);
+    }
+
 
     /**
      * Create with the specified shape
@@ -283,6 +403,15 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         this(shape,0);
     }
 
+    /**
+     * Create with the specified shape
+     * and an offset of 0
+     * @param shape the shape of the ndarray
+     * @param ordering the ordering for the ndarray
+     */
+    public ComplexNDArray(int[] shape,char ordering) {
+        this(shape,0,ordering);
+    }
 
     /**
      * Creates a new <i>n</i> times <i>m</i> <tt>ComplexDoubleMatrix</tt>.
@@ -294,17 +423,40 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         this(new int[]{newRows,newColumns});
     }
 
+    /**
+     * Creates a new <i>n</i> times <i>m</i> <tt>ComplexDoubleMatrix</tt>.
+     *
+     * @param newRows    the number of rows (<i>n</i>) of the new matrix.
+     * @param newColumns the number of columns (<i>m</i>) of the new matrix.
+     * @param ordering the ordering of the ndarray
+     */
+    public ComplexNDArray(int newRows, int newColumns,char ordering) {
+        this(new int[]{newRows,newColumns},ordering);
+    }
+
+
+    /**
+     * Float overloading for constructor
+     * @param data the data to use
+     * @param shape the shape to use
+     * @param stride the stride of the ndarray
+     * @param offset the offset of the ndarray
+     * @param ordering the ordering for the ndarrayg
+     */
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset,char ordering) {
+        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset,ordering);
+    }
 
 
     public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
-        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
+        this(data,shape,stride,offset,NDArrays.order());
     }
 
     @Override
     public ComplexNDArray dup() {
         double[] dupData = new double[data.length];
         System.arraycopy(data,0,dupData,0,dupData.length);
-        ComplexNDArray ret = new ComplexNDArray(dupData,shape,stride,offset);
+        ComplexNDArray ret = new ComplexNDArray(dupData,shape,stride,offset,ordering);
         return ret;
     }
 
@@ -1546,12 +1698,13 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     public ComplexNDArray slice(int slice) {
         int offset = this.offset + (slice * stride[0]  );
+        ComplexNDArray ret;
         if (shape.length == 0)
             throw new IllegalArgumentException("Can't slice a 0-d ComplexNDArray");
 
             //slice of a vector is a scalar
         else if (shape.length == 1)
-            return new ComplexNDArray(
+            ret = new ComplexNDArray(
                     data,
                     ArrayUtil.empty(),
                     ArrayUtil.empty(),
@@ -1560,7 +1713,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
             //slice of a matrix is a vector
         else if (shape.length == 2) {
-            return new ComplexNDArray(
+            ret = new ComplexNDArray(
                     data,
                     ArrayUtil.of(shape[1]),
                     Arrays.copyOfRange(stride,1,stride.length),
@@ -1573,11 +1726,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         else {
             if(offset >= data.length)
                 throw new IllegalArgumentException("Offset index is > data.length");
-            return new ComplexNDArray(data,
+            ret = new ComplexNDArray(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
                     Arrays.copyOfRange(stride, 1, stride.length),
                     offset);
         }
+
+        ret.ordering = ordering;
+        return ret;
     }
 
 
@@ -1588,11 +1744,12 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @return the slice of this matrix from the specified dimension
      * and dimension
      */
+    @Override
     public ComplexNDArray slice(int slice, int dimension) {
         int offset = this.offset + dimension * stride[slice];
         if(this.offset == 0)
             offset *= 2;
-
+        ComplexNDArray ret;
         if (shape.length == 2) {
             int st = stride[1];
             if (st == 1) {
@@ -3022,6 +3179,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
             throw new IllegalArgumentException("Too many elements");
 
         ComplexNDArray ndArray = new ComplexNDArray(data,shape,stride,offset);
+        ndArray.ordering = ordering;
         return ndArray;
 
     }
@@ -3122,9 +3280,8 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 			 */
             otherArray = otherArray.ravel().reshape(otherArray.shape);
 
-            ComplexNDArray temp = new ComplexNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
+            ComplexNDArray temp = new ComplexNDArray(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()),ordering);
             NDArrayBlas.gemm(ComplexDouble.UNIT, this, otherArray, ComplexDouble.ZERO, temp);
-
             NDArrayBlas.copy(temp, resultArray);
 
         }
@@ -3311,14 +3468,23 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         }
 
         this.length = ArrayUtil.prod(this.shape);
-        if(this.stride == null) {
-            this.stride = ArrayUtil.calcStrides(this.shape,2);
+        //null character
+        if(this.ordering == '\u0000')
+            this.ordering = NDArrays.order();
 
+        if(this.stride == null) {
+            if(ordering == NDArrayFactory.FORTRAN)
+                this.stride = ArrayUtil.calcStridesFortran(shape,2);
+            else
+                this.stride = ArrayUtil.calcStrides(this.shape,2);
         }
 
+        //recalculate stride: this should only happen with row vectors
         if(this.stride.length != this.shape.length) {
-            this.stride = ArrayUtil.calcStrides(this.shape,2);
-
+            if(ordering == NDArrayFactory.FORTRAN)
+                this.stride = ArrayUtil.calcStridesFortran(shape,2);
+            else
+                this.stride = ArrayUtil.calcStrides(this.shape,2);
         }
 
     }
@@ -4066,12 +4232,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     public ComplexNDArray getColumn(int c) {
         if(shape.length == 2) {
             int offset = this.offset + c * 2;
-            return new ComplexNDArray(
+            ComplexNDArray ret =  new ComplexNDArray(
                     data,
                     new int[]{shape[0], 1},
                     new int[]{stride[0], 2},
                     offset
             );
+            ret.ordering = ordering;
+            return ret;
         }
 
         else
@@ -4090,13 +4258,17 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      */
     @Override
     public ComplexNDArray getRow(int r) {
-        if(shape.length == 2)
-            return new ComplexNDArray(
+        if(shape.length == 2) {
+            ComplexNDArray ret =  new ComplexNDArray(
                     data,
                     new int[]{shape[1]},
                     new int[]{stride[1]},
-                    offset +  (r * 2) * columns()
+                    offset + (r * 2) * columns()
             );
+
+            ret.ordering = ordering;
+            return ret;
+        }
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
 
@@ -4191,7 +4363,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         rs.init(0, rows());
         cs.init(0, columns());
         ComplexNDArray result = new ComplexNDArray(rs.length(), cs.length());
-
+        result.ordering = ordering;
         for (; rs.hasMore(); rs.next()) {
             cs.init(0, columns());
             for (; cs.hasMore(); cs.next()) {
@@ -4214,14 +4386,22 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * Returns the stride(indices along the linear index for which each slice is accessed) of this array
      * @return the stride of this array
      */
+    @Override
     public int[] stride() {
         return stride;
     }
 
 
+    @Override
     public int offset() {
         return offset;
     }
+
+    @Override
+    public char ordering() {
+        return ordering;
+    }
+
 
     /**
      * Returns the size of this array
@@ -4235,6 +4415,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
      * @param dimension the dimension to return from
      * @return the shape of the specified dimension
      */
+    @Override
     public int size(int dimension) {
         if(isScalar()) {
             if(dimension == 0)
@@ -4311,7 +4492,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         int[] newStrides = doPermuteSwap(stride,rearrange);
 
         ComplexNDArray ret = new ComplexNDArray(data,newDims,newStrides,offset);
-
+        ret.ordering = ordering;
         return ret;
     }
 

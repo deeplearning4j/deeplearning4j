@@ -93,14 +93,14 @@ public class LossFunctions {
      */
     public static double reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
         INDArray preSigH = input.mmul(W).addiRowVector(hBias);
-        INDArray sigH = sigmoid(preSigH);
+        INDArray sigH = sigmoid(preSigH.dup());
 
-        INDArray preSigV = sigH.mmul(W.transpose()).addiRowVector(vBias);
-        INDArray sigV = sigmoid(preSigV);
+        INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
+        INDArray sigV = sigmoid(preSigV.dup());
         INDArray inner =
-                input.mul(log(sigV))
+                input.mul(log(sigV.dup()))
                         .addi(input.rsub(1)
-                                .muli(log(sigV.rsub(1))));
+                                .muli(log(sigV.rsubi(1))));
 
         double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
 

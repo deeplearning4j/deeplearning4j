@@ -260,7 +260,7 @@ public class ArrayUtil {
      * @return the int array with a length equal to absoluteValue(from - to)
      */
     public static int[] range(int from,int to) {
-         return range(from,to,1);
+        return range(from,to,1);
     }
 
     public static double[] toDoubles(int[] ints) {
@@ -271,7 +271,7 @@ public class ArrayUtil {
     }
 
     public static double[] toDoubles(int[][] ints) {
-       return toDoubles(Ints.concat(ints));
+        return toDoubles(Ints.concat(ints));
     }
 
 
@@ -346,21 +346,32 @@ public class ArrayUtil {
 
 
 
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:
+     * @param startNum the start number for the strides
      * @return the strides for a matrix of n dimensions
      */
-    public static  int[]  calcStridesFortran(int[] shape) {
+    public static  int[]  calcStridesFortran(int[] shape,int startNum) {
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
-        int st = 1;
+        int st = startNum;
         for (int j = 0; j < stride.length; j++) {
             stride[j] = st;
             st *= shape[j];
         }
 
         return stride;
+    }
+
+    /**
+     * Computes the standard packed array strides for a given shape.
+     * @param shape the shape of a matrix:
+     * @return the strides for a matrix of n dimensions
+     */
+    public static  int[]  calcStridesFortran(int[] shape) {
+        return calcStridesFortran(shape,1);
     }
 
 

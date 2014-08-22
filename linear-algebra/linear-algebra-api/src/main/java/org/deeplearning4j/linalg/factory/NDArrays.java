@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexFloat;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.springframework.core.io.ClassPathResource;
 
 import java.lang.reflect.Constructor;
@@ -71,7 +72,7 @@ public class NDArrays  {
      * @return the ordering of the ndarrays
      */
     public static Character order() {
-        return ORDER;
+        return factory().order();
     }
 
     /**
@@ -1112,8 +1113,54 @@ public class NDArrays  {
     }
 
 
+    /**
+     * Get the strides for the given order and shape
+     * @param shape the shape of the ndarray
+     * @param order the order to get the strides for
+     * @return the strides for the given shape and order
+     */
+    public static int[] getStrides(int[] shape,char order) {
+        if(order == NDArrayFactory.FORTRAN)
+            return ArrayUtil.calcStridesFortran(shape);
+        return ArrayUtil.calcStrides(shape);
+    }
+
+    /**
+     * Get the strides based on the shape
+     * and NDArrays.order()
+     * @param shape the shape of the ndarray
+     * @return the strides for the given shape
+     * and order specified by NDArrays.order()
+     */
+    public static int[] getStrides(int[] shape) {
+        return getStrides(shape,NDArrays.order());
+    }
 
 
+
+
+    /**
+     * Get the strides for the given order and shape
+     * @param shape the shape of the ndarray
+     * @param order the order to get the strides for
+     * @return the strides for the given shape and order
+     */
+    public static int[] getComplexStrides(int[] shape,char order) {
+        if(order == NDArrayFactory.FORTRAN)
+            return ArrayUtil.calcStridesFortran(shape,2);
+        return ArrayUtil.calcStrides(shape,2);
+    }
+
+    /**
+     * Get the strides based on the shape
+     * and NDArrays.order()
+     * @param shape the shape of the ndarray
+     * @return the strides for the given shape
+     * and order specified by NDArrays.order()
+     */
+    public static int[] getComplexStrides(int[] shape) {
+        return getStrides(shape,NDArrays.order());
+    }
 
 
 

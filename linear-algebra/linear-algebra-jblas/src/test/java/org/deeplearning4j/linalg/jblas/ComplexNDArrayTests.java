@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Tests for a complex ndarray
+ *
+ * @author Adam Gibson
  */
 public class ComplexNDArrayTests extends org.deeplearning4j.linalg.api.test.ComplexNDArrayTests {
 
