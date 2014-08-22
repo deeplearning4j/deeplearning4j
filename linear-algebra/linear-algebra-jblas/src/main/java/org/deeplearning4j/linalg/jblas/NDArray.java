@@ -1,8 +1,6 @@
 package org.deeplearning4j.linalg.jblas;
 
 
-import static org.deeplearning4j.linalg.util.ArrayUtil.*;
-
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
@@ -29,13 +27,16 @@ import org.deeplearning4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.linalg.util.Shape;
 import org.jblas.ComplexDouble;
 import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
 import org.jblas.ranges.Range;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.deeplearning4j.linalg.util.ArrayUtil.*;
 
 
 /**
@@ -2201,7 +2202,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
         else
             return new NDArray(data,
                     Arrays.copyOfRange(shape, 1, shape.length),
-                   strides,
+                   stride,
                     offset + (slice * stride[0]));
 
     }

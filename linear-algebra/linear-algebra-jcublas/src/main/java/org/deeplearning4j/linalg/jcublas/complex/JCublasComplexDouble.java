@@ -11,11 +11,13 @@ public class JCublasComplexDouble implements IComplexDouble  {
 
     }
 
-    public JCublasComplexDouble(JCublasComplexDouble jCublasComplexDouble) {
+    public JCublasComplexDouble(int i) {
+
     }
 
+
     @Override
-    public IComplexNumber set(Number real, Number imag) {
+    public JCublasComplexDouble set(Number real, Number imag) {
         return null;
     }
 
@@ -237,5 +239,13 @@ public class JCublasComplexDouble implements IComplexDouble  {
     @Override
     public IComplexDouble asDouble() {
         return null;
+    }
+
+    public double imag() {
+        return 0;
+    }
+
+    public double real() {
+        return 0;
     }
 }

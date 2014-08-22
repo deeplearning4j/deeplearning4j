@@ -35,6 +35,7 @@ public class JCublasNDArray implements INDArray {
     private int offset = 0;
     private boolean changedStride = false;
     private int[] oldStride;
+    private char ordering;
 
     public int rows;
     /** Number of columns. */
@@ -169,6 +170,11 @@ public class JCublasNDArray implements INDArray {
      */
     public int[] stride() {
         return stride;
+    }
+
+    @Override
+    public char ordering() {
+        return ordering;
     }
 
 
@@ -2281,6 +2287,10 @@ public class JCublasNDArray implements INDArray {
     //@Override
     public JCublasNDArray mulColumnVector(JCublasNDArray columnVector) {
         return dup().muliColumnVector(columnVector);
+    }
+
+    public static IComplexNDArray gemm(IComplexNDArray thisInput, IComplexNDArray otherArray, int i, int i1) {
+        return null;
     }
 
     public static enum ScalarOp {

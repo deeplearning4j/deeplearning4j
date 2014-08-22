@@ -3,6 +3,8 @@ package org.deeplearning4j.linalg.jcublas;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
 
 /**
  * Created by mjk on 8/20/14.
@@ -66,6 +68,11 @@ public class SimpleJCublas {
         JCublas.cublasShutdown();
 
         return C;
+    }
+    public static JCublasComplexNDArray gemm(IComplexNDArray A_, IComplexNDArray B_, double alpha, double beta) {
+    //cublasDnrm2(int n, jcuda.Pointer x, int incx)
+
+        return null;
     }
     public static JCublasNDArray gemm(JCublasNDArray A_, JCublasNDArray B_, double alpha, double beta) {
 
@@ -217,5 +224,45 @@ public class SimpleJCublas {
         return resultArray;
         */
 
+    }
+
+    public static void dcopy(int length, double[] data, int offset, int i, double[] data1, int i1, int i2) {
+        Pointer X = new Pointer();
+        Pointer Y = new Pointer();
+
+        JCublas.cublasAlloc(length, Sizeof.DOUBLE, X);
+        JCublas.cublasAlloc(length, Sizeof.DOUBLE, Y);
+
+        JCublas.cublasInit();
+        JCublas.setExceptionsEnabled(true);
+
+        JCublas.cublasSetVector(
+                length,
+                Sizeof.DOUBLE,
+                Pointer.to(data),
+                1,
+                X,
+                1);
+
+        JCublas.cublasDcopy(length,
+                X,
+                1,
+                Y,
+                1);
+
+        JCublas.cublasGetVector(
+                length,
+                Sizeof.DOUBLE,
+                Y,
+                1,
+                Pointer.to(data1),
+                1);
+
+        JCublas.cublasShutdown();
+
+    }
+
+    public static double nrm2(JCublasComplexNDArray jCublasComplexNDArray) {
+        return 0;
     }
 }
