@@ -1349,6 +1349,11 @@ public class DummyNDArray implements INDArray {
         return new int[0];
     }
 
+    @Override
+    public char ordering() {
+        return 0;
+    }
+
     /**
      * Returns the size along a specified dimension
      *

@@ -19,6 +19,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.lossfunctions.*;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetworkOptimizer;
@@ -819,21 +820,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return reconstruction error
      */
     public double getReConstructionCrossEntropy() {
-        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
-        INDArray sigH = sigmoid(preSigH);
-
-        INDArray preSigV = sigH.mmul(W.transpose()).addiRowVector(vBias);
-        INDArray sigV = sigmoid(preSigV);
-        INDArray inner =
-                input.mul(log(sigV))
-                        .add(input.rsub(1)
-                                .mul(log(sigV.rsub(1))));
-
-        double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
-        if(normalizeByInputRows)
-            ret /= input.rows();
-
-        return ret;
+       return org.deeplearning4j.linalg.lossfunctions.LossFunctions.reconEntropy(input,hBias,vBias,W);
     }
 
 
