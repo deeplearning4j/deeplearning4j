@@ -21,6 +21,34 @@ public interface NDArrayFactory  {
 
 
 
+    public final static char FORTRAN = 'f';
+    public final static char C = 'c';
+
+
+    /**
+     * Sets the order. Primarily for testing purposes
+     * @param order
+     */
+    void setOrder(char order);
+
+    /**
+     * Sets the data type
+     * @param dtype
+     */
+    void setDType(String dtype);
+
+    /**
+     * Returns the order for this ndarray for internal data storage
+     * @return the order (c or f)
+     */
+    public char order();
+
+    /**
+     * Returns the data type for this ndarray
+     * @return the data type for this ndarray
+     */
+    public String dtype();
+
     /**
      * Creates a complex ndarray with the specified shape
      * @param rows the rows of the ndarray

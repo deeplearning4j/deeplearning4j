@@ -9,6 +9,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
@@ -48,6 +49,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
     private int[] shape;
     private int[] stride;
     private int offset = 0;
+    private boolean changedStride = false;
+    private int[] oldStride;
 
     /**
      * Create an ndarray from the specified slices.
@@ -70,6 +73,27 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     }
 
+
+    /**
+     * Create an ndarray from the specified slices.
+     * This will go through and merge all of the
+     * data from each slice in to one ndarray
+     * which will then take the specified shape
+     * @param slices the slices to merge
+     * @param shape the shape of the ndarray
+     */
+    public NDArray(List<INDArray> slices,int[] shape,int[] stride) {
+        List<double[]> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++)
+            list.add(slices.get(i).data());
+
+        this.data = ArrayUtil.combine(list);
+        this.stride = stride;
+        initShape(shape);
+
+
+
+    }
 
 
     public NDArray(double[] data,int[] shape,int[] stride) {
@@ -96,6 +120,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
     public NDArray(float[] data, int[] shape, int[] stride, int offset) {
+        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
     }
 
 
@@ -925,15 +950,6 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public double[] data() {
-        if(offset == 0)
-            return data;
-
-        INDArray linear = reshape(new int[]{1,length});
-        double[] data = new double[length];
-        int count = 0;
-        for(int i = 0; i < length; i++) {
-            data[count++] = (double) linear.getScalar(i).element();
-        }
         return data;
     }
 
@@ -964,6 +980,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
 
+    @Override
     public NDArray subArray(int[] offsets, int[] shape,int[] stride) {
         int n = shape.length;
         if (offsets.length != n)
@@ -1080,7 +1097,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
         return result;
     }
 
+
+    @Override
     public void setStride(int[] stride) {
+        this.oldStride = ArrayUtil.copy(this.stride);
         this.stride = stride;
     }
 
@@ -1290,8 +1310,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray diviColumnVector(INDArray columnVector) {
+        assert columnVector.isColumnVector() : "Must only add a column vector";
+        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
+
         for(int i = 0; i < columns(); i++) {
-            getColumn(i).divi(columnVector.getScalar(i));
+            getColumn(i).divi(columnVector);
         }
         return this;
     }
@@ -1315,8 +1338,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray diviRowVector(INDArray rowVector) {
-        for(int i = 0; i < rows(); i++) {
-            getRow(i).divi(rowVector.getScalar(i));
+        assert rowVector.isRowVector() : "Must only add a row vector";
+        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
+        for(int j = 0; j< rows(); j++) {
+            getRow(j).divi(rowVector);
         }
         return this;
     }
@@ -1340,8 +1365,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray muliColumnVector(INDArray columnVector) {
+        assert columnVector.isColumnVector() : "Must only add a column vector";
+        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
+
         for(int i = 0; i < columns(); i++) {
-            getColumn(i).muli(columnVector.getScalar(i));
+            getColumn(i).muli(columnVector);
         }
         return this;
     }
@@ -1365,8 +1393,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray muliRowVector(INDArray rowVector) {
-        for(int i = 0; i < rows(); i++) {
-            getRow(i).muli(rowVector.getScalar(i));
+        assert rowVector.isRowVector() : "Must only add a row vector";
+        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
+        for(int j = 0; j< rows(); j++) {
+            getRow(j).muli(rowVector);
         }
         return this;
     }
@@ -1390,8 +1420,11 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subiColumnVector(INDArray columnVector) {
+        assert columnVector.isColumnVector() : "Must only add a column vector";
+        assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
+
         for(int i = 0; i < columns(); i++) {
-            getColumn(i).subi(columnVector.getScalar(i));
+            getColumn(i).subi(columnVector);
         }
         return this;
     }
@@ -1415,8 +1448,10 @@ public class NDArray extends DoubleMatrix implements INDArray {
      */
     @Override
     public NDArray subiRowVector(INDArray rowVector) {
-        for(int i = 0; i < rows(); i++) {
-            getRow(i).subi(rowVector.getScalar(i));
+        assert rowVector.isRowVector() : "Must only add a row vector";
+        assert rowVector.length() == columns() : "Illegal row vector must have the same length as the number of rows in this ndarray";
+        for(int j = 0; j< rows(); j++) {
+            getRow(j).subi(rowVector);
         }
         return this;
     }
@@ -1496,7 +1531,19 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray mmul(INDArray other) {
         int[] shape = {rows(),other.columns()};
-        return mmuli(other,NDArrays.create(shape));
+        char order = NDArrays.factory().order();
+        boolean switchedOrder = false;
+        if(order != NDArrayFactory.FORTRAN) {
+            NDArrays.factory().setOrder(NDArrayFactory.C);
+           switchedOrder = true;
+        }
+
+        INDArray result = NDArrays.create(shape);
+
+        if(switchedOrder)
+            NDArrays.factory().setOrder(NDArrayFactory.C);
+
+        return mmuli(other,result);
     }
 
     /**
@@ -1946,6 +1993,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
     @Override
     public int linearIndex(int i) {
+        if(oldStride != null)
+            return offset + i;
         int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
         if(idx >= data.length)
@@ -1954,13 +2003,25 @@ public class NDArray extends DoubleMatrix implements INDArray {
     }
 
     private int getRealStrideForLinearIndex() {
-        if(stride == null || stride().length < 1)
-            return 1;
-        if(stride.length == 2 && shape[0] == 1)
-            return stride[1];
-        if(stride().length == 2 && shape[1] == 1)
+        if(oldStride != null) {
+            if(oldStride == null || oldStride.length < 1)
+                return 1;
+            if(oldStride.length == 2 && shape[0] == 1)
+                return stride[1];
+            if(stride().length == 2 && oldStride[1] == 1)
+                return oldStride[0];
+            return oldStride[0];
+        }
+        else {
+            if(stride == null || stride().length < 1)
+                return 1;
+            if(stride.length == 2 && shape[0] == 1)
+                return stride[1];
+            if(stride().length == 2 && shape[1] == 1)
+                return stride[0];
             return stride[0];
-        return stride[0];
+        }
+
     }
 
 
@@ -3476,12 +3537,20 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray getColumn(int c) {
         if(shape.length == 2)
-            return new NDArray(
-                    data,
-                    new int[]{shape[0]},
-                    new int[]{stride[0]},
-                    offset + c
-            );
+            if(oldStride == null)
+                return new NDArray(
+                        data,
+                        new int[]{shape[0]},
+                        new int[]{stride[0]},
+                        offset + c
+                );
+            else
+                return new NDArray(
+                        data,
+                        new int[]{shape[0]},
+                        new int[]{oldStride[0]},
+                        offset + c
+                );
         else
             throw new IllegalArgumentException("Unable to getFromOrigin column of non 2d matrix");
     }
@@ -3538,12 +3607,20 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray getRow(int r) {
         if(shape.length == 2)
-            return new NDArray(
-                    data,
-                    new int[]{shape[1]},
-                    new int[]{stride[1]},
-                    offset +  r * columns()
-            );
+            if(oldStride == null)
+                return new NDArray(
+                        data,
+                        new int[]{shape[1]},
+                        new int[]{stride[1]},
+                        offset +  r * columns()
+                );
+            else
+                return new NDArray(
+                        data,
+                        new int[]{shape[1]},
+                        new int[]{oldStride[1]},
+                        offset +  r * columns()
+                );
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
     }

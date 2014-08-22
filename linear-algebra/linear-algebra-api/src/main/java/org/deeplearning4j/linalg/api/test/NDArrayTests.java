@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.Shape;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,15 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testGetRowAfterSetSlice() {
+
+    }
+
+    @Test
+    public void testGetColumnAfterSetSlice() {
+
+    }
 
     @Test
     public void testSlices() {
@@ -223,6 +233,22 @@ public abstract class NDArrayTests {
 
     }
 
+    @Test
+    public void testOrdering() {
+        //c ordering first
+        NDArrays.factory().setOrder('c');
+        NDArrays.factory().setDType("double");
+
+        INDArray  data = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        assertEquals(2.0,(double) data.getScalar(0,1).element(),1e-1);
+        NDArrays.factory().setOrder('f');
+
+        INDArray data2 = NDArrays.create(new double[]{1,2,3,4},new int[]{2,2});
+        assertNotEquals(data2.getScalar(0,1),data.getScalar(0,1));
+        NDArrays.factory().setOrder('c');
+
+    }
+
 
 
     @Test
@@ -272,7 +298,9 @@ public abstract class NDArrayTests {
 
 
         INDArray mmul = row1.mmul(row2);
+        NDArrays.factory().setOrder('f');
         INDArray result = NDArrays.create(new double[]{3,6,4,8},new int[]{2,2});
+        NDArrays.factory().setOrder('c');
         assertEquals(result,mmul);
 
 
@@ -370,8 +398,7 @@ public abstract class NDArrayTests {
         assertEquals(true, Arrays.equals(new int[]{2, 2}, slice.shape()));
 
         INDArray slice1 = n.slice(1);
-        assertEquals(true,Arrays.equals(slice.shape(),slice1.shape()));
-        assertNotEquals(true,Arrays.equals(slice.data(),slice1.data()));
+        assertNotEquals(slice,slice1);
 
         INDArray arr = NDArrays.create(NDArrays.linspace(1,24,24).data(),new int[]{4,3,2});
         INDArray slice0 = NDArrays.create(new double[]{1,2,3,4,5,6},new int[]{3,2});
