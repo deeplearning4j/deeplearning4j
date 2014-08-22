@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Floats;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.NeuralNetwork;
@@ -194,7 +195,8 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
         if(iteration >= 1)
             extraParams[extraParams.length - 1] = iteration;
         NeuralNetworkGradient g = network.getGradient(extraParams);
-        double[] buffer = new double[getNumParameters()];
+
+        if(NDArrays.dataType().equals("double")) {
         /*
 		 * Treat params as linear index. Always:
 		 * W
@@ -202,22 +204,23 @@ public abstract class NeuralNetworkOptimizer implements OptimizableByGradientVal
 		 * Hidden Bias
 		 */
 
-        INDArray wGradientFlattened = g.getwGradient().ravel();
-        INDArray vBiasGradientFlattened = g.getvBiasGradient().ravel();
-        INDArray hBiasGradientFlattened = g.gethBiasGradient().ravel();
 
-        int idx = 0;
-        for (int i = 0; i < g.getwGradient().length(); i++) {
-            buffer[idx++] = (double) wGradientFlattened.getScalar(i).element();
+            double[] buffer = Doubles.concat(g.getwGradient().data(), g.getvBiasGradient().data(),g.gethBiasGradient().data());
+
+            return NDArrays.create(buffer);
         }
-        for (int i = 0; i < g.getvBiasGradient().length(); i++) {
-            buffer[idx++] = (double) vBiasGradientFlattened.getScalar(i).element();
-        }
-        for (int i = 0; i < g.gethBiasGradient().length(); i++) {
-            buffer[idx++] = (double) hBiasGradientFlattened.getScalar(i).element();
+        else {
+        /*
+		 * Treat params as linear index. Always:
+		 * W
+		 * Visible Bias
+		 * Hidden Bias
+		 */
+
+            float[] buffer = Floats.concat(g.getwGradient().floatData(),g.getvBiasGradient().floatData(),g.gethBiasGradient().floatData());
+            return NDArrays.create(buffer);
         }
 
-        return NDArrays.create(buffer);
     }
 
 
