@@ -876,7 +876,7 @@ public class JCublasComplexNDArray implements IComplexNDArray {
         JCublasComplexNDArray ret = new JCublasComplexNDArray(toWrap.data,shape);
         return ret;
     }
-    
+
     public static JCublasComplexNDArray wrap(JCublasComplexNDArray ndArray,JCublasComplexNDArray toWrap) {
         if(toWrap instanceof JCublasComplexNDArray)
             return (JCublasComplexNDArray) toWrap;

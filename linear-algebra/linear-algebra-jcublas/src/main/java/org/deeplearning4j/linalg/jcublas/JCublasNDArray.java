@@ -33,6 +33,9 @@ public class JCublasNDArray implements INDArray {
     private int[] shape;
     private int[] stride;
     private int offset = 0;
+    private boolean changedStride = false;
+    private int[] oldStride;
+
     public int rows;
     /** Number of columns. */
     public int columns;
@@ -40,6 +43,11 @@ public class JCublasNDArray implements INDArray {
     public int length;
     /** The actual data stored by rows (that is, row 0, row 1...). */
     public double[] data = null; // rows are contiguous
+
+    public JCublasNDArray(float[] data, int[] shape, int[] stride, int offset) {
+        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset);
+
+    }
 
     @Override
     public String toString() {
@@ -490,6 +498,18 @@ public class JCublasNDArray implements INDArray {
 
             return arr.reshape(shape).transpose();
         }
+    }
+
+    @Override
+    public void setStride(int[] stride) {
+        this.oldStride = ArrayUtil.copy(this.stride);
+        this.stride = stride;
+
+    }
+
+    @Override
+    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+        return null;
     }
 
     public double mean() {

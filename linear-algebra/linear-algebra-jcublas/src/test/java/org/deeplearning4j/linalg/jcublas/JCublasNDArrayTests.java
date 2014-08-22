@@ -4,6 +4,7 @@ package org.deeplearning4j.linalg.jcublas;
 import org.deeplearning4j.linalg.api.ndarray.DimensionSlice;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
+import org.deeplearning4j.linalg.api.test.NDArrayTests;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
@@ -26,7 +27,7 @@ import static org.junit.Assert.*;
  * JCublasNDArrayTests
  * @author Adam Gibson
  */
-public class JCublasNDArrayTests {
+public class JCublasNDArrayTests  extends NDArrayTests {
     private static Logger log = LoggerFactory.getLogger(JCublasNDArrayTests.class);
     private INDArray n = new JCublasNDArray(new double[]{1,2,3,4,5,6,7,8},new int[]{2,2,2});
 
