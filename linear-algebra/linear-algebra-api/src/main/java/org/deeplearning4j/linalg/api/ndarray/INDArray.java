@@ -894,6 +894,8 @@ public interface INDArray {
      */
     int[] stride();
 
+    char ordering();
+
     /**
      * Returns the size along a specified dimension
      * @param dimension the dimension to return the size for
