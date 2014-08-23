@@ -58,7 +58,7 @@ layout: default
              </repository>
          </repositories>
 
-6. All dependencies should be added after the tags <dependencyManagement><dependencies> and before they close. Add this dependency to your POM file:
+6. All dependencies should be added after the tags "dependencyManagement" and "dependencies", and before they close. Add this dependency to your POM file:
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
