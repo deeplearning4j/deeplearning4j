@@ -19,7 +19,7 @@ in the command line.
 
 Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads).
 
-Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in the command line:
+Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
 
 	import numpy
 	import pylab as pl
