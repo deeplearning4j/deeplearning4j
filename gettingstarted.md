@@ -35,9 +35,7 @@ layout: default
 
          c:\Programs\maven\bin\..
 
-  If you don't have Maven, you can follow the installation instructions here:
-
-  On [Maven's website](http://maven.apache.org/), you'll find its ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html).
+  If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html).
 
   Finally, run this command:
 
