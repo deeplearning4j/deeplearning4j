@@ -38,15 +38,15 @@ To run the examples, move into the DL4J examples folder you downloaded and unzip
 		
 (*If you previously installed DL4J*, cd into deeplearning4j-examples/target/, and there you will find the file you need to unzip.)
 
-Once you've made the the examples folder your current working directory, enter this command:
+Once you've made the examples folder your current working directory, enter this command:
 
 		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
 
-Now you should see evidence that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral image. If the error shrinks, that means your net is learning, and all is well in the world.
+Now you should see evidence that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
 
 ![Alt text](../img/learning.png)
 
-At the end of the training, you should see some numerals pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net works, and they look similar to these.
+At the end of the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these.
 
 ![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
 
