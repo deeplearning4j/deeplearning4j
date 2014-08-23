@@ -1,5 +1,9 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ArrayUtil;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
@@ -9,8 +13,6 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import org.deeplearning4j.nn.linalg.Tensor;
-import org.jblas.DoubleMatrix;
 /**
  * Image loader for taking images and converting them to matrices
  * @author Adam Gibson
@@ -32,8 +34,8 @@ public class ImageLoader {
         this.height = height;
     }
 
-    public DoubleMatrix asRowVector(File f) throws Exception {
-        return MatrixUtil.toMatrix(flattenedImageFromFile(f));
+    public INDArray asRowVector(File f) throws Exception {
+        return ArrayUtil.toNDArray(flattenedImageFromFile(f));
     }
 
 
@@ -45,10 +47,10 @@ public class ImageLoader {
      * @param numRowsPerSlice the number of rows for each image
      * @return a tensor representing one image as a mini batch
      */
-    public Tensor asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
+    public INDArray asImageMiniBatches(File f,int numMiniBatches,int numRowsPerSlice) {
         try {
-            DoubleMatrix d = asMatrix(f);
-            Tensor f2 = new Tensor(d,numRowsPerSlice,d.columns,numMiniBatches);
+            INDArray d = asMatrix(f);
+            INDArray f2 = NDArrays.create(new int[]{numMiniBatches, numRowsPerSlice, d.columns()});
             return f2;
         }catch(Exception e) {
             throw new RuntimeException(e);
@@ -56,8 +58,8 @@ public class ImageLoader {
 
     }
 
-    public DoubleMatrix asMatrix(File f) throws IOException {
-        return MatrixUtil.toMatrix(fromFile(f));
+    public INDArray asMatrix(File f) throws IOException {
+        return ArrayUtil.toNDArray(fromFile(f));
     }
 
     public int[] flattenedImageFromFile(File f) throws Exception {
@@ -79,24 +81,24 @@ public class ImageLoader {
     }
 
 
-    public static BufferedImage toImage(DoubleMatrix matrix) {
-        BufferedImage img = new BufferedImage(matrix.rows, matrix.columns, BufferedImage.TYPE_INT_ARGB);
+    public static BufferedImage toImage(INDArray matrix) {
+        BufferedImage img = new BufferedImage(matrix.rows(), matrix.columns(), BufferedImage.TYPE_INT_ARGB);
         WritableRaster r = img.getRaster();
-        int[] equiv = new int[matrix.length];
+        int[] equiv = new int[matrix.length()];
         for(int i = 0; i < equiv.length; i++) {
-            equiv[i] = (int) matrix.get(i);
+            equiv[i] = (int) matrix.getScalar(i).element();
         }
 
 
-        r.setDataElements(0,0,matrix.rows,matrix.columns,equiv);
+        r.setDataElements(0,0,matrix.rows(),matrix.columns(),equiv);
         return img;
     }
 
 
-    private static int[] rasterData(DoubleMatrix matrix) {
-        int[] ret = new int[matrix.length];
+    private static int[] rasterData(INDArray matrix) {
+        int[] ret = new int[matrix.length()];
         for(int i = 0; i < ret.length; i++)
-            ret[i] = (int) Math.round(matrix.get(i));
+            ret[i] = (int) Math.round((double) matrix.getScalar(i).element());
         return ret;
     }
 

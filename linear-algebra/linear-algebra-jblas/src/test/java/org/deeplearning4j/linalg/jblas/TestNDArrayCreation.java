@@ -24,6 +24,7 @@ public class TestNDArrayCreation {
 
         INDArray arr2 = NDArrays.scalar(0d,0);
         assertEquals(arr,arr2);
+        arr = NDArrays.create(1,1);
 
     }
 

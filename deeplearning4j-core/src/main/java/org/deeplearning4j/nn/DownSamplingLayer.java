@@ -2,9 +2,9 @@ package org.deeplearning4j.nn;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.linalg.FourDTensor;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+
 
 
 /**
@@ -14,17 +14,17 @@ public class DownSamplingLayer extends HiddenLayer {
 
     private int[] stride;
     private int numFeatureMaps;
-    private DoubleMatrix fmSize;
-    private FourDTensor featureMap;
+    private INDArray fmSize;
+    private INDArray featureMap;
 
     private DownSamplingLayer() {}
 
 
-    public FourDTensor getFeatureMap() {
+    public INDArray getFeatureMap() {
         return featureMap;
     }
 
-    public void setFeatureMap(FourDTensor featureMap) {
+    public void setFeatureMap(INDArray featureMap) {
         this.featureMap = featureMap;
     }
 
@@ -45,11 +45,11 @@ public class DownSamplingLayer extends HiddenLayer {
     }
 
 
-    public DoubleMatrix getFmSize() {
+    public INDArray getFmSize() {
         return fmSize;
     }
 
-    public void setFmSize(DoubleMatrix fmSize) {
+    public void setFmSize(INDArray fmSize) {
         this.fmSize = fmSize;
     }
 
@@ -57,7 +57,7 @@ public class DownSamplingLayer extends HiddenLayer {
     public static class Builder extends HiddenLayer.Builder {
 
         private int[] stride;
-        private DoubleMatrix fmSize;
+        private INDArray fmSize;
         private int numFeatureMaps;
 
 
@@ -73,7 +73,7 @@ public class DownSamplingLayer extends HiddenLayer {
             return this;
         }
 
-        public Builder withFmSize(DoubleMatrix fmSize) {
+        public Builder withFmSize(INDArray fmSize) {
             this.fmSize = fmSize;
             return this;
         }
@@ -98,7 +98,7 @@ public class DownSamplingLayer extends HiddenLayer {
         }
 
         @Override
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             super.withWeights(W);
             return this;
         }
@@ -116,13 +116,13 @@ public class DownSamplingLayer extends HiddenLayer {
         }
 
         @Override
-        public Builder withBias(DoubleMatrix b) {
+        public Builder withBias(INDArray b) {
             super.withBias(b);
             return this;
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
              super.withInput(input);
             return this;
         }

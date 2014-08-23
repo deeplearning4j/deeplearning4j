@@ -8,19 +8,25 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import akka.actor.Cancellable;
 import com.google.common.util.concurrent.AtomicDouble;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.nn.Persistable;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.word2vec.actor.SentenceActor;
 import org.deeplearning4j.word2vec.actor.VocabActor;
 import org.deeplearning4j.word2vec.sentenceiterator.CollectionSentenceIterator;
@@ -30,9 +36,7 @@ import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
-import org.jblas.FloatMatrix;
-import org.jblas.SimpleBlas;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,9 +87,9 @@ public class Word2Vec implements Persistable {
     private int size = 0;
     private int words = 0;
     //input layer
-    private FloatMatrix syn0;
+    private INDArray syn0;
     //hidden layer
-    private FloatMatrix syn1;
+    private INDArray syn1;
     private int allWordsCount = 0;
     private AtomicInteger numSentencesProcessed = new AtomicInteger(0);
     private static ActorSystem trainingSystem;
@@ -212,31 +216,31 @@ public class Word2Vec implements Persistable {
                 return oob;
         }
 
-        return syn0.getRow(i).toArray();
+        return syn0.getRow(i).floatData();
     }
 
     public int indexOf(String word) {
         return wordIndex.indexOf(word);
     }
 
-    public FloatMatrix getWordVectorMatrix(String word) {
+    public INDArray getWordVectorMatrix(String word) {
         int i = this.wordIndex.indexOf(word);
         if(oob == null)
             oob = new float[layerSize];
 
         if(i < 0)
-            return new FloatMatrix(oob);
+            return NDArrays.create(oob, new int[]{layerSize});
         return syn0.getRow(i);
     }
 
-    public FloatMatrix getWordVectorMatrixNormalized(String word) {
+    public INDArray getWordVectorMatrixNormalized(String word) {
         int i = this.wordIndex.indexOf(word);
         if(oob == null)
             oob = new float[layerSize];
         if(i < 0)
-            return FloatMatrix.zeros(syn0.getRow(0).columns);
-        FloatMatrix r =  syn0.getRow(i);
-        return r.div((SimpleBlas.nrm2(r)));
+            return NDArrays.zeros(syn0.getRow(0).columns());
+        INDArray r =  syn0.getRow(i);
+        return r.div((NDArrays.getBlasWrapper().nrm2(r)));
     }
 
 
@@ -250,11 +254,11 @@ public class Word2Vec implements Persistable {
 
 
     public Collection<String> wordsNearest(String word,int n) {
-        FloatMatrix vec = this.getWordVectorMatrix(word);
+        INDArray vec = this.getWordVectorMatrix(word);
         if(vec == null)
             return new ArrayList<>();
         Counter<String> distances = new Counter<String>();
-        for(int i = 0; i < syn0.rows; i++) {
+        for(int i = 0; i < syn0.rows(); i++) {
             double sim = similarity(word,wordIndex.get(i).toString());
             distances.incrementCount(wordIndex.get(i).toString(), sim);
         }
@@ -311,10 +315,18 @@ public class Word2Vec implements Persistable {
 
     }
 
+    /**
+     * Returns true if the model has this word in the vocab
+     * @param word the word to test for
+     * @return true if the model has the word in the vocab
+     */
     public boolean hasWord(String word) {
         return wordIndex.indexOf(word) >= 0;
     }
 
+    /**
+     * Train the model
+     */
     public void train(){
         if(trainingSystem == null) {
             trainingSystem = ActorSystem.create();
@@ -345,37 +357,65 @@ public class Word2Vec implements Persistable {
         trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors() *3 ).props(Props.create(new SentenceActor.SentenceActorCreator(this)).withDispatcher("akka.actor.worker-dispatcher")));
 
 
-        if(syn0.rows != this.vocab.size())
+        if(syn0.rows() != this.vocab.size())
             throw new IllegalStateException("We appear to be missing vectors here. Unable to train. Please ensure vectors were loaded properly.");
 
 
-        while(getSentenceIter().hasNext()) {
-            final String sentence = sentenceIter.nextSentence();
-            if(sentence != null && !sentence.isEmpty()) {
-                Future<Void> f = Futures.future(new Callable<Void>() {
+        int numCores = Runtime.getRuntime().availableProcessors();
 
-                    @Override
-                    public Void call() throws Exception {
-                        processSentence(sentence, totalWords);
-                        return null;
+        final CountDownLatch latch = new CountDownLatch(numCores);
+
+
+        for(int i = 0; i < numCores; i++) {
+            Future<Void> f = Futures.future(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    while(getSentenceIter().hasNext()) {
+
+                        final String sentence = sentenceIter.nextSentence();
+                        if(sentence != null && !sentence.isEmpty()) {
+                            Future<Void> f = Futures.future(new Callable<Void>() {
+
+                                @Override
+                                public Void call() throws Exception {
+                                    processSentence(sentence, totalWords);
+                                    return null;
+                                }
+
+                            },trainingSystem.dispatcher());
+                            f.onComplete(new OnComplete<Void>() {
+
+                                @Override
+                                public void onComplete(Throwable arg0, Void arg1)
+                                        throws Throwable {
+                                    if(arg0 != null)
+                                        throw arg0;
+                                    numSentencesProcessed.incrementAndGet();
+                                    changed.set(System.currentTimeMillis());
+
+                                }
+
+                            }, trainingSystem.dispatcher());
+
+                        }
+
                     }
+                    return null;
+                }
+            },trainingSystem.dispatcher());
+            f.onComplete(new OnComplete<Void>() {
+                @Override
+                public void onComplete(Throwable failure, Void success) throws Throwable {
+                     latch.countDown();
+                }
+            },trainingSystem.dispatcher());
+        }
 
-                },trainingSystem.dispatcher());
-                f.onComplete(new OnComplete<Void>() {
 
-                    @Override
-                    public void onComplete(Throwable arg0, Void arg1)
-                            throws Throwable {
-                        if(arg0 != null)
-                            throw arg0;
-                        numSentencesProcessed.incrementAndGet();
-                        changed.set(System.currentTimeMillis());
-
-                    }
-
-                }, trainingSystem.dispatcher());
-
-            }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
 
         }
 
@@ -452,14 +492,14 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public Set<VocabWord> distance(String word) {
-        FloatMatrix wordVector = getWordVectorMatrix(word);
+        INDArray wordVector = getWordVectorMatrix(word);
         if (wordVector == null) {
             return null;
         }
-        FloatMatrix tempVector = null;
+        INDArray tempVector = null;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
         String name;
-        for (int i = 0; i < syn0.rows; i++) {
+        for (int i = 0; i < syn0.rows(); i++) {
             name = wordIndex.get(i).toString();
             if (name.equals(word)) {
                 continue;
@@ -467,7 +507,7 @@ public class Word2Vec implements Persistable {
 
             double dist = 0;
             tempVector = syn0.getRow(i);
-            dist = wordVector.dot(tempVector);
+            dist = NDArrays.getBlasWrapper().dot(wordVector,tempVector);
             insertTopN(name, dist, wordEntrys);
         }
         return new TreeSet<>(wordEntrys);
@@ -478,27 +518,27 @@ public class Word2Vec implements Persistable {
      * @return
      */
     public TreeSet<VocabWord> analogy(String word0, String word1, String word2) {
-        FloatMatrix wv0 = getWordVectorMatrix(word0);
-        FloatMatrix wv1 = getWordVectorMatrix(word1);
-        FloatMatrix wv2 = getWordVectorMatrix(word2);
+        INDArray wv0 = getWordVectorMatrix(word0);
+        INDArray wv1 = getWordVectorMatrix(word1);
+        INDArray wv2 = getWordVectorMatrix(word2);
 
 
-        FloatMatrix wordVector = wv1.sub(wv0).add(wv2);
+        INDArray wordVector = wv1.sub(wv0).add(wv2);
 
         if (wv1 == null || wv2 == null || wv0 == null)
             return null;
 
-        FloatMatrix tempVector;
+        INDArray tempVector;
         String name;
         List<VocabWord> wordEntrys = new ArrayList<>(topNSize);
-        for (int i = 0; i < syn0.rows; i++) {
+        for (int i = 0; i < syn0.rows(); i++) {
             name = wordIndex.get(i).toString();
 
             if (name.equals(word0) || name.equals(word1) || name.equals(word2)) {
                 continue;
             }
             tempVector = syn0.getRow(i);
-            double dist = wordVector.dot(tempVector);
+            double dist = NDArrays.getBlasWrapper().dot(wordVector,tempVector);
             insertTopN(name, dist, wordEntrys);
         }
         return new TreeSet<>(wordEntrys);
@@ -515,6 +555,9 @@ public class Word2Vec implements Persistable {
     }
 
 
+    /**
+     * Builds the vocabulary for training
+     */
     public void buildVocab() {
         readStopWords();
 
@@ -525,23 +568,53 @@ public class Word2Vec implements Persistable {
 
         final Counter<String> rawVocab = Util.parallelCounter();
         final AtomicLong semaphore = new AtomicLong(System.currentTimeMillis());
-        int queued = 0;
+        final AtomicInteger queued = new AtomicInteger(0);
 
         final ActorRef vocabActor = trainingSystem.actorOf(new RoundRobinPool(Runtime.getRuntime().availableProcessors()).props(Props.create(VocabActor.class,tokenizerFactory,wordIndex,minWordFrequency,vocab,layerSize,stopWords,rawVocab,semaphore)));
 
 		/* all words; including those not in the actual ending index */
-        while(getSentenceIter().hasNext()) {
-            String sentence = getSentenceIter().nextSentence();
-            if(sentence == null)
-                continue;
+        int numCores = Runtime.getRuntime().availableProcessors();
 
-            vocabActor.tell(sentence, vocabActor);
-            queued++;
-            log.info("Sent " + queued);
+        final CountDownLatch latch = new CountDownLatch(numCores);
+
+        for(int i = 0; i < numCores; i++) {
+
+            Future<Void> f =  Futures.future(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    while(getSentenceIter().hasNext()) {
+                        String sentence = getSentenceIter().nextSentence();
+                        if(sentence == null)
+                            return null;
+
+                        vocabActor.tell(sentence, vocabActor);
+                        queued.incrementAndGet();
+                        log.info("Sent " + queued);
 
 
+                    }
+
+                    return null;
+                }
+            },trainingSystem.dispatcher());
+
+
+            f.onComplete(new OnComplete<Void>() {
+                @Override
+                public void onComplete(Throwable failure, Void success) throws Throwable {
+                    latch.countDown();
+                }
+            },trainingSystem.dispatcher());
 
         }
+
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
 
         boolean done = false;
         long fiveMinutes = TimeUnit.MINUTES.toMillis(1);
@@ -581,6 +654,7 @@ public class Word2Vec implements Persistable {
                     continue;
                 }
             }
+
             nextRandom = nextRandom * 25214903917L + 11;
             int b = (int) nextRandom % window;
             skipGram(i,sentence,b);
@@ -609,8 +683,8 @@ public class Word2Vec implements Persistable {
         }
     }
 
-    public Map<String,FloatMatrix> toVocabFloat() {
-        Map<String,FloatMatrix> ret = new HashMap<>();
+    public Map<String,INDArray> toVocabFloat() {
+        Map<String,INDArray> ret = new HashMap<>();
         for(int i = 0; i < getWordIndex().size(); i++) {
             String word = (String) wordIndex.get(i);
             ret.put(word,getWordVectorMatrix(word));
@@ -620,29 +694,29 @@ public class Word2Vec implements Persistable {
 
     }
 
-    public Map<String,DoubleMatrix> toVocabDouble() {
-        Map<String,DoubleMatrix> ret = new HashMap<>();
+    public Map<String,INDArray> toVocabDouble() {
+        Map<String,INDArray> ret = new HashMap<>();
         for(int i = 0; i < getWordIndex().size(); i++) {
             String word = (String) wordIndex.get(i);
-            ret.put(word,MatrixUtil.toDoubleMatrix(getWordVectorMatrix(word)));
+            ret.put(word,getWordVectorMatrix(word));
         }
 
         return ret;
     }
 
     public void  iterate(VocabWord w1,VocabWord w2) {
-        FloatMatrix l1 = syn0.getRow(w2.getIndex());
-        FloatMatrix l2a = syn1.getRows(w1.getCodes());
-        FloatMatrix fa = MatrixUtil.sigmoid(MatrixUtil.dot(l1, l2a.transpose()));
+        INDArray l1 = syn0.getRow(w2.getIndex());
+        INDArray l2a = syn1.getRows(w1.getCodes());
+        INDArray fa = Transforms.sigmoid(l1.mmul(l2a.transpose()));
         // ga = (1 - word.code - fa) * alpha  # vector of error gradients multiplied by the learning rate
-        FloatMatrix ga = FloatMatrix.ones(fa.length).sub(MatrixUtil.toFloatMatrix(w1.getCodes())).sub(fa).mul(alpha.floatValue());
-        FloatMatrix outer = ga.mmul(l1);
+        INDArray ga = NDArrays.ones(fa.length()).subi(ArrayUtil.toNDArray(w1.getCodes())).sub(fa).mul(alpha.floatValue());
+        INDArray outer = ga.mmul(l1);
         for(int i = 0; i < w1.getPoints().length; i++) {
-            FloatMatrix toAdd = l2a.getRow(i).add(outer.getRow(i));
+            INDArray toAdd = l2a.getRow(i).addi(outer.getRow(i));
             syn1.putRow(w1.getPoints()[i],toAdd);
         }
 
-        FloatMatrix updatedInput = l1.add(MatrixUtil.dot(ga, l2a));
+        INDArray updatedInput = l1.addi(ga.mmul(l2a));
         syn0.putRow(w2.getIndex(),updatedInput);
     }
 
@@ -651,7 +725,7 @@ public class Word2Vec implements Persistable {
 
     /* Builds the binary tree for the word relationships */
     private void buildBinaryTree() {
-        PriorityQueue<VocabWord> heap = new PriorityQueue<VocabWord>(vocab.values());
+        PriorityQueue<VocabWord> heap = new PriorityQueue<>(vocab.values());
         int i = 0;
         while(heap.size() > 1) {
             VocabWord min1 = heap.poll();
@@ -714,12 +788,12 @@ public class Word2Vec implements Persistable {
 
     /* reinit weights */
     private void resetWeights() {
-        syn1 = FloatMatrix.zeros(vocab.size(), layerSize);
-        syn0 = FloatMatrix.zeros(vocab.size(),layerSize);
-        org.jblas.util.Random.seed(1);
-        for(int i = 0; i < syn0.rows; i++)
-            for(int j = 0; j < syn0.columns; j++) {
-                syn0.put(i,j,(float) (org.jblas.util.Random.nextFloat() - 0.5) / layerSize);
+        syn1 = NDArrays.zeros(vocab.size(), layerSize);
+        syn0 = NDArrays.zeros(vocab.size(),layerSize);
+        RandomGenerator g = new MersenneTwister(123);
+        for(int i = 0; i < syn0.rows(); i++)
+            for(int j = 0; j < syn0.columns(); j++) {
+                syn0.put(i,j,(float) (g.nextFloat() - 0.5) / layerSize);
             }
     }
 
@@ -733,13 +807,13 @@ public class Word2Vec implements Persistable {
     public double similarity(String word,String word2) {
         if(word.equals(word2))
             return 1.0;
-        FloatMatrix vector = getWordVectorMatrixNormalized(word);
-        FloatMatrix vector2 = getWordVectorMatrixNormalized(word2);
+        INDArray vector = getWordVectorMatrixNormalized(word);
+        INDArray vector2 = getWordVectorMatrixNormalized(word2);
         if(vector == null || vector2 == null)
             return -1;
-        FloatMatrix d1 = MatrixUtil.unitVec(vector);
-        FloatMatrix d2 = MatrixUtil.unitVec(vector2);
-        double ret = SimpleBlas.dot(d1,d2);
+        INDArray d1 = Transforms.unitVec(vector);
+        INDArray d2 = Transforms.unitVec(vector2);
+        double ret = NDArrays.getBlasWrapper().dot(d1, d2);
         if(ret <  0)
             return 0;
         return ret;
@@ -782,11 +856,11 @@ public class Word2Vec implements Persistable {
     }
 
 
-    public FloatMatrix getSyn0() {
+    public INDArray getSyn0() {
         return syn0;
     }
 
-    public FloatMatrix getSyn1() {
+    public INDArray getSyn1() {
         return syn1;
     }
 
@@ -853,11 +927,11 @@ public class Word2Vec implements Persistable {
     }
 
 
-    public void setSyn0(FloatMatrix syn0) {
+    public void setSyn0(INDArray syn0) {
         this.syn0 = syn0;
     }
 
-    public void setSyn1(FloatMatrix syn1) {
+    public void setSyn1(INDArray syn1) {
         this.syn1 = syn1;
     }
 

@@ -1,10 +1,11 @@
 package org.deeplearning4j.optimize;
 
 import cc.mallet.optimize.Optimizable;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,13 +151,13 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     @Override
     public int getNumParameters() {
         if(length < 0)
-            length = getParameters().length;
+            length = getParameters().length();
         return length;
     }
 
     @Override
     public void getParameters(double[] buffer) {
-        System.arraycopy(getParameters().data,0,buffer,0,buffer.length);
+        System.arraycopy(getParameters().data(),0,buffer,0,buffer.length);
     }
 
     @Override
@@ -166,7 +167,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
 
     @Override
     public void setParameters(double[] params) {
-        setParameters(new DoubleMatrix(params).reshape(1,params.length));
+        setParameters(NDArrays.create(params).reshape(1,params.length));
     }
 
     @Override
@@ -175,12 +176,12 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     }
 
     @Override
-    public DoubleMatrix getParameters() {
+    public INDArray getParameters() {
         return network.params();
     }
 
     @Override
-    public void setParameters(DoubleMatrix params) {
+    public void setParameters(INDArray params) {
         network.setParameters(params);
         network.getOutputLayer().trainTillConvergence(lr,epochs);
 
@@ -188,7 +189,7 @@ public class BackPropOptimizer implements Optimizable.ByGradientValue,Serializab
     }
 
     @Override
-    public DoubleMatrix getValueGradient(int iteration) {
+    public INDArray getValueGradient(int iteration) {
         return network.getBackPropGradient2().getFirst();
     }
 

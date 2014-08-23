@@ -1,10 +1,10 @@
 package org.deeplearning4j.plot;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.mnist.draw.DrawReconstruction;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.jblas.DoubleMatrix;
 
 /**
  * Reconstruction renders for a multi layer network
@@ -26,16 +26,16 @@ public class MultiLayerNetworkReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            DoubleMatrix reconstruct = null;
+            INDArray reconstruct = null;
             if(reconLayer < 0)
-                reconstruct = network.output(first.getFirst());
+                reconstruct = network.output(first.getFeatureMatrix());
              else
-                  reconstruct = network.reconstruct(first.getFirst(),reconLayer);
+                  reconstruct = network.reconstruct(first.getFeatureMatrix(),reconLayer);
             for(int j = 0; j < first.numExamples(); j++) {
 
-                DoubleMatrix draw1 = first.get(j).getFirst().mul(255);
-                DoubleMatrix reconstructed2 = reconstruct.getRow(j);
-                DoubleMatrix draw2 = reconstructed2.mul(255 * 255);
+                INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);
+                INDArray reconstructed2 = reconstruct.getRow(j);
+                INDArray draw2 = reconstructed2.mul(255 * 255);
 
                 DrawReconstruction d = new DrawReconstruction(draw1);
                 d.title = "REAL";

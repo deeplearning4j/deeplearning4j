@@ -6,10 +6,10 @@ import java.util.Map;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.NeuralNetEpochListener;
-import org.jblas.DoubleMatrix;
 /**
  * Single layer neural network, this is typically one that has 
  * the objective function of reconstruction the input: also called feature detectors
@@ -81,25 +81,25 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 
 	public  void setnHidden(int nHidden);
 
-	public  DoubleMatrix getW();
+	public INDArray getW();
 
-	public  void setW(DoubleMatrix w);
+	public  void setW(INDArray w);
 
-	public  DoubleMatrix gethBias();
+	public  INDArray gethBias();
 
-	public  void sethBias(DoubleMatrix hBias);
+	public  void sethBias(INDArray hBias);
 
-	public  DoubleMatrix getvBias();
+	public  INDArray getvBias();
 
-	public  void setvBias(DoubleMatrix vBias);
+	public  void setvBias(INDArray vBias);
 
 	public  RandomGenerator getRng();
 
 	public  void setRng(RandomGenerator rng);
 
-	public  DoubleMatrix getInput();
+	public  INDArray getInput();
 
-	public  void setInput(DoubleMatrix input);
+	public  void setInput(INDArray input);
 	
 	public WeightInit getWeightInit();
     public void setWeightInit(WeightInit weightInit);
@@ -114,10 +114,10 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public RealDistribution getDist();
 	
 
-    public DoubleMatrix reconstruct(DoubleMatrix input);
+    public INDArray reconstruct(INDArray input);
 
 	
-	DoubleMatrix hBiasMean();
+	INDArray hBiasMean();
 	
 	public AdaGrad getAdaGrad();
 	public void setAdaGrad(AdaGrad adaGrad);
@@ -180,7 +180,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 * @param v the  the visible input
 	 * @return a pair with mean, sample
 	 */
-	public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v);
+	public Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v);
 
 
     public boolean isUseAdaGrad();
@@ -194,7 +194,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 * @param h the  the hidden input
 	 * @return a pair with mean, sample
 	 */
-	public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h);
+	public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h);
 	
 	void resetAdaGrad(double lr);
 	
@@ -219,7 +219,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param lr the learning rate to use
      * @param params the extra params for the neural network(k, corruption level, max epochs,...)
      */
-	public void train(DoubleMatrix input,double lr,Object[] params);
+	public void train(INDArray input,double lr,Object[] params);
 
     /**
      * Trains via an optimization algorithm such as SGD or Conjugate Gradient
@@ -227,7 +227,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param lr the learning rate to use
      * @param params the params (k,corruption level, max epochs,...)
      */
-	public void trainTillConvergence(DoubleMatrix input,double lr,Object[] params);
+	public void trainTillConvergence(INDArray input,double lr,Object[] params);
 	/**
 	 * Performs a network merge in the form of
 	 * a += b - a / n

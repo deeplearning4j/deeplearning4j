@@ -1,6 +1,7 @@
 package org.deeplearning4j.linalg.api.ndarray;
 
 
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
 /**
@@ -8,6 +9,203 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
  */
 public class JCUBlasNDArray  implements INDArray  {
 
+
+    @Override
+    public int vectorsAlongDimension(int dimension) {
+        return 0;
+    }
+
+    @Override
+    public INDArray vectorAlongDimension(int index, int dimension) {
+        return null;
+    }
+
+
+    /**
+     * Cumulative sum along a dimension
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    @Override
+    public INDArray cumsumi(int dimension) {
+        return null;
+    }
+
+    /**
+     * Cumulative sum along a dimension (in place)
+     *
+     * @param dimension the dimension to perform cumulative sum along
+     * @return the cumulative sum along the specified dimension
+     */
+    @Override
+    public INDArray cumsum(int dimension) {
+        return null;
+    }
+
+    /**
+     * Assign all of the elements in the given
+     * ndarray to this ndarray
+     *
+     * @param arr the elements to assign
+     * @return this
+     */
+    @Override
+    public INDArray assign(INDArray arr) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(int i, Number value) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(int[] i, Number value) {
+        return null;
+    }
+
+    @Override
+    public INDArray lt(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray lti(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray eq(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray eqi(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray gt(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray gti(Number other) {
+        return null;
+    }
+
+    @Override
+    public INDArray lt(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray lti(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray eq(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray eqi(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray gt(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray gti(INDArray other) {
+        return null;
+    }
+
+    @Override
+    public INDArray neg() {
+        return null;
+    }
+
+    @Override
+    public INDArray negi() {
+        return null;
+    }
+
+    @Override
+    public INDArray rdiv(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray rdivi(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray rsub(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray rsubi(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray div(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray divi(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray mul(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray muli(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray sub(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray subi(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray add(Number n) {
+        return null;
+    }
+
+    @Override
+    public INDArray addi(Number n) {
+        return null;
+    }
+
+    /**
+     * Returns a subset of this array based on the specified
+     * indexes
+     *
+     * @param indexes the indexes in to the array
+     * @return a view of the array with the specified indices
+     */
+    @Override
+    public INDArray get(NDArrayIndex... indexes) {
+        return null;
+    }
 
     @Override
     public INDArray getColumns(int[] columns) {
@@ -274,6 +472,46 @@ public class JCUBlasNDArray  implements INDArray  {
     }
 
     /**
+     * Returns the squared (Euclidean) distance.
+     *
+     * @param other
+     */
+    @Override
+    public double squaredDistance(INDArray other) {
+        return 0;
+    }
+
+    /**
+     * Returns the (euclidean) distance.
+     *
+     * @param other
+     */
+    @Override
+    public double distance2(INDArray other) {
+        return 0;
+    }
+
+    /**
+     * Returns the (1-norm) distance.
+     *
+     * @param other
+     */
+    @Override
+    public double distance1(INDArray other) {
+        return 0;
+    }
+
+    @Override
+    public INDArray put(NDArrayIndex[] indices, INDArray element) {
+        return null;
+    }
+
+    @Override
+    public INDArray put(NDArrayIndex[] indices, Number element) {
+        return null;
+    }
+
+    /**
      * Inserts the element at the specified index
      *
      * @param indices the indices to insert into
@@ -295,6 +533,19 @@ public class JCUBlasNDArray  implements INDArray  {
      */
     @Override
     public INDArray put(int i, int j, INDArray element) {
+        return null;
+    }
+
+    /**
+     * Inserts the element at the specified index
+     *
+     * @param i       the row insert into
+     * @param j       the column to insert into
+     * @param element a scalar ndarray
+     * @return a scalar ndarray of the element at this index
+     */
+    @Override
+    public INDArray put(int i, int j, Number element) {
         return null;
     }
 
@@ -783,6 +1034,17 @@ public class JCUBlasNDArray  implements INDArray  {
     }
 
     /**
+     * Returns the overall variance of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray var(int dimension) {
+        return null;
+    }
+
+    /**
      * Returns the overall max of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
@@ -812,6 +1074,16 @@ public class JCUBlasNDArray  implements INDArray  {
      */
     @Override
     public INDArray sum(int dimension) {
+        return null;
+    }
+
+    @Override
+    public void setStride(int[] stride) {
+
+    }
+
+    @Override
+    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
         return null;
     }
 
@@ -898,6 +1170,18 @@ public class JCUBlasNDArray  implements INDArray  {
      */
     @Override
     public INDArray reshape(int[] newShape) {
+        return null;
+    }
+
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray)
+     *
+     * @param rows    the rows of the matrix
+     * @param columns the columns of the matrix
+     * @return the reshaped ndarray
+     */
+    @Override
+    public INDArray reshape(int rows, int columns) {
         return null;
     }
 
@@ -1049,6 +1333,11 @@ public class JCUBlasNDArray  implements INDArray  {
         return new int[0];
     }
 
+    @Override
+    public char ordering() {
+        return 0;
+    }
+
     /**
      * Returns the size along a specified dimension
      *
@@ -1113,6 +1402,11 @@ public class JCUBlasNDArray  implements INDArray  {
         return new double[0];
     }
 
+    @Override
+    public void setData(double[] data) {
+
+    }
+
     /**
      * Returns a linear float array representation of this ndarray
      *
@@ -1121,5 +1415,10 @@ public class JCUBlasNDArray  implements INDArray  {
     @Override
     public float[] floatData() {
         return new float[0];
+    }
+
+    @Override
+    public void setData(float[] data) {
+
     }
 }

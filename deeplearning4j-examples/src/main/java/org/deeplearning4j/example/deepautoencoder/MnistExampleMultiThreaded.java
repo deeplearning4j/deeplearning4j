@@ -1,12 +1,11 @@
 package org.deeplearning4j.example.deepautoencoder;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.util.SerializationUtils;
@@ -37,7 +36,7 @@ public class MnistExampleMultiThreaded {
         c.setPretrainEpochs(100);
         c.setFinetuneLearningRate(1e-1);
         c.setPretrainLearningRate(1e-1);
-        c.setActivationFunctionForLayer(Collections.singletonMap(codeLayer,Activations.linear()));
+        c.setActivationFunctionForLayer(Collections.singletonMap(codeLayer, Activations.linear()));
         c.setSampleHiddenActivations(true);
         c.setLearningRateForLayer(Collections.singletonMap(codeLayer,1e-2));
         c.setLayerSizes(new int[]{1000, 500,250,30});

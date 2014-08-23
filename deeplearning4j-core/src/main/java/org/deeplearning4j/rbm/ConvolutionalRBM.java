@@ -1,27 +1,21 @@
 package org.deeplearning4j.rbm;
 
-import static org.deeplearning4j.util.MatrixUtil.*;
 
-import static org.deeplearning4j.util.Convolution.*;
-
-import static org.deeplearning4j.util.Convolution.Type.*;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.convolution.Convolution;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.linalg.sampling.Sampling;
 import org.deeplearning4j.nn.BaseNeuralNetwork;
-import org.deeplearning4j.nn.linalg.FourDTensor;
 import org.deeplearning4j.nn.NeuralNetwork;
-import org.deeplearning4j.nn.linalg.Tensor;
 import org.deeplearning4j.nn.gradient.NeuralNetworkGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
-import org.deeplearning4j.nn.learning.FourDTensorAdaGrad;
 import org.deeplearning4j.plot.NeuralNetPlotter;
-import org.deeplearning4j.util.Convolution;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.MatrixFunctions;
-import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +32,11 @@ public class ConvolutionalRBM extends RBM  {
     //number of feature mapConvolution
     protected int[] numFilters = {4,4};
     //top down signal from hidden feature maps to visibles
-    private FourDTensor visI;
+    private INDArray visI;
     //bottom up signal from visibles to hiddens
-    private FourDTensor hidI;
+    private INDArray hidI;
     //also called the filters
-    private FourDTensor W;
+    private INDArray W;
     //overlapping pixels
     private int[] stride = {2,2};
     //visible layer size
@@ -52,22 +46,22 @@ public class ConvolutionalRBM extends RBM  {
     protected int[] fmSize;
     private static Logger log = LoggerFactory.getLogger(ConvolutionalRBM.class);
     protected boolean convolutionInitCalled = false;
-    protected DoubleMatrix chainStart;
+    protected INDArray chainStart;
     //cache last propup/propdown
-    protected FourDTensor eVis,eHid;
-    protected DoubleMatrix wGradient,vBiasGradient,hBiasGradient;
+    protected INDArray eVis,eHid;
+    protected INDArray wGradient,vBiasGradient,hBiasGradient;
     protected double sparseGain = 5;
     public int wRows = 0,wCols = 0,wSlices = 0;
-    private FourDTensor featureMap;
+    private INDArray featureMap;
     //same size as W
-    protected FourDTensor dWeights;
+    protected INDArray dWeights;
     protected ConvolutionalRBM() {}
 
 
 
 
-    protected ConvolutionalRBM(DoubleMatrix input, int nVisible, int n_hidden, DoubleMatrix W,
-                               DoubleMatrix hbias, DoubleMatrix vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+    protected ConvolutionalRBM(INDArray input, int nVisible, int n_hidden, INDArray W,
+                               INDArray hbias, INDArray vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
         super(input, nVisible, n_hidden, W, hbias, vBias, rng,fanIn,dist);
     }
 
@@ -77,26 +71,26 @@ public class ConvolutionalRBM extends RBM  {
     private void convolutionInit() {
         if(convolutionInitCalled)
             return;
-        W = new FourDTensor(filterSize[0],filterSize[1],numFilters[0],numFilters[1]);
+        W = NDArrays.create(new int[]{filterSize[0], filterSize[1], numFilters[0], numFilters[1]});
         wRows = W.rows();
         wCols = W.columns();
         wSlices = W.slices();
-        visI = FourDTensor.zeros(visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]);
-        hidI = FourDTensor.zeros(fmSize[0],fmSize[1],numFilters[0],numFilters[1]);
+        visI = NDArrays.zeros(new int[]{visibleSize[0],visibleSize[1],numFilters[0],numFilters[1]});
+        hidI = NDArrays.zeros(new int[]{fmSize[0],fmSize[1],numFilters[0],numFilters[1]});
         convolutionInitCalled = true;
-        vBias = DoubleMatrix.zeros(1);
-        hBias = DoubleMatrix.zeros(numFilters[0]);
+        vBias = NDArrays.zeros(1);
+        hBias = NDArrays.zeros(numFilters[0]);
 
 
-        for(int i = 0; i < this.W.rows; i++)
-            W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
+        for(int i = 0; i < this.W.rows(); i++)
+            W.putRow(i,NDArrays.create(dist.sample(W.columns())));
 
 
-        wAdaGrad = new FourDTensorAdaGrad(W.rows(),W.columns(),W.slices(),W.numTensors());
-        vBiasAdaGrad = new AdaGrad(vBias.rows,vBias.columns);
-        hBiasAdaGrad = new AdaGrad(hBias.rows,hBias.columns);
+        wAdaGrad = new AdaGrad(W.shape());
+        vBiasAdaGrad = new AdaGrad(vBias.rows(),vBias.columns());
+        hBiasAdaGrad = new AdaGrad(hBias.rows(),hBias.columns());
         convolutionInitCalled = true;
-        dWeights = new FourDTensor(W.rows(),W.columns(),W.slices(),W.getNumTensor());
+        dWeights = NDArrays.create(W.shape());
         //dont normalize by input rows here, the batch size can only be 1
         this.normalizeByInputRows = false;
     }
@@ -111,21 +105,21 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated activations of the visible layer
      */
     @Override
-    public FourDTensor propUp(DoubleMatrix v) {
+    public INDArray propUp(INDArray v) {
         for(int i = 0; i < numFilters[0]; i++) {
             for(int j = 0; j < numFilters[1]; j++) {
-                DoubleMatrix reversedSlice =  reverse(W.getSliceOfTensor(i,j));
+                INDArray reversedSlice =  NDArrays.reverse(W.slice(i).slice(j));
                 //a bias for each hidden unit
-                DoubleMatrix slice = sigmoid(conv2d(v, reversedSlice, VALID).add(hBias.get(i)));
+                INDArray slice = Transforms.sigmoid(Convolution.convn(v, reversedSlice, Convolution.Type.VALID).addi(hBias.getScalar(i)));
                 hidI.put(i,j,slice);
             }
 
 
         }
 
-        FourDTensor expHidI = MatrixUtil.exp(hidI);
+        INDArray expHidI = Transforms.exp(hidI.dup());
 
-        FourDTensor eHid = expHidI.div((DoubleMatrix) pool(expHidI).add(1));
+        INDArray eHid = expHidI.div(pool(expHidI).add(1));
         this.eHid = eHid;
 
         return eHid;
@@ -139,25 +133,23 @@ public class ConvolutionalRBM extends RBM  {
      * @return the approximated output of the hidden layer
      */
     @Override
-    public FourDTensor propDown(DoubleMatrix h) {
-        FourDTensor h1 = (FourDTensor) h;
+    public INDArray propDown(INDArray h) {
+        INDArray h1 =  h;
         for(int i = 0; i < numFilters[0]; i++) {
             for(int j = 0; j < numFilters[1]; j++) {
- /*
-               Each tensor only has one slice, need to figure out what's going on here
-             */
-                visI.put(j,i,sigmoid(conv2d(h1.getSlice(i), W.getSlice(i),FULL)));
+
+                visI.put(j,i,Transforms.sigmoid(Convolution.convn(h1.slice(i), W.slice(i), Convolution.Type.FULL)));
             }
 
         }
 
-        DoubleMatrix I = visI.sliceElementSums().add(vBias);
+        INDArray I = visI.sum(visI.shape().length - 1).add(vBias);
         if(visibleType == VisibleUnit.BINARY)
-            I = sigmoid(I);
+            I = Transforms.sigmoid(I);
 
-        FourDTensor ret =   new FourDTensor(I);
-        this.eVis = ret;
-        return ret;
+
+        this.eVis = I.dup();
+        return this.eVis;
     }
 
 
@@ -166,20 +158,20 @@ public class ConvolutionalRBM extends RBM  {
      * @param input the input to sample from
      * @return  the pooled expectations given visible
      */
-    public Tensor poolGivenVis(DoubleMatrix input) {
-        FourDTensor eHid = propUp(input);
-        FourDTensor I = new FourDTensor(eHid.rows(),eHid.columns(),eHid.slices(),eHid.getNumTensor());
+    public INDArray poolGivenVis(INDArray input) {
+        INDArray eHid = propUp(input);
+        INDArray I = NDArrays.create(eHid.shape());
         for(int i = 0; i < W.slices(); i++) {
-            for(int j = 0; j < W.getNumTensor(); j++) {
-                I.setSlice(i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
-                I.put(j,i,Convolution.conv2d(input,reverse(W.getSlice(i)), VALID).add(hBias.get(i)));
+            for(int j = 0; j < W.slices(); j++) {
+                I.putSlice(i, Convolution.convn(input, NDArrays.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
+                I.put(j,i,Convolution.convn(input, NDArrays.reverse(W.slice(i)), Convolution.Type.VALID).addi(hBias.getScalar(i)));
             }
         }
 
-        FourDTensor ret = FourDTensor.ones(I.rows(),I.columns(),I.slices(),I.numTensors());
+        INDArray ret = NDArrays.ones(I.shape());
         //1 / 1 + pool(exp(I))
-        FourDTensor poolExpI = pool(MatrixUtil.exp(I)).add(1);
-        FourDTensor sub = ret.div((DoubleMatrix) poolExpI);
+        INDArray poolExpI = pool(Transforms.exp(I)).add(1);
+        INDArray sub = ret.div( poolExpI);
         ret.subi(sub);
         return ret;
     }
@@ -191,11 +183,11 @@ public class ConvolutionalRBM extends RBM  {
      * @param learningRate the learning rate for the current iteratiaon
      */
     protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,double learningRate) {
-        FourDTensor wGradient = (FourDTensor) gradient.getwGradient();
+        INDArray wGradient = gradient.getwGradient();
 
-        DoubleMatrix hBiasGradient = gradient.gethBiasGradient();
-        DoubleMatrix vBiasGradient = gradient.getvBiasGradient();
-        DoubleMatrix wLearningRates = wAdaGrad.getLearningRates(wGradient);
+        INDArray hBiasGradient = gradient.gethBiasGradient();
+        INDArray vBiasGradient = gradient.getvBiasGradient();
+        INDArray wLearningRates = wAdaGrad.getLearningRates(wGradient);
         if (useAdaGrad)
             wGradient.muli(wLearningRates);
         else
@@ -231,7 +223,7 @@ public class ConvolutionalRBM extends RBM  {
 
         if(useRegularization) {
             if(l2 > 0) {
-                DoubleMatrix penalized = W.mul(l2);
+                INDArray penalized = W.mul(l2);
                 if(useAdaGrad)
                     penalized.muli(wAdaGrad.getLearningRates(wGradient));
                 else
@@ -266,13 +258,13 @@ public class ConvolutionalRBM extends RBM  {
      * @param input the input to sum over
      * @return the pooled expectations
      */
-    public FourDTensor pool(FourDTensor input) {
+    public INDArray pool(INDArray input) {
         int nCols = input.columns();
-        int nRows = input.rows;
+        int nRows = input.rows();
         int yStride = stride[0];
         int xStride = stride[1];
 
-        FourDTensor ret = new FourDTensor(input.rows,input.columns,input.slices(),input.numTensors());
+        INDArray ret = NDArrays.create(input.shape());
         int endRowBlock =  (int) Math.ceil(nRows / yStride);
         for(int i = 1; i < endRowBlock; i++) {
             int rowsMin = (i -1)  * yStride + 1;
@@ -281,12 +273,12 @@ public class ConvolutionalRBM extends RBM  {
             for(int j = 1; j < endColBlock; j++) {
                 int cols = (j - 1)  * xStride + 1;
                 int colsMax = j  * xStride;
-                double blockVal = input.columnsSums().sum();
+                double blockVal = (double) input.sum(1).sum(Integer.MAX_VALUE).element();
                 int rowLength = rowsMax - rowsMin;
                 int colLength = colsMax - cols;
-                DoubleMatrix block = new DoubleMatrix(rowLength,colLength);
-                assign(block,blockVal);
-                ret.put(RangeUtils.interval(rowsMin,rowsMax),RangeUtils.interval(cols,colsMax),block);
+                INDArray block = NDArrays.create(rowLength,colLength);
+                block.assign(blockVal);
+                ret.put(new NDArrayIndex[]{NDArrayIndex.interval(rowsMin, rowsMax),NDArrayIndex.interval(cols,colsMax)},block);
             }
 
         }
@@ -294,7 +286,7 @@ public class ConvolutionalRBM extends RBM  {
     }
 
     @Override
-    public FourDTensor getW() {
+    public INDArray getW() {
         return W;
     }
 
@@ -312,7 +304,7 @@ public class ConvolutionalRBM extends RBM  {
     public double getReConstructionCrossEntropy() {
         if(eVis == null)
             reconstruct(input);
-        double squaredLoss = MatrixFunctions.pow(eVis.sub(input), 2).sum();
+        double squaredLoss = (double) Transforms.pow(eVis.sub(input), 2).sum(Integer.MAX_VALUE).element();
         return squaredLoss;
     }
 
@@ -322,10 +314,10 @@ public class ConvolutionalRBM extends RBM  {
      * @return
      */
     @Override
-    public Pair<DoubleMatrix,DoubleMatrix> sampleVisibleGivenHidden(DoubleMatrix h) {
-        FourDTensor v1Mean = propDown(h);
-        FourDTensor v1Sample = new FourDTensor(binomial(v1Mean, 1, rng));
-        return new Pair<>((DoubleMatrix)v1Mean,(DoubleMatrix) v1Sample);
+    public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h) {
+        INDArray v1Mean = propDown(h);
+        INDArray v1Sample = Sampling.binomial(v1Mean, 1, rng);
+        return new Pair<>(v1Mean, v1Sample);
     }
 
 
@@ -335,14 +327,14 @@ public class ConvolutionalRBM extends RBM  {
      * @return a binomial distribution containing the expected values and the samples
      */
     @Override
-    public Pair<DoubleMatrix,DoubleMatrix> sampleHiddenGivenVisible(DoubleMatrix v) {
+    public Pair<INDArray,INDArray> sampleHiddenGivenVisible(INDArray v) {
 
 
-        FourDTensor h1Mean = propUp(v);
-        FourDTensor h1Sample = new FourDTensor(binomial(h1Mean, 1, rng));
+        INDArray h1Mean = propUp(v);
+        INDArray h1Sample = Sampling.binomial(h1Mean, 1, rng);
         //apply dropout
         applyDropOutIfNecessary(h1Sample);
-        return new Pair<>((DoubleMatrix)h1Mean,(DoubleMatrix) h1Sample);
+        return new Pair<>(h1Mean, h1Sample);
 
     }
 
@@ -363,22 +355,22 @@ public class ConvolutionalRBM extends RBM  {
                 break;
 
             NeuralNetworkGradient gradient = getGradient(extraParams);
-            DoubleMatrix wLearningRates = getAdaGrad().getLearningRates(gradient.getwGradient());
-            DoubleMatrix z = reconstruct(input);
+            INDArray wLearningRates = getAdaGrad().getLearningRates(gradient.getwGradient());
+            INDArray z = reconstruct(input);
 
             //Scale the input and reconstruction to see the relative difference in absolute space
            /*
            Other current problems: the hbias mmul output diff is being calculated wrong.
            We should be able to calculate the w gradient with 1 mmul.
             */
-            DoubleMatrix scaledInput = input.dup();
-            normalizeZeroMeanAndUnitVariance(scaledInput);
-            normalizeZeroMeanAndUnitVariance(z);
-            DoubleMatrix outputDiff = z.sub(scaledInput);
+            INDArray scaledInput = input.dup();
+            Transforms.normalizeZeroMeanAndUnitVariance(scaledInput);
+            Transforms.normalizeZeroMeanAndUnitVariance(z);
+            INDArray outputDiff = z.sub(scaledInput);
             //changes in error relative to neurons
-            DoubleMatrix delta = W.mmul(outputDiff);
+            INDArray delta = W.mmul(outputDiff);
             //hidden activations
-            DoubleMatrix hBiasMean = z.columnSums().transpose();
+            INDArray hBiasMean = z.sum(1).transpose();
 
             if(isUseAdaGrad()) {
                 delta.muli(wLearningRates);
@@ -390,7 +382,7 @@ public class ConvolutionalRBM extends RBM  {
                 delta.muli(momentum).add(delta.mul(1 - momentum));
 
             if(normalizeByInputRows)
-                delta.divi(input.rows);
+                delta.divi(input.rows());
 
 
             getW().addi(W.sub(delta));
@@ -446,7 +438,7 @@ public class ConvolutionalRBM extends RBM  {
 		/*
 		 * Start the gibbs sampling.
 		 */
-        FourDTensor chainStart = propUp(input);
+        INDArray chainStart = propUp(input);
         this.chainStart = chainStart;
 
 
@@ -459,11 +451,11 @@ public class ConvolutionalRBM extends RBM  {
 		 *
 		 */
 
-        FourDTensor nvSamples = null;
-        FourDTensor hiddenMeans = chainStart;
+        INDArray nvSamples = null;
+        INDArray hiddenMeans = chainStart;
         //contrastive divergence
         for(int i = 0; i < k; i++) {
-            nvSamples = propDown(binomial(eHid,1,rng));
+            nvSamples = propDown(Sampling.binomial(eHid, 1, rng));
             hiddenMeans = propUp(nvSamples);
         }
 
@@ -471,19 +463,19 @@ public class ConvolutionalRBM extends RBM  {
 		 * Update gradient parameters
 		 */
 
-        FourDTensor wGradient = new FourDTensor(W.rows(),W.columns(),W.slices(),W.getNumTensor());
+        INDArray wGradient = NDArrays.create(W.shape());
         for(int i = 0; i < numFilters[0]; i++)
             for(int j = 0; j < numFilters[1]; j++) {
-                wGradient.put(j,i,conv2d(input,chainStart.getSliceOfTensor(j, i),VALID).sub(conv2d(nvSamples, reverse(hiddenMeans.getSliceOfTensor(j, i)), VALID)));
+                wGradient.putSlice(j, Convolution.convn(input, NDArrays.reverse(eHid.slice(j)), Convolution.Type.VALID).subi(Convolution.convn(eVis, NDArrays.reverse(eHid.slice(j)), Convolution.Type.VALID)));
             }
 
 
 
 
-        DoubleMatrix vBiasGradient = DoubleMatrix.scalar(chainStart.sub(hiddenMeans).columnSums().sum());
+        INDArray vBiasGradient = NDArrays.scalar((double) chainStart.sub(hiddenMeans).sum(1).sum(Integer.MAX_VALUE).element());
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        DoubleMatrix  hBiasGradient = DoubleMatrix.scalar((input.sub(nvSamples)).columnSums().sum());
+        INDArray  hBiasGradient = NDArrays.scalar((double) (input.sub(nvSamples)).sum(1).sum(Integer.MAX_VALUE).element());
         NeuralNetworkGradient ret = new NeuralNetworkGradient(wGradient, vBiasGradient, hBiasGradient);
 
 
@@ -502,11 +494,11 @@ public class ConvolutionalRBM extends RBM  {
      * @param learningRate  the learning rate used
      */
     @Override
-    protected void applySparsity(DoubleMatrix hBiasGradient, double learningRate) {
+    protected void applySparsity(INDArray hBiasGradient, double learningRate) {
         // dcSparse = self.lRate*self.sparseGain*(squeeze(self.sparsity -mean(mean(self.eHid0))));
         //self.c = self.c + dcSparse;
         if(sparsity != 0) {
-            DoubleMatrix negMean = DoubleMatrix.scalar(sparseGain * (sparsity -chainStart.columnMeans().mean()));
+            INDArray negMean = NDArrays.scalar(sparseGain * (sparsity -(double) chainStart.mean(1).mean(Integer.MAX_VALUE).element()));
             if(useAdaGrad)
                 negMean.muli(hBiasAdaGrad.getLearningRates(hBiasGradient));
             else
@@ -560,23 +552,23 @@ public class ConvolutionalRBM extends RBM  {
         this.numFilters = numFilters;
     }
 
-    public FourDTensor getVisI() {
+    public INDArray getVisI() {
         return visI;
     }
 
-    public void setVisI(FourDTensor visI) {
+    public void setVisI(INDArray visI) {
         this.visI = visI;
     }
 
-    public FourDTensor getHidI() {
+    public INDArray getHidI() {
         return hidI;
     }
 
-    public void setHidI(FourDTensor hidI) {
+    public void setHidI(INDArray hidI) {
         this.hidI = hidI;
     }
 
-    public void setW(FourDTensor w) {
+    public void setW(INDArray w) {
         W = w;
     }
 
@@ -589,51 +581,51 @@ public class ConvolutionalRBM extends RBM  {
         this.convolutionInitCalled = convolutionInitCalled;
     }
 
-    public DoubleMatrix getChainStart() {
+    public INDArray getChainStart() {
         return chainStart;
     }
 
-    public void setChainStart(DoubleMatrix chainStart) {
+    public void setChainStart(INDArray chainStart) {
         this.chainStart = chainStart;
     }
 
-    public Tensor geteVis() {
+    public INDArray geteVis() {
         return eVis;
     }
 
-    public void seteVis(FourDTensor eVis) {
+    public void seteVis(INDArray eVis) {
         this.eVis = eVis;
     }
 
-    public Tensor geteHid() {
+    public INDArray geteHid() {
         return eHid;
     }
 
-    public void seteHid(FourDTensor eHid) {
+    public void seteHid(INDArray eHid) {
         this.eHid = eHid;
     }
 
-    public DoubleMatrix getwGradient() {
+    public INDArray getwGradient() {
         return wGradient;
     }
 
-    public void setwGradient(DoubleMatrix wGradient) {
+    public void setwGradient(INDArray wGradient) {
         this.wGradient = wGradient;
     }
 
-    public DoubleMatrix getvBiasGradient() {
+    public INDArray getvBiasGradient() {
         return vBiasGradient;
     }
 
-    public void setvBiasGradient(DoubleMatrix vBiasGradient) {
+    public void setvBiasGradient(INDArray vBiasGradient) {
         this.vBiasGradient = vBiasGradient;
     }
 
-    public DoubleMatrix gethBiasGradient() {
+    public INDArray gethBiasGradient() {
         return hBiasGradient;
     }
 
-    public void sethBiasGradient(DoubleMatrix hBiasGradient) {
+    public void sethBiasGradient(INDArray hBiasGradient) {
         this.hBiasGradient = hBiasGradient;
     }
 
@@ -670,20 +662,20 @@ public class ConvolutionalRBM extends RBM  {
     }
 
 
-    public FourDTensor getFeatureMap() {
+    public INDArray getFeatureMap() {
         return featureMap;
     }
 
-    public void setFeatureMap(FourDTensor featureMap) {
+    public void setFeatureMap(INDArray featureMap) {
         this.featureMap = featureMap;
     }
 
 
-    public FourDTensor getdWeights() {
+    public INDArray getdWeights() {
         return dWeights;
     }
 
-    public void setdWeights(FourDTensor dWeights) {
+    public void setdWeights(INDArray dWeights) {
         this.dWeights = dWeights;
     }
 
@@ -820,7 +812,7 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         @Override
-        public Builder withInput(DoubleMatrix input) {
+        public Builder withInput(INDArray input) {
             super.withInput(input);
             return this;
         }
@@ -832,19 +824,19 @@ public class ConvolutionalRBM extends RBM  {
         }
 
         @Override
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             super.withWeights(W);
             return this;
         }
 
         @Override
-        public Builder withVisibleBias(DoubleMatrix vBias) {
+        public Builder withVisibleBias(INDArray vBias) {
             super.withVisibleBias(vBias);
             return this;
         }
 
         @Override
-        public Builder withHBias(DoubleMatrix hBias) {
+        public Builder withHBias(INDArray hBias) {
             super.withHBias(hBias);
             return this;
         }

@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.learning;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.deeplearning4j.distributions.Distributions;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -20,7 +22,7 @@ public class AdaGradTest {
 		
 		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
-		DoubleMatrix W = DoubleMatrix.ones(rows,cols);
+		INDArray W = NDArrays.ones(rows,cols);
 	
 		log.info("Learning rates for 1 " + grad.getLearningRates(W));
 		
@@ -35,15 +37,15 @@ public class AdaGradTest {
 		
 		
 		AdaGrad grad = new AdaGrad(rows,cols,0.1);
-		DoubleMatrix W = DoubleMatrix.zeros(rows,cols);
+		INDArray W = NDArrays.zeros(rows, cols);
 		RealDistribution dist = Distributions.normal(new MersenneTwister(123),1);
-		for(int i = 0; i < W.rows; i++) 
-			W.putRow(i,new DoubleMatrix(dist.sample(W.columns)));
+		for(int i = 0; i < W.rows(); i++)
+			W.putRow(i,NDArrays.create(dist.sample(W.columns())));
 		
 		for(int i = 0; i < 5; i++) {
 			String learningRates = String.valueOf("\nAdagrad\n " + grad.getLearningRates(W)).replaceAll(";","\n");
 			log.info(learningRates);
-			W.addi(DoubleMatrix.randn(rows, cols));
+			W.addi(NDArrays.randn(rows, cols));
 		}
 
 	}

@@ -1,21 +1,20 @@
 package org.deeplearning4j.nn;
 
-import static org.deeplearning4j.util.MatrixUtil.log;
-import static org.deeplearning4j.util.MatrixUtil.oneMinus;
-import static org.deeplearning4j.util.MatrixUtil.sigmoid;
-import static org.jblas.MatrixFunctions.pow;
+import static org.deeplearning4j.linalg.ops.transforms.Transforms.*;
 
 import java.io.Serializable;
 
+import org.deeplearning4j.linalg.api.activation.ActivationFunction;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.LinAlgExceptions;
 import org.deeplearning4j.nn.NeuralNetwork.OptimizationAlgorithm;
-import org.deeplearning4j.nn.activation.ActivationFunction;
-import org.deeplearning4j.nn.activation.Activations;
+
 import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.deeplearning4j.nn.learning.AdaGrad;
 import org.deeplearning4j.optimize.*;
-import org.deeplearning4j.util.MatrixUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
+
 
 /**
  * Output layer with different objective functions for different objectives.
@@ -31,11 +30,11 @@ public class OutputLayer implements Serializable,Output {
     //number of outputs for labeling
     private int nOut;
     //current input and label matrices
-    private DoubleMatrix input,labels;
+    private INDArray input,labels;
     //weight matrix
-    private DoubleMatrix W;
+    private INDArray W;
     //bias
-    private DoubleMatrix b;
+    private INDArray b;
     //weight decay; l2 regularization
     private double l2 = 0.01;
     private boolean useRegularization = false;
@@ -46,7 +45,7 @@ public class OutputLayer implements Serializable,Output {
     private LossFunction lossFunction;
     private ActivationFunction activationFunction;
     private double dropOut;
-    private DoubleMatrix dropoutMask;
+    private INDArray dropoutMask;
     private boolean concatBiases = false;
     private boolean constrainGradientToUniNorm = false;
     private WeightInit weightinit;
@@ -66,11 +65,11 @@ public class OutputLayer implements Serializable,Output {
         MSE,EXPLL,XENT,MCXENT,RMSE_XENT,SQUARED_LOSS
     }
 
-    public OutputLayer(DoubleMatrix input, DoubleMatrix labels, int nIn, int nOut) {
+    public OutputLayer(INDArray input, INDArray labels, int nIn, int nOut) {
         this(input,labels,nIn,nOut,null);
     }
 
-    public OutputLayer(DoubleMatrix input, DoubleMatrix labels, int nIn, int nOut,WeightInit weightInit) {
+    public OutputLayer(INDArray input, INDArray labels, int nIn, int nOut,WeightInit weightInit) {
         this.input = input;
         this.labels = labels;
         this.nIn = nIn;
@@ -80,13 +79,13 @@ public class OutputLayer implements Serializable,Output {
             W = WeightInitUtil.initWeights(nIn,nOut,weightInit,activationFunction);
         }
         else
-            W = DoubleMatrix.zeros(nIn,nOut);
+            W = NDArrays.zeros(nIn,nOut);
         adaGrad = new AdaGrad(nIn,nOut);
-        b = DoubleMatrix.zeros(1,nOut);
-        biasAdaGrad = new AdaGrad(b.rows,b.columns);
+        b = NDArrays.zeros(1,nOut);
+        biasAdaGrad = new AdaGrad(b.rows(),b.columns());
     }
 
-    public OutputLayer(DoubleMatrix input, int nIn, int nOut) {
+    public OutputLayer(INDArray input, int nIn, int nOut) {
         this(input,null,nIn,nOut);
     }
 
@@ -111,11 +110,11 @@ public class OutputLayer implements Serializable,Output {
      * @param x the input to use
      * @param lr the learning rate to use
      */
-    public  void train(DoubleMatrix x,double lr) {
+    public  void train(INDArray x,double lr) {
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
-        MatrixUtil.complainAboutMissMatchedMatrices(x, labels);
+        LinAlgExceptions.assertRows(x,labels);
 
         train(x,labels,lr);
 
@@ -128,8 +127,8 @@ public class OutputLayer implements Serializable,Output {
      * @param learningRate
      * @param epochs
      */
-    public  void trainTillConvergence(DoubleMatrix x,DoubleMatrix y, double learningRate,int epochs) {
-        MatrixUtil.complainAboutMissMatchedMatrices(x, y);
+    public  void trainTillConvergence(INDArray x,INDArray y, double learningRate,int epochs) {
+        LinAlgExceptions.assertRows(x,y);
         adaGrad.setMasterStepSize(learningRate);
         biasAdaGrad.setMasterStepSize(learningRate);
 
@@ -146,7 +145,7 @@ public class OutputLayer implements Serializable,Output {
      * @param numEpochs the number of epochs
      * @param eval the training evaluator to use for early stopping (where applicable)
      */
-    public  void trainTillConvergence(DoubleMatrix labels,double learningRate, int numEpochs,TrainingEvaluator eval) {
+    public  void trainTillConvergence(INDArray labels,double learningRate, int numEpochs,TrainingEvaluator eval) {
 
         this.labels = labels;
         OutputLayerOptimizer opt = new OutputLayerOptimizer(this, learningRate);
@@ -246,36 +245,36 @@ public class OutputLayer implements Serializable,Output {
      * @return the score for the objective
      */
     public  double score() {
-        MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
-        DoubleMatrix z = output(input);
+        LinAlgExceptions.assertRows(input,labels);
+        INDArray z = output(input);
         double ret = 0;
         double reg = 0.5 * l2;
 
 
         switch (lossFunction) {
             case MCXENT:
-                DoubleMatrix mcXEntLogZ = log(z);
-                ret = - labels.mul(mcXEntLogZ).columnSums().sum() / labels.rows;
+                INDArray mcXEntLogZ = log(z);
+                ret = -(double) labels.mul(mcXEntLogZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case XENT:
-                DoubleMatrix xEntLogZ = log(z);
-                DoubleMatrix xEntOneMinusLabelsOut = oneMinus(labels);
-                DoubleMatrix xEntOneMinusLogOneMinusZ = oneMinus(log(z));
-                ret = -labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).columnSums().sum() / labels.rows;
+                INDArray xEntLogZ = log(z);
+                INDArray xEntOneMinusLabelsOut = labels.rsub(1);
+                INDArray xEntOneMinusLogOneMinusZ = log(z).rsub(1);
+                ret = -(double) labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case RMSE_XENT:
-                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = (double) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case MSE:
-                DoubleMatrix mseDelta = labels.sub(z);
-                ret = 0.5 * pow(mseDelta, 2).columnSums().sum() / labels.rows;
+                INDArray mseDelta = labels.sub(z);
+                ret =  0.5 * (double) (pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE)).element() / labels.rows();
                 break;
             case EXPLL:
-                DoubleMatrix expLLLogZ = log(z);
-                ret = -z.sub(labels.mul(expLLLogZ)).columnSums().sum() / labels.rows;
+                INDArray expLLLogZ = log(z);
+                ret = -(double) z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case SQUARED_LOSS:
-                ret = pow(labels.sub(z),2).columnSums().sum() / labels.rows;
+                ret = (double) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
 
 
         }
@@ -290,13 +289,13 @@ public class OutputLayer implements Serializable,Output {
     }
 
 
-    protected void applyDropOutIfNecessary(DoubleMatrix input) {
+    protected void applyDropOutIfNecessary(INDArray input) {
         if(dropOut > 0) {
-            this.dropoutMask = DoubleMatrix.rand(input.rows, this.nOut).gt(dropOut);
+            this.dropoutMask = NDArrays.rand(input.rows(), this.nOut).gt(dropOut);
         }
 
         else
-            this.dropoutMask = DoubleMatrix.ones(input.rows,this.nOut);
+            this.dropoutMask = NDArrays.ones(input.rows(),this.nOut);
 
         //actually apply drop out
         input.muli(dropoutMask);
@@ -312,18 +311,18 @@ public class OutputLayer implements Serializable,Output {
      * @param y the labels to train on
      * @param lr the learning rate
      */
-    public  void train(DoubleMatrix x,DoubleMatrix y, double lr) {
+    public  void train(INDArray x,INDArray y, double lr) {
 
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
 
-        MatrixUtil.complainAboutMissMatchedMatrices(x, y);
+        LinAlgExceptions.assertRows(input,labels);
 
         this.input = x;
         this.labels = y;
 
-        //DoubleMatrix regularized = W.transpose().mul(l2);
+        //INDArray regularized = W.transpose().mul(l2);
         OutputLayerGradient gradient = getGradient(lr);
 
 
@@ -368,40 +367,39 @@ public class OutputLayer implements Serializable,Output {
      * @return the gradient (bias and weight matrix)
      */
     public OutputLayerGradient getGradient(double lr) {
-        MatrixUtil.complainAboutMissMatchedMatrices(input, labels);
-
+        LinAlgExceptions.assertRows(input,labels);
 
         adaGrad.setMasterStepSize(lr);
         biasAdaGrad.setMasterStepSize(lr);
 
 
         //input activation
-        DoubleMatrix netOut = output(input);
+        INDArray netOut = output(input);
         //difference of outputs
-        DoubleMatrix dy = labels.sub(netOut);
+        INDArray dy = labels.sub(netOut);
         //weight decay
         if(normalizeByInputRows)
-            dy.divi(input.rows);
+            dy.divi(input.rows());
 
-        DoubleMatrix wGradient = getWeightGradient();
+        INDArray wGradient = getWeightGradient();
         if(useAdaGrad)
             wGradient.muli(adaGrad.getLearningRates(wGradient));
         else
             wGradient.muli(lr);
 
         if(useAdaGrad)
-            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.columnMeans()));
+            dy.muliRowVector(biasAdaGrad.getLearningRates(dy.mean(1)));
         else
             dy.muli(lr);
 
         if(normalizeByInputRows)
-            dy.divi(input.rows);
+            dy.divi(input.rows());
 
 
-        DoubleMatrix bGradient = dy;
+        INDArray bGradient = dy;
         if(constrainGradientToUniNorm) {
-            wGradient.divi(wGradient.norm2());
-            bGradient.divi(bGradient.norm2());
+            wGradient.divi(wGradient.norm2(Integer.MAX_VALUE));
+            bGradient.divi(bGradient.norm2(Integer.MAX_VALUE));
         }
 
 
@@ -411,25 +409,25 @@ public class OutputLayer implements Serializable,Output {
     }
 
 
-    private DoubleMatrix getWeightGradient() {
-        DoubleMatrix z = output(input);
+    private INDArray getWeightGradient() {
+        INDArray z = output(input);
 
         switch (lossFunction) {
             case MCXENT:
                 //input activation
-                DoubleMatrix p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
+                INDArray p_y_given_x = sigmoid(input.mmul(W).addRowVector(b));
                 //difference of outputs
-                DoubleMatrix dy = labels.sub(p_y_given_x);
+                INDArray dy = labels.sub(p_y_given_x);
                 return input.transpose().mmul(dy);
 
             case XENT:
-                DoubleMatrix xEntDiff = z.sub(labels);
-                return input.transpose().mmul(xEntDiff.div(z.mul(oneMinus(z))));
+                INDArray xEntDiff = z.sub(labels);
+                return input.transpose().mmul(xEntDiff.div(z.mul(z.rsub(1))));
             case MSE:
-                DoubleMatrix mseDelta = labels.sub(z);
+                INDArray mseDelta = labels.sub(z);
                 return input.transpose().mmul(mseDelta.neg());
             case EXPLL:
-                return input.transpose().mmul(oneMinus(labels).div(z));
+                return input.transpose().mmul(labels.rsub(1).divi(z));
             case RMSE_XENT:
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case SQUARED_LOSS:
@@ -454,15 +452,15 @@ public class OutputLayer implements Serializable,Output {
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public  DoubleMatrix preOutput(DoubleMatrix x) {
+    public  INDArray preOutput(INDArray x) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
         this.input = x;
 
-        DoubleMatrix ret = this.input.mmul(W);
+        INDArray ret = this.input.mmul(W);
         if(concatBiases)
-            ret = DoubleMatrix.concatHorizontally(ret,b);
+            ret = NDArrays.concatHorizontally(ret,b);
         else
             ret.addiRowVector(b);
         return ret;
@@ -475,11 +473,11 @@ public class OutputLayer implements Serializable,Output {
      * @param d the matrix to predict
      * @return the prediction for the dataset
      */
-    public int[] predict(DoubleMatrix d) {
-        DoubleMatrix output = output(d);
-        int[] ret = new int[d.rows];
+    public int[] predict(INDArray d) {
+        INDArray output = output(d);
+        int[] ret = new int[d.rows()];
         for(int i = 0; i < ret.length; i++)
-            ret[i] = SimpleBlas.iamax(output);
+            ret[i] = NDArrays.getBlasWrapper().iamax(output.getRow(i));
         return ret;
     }
 
@@ -492,13 +490,13 @@ public class OutputLayer implements Serializable,Output {
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public  DoubleMatrix output(DoubleMatrix x) {
+    public  INDArray output(INDArray x) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
         this.input = x;
-        DoubleMatrix preOutput = preOutput(x);
-        DoubleMatrix ret = activationFunction.apply(preOutput);
+        INDArray preOutput = preOutput(x);
+        INDArray ret = activationFunction.apply(preOutput);
         applyDropOutIfNecessary(ret);
         return ret;
 
@@ -529,35 +527,35 @@ public class OutputLayer implements Serializable,Output {
         this.nOut = nOut;
     }
 
-    public  DoubleMatrix getInput() {
+    public  INDArray getInput() {
         return input;
     }
 
-    public  void setInput(DoubleMatrix input) {
+    public  void setInput(INDArray input) {
         this.input = input;
     }
 
-    public  DoubleMatrix getLabels() {
+    public  INDArray getLabels() {
         return labels;
     }
 
-    public  void setLabels(DoubleMatrix labels) {
+    public  void setLabels(INDArray labels) {
         this.labels = labels;
     }
 
-    public  DoubleMatrix getW() {
+    public  INDArray getW() {
         return W;
     }
 
-    public  void setW(DoubleMatrix w) {
+    public  void setW(INDArray w) {
         W = w;
     }
 
-    public  DoubleMatrix getB() {
+    public  INDArray getB() {
         return b;
     }
 
-    public  void setB(DoubleMatrix b) {
+    public  void setB(INDArray b) {
         this.b = b;
     }
 
@@ -658,14 +656,14 @@ public class OutputLayer implements Serializable,Output {
     }
 
     public static class Builder {
-        private DoubleMatrix W;
+        private INDArray W;
         private OutputLayer ret;
-        private DoubleMatrix b;
+        private INDArray b;
         private double l2;
         private int nIn;
         private int nOut;
-        private DoubleMatrix input;
-        private DoubleMatrix labels;
+        private INDArray input;
+        private INDArray labels;
         private boolean useRegualarization;
         private ActivationFunction activationFunction = Activations.softmax();
         private boolean useAdaGrad = true;
@@ -678,7 +676,7 @@ public class OutputLayer implements Serializable,Output {
         private WeightInit weightInit;
 
 
-        public Builder withLabels(DoubleMatrix labels)  {
+        public Builder withLabels(INDArray labels)  {
             this.labels = labels;
             return this;
         }
@@ -745,12 +743,12 @@ public class OutputLayer implements Serializable,Output {
             return this;
         }
 
-        public Builder withWeights(DoubleMatrix W) {
+        public Builder withWeights(INDArray W) {
             this.W = W;
             return this;
         }
 
-        public Builder withBias(DoubleMatrix b) {
+        public Builder withBias(INDArray b) {
             this.b = b;
             return this;
         }

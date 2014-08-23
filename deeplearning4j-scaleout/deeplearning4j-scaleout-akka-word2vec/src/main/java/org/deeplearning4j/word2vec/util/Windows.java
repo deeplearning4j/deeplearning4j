@@ -83,7 +83,7 @@ public class Windows {
 	 * Creates a sliding window from text
 	 * @param windowSize the window size to use
 	 * @param wordPos the position of the word to center
-	 * @param sentence the sentence to create a window for
+	 * @param sentence the sentence to createComplex a window for
 	 * @return a window based on the given sentence
 	 */
 	public static Window windowForWordInPosition(int windowSize,int wordPos,List<String> sentence) {

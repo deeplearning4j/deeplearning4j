@@ -2,11 +2,11 @@ package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.OptimizerMatrix;
-import org.jblas.DoubleMatrix;
-import org.jblas.SimpleBlas;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
     private String myName = "";
     private static Logger log = LoggerFactory.getLogger(StochasticHessianFree.class);
     /* decay, current gradient/direction/current point in vector space,preCondition on conjugate gradient,current parameters */
-    private DoubleMatrix ch,gradient,xi;
+    private INDArray ch,gradient,xi;
     private NeuralNetEpochListener listener;
     private double pi = 0.5;
     private double decrease = 0.99;
@@ -70,7 +70,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     void setup() {
-        ch = DoubleMatrix.zeros(1,optimizable.getNumParameters());
+        ch = NDArrays.zeros(1,optimizable.getNumParameters());
         xi = network.pack();
     }
 
@@ -90,38 +90,34 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
     /* run conjugate gradient for numIterations */
-    public Pair<List<Integer>,List<DoubleMatrix>> conjGradient(DoubleMatrix b,DoubleMatrix x0,DoubleMatrix preCon,int numIterations) {
+    public Pair<List<Integer>,List<INDArray>> conjGradient(INDArray b,INDArray x0,INDArray preCon,int numIterations) {
         List<Integer> is = new ArrayList<>();
-        List<DoubleMatrix> xs = new ArrayList<>();
+        List<INDArray> xs = new ArrayList<>();
         //log.info("B sum " + b.sum());
         //in the pseudo code the gradient is b
         //x0 is ch
-        DoubleMatrix r = network.getBackPropRGradient(x0).subi(b);
-        DoubleMatrix y = r.div(preCon);
-        double deltaNew = r.mul(y).sum();
-        DoubleMatrix p = y.neg();
+        INDArray r = network.getBackPropRGradient(x0).subi(b);
+        INDArray y = r.div(preCon);
+        double deltaNew = (double) r.mul(y).sum(Integer.MAX_VALUE).element();
+        INDArray p = y.neg();
         //initial x
-        DoubleMatrix x = x0;
+        INDArray x = x0;
 
 
         for (int iterationCount = 0; iterationCount < numIterations; iterationCount++) {
-            if(MatrixUtil.isNaN(p)) {
-                log.warn("P is NaN breaking");
-                break;
-            }
             //log.info("P sum at iteration " + iterationCount + " is " + p.sum());
             //log.info("R sum at iteration " + iterationCount + " is " + r.sum());
 
-            DoubleMatrix Ap = network.getBackPropRGradient(p);
+            INDArray Ap = network.getBackPropRGradient(p);
             //log.info("Ap sum at iteration " + iterationCount + " is " + Ap.sum());
             //think Ax + b, this is the curvature
-            double pAp = Ap.mul(p).sum();
+            double pAp = (double) Ap.mul(p).sum(Integer.MAX_VALUE).element();
             if(pAp < 0) {
                 log.info("Negative slope: " + pAp + " breaking");
             }
 
 
-            double val = 0.5 * SimpleBlas.dot(b.neg().add(r).transpose(), x);
+            double val = 0.5 * NDArrays.getBlasWrapper().dot(b.neg().add(r).transpose(), x);
 
             log.info("Iteration on conjugate gradient " + iterationCount + " with value " + val);
 
@@ -135,10 +131,10 @@ public class StochasticHessianFree implements OptimizerMatrix {
             x.addi(p.mul(alpha));
 
            //conjugate gradient
-            DoubleMatrix rNew = r.add(Ap.mul(alpha));
-            DoubleMatrix yNew = rNew.div(preCon);
+            INDArray rNew = r.add(Ap.mul(alpha));
+            INDArray yNew = rNew.div(preCon);
             double deltaOld = deltaNew;
-            deltaNew = rNew.mul(yNew).sum();
+            deltaNew = (double) rNew.mul(yNew).sum(Integer.MAX_VALUE).element();
             double beta = deltaNew / deltaOld;
             p = yNew.neg().add(p.mul(beta));
 
@@ -155,8 +151,8 @@ public class StochasticHessianFree implements OptimizerMatrix {
     }
 
     //setup baseline conjugate gradient and run it for n iterations
-    private Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix> runConjugateGradient(DoubleMatrix preCon,int numIterations) {
-        Pair<List<Integer>,List<DoubleMatrix>> cg = conjGradient(gradient,ch,preCon,numIterations);
+    private Triple<INDArray,List<INDArray>,INDArray> runConjugateGradient(INDArray preCon,int numIterations) {
+        Pair<List<Integer>,List<INDArray>> cg = conjGradient(gradient,ch,preCon,numIterations);
         ch = cg.getSecond().get(cg.getSecond().size() - 1);
         return new Triple<>(ch,cg.getSecond(),ch);
     }
@@ -168,7 +164,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * @param params the params of the proposed step
      * @return the rate to step by
      */
-    public double lineSearch(double newScore,DoubleMatrix params,DoubleMatrix p) {
+    public double lineSearch(double newScore,INDArray params,INDArray p) {
         double rate = 1.0;
         double c = 1e-2;
         int j = 0;
@@ -178,7 +174,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
                 log.info("Iteration " + j + " on line search with current rate of " + rate);
             }
             //converged
-            if(newScore <= gradient.mul(p).mul(score + c * rate).sum()) {
+            if(newScore <= (double) gradient.mul(p).mul(score + c * rate).sum(Integer.MAX_VALUE).element()) {
                 break;
             }
             else {
@@ -209,8 +205,8 @@ public class StochasticHessianFree implements OptimizerMatrix {
      * @param chs the proposed changes
      * @return the new changed path and score for that path
      */
-    public Pair<DoubleMatrix,Double> cgBackTrack(List<DoubleMatrix> chs,DoubleMatrix p) {
-        DoubleMatrix params = network.params();
+    public Pair<INDArray,Double> cgBackTrack(List<INDArray> chs,INDArray p) {
+        INDArray params = network.params();
         double score = network.score(p.add(params));
         double currMin = network.score();
         int i = chs.size() - 2;
@@ -249,23 +245,23 @@ public class StochasticHessianFree implements OptimizerMatrix {
 
 
         //initial gradient, precon/conjugate gradient conditioner
-        Pair<DoubleMatrix,DoubleMatrix> backPropGradient = network.getBackPropGradient2();
+        Pair<INDArray,INDArray> backPropGradient = network.getBackPropGradient2();
 
         gradient = backPropGradient.getFirst().neg();
         //log.info("Gradient sum " + gradient.sum());
 
-        DoubleMatrix preCon = backPropGradient.getSecond();
+        INDArray preCon = backPropGradient.getSecond();
 
         if(ch == null)
             setup();
 
         ch.muli(pi);
 
-        Triple<DoubleMatrix,List<DoubleMatrix>,DoubleMatrix>  cg = runConjugateGradient(preCon,numIterations);
+        Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,numIterations);
 
-        DoubleMatrix p = cg.getFirst();
+        INDArray p = cg.getFirst();
 
-        Pair<DoubleMatrix,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
+        Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
 
         p = cgBackTrack.getFirst();
 
@@ -275,7 +271,7 @@ public class StochasticHessianFree implements OptimizerMatrix {
         step = lineSearch(newScore,gradient,p);
         network.dampingUpdate(rho,boost,decrease);
 
-        DoubleMatrix proposedUpdate = xi.add(p.mul(f * step));
+        INDArray proposedUpdate = xi.add(p.mul(f * step));
         network.setParameters(proposedUpdate);
 
         return true;

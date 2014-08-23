@@ -5,10 +5,12 @@ import akka.dispatch.Futures;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.datasets.DataSet;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.MatrixUtil;
 import org.deeplearning4j.util.SetUtils;
 import org.deeplearning4j.word2vec.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;
@@ -16,7 +18,6 @@ import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.word2vec.util.Util;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -215,22 +216,22 @@ public class TfidfVectorizer implements TextVectorizer {
         return DataSet.merge(data);
     }
 
-    private DoubleMatrix tfidfForInput(String text) {
-        DoubleMatrix ret = new DoubleMatrix(1,vocab.size());
+    private INDArray tfidfForInput(String text) {
+        INDArray ret = NDArrays.create(1, vocab.size());
         Tokenizer tokenizer = tokenizerFactory.create(text);
         List<String> tokens = tokenizer.getTokens();
 
         for(int i = 0;i  < tokens.size(); i++) {
             int idx = vocab.indexOf(tokens.get(i));
             if(idx >= 0)
-                ret.put(idx,tfidfWord(tokens.get(i)));
+                ret.putScalar(idx, tfidfWord(tokens.get(i)));
         }
 
         return ret;
 
     }
 
-    private DoubleMatrix tfidfForInput(InputStream is) {
+    private INDArray tfidfForInput(InputStream is) {
         try {
             String text = new String(IOUtils.toByteArray(is));
             return tfidfForInput(text);
@@ -254,13 +255,13 @@ public class TfidfVectorizer implements TextVectorizer {
 
     @Override
     public DataSet vectorize(InputStream is, String label) {
-        return new DataSet(tfidfForInput(is),MatrixUtil.toOutcomeVector(labels.indexOf(label),labels.size()));
+        return new DataSet(tfidfForInput(is),FeatureUtil.toOutcomeVector(labels.indexOf(label),labels.size()));
     }
 
     @Override
     public DataSet vectorize(String text, String label) {
-        DoubleMatrix tfidf  = tfidfForInput(text);
-        DoubleMatrix label2 = MatrixUtil.toOutcomeVector(labels.indexOf(label),labels.size());
+        INDArray tfidf  = tfidfForInput(text);
+        INDArray label2 = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
         return new DataSet(tfidf,label2);
     }
 
@@ -280,7 +281,7 @@ public class TfidfVectorizer implements TextVectorizer {
      * @return
      */
     @Override
-    public DoubleMatrix transform(String text) {
+    public INDArray transform(String text) {
         return tfidfForInput(text);
     }
 

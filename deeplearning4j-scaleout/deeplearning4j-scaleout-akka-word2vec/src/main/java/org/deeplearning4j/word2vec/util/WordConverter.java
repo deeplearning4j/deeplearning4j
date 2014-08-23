@@ -3,9 +3,10 @@ package org.deeplearning4j.word2vec.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.FeatureUtil;
 import org.deeplearning4j.word2vec.Word2Vec;
-import org.jblas.DoubleMatrix;
 
 
 public class WordConverter {
@@ -19,34 +20,34 @@ public class WordConverter {
 		this.vec = vec;
 	}
 
-	public static DoubleMatrix toInputMatrix(List<Window> windows,Word2Vec vec) {
+	public static INDArray toInputMatrix(List<Window> windows,Word2Vec vec) {
 		int columns = vec.getLayerSize() * vec.getWindow();
 		int rows = windows.size();
-		DoubleMatrix ret = new DoubleMatrix(rows,columns);
+		INDArray ret = NDArrays.create(rows,columns);
 		for(int i = 0; i < rows; i++) {
-			ret.putRow(i,new DoubleMatrix(WindowConverter.asExample(windows.get(i), vec)));
+			ret.putRow(i, NDArrays.create(WindowConverter.asExample(windows.get(i), vec)));
 		}
 		return ret;
 	}
 	
 	
-	public DoubleMatrix toInputMatrix() {
+	public INDArray toInputMatrix() {
 		List<Window> windows = allWindowsForAllSentences();
 		return toInputMatrix(windows,vec);
 	}
 
 	
 
-	public static DoubleMatrix toLabelMatrix(List<String> labels,List<Window> windows) {
+	public static INDArray toLabelMatrix(List<String> labels,List<Window> windows) {
 		int columns = labels.size();
-		DoubleMatrix ret = new DoubleMatrix(windows.size(),columns);
-		for(int i = 0; i < ret.rows; i++) {
-			ret.putRow(i,MatrixUtil.toOutcomeVector(labels.indexOf(windows.get(i).getLabel()), labels.size()));
+		INDArray ret = NDArrays.create(windows.size(),columns);
+		for(int i = 0; i < ret.rows(); i++) {
+			ret.putRow(i, FeatureUtil.toOutcomeVector(labels.indexOf(windows.get(i).getLabel()), labels.size()));
 		}
 		return ret;
 	}
 	
-	public DoubleMatrix toLabelMatrix(List<String> labels) {
+	public INDArray toLabelMatrix(List<String> labels) {
 		List<Window> windows = allWindowsForAllSentences();
 		return toLabelMatrix(labels,windows);
 	}

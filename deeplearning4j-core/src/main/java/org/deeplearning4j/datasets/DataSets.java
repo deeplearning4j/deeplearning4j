@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.LFWDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
+import org.deeplearning4j.linalg.dataset.DataSet;
 
 public class DataSets {
 

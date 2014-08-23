@@ -1,12 +1,12 @@
 package org.deeplearning4j.topicmodeling;
 
 import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.util.MatrixUtil;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.word2vec.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +41,10 @@ public class CountVectorizer {
 	}
 	
 	
-	public DoubleMatrix toNormalizedVector() {
-		return MatrixUtil.normalizeByRowSums(toVector());
-	}
+
 	
-	public DoubleMatrix toVector() {
-		DoubleMatrix d = new DoubleMatrix(1,wordsToCount.size());
+	public INDArray toVector() {
+		INDArray d = NDArrays.create(1,wordsToCount.size());
 		Counter<String> wordFrequencies = new Counter<String>();
 		while(iter.hasNext()) {
 			String sentence = iter.nextSentence();
@@ -63,14 +61,14 @@ public class CountVectorizer {
 		}
 		
 		for(int i = 0; i < wordsToCount.size(); i++) {
-			d.put(i,wordFrequencies.getCount(wordsToCount.get(i).toString()));
+			d.putScalar(i,wordFrequencies.getCount(wordsToCount.get(i).toString()));
 		}
 		
 		return d;
 	}
 	
-	public DoubleMatrix toBinaryVector() {
-		DoubleMatrix d = new DoubleMatrix(1,wordsToCount.size());
+	public INDArray toBinaryVector() {
+		INDArray d = NDArrays.create(1, wordsToCount.size());
 		Counter<String> wordFrequencies = new Counter<String>();
 		while(iter.hasNext()) {
 			String sentence = iter.nextSentence();
@@ -88,7 +86,7 @@ public class CountVectorizer {
 		
 		for(int i = 0; i < wordsToCount.size(); i++) {
 			double count = wordFrequencies.getCount(wordsToCount.get(i).toString());
-			d.put(i,count > 0 ? 1 : 0);
+			d.putScalar(i,count > 0 ? 1 : 0);
 		}
 		
 		return d;

@@ -1,7 +1,8 @@
 package org.deeplearning4j.test;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
+import org.deeplearning4j.linalg.dataset.DataSet;
+
 /**
  * Track number of times the dataset iterator has been called
  * @author agibsonccc

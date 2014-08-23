@@ -1,10 +1,17 @@
 package org.deeplearning4j.linalg.util;
 
+import com.google.common.primitives.Ints;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author Adam Gibson
@@ -12,13 +19,55 @@ import java.util.List;
 public class ArrayUtil {
 
 
+    /**
+     *
+     * Credit to mikio braun from jblas
+     *
+     * Create a random permutation of the numbers 0, ..., size - 1.
+     *
+     * see Algorithm P, D.E. Knuth: The Art of Computer Programming, Vol. 2, p. 145
+     */
+    public static int[] randomPermutation(int size) {
+        Random r = new Random();
+        int[] result = new int[size];
 
+        for (int j = 0; j < size; j++) {
+            result[j] = j;
+        }
+
+        for (int j = size - 1; j > 0; j--) {
+            int k = r.nextInt(j);
+            int temp = result[j];
+            result[j] = result[k];
+            result[k] = temp;
+        }
+
+        return result;
+    }
+
+    public static INDArray toNDArray(int[][] nums) {
+        double[] doubles = toDoubles(nums);
+        INDArray create = NDArrays.create(doubles,new int[]{1,nums.length});
+        return create;
+    }
 
     public static INDArray toNDArray(int[] nums) {
         double[] doubles = toDoubles(nums);
         INDArray create = NDArrays.create(doubles,new int[]{1,nums.length});
         return create;
     }
+
+
+    public static int[] toInts(INDArray n) {
+        if(n instanceof IComplexNDArray)
+            throw new IllegalArgumentException("Unable to convert complex array");
+        n = n.reshape(new int[]{1,n.length()});
+        int[] ret = new int[n.length()];
+        for(int i = 0; i < n.length(); i++)
+            ret[i] = (int) n.getScalar(i).element();
+        return ret;
+    }
+
 
     public static int prod(int[] mult) {
         int ret = 1;
@@ -29,9 +78,9 @@ public class ArrayUtil {
 
 
     public static int[] consArray(int a, int[] as) {
-        int len=as.length;
-        int[] nas=new int[len+1];
-        nas[0]=a;
+        int len = as.length;
+        int[] nas= new int[len+1];
+        nas[0] = a;
         System.arraycopy(as, 0, nas, 1, len);
         return nas;
     }
@@ -89,6 +138,21 @@ public class ArrayUtil {
     public static int[] copy(int[] copy) {
         int[] ret = new int[copy.length];
         System.arraycopy(copy,0,ret,0,ret.length);
+        return ret;
+    }
+
+
+    public static double[] doubleCopyOf(float[] data) {
+        double[] ret = new double[data.length];
+        for(int i = 0;i < ret.length; i++)
+            ret[i] =  data[i];
+        return ret;
+    }
+
+    public static float[] floatCopyOf(double[] data) {
+        float[] ret = new float[data.length];
+        for(int i = 0;i < ret.length; i++)
+            ret[i] = (float) data[i];
         return ret;
     }
 
@@ -160,6 +224,36 @@ public class ArrayUtil {
     }
 
 
+
+
+    /**
+     * Generate an int array ranging from
+     * from to to.
+     * if from is > to this method will
+     * count backwards
+     * @param from the from
+     * @param to the end point of the data
+     * @param increment the amount to increment by
+     * @return the int array with a length equal to absoluteValue(from - to)
+     */
+    public static int[] range(int from,int to,int increment) {
+        int diff = Math.abs(from - to);
+        int[] ret = new int[diff];
+        if(from < to) {
+            int count = 0;
+            for(int i = from; i < to; i+= increment) {
+                ret[count++] = i;
+            }
+        }
+        else if(from > to) {
+            int count = 0;
+            for(int i = from; i >= to; i-= increment)
+                ret[count++] = i;
+        }
+
+        return ret;
+    }
+
     /**
      * Generate an int array ranging from
      * from to to.
@@ -170,21 +264,7 @@ public class ArrayUtil {
      * @return the int array with a length equal to absoluteValue(from - to)
      */
     public static int[] range(int from,int to) {
-        int diff = Math.abs(from - to);
-        int[] ret = new int[diff];
-        if(from < to) {
-            int count = 0;
-            for(int i = from; i < to; i++) {
-                ret[count++] = i;
-            }
-        }
-        else if(from > to) {
-            int count = 0;
-            for(int i = from; i >= to; i--)
-                ret[count++] = i;
-        }
-
-        return ret;
+        return range(from,to,1);
     }
 
     public static double[] toDoubles(int[] ints) {
@@ -192,6 +272,10 @@ public class ArrayUtil {
         for(int i = 0; i < ints.length; i++)
             ret[i] = (double) ints[i];
         return ret;
+    }
+
+    public static double[] toDoubles(int[][] ints) {
+        return toDoubles(Ints.concat(ints));
     }
 
 
@@ -266,21 +350,32 @@ public class ArrayUtil {
 
 
 
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:
+     * @param startNum the start number for the strides
      * @return the strides for a matrix of n dimensions
      */
-    public static  int[]  calcStridesFortran(int[] shape) {
+    public static  int[]  calcStridesFortran(int[] shape,int startNum) {
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
-        int st = 1;
+        int st = startNum;
         for (int j = 0; j < stride.length; j++) {
             stride[j] = st;
             st *= shape[j];
         }
 
         return stride;
+    }
+
+    /**
+     * Computes the standard packed array strides for a given shape.
+     * @param shape the shape of a matrix:
+     * @return the strides for a matrix of n dimensions
+     */
+    public static  int[]  calcStridesFortran(int[] shape) {
+        return calcStridesFortran(shape,1);
     }
 
 
@@ -317,7 +412,7 @@ public class ArrayUtil {
 
     /**
      * Create a backwards copy of the given array
-     * @param e the array to create a reverse clone of
+     * @param e the array to createComplex a reverse clone of
      * @return the reversed copy
      */
     public static  int[] reverseCopy(int[] e) {
@@ -333,6 +428,35 @@ public class ArrayUtil {
         }
         return copy;
     }
+
+
+    public static double[] read(int length,DataInputStream dis) throws IOException {
+        double[] ret = new double[length];
+        for(int i = 0; i < length; i++)
+            ret[i] = dis.readDouble();
+        return ret;
+    }
+
+
+    public static void write(double[] data,DataOutputStream dos) throws IOException {
+        for(int i = 0; i < data.length; i++)
+            dos.writeDouble(data[i]);
+    }
+
+
+    public static float[] readFloat(int length,DataInputStream dis) throws IOException {
+        float[] ret = new float[length];
+        for(int i = 0; i < length; i++)
+            ret[i] = dis.readFloat();
+        return ret;
+    }
+
+
+    public static void write(float[] data,DataOutputStream dos) throws IOException {
+        for(int i = 0; i < data.length; i++)
+            dos.writeFloat(data[i]);
+    }
+
 
 
     /**
@@ -497,6 +621,8 @@ public class ArrayUtil {
 
         return ret;
     }
+
+
 
 
     public static int[] toOutcomeArray(int outcome,int numOutcomes) {

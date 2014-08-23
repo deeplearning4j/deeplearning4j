@@ -4,18 +4,15 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.optimize.OutputLayerTrainingEvaluator;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +22,7 @@ public class MnistExample {
 
     /**
      * @param args
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public static void main(String[] args) throws IOException {
         //batches of 10, 60000 examples total
@@ -42,7 +39,7 @@ public class MnistExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFirst(),1,1e-1,1000);
+            dbn.pretrain(next.getFeatureMatrix(),1,1e-1,1000);
 
         }
 
@@ -50,7 +47,7 @@ public class MnistExample {
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.finetune(next.getSecond(),1e-1,1000);
+            dbn.finetune(next.getLabels(),1e-1,1000);
 
         }
 
@@ -59,7 +56,6 @@ public class MnistExample {
         dbn.write(bos);
         bos.flush();
         bos.close();
-        log.info("Saved dbn");
 
         iter.reset();
 
@@ -67,8 +63,8 @@ public class MnistExample {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            DoubleMatrix predict = dbn.output(next.getFirst());
-            DoubleMatrix labels = next.getSecond();
+            INDArray predict = dbn.output(next.getFeatureMatrix());
+            INDArray labels = next.getLabels();
             eval.eval(labels, predict);
         }
 

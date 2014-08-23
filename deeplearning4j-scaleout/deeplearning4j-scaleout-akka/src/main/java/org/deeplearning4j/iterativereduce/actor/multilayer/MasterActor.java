@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import akka.dispatch.Futures;
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.Ack;
 import org.deeplearning4j.iterativereduce.actor.core.ClusterListener;
@@ -23,13 +22,13 @@ import org.deeplearning4j.iterativereduce.akka.DeepLearningAccumulator;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.StateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.DeepLearningAccumulatorIterateAndUpdate;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.iterativereduce.multi.UpdateableImpl;
 import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.util.SetUtils;
-import org.jblas.DoubleMatrix;
-
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
@@ -147,7 +146,7 @@ public class MasterActor extends org.deeplearning4j.iterativereduce.actor.core.a
         if(conf.getColumnStds() != null)
             network.setColumnStds(conf.getColumnStds());
 
-        network.initializeLayers(DoubleMatrix.zeros(1,conf.getnIn()));
+        network.initializeLayers(NDArrays.zeros(1, conf.getnIn()));
 
         UpdateableImpl masterResults = new UpdateableImpl(network);
 

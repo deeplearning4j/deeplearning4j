@@ -5,27 +5,24 @@ import java.util.List;
 import java.util.Random;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.jblas.DoubleMatrix;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
 
 
 public class InputSplit {
 
-	public static void splitInputs(DoubleMatrix inputs,DoubleMatrix outcomes,List<Pair<DoubleMatrix,DoubleMatrix>> train,List<Pair<DoubleMatrix,DoubleMatrix>> test,double split) {
-		List<DoubleMatrix> inputRows = inputs.rowsAsList();
-		List<DoubleMatrix> outcomeRows = outcomes.rowsAsList();
-		assert inputRows.size() == outcomeRows.size();
-		List<Pair<DoubleMatrix,DoubleMatrix>> list = new ArrayList<>();
-		for(int i = 0; i < inputRows.size(); i++) {
-			list.add(new Pair<>(inputRows.get(i),outcomeRows.get(i)));
+	public static void splitInputs(INDArray inputs,INDArray outcomes,List<Pair<INDArray,INDArray>> train,List<Pair<INDArray,INDArray>> test,double split) {
+		List<Pair<INDArray,INDArray>> list = new ArrayList<>();
+		for(int i = 0; i < inputs.rows(); i++) {
+			list.add(new Pair<>(inputs.getRow(i),outcomes.getRow(i)));
 		}
 
 		splitInputs(list,train,test,split);
 	}
 
-	public static void splitInputs(List<Pair<DoubleMatrix,DoubleMatrix>> pairs,List<Pair<DoubleMatrix,DoubleMatrix>> train,List<Pair<DoubleMatrix,DoubleMatrix>> test,double split) {
+	public static void splitInputs(List<Pair<INDArray,INDArray>> pairs,List<Pair<INDArray,INDArray>> train,List<Pair<INDArray,INDArray>> test,double split) {
 		Random rand = new Random();
 
-		for(Pair<DoubleMatrix,DoubleMatrix> pair : pairs)
+		for(Pair<INDArray,INDArray> pair : pairs)
 			if(rand.nextDouble() <= split) 
 				train.add(pair);
 			else

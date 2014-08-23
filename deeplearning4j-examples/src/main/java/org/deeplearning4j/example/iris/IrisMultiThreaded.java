@@ -1,13 +1,12 @@
 package org.deeplearning4j.example.iris;
-
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.SamplingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.iterativereduce.actor.core.DefaultModelSaver;
 import org.deeplearning4j.iterativereduce.actor.multilayer.ActorNetworkRunner;
-import org.deeplearning4j.nn.activation.Activations;
+import org.deeplearning4j.linalg.api.activation.Activations;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.rbm.RBM;
 import org.deeplearning4j.scaleout.conf.Conf;
 

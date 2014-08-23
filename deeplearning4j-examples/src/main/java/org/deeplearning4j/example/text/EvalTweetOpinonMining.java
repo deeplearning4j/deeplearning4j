@@ -1,10 +1,10 @@
 package org.deeplearning4j.example.text;
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.dbn.DBN;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.text.tokenizerfactory.UimaTokenizerFactory;
 import org.deeplearning4j.util.SerializationUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
@@ -52,7 +52,7 @@ public class EvalTweetOpinonMining {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            eval.eval(next.getSecond(),d.output(next.getFirst()));
+            eval.eval(next.getLabels(),d.output(next.getFeatureMatrix()));
         }
 
         log.info(eval.stats());

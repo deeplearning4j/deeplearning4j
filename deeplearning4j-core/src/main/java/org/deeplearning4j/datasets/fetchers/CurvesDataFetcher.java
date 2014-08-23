@@ -1,10 +1,10 @@
 package org.deeplearning4j.datasets.fetchers;
 
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.datasets.DataSet;
-import org.deeplearning4j.util.MatrixUtil;
+
+import org.deeplearning4j.linalg.dataset.DataSet;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.util.SerializationUtils;
-import org.jblas.ranges.RangeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class CurvesDataFetcher extends BaseDataFetcher {
             cursor = data.numExamples();
         }
 
-        curr = data.get(MatrixUtil.toIndices(RangeUtils.interval(cursor,cursor + numExamples)));
+        curr = data.get(NDArrayIndex.interval(cursor, cursor + numExamples).indices());
         log.info("Fetched " + curr.numExamples());
         if(cursor + numExamples < data.numExamples())
             cursor += numExamples;

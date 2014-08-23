@@ -13,6 +13,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.CounterMap;
+import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.stopwords.StopWords;
 import org.deeplearning4j.util.MathUtils;
 import org.deeplearning4j.word2vec.inputsanitation.InputHomogenization;
@@ -22,7 +24,6 @@ import org.deeplearning4j.word2vec.tokenizer.DefaultTokenizerFactory;
 import org.deeplearning4j.word2vec.tokenizer.Tokenizer;
 import org.deeplearning4j.word2vec.tokenizer.TokenizerFactory;
 import org.deeplearning4j.util.Index;
-import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,6 @@ public class VocabCreator implements Serializable {
 	protected transient TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 	/**
 	 * Creates a vocab based on tf-idf
-	 * @param stopWords the stop words to use
 	 * @param rootDir the root directory to train on
 	 */
 	public VocabCreator( File rootDir) {
@@ -85,7 +85,6 @@ public class VocabCreator implements Serializable {
 
 	/**
 	 * Creates a vocab based on tf-idf
-	 * @param stopWords the stop words to use
 	 * @param rootDir the root directory to train on
 	 * @param tokenizerFactory the tokenizer factory to use
 	 */
@@ -232,12 +231,12 @@ public class VocabCreator implements Serializable {
 	}
 
 
-	public DoubleMatrix getScoreMatrix(File file) {
+	public INDArray getScoreMatrix(File file) {
 		Counter<String> docWords = new Counter<String>();
 		try {
 			LineIterator iter = FileUtils.lineIterator(file);
 			while(iter.hasNext()) {
-				Tokenizer t =tokenizerFactory.create((new InputHomogenization(iter.nextLine()).transform()));
+				Tokenizer t = tokenizerFactory.create((new InputHomogenization(iter.nextLine()).transform()));
 				while(t.hasMoreTokens()) {
 					docWords.incrementCount(t.nextToken(), 1.0);
 				}
@@ -247,12 +246,12 @@ public class VocabCreator implements Serializable {
 		} catch (IOException e) {
 			throw new IllegalStateException("Unable to read file",e);
 		}
-		DoubleMatrix ret = new DoubleMatrix(1,currVocab.size());
+		INDArray ret = NDArrays.create(1, currVocab.size());
 
 
 		for(int i = 0; i < currVocab.size(); i++) {
 			if(docWords.getCount(currVocab.get(i).toString()) > 0) {
-				ret.put(i,wordScores.getCount(currVocab.get(i).toString()));
+				ret.putScalar(i,wordScores.getCount(currVocab.get(i).toString()));
 			}
 		}
 

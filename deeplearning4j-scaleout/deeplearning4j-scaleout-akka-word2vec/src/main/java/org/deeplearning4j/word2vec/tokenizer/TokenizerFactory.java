@@ -8,8 +8,8 @@ package org.deeplearning4j.word2vec.tokenizer;
 public interface TokenizerFactory {
 
 	/**
-	 * The tokenizer to create
-	 * @param toTokenize the string to create the tokenizer with
+	 * The tokenizer to createComplex
+	 * @param toTokenize the string to createComplex the tokenizer with
 	 * @return the new tokenizer
 	 */
 	Tokenizer create(String toTokenize);

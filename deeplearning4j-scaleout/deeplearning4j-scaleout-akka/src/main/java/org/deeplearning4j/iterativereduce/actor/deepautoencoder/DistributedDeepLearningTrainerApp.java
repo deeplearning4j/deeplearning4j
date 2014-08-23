@@ -1,15 +1,15 @@
 package org.deeplearning4j.iterativereduce.actor.deepautoencoder;
 
 
-import org.deeplearning4j.datasets.DataSet;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
-import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.HazelCastStateTracker;
 import org.deeplearning4j.iterativereduce.tracker.statetracker.hazelcast.deepautoencoder.DeepAutoEncoderHazelCastStateTracker;
+import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
 import org.deeplearning4j.scaleout.conf.Conf;
 import org.deeplearning4j.scaleout.core.conf.DeepLearningConfigurableDistributed;
 import org.deeplearning4j.scaleout.zookeeper.ZookeeperConfigurationRetriever;
+import org.deeplearning4j.util.SerializationUtils;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -222,7 +222,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 				throw new IllegalStateException("Can't have both a data applyTransformToDestination and a dataset path defined");
 
 			else if(dataPath != null) {
-				DataSet data = DataSet.load(new File(dataPath));
+				DataSet data = SerializationUtils.readObject(new File(dataPath));
 				this.iter = new ListDataSetIterator(data.asList(),split);
 			}
 			
