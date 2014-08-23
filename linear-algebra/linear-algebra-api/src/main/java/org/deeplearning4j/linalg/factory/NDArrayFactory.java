@@ -25,6 +25,9 @@ public interface NDArrayFactory  {
     public final static char C = 'c';
 
 
+
+
+
     /**
      * Sets the order. Primarily for testing purposes
      * @param order
@@ -168,6 +171,13 @@ public interface NDArrayFactory  {
 
      INDArray appendBias(INDArray...vectors);
 
+    /**
+     * Create an ndarray with the given data layout
+     * @param data the data to create the ndarray with
+     * @return the ndarray with the given data layout
+     *
+     */
+    INDArray create(double[][] data);
 
     /**
      * Create a complex ndarray from the passed in indarray

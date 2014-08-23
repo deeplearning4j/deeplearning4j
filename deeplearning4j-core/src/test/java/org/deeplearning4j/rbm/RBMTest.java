@@ -28,23 +28,27 @@ public class RBMTest  {
 
 	@Test
 	public void testBasic() throws Exception {
-		double[] data = new double[]
-				{
-				1,1,1,0,0,0,
-				1,0,1,0,0,0,
-				1,1,1,0,0,0,
-				0,0,1,1,1,0,
-				0,0,1,1,0,0,
-				0,0,1,1,1,0,
-				0,0,1,1,1,0
-				};
+        double[][] data = new double[][]
+                {
+                        {1,1,1,0,0,0},
+                        {1,0,1,0,0,0},
+                        {1,1,1,0,0,0},
+                        {0,0,1,1,1,0},
+                        {0,0,1,1,0,0},
+                        {0,0,1,1,1,0},
+                        {0,0,1,1,1,0}
+                };
+
+
 
 
         ClassPathResource r3 = new ClassPathResource("/test-matrix.ser");
 
+        NDArrays.factory().setOrder('f');
 
-		INDArray d =  NDArrays.create(data,new int[]{7,6});
-		RandomGenerator g = new MersenneTwister(123);
+		INDArray d =  NDArrays.create(data);
+
+        RandomGenerator g = new MersenneTwister(123);
 
 		RBM r = new RBM.Builder().weightInit(WeightInit.SI)
 				.numberOfVisible(d.columns()).numHidden(4).withRandom(g).build();
