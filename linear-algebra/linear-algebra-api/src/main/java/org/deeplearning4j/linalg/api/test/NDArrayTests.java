@@ -9,7 +9,6 @@ import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.Shape;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -732,7 +731,9 @@ public abstract class NDArrayTests {
     public void testVectorAlongDimension() {
         INDArray arr = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
         INDArray assertion = NDArrays.create(new double[]{1,2}, new int[]{2});
-        assertEquals(NDArrays.create(new double[]{3,4},new int[]{2}),arr.vectorAlongDimension(1,2));
+        INDArray a = NDArrays.create(new double[]{3,4},new int[]{2});
+        INDArray b = arr.vectorAlongDimension(1,2);
+        assertEquals(a,b);
         assertEquals(assertion,arr.vectorAlongDimension(0,2));
         assertEquals(arr.vectorAlongDimension(0,1),NDArrays.create(new double[]{1,3,5}));
 

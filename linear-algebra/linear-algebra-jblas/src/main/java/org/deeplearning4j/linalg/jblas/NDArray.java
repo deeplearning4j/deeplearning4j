@@ -392,7 +392,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
             return new NDArray(data,
                     new int[]{1,shape[dimension]}
                     ,ArrayUtil.removeIndex(stride,0),
-                    offset + index * stride[dimension - 1]);
+                    offset + index * stride[dimension-1]);
 
         else if(dimension == 0)
             return new NDArray(data,

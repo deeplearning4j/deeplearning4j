@@ -10,6 +10,7 @@ import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+//import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jcublas.JCublasNDArray;
 import org.deeplearning4j.linalg.jcublas.SimpleJCublas;
 import org.deeplearning4j.linalg.ops.TwoArrayOps;
@@ -501,8 +502,55 @@ public class JCublasComplexNDArray implements IComplexNDArray {
     }
 
 
+    public JCublasComplexNDArray(IComplexNumber[] newData,int[] shape,int[] stride) {
+        this(newData.length/2);
+
+        data = new double[ArrayUtil.prod(shape) * 2];
+        this.stride = stride;
+        initShape(shape);
+        for(int i = 0;i  < length; i++)
+            put(i,(JCublasComplexDouble) newData[i].asDouble());
+
+    }
     public JCublasComplexDouble scalar() {
         return new JCublasComplexDouble(get(0));
+    }
+    public JCublasComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride) {
+        this(slices,shape,stride,NDArrays.order());
+    }
+    public JCublasComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride,char ordering) {
+        this(new double[ArrayUtil.prod(shape) ].length);
+
+        data = new double[ArrayUtil.prod(shape) * 2];
+
+        List<JCublasComplexDouble> list = new ArrayList<>();
+        for(int i = 0; i < slices.size(); i++) {
+            IComplexNDArray flattened = slices.get(i).ravel();
+            for(int j = 0; j < flattened.length(); j++)
+                list.add((JCublasComplexDouble) flattened.getScalar(j).element());
+        }
+
+
+        this.ordering = ordering;
+        this.data = new double[ArrayUtil.prod(shape) * 2 ];
+        this.stride = stride;
+        int count = 0;
+        for (int i = 0; i < list.size(); i++) {
+            data[count] = list.get(i).realComponent();
+            data[count + 1] = list.get(i).imaginaryComponent();
+            count += 2;
+        }
+
+        initShape(shape);
+    }
+    //@Override
+    public JCublasComplexNDArray put(int i, org.jblas.ComplexDouble v) {
+        if(i > length)
+            throw new IllegalArgumentException("Unable to insert element " + v + " at index " + i + " with length " + length);
+        int linearIndex = linearIndex(i);
+        data[linearIndex] = v.real();
+        data[linearIndex + 1] = v.imag();
+        return this;
     }
 
     @Override

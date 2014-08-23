@@ -232,8 +232,8 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void testSum() {
-        INDArray n = new JCublasNDArray(JCublasNDArray.linspace(1,8,8).data,new int[]{2,2,2});
-        INDArray test = NDArrays.create(new double[]{6,8,10,12},new int[]{2,2});
+        INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
+        INDArray test = NDArrays.create(new double[]{3,7,11,15},new int[]{2,2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test,sum);
     }
@@ -241,54 +241,55 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void testMmul() {
-        double[] data = JCublasNDArray.linspace(1,10,10).data;
-        INDArray n = new JCublasNDArray(data,new int[]{10});
+        NDArrays.factory().setOrder('f');
+        double[] data = NDArrays.linspace(1,10,10).data();
+        INDArray n = NDArrays.create(data,new int[]{10});
         INDArray transposed = n.transpose();
         assertEquals(true,n.isRowVector());
         assertEquals(true,transposed.isColumnVector());
 
-        JCublasNDArray d = new JCublasNDArray(n.rows(),n.columns());
-        d.data = n.data();
-        JCublasNDArray dTransposed = d.transpose();
-        JCublasNDArray result2 = d.mmul(dTransposed);
+        INDArray d = NDArrays.create(n.rows(),n.columns());
+        d.setData(n.data());
+        INDArray dTransposed = d.transpose();
+        INDArray result2 = d.mmul(dTransposed);
 
 
         INDArray innerProduct = n.mmul(transposed);
 
-        INDArray scalar = JCublasNDArray.scalar(385);
+        INDArray scalar = NDArrays.scalar(385);
         assertEquals(scalar,innerProduct);
 
         INDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10,10},outerProduct.shape()));
 
 
-        INDArray testMatrix = new JCublasNDArray(data,new int[]{5,2});
+        INDArray testMatrix = NDArrays.create(data,new int[]{5,2});
         INDArray row1 = testMatrix.getRow(0).transpose();
         INDArray row2 = testMatrix.getRow(1);
-        JCublasNDArray row12 = JCublasNDArray.linspace(1,2,2).reshape(2,1);
-        JCublasNDArray row22 = JCublasNDArray.linspace(3,4,2).reshape(1,2);
-        JCublasNDArray rowResult = row12.mmul(row22);
+        INDArray row12 = NDArrays.linspace(1,2,2).reshape(2,1);
+        INDArray row22 = NDArrays.linspace(3,4,2).reshape(1,2);
+        INDArray rowResult = row12.mmul(row22);
 
-        INDArray row122 = JCublasNDArray.wrap(row12);
-        INDArray row222 = JCublasNDArray.wrap(row22);
+        INDArray row122 = row12;
+        INDArray row222 = row22;
         INDArray rowResult2 = row122.mmul(row222);
 
 
 
 
         INDArray mmul = row1.mmul(row2);
-        INDArray result = new JCublasNDArray(new double[]{3,6,4,8},new int[]{2,2});
+        INDArray result = NDArrays.create(new double[]{3,6,4,8},new int[]{2,2});
         assertEquals(result,mmul);
 
 
 
 
-        INDArray three = new JCublasNDArray(new double[]{3,4},new int[]{2});
-        INDArray test = new JCublasNDArray(JCublasNDArray.linspace(1,30,30).data,new int[]{3,5,2});
+        INDArray three = NDArrays.create(new double[]{3,4},new int[]{2});
+        INDArray test = NDArrays.create(NDArrays.linspace(1,30,30).data(),new int[]{3,5,2});
         INDArray sliceRow = test.slice(0).getRow(1);
         assertEquals(three,sliceRow);
 
-        INDArray twoSix = new JCublasNDArray(new double[]{2,6},new int[]{2,1});
+        INDArray twoSix = NDArrays.create(new double[]{2,6},new int[]{2,1});
         INDArray threeTwoSix = three.mmul(twoSix);
 
         INDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
@@ -296,17 +297,18 @@ public class JCublasNDArrayTests  extends NDArrayTests {
         assertEquals(threeTwoSix,sliceRowTwoSix);
 
 
-        INDArray vectorVector = new JCublasNDArray(new double[]{
+        INDArray vectorVector = NDArrays.create(new double[]{
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143, 156, 169, 182, 195, 0, 14, 28, 42, 56, 70, 84, 98, 112, 126, 140, 154, 168, 182, 196, 210, 0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225
         },new int[]{16,16});
 
 
-        INDArray n1 = new JCublasNDArray(JCublasNDArray.linspace(0,15,16).data,new int[]{16});
+        INDArray n1 = NDArrays.create(NDArrays.linspace(0,15,16).data(),new int[]{16});
         INDArray k1 = n1.transpose();
 
         INDArray testVectorVector = k1.mmul(n1);
         assertEquals(vectorVector,testVectorVector);
 
+        NDArrays.factory().setOrder('c');
 
 
     }
@@ -353,16 +355,16 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void testPermute() {
-        INDArray n = new JCublasNDArray(JCublasNDArray.linspace(1,20,20).data,new int[]{5,4});
+        INDArray n = NDArrays.create(NDArrays.linspace(1,20,20).data(),new int[]{5,4});
         INDArray transpose = n.transpose();
         INDArray permute = n.permute(new int[]{1,0});
         assertEquals(permute,transpose);
         assertEquals(transpose.length(),permute.length(),1e-1);
 
 
-        INDArray toPermute = new JCublasNDArray(JCublasNDArray.linspace(0,7,8).data,new int[]{2,2,2});
+        INDArray toPermute = NDArrays.create(NDArrays.linspace(0,7,8).data(),new int[]{2,2,2});
         INDArray permuted = toPermute.permute(new int[]{2,1,0});
-        INDArray assertion = new JCublasNDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        INDArray assertion = NDArrays.create(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(permuted,assertion);
 
     }
@@ -395,10 +397,10 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void testSwapAxes() {
-        INDArray n = new JCublasNDArray(JCublasNDArray.linspace(0,7,8).data,new int[]{2,2,2});
+        INDArray n = NDArrays.create(NDArrays.linspace(0,7,8).data(),new int[]{2,2,2});
         INDArray assertion = n.permute(new int[]{2,1,0});
         double[] data = assertion.data();
-        INDArray validate = new JCublasNDArray(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
+        INDArray validate = NDArrays.create(new double[]{0,4,2,6,1,5,3,7},new int[]{2,2,2});
         assertEquals(validate,assertion);
 
 
@@ -434,20 +436,20 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void testVectorDimension() {
-        INDArray test = new JCublasNDArray(JCublasNDArray.linspace(1,4,4).data,new int[]{2,2});
+        INDArray test = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
         final AtomicInteger count = new AtomicInteger(0);
         //row wise
         test.iterateOverDimension(1,new SliceOp() {
             @Override
             public void operate(DimensionSlice nd) {
                 log.info("Operator " + nd);
-                INDArray test = (JCublasNDArray) nd.getResult();
+                INDArray test = (INDArray) nd.getResult();
                 if(count.get() == 0) {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{1,2},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{1,2},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{3,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{3,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -456,7 +458,7 @@ public class JCublasNDArrayTests  extends NDArrayTests {
             }
 
             /**
-             * Operates on an jcublasndarray slice
+             * Operates on an ndarray slice
              *
              * @param nd the result to operate on
              */
@@ -465,11 +467,11 @@ public class JCublasNDArrayTests  extends NDArrayTests {
                 log.info("Operator " + nd);
                 INDArray test = nd;
                 if(count.get() == 0) {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{1,3},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{1,2},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{2,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{3,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -488,13 +490,13 @@ public class JCublasNDArrayTests  extends NDArrayTests {
             @Override
             public void operate(DimensionSlice nd) {
                 log.info("Operator " + nd);
-                INDArray test = (JCublasNDArray) nd.getResult();
+                INDArray test = (INDArray) nd.getResult();
                 if(count.get() == 0) {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{1,3},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{1,3},new int[]{2});
                     assertEquals(firstDimension,test);
                 }
                 else {
-                    INDArray firstDimension = new JCublasNDArray(new double[]{2,4},new int[]{2});
+                    INDArray firstDimension = NDArrays.create(new double[]{2,4},new int[]{2});
                     assertEquals(firstDimension,test);
 
                 }
@@ -503,13 +505,25 @@ public class JCublasNDArrayTests  extends NDArrayTests {
             }
 
             /**
-             * Operates on an jcublasndarray slice
+             * Operates on an ndarray slice
              *
              * @param nd the result to operate on
              */
             @Override
             public void operate(INDArray nd) {
+                log.info("Operator " + nd);
+                INDArray test = nd;
+                if(count.get() == 0) {
+                    INDArray firstDimension = NDArrays.create(new double[]{1,3},new int[]{2});
+                    assertEquals(firstDimension,test);
+                }
+                else {
+                    INDArray firstDimension = NDArrays.create(new double[]{2,4},new int[]{2});
+                    assertEquals(firstDimension,test);
 
+                }
+
+                count.incrementAndGet();
             }
 
         },false);
@@ -532,7 +546,7 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     @Test
     public void reduceTest() {
-        INDArray arr = new JCublasNDArray(JCublasNDArray.linspace(1,24,24).data,new int[]{4,3,2});
+        INDArray arr = NDArrays.create(NDArrays.linspace(1,24,24).data(),new int[]{4,3,2});
         INDArray reduced = arr.reduce(Ops.DimensionOp.MAX,1);
         log.info("Reduced " + reduced);
         reduced = arr.reduce(Ops.DimensionOp.MAX,1);
@@ -649,6 +663,47 @@ public class JCublasNDArrayTests  extends NDArrayTests {
 
     }
 
+    @Test
+    public void testVectorAlongDimension() {
+        INDArray arr = NDArrays.linspace(1,24,24).reshape(new int[]{4,3,2});
+        INDArray assertion = NDArrays.create(new double[]{1,2}, new int[]{2});
+        INDArray a = NDArrays.create(new double[]{3,4},new int[]{2});
+        INDArray b = arr.vectorAlongDimension(1,2);
+        assertEquals(a,b);
+        assertEquals(assertion,arr.vectorAlongDimension(0,2));
+        assertEquals(arr.vectorAlongDimension(0,1),NDArrays.create(new double[]{1,3,5}));
+
+        INDArray testColumn2Assertion = NDArrays.create(new double[]{7,9,11});
+        INDArray testColumn2 = arr.vectorAlongDimension(1,1);
+
+        assertEquals(testColumn2Assertion,testColumn2);
+
+
+        INDArray testColumn3Assertion = NDArrays.create(new double[]{13,15,17});
+        INDArray testColumn3 = arr.vectorAlongDimension(2,1);
+        assertEquals(testColumn3Assertion,testColumn3);
+
+
+        INDArray v1= NDArrays.linspace(1,4,4).reshape(new int[]{2,2});
+        INDArray testColumnV1 = v1.vectorAlongDimension(0,0);
+        INDArray testColumnV1Assertion = NDArrays.create(new double[]{1,3});
+        assertEquals(testColumnV1Assertion,testColumnV1);
+
+        INDArray testRowV1 = v1.vectorAlongDimension(1,0);
+        INDArray testRowV1Assertion = NDArrays.create(new double[]{2,4});
+        assertEquals(testRowV1Assertion,testRowV1);
+
+
+        INDArray lastAxis = arr.vectorAlongDimension(0,2);
+        assertEquals(assertion,lastAxis);
+
+
+
+
+
+
+
+    }
     @Test
     public void testVectorDimensionMulti() {
         INDArray arr = new JCublasNDArray(JCublasNDArray.linspace(1,24,24).data,new int[]{4,3,2});
