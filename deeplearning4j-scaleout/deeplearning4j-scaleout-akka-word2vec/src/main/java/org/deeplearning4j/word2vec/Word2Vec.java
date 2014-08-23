@@ -416,7 +416,7 @@ public class Word2Vec implements Persistable {
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            
+
         }
 
 

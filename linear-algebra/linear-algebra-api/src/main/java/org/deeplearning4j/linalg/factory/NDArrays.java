@@ -11,6 +11,9 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -143,6 +146,119 @@ public class NDArrays  {
         INSTANCE.rot90(toRotate);
 
     }
+
+
+    /**
+     * Read in an ndarray from a data input stream
+     * @param dis the data input stream to read from
+     * @return the ndarray
+     * @throws IOException
+     */
+    public static INDArray read(DataInputStream dis) throws IOException {
+        int dimensions = dis.readInt();
+        int[] shape = new int[dimensions];
+        int[] stride = new int[dimensions];
+
+        for(int i = 0; i < dimensions; i++)
+            shape[i] = dis.readInt();
+        for(int  i = 0; i < dimensions; i++)
+            stride[i] = dis.readInt();
+        String dataType = dis.readUTF();
+        String type = dis.readUTF();
+
+        if(!type.equals("real"))
+            throw new IllegalArgumentException("Trying to read in a complex ndarray");
+
+        if(dataType.equals("float")) {
+            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
+            return create(data,shape,stride,0);
+        }
+        double[] data = ArrayUtil.read(ArrayUtil.prod(shape),dis);
+        return create(data,shape,stride,0);
+    }
+
+
+    /**
+     * Write an ndarray to the specified outputs tream
+     * @param arr the array to write
+     * @param dataOutputStream the data output stream to write to
+     * @throws IOException
+     */
+    public static void write(INDArray arr,DataOutputStream dataOutputStream) throws IOException {
+        dataOutputStream.writeInt(arr.shape().length);
+        for(int i = 0; i < arr.shape().length; i++)
+            dataOutputStream.writeInt(arr.size(i));
+        for(int i = 0; i < arr.stride().length; i++)
+            dataOutputStream.writeInt(arr.stride()[i]);
+
+        dataOutputStream.writeUTF(dataType());
+
+        dataOutputStream.writeUTF("real");
+
+        if(dataType().equals("float"))
+            ArrayUtil.write(arr.floatData(),dataOutputStream);
+        else
+            ArrayUtil.write(arr.data(),dataOutputStream);
+
+    }
+
+
+
+    /**
+     * Read in an ndarray from a data input stream
+     * @param dis the data input stream to read from
+     * @return the ndarray
+     * @throws IOException
+     */
+    public static IComplexNDArray readComplex(DataInputStream dis) throws IOException {
+        int dimensions = dis.readInt();
+        int[] shape = new int[dimensions];
+        int[] stride = new int[dimensions];
+
+        for(int i = 0; i < dimensions; i++)
+            shape[i] = dis.readInt();
+        for(int  i = 0; i < dimensions; i++)
+            stride[i] = dis.readInt();
+        String dataType = dis.readUTF();
+
+        String type = dis.readUTF();
+
+        if(!type.equals("complex"))
+             throw new IllegalArgumentException("Trying to read in a real ndarray");
+
+        if(dataType.equals("float")) {
+            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape),dis);
+            return createComplex(data,shape,stride,0);
+        }
+
+        double[] data = ArrayUtil.read(ArrayUtil.prod(shape),dis);
+        return createComplex(data,shape,stride,0);
+    }
+
+
+    /**
+     * Write an ndarray to the specified outputs tream
+     * @param arr the array to write
+     * @param dataOutputStream the data output stream to write to
+     * @throws IOException
+     */
+    public static void writeComplex(IComplexNDArray arr,DataOutputStream dataOutputStream) throws IOException {
+        dataOutputStream.writeInt(arr.shape().length);
+        for(int i = 0; i < arr.shape().length; i++)
+            dataOutputStream.writeInt(arr.size(i));
+        for(int i = 0; i < arr.stride().length; i++)
+            dataOutputStream.writeInt(arr.stride()[i]);
+        dataOutputStream.writeUTF(dataType());
+
+        dataOutputStream.writeUTF("complex");
+
+        if(dataType().equals("float"))
+            ArrayUtil.write(arr.floatData(),dataOutputStream);
+        else
+            ArrayUtil.write(arr.data(),dataOutputStream);
+
+    }
+
 
     /**
      * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc

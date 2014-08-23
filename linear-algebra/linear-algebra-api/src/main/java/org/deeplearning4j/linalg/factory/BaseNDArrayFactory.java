@@ -91,10 +91,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray linspace(int lower,int upper,int num) {
         INDArray ret = create(num);
-        double[] length = new double[num];
         for (int i = 0; i < num; i++) {
             double t = (double) i / (num - 1);
-          ret.putScalar(i,lower * (1 - t) + t * upper);
+            ret.putScalar(i,lower * (1 - t) + t * upper);
 
         }
         return ret;
@@ -883,7 +882,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data,int[] shape) {
-         return create(data,shape,NDArrays.getStrides(shape),0);
+        return create(data,shape,NDArrays.getStrides(shape),0);
     }
 
 
@@ -1324,7 +1323,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     /**
      * Create a scalar nd array with the specified value and offset
      * @param value the value of the scalar
-    * @return the scalar nd array
+     * @return the scalar nd array
      */
     @Override
     public IComplexNDArray scalar(IComplexDouble value) {
