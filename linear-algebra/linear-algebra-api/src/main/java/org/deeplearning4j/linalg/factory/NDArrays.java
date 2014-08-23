@@ -203,6 +203,15 @@ public class NDArrays  {
     }
 
 
+    /**
+     * Create an ndarray based on the given data layout
+     * @param data the data to use
+     * @return an ndarray with the given data layout
+     */
+    public static INDArray create(double[][] data) {
+        return INSTANCE.create(data);
+    }
+
 
     /**
      * Read in an ndarray from a data input stream

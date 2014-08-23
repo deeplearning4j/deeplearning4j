@@ -71,6 +71,20 @@ public class NDArray extends DoubleMatrix implements INDArray {
 
 
 
+    public NDArray(double[][] data) {
+        this(data.length, data[0].length);
+
+        for (int r = 0; r < rows; r++) {
+            assert (data[r].length == columns);
+        }
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < columns; c++) {
+                put(r, c, data[r][c]);
+            }
+        }
+    }
+
 
     /**
      * Create this ndarray with the given data and shape and 0 offset

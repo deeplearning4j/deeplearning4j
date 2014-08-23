@@ -49,6 +49,17 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     /**
+     * Create an ndarray with the given data layout
+     *
+     * @param data the data to create the ndarray with
+     * @return the ndarray with the given data layout
+     */
+    @Override
+    public INDArray create(double[][] data) {
+        return new NDArray(data);
+    }
+
+    /**
      * Create a complex ndarray from the passed in indarray
      *
      * @param arr the arr to wrap
