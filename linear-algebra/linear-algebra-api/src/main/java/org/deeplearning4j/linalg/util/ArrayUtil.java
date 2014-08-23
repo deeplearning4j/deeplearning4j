@@ -5,6 +5,10 @@ import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Random;
@@ -421,6 +425,35 @@ public class ArrayUtil {
         }
         return copy;
     }
+
+
+    public static double[] read(int length,DataInputStream dis) throws IOException {
+        double[] ret = new double[length];
+        for(int i = 0; i < length; i++)
+            ret[i] = dis.readDouble();
+        return ret;
+    }
+
+
+    public static void write(double[] data,DataOutputStream dos) throws IOException {
+        for(int i = 0; i < data.length; i++)
+            dos.writeDouble(data[i]);
+    }
+
+
+    public static float[] readFloat(int length,DataInputStream dis) throws IOException {
+        float[] ret = new float[length];
+        for(int i = 0; i < length; i++)
+            ret[i] = dis.readFloat();
+        return ret;
+    }
+
+
+    public static void write(float[] data,DataOutputStream dos) throws IOException {
+        for(int i = 0; i < data.length; i++)
+            dos.writeFloat(data[i]);
+    }
+
 
 
     /**

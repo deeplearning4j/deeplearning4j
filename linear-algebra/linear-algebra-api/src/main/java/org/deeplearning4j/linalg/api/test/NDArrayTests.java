@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.Shape;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -29,6 +30,11 @@ public abstract class NDArrayTests {
     private INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
 
 
+
+    @After
+    public void after() {
+        NDArrays.factory().setOrder('c');
+    }
 
     @Test
     public void testScalarOps() {
@@ -251,6 +257,8 @@ public abstract class NDArrayTests {
 
 
 
+
+
     @Test
     public void testSum() {
         INDArray n = NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2});
@@ -262,6 +270,7 @@ public abstract class NDArrayTests {
 
     @Test
     public void testMmul() {
+        NDArrays.factory().setOrder('f');
         double[] data = NDArrays.linspace(1,10,10).data();
         INDArray n = NDArrays.create(data,new int[]{10});
         INDArray transposed = n.transpose();
@@ -298,9 +307,7 @@ public abstract class NDArrayTests {
 
 
         INDArray mmul = row1.mmul(row2);
-        NDArrays.factory().setOrder('f');
         INDArray result = NDArrays.create(new double[]{3,6,4,8},new int[]{2,2});
-        NDArrays.factory().setOrder('c');
         assertEquals(result,mmul);
 
 
@@ -330,6 +337,7 @@ public abstract class NDArrayTests {
         INDArray testVectorVector = k1.mmul(n1);
         assertEquals(vectorVector,testVectorVector);
 
+        NDArrays.factory().setOrder('c');
 
 
     }
@@ -373,6 +381,9 @@ public abstract class NDArrayTests {
         transposed = linspaced.transpose();
         assertEquals(transposed,transposed2);
         NDArrays.factory().setOrder('c');
+
+
+
 
 
     }
@@ -792,6 +803,35 @@ public abstract class NDArrayTests {
         assertEquals(true,Arrays.equals(ArrayUtil.of(2, 2, 2),n.shape()));
         double val = (double) n.getScalar(1,1,1).element();
         assertEquals(8.0,val,1e-6);
+    }
+
+
+    @Test
+    public void testGetRowOrdering() {
+        INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
+        NDArrays.factory().setOrder('f');
+        INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
+        assertEquals(row1.getScalar(0,1),row1Fortran.getScalar(0,1));
+        NDArrays.factory().setOrder('c');
+    }
+
+
+    @Test
+    public void testPutRowGetRowOrdering() {
+        INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray put = NDArrays.create(new double[]{5,6});
+        row1.putRow(1,put);
+
+        NDArrays.factory().setOrder('f');
+
+        INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray putFortran = NDArrays.create(new double[]{5,6});
+        row1Fortran.putRow(1,putFortran);
+        assertEquals(row1,row1Fortran);
+
+        NDArrays.factory().setOrder('c');
+
+
     }
 
 

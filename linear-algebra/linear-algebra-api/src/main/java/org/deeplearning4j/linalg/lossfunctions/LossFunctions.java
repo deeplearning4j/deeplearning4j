@@ -92,7 +92,8 @@ public class LossFunctions {
      * @return the reconstruction cross entropy for the given parameters
      */
     public static double reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
-        INDArray preSigH = input.mmul(W).addiRowVector(hBias);
+        INDArray inputTimesW = input.mmul(W);
+        INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = sigmoid(preSigH.dup());
 
         INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
@@ -101,6 +102,10 @@ public class LossFunctions {
                 input.mul(log(sigV.dup()))
                         .addi(input.rsub(1)
                                 .muli(log(sigV.rsubi(1))));
+
+
+        INDArray rows = inner.sum(0);
+        INDArray mean = rows.mean(Integer.MAX_VALUE);
 
         double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
 

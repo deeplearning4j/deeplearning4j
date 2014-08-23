@@ -272,7 +272,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      */
     public NDArray(int newRows, int newColumns) {
-       this(newRows,newColumns,NDArrays.order());
+        this(newRows,newColumns,NDArrays.order());
     }
 
 
@@ -285,7 +285,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param shape the shape of the ndarray
      */
     public NDArray(List<INDArray> slices,int[] shape) {
-         this(slices,shape,NDArrays.order());
+        this(slices,shape,NDArrays.order());
     }
 
 
@@ -298,7 +298,7 @@ public class NDArray extends DoubleMatrix implements INDArray {
      * @param shape the shape of the ndarray
      */
     public NDArray(List<INDArray> slices,int[] shape,int[] stride) {
-         this(slices,shape,stride,NDArrays.order());
+        this(slices,shape,stride,NDArrays.order());
 
     }
 
@@ -1625,7 +1625,8 @@ public class NDArray extends DoubleMatrix implements INDArray {
         assert columnVector.length() == rows() : "Illegal column vector must have the same length as the number of column in this ndarray";
 
         for(int i = 0; i < columns(); i++) {
-            getColumn(i).addi(columnVector);
+            INDArray column = getColumn(i);
+            column.addi(columnVector);
         }
         return this;
     }
@@ -2805,8 +2806,15 @@ public class NDArray extends DoubleMatrix implements INDArray {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
+        //vector reshapes should be c order
+        if(isRowVector() && shape.length != 1 && ordering == NDArrayFactory.FORTRAN) {
+            NDArray ndArray = new NDArray(data,shape,NDArrays.getStrides(shape,'c'),offset,ordering);
+            return ndArray;
+        }
+
         NDArray ndArray = new NDArray(data,shape,stride,offset,ordering);
         return ndArray;
+
 
     }
 
@@ -3658,14 +3666,27 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray getColumn(int c) {
         if(shape.length == 2) {
-            NDArray ret = new NDArray(
-                    data,
-                    new int[]{shape[0]},
-                    new int[]{stride[0]},
-                    offset + c,ordering
-            );
+            if(ordering == NDArrayFactory.C) {
+                NDArray ret = new NDArray(
+                        data,
+                        new int[]{shape[0]},
+                        new int[]{stride[0]},
+                        offset + c,ordering
+                );
 
-            return ret;
+                return ret;
+            }
+            else {
+                NDArray ret = new NDArray(
+                        data,
+                        new int[]{shape[0]},
+                        new int[]{stride[1]},
+                        offset + c,ordering
+                );
+
+                return ret;
+            }
+
         }
 
         else
@@ -3724,14 +3745,28 @@ public class NDArray extends DoubleMatrix implements INDArray {
     @Override
     public NDArray getRow(int r) {
         if(shape.length == 2) {
-            NDArray ret = new NDArray(
-                    data,
-                    new int[]{shape[1]},
-                    new int[]{stride[1]},
-                    offset + r * columns(),
-                    ordering
-            );
-            return ret;
+            if(ordering == NDArrayFactory.C) {
+                NDArray ret = new NDArray(
+                        data,
+                        new int[]{shape[1]},
+                        new int[]{stride[1]},
+                        offset + r * columns(),
+                        ordering
+                );
+                return ret;
+            }
+            else {
+                NDArray ret = new NDArray(
+                        data,
+                        new int[]{shape[1]},
+                        new int[]{stride[0]},
+                        offset + r * columns(),
+                        ordering
+                );
+                return ret;
+            }
+
+
         }
         else
             throw new IllegalArgumentException("Unable to getFromOrigin row of non 2d matrix");
