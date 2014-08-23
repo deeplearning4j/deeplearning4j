@@ -273,4 +273,8 @@ public class SimpleJCublas {
     public static int iamax(JCublasComplexNDArray jCublasComplexNDArray) {
         return 0;
     }
+
+    public static int asum(JCublasComplexNDArray arr) {
+        return 0;
+    }
 }

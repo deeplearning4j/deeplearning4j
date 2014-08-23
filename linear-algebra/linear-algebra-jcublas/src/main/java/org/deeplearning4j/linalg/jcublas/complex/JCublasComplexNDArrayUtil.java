@@ -1,9 +1,10 @@
 package org.deeplearning4j.linalg.jcublas.complex;
 
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.jcublas.JCublasNDArray;
+import org.deeplearning4j.linalg.jcublas.SimpleJCublas;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.deeplearning4j.linalg.util.ComplexUtil;
-import org.jblas.DoubleMatrix;
 import org.jblas.ranges.RangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public class JCublasComplexNDArrayUtil {
 
 
     public static JCublasComplexNDArray exp(JCublasComplexNDArray toExp) {
-        return expi(toExp.dup());
+        return expi((JCublasComplexNDArray) toExp.dup());
     }
 
     /**
@@ -80,7 +81,13 @@ public class JCublasComplexNDArrayUtil {
         return flattened.reshape(toExp.shape());
     }
 
-
+    public static JCublasNDArray toMatrix(int[] arr) {
+        JCublasNDArray d = new JCublasNDArray(arr.length);
+        for(int i = 0; i < arr.length; i++)
+            d.put(i,arr[i]);
+        d.reshape(1, d.length);
+        return d;
+    }
     /**
      * Center an array
      *
@@ -93,11 +100,11 @@ public class JCublasComplexNDArrayUtil {
         if (arr.length < ArrayUtil.prod(shape))
             return arr;
 
-        DoubleMatrix shapeMatrix = MatrixUtil.toMatrix(shape);
-        DoubleMatrix currShape = MatrixUtil.toMatrix(arr.shape());
+        JCublasNDArray shapeMatrix = toMatrix(shape);
+        JCublasNDArray currShape = toMatrix(arr.shape());
 
-        DoubleMatrix startIndex = currShape.sub(shapeMatrix).div(2);
-        DoubleMatrix endIndex = startIndex.add(shapeMatrix);
+        JCublasNDArray startIndex = (JCublasNDArray) currShape.sub(shapeMatrix).div(2);
+        JCublasNDArray endIndex = (JCublasNDArray) startIndex.add(shapeMatrix);
         if (shapeMatrix.length > 1)
             arr = JCublasComplexNDArray.wrap(arr.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)), RangeUtils.interval((int) startIndex.get(1), (int) endIndex.get(1))));
         else {
@@ -162,7 +169,7 @@ public class JCublasComplexNDArrayUtil {
                     }
                 } else if (dimension == 1) {
                     for (int i = 0; i < nd.columns(); i++) {
-                        JCublasComplexNDArray row = nd.getColumn(i);
+                        JCublasComplexNDArray row = (JCublasComplexNDArray) nd.getColumn(i);
                         for (int j = 0; j < row.length; j++) {
                             if (list.size() == numRequired)
                                 return new JCublasComplexNDArray(list.toArray(new JCublasComplexDouble[0]), targetShape);
@@ -299,22 +306,22 @@ public class JCublasComplexNDArrayUtil {
         arr = arr.reshape(new int[]{1,arr.length});
 
         if(op == ScalarOp.NORM_1) {
-            return new JCublasComplexDouble(NDArrayBlas.asum(arr));
+            return new JCublasComplexDouble(SimpleJCublas.asum(arr));
         }
 
         else if(op == ScalarOp.NORM_2) {
-            return new JCublasComplexDouble(NDArrayBlas.nrm2(arr));
+            return new JCublasComplexDouble(SimpleJCublas.nrm2(arr));
 
         }
 
         else if(op == ScalarOp.NORM_MAX) {
-            int i = NDArrayBlas.iamax(arr);
+            int i = SimpleJCublas.iamax(arr);
             return arr.unSafeGet(i);
         }
 
         JCublasComplexDouble s = new JCublasComplexDouble(0.0);
         for (int i = 0; i < arr.length; i++) {
-            org.jblas.JCublasComplexDouble curr = arr.get(i);
+            JCublasComplexDouble curr = arr.get(i);
 
             switch (op) {
                 case SUM:

@@ -171,7 +171,7 @@ public class JCublasComplexDouble implements IComplexDouble  {
     }
 
     @Override
-    public Number absoluteValue() {
+    public Double absoluteValue() {
         return null;
     }
 
