@@ -56,6 +56,8 @@ public class NDArrays  {
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(props.get(BLAS_OPS).toString());
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
         }catch(Exception e) {
+            System.err.printf("MJK: %s\n", e.getMessage());
+            System.err.printf("MJK: %s\n", e.getStackTrace());
             throw new RuntimeException(e);
         }
     }

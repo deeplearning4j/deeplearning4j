@@ -389,9 +389,12 @@ public class ArrayUtil {
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
         int st= startValue;
-        for (int j = dimensions - 1; j >= 0; j--) {
+        stride[dimensions - 1] = st;
+        for (int j = dimensions - 2; j >= 0; j--) {
+        	 int term = shape[dimensions - 1 -j];
+             st *= term;
             stride[j] = st;
-            st *= shape[j];
+           
         }
 
         return stride;
