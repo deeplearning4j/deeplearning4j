@@ -38,12 +38,14 @@ layout: default
 
          mvn clean install -DskipTests
 
-5. After you run "mvn clean", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
+### dependencies
+
+1. After you run "mvn clean", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
 
 		*/java-deeplearning/deeplearning4j-distribution/target
 	
 
-6. Use this repo in your POM file (POM.xml files live in the root of a given directory):
+2. Use this repo in your POM file (POM.xml files live in the root of a given directory):
 
          <repositories>
              <repository>
@@ -54,7 +56,7 @@ layout: default
              </repository>
          </repositories>
 
-7. All dependencies should be added after the tags "dependencyManagement" and "dependencies", and before they close. Add this dependency to your POM file:
+3. All dependencies should be added after the tags "dependencyManagement" and "dependencies", and before they close. Add this dependency to your POM file:
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -62,7 +64,7 @@ layout: default
 			<version>0.0.3.2-SNAPSHOT</version>
 		 </dependency>
 
-8. For multithreaded/clustering support, add this dependency to your POM file:
+4. For multithreaded/clustering support, add this dependency to your POM file:
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -70,7 +72,7 @@ layout: default
 			<version>0.0.3.2-SNAPSHOT</version>
          </dependency>
 
-9. For natural-language processing (NLP), add this dependency to your POM file:
+5. For natural-language processing (NLP), add this dependency to your POM file:
          
          <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -78,7 +80,7 @@ layout: default
             <version>0.0.3.2-SNAPSHOT</version>
          </dependency>
 
-10. To locally install Jcublas, which does linear algebra for GPUs, first enter these commands:
+6. To locally install Jcublas, which does linear algebra for GPUs, first enter these commands:
 
 		git clone git@github.com:MysterionRise/mavenized-jcuda.git
 		cd mavenized-jcuda && mvn clean install -DskipTests
