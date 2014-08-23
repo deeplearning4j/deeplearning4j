@@ -30,11 +30,13 @@ Next, download [DL4J examples here](https://oss.sonatype.org/content/repositorie
 
 	deeplearning4j-examples-0.0.3.2-20140625.144826-39-bin.tar.gz
 
-Unzip the file.
+Unzip the file. 
 
 To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this
 
 		cd Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
+		
+(*If you previously installed DL4J*, cd into deeplearning4j-examples/target/, and there you will find the file you need to unzip.)
 
 Once you've made the the examples folder your current working directory, enter this command:
 
