@@ -9,11 +9,16 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.dataset.DataSet;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.jblas.NDArray;
+import org.deeplearning4j.linalg.jblas.util.JblasSerde;
 import org.deeplearning4j.nn.NeuralNetwork;
+import org.deeplearning4j.nn.WeightInit;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.DataInputStream;
 
 
 public class RBMTest  {
@@ -22,7 +27,7 @@ public class RBMTest  {
 
 
 	@Test
-	public void testBasic() {
+	public void testBasic() throws Exception {
 		double[] data = new double[]
 				{
 				1,1,1,0,0,0,
@@ -34,10 +39,14 @@ public class RBMTest  {
 				0,0,1,1,1,0
 				};
 
+
+        ClassPathResource r3 = new ClassPathResource("/test-matrix.ser");
+
+
 		INDArray d =  NDArrays.create(data,new int[]{7,6});
 		RandomGenerator g = new MersenneTwister(123);
 
-		RBM r = new RBM.Builder()
+		RBM r = new RBM.Builder().weightInit(WeightInit.SI)
 				.numberOfVisible(d.columns()).numHidden(4).withRandom(g).build();
 
 
@@ -58,7 +67,6 @@ public class RBMTest  {
 		assertEquals(r2.gethBias(),r.gethBias());
 		assertEquals(r2.getvBias(),r.getvBias());
 		r2.trainTillConvergence(d, 0.01,new Object[]{1,0.01,1000});
-		log.info("Cross entropy " + r.getReConstructionCrossEntropy());
 
 
 	}
