@@ -455,6 +455,21 @@ public class ArrayUtil {
     }
 
 
+    public static void assertSquare(double[]...d) {
+        if(d.length > 2) {
+            for(int i = 0; i < d.length; i++) {
+                assertSquare(d[i]);
+            }
+        }
+
+        else {
+            int firstLength = d[0].length;
+            for(int i = 1; i  < d.length; i++) {
+                assert d[i].length == firstLength;
+            }
+        }
+    }
+
 
     /**
      * Reverse the passed in array in place
