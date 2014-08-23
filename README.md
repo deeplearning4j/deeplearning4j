@@ -70,7 +70,7 @@ Deeplearning4j has its own IRC channel at https://webchat.freenode.net/, a netwo
 
 
 
-EXPERIMENTAL GPU SUPPORT (NOT DONE YET ONLY SCAFFOLDING IN THERE)
+EXPERIMENTAL GPU SUPPORT (work in progress, only scaffolding for now)
 ==========================================
 
 Initial deployment instructions:
@@ -89,11 +89,7 @@ Initial deployment instructions:
 Bugs/Feature Requests
 =============================
 
-
-
 https://github.com/agibsonccc/java-deeplearning/issues
-
-
 
 
 Installation
