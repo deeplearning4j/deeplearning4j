@@ -47,7 +47,7 @@ layout: default
 
 		*/java-deeplearning/deeplearning4j-distribution/target
 	
-This is where you will find the jar files and it's where compiling happens. 
+  This is where you will find the jar files and it's where compiling happens. 
 
 5. Use this repo in your POM file (POM.xml files live in the root of a given directory):
 
