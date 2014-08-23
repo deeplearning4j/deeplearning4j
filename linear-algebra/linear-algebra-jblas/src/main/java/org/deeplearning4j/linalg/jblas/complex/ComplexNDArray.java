@@ -60,7 +60,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
 
 
-      /**
+    /**
      * Creates a new <tt>ComplexDoubleMatrix</tt> of size 0 times 0.
      */
     public ComplexNDArray() {
@@ -313,7 +313,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
 
 
     public ComplexNDArray(double[] data,int[] shape,int[] stride,int offset) {
-         this(data,shape,stride,offset,NDArrays.order());
+        this(data,shape,stride,offset,NDArrays.order());
     }
 
 
@@ -328,7 +328,7 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
     }
 
     public ComplexNDArray(double[] data,int[] shape,int offset) {
-         this(data,shape,offset,NDArrays.order());
+        this(data,shape,offset,NDArrays.order());
     }
 
 
@@ -3177,8 +3177,14 @@ public class ComplexNDArray extends ComplexDoubleMatrix implements IComplexNDArr
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        ComplexNDArray ndArray = new ComplexNDArray(data,shape,stride,offset);
-        ndArray.ordering = ordering;
+        //vector reshapes should be c order
+        if(isVector() && shape.length != this.shape.length)  {
+            ComplexNDArray ndArray = new ComplexNDArray(data,shape,NDArrays.getComplexStrides(shape,'c'),offset,ordering);
+            ndArray.ordering = ordering;
+            return ndArray;
+        }
+
+        ComplexNDArray ndArray = new ComplexNDArray(data,shape,stride,offset,ordering);
         return ndArray;
 
     }
