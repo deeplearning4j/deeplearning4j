@@ -3,39 +3,53 @@ title:
 layout: default
 ---
 
-**prerequisites**: *you've gone through [these steps](../gettingstarted.html) and set up Maven and Blas (native matrices).*
-
 #Quickstart
 
-If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
+1. If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
 
-	Mac OS X x64 185.94 MB -  jdk-7u60-macosx-x64.dmg
+		Mac OS X x64 185.94 MB -  jdk-7u60-macosx-x64.dmg
 
-You can test which version of Java you have (and whether you have it at all), by typing 
+  You can test which version of Java you have (and whether you have it at all), by typing the following into the command line:
 
-	java -version
+		java -version
 
-in the command line.
+2. Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
 
-Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads).
+		Fedora/RHEL
+		yum -y install blas
 
-Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
+		Ubuntu
+		apt-get install libblas* (credit to @sujitpal)
 
-	import numpy
-	import pylab as pl
+		OSX
+		Already Installed
 
-These will generate the visualizations that allow you to debug your neural nets as they train. 
+		Windows
+		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz file somewhere near the top of the list. It will look something like this:
+3. Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads).
 
-	deeplearning4j-examples-0.0.3.2-20140625.144826-39-bin.tar.gz
+  Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
+
+		import numpy
+		import pylab as pl
+
+  These will generate the visualizations that allow you to debug your neural nets as they train. 
+
+4. Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
+
+		WINDOWS
+		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip
+
+		MAC
+		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz
 
 Unzip the file. (*N.B.: If you have previously installed DL4J following the instructions on the Getting Started page, you already have this file.*)
 
 To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :)
 
 		cd Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
-		
+	
 (*If you previously installed DL4J*, cd into */deeplearning4j-examples/target/, and there you will find the file you need to unzip.)
 
 Once you've made the examples folder your current working directory, enter this command:
