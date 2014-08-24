@@ -2340,6 +2340,22 @@ public abstract class BaseNDArray  implements INDArray {
         if(Arrays.equals(shape(),shape))
             return this;
 
+        //row to column vector
+        if(isRowVector()) {
+            if(Shape.isColumnVectorShape(shape)) {
+                return NDArrays.create(data,shape,NDArrays.getStrides(shape,ordering),offset,ordering);
+            }
+        }
+        //column to row vector
+        if(isColumnVector()) {
+            if(Shape.isRowVectorShape(shape)) {
+                return NDArrays.create(data,shape,NDArrays.getStrides(shape,ordering),offset,ordering);
+
+            }
+        }
+
+
+
         //returns strides for reshape or null if data needs to be copied
         int[] newStrides = newStridesReshape(shape);
 
