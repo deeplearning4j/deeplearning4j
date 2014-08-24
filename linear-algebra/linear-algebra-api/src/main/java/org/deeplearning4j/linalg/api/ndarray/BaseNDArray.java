@@ -589,7 +589,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public   INDArray dup() {
-        return NDArrays.create(data,shape,stride,offset,ordering);
+        return NDArrays.create(Arrays.copyOf(data,data.length),shape,stride,offset,ordering);
     }
 
 
