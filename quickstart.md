@@ -27,9 +27,7 @@ layout: default
 		Windows
 		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-3. Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads).
-
-  Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
+3. Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads). Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
 
 		import numpy
 		import pylab as pl
