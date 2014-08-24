@@ -20,6 +20,6 @@ DL4J's neural nets can classify the set within two minutes with an accuracy of g
 
 The code to run the Iris dataset on DL4J looks like this:
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisRBMExample.java?slice=17:33"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisRBMExample.java?slice=16:32"></script>
 
 [For a deeper dive, see our Iris code on Github](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisExample.java)
