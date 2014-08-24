@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-**prerequisites**: *you've gone through [these steps](../gettingstarted.html) and set up Maven and Blas (native matrices).*
+**prerequisites**: *you've [set up native matrices with Blas](../gettingstarted.html)*
 
 #How to Run Any DL4J Example
 
