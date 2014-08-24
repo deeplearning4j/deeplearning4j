@@ -5,15 +5,15 @@ layout: default
 
 #Quickstart
 
-1. If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
+* If you don't have Java 7 installed on your machine, download the [Java Development Kit (JDK) here](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). The download will vary by operating system. For newer Macs, you'll want the file on this line:
 
 		Mac OS X x64 185.94 MB -  jdk-7u60-macosx-x64.dmg
 
-  You can test which version of Java you have (and whether you have it at all), by typing the following into the command line:
+You can test which version of Java you have (and whether you have it at all), by typing the following into the command line:
 
 		java -version
 
-2. Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
+* Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
 
 		Fedora/RHEL
 		yum -y install blas
@@ -27,14 +27,14 @@ layout: default
 		Windows
 		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
 
-3. Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads). Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
+* Since DL4J uses cross-platform tooling to make Python calls for data visualization and debugging, you'll also want to dowload [Anaconda here](http://continuum.io/downloads). Once you have Anaconda installed, you can test whether you have the necessary libs by entering this in a Python window:
 
 		import numpy
 		import pylab as pl
 
   These will generate the visualizations that allow you to debug your neural nets as they train. 
 
-4. Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
+* Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
 
 		WINDOWS
 		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.zip
