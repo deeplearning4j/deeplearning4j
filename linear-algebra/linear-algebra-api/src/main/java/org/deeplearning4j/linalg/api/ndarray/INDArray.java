@@ -3,6 +3,8 @@ package org.deeplearning4j.linalg.api.ndarray;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
+import java.util.List;
+
 /**
  * Interface for an ndarray
  *
@@ -106,6 +108,9 @@ public interface INDArray {
     public INDArray add(Number n);
 
     public INDArray addi(Number n);
+
+
+
 
     /**
      * Returns a subset of this array based on the specified
@@ -235,7 +240,7 @@ public interface INDArray {
      */
     public int[] endsForSlices();
 
-
+    void sliceVectors(List<INDArray> list);
     /**
      *
      * http://docs.scipy.org/doc/numpy/reference/generated/numpy.ufunc.reduce.html
@@ -311,6 +316,7 @@ public interface INDArray {
     public INDArray getScalar(int i);
 
 
+    int index(int row, int column);
 
     /**
      * Returns the squared (Euclidean) distance.
@@ -739,6 +745,13 @@ public interface INDArray {
     public INDArray get(int[] indices);
 
 
+
+    public double get(int i);
+
+    public double get(int i,int j);
+
+
+
     /**
      * Return a copy of this ndarray
      * @return a copy of this ndarray
@@ -951,4 +964,8 @@ public interface INDArray {
 
 
     void setData(float[] data);
+
+
+
+
 }

@@ -216,4 +216,11 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray,COMPLEX_NDARRAY_TYPE 
     public  void ormqr(char side, char trans, NDARRAY_TYPE A, NDARRAY_TYPE tau, NDARRAY_TYPE C);
 
 
+    public  void dcopy(int n, double[] dx, int dxIdx, int incx, double[] dy, int dyIdx, int incy);
+
+
+
+
+
+
 }

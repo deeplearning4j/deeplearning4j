@@ -1,17 +1,16 @@
-package org.deeplearning4j.linalg.jblas.util;
+package org.deeplearning4j.linalg.util;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
-import org.deeplearning4j.linalg.jblas.NDArray;
-import org.deeplearning4j.linalg.util.ArrayUtil;
-import org.jblas.DoubleMatrix;
-import org.jblas.ranges.RangeUtils;
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.indexing.NDArrayIndex;
+
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- *  Basic NDArray ops
+ *  Basic INDArray ops
  *
  *  @author Adam Gibson
  */
@@ -56,19 +55,19 @@ public class NDArrayUtil {
     }
 
 
-    public static INDArray exp(NDArray toExp) {
+    public static INDArray exp(INDArray toExp) {
         return expi(toExp.dup());
     }
 
     /**
      * Returns an exponential version of this ndarray
-     * @param toExp the ndarray to convert
+     * @param toExp the INDArray to convert
      * @return the converted ndarray
      */
-    public static INDArray expi(NDArray toExp) {
+    public static INDArray expi(INDArray toExp) {
         INDArray flattened = toExp.ravel();
         for(int i = 0; i < flattened.length(); i++)
-            flattened.put(i,NDArray.scalar(Math.exp((double) flattened.getScalar(i).element())));
+            flattened.put(i, NDArrays.scalar(Math.exp((double) flattened.getScalar(i).element())));
         return flattened.reshape(toExp.shape());
     }
 
@@ -81,12 +80,12 @@ public class NDArrayUtil {
      * specified shape
      */
     public static INDArray center(INDArray arr,int[] shape) {
-        DoubleMatrix shapeMatrix = MatrixUtil.toMatrix(shape);
-        DoubleMatrix currShape = MatrixUtil.toMatrix(arr.shape());
-        NDArray centered = (NDArray) arr;
-        DoubleMatrix startIndex = currShape.sub(shapeMatrix).div(2);
-        DoubleMatrix endIndex = startIndex.add(shapeMatrix);
-        arr = NDArray.wrap(centered.get(RangeUtils.interval((int) startIndex.get(0), (int) endIndex.get(0)),RangeUtils.interval((int) startIndex.get(1),(int) endIndex.get(1))));
+        INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
+        INDArray currShape =  ArrayUtil.toNDArray(arr.shape());
+        INDArray centered =  arr;
+        INDArray startIndex = currShape.sub(shapeMatrix).div(2);
+        INDArray endIndex = startIndex.add(shapeMatrix);
+        arr = centered.get(NDArrayIndex.interval((int) startIndex.getScalar(0).element(), (int) startIndex.getScalar(0).element()), NDArrayIndex.interval((int) startIndex.getScalar(1).element(), (int) endIndex.getScalar(1).element()));
 
 
 
@@ -95,17 +94,17 @@ public class NDArrayUtil {
 
 
     /**
-     * Truncates an ndarray to the specified shape.
+     * Truncates an INDArray to the specified shape.
      * If the shape is the same or greater, it just returns
      * the original array
-     * @param nd the ndarray to truncate
+     * @param nd the INDArray to truncate
      * @param n the number of elements to truncate to
      * @return the truncated ndarray
      */
-    public static INDArray truncate(NDArray nd,final int n,int dimension) {
+    public static INDArray truncate(INDArray nd,final int n,int dimension) {
 
         if(nd.isVector()) {
-            NDArray truncated = new NDArray(new int[]{n});
+            INDArray truncated = NDArrays.create(new int[]{n});
             for(int i = 0;i  < n; i++)
                 truncated.put(i,nd.getScalar(i));
             return truncated;
@@ -116,9 +115,9 @@ public class NDArrayUtil {
             targetShape[dimension] = n;
             int numRequired = ArrayUtil.prod(targetShape);
             if(nd.isVector()) {
-                NDArray ret = new NDArray(targetShape);
+                INDArray ret = NDArrays.create(targetShape);
                 int count = 0;
-                for(int i = 0; i < nd.length; i+= nd.stride()[dimension]) {
+                for(int i = 0; i < nd.length(); i+= nd.stride()[dimension]) {
                     ret.put(count++,nd.getScalar(i));
 
                 }
@@ -133,7 +132,7 @@ public class NDArrayUtil {
                         INDArray row = nd.getRow(i);
                         for(int j = 0; j < row.length(); j++) {
                             if(list.size() == numRequired)
-                                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+                                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
 
                             list.add((Double) row.getScalar(j).element());
                         }
@@ -144,7 +143,7 @@ public class NDArrayUtil {
                         INDArray row = nd.getColumn(i);
                         for(int j = 0; j < row.length(); j++) {
                             if(list.size() == numRequired)
-                                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+                                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
 
                             list.add((Double) row.getScalar(j).element());
                         }
@@ -155,7 +154,7 @@ public class NDArrayUtil {
                     throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
 
 
-                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+                return NDArrays.create(ArrayUtil.toArrayDouble(list),targetShape);
 
             }
 
@@ -167,7 +166,7 @@ public class NDArrayUtil {
                     slices.add(slice);
                 }
 
-                return new NDArray(slices,targetShape);
+                return NDArrays.create(slices,targetShape);
 
             }
             else {
@@ -181,7 +180,7 @@ public class NDArrayUtil {
 
                 assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
 
-                return new NDArray(ArrayUtil.toArrayDouble(list),targetShape);
+                return NDArrays.create(ArrayUtil.toArrayDouble(list), targetShape);
 
             }
 
@@ -194,20 +193,20 @@ public class NDArrayUtil {
 
     }
     /**
-     * Pads an ndarray with zeros
-     * @param nd the ndarray to pad
+     * Pads an INDArray with zeros
+     * @param nd the INDArray to pad
      * @param targetShape the the new shape
      * @return the padded ndarray
      */
-    public static NDArray padWithZeros(NDArray nd,int[] targetShape) {
+    public static INDArray padWithZeros(INDArray nd,int[] targetShape) {
         if(Arrays.equals(nd.shape(),targetShape))
             return nd;
         //no padding required
         if(ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
             return nd;
 
-        NDArray ret = new NDArray(targetShape);
-        System.arraycopy(nd.data,0,ret.data,0,nd.data.length);
+        INDArray ret = NDArrays.create(targetShape);
+        System.arraycopy(nd.data(),0,ret.data(),0,nd.data().length);
         return ret;
 
     }
@@ -234,54 +233,6 @@ public class NDArrayUtil {
 
 
 
-    /**
-     * Does slice wise ops on matrices and
-     * returns the aggregate results in one matrix
-     *
-     * @param op the operation to perform
-     * @param arr the array  to do operations on
-     * @return the slice wise operations
-     */
-    public static NDArray doSliceWise(MatrixOp op,NDArray arr) {
-        int columns = isColumnOp(op) ? arr.columns() : arr.rows();
-        int[] shape = {arr.slices(),columns};
-
-        NDArray ret = new NDArray(shape);
-
-        for(int i = 0; i < arr.slices(); i++) {
-            switch(op) {
-                case COLUMN_MIN:
-                    ret.putSlice(i,arr.slice(i).columnMins());
-                    break;
-                case COLUMN_MAX:
-                    ret.putSlice(i,arr.slice(i).columnMaxs());
-                    break;
-                case COLUMN_SUM:
-                    ret.putSlice(i,arr.slice(i).columnSums());
-                    break;
-                case COLUMN_MEAN:
-                    ret.putSlice(i,arr.slice(i).columnMeans());
-                    break;
-                case ROW_MIN:
-                    ret.putSlice(i,arr.slice(i).rowMins());
-                    break;
-                case ROW_MAX:
-                    ret.putSlice(i,arr.slice(i).rowMaxs());
-                    break;
-                case ROW_SUM:
-                    ret.putSlice(i,arr.slice(i).rowSums());
-                    break;
-                case ROW_MEAN:
-                    ret.putSlice(i,arr.slice(i).rowMeans());
-                    break;
-            }
-        }
-
-
-        return ret;
-    }
-
-
 
 
 
@@ -295,23 +246,23 @@ public class NDArrayUtil {
 
         arr = arr.reshape(new int[]{1,arr.length()});
 
-        NDArray cast = (NDArray) arr;
+        INDArray cast =   arr;
 
         if(op == ScalarOp.NORM_1) {
-            return NDArray.scalar(NDArrayBlas.asum(cast));
+            return NDArrays.scalar(NDArrays.getBlasWrapper().asum(cast));
         }
 
         else if(op == ScalarOp.NORM_2) {
-            return NDArray.scalar(NDArrayBlas.nrm2(cast));
+            return NDArrays.scalar(NDArrays.getBlasWrapper().nrm2(cast));
 
         }
 
         else if(op == ScalarOp.NORM_MAX) {
-            int i = NDArrayBlas.iamax(cast);
+            int i = NDArrays.getBlasWrapper().iamax(cast);
             return arr.getScalar(i);
         }
 
-        INDArray s = NDArray.scalar(0);
+        INDArray s = NDArrays.scalar(0);
         for (int i = 0; i < arr.length(); i++) {
             switch (op) {
                 case SUM:
@@ -344,7 +295,7 @@ public class NDArrayUtil {
         }
 
         if(op == ScalarOp.MEAN)
-            s.divi(NDArray.scalar(arr.length()));
+            s.divi(NDArrays.scalar(arr.length()));
 
 
         return s;
