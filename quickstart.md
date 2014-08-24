@@ -30,19 +30,19 @@ Next, download [DL4J examples here](https://oss.sonatype.org/content/repositorie
 
 	deeplearning4j-examples-0.0.3.2-20140625.144826-39-bin.tar.gz
 
-Unzip the file. 
+Unzip the file. (*N.B.: If you have previously installed DL4J following the instructions on the Getting Started page, you already have this file.*)
 
-To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this
+To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :)
 
 		cd Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
 		
-(*If you previously installed DL4J*, cd into deeplearning4j-examples/target/, and there you will find the file you need to unzip.)
+(*If you previously installed DL4J*, cd into */deeplearning4j-examples/target/, and there you will find the file you need to unzip.)
 
 Once you've made the examples folder your current working directory, enter this command:
 
 		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
 
-Now you should see evidence that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
+Now you should see evidence in your terminal/cmd that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
 
 ![Alt text](../img/learning.png)
 
