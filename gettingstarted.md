@@ -30,7 +30,7 @@ layout: default
 
 * To work with DL4J code, you should download the Java IDE IntelliJ. A free, community edition is available here. 
 
-         http://www.jetbrains.com/idea/download/
+         [http://www.jetbrains.com/idea/download/](http://www.jetbrains.com/idea/download/)
 
 * Unzip it, move it to your applications folder, and open it. On opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
 
