@@ -64,6 +64,23 @@ public class Shape {
         return false;
     }
 
+    public static boolean isRowVectorShape(int[] shape) {
+        return
+                (shape.length == 2
+                &&  shape[0] == 1) ||
+                shape.length == 1;
+
+    }
+
+    public static boolean isColumnVectorShape(int[] shape) {
+        return
+                (shape.length == 2
+                        &&  shape[1] == 1);
+
+    }
+
+
+
     /**
      * Returns true for the case where
      * singleton dimensions are being compared
