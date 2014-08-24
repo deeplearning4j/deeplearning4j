@@ -52,6 +52,6 @@ At the end of the training, you should see some numeral-images pop up in small w
 
 By this point, you should have trained your first neural net. Congratulations. (If you haven't, please [let us know](groups.google.com/forum/#!forum/deeplearning4j)!)
 
-Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run. 
+Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run. Here is a tutorial on [how to run any example on DL4J](../runexample.html). 
 
 Now it's time to start thinking about how to train it on other data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
