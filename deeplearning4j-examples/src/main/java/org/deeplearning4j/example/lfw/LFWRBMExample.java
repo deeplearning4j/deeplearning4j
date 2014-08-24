@@ -47,7 +47,7 @@ public class LFWRBMExample {
         int numIter = 0;
         /*
         Note that this is a demo meant to run faster, the faces learned are too fast, and the learning rate should be 1e-6
-        or lower for proper learning to take place. Thi sis purely for demo purposes
+        or lower for proper learning to take place. This is purely for demo purposes.
          */
         while(iter.hasNext()) {
             DataSet curr = iter.next();
@@ -70,8 +70,6 @@ public class LFWRBMExample {
         log.info("Saving to " + f.getAbsolutePath());
         SerializationUtils.saveObject(r, f);
         iter.reset();
-
-
 
 
 
