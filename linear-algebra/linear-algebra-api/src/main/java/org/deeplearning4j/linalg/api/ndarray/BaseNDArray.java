@@ -2176,7 +2176,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-
+        assert toPut.isVector() && toPut.length() == columns : "Illegal length for row " + toPut.length() + " should have been " + columns;
+        INDArray r = getRow(row);
+        for(int i = 0; i < r.length(); i++)
+            r.putScalar(i,toPut.get(i));
         return this;
     }
 
@@ -2191,6 +2194,10 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
+        assert toPut.isVector() && toPut.length() == rows : "Illegal length for row " + toPut.length() + " should have been " + columns;
+        INDArray r = getColumn(column);
+        for(int i = 0; i < r.length(); i++)
+            r.putScalar(i,toPut.get(i));
 
         return this;
     }
