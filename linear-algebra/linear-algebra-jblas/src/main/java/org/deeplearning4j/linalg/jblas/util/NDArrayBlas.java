@@ -85,9 +85,9 @@ public class NDArrayBlas {
         int aOffset = a.offset();
         int bOffset = b.offset();
         int cOffset = c.offset();
-        double[] aData = a.data;
-        double[] bData = b.data;
-        double[] cData = c.data;
+        double[] aData = a.data();
+        double[] bData = b.data();
+        double[] cData = c.data();
 
 
         NativeBlas.zgemm(
@@ -113,7 +113,7 @@ public class NDArrayBlas {
     }
 
     public static ComplexNDArray copy(ComplexNDArray x, ComplexNDArray y) {
-        NativeBlas.zcopy(x.length, x.data, x.offset(), 1, y.data, y.offset(), 1);
+        NativeBlas.zcopy(x.length(), x.data(), x.offset(), 1, y.data(), y.offset(), 1);
         return y;
     }
 
@@ -164,7 +164,7 @@ public class NDArrayBlas {
     }
 
     public static double asum(ComplexNDArray x) {
-        return NativeBlas.dzasum(x.length, x.data, x.offset(), 1);
+        return NativeBlas.dzasum(x.length(), x.data(), x.offset(), 1);
     }
 
 
@@ -178,7 +178,7 @@ public class NDArrayBlas {
     }
 
     public static double nrm2(ComplexNDArray x) {
-        return NativeBlas.dznrm2(x.length, x.data, x.offset(), 1);
+        return NativeBlas.dznrm2(x.length(), x.data(), x.offset(), 1);
     }
 
 
@@ -197,7 +197,7 @@ public class NDArrayBlas {
      * @return index of element with largest absolute value.
      */
     public static int iamax(ComplexNDArray x) {
-        return NativeBlas.izamax(x.length, x.data, x.offset(), 1) - 1;
+        return NativeBlas.izamax(x.length(), x.data(), x.offset(), 1) - 1;
     }
 
 

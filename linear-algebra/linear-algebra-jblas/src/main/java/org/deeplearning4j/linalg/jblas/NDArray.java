@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.jblas;
 
 import org.deeplearning4j.linalg.api.ndarray.BaseNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.jblas.DoubleMatrix;
 
 
 import java.util.*;
@@ -235,5 +236,9 @@ public class NDArray extends BaseNDArray {
     }
 
 
-
+    public NDArray(DoubleMatrix doubleMatrix) {
+        this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
+        this.data = doubleMatrix.data;
+        
+    }
 }
