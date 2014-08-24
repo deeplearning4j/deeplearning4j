@@ -12,14 +12,14 @@ public class JCublasNDArrayBlas {
                                       JCublasNDArray A,
                                       JCublasNDArray B, double beta, JCublasNDArray C)
     {
-        return SimpleJCublas.gemm(A,B, alpha, beta);
+        return SimpleJCublas.gemm(A,B,C, alpha, beta);
     }
 
     public static JCublasNDArray gemv(double alpha,
                                       JCublasNDArray A,
                                       JCublasNDArray B, double beta, JCublasNDArray C)
     {
-        return SimpleJCublas.gemv(A,B, alpha, beta);
+        return SimpleJCublas.gemv(A,B,C, alpha, beta);
     }
 
     public static int nrm2(JCublasComplexNDArray x) {
