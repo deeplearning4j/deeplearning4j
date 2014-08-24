@@ -32,7 +32,7 @@ layout: default
 		import numpy
 		import pylab as pl
 
-  These will generate the visualizations that allow you to debug your neural nets as they train. 
+These tools will generate the visualizations that allow you to debug your neural nets as they train. 
 
 * Next, download [DL4J examples here](https://oss.sonatype.org/content/repositories/snapshots/org/deeplearning4j/deeplearning4j-examples/0.0.3.2-SNAPSHOT/). Just click on the latest tar.gz or .zip file somewhere near the top of the list. It will look something like this:
 
