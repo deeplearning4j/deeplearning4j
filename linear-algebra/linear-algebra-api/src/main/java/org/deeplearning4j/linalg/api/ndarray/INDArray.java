@@ -219,6 +219,12 @@ public interface INDArray {
      */
     public void iterateOverAllRows(SliceOp op);
 
+    /**
+     * Iterate over every column of every slice
+     * @param op the operation to apply
+     */
+    public void iterateOverAllColumns(SliceOp op);
+
 
     /**
      * Fetch a particular number on a multi dimensional scale.
