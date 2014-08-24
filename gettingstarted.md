@@ -13,7 +13,7 @@ layout: default
         yum -y install blas
 
         Ubuntu
-        apt-get install libblas* (criedit to @sujitpal)
+        apt-get install libblas* (credit to @sujitpal)
 
         OSX
         Already Installed
