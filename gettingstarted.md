@@ -45,7 +45,7 @@ layout: default
 		*/java-deeplearning/deeplearning4j-distribution/target
 	
 
-2. Use this repo in your POM file (POM.xml files live in the root of a given directory):
+2. Paste this repo in your POM file (POM.xml files live in the root of a given directory):
 
          <repositories>
              <repository>
@@ -95,6 +95,8 @@ layout: default
 
 For the moment, the installation is throwing errors related to Jcublas. (We're working on it :) GPU integration is being completed. Steps 5 and 6 are only for building the software. 
 
-From here, you may be interested in exploring our [Github repo](https://github.com/agibsonccc/java-deeplearning) or accessing the core through [Maven](http://maven.apache.org/download.cgi).
+**Next step**: We recommend following our [**MNIST tutorial**](../rbm-mnist-tutorial.html) and [running a few examples](../quickstart.html). 
 
-If you're starting to explore deep learning, we recommend following our [MNIST tutorial](../rbm-mnist-tutorial.html) or [running a few examples](../quickstart.html). If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
+**The curious** will want to examine our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
+
+**Advanced users**: If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](../customdatasets.html).
