@@ -59,7 +59,7 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
                 {5,6,7,8}
         };
 
-        //NDArrays.factory().setOrder('f');
+        NDArrays.factory().setOrder('f');
 
         DoubleMatrix d = new DoubleMatrix(data);
         INDArray d2 = NDArrays.create(data);
