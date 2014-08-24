@@ -13,6 +13,8 @@ import java.util.List;
  */
 public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
+
+
     public JCublasComplexNDArray(double[][] data) {
         super(data);
     }
@@ -316,4 +318,5 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
     public JCublasComplexNDArray(double[] doubles) {
         super(doubles);
     }
+
 }
