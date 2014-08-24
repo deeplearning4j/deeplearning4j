@@ -52,11 +52,11 @@ At the end of the training, you should see some numeral-images pop up in small w
 
 Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run.
 
-Java works with deep and complex file systems, which are important to explain here. You can choose the example to run by dropping the first half of the URL and replacing the remaining forward slashes with dots, as in the example below.
+### how to run any example dataset
 
-For example, the file at 
+Java works with deep and complex file systems, which are important to explain here. You can choose the example to run by dropping the first half of the URL, take the latter half starting at "org," and replace the remaining forward slashes with dots, as in the example below. For example, the file at 
 
-[https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistConvNetTest.java](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistConvNetTest.java)
+[https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistExampleMultiThreaded.java](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/MnistExampleMultiThreaded.java)
 
 can be entered into the command line as 
 
@@ -64,9 +64,9 @@ can be entered into the command line as
 		
 Here are a few other examples you can run, each of which takes about as long as the Mnist example above:
 		
-		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
+		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample.java
 		
-		java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
+		java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW.java
 
 A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
 
