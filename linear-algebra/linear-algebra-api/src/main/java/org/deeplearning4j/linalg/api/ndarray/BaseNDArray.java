@@ -479,8 +479,15 @@ public abstract class BaseNDArray  implements INDArray {
     }
 
     @Override
-    public INDArray putScalar(int[] i, Number value) {
-        return null;
+    public INDArray putScalar(int[] indexes, Number value) {
+        int ix = offset;
+        for (int i = 0; i < shape.length; i++) {
+            ix += indexes[i] * stride[i];
+        }
+
+        data[ix] = value.doubleValue();
+
+        return this;
     }
 
     @Override
