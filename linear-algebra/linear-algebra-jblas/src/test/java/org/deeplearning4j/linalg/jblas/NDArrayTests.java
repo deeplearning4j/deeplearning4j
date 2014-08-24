@@ -20,12 +20,14 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
 
     @Test
-    public void testResults() {
+    public void testMatrixVector() {
         double[][] data = new double[][]{
                 {1,2,3,4},
                 {5,6,7,8}
         };
 
+
+        NDArrays.factory().setOrder('f');
         double[] mmul = {1,2,3,4};
 
         DoubleMatrix d = new DoubleMatrix(data);
@@ -34,17 +36,100 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         assertEquals(d.columns,d2.columns());
         verifyElements(d,d2);
 
+        INDArray toMmulD2 = NDArrays.create(mmul).reshape(new int[]{mmul.length,1});
+        DoubleMatrix toMmulD = new DoubleMatrix(mmul);
+
+        DoubleMatrix mmulResultD = d.mmul(toMmulD);
+        INDArray mmulResultD2 = d2.mmul(toMmulD2);
+        verifyElements(mmulResultD,mmulResultD2);
+
+
+
+
+
+        NDArrays.factory().setOrder('c');
+
+
+    }
+
+    @Test
+    public void testFortranReshapeMatrix() {
+        double[][] data = new double[][]{
+                {1,2,3,4},
+                {5,6,7,8}
+        };
+
+        //NDArrays.factory().setOrder('f');
+
+        DoubleMatrix d = new DoubleMatrix(data);
+        INDArray d2 = NDArrays.create(data);
+        assertEquals(d.rows, d2.rows());
+        assertEquals(d.columns, d2.columns());
+        verifyElements(d, d2);
+
+
+        DoubleMatrix reshapedD = d.reshape(4,2);
+        INDArray reshapedD2 = d2.reshape(4,2);
+        verifyElements(reshapedD,reshapedD2);
+
+
+    }
+
+    @Test
+    public void testFortranCreation() {
+        double[][] data = new double[][]{
+                {1,2,3,4},
+                {5,6,7,8}
+        };
+
+
+        NDArrays.factory().setOrder('f');
+        double[][] mmul = {{1,2,3,4},{5,6,7,8}};
+
+        INDArray d2 = NDArrays.create(data);
+        verifyElements(mmul,d2);
+    }
+
+
+    @Test
+    public void testMatrixMatrix() {
+        double[][] data = new double[][]{
+                {1, 2, 3, 4},
+                {5, 6, 7, 8}
+        };
+
+
+        NDArrays.factory().setOrder('f');
+        double[][] mmul = {{1, 2, 3, 4}, {5, 6, 7, 8}};
+
+        DoubleMatrix d = new DoubleMatrix(data).reshape(4, 2);
+        INDArray d2 = NDArrays.create(data).reshape(4, 2);
+        assertEquals(d.rows, d2.rows());
+        assertEquals(d.columns, d2.columns());
+        verifyElements(d, d2);
+
         INDArray toMmulD2 = NDArrays.create(mmul);
         DoubleMatrix toMmulD = new DoubleMatrix(mmul);
 
         DoubleMatrix mmulResultD = d.mmul(toMmulD);
-
         INDArray mmulResultD2 = d2.mmul(toMmulD2);
+        verifyElements(mmulResultD, mmulResultD2);
 
 
-
-
+        NDArrays.factory().setOrder('c');
     }
+
+
+
+        protected void verifyElements(double[][] d,INDArray d2) {
+            for(int i = 0; i < d2.rows(); i++) {
+                for(int j = 0; j < d2.columns(); j++) {
+                    double test1 =  d[i][j];
+                    double test2 = (double) d2.getScalar(i,j).element();
+                    assertEquals(test1,test2,1e-6);
+                }
+            }
+        }
 
 
     protected void verifyElements(DoubleMatrix d,INDArray d2) {

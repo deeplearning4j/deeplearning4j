@@ -3,7 +3,6 @@ package org.deeplearning4j.linalg.jblas.util;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.deeplearning4j.linalg.jblas.NDArray;
-import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.jblas.ComplexDouble;
 import org.jblas.DoubleMatrix;
 import org.jblas.JavaBlas;
@@ -24,7 +23,7 @@ public class NDArrayBlas {
      * Compute y <- alpha * x + y (elementwise addition)
      */
     public static NDArray axpy(double da, NDArray dx, NDArray dy) {
-        NativeBlas.daxpy(dx.length, da, dx.data, dx.offset(), 1, dy.data, dy.offset(), 1);
+        NativeBlas.daxpy(dx.length(), da, dx.data(), dx.offset(), 1, dy.data(), dy.offset(), 1);
         //JavaBlas.raxpy(dx.length, da, dx.data, 0, 1, dy.data, 0, 1);
 
         return dy;
@@ -53,8 +52,8 @@ public class NDArrayBlas {
      */
     public static NDArray gemm(double alpha, NDArray a,
                                NDArray b, double beta, NDArray c) {
-        NativeBlas.dgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data, a.offset(),
-                a.rows(), b.data, b.offset(), b.rows(), beta, c.data, c.offset(), c.rows());
+        NativeBlas.dgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), a.offset(),
+                a.rows(), b.data(), b.offset(), b.rows(), beta, c.data(), c.offset(), c.rows());
         //data is in wrong order update the strides appropriately
         setStrideForJblas(c);
         return c;
@@ -72,7 +71,7 @@ public class NDArrayBlas {
     public static DoubleMatrix gemm(double alpha, DoubleMatrix a,
                                     DoubleMatrix b, double beta, DoubleMatrix c) {
         NativeBlas.dgemm('V', 'V', c.rows, c.columns, a.columns, alpha, a.data, 0,
-                a.rows, b.data, 0, b.rows, beta, c.data, 0, c.rows);
+                a.rows, b.data, 0, b.rows ,beta, c.data, 0, c.rows);
         return c;
     }
 
@@ -109,7 +108,7 @@ public class NDArrayBlas {
      * @return
      */
     public static NDArray copy(NDArray x, NDArray y) {
-        JavaBlas.rcopy(x.length, x.data, 0, 1, y.data, 0, 1);
+        JavaBlas.rcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         return y;
     }
 
@@ -130,26 +129,26 @@ public class NDArrayBlas {
     public static NDArray gemv(double alpha, NDArray a,
                                NDArray x, double beta, NDArray y) {
         if (false) {
-            NativeBlas.dgemv('N', a.rows, a.columns, alpha, a.data, a.offset(), a.rows, x.data, 0,
-                    1, beta, y.data, y.offset(), 1);
+            NativeBlas.dgemv('N', a.rows(), a.columns(), alpha, a.data(), a.offset(), a.rows(), x.data(), 0,
+                    1, beta, y.data(), y.offset(), 1);
         } else {
             if (beta == 0.0) {
-                for (int i = 0; i < y.length; i++)
-                    y.data[i] = 0.0;
+                for (int i = 0; i < y.length(); i++)
+                    y.data()[i] = 0.0;
 
-                for (int j = 0; j < a.columns; j++) {
+                for (int j = 0; j < a.columns(); j++) {
                     double xj = (double) x.getScalar(j).element();
                     if (xj != 0.0) {
-                        for (int i = 0; i < a.rows; i++)
-                            y.data[i] += a.get(i, j) * xj;
+                        for (int i = 0; i < a.rows(); i++)
+                            y.data()[i] += a.get(i, j) * xj;
                     }
                 }
             } else {
-                for (int j = 0; j < a.columns; j++) {
-                    double byj = beta * y.data[j];
+                for (int j = 0; j < a.columns(); j++) {
+                    double byj = beta * y.data()[j];
                     double xj = (double) x.getScalar(j).element();
-                    for (int i = 0; i < a.rows; i++)
-                        y.data[j] = a.get(i, j) * xj + byj;
+                    for (int i = 0; i < a.rows(); i++)
+                        y.data()[j] = a.get(i, j) * xj + byj;
                 }
             }
         }
@@ -161,7 +160,7 @@ public class NDArrayBlas {
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     public static double asum(NDArray x) {
-        return NativeBlas.dasum(x.length, x.data, x.offset(), 1);
+        return NativeBlas.dasum(x.length(), x.data(), x.offset(), 1);
     }
 
     public static double asum(ComplexNDArray x) {
@@ -175,7 +174,7 @@ public class NDArrayBlas {
      * Compute || x ||_2 (2-norm)
      */
     public static double nrm2(NDArray x) {
-        return NativeBlas.dnrm2(x.length, x.data, x.offset(), 1);
+        return NativeBlas.dnrm2(x.length(), x.data(), x.offset(), 1);
     }
 
     public static double nrm2(ComplexNDArray x) {
@@ -188,7 +187,7 @@ public class NDArrayBlas {
      * value maximum)
      */
     public static int iamax(NDArray x) {
-        return NativeBlas.idamax(x.length, x.data, x.offset(), 1) - 1;
+        return NativeBlas.idamax(x.length(), x.data(), x.offset(), 1) - 1;
     }
 
     /**

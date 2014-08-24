@@ -5,6 +5,8 @@ import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
+import java.util.List;
+
 /**
  * Created by agibsonccc on 8/12/14.
  */
@@ -205,6 +207,11 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray addi(Number n) {
         return null;
+    }
+
+    @Override
+    public void sliceVectors(List<INDArray> list) {
+
     }
 
     /**
