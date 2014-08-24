@@ -475,7 +475,9 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public INDArray putScalar(int i, Number value) {
-        return put(i,NDArrays.scalar(value));
+        int idx = linearIndex(i);
+        data[idx] = value.doubleValue();
+        return this;
     }
 
     @Override
