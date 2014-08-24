@@ -50,26 +50,8 @@ At the end of the training, you should see some numeral-images pop up in small w
 
 ![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
 
-Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run.
-
-### how to run any example dataset
-
-Java works with deep and complex file systems, which are important to explain here. You can choose the example to run by dropping the first half of the URL, take the latter half starting at "org," and replace the remaining forward slashes with dots, as in the example below. For example, the file at 
-
-[https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/convnet/mnist/MnistExampleMultiThreaded.java](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/MnistExampleMultiThreaded.java)
-
-can be entered into the command line as 
-
-		java -cp "lib/*" org.deeplearning4j.example.mnist.MnistExampleMultiThreaded.java
-		
-Here are a few other examples you can run, each of which takes about as long as the Mnist example above:
-		
-		java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample.java
-		
-		java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW.java
-
-A fuller explanation of class paths in Java can be found in [Oracle's  documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html).
-
 By this point, you should have trained your first neural net. Congratulations. (If you haven't, please [let us know](groups.google.com/forum/#!forum/deeplearning4j)!)
+
+Go [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/) to choose the next example to run. 
 
 Now it's time to start thinking about how to train it on other data. Check out the repos on our [Getting Started page](../gettingstarted.html) and then start exploring how to deal with [your own datasets](../customdatasets.html).
