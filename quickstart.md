@@ -42,11 +42,11 @@ layout: default
 		MAC
 		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz
 
-* Unzip the file. (*If you have previously installed DL4J following the instructions on the Getting Started page, you already have this file. In that case, cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip.*)
+* Unzip the file. (* **EXCEPTION**: If you have previously installed DL4J following the instructions on the [Getting Started page](../gettingstarted.html), you already have this file. In that case, simply cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip. Then cd once more into the unzipped folder...*)
 
-* To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :)
+* To run the examples, move into the DL4J examples folder you just downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :):
 
-		cd Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
+		cd */Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
 
 * Once you've made the examples folder your current working directory, enter this command:
 
