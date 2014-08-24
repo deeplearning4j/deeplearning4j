@@ -358,6 +358,16 @@ public class DummyNDArray implements INDArray {
     }
 
     /**
+     * Iterate over every column of every slice
+     *
+     * @param op the operation to apply
+     */
+    @Override
+    public void iterateOverAllColumns(SliceOp op) {
+
+    }
+
+    /**
      * Fetch a particular number on a multi dimensional scale.
      *
      * @param indexes the indexes to getFromOrigin a number from
