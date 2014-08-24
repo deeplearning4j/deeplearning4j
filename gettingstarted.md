@@ -28,13 +28,13 @@ layout: default
 
 ### IntelliJ
 
-* To work with DL4J code, you should download the Java IDE IntelliJ. A free, community edition is available here. 
+* To work with DL4J code, you should download the Java IDE IntelliJ. A [free, community edition](http://www.jetbrains.com/idea/download/) is available at:
 
-         [http://www.jetbrains.com/idea/download/](http://www.jetbrains.com/idea/download/)
+         http://www.jetbrains.com/idea/download/
 
-* Unzip it, move it to your applications folder, and open it. On opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
+* Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
 
-* As you open IntelliJ, you'll be prompted to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. Mine was "java-deeplearning". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.)
+* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. Mine was "java-deeplearning". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.)
 
 * You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then clicks on Plugins. Then choose to Browse Repositories search "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
 
