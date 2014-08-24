@@ -22,17 +22,26 @@ public class TwoArrayOps  {
 
 
     public TwoArrayOps other(INDArray other) {
-        this.other = other.reshape(new int[]{1,other.length()});
+        if(!other.isVector())
+            this.other = other.reshape(new int[]{1,other.length()});
+        else
+            this.other = other;
         return this;
     }
 
     public TwoArrayOps from(INDArray from) {
-        this.from = from.reshape(new int[]{1,from.length()});
+        if(!from.isVector())
+            this.from = from.reshape(new int[]{1,from.length()});
+        else
+             this.from = from;
         return this;
     }
 
     public TwoArrayOps to(INDArray to) {
-        this.to = to.reshape(new int[]{1,to.length()});
+        if(!to.isVector())
+            this.to = to.reshape(new int[]{1,to.length()});
+        else
+             this.to = to;
         return this;
     }
 
