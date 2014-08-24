@@ -1,7 +1,6 @@
 package org.deeplearning4j.linalg.jblas;
 
 import org.deeplearning4j.linalg.api.complex.IComplexDouble;
-import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
 import org.jblas.JavaBlas;
@@ -28,8 +27,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x <-> y (swap two matrices)
      */
     public NDArray swap(NDArray x, NDArray y) {
-        //NativeBlas.dswap(x.length, x.data, 0, 1, y.data, 0, 1);
-        JavaBlas.rswap(x.length, x.data, 0, 1, y.data, 0, 1);
+        //NativeBlas.dswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        JavaBlas.rswap(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         return y;
     }
 
@@ -37,7 +36,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x <- alpha * x (scale a matrix)
      */
     public NDArray scal(double alpha, NDArray x) {
-        NativeBlas.dscal(x.length, alpha, x.data, 0, 1);
+        NativeBlas.dscal(x.length(), alpha, x.data(), 0, 1);
         return x;
     }
 
@@ -47,7 +46,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     public ComplexNDArray scal(ComplexDouble alpha, ComplexNDArray x) {
-        NativeBlas.zscal(x.length, alpha, x.data, 0, 1);
+        NativeBlas.zscal(x.length(), alpha, x.data(), 0, 1);
         return x;
     }
 
@@ -55,13 +54,13 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute y <- x (copy a matrix)
      */
     public NDArray copy(NDArray x, NDArray y) {
-        //NativeBlas.dcopy(x.length, x.data, 0, 1, y.data, 0, 1);
-        JavaBlas.rcopy(x.length, x.data, 0, 1, y.data, 0, 1);
+        //NativeBlas.dcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        JavaBlas.rcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         return y;
     }
 
     public ComplexNDArray copy(ComplexNDArray x, ComplexNDArray y) {
-        NativeBlas.zcopy(x.length, x.data, 0, 1, y.data, 0, 1);
+        NativeBlas.zcopy(x.length(), x.data(), 0, 1, y.data(), 0, 1);
         return y;
     }
 
@@ -69,8 +68,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute y <- alpha * x + y (elementwise addition)
      */
     public NDArray axpy(double da, NDArray dx, NDArray dy) {
-        //NativeBlas.daxpy(dx.length, da, dx.data, 0, 1, dy.data, 0, 1);
-        JavaBlas.raxpy(dx.length, da, dx.data, 0, 1, dy.data, 0, 1);
+        //NativeBlas.daxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
+        JavaBlas.raxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
 
         return dy;
     }
@@ -81,7 +80,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     public ComplexNDArray axpy(ComplexDouble da, ComplexNDArray dx, ComplexNDArray dy) {
-        NativeBlas.zaxpy(dx.length, da, dx.data, 0, 1, dy.data, 0, 1);
+        NativeBlas.zaxpy(dx.length(), da, dx.data(), 0, 1, dy.data(), 0, 1);
         return dy;
     }
 
@@ -89,44 +88,44 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * Compute x^T * y (dot product)
      */
     public double dot(NDArray x, NDArray y) {
-        //return NativeBlas.ddot(x.length, x.data, 0, 1, y.data, 0, 1);
-        return JavaBlas.rdot(x.length, x.data, 0, 1, y.data, 0, 1);
+        //return NativeBlas.ddot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
+        return JavaBlas.rdot(x.length(), x.data(), 0, 1, y.data(), 0, 1);
     }
 
     /**
      * Compute x^T * y (dot product)
      */
     public ComplexDouble dotc(ComplexNDArray x, ComplexNDArray y) {
-        return new ComplexDouble(NativeBlas.zdotc(x.length, x.data, 0, 1, y.data, 0, 1));
+        return new ComplexDouble(NativeBlas.zdotc(x.length(), x.data(), 0, 1, y.data(), 0, 1));
     }
 
     /**
      * Compute x^T * y (dot product)
      */
     public ComplexDouble dotu(ComplexNDArray x, ComplexNDArray y) {
-        return new ComplexDouble(NativeBlas.zdotu(x.length, x.data, 0, 1, y.data, 0, 1));
+        return new ComplexDouble(NativeBlas.zdotu(x.length(), x.data(), 0, 1, y.data(), 0, 1));
     }
 
     /**
      * Compute || x ||_2 (2-norm)
      */
     public double nrm2(NDArray x) {
-        return NativeBlas.dnrm2(x.length, x.data, 0, 1);
+        return NativeBlas.dnrm2(x.length(), x.data(), 0, 1);
     }
 
     public double nrm2(ComplexNDArray x) {
-        return NativeBlas.dznrm2(x.length, x.data, 0, 1);
+        return NativeBlas.dznrm2(x.length(), x.data(), 0, 1);
     }
 
     /**
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     public double asum(NDArray x) {
-        return NativeBlas.dasum(x.length, x.data, 0, 1);
+        return NativeBlas.dasum(x.length(), x.data(), 0, 1);
     }
 
     public double asum(ComplexNDArray x) {
-        return NativeBlas.dzasum(x.length, x.data, 0, 1);
+        return NativeBlas.dzasum(x.length(), x.data(), 0, 1);
     }
 
     /**
@@ -134,7 +133,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * value maximum)
      */
     public int iamax(NDArray x) {
-        return NativeBlas.idamax(x.length, x.data, 0, 1) - 1;
+        return NativeBlas.idamax(x.length(), x.data(), 0, 1) - 1;
     }
 
     /**
@@ -144,7 +143,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * @return index of element with largest absolute value.
      */
     public int iamax(ComplexNDArray x) {
-        return NativeBlas.izamax(x.length, x.data, 0, 1) - 1;
+        return NativeBlas.izamax(x.length(), x.data(), 0, 1) - 1;
     }
 
     /***************************************************************************
@@ -158,26 +157,26 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     public NDArray gemv(double alpha, NDArray a,
                                     NDArray x, double beta, NDArray y) {
         if (false) {
-            NativeBlas.dgemv('N', a.rows, a.columns, alpha, a.data, 0, a.rows, x.data, 0,
-                    1, beta, y.data, 0, 1);
+            NativeBlas.dgemv('N', a.rows(), a.columns(), alpha, a.data(), 0, a.rows(), x.data(), 0,
+                    1, beta, y.data(), 0, 1);
         } else {
             if (beta == 0.0) {
-                for (int i = 0; i < y.length; i++)
-                    y.data[i] = 0.0;
+                for (int i = 0; i < y.length(); i++)
+                    y.data()[i] = 0.0;
 
-                for (int j = 0; j < a.columns; j++) {
+                for (int j = 0; j < a.columns(); j++) {
                     double xj = x.get(j);
                     if (xj != 0.0) {
-                        for (int i = 0; i < a.rows; i++)
-                            y.data[i] += a.get(i, j) * xj;
+                        for (int i = 0; i < a.rows(); i++)
+                            y.data()[i] += a.get(i, j) * xj;
                     }
                 }
             } else {
-                for (int j = 0; j < a.columns; j++) {
-                    double byj = beta * y.data[j];
+                for (int j = 0; j < a.columns(); j++) {
+                    double byj = beta * y.data()[j];
                     double xj = x.get(j);
-                    for (int i = 0; i < a.rows; i++)
-                        y.data[j] = a.get(i, j) * xj + byj;
+                    for (int i = 0; i < a.rows(); i++)
+                        y.data()[j] = a.get(i, j) * xj + byj;
                 }
             }
         }
@@ -189,8 +188,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     public NDArray ger(double alpha, NDArray x,
                                    NDArray y, NDArray a) {
-        NativeBlas.dger(a.rows, a.columns, alpha, x.data, 0, 1, y.data, 0, 1, a.data,
-                0, a.rows);
+        NativeBlas.dger(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
+                0, a.rows());
         return a;
     }
 
@@ -225,8 +224,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     public ComplexNDArray geru(ComplexDouble alpha, ComplexNDArray x,
                                            ComplexNDArray y, ComplexNDArray a) {
-        NativeBlas.zgeru(a.rows, a.columns, alpha, x.data, 0, 1, y.data, 0, 1, a.data,
-                0, a.rows);
+        NativeBlas.zgeru(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
+                0, a.rows());
         return a;
     }
 
@@ -235,8 +234,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     public ComplexNDArray gerc(ComplexDouble alpha, ComplexNDArray x,
                                            ComplexNDArray y, ComplexNDArray a) {
-        NativeBlas.zgerc(a.rows, a.columns, alpha, x.data, 0, 1, y.data, 0, 1, a.data,
-                0, a.rows);
+        NativeBlas.zgerc(a.rows(), a.columns(), alpha, x.data(), 0, 1, y.data(), 0, 1, a.data(),
+                0, a.rows());
         return a;
     }
 
@@ -250,8 +249,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     public NDArray gemm(double alpha, NDArray a,
                                     NDArray b, double beta, NDArray c) {
-        NativeBlas.dgemm('N', 'N', c.rows, c.columns, a.columns, alpha, a.data, 0,
-                a.rows, b.data, 0, b.rows, beta, c.data, 0, c.rows);
+        NativeBlas.dgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), 0,
+                a.rows(), b.data(), 0, b.rows(), beta, c.data(), 0, c.rows());
         return c;
     }
 
@@ -262,8 +261,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     public ComplexNDArray gemm(ComplexDouble alpha, ComplexNDArray a,
                                            ComplexNDArray b, ComplexDouble beta, ComplexNDArray c) {
-        NativeBlas.zgemm('N', 'N', c.rows, c.columns, a.columns, alpha, a.data, 0,
-                a.rows, b.data, 0, b.rows, beta, c.data, 0, c.rows);
+        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), 0,
+                a.rows(), b.data(), 0, b.rows(), beta, c.data(), 0, c.rows());
         return c;
     }
 
@@ -273,8 +272,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     public NDArray gesv(NDArray a, int[] ipiv,
                                     NDArray b) {
-        int info = NativeBlas.dgesv(a.rows, b.columns, a.data, 0, a.rows, ipiv, 0,
-                b.data, 0, b.rows);
+        int info = NativeBlas.dgesv(a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
+                b.data(), 0, b.rows());
         checkInfo("DGESV", info);
 
         if (info > 0)
@@ -294,8 +293,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     public NDArray sysv(char uplo, NDArray a, int[] ipiv,
                                     NDArray b) {
-        int info = NativeBlas.dsysv(uplo, a.rows, b.columns, a.data, 0, a.rows, ipiv, 0,
-                b.data, 0, b.rows);
+        int info = NativeBlas.dsysv(uplo, a.rows(), b.columns(), a.data(), 0, a.rows(), ipiv, 0,
+                b.data(), 0, b.rows());
         checkInfo("SYSV", info);
 
         if (info > 0)
@@ -306,7 +305,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     public int syev(char jobz, char uplo, NDArray a, NDArray w) {
-        int info = NativeBlas.dsyev(jobz, uplo, a.rows, a.data, 0, a.rows, w.data, 0);
+        int info = NativeBlas.dsyev(jobz, uplo, a.rows(), a.data(), 0, a.rows(), w.data(), 0);
 
         if (info > 0)
             throw new LapackConvergenceException("SYEV",
@@ -319,14 +318,14 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     public int syevx(char jobz, char range, char uplo, NDArray a,
                             double vl, double vu, int il, int iu, double abstol,
                             NDArray w, NDArray z) {
-        int n = a.rows;
+        int n = a.rows();
         int[] iwork = new int[5 * n];
         int[] ifail = new int[n];
         int[] m = new int[1];
         int info;
 
-        info = NativeBlas.dsyevx(jobz, range, uplo, n, a.data, 0, a.rows, vl, vu, il,
-                iu, abstol, m, 0, w.data, 0, z.data, 0, z.rows, iwork, 0, ifail, 0);
+        info = NativeBlas.dsyevx(jobz, range, uplo, n, a.data(), 0, a.rows(), vl, vu, il,
+                iu, abstol, m, 0, w.data(), 0, z.data(), 0, z.rows(), iwork, 0, ifail, 0);
 
         if (info > 0) {
             StringBuilder msg = new StringBuilder();
@@ -346,9 +345,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     public int syevd(char jobz, char uplo, NDArray A,
                             NDArray w) {
-        int n = A.rows;
+        int n = A.rows();
 
-        int info = NativeBlas.dsyevd(jobz, uplo, n, A.data, 0, A.rows, w.data, 0);
+        int info = NativeBlas.dsyevd(jobz, uplo, n, A.data(), 0, A.rows(), w.data(), 0);
 
         if (info > 0)
             throw new LapackConvergenceException("SYEVD", "Not all eigenvalues converged.");
@@ -359,11 +358,11 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     public int syevr(char jobz, char range, char uplo, NDArray a,
                             double vl, double vu, int il, int iu, double abstol,
                             NDArray w, NDArray z, int[] isuppz) {
-        int n = a.rows;
+        int n = a.rows();
         int[] m = new int[1];
 
-        int info = NativeBlas.dsyevr(jobz, range, uplo, n, a.data, 0, a.rows, vl, vu,
-                il, iu, abstol, m, 0, w.data, 0, z.data, 0, z.rows, isuppz, 0);
+        int info = NativeBlas.dsyevr(jobz, range, uplo, n, a.data(), 0, a.rows(), vl, vu,
+                il, iu, abstol, m, 0, w.data(), 0, z.data(), 0, z.rows(), isuppz, 0);
 
         checkInfo("SYEVR", info);
 
@@ -371,10 +370,10 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     public void posv(char uplo, NDArray A, NDArray B) {
-        int n = A.rows;
-        int nrhs = B.columns;
-        int info = NativeBlas.dposv(uplo, n, nrhs, A.data, 0, A.rows, B.data, 0,
-                B.rows);
+        int n = A.rows();
+        int nrhs = B.columns();
+        int info = NativeBlas.dposv(uplo, n, nrhs, A.data(), 0, A.rows(), B.data(), 0,
+                B.rows());
         checkInfo("DPOSV", info);
         if (info > 0)
             throw new LapackArgumentException("DPOSV",
@@ -383,26 +382,26 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     public int geev(char jobvl, char jobvr, NDArray A,
                            NDArray WR, NDArray WI, NDArray VL, NDArray VR) {
-        int info = NativeBlas.dgeev(jobvl, jobvr, A.rows, A.data, 0, A.rows, WR.data, 0,
-                WI.data, 0, VL.data, 0, VL.rows, VR.data, 0, VR.rows);
+        int info = NativeBlas.dgeev(jobvl, jobvr, A.rows(), A.data(), 0, A.rows(), WR.data(), 0,
+                WI.data(), 0, VL.data(), 0, VL.rows(), VR.data(), 0, VR.rows());
         if (info > 0)
             throw new LapackConvergenceException("DGEEV", "First " + info + " eigenvalues have not converged.");
         return info;
     }
 
     public int sygvd(int itype, char jobz, char uplo, NDArray A, NDArray B, NDArray W) {
-        int info = NativeBlas.dsygvd(itype, jobz, uplo, A.rows, A.data, 0, A.rows, B.data, 0, B.rows, W.data, 0);
+        int info = NativeBlas.dsygvd(itype, jobz, uplo, A.rows(), A.data(), 0, A.rows(), B.data(), 0, B.rows(), W.data(), 0);
         if (info == 0)
             return 0;
         else {
             if (info < 0)
                 throw new LapackArgumentException("DSYGVD", -info);
-            if (info <= A.rows && jobz == 'N')
+            if (info <= A.rows() && jobz == 'N')
                 throw new LapackConvergenceException("DSYGVD", info + " off-diagonal elements did not converge to 0.");
-            if (info <= A.rows && jobz == 'V')
+            if (info <= A.rows() && jobz == 'V')
                 throw new LapackException("DSYGVD", "Failed to compute an eigenvalue while working on a sub-matrix  " + info + ".");
             else
-                throw new LapackException("DSYGVD", "The leading minor of order " + (info - A.rows) + " of B is not positive definite.");
+                throw new LapackException("DSYGVD", "The leading minor of order " + (info - A.rows()) + " of B is not positive definite.");
         }
     }
 
@@ -421,13 +420,13 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      * @param B an (max(m,n), k) matrix (well, at least)
      */
     public void gelsd(NDArray A, NDArray B) {
-        int m = A.rows;
-        int n = A.columns;
-        int nrhs = B.columns;
+        int m = A.rows();
+        int n = A.columns();
+        int nrhs = B.columns();
         int minmn = min(m, n);
         int maxmn = max(m, n);
 
-        if (B.rows < maxmn) {
+        if (B.rows() < maxmn) {
             throw new SizeException("Result matrix B must be padded to contain the solution matrix X!");
         }
 
@@ -442,7 +441,7 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
         int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
         double[] s = new double[minmn];
         int[] rank = new int[1];
-        int info = NativeBlas.dgelsd(m, n, nrhs, A.data, 0, m, B.data, 0, B.rows, s, 0, -1, rank, 0, iwork, 0);
+        int info = NativeBlas.dgelsd(m, n, nrhs, A.data(), 0, m, B.data(), 0, B.rows(), s, 0, -1, rank, 0, iwork, 0);
         if (info == 0) {
             return;
         } else if (info < 0) {
@@ -453,14 +452,19 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
     }
 
     public void geqrf(NDArray A, NDArray tau) {
-        int info = NativeBlas.dgeqrf(A.rows, A.columns, A.data, 0, A.rows, tau.data, 0);
+        int info = NativeBlas.dgeqrf(A.rows(), A.columns(), A.data(), 0, A.rows(), tau.data(), 0);
         checkInfo("GEQRF", info);
     }
 
     public void ormqr(char side, char trans, NDArray A, NDArray tau, NDArray C) {
-        int k = tau.length;
-        int info = NativeBlas.dormqr(side, trans, C.rows, C.columns, k, A.data, 0, A.rows, tau.data, 0, C.data, 0, C.rows);
+        int k = tau.length();
+        int info = NativeBlas.dormqr(side, trans, C.rows(), C.columns(), k, A.data(), 0, A.rows(), tau.data(), 0, C.data(), 0, C.rows());
         checkInfo("ORMQR", info);
+    }
+
+    @Override
+    public void dcopy(int n, double[] dx, int dxIdx, int incx, double[] dy, int dyIdx, int incy) {
+         NativeBlas.dcopy(n,dx,dxIdx,incx,dy,dyIdx,incy);
     }
 
 }

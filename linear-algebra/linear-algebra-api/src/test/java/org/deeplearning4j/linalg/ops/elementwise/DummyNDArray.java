@@ -490,6 +490,11 @@ public class DummyNDArray implements INDArray {
         return this;
     }
 
+    @Override
+    public int index(int row, int column) {
+        return 0;
+    }
+
     /**
      * Returns the squared (Euclidean) distance.
      *
@@ -1119,6 +1124,16 @@ public class DummyNDArray implements INDArray {
     @Override
     public INDArray get(int[] indices) {
         return this;
+    }
+
+    @Override
+    public double get(int i) {
+        return 0;
+    }
+
+    @Override
+    public double get(int i, int j) {
+        return 0;
     }
 
     /**
