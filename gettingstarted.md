@@ -38,7 +38,9 @@ layout: default
 
 * You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then clicks on Plugins. Then choose to Browse Repositories search "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
 
-* Click through the folder names to the examples folder -- java-deeplearning/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/ -- and then right-click on the dataset you're interested in. (MNIST is where most users start.) There, you will find a number of nets that will run on MNIST. Right click on RBMMnistExample. In the menu that appears, choose "Run." 
+* Click through the folder names to the examples folder -- java-deeplearning/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/ -- and then right-click on the dataset you're interested in. (MNIST is where most users start.) There, you will find a number of nets that will run on MNIST. Right click on RBMMnistExample. In the menu that appears, look for the green arrow and choose "Run." 
+
+![Alt text](../img/run_menu.png)
 
 * Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
 
