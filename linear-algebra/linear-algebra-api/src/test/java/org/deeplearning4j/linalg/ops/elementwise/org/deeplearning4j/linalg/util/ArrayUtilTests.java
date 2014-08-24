@@ -1,4 +1,4 @@
-package util;
+package org.deeplearning4j.linalg.ops.elementwise.org.deeplearning4j.linalg.util;
 
 import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.junit.Test;
