@@ -52,11 +52,11 @@ layout: default
 
 		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
 
-* Now you should see evidence in your terminal/cmd that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
+* This is the moment of truth. You should now see evidence in your terminal/cmd that the neural net has begun to train, as the net's iterations begin to scroll down your terminal window. Look at the second-to-last number on the right hand side below. It should be decreasing with each new iteration. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
 
 ![Alt text](../img/learning.png)
 
-* At the end of the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these.
+* Throughout the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these. If you close them, the net will keep training. 
 
 ![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
 
