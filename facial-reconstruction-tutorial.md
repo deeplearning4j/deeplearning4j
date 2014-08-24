@@ -26,6 +26,6 @@ For now, the next page in this guide discusses how to feed DL4J other [datasets]
 
 Here's some of the code used to run LFW on DL4J:
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw/LFWRBMExample.java?slice=25:72"></script>
+<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw/LFWRBMExample.java?slice=26:72"></script>
 
 (For a deeper dive into our LFW code, see this [Github page](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw).)
