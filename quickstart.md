@@ -42,7 +42,7 @@ These tools will generate the visualizations that allow you to debug your neural
 		MAC
 		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz
 
-* Unzip the file. (* **EXCEPTION**: If you have previously installed DL4J following the instructions on the [Getting Started page](../gettingstarted.html), you already have this file. In that case, simply cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip. Then cd once more into the unzipped folder...*)
+* Unzip the file. (**EXCEPTION**: *If you have previously installed DL4J following the instructions on the [Getting Started page](../gettingstarted.html), you already have this file. In that case, simply cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip. Then cd once more into the unzipped folder...*)
 
 * To run the examples, move into the DL4J examples folder you just downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :):
 
