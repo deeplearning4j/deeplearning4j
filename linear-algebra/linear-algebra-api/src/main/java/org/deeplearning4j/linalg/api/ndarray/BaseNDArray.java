@@ -2438,15 +2438,15 @@ public abstract class BaseNDArray  implements INDArray {
          /* oi to oj and ni to nj give the axis ranges currently worked with */
         int newNd = shape.length;
         int oldNd = oldShapeAndStride[0].length;
-        int np,op;
+        int np, op;
         int nk;
 
 
         //must be same length
-        if(ArrayUtil.prod(shape) != ArrayUtil.prod(oldShape))
+        if (ArrayUtil.prod(shape) != ArrayUtil.prod(oldShape))
             return null;
         //no 0 length arr
-        if(ArrayUtil.prod(shape) == 0)
+        if (ArrayUtil.prod(shape) == 0)
             return null;
 
         int[] newStrides = new int[oldStride.length];
@@ -2458,7 +2458,7 @@ public abstract class BaseNDArray  implements INDArray {
                 nj = 1,
                 oj = 1;
 
-        for(; ni < newNd && oi < oldNd; ni = nj++,oi = oj++) {
+        for (; ni < newNd && oi < oldNd; ni = nj++, oi = oj++) {
             np = shape[ni];
             op = oldShape[oi];
 
@@ -2475,12 +2475,11 @@ public abstract class BaseNDArray  implements INDArray {
              /* Check whether the original axes can be combined */
             for (int ok = oi; ok < oj - 1; ok++) {
                 if (ordering == NDArrayFactory.FORTRAN) {
-                    if (oldStride[ok+1] != oldStride[ok] * oldStride[ok])
+                    if (oldStride[ok + 1] != oldStride[ok] * oldStride[ok])
                      /* not contiguous enough */
                         return null;
 
-                }
-                else {
+                } else {
                 /* C order */
                     if (oldStride[ok] != oldShape[ok + 1] * oldStride[ok + 1])
                     /* not contiguous enough */
@@ -2489,457 +2488,421 @@ public abstract class BaseNDArray  implements INDArray {
                 }
             }
 
-        /* Calculate new strides for all axes currently worked with */
-            if (ordering == NDArrayFactory.FORTRAN) {
-                newStrides[ni] = oldStride[oi];
-                for (nk = ni + 1; nk < nj; nk++) {
-                    newStrides[nk] = newStrides[nk - 1]* shape[nk - 1];
+
+        }
+        return NDArrays.getStrides(shape, ordering);
+
+    }
+
+
+        //get a 2d array of the non one sizes of the array and their associated strides
+        protected int[][] getNonOneStridesAndShape() {
+            int nonOneDims = 0;
+            for(int i = 0; i < shape.length; i++)
+                if(size(i) != 1)
+                    nonOneDims++;
+            int[][] ret = new int[2][nonOneDims];
+            int count = 0;
+            for(int i = 0; i < shape.length; i++) {
+                if(size(i) != 1) {
+                    ret[0][count] = size(i);
+                    ret[1][count] = stride[i];
+                    count++;
                 }
+            }
+
+            return ret;
+        }
+
+
+        @Override
+        public void checkDimensions(INDArray other) {
+            assert Arrays.equals(shape,other.shape()) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape());
+            assert Arrays.equals(stride,other.stride()) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride());
+            assert offset == other.offset() : "Offset of this array is " + offset + " but other was " + other.offset();
+
+        }
+
+
+
+        /**
+         * Returns the product along a given dimension
+         *
+         * @param dimension the dimension to getScalar the product along
+         * @return the product along the specified dimension
+         */
+        @Override
+        public INDArray prod(int dimension) {
+
+            if(dimension == Integer.MAX_VALUE) {
+                return  reshape(new int[]{1,length}).prod(Integer.MAX_VALUE);
+            }
+
+            else if(isVector()) {
+                return  prod(Integer.MAX_VALUE);
             }
             else {
-            /* C order */
-                newStrides[nj - 1] = oldStride[oj - 1];
-                for (nk = nj - 1; nk > ni; nk--)
-                    newStrides[nk - 1] = newStrides[nk] * shape[nk];
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
+                        arr.put(i.get(),arr2.prod(0));
+                        i.incrementAndGet();
+                    }
 
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.prod(0));
+                        i.incrementAndGet();
+
+                    }
+                }, false);
+
+                return arr.reshape(shape);
             }
         }
 
-
-
-        int last_stride = 0;
-
-        /*
-         * Set strides corresponding to trailing 1s of the new shape.
+        /**
+         * Returns the overall mean of this ndarray
+         *
+         * @param dimension the dimension to getScalar the mean along
+         * @return the mean along the specified dimension of this ndarray
          */
-        if (ni >= 1)
-            last_stride = newStrides[ni - 1];
+        @Override
+        public INDArray mean(int dimension) {
+            if(dimension == Integer.MAX_VALUE || isVector()) {
+                return NDArrays.scalar(Ops.mean(this));
 
-        else
-            last_stride = shape[shape.length - 1];
+            }
+            else if(isVector()) {
+                return NDArrays.scalar((double) sum(Integer.MAX_VALUE).element() / length());
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.mean(0));
+                        i.incrementAndGet();
+                    }
 
-        if (ordering == NDArrayFactory.FORTRAN)
-            last_stride *= shape[ni - 1];
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.mean(0));
+                        i.incrementAndGet();
+                    }
+                }, false);
 
-        for (nk = ni; nk < newNd; nk++)
-            newStrides[nk] = last_stride;
-
-
-
-        return newStrides;
-
-
-    }
-
-
-    //get a 2d array of the non one sizes of the array and their associated strides
-    protected int[][] getNonOneStridesAndShape() {
-        int nonOneDims = 0;
-        for(int i = 0; i < shape.length; i++)
-            if(size(i) != 1)
-                nonOneDims++;
-        int[][] ret = new int[2][nonOneDims];
-        int count = 0;
-        for(int i = 0; i < shape.length; i++) {
-            if(size(i) != 1) {
-                ret[0][count] = size(i);
-                ret[1][count] = stride[i];
-                count++;
+                return arr.reshape(shape);
             }
         }
 
-        return ret;
-    }
+        /**
+         * Returns the overall variance of this ndarray
+         *
+         * @param dimension the dimension to getScalar the mean along
+         * @return the mean along the specified dimension of this ndarray
+         */
+        @Override
+        public INDArray var(int dimension) {
+            if(dimension == Integer.MAX_VALUE || isVector()) {
+                return NDArrays.scalar(Ops.var(this));
+            }
 
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.var(0));
+                        i.incrementAndGet();
+                    }
 
-    @Override
-    public void checkDimensions(INDArray other) {
-        assert Arrays.equals(shape,other.shape()) : " Other array should have been shape: " + Arrays.toString(shape) + " but was " + Arrays.toString(other.shape());
-        assert Arrays.equals(stride,other.stride()) : " Other array should have been stride: " + Arrays.toString(stride) + " but was " + Arrays.toString(other.stride());
-        assert offset == other.offset() : "Offset of this array is " + offset + " but other was " + other.offset();
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.var(0));
+                        i.incrementAndGet();
+                    }
+                }, false);
 
-    }
-
-
-
-    /**
-     * Returns the product along a given dimension
-     *
-     * @param dimension the dimension to getScalar the product along
-     * @return the product along the specified dimension
-     */
-    @Override
-    public INDArray prod(int dimension) {
-
-        if(dimension == Integer.MAX_VALUE) {
-            return  reshape(new int[]{1,length}).prod(Integer.MAX_VALUE);
+                return arr.reshape(shape);
+            }
         }
 
-        else if(isVector()) {
-            return  prod(Integer.MAX_VALUE);
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
-                    arr.put(i.get(),arr2.prod(0));
-                    i.incrementAndGet();
-                }
+        /**
+         * Returns the overall max of this ndarray
+         *
+         * @param dimension the dimension to getScalar the mean along
+         * @return the mean along the specified dimension of this ndarray
+         */
+        @Override
+        public INDArray max(int dimension) {
+            if(dimension == Integer.MAX_VALUE || isVector()) {
+                return NDArrays.scalar(Ops.max(this));
+            }
 
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.prod(0));
-                    i.incrementAndGet();
 
-                }
-            }, false);
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.max(0));
+                        i.incrementAndGet();
+                    }
 
-            return arr.reshape(shape);
-        }
-    }
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.max(0));
+                        i.incrementAndGet();
+                    }
+                }, false);
 
-    /**
-     * Returns the overall mean of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public INDArray mean(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return NDArrays.scalar(Ops.mean(this));
-
-        }
-        else if(isVector()) {
-            return NDArrays.scalar((double) sum(Integer.MAX_VALUE).element() / length());
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.mean(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.mean(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-    }
-
-    /**
-     * Returns the overall variance of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public INDArray var(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return NDArrays.scalar(Ops.var(this));
+                return arr.reshape(shape).transpose();
+            }
         }
 
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.var(0));
-                    i.incrementAndGet();
-                }
+        /**
+         * Returns the overall min of this ndarray
+         *
+         * @param dimension the dimension to getScalar the mean along
+         * @return the mean along the specified dimension of this ndarray
+         */
+        @Override
+        public INDArray min(int dimension) {
+            if(dimension == Integer.MAX_VALUE || isVector()) {
+                return NDArrays.scalar(Ops.min(this));
+            }
 
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.var(0));
-                    i.incrementAndGet();
-                }
-            }, false);
 
-            return arr.reshape(shape);
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr =  NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.min(0));
+                        i.incrementAndGet();
+                    }
+
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.min(0));
+                        i.incrementAndGet();
+                    }
+                }, false);
+
+                return arr.reshape(shape).transpose();
+            }
         }
-    }
 
-    /**
-     * Returns the overall max of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public INDArray max(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return NDArrays.scalar(Ops.max(this));
-        }
+        /**
+         * Returns the sum along the last dimension of this ndarray
+         *
+         * @param dimension the dimension to getScalar the sum along
+         * @return the sum along the specified dimension of this ndarray
+         */
+        @Override
+        public INDArray sum(int dimension) {
+            if(dimension == Integer.MAX_VALUE || isVector()) {
+                return NDArrays.scalar(Ops.sum(this));
+            }
 
+            else if(isVector()) {
+                return  sum(Integer.MAX_VALUE);
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.sum(0));
+                        i.incrementAndGet();
+                    }
 
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.max(0));
-                    i.incrementAndGet();
-                }
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.sum(0));
+                        i.incrementAndGet();
+                    }
+                }, false);
 
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.max(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape).transpose();
-        }
-    }
-
-    /**
-     * Returns the overall min of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return the mean along the specified dimension of this ndarray
-     */
-    @Override
-    public INDArray min(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return NDArrays.scalar(Ops.min(this));
+                return arr.reshape(shape);
+            }
         }
 
 
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr =  NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.min(0));
-                    i.incrementAndGet();
-                }
 
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.min(0));
-                    i.incrementAndGet();
-                }
-            }, false);
+        /**
+         * Returns the norm1 along the specified dimension
+         *
+         * @param dimension the dimension to getScalar the norm1 along
+         * @return the norm1 along the specified dimension
+         */
+        @Override
+        public INDArray norm1(int dimension) {
+            if(isVector() || dimension == Integer.MAX_VALUE) {
+                return NDArrays.scalar(Ops.norm1(this));
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.norm1(0));
+                        i.incrementAndGet();
+                    }
 
-            return arr.reshape(shape).transpose();
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.norm1(0));
+                        i.incrementAndGet();
+
+                    }
+                }, false);
+
+                return arr.reshape(shape);
+            }
         }
-    }
 
-    /**
-     * Returns the sum along the last dimension of this ndarray
-     *
-     * @param dimension the dimension to getScalar the sum along
-     * @return the sum along the specified dimension of this ndarray
-     */
-    @Override
-    public INDArray sum(int dimension) {
-        if(dimension == Integer.MAX_VALUE || isVector()) {
-            return NDArrays.scalar(Ops.sum(this));
+
+
+
+        /**
+         * Standard deviation of an ndarray along a dimension
+         *
+         * @param dimension the dimension to get the std along
+         * @return the standard deviation along a particular dimension
+         */
+        @Override
+        public INDArray std(int dimension) {
+            if(isVector() || dimension == Integer.MAX_VALUE) {
+                return NDArrays.scalar(Ops.std(this));
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.std(0));
+                        i.incrementAndGet();
+                    }
+
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.std(0));
+                        i.incrementAndGet();
+
+                    }
+                }, false);
+
+                return arr.reshape(shape);
+            }
         }
 
-        else if(isVector()) {
-            return  sum(Integer.MAX_VALUE);
+
+        /**
+         * Returns the norm2 along the specified dimension
+         *
+         * @param dimension the dimension to getScalar the norm2 along
+         * @return the norm2 along the specified dimension
+         */
+        @Override
+        public INDArray norm2(int dimension) {
+            if(isVector() || dimension == Integer.MAX_VALUE) {
+                return  NDArrays.scalar(Ops.norm2(this));
+            }
+            else {
+                int[] shape = ArrayUtil.removeIndex(shape(),dimension);
+                final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
+                final AtomicInteger i = new AtomicInteger(0);
+                iterateOverDimension(dimension, new SliceOp() {
+                    @Override
+                    public void operate(DimensionSlice nd) {
+                        INDArray arr2 = (INDArray) nd.getResult();
+                        arr.put(i.get(),arr2.norm2(0));
+                        i.incrementAndGet();
+                    }
+
+                    /**
+                     * Operates on an ndarray slice
+                     *
+                     * @param nd the result to operate on
+                     */
+                    @Override
+                    public void operate(INDArray nd) {
+                        arr.put(i.get(),nd.norm2(0));
+                        i.incrementAndGet();
+
+                    }
+                }, false);
+
+                return arr.reshape(shape);
+            }
         }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.sum(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.sum(0));
-                    i.incrementAndGet();
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-    }
-
-
-
-    /**
-     * Returns the norm1 along the specified dimension
-     *
-     * @param dimension the dimension to getScalar the norm1 along
-     * @return the norm1 along the specified dimension
-     */
-    @Override
-    public INDArray norm1(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return NDArrays.scalar(Ops.norm1(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm1(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm1(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-    }
-
-
-
-
-    /**
-     * Standard deviation of an ndarray along a dimension
-     *
-     * @param dimension the dimension to get the std along
-     * @return the standard deviation along a particular dimension
-     */
-    @Override
-    public INDArray std(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return NDArrays.scalar(Ops.std(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.std(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.std(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-    }
-
-
-    /**
-     * Returns the norm2 along the specified dimension
-     *
-     * @param dimension the dimension to getScalar the norm2 along
-     * @return the norm2 along the specified dimension
-     */
-    @Override
-    public INDArray norm2(int dimension) {
-        if(isVector() || dimension == Integer.MAX_VALUE) {
-            return  NDArrays.scalar(Ops.norm2(this));
-        }
-        else {
-            int[] shape = ArrayUtil.removeIndex(shape(),dimension);
-            final INDArray arr = NDArrays.create(new int[]{ArrayUtil.prod(shape)});
-            final AtomicInteger i = new AtomicInteger(0);
-            iterateOverDimension(dimension, new SliceOp() {
-                @Override
-                public void operate(DimensionSlice nd) {
-                    INDArray arr2 = (INDArray) nd.getResult();
-                    arr.put(i.get(),arr2.norm2(0));
-                    i.incrementAndGet();
-                }
-
-                /**
-                 * Operates on an ndarray slice
-                 *
-                 * @param nd the result to operate on
-                 */
-                @Override
-                public void operate(INDArray nd) {
-                    arr.put(i.get(),nd.norm2(0));
-                    i.incrementAndGet();
-
-                }
-            }, false);
-
-            return arr.reshape(shape);
-        }
-    }
 
 
 
@@ -2948,11 +2911,11 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
-    /**
-     * Number of columns (shape[1]), throws an exception when
-     * called when not 2d
-     * @return the number of columns in the array (only 2d)
-     */
+        /**
+         * Number of columns (shape[1]), throws an exception when
+         * called when not 2d
+         * @return the number of columns in the array (only 2d)
+         */
     public int columns() {
         if(isMatrix()) {
             if (shape().length > 2)
