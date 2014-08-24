@@ -5,6 +5,8 @@ import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.linalg.ops.reduceops.Ops;
 
+import java.util.List;
+
 /**
  * Complex numbers
  * @author Adam Gibson
@@ -207,6 +209,22 @@ public interface IComplexNDArray extends INDArray {
      */
     @Override
     IComplexNDArray putSlice(int slice, INDArray put);
+
+    double getImag(int i);
+
+    double getReal(int i);
+
+    IComplexNDArray putReal(int rowIndex, int columnIndex, double value);
+
+    IComplexNDArray putImag(int rowIndex, int columnIndex, double value);
+
+    IComplexNDArray putReal(int i, double v);
+
+    IComplexNDArray putImag(int i, double v);
+
+    INDArray real();
+
+    INDArray imag();
 
     /**
      * Iterate along a dimension.
@@ -756,6 +774,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray norm1(int dimension);
 
 
+    double[] data();
 
     /**
      * Returns the product along a given dimension
@@ -794,6 +813,18 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray get(int[] indices);
 
+
+    IComplexNumber getComplex(int i);
+
+
+    IComplexNumber getComplex(int i,int j);
+
+
+
+    IComplexNumber getComplex(int i,IComplexNumber result);
+
+
+    IComplexNumber getComplex(int i,int j,IComplexNumber result);
 
     /**
      * Return a copy of this ndarray
@@ -846,6 +877,10 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray transpose();
 
+    IComplexNDArray put(int[] indexes, double value);
+
+    IComplexNDArray putSlice(int slice, IComplexNDArray put);
+
     /**
      * Mainly here for people coming from numpy.
      * This is equivalent to a call to permute
@@ -864,6 +899,8 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray permute(int[] rearrange);
 
+
+    IComplexNumber[] toArray();
 
     /**
      * Returns the specified column.
@@ -905,5 +942,5 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray broadcasti(int[] shape);
 
 
-
+    IComplexNDArray putScalar(int j, int i, IComplexNumber conji);
 }
