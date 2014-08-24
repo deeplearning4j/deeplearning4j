@@ -795,6 +795,24 @@ public abstract class NDArrayTests {
             INDArray scalar = NDArrays.scalar((double) i + 1);
             assertEquals(scalar,n.getScalar(i));
         }
+
+        NDArrays.factory().setOrder('f');
+        n = NDArrays.create(new double[]{1,2,3,4},new int[]{4});
+        for(int i = 0; i < n.length(); i++) {
+            INDArray scalar = NDArrays.scalar((double) i + 1);
+            assertEquals(scalar,n.getScalar(i));
+        }
+
+
+        INDArray twoByTwo = NDArrays.create(new double[][]{{1,2},{3,4}});
+        INDArray column = twoByTwo.getColumn(0);
+        assertEquals(NDArrays.create(new double[]{1,3}),column);
+        assertEquals(1,column.get(0),1e-1);
+        assertEquals(3,column.get(1),1e-1);
+        assertEquals(NDArrays.scalar(1),column.getScalar(0));
+        assertEquals(NDArrays.scalar(3),column.getScalar(1));
+
+
     }
 
     @Test

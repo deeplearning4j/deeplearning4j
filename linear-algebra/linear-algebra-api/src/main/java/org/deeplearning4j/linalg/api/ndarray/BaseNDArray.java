@@ -1460,6 +1460,8 @@ public abstract class BaseNDArray  implements INDArray {
 
         for(int i = 0; i < columns(); i++) {
             INDArray column = getColumn(i);
+            double d = column.get(0);
+            double d2 = column.get(1);
             column.addi(columnVector);
         }
         return this;
