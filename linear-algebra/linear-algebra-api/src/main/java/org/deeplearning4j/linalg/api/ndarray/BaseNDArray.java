@@ -66,6 +66,9 @@ public abstract class BaseNDArray  implements INDArray {
             assert (data[r].length == columns);
         }
 
+        this.data = new double[length];
+
+
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < columns; c++) {
                 putScalar(new int[]{r, c}, data[r][c]);
@@ -194,9 +197,6 @@ public abstract class BaseNDArray  implements INDArray {
 
 
     public BaseNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        if(offset >= data.length)
-            throw new IllegalArgumentException("Invalid offset: must be < data.length");
-
 
 
         this.offset = offset;
@@ -204,8 +204,13 @@ public abstract class BaseNDArray  implements INDArray {
         this.ordering = ordering;
         initShape(shape);
 
-        if(data != null  && data.length > 0)
+        if(data != null  && data.length > 0) {
             this.data = data;
+            if(offset >= data.length)
+                throw new IllegalArgumentException("Invalid offset: must be < data.length");
+
+
+        }
 
 
 
@@ -369,7 +374,7 @@ public abstract class BaseNDArray  implements INDArray {
                         ,new int[]{stride[dimension]},
                         offset + index * stride[0]);
             else if(dimension == 0)
-                NDArrays.create(data,
+                return NDArrays.create(data,
                         new int[]{shape[dimension]}
                         ,new int[]{stride[dimension]},
                         offset + index);
@@ -378,13 +383,13 @@ public abstract class BaseNDArray  implements INDArray {
         }
 
         if(dimension == shape.length - 1)
-            NDArrays.create(data,
+            return NDArrays.create(data,
                     new int[]{1,shape[dimension]}
                     ,ArrayUtil.removeIndex(stride,0),
                     offset + index * stride[dimension - 1]);
 
         else if(dimension == 0)
-            NDArrays.create(data,
+            return NDArrays.create(data,
                     new int[]{shape[dimension],1}
                     ,new int[]{stride[dimension],1},
                     offset + index);
@@ -876,8 +881,13 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public int index(int row, int column) {
-        if(!isMatrix())
-            throw new IllegalStateException("Unable to getFromOrigin row/column from a non matrix");
+        if(!isMatrix()) {
+            if(stride.length < 2 && row >= 1 && column >= 1)
+                throw new IllegalStateException("Unable to getFromOrigin row/column from a non matrix");
+        }
+
+        if(stride.length < 2)
+            return row * stride[0] + column;
 
         return row *  stride[0]  + column * stride[1];
     }
@@ -1235,8 +1245,8 @@ public abstract class BaseNDArray  implements INDArray {
         if(element == null)
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
-
-        putScalar(i, (double) element.element());
+        int idx = linearIndex(i);
+        data[idx] = (double) element.element();
         return this;
     }
 
@@ -2031,6 +2041,10 @@ public abstract class BaseNDArray  implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
+
+        if(ix >= data.length)
+            throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
+
         return NDArrays.scalar(data[ix]);
     }
 
@@ -2188,7 +2202,7 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public double get(int i, int j) {
         int idx = index(i,j);
-         return data[idx];
+        return data[idx];
     }
 
     /**
@@ -2365,8 +2379,9 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray mean(int dimension) {
-        if(dimension == Integer.MAX_VALUE) {
-            return  reshape(new int[]{1,length}).mean(Integer.MAX_VALUE);
+        if(dimension == Integer.MAX_VALUE || isVector()) {
+            return NDArrays.scalar(Ops.mean(this));
+
         }
         else if(isVector()) {
             return NDArrays.scalar((double) sum(Integer.MAX_VALUE).element() / length());
@@ -2904,7 +2919,7 @@ public abstract class BaseNDArray  implements INDArray {
     public boolean equals(Object o) {
         INDArray n = null;
 
-        if(!o.getClass().isAssignableFrom(INDArray.class))
+        if(!(o instanceof  INDArray))
             return false;
 
         if(n == null)

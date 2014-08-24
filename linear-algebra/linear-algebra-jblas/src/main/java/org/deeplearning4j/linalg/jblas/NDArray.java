@@ -239,6 +239,6 @@ public class NDArray extends BaseNDArray {
     public NDArray(DoubleMatrix doubleMatrix) {
         this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
         this.data = doubleMatrix.data;
-        
+
     }
 }
