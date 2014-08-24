@@ -6,213 +6,309 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 /**
  * Created by mjk on 8/20/14.
  */
-public class JCublasComplexDouble implements IComplexDouble  {
-    private double r,  i;
+public class JCublasComplexDouble extends org.deeplearning4j.linalg.jcublas.complex.ComplexDouble implements IComplexDouble  {
+
 
     public JCublasComplexDouble(double real, double imag) {
+        super(real, imag);
+    }
 
-    }
-    public double abs() {
-        return (double) Math.sqrt(r * r + i * i);
-    }
-    public JCublasComplexDouble(int i) {
-
-    }
-    public JCublasComplexDouble(JCublasComplexDouble c) {
-        this(c.real(), c.imag());
-    }
     public JCublasComplexDouble(double real) {
-        this(real, 0.0);
+        super(real);
     }
 
+    /**
+     * Returns the argument of a complex number.
+     */
     @Override
-    public JCublasComplexDouble set(Number real, Number imag) {
+    public double arg() {
+        return super.arg();
+    }
+
+    /**
+     * Return the absolute value
+     */
+    @Override
+    public double abs() {
+        return super.abs();
+    }
+
+    /**
+     * Convert to a float
+     *
+     * @return this complex number as a float
+     */
+    @Override
+    public IComplexFloat asFloat() {
         return null;
     }
 
+    /**
+     * Convert to a double
+     *
+     * @return this complex number as a double
+     */
     @Override
-    public Double realComponent() {
-        return null;
+    public IComplexDouble asDouble() {
+        return this;
     }
 
     @Override
-    public Double imaginaryComponent() {
-        return null;
+    public JCublasComplexDouble dup() {
+        return new JCublasComplexDouble(realComponent(), imaginaryComponent());
+    }
+
+
+    @Override
+    public JCublasComplexDouble conji() {
+        super.set(realComponent(), -imaginaryComponent());
+        return this;
     }
 
     @Override
-    public IComplexNumber dup() {
-        return null;
+    public JCublasComplexDouble conj() {
+        return dup().conji();
+    }
+
+    @Override
+    public IComplexNumber set(Number real, Number imag) {
+        super.set((double) real,(double) imag);
+        return this;
     }
 
     @Override
     public IComplexNumber copy(IComplexNumber other) {
+
         return null;
+
     }
 
+    /**
+     * Add two complex numbers in-place
+     *
+     * @param c
+     * @param result
+     */
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() + c.realComponent().doubleValue(),imag() + result.imaginaryComponent().doubleValue());
+        } else {
+            result.set(result.realComponent().doubleValue() + c.realComponent().doubleValue(),result.imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
+
+        }
+        return this;
     }
 
+    /**
+     * Add two complex numbers in-place storing the result in this.
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber addi(IComplexNumber c) {
-        return null;
+        return addi(c,this);
     }
 
+    /**
+     * Add two complex numbers.
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber add(IComplexNumber c) {
-        return null;
+        return dup().addi(c);
     }
 
+    /**
+     * Add a realComponent number to a complex number in-place.
+     *
+     * @param a
+     * @param result
+     */
     @Override
     public IComplexNumber addi(Number a, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() + a.doubleValue(),imag());
+        } else {
+            result.set(result.realComponent().doubleValue() + a.doubleValue(),imaginaryComponent());
+
+        }
+        return result;
     }
 
+    /**
+     * Add a realComponent number to complex number in-place, storing the result in this.
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber addi(Number c) {
-        return null;
+        return addi(c,this);
     }
 
+    /**
+     * Add a realComponent number to a complex number.
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber add(Number c) {
-        return null;
+        return dup().addi(c);
     }
 
+    /**
+     * Subtract two complex numbers, in-place
+     *
+     * @param c
+     * @param result
+     */
     @Override
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() - c.realComponent().doubleValue(),imag() - result.imaginaryComponent().doubleValue());
+        } else {
+            result.set(result.realComponent().doubleValue() - c.realComponent().doubleValue(),result.imaginaryComponent().doubleValue() - c.imaginaryComponent().doubleValue());
+
+        }
+        return this;
     }
 
     @Override
     public IComplexNumber subi(IComplexNumber c) {
-        return null;
+        return subi(c,this);
     }
 
+    /**
+     * Subtract two complex numbers
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber sub(IComplexNumber c) {
-        return null;
+        return dup().subi(c);
     }
 
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() - a.doubleValue(),imag());
+        } else {
+            result.set(result.realComponent().doubleValue() - a.doubleValue(),imaginaryComponent());
+
+        }
+        return result;
     }
 
     @Override
     public IComplexNumber subi(Number a) {
-        return null;
+        return subi(a,this);
     }
 
     @Override
     public IComplexNumber sub(Number r) {
-        return null;
+        return dup().subi(r);
     }
 
+    /**
+     * Multiply two complex numbers, inplace
+     *
+     * @param c
+     * @param result
+     */
     @Override
     public IComplexNumber muli(IComplexNumber c, IComplexNumber result) {
-        return null;
+        double newR = real() * c.realComponent().doubleValue() - imag() * c.imaginaryComponent().doubleValue();
+        double newI = real() * c.imaginaryComponent().doubleValue() + imag() * c.realComponent().doubleValue();
+        result.set(newR,newI);
+        return result;
     }
 
     @Override
     public IComplexNumber muli(IComplexNumber c) {
-        return null;
+        return muli(c,this);
     }
 
+    /**
+     * Multiply two complex numbers
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber mul(IComplexNumber c) {
-        return null;
+        return dup().muli(c);
     }
 
     @Override
     public IComplexNumber mul(Number v) {
-        return null;
+        return dup().muli(v);
     }
 
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() + v.doubleValue(),imag());
+        } else {
+            result.set(result.realComponent().doubleValue() + v.doubleValue(),imaginaryComponent());
+
+        }
+        return result;
     }
 
     @Override
     public IComplexNumber muli(Number v) {
-        return null;
+        return muli(v,this);
     }
 
+    /**
+     * Divide two complex numbers
+     *
+     * @param c
+     */
     @Override
     public IComplexNumber div(IComplexNumber c) {
-        return null;
+        return dup().divi(c);
     }
 
+    /**
+     * Divide two complex numbers, in-place
+     *
+     * @param c
+     * @param result
+     */
     @Override
     public IComplexNumber divi(IComplexNumber c, IComplexNumber result) {
-        return null;
+        double d = c.realComponent().doubleValue() * c.realComponent().doubleValue() + c.imaginaryComponent().doubleValue() * c.imaginaryComponent().doubleValue();
+        double newR = (real() * c.realComponent().doubleValue() + imag() * c.imaginaryComponent().doubleValue()) / d;
+        double newI = (imag() * c.realComponent().doubleValue() - real() * c.imaginaryComponent().doubleValue()) / d;
+        result.set(newR,newI);
+        return result;
     }
 
     @Override
     public IComplexNumber divi(IComplexNumber c) {
-        return null;
+        return divi(c,this);
     }
 
     @Override
     public IComplexNumber divi(Number v, IComplexNumber result) {
-        return null;
+        if (this == result) {
+            set(real() / v.doubleValue(),imag());
+        } else {
+            result.set(result.realComponent().doubleValue() / v.doubleValue(),imaginaryComponent());
+
+        }
+        return result;
     }
 
     @Override
-    public JCublasComplexDouble divi(Number v) {
-        return null;
+    public IComplexNumber divi(Number v) {
+        return divi(v,this);
     }
 
     @Override
     public IComplexNumber div(Number v) {
-        return null;
-    }
-
-    @Override
-    public Double absoluteValue() {
-        return null;
-    }
-
-    @Override
-    public Number complexArgument() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber invi() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber inv() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber neg() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber negi() {
-        return null;
-    }
-
-    @Override
-    public JCublasComplexDouble conji() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber conj() {
-        return null;
-    }
-
-    @Override
-    public IComplexNumber sqrt() {
-        return null;
+        return dup().divi(v);
     }
 
     @Override
@@ -226,35 +322,310 @@ public class JCublasComplexDouble implements IComplexDouble  {
     }
 
     @Override
+    public String toString() {
+        return super.toString();
+    }
+
+    @Override
+    public ComplexDouble set(double real, double imag) {
+        return super.set(real, imag);
+    }
+
+    @Override
+    public double real() {
+        return super.real();
+    }
+
+    @Override
+    public double imag() {
+        return super.imag();
+    }
+
+    @Override
+    public Double realComponent() {
+        return super.real();
+    }
+
+    @Override
+    public Double imaginaryComponent() {
+        return super.imag();
+    }
+
+    //@Override
+    public ComplexDouble copy(JCublasComplexDouble other) {
+        return super.copy(other);
+    }
+
+    /**
+     * Add two complex numbers in-place
+     *
+     * @param c
+     * @param result
+     */
+    //@Override
+    public ComplexDouble addi(JCublasComplexDouble c, JCublasComplexDouble result) {
+        return super.addi(c, result);
+    }
+
+    /**
+     * Add two complex numbers in-place storing the result in this.
+     *
+     * @param c
+     */
+    //@Override
+    public ComplexDouble addi(JCublasComplexDouble c) {
+        return super.addi(c);
+    }
+
+    /**
+     * Add two complex numbers.
+     *
+     * @param c
+     */
+    //@Override
+    public ComplexDouble add(JCublasComplexDouble c) {
+        return super.add(c);
+    }
+
+    /**
+     * Add a realComponent number to a complex number in-place.
+     *
+     * @param a
+     * @param result
+     */
+    //@Override
+    public ComplexDouble addi(double a, JCublasComplexDouble result) {
+        return super.addi(a, result);
+    }
+
+    /**
+     * Add a realComponent number to complex number in-place, storing the result in this.
+     *
+     * @param c
+     */
+    @Override
+    public ComplexDouble addi(double c) {
+        return super.addi(c);
+    }
+
+    /**
+     * Add a realComponent number to a complex number.
+     *
+     * @param c
+     */
+    @Override
+    public ComplexDouble add(double c) {
+        return super.add(c);
+    }
+
+    /**
+     * Subtract two complex numbers, in-place
+     *
+     * @param c
+     * @param result
+     */
+    //@Override
+    public ComplexDouble subi(JCublasComplexDouble c, JCublasComplexDouble result) {
+        return super.subi(c, result);
+    }
+
+    //@Override
+    public org.deeplearning4j.linalg.jcublas.complex.ComplexDouble subi(JCublasComplexDouble c) {
+        return super.subi(c);
+    }
+
+    /**
+     * Subtract two complex numbers
+     *
+     * @param c
+     */
+    //@Override
+    public ComplexDouble sub(JCublasComplexDouble c) {
+        return super.sub(c);
+    }
+
+    //@Override
+    public ComplexDouble subi(double a, JCublasComplexDouble result) {
+        return super.subi(a, result);
+    }
+
+    @Override
+    public ComplexDouble subi(double a) {
+        return super.subi(a);
+    }
+
+    @Override
+    public ComplexDouble sub(double r) {
+        return super.sub(r);
+    }
+
+    /**
+     * Multiply two complex numbers, inplace
+     *
+     * @param c
+     * @param result
+     */
+    //@Override
+    public ComplexDouble muli(JCublasComplexDouble c, JCublasComplexDouble result) {
+        return super.muli(c, result);
+    }
+
+    //@Override
+    public ComplexDouble muli(JCublasComplexDouble c) {
+        return super.muli(c);
+    }
+
+    /**
+     * Multiply two complex numbers
+     *
+     * @param c
+     */
+    //@Override
+    public ComplexDouble mul(JCublasComplexDouble c) {
+        return super.mul(c);
+    }
+
+    @Override
+    public ComplexDouble mul(double v) {
+        return super.mul(v);
+    }
+
+    //@Override
+    public ComplexDouble muli(double v, JCublasComplexDouble result) {
+        return super.muli(v, result);
+    }
+
+    @Override
+    public ComplexDouble muli(double v) {
+        return super.muli(v);
+    }
+
+    /**
+     * Divide two complex numbers
+     *
+     * @param c
+     */
+    //@Override
+    public JCublasComplexDouble div(JCublasComplexDouble c) {
+        return dup().divi(c);
+
+    }
+
+    /**
+     * Divide two complex numbers, in-place
+     *
+     * @param c
+     * @param result
+     */
+    //@Override
+    public ComplexDouble divi(JCublasComplexDouble c, JCublasComplexDouble result) {
+        return super.divi(c, result);
+    }
+
+    //@Override
+    public JCublasComplexDouble divi(JCublasComplexDouble c) {
+        super.divi(c);
+        return this;
+    }
+
+    //@Override
+    public JCublasComplexDouble divi(double v, JCublasComplexDouble result) {
+        super.divi(v, result);
+        return this;
+    }
+
+    @Override
+    public JCublasComplexDouble divi(double v) {
+        super.divi(v);
+        return this;
+    }
+
+    @Override
+    public JCublasComplexDouble div(double v) {
+        super.div(v);
+        return this;
+    }
+
+    /**
+     * Return the absolute value
+     */
+    @Override
+    public Double absoluteValue() {
+        return super.abs();
+    }
+
+    /**
+     * Returns the argument of a complex number.
+     */
+    @Override
+    public Double complexArgument() {
+        return (double) Math.acos(realComponent()/ absoluteValue());
+    }
+
+    @Override
+    public JCublasComplexDouble invi() {
+        double d = realComponent() * realComponent() + imaginaryComponent() * imaginaryComponent();
+        set(realComponent() / d,-imaginaryComponent() / d);
+        return this;
+    }
+
+    @Override
+    public JCublasComplexDouble inv() {
+        return dup().invi();
+    }
+
+    @Override
+    public JCublasComplexDouble neg() {
+        return dup().negi();
+    }
+
+    @Override
+    public JCublasComplexDouble negi() {
+        set(-realComponent(),-imaginaryComponent());
+        return this;
+    }
+
+    @Override
+    public JCublasComplexDouble sqrt() {
+        double a = absoluteValue();
+        double s2 = (double)Math.sqrt(2);
+        double p = (double)Math.sqrt(a + realComponent())/s2;
+        double q = (double)Math.sqrt(a - realComponent())/s2 * Math.signum(imaginaryComponent());
+        return new JCublasComplexDouble(p, q);
+    }
+
+    /**
+     * Comparing two DoubleComplex values.
+     *
+     * @param o
+     */
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    //@Override
+    public boolean eq(JCublasComplexDouble c) {
+        return super.eq(c);
+    }
+
+    //@Override
+    public boolean ne(JCublasComplexDouble c) {
+        return super.ne(c);
+    }
+
+    @Override
     public boolean isZero() {
-        return false;
+        return super.isZero();
     }
 
     @Override
     public boolean isReal() {
-        return false;
+        return imaginaryComponent() == 0.0;
     }
 
     @Override
     public boolean isImag() {
-        return false;
-    }
-
-    @Override
-    public IComplexFloat asFloat() {
-        return null;
-    }
-
-    @Override
-    public IComplexDouble asDouble() {
-        return null;
-    }
-
-    public double imag() {
-        return 0;
-    }
-
-    public double real() {
-        return 0;
+        return realComponent() == 0.0;
     }
 }

@@ -2,8 +2,8 @@ package org.deeplearning4j.linalg.jcublas;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas;
-import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
 
 /**
@@ -38,6 +38,33 @@ public class SimpleJCublas {
         );
     }
 
+    private static void ThreePointerMi(Pointer d_A, Pointer d_B, Pointer d_C,
+                                      JCublasComplexNDArray A, JCublasComplexNDArray B, JCublasComplexNDArray C) {
+
+        JCublas.cublasAlloc(A.rows()*A.columns(), Sizeof.DOUBLE, d_A);
+        JCublas.cublasAlloc(B.rows()*B.columns(), Sizeof.DOUBLE, d_B);
+        JCublas.cublasAlloc(A.rows()*B.columns(), Sizeof.DOUBLE, d_C);
+
+        int ret;
+        ret = JCublas.cublasSetMatrix(
+                A.rows(),
+                A.columns(),
+                Sizeof.DOUBLE,
+                d_A,//.withByteOffset(A.offset()),
+                A.rows(),
+                d_A,
+                A.rows()
+        );
+        ret = JCublas.cublasSetMatrix(
+                B.rows(),
+                B.columns(),
+                Sizeof.DOUBLE,
+                d_B,//.withByteOffset(B.offset()),
+                B.rows(),
+                d_B,
+                B.rows()
+        );
+    }
     private static void ThreePointersV(Pointer d_A, Pointer d_B, Pointer d_C,
                                        JCublasNDArray A, JCublasNDArray B) {
         JCublas.cublasAlloc(A.rows()*A.columns(), Sizeof.DOUBLE, d_A);
@@ -81,8 +108,39 @@ public class SimpleJCublas {
                 1);
     }
 
+    private static void TwoPointersVi(Pointer d_A, Pointer d_B, JCublasComplexNDArray A, JCublasComplexNDArray B) {
 
+        JCublas.cublasAlloc(A.length(), Sizeof.DOUBLE, d_A);
+        JCublas.cublasAlloc(B.length(), Sizeof.DOUBLE, d_B);
+
+        JCublas.cublasSetVector(
+                A.length(),
+                Sizeof.DOUBLE,
+                Pointer.to(A.data()),
+                1,
+                d_A,
+                1);
+
+        JCublas.cublasSetVector(
+                B.length(),
+                Sizeof.DOUBLE,
+                Pointer.to(B.data()),
+                1,
+                d_B,
+                1);
+    }
     private static void OnePointerV(Pointer d_A, JCublasNDArray A) {
+        JCublas.cublasAlloc(A.length(), Sizeof.DOUBLE, d_A);
+        JCublas.cublasSetVector(
+                A.length(),
+                Sizeof.DOUBLE,
+                Pointer.to(A.data()),
+                1,
+                d_A,
+                1);
+    }
+
+    private static void OnePointerVi(Pointer d_A, JCublasComplexNDArray A) {
         JCublas.cublasAlloc(A.length(), Sizeof.DOUBLE, d_A);
         JCublas.cublasSetVector(
                 A.length(),
@@ -103,6 +161,16 @@ public class SimpleJCublas {
                 1);
     }
 
+    private static void gvi(Pointer d_A, JCublasComplexNDArray B) {
+        JCublas.cublasGetVector(
+                B.length(),
+                Sizeof.DOUBLE,
+                d_A,
+                1,
+                Pointer.to(B.data()),
+                1);
+    }
+
     private static void gm(Pointer d_C, JCublasNDArray C) {
         int ret;
         ret = JCublas.cublasGetMatrix(
@@ -114,12 +182,15 @@ public class SimpleJCublas {
                 Pointer.to(C.data()),
                 C.rows());
     }
-    public static JCublasNDArray gemv(JCublasNDArray A, JCublasNDArray B, double alpha, double beta) {
 
+    private static void init() {
         JCublas.cublasInit();
         JCublas.setExceptionsEnabled(true);
+    }
 
-        JCublasNDArray C = new JCublasNDArray(A.rows(), B.columns());
+    public static JCublasNDArray gemv(JCublasNDArray A, JCublasNDArray B, JCublasNDArray C, double alpha, double beta) {
+
+        init();
 
         Pointer d_A = new Pointer();
         Pointer d_B = new Pointer();
@@ -150,26 +221,55 @@ public class SimpleJCublas {
 
         return C;
     }
-    public static JCublasComplexNDArray gemm(IComplexNDArray A_, IComplexNDArray B_, double alpha, double beta) {
-    //cublasDnrm2(int n, jcuda.Pointer x, int incx)
+    public static JCublasComplexNDArray gemm(JCublasComplexNDArray A, JCublasComplexNDArray B, JCublasComplexNDArray C,
+                                             double Alpha, double Beta) {
 
-        return null;
-    }
-    public static JCublasNDArray gemm(JCublasNDArray A, JCublasNDArray B, double alpha, double beta) {
-
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        init();
 
         Pointer d_A = new Pointer();
         Pointer d_B = new Pointer();
         Pointer d_C = new Pointer();
 
-        JCublasNDArray C = new JCublasNDArray(A.rows(), B.columns());
+        ThreePointerMi(d_A,d_B,d_C,A,B,C);
+        cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(Alpha,0);
+        cuDoubleComplex beta = cuDoubleComplex.cuCmplx(Beta,0);
+
+        JCublas.cublasZgemm(
+                'n', //trans
+                'n',
+                A.rows(),  // m
+                B.columns(), // n
+                B.rows(), //k,
+                alpha,
+                d_A, // A
+                A.rows(),  // lda
+                d_B, // x
+                B.rows(), // incx
+                beta,  // beta
+                d_C, // y
+                C.rows()); // incy
+
+        gvi(d_C, C);
+
+        JCublas.cublasFree(d_A);
+        JCublas.cublasFree(d_B);
+        JCublas.cublasFree(d_C);
+
+        JCublas.cublasShutdown();
+
+        return C;
+
+    }
+    public static JCublasNDArray gemm(JCublasNDArray A, JCublasNDArray B, JCublasNDArray C,
+                                      double alpha, double beta) {
+
+        init();
+
+        Pointer d_A = new Pointer();
+        Pointer d_B = new Pointer();
+        Pointer d_C = new Pointer();
 
         ThreePointerM(d_A,d_B,d_C,A,B,C);
-
-        int ret;
-
 
         JCublas.cublasDgemm(
                 'n', //trans
@@ -202,12 +302,41 @@ public class SimpleJCublas {
     public static void dcopy(int length, double[] data, int offset, int i, double[] data1, int i1, int i2) {
     }
 
-    public static double nrm2(JCublasComplexNDArray jCublasComplexNDArray) {
-        return 0;
+    public static double nrm2(JCublasComplexNDArray A) {
+        init();
+
+        Pointer d_A = new Pointer();
+
+        OnePointerVi(d_A, A);
+
+        double s = JCublas.cublasDnrm2(A.length(),d_A,2);
+
+        JCublas.cublasShutdown();
+
+        return s;
     }
 
-    public static void copy(JCublasComplexNDArray a, JCublasComplexNDArray jCublasComplexNDArray) {
+    public static void copy(JCublasComplexNDArray x, JCublasComplexNDArray y) {
+        Pointer X = new Pointer();
+        Pointer Y = new Pointer();
 
+        init();
+
+        TwoPointersVi(X,Y,x,y);
+
+        JCublas.cublasDcopy(x.length(),
+                X,
+                1,
+                Y,
+                1);
+
+
+        gvi(Y, y);
+
+        JCublas.cublasFree(X);
+        JCublas.cublasFree(Y);
+
+        JCublas.cublasShutdown();
     }
 
     public static int iamax(JCublasComplexNDArray jCublasComplexNDArray) {
@@ -232,6 +361,9 @@ public class SimpleJCublas {
     }
 
     public static void swap(JCublasNDArray x, JCublasNDArray y) {
+
+        init();
+
         Pointer X = new Pointer();
         Pointer Y = new Pointer();
 
@@ -240,10 +372,6 @@ public class SimpleJCublas {
 
         if (length != length_o)
             return;
-
-
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
 
         TwoPointersV(X, Y, x, y);
 
@@ -263,10 +391,9 @@ public class SimpleJCublas {
 
     public static double asum(JCublasNDArray x) {
 
-        Pointer X = new Pointer();
+        init();
 
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        Pointer X = new Pointer();
 
         OnePointerV(X,x);
 
@@ -284,8 +411,7 @@ public class SimpleJCublas {
 
         double normal2;
 
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        init();
 
         OnePointerV(X,x);
 
@@ -295,12 +421,12 @@ public class SimpleJCublas {
     }
 
     public static int iamax(JCublasNDArray x) {
+
         Pointer X = new Pointer();
 
         int max;
 
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        init();
 
         OnePointerV(X,x);
 
@@ -320,8 +446,7 @@ public class SimpleJCublas {
         if (length != length_o)
             return;
 
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        init();
 
         TwoPointersV(d_A, d_B, A, B);
 
@@ -338,8 +463,8 @@ public class SimpleJCublas {
     public static JCublasNDArray scal(double alpha, JCublasNDArray x) {
         Pointer d_A = new Pointer();
         int length = x.length();
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+
+        init();
 
         JCublas.cublasAlloc(length, Sizeof.DOUBLE, d_A);
 
@@ -361,9 +486,7 @@ public class SimpleJCublas {
         Pointer X = new Pointer();
         Pointer Y = new Pointer();
 
-
-        JCublas.cublasInit();
-        JCublas.setExceptionsEnabled(true);
+        init();
 
         TwoPointersV(X,Y,x,y);
 
@@ -385,6 +508,8 @@ public class SimpleJCublas {
     public static double dot(JCublasNDArray x, JCublasNDArray y) {
         Pointer d_A = new Pointer();
         Pointer d_B = new Pointer();
+
+        init();
 
         TwoPointersV(d_A,d_B,x,y);
 
