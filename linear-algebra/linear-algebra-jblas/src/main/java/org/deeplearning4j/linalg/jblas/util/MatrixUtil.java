@@ -10,6 +10,8 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.jblas.complex.*;
 import org.deeplearning4j.linalg.jblas.NDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
@@ -619,18 +621,18 @@ public class MatrixUtil {
     }
 
 
-    public static ComplexNDArray complexPadWithZeros(NDArray toPad,int[] newShape) {
-        ComplexNDArray ret = ComplexNDArray.zeros(newShape);
-        for(int i = 0; i < toPad.length; i++)
+    public static IComplexNDArray complexPadWithZeros(NDArray toPad,int[] newShape) {
+        IComplexNDArray ret = NDArrays.complexZeros(newShape);
+        for(int i = 0; i < toPad.length(); i++)
             ret.put(i,toPad.getScalar(i));
         return ret;
     }
 
 
-    public static ComplexNDArray complexPadWithZeros(ComplexNDArray toPad,int[] newShape) {
-        ComplexNDArray ret = ComplexNDArray.zeros(newShape);
-        for(int i = 0; i < toPad.length; i++)
-            ret.put(i,toPad.get(i));
+    public static IComplexNDArray complexPadWithZeros(ComplexNDArray toPad,int[] newShape) {
+        IComplexNDArray ret = NDArrays.complexZeros(newShape);
+        for(int i = 0; i < toPad.length(); i++)
+            ret.put(i,toPad.getScalar(i));
         return ret;
     }
 
