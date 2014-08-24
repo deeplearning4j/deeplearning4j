@@ -9,7 +9,7 @@ layout: default
 
 		Mac OS X x64 185.94 MB -  jdk-7u60-macosx-x64.dmg
 
-You can test which version of Java you have (and whether you have it at all), by typing the following into the command line:
+* You can test which version of Java you have (and whether you have it at all), by typing the following into the command line:
 
 		java -version
 
@@ -42,21 +42,21 @@ You can test which version of Java you have (and whether you have it at all), by
 		MAC
 		deeplearning4j-examples-0.0.3.2-20140811.044400-46-bin.tar.gz
 
-Unzip the file. (*If you have previously installed DL4J following the instructions on the Getting Started page, you already have this file. In that case, cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip.*)
+* Unzip the file. (*If you have previously installed DL4J following the instructions on the Getting Started page, you already have this file. In that case, cd into */deeplearning4j-examples/target/, where you will find the file you need to unzip.*)
 
-To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :)
+* To run the examples, move into the DL4J examples folder you downloaded and unzipped to make it your current working directory. To do that, you'll type something like this (file paths may vary :)
 
 		cd Desktop/deeplearning4j-examples-0.0.3.2-SNAPSHOT
 
-Once you've made the examples folder your current working directory, enter this command:
+* Once you've made the examples folder your current working directory, enter this command:
 
 		java -cp "lib/*" org.deeplearning4j.example.mnist.RBMMnistExample
 
-Now you should see evidence in your terminal/cmd that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
+* Now you should see evidence in your terminal/cmd that the neural net has begun to train. Look at the second-to-last number on the right hand side below. It should be decreasing. That’s the measure of the net’s error reconstructing a numeral-image. If the error shrinks, that means your net is learning, and all is well in the world.
 
 ![Alt text](../img/learning.png)
 
-At the end of the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these.
+* At the end of the training, you should see some numeral-images pop up in small windows in the upper left hand corner of your screen. Those are the reconstructions that prove your net actually works, and they look similar to these.
 
 ![Alt text](../img/two.png)![Alt text](../img/nine.png)![Alt text](../img/three.png)![Alt text](../img/one.png)
 
