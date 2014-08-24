@@ -93,7 +93,7 @@ layout: default
              <version>0.0.3.2-SNAPSHOT</version>
            </dependency>
 
-For the moment, the installation is throwing errors related to Jcublas. (We're working on it :)
+For the moment, the installation is throwing errors related to Jcublas. (We're working on it :) GPU integration is being completed. Steps 5 and 6 are only for building the software. 
 
 From here, you may be interested in exploring our [Github repo](https://github.com/agibsonccc/java-deeplearning) or accessing the core through [Maven](http://maven.apache.org/download.cgi).
 
