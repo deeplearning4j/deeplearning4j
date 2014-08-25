@@ -28,7 +28,7 @@ Here's some of the code used to run LFW on DL4J:
 
 <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw/LFWRBMExample.java?slice=26:72"></script>
 
-To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" in IntelliJ (see our [Getting Started page](../gettingstarted.html)), or type this into your command line:
+To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the MultiThreadedLFW Java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)), or type this into your command line:
 
     java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
 
