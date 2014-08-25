@@ -7,6 +7,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.BaseNDArrayFactory;
+import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexFloat;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
@@ -172,5 +173,44 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
             return new NDArray(list,shape, ArrayUtil.calcStridesFortran(shape));
         else
             return new NDArray(list,shape);
+    }
+
+    /**
+     * Create a complex ndarray with the given data
+     *
+     * @param data     the data to use with tne ndarray
+     * @param shape    the shape of the ndarray
+     * @param stride   the stride for the ndarray
+     * @param offset   the offset of the ndarray
+     * @param ordering the ordering for the ndarray
+     * @return the created complex ndarray
+     */
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new ComplexNDArray(data,shape,stride,offset,ordering);
+    }
+
+    /**
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
+        return new ComplexNDArray(data,shape, NDArrays.getComplexStrides(shape,ordering),offset,ordering);
+
+    }
+
+    /**
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+        return new ComplexNDArray(data,shape,offset);
     }
 }

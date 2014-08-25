@@ -1,7 +1,6 @@
 package org.deeplearning4j.linalg.api.ndarray;
 
 
-import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.factory.NDArrayFactory;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.indexing.NDArrayIndex;
@@ -56,6 +55,8 @@ public abstract class BaseNDArray  implements INDArray {
     protected int length;
 
 
+
+    public BaseNDArray() {}
 
 
 
@@ -2339,19 +2340,19 @@ public abstract class BaseNDArray  implements INDArray {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        if(Arrays.equals(shape(),shape))
+        if(Shape.shapeEquals(shape(),shape))
             return this;
 
         //row to column vector
         if(isRowVector()) {
             if(Shape.isColumnVectorShape(shape)) {
-                return NDArrays.create(data,shape,NDArrays.getStrides(shape,ordering),offset,ordering);
+                return NDArrays.create(data,shape,new int[]{stride[0],1},offset,ordering);
             }
         }
         //column to row vector
         if(isColumnVector()) {
             if(Shape.isRowVectorShape(shape)) {
-                return NDArrays.create(data,shape,NDArrays.getStrides(shape,ordering),offset,ordering);
+                return NDArrays.create(data,shape,new int[]{stride[0]},offset,ordering);
 
             }
         }
@@ -2527,6 +2528,9 @@ public abstract class BaseNDArray  implements INDArray {
 
 
 
+
+
+
     /**
      * Returns the product along a given dimension
      *
@@ -2537,7 +2541,7 @@ public abstract class BaseNDArray  implements INDArray {
     public INDArray prod(int dimension) {
 
         if(dimension == Integer.MAX_VALUE) {
-            return  reshape(new int[]{1,length}).prod(Integer.MAX_VALUE);
+            return NDArrays.scalar(Ops.prod(this));
         }
 
         else if(isVector()) {
@@ -2550,7 +2554,7 @@ public abstract class BaseNDArray  implements INDArray {
             iterateOverDimension(dimension, new SliceOp() {
                 @Override
                 public void operate(DimensionSlice nd) {
-                    IComplexNDArray arr2 = (IComplexNDArray) nd.getResult();
+                    INDArray arr2 = (INDArray) nd.getResult();
                     arr.put(i.get(),arr2.prod(0));
                     i.incrementAndGet();
                 }
