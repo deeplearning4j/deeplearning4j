@@ -119,17 +119,31 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         NDArrays.factory().setOrder('c');
     }
 
+    @Test
+    public void testVectorVector() {
+        DoubleMatrix d = new DoubleMatrix(2,1);
+        d.data = new double[]{1,2};
+        DoubleMatrix d2 = new DoubleMatrix(1,2);
+        d2.data = new double[]{3,4};
+        DoubleMatrix resultMatrix = d.mmul(d2);
+        INDArray d3 = NDArrays.create(new double[]{1,2}).reshape(2,1);
+        INDArray d4 = NDArrays.create(new double[]{3,4});
+        INDArray resultNDArray = d3.mmul(d4);
+        verifyElements(resultMatrix,resultNDArray);
+
+    }
 
 
-        protected void verifyElements(double[][] d,INDArray d2) {
-            for(int i = 0; i < d2.rows(); i++) {
-                for(int j = 0; j < d2.columns(); j++) {
-                    double test1 =  d[i][j];
-                    double test2 = (double) d2.getScalar(i,j).element();
-                    assertEquals(test1,test2,1e-6);
-                }
+
+    protected void verifyElements(double[][] d,INDArray d2) {
+        for(int i = 0; i < d2.rows(); i++) {
+            for(int j = 0; j < d2.columns(); j++) {
+                double test1 =  d[i][j];
+                double test2 = (double) d2.getScalar(i,j).element();
+                assertEquals(test1,test2,1e-6);
             }
         }
+    }
 
 
     protected void verifyElements(DoubleMatrix d,INDArray d2) {
