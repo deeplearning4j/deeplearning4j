@@ -587,7 +587,7 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray createComplex(int columns,char order) {
+    public static IComplexNDArray createComplex(int columns,char order) {
         return INSTANCE.createComplex(columns);
     }
 
@@ -744,7 +744,7 @@ public class NDArrays  {
      * @param columns the number of columns in the row vector
      * @return ndarray
      */
-    public static INDArray complexOnes(int columns) {
+    public static IComplexNDArray complexOnes(int columns) {
         return INSTANCE.complexOnes(columns);
     }
 
@@ -1383,7 +1383,7 @@ public class NDArrays  {
      * and order specified by NDArrays.order()
      */
     public static int[] getComplexStrides(int[] shape) {
-        return getStrides(shape,NDArrays.order());
+        return getComplexStrides(shape,NDArrays.order());
     }
 
 

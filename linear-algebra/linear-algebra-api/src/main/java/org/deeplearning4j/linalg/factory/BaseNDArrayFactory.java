@@ -727,8 +727,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return ndarray
      */
     @Override
-    public INDArray complexOnes(int columns) {
-        return createComplex(new int[]{columns});
+    public IComplexNDArray complexOnes(int columns) {
+        IComplexNDArray base =  createComplex(new int[]{columns});
+        base.assign(1);
+        return base;
     }
 
 
@@ -1460,10 +1462,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return the created complex ndarray
      */
     @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return null;
-    }
-
+    public abstract IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering);
     /**
      * @param data
      * @param shape
@@ -1472,9 +1471,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
-        return null;
-    }
+    public abstract IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering);
 
     /**
      * @param data
@@ -1483,9 +1480,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @return
      */
     @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
-        return null;
-    }
+    public abstract IComplexNDArray createComplex(double[] data, int[] shape, int offset);
 
 
 }

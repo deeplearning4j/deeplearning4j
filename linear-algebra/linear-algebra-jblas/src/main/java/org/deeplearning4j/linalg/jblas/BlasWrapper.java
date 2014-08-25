@@ -1,6 +1,7 @@
 package org.deeplearning4j.linalg.jblas;
 
 import org.deeplearning4j.linalg.api.complex.IComplexDouble;
+import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.jblas.complex.ComplexDouble;
 import org.deeplearning4j.linalg.jblas.complex.ComplexNDArray;
@@ -43,7 +44,10 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     @Override
     public ComplexNDArray scal(IComplexDouble alpha, ComplexNDArray x) {
-        return null;
+        NativeBlas.zscal(x.length(),
+                new ComplexDouble(alpha.realComponent(),alpha.imaginaryComponent()),
+                x.data(), x.offset(), 1);
+        return x;
     }
 
     public ComplexNDArray scal(ComplexDouble alpha, ComplexNDArray x) {
@@ -77,7 +81,8 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     @Override
     public ComplexNDArray axpy(IComplexDouble da, ComplexNDArray dx, ComplexNDArray dy) {
-        return null;
+        NativeBlas.zaxpy(dx.length(), new org.jblas.ComplexDouble(da.realComponent(),da.imaginaryComponent()), dx.data(), 0, 1, dy.data(), 0, 1);
+        return dy;
     }
 
     public ComplexNDArray axpy(ComplexDouble da, ComplexNDArray dx, ComplexNDArray dy) {
@@ -203,7 +208,11 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     @Override
     public ComplexNDArray geru(IComplexDouble alpha, ComplexNDArray x, ComplexNDArray y, ComplexNDArray a) {
-        return null;
+        NativeBlas.zgeru(a.rows(), a.columns(),
+                new ComplexDouble(alpha.realComponent(),alpha.imaginaryComponent()),
+                x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
+                a.offset(), a.rows());
+        return a;
     }
 
     /**
@@ -216,7 +225,9 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
      */
     @Override
     public ComplexNDArray gerc(IComplexDouble alpha, ComplexNDArray x, ComplexNDArray y, ComplexNDArray a) {
-        return null;
+        NativeBlas.zgerc(a.rows(), a.columns(), new ComplexDouble(alpha.realComponent(),alpha.imaginaryComponent()), x.data(), x.offset(), 1, y.data(), y.offset(), 1, a.data(),
+                a.offset(), a.rows());
+        return a;
     }
 
     /**
@@ -258,16 +269,16 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     @Override
     public ComplexNDArray gemm(IComplexDouble alpha, ComplexNDArray a, ComplexNDArray b, IComplexDouble beta, ComplexNDArray c) {
-        return null;
-    }
-
-    public ComplexNDArray gemm(ComplexDouble alpha, ComplexNDArray a,
-                               ComplexNDArray b, ComplexDouble beta, ComplexNDArray c) {
-        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(), alpha, a.data(), 0,
-                a.rows(), b.data(), 0, b.rows(), beta, c.data(), 0, c.rows());
+        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(),
+                new ComplexDouble(alpha.realComponent().doubleValue(),alpha.imaginaryComponent().doubleValue()),
+                a.data(), 0,
+                a.rows(), b.data(), 0, b.rows(), new ComplexDouble(beta.realComponent().doubleValue(),beta.imaginaryComponent().doubleValue()), c.data(), 0, c.rows());
         return c;
+
     }
 
+
+  
     /***************************************************************************
      * LAPACK
      */
