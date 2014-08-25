@@ -369,6 +369,8 @@ public class NDArrays  {
      * real components
      */
     public static IComplexNDArray createComplex(INDArray arr) {
+        if(arr instanceof  IComplexNDArray)
+            return (IComplexNDArray) arr;
         return INSTANCE.createComplex(arr);
     }
 

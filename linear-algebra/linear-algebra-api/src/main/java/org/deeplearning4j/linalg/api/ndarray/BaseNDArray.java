@@ -892,14 +892,21 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public int index(int row, int column) {
         if(!isMatrix()) {
-            if(stride.length < 2 && row >= 1 && column >= 1)
+            if(isColumnVector()) {
+                int idx = linearIndex(row);
+                return idx;
+            }
+            else if (isRowVector()) {
+                int idx = linearIndex(column);
+                return idx;
+            }
+            else
                 throw new IllegalStateException("Unable to getFromOrigin row/column from a non matrix");
         }
 
-        if(stride.length < 2)
-            return offset + (row * stride[0] + column);
 
-        return offset  + (row *  stride[0]  + column * stride[1]);
+
+        return row *  stride[0]  + column * stride[1];
     }
 
 
@@ -1658,6 +1665,8 @@ public abstract class BaseNDArray  implements INDArray {
         INDArray otherArray =  other;
         INDArray resultArray =  result;
 
+        LinAlgExceptions.assertMultiplies(this,other);
+
         if (other.isScalar()) {
             return muli((INDArray) otherArray.element(), resultArray);
         }
@@ -2340,8 +2349,11 @@ public abstract class BaseNDArray  implements INDArray {
         if (ec != n)
             throw new IllegalArgumentException("Too many elements");
 
-        if(Shape.shapeEquals(shape(),shape))
+        if(Shape.shapeEquals(shape(), shape))
             return this;
+
+
+
 
         //row to column vector
         if(isRowVector()) {
@@ -3167,14 +3179,11 @@ public abstract class BaseNDArray  implements INDArray {
         }
         else if(isVector() && n.isVector()) {
             for(int i = 0; i < length; i++) {
-                double curr = (double) getScalar(i).element();
-                double comp = (double) n.getScalar(i).element();
+                double curr = get(i);
+                double comp = n.get(i);
                 if(Math.abs(curr - comp) > 1e-6)
                     return false;
             }
-
-            if(!Shape.shapeEquals(shape(),n.shape()))
-                return false;
 
             return true;
 

@@ -101,12 +101,10 @@ public abstract class NDArrayTests {
         INDArray row12 = NDArrays.linspace(1,2,2).reshape(2,1);
         INDArray row22 = NDArrays.linspace(3,4,2).reshape(1,2);
 
-        INDArray row122 = row12;
-        INDArray row222 = row22;
-        assertEquals(row122.rows(),2);
-        assertEquals(row122.columns(),1);
-        assertEquals(row222.rows(),1);
-        assertEquals(row222.columns(),2);
+        assertEquals(row12.rows(),2);
+        assertEquals(row12.columns(),1);
+        assertEquals(row22.rows(),1);
+        assertEquals(row22.columns(),2);
 
 
 
@@ -299,7 +297,6 @@ public abstract class NDArrayTests {
         INDArray row2 = testMatrix.getRow(1);
         INDArray row12 = NDArrays.linspace(1,2,2).reshape(2,1);
         INDArray row22 = NDArrays.linspace(3,4,2).reshape(1,2);
-        INDArray rowResult = row12.mmul(row22);
 
         INDArray row122 = row12;
         INDArray row222 = row22;

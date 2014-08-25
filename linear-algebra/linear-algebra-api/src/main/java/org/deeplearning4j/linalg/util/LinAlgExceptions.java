@@ -17,6 +17,16 @@ public class LinAlgExceptions {
         assert n.rows() == n2.rows() : "Mis matched rows";
     }
 
+    /**
+     * Asserts matrix multiply rules (columns of left == rows of right)
+     * @param nd1 the left ndarray
+     * @param nd2 the right ndarray
+     */
+    public static void assertMultiplies(INDArray nd1,INDArray nd2) {
+        assert nd1.columns() == nd2.rows() : "Column of left " + nd1.columns() + " != rows of right " + nd2.rows();
+    }
+
+
 
     public static void assertColumns(INDArray n,INDArray n2) {
         assert n.columns() == n2.columns() : "Mis matched rows";
