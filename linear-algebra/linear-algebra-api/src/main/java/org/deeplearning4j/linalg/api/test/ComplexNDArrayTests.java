@@ -8,6 +8,7 @@ import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.api.ndarray.SliceOp;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.linalg.util.Shape;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for a complex ndarray
@@ -24,6 +26,11 @@ import static org.junit.Assert.*;
 public abstract class ComplexNDArrayTests {
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTests.class);
+    @Before
+    public void before() {
+        NDArrays.factory().setOrder('c');
+    }
+
 
     @Test
     public void testConstruction() {
@@ -61,7 +68,7 @@ public abstract class ComplexNDArrayTests {
     public void testSum() {
         IComplexNDArray n = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2}));
         n.toString();
-        assertEquals(NDArrays.createDouble(36,0),n.sum(Integer.MAX_VALUE).element());
+        assertEquals(NDArrays.createDouble(36, 0), n.sum(Integer.MAX_VALUE).element());
     }
 
     @Test
@@ -317,6 +324,27 @@ public abstract class ComplexNDArrayTests {
 
 
     @Test
+    public void testMmulOffset() {
+        IComplexNDArray three = NDArrays.createComplex(NDArrays.create(new double[]{3,4},new int[]{2}));
+        IComplexNDArray test = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,30,30).data(),new int[]{3,5,2}));
+        IComplexNDArray sliceRow = test.slice(0).getRow(1);
+        assertEquals(three,sliceRow);
+
+        IComplexNDArray twoSix = NDArrays.createComplex(NDArrays.create(new double[]{2,6},new int[]{2,1}));
+        IComplexNDArray threeTwoSix = three.mmul(twoSix);
+
+
+
+        IComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
+        verifyElements(three,sliceRow);
+        assertEquals(threeTwoSix,sliceRowTwoSix);
+
+    }
+
+
+
+
+    @Test
     public void testMmul() {
         double[] data = NDArrays.linspace(1,10,10).data();
         IComplexNDArray n = NDArrays.createComplex((NDArrays.create(data,new int[]{10})));
@@ -332,36 +360,9 @@ public abstract class ComplexNDArrayTests {
         assertEquals(true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
 
 
-        IComplexNDArray three = NDArrays.createComplex(NDArrays.create(new double[]{3,4},new int[]{2}));
-        IComplexNDArray test = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,30,30).data(),new int[]{3,5,2}));
-        IComplexNDArray sliceRow = test.slice(0).getRow(1);
-        assertEquals(three,sliceRow);
-
-        IComplexNDArray twoSix = NDArrays.createComplex(NDArrays.create(new double[]{2,6},new int[]{2,1}));
-        IComplexNDArray threeTwoSix = three.mmul(twoSix);
-
-        IComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
-
-        assertEquals(threeTwoSix,sliceRowTwoSix);
 
 
 
-        IComplexNDArray anotherOffsetTest = NDArrays.createComplex(new double[]{
-                3.0,0.0,-1.0,-2.4492935982947064E-16,7.0,0.0,-1.0,-4.898587196589413E-16,11.0,0.0,-1.0,
-                -7.347880794884119E-16,15.0,0.0,-1.0,-9.797174393178826E-16,19.0,0.0,-1.0,-1.2246467991473533E-15,23.0,0.0,-1.0,
-                -1.4695761589768238E-15,27.0,0.0,-1.0,-1.7145055188062944E-15,31.0,0.0,-0.9999999999999982,-1.959434878635765E-15,35.0,0.0,
-                -1.0,-2.204364238465236E-15,39.0,0.0,-1.0,-2.4492935982947065E-15,43.0,0.0,-1.0,-2.6942229581241772E-15,47.0,0.0,-1.0000000000000036,
-                -2.9391523179536483E-15,51.0,0.0,-0.9999999999999964,-3.1840816777831178E-15,55.0,0.0,-1.0,-3.429011037612589E-15,59.0,0.0,-0.9999999999999964,
-                -3.67394039744206E-15},new int[]{3,2,5},new int[]{20,2,4});
-
-        IComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
-        IComplexNDArray noOffsetRow = NDArrays.createComplex(new double[]{3,0,7,0,11,0,15,0,19,0},new int[]{5});
-        assertEquals(rowToTest,noOffsetRow);
-
-        IComplexNDArray rowOther = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{5,1}));
-        IComplexNDArray noOffsetTimesrowOther = noOffsetRow.mmul(rowOther);
-        IComplexNDArray rowToTestTimesrowOther = rowToTest.mmul(rowOther);
-        assertEquals(noOffsetTimesrowOther,rowToTestTimesrowOther);
 
         IComplexNDArray vectorVector = NDArrays.createComplex(NDArrays.create(new double[]{
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 0, 13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143, 156, 169, 182, 195, 0, 14, 28, 42, 56, 70, 84, 98, 112, 126, 140, 154, 168, 182, 196, 210, 0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225
@@ -463,7 +464,7 @@ public abstract class ComplexNDArrayTests {
 
         IComplexNDArray anotherOffsetTest = NDArrays.createComplex(
                 new double[]{
-                3.0,0.0,-1.0,-2.4492935982947064E-16,7.0,0.0,-1.0,-4.898587196589413E-16,11.0,0.0,-1.0,-7.347880794884119E-16,15.0,0.0,-1.0,-9.797174393178826E-16,19.0,0.0,-1.0,-1.2246467991473533E-15,23.0,0.0,-1.0,-1.4695761589768238E-15,27.0,0.0,-1.0,-1.7145055188062944E-15,31.0,0.0,-0.9999999999999982,-1.959434878635765E-15,35.0,0.0,-1.0,-2.204364238465236E-15,39.0,0.0,-1.0,-2.4492935982947065E-15,43.0,0.0,-1.0,-2.6942229581241772E-15,47.0,0.0,-1.0000000000000036,-2.9391523179536483E-15,51.0,0.0,-0.9999999999999964,-3.1840816777831178E-15,55.0,0.0,-1.0,-3.429011037612589E-15,59.0,0.0,-0.9999999999999964,-3.67394039744206E-15},new int[]{3,2,5},new int[]{20,2,4});
+                        3.0,0.0,-1.0,-2.4492935982947064E-16,7.0,0.0,-1.0,-4.898587196589413E-16,11.0,0.0,-1.0,-7.347880794884119E-16,15.0,0.0,-1.0,-9.797174393178826E-16,19.0,0.0,-1.0,-1.2246467991473533E-15,23.0,0.0,-1.0,-1.4695761589768238E-15,27.0,0.0,-1.0,-1.7145055188062944E-15,31.0,0.0,-0.9999999999999982,-1.959434878635765E-15,35.0,0.0,-1.0,-2.204364238465236E-15,39.0,0.0,-1.0,-2.4492935982947065E-15,43.0,0.0,-1.0,-2.6942229581241772E-15,47.0,0.0,-1.0000000000000036,-2.9391523179536483E-15,51.0,0.0,-0.9999999999999964,-3.1840816777831178E-15,55.0,0.0,-1.0,-3.429011037612589E-15,59.0,0.0,-0.9999999999999964,-3.67394039744206E-15},new int[]{3,2,5},new int[]{20,2,4});
 
 
         IComplexNDArray rowToTest = anotherOffsetTest.slice(0).slice(0);
@@ -574,7 +575,7 @@ public abstract class ComplexNDArrayTests {
         assertEquals(8,arr.data().length);
         arr.put(1,1,NDArrays.scalar(5.0));
 
-        IComplexNumber n1 = arr.getComplex(1,1);
+        IComplexNumber n1 = arr.getComplex(1, 1);
         IComplexNumber n2 =  arr.getComplex(1,1);
 
         assertEquals(5.0,n1.realComponent().doubleValue(),1e-1);
@@ -857,5 +858,16 @@ public abstract class ComplexNDArrayTests {
     }
 
 
+    protected void verifyElements(IComplexNDArray d,IComplexNDArray d2) {
+        for(int i = 0; i < d.rows(); i++) {
+            for(int j = 0; j < d.columns(); j++) {
+                IComplexNumber test1 = d.getComplex(i,j);
+                IComplexNumber test2 =  d2.getComplex(i, j);
+                assertEquals(test1.realComponent().doubleValue(),test2.realComponent().doubleValue(),1e-6);
+                assertEquals(test1.imaginaryComponent().doubleValue(),test2.imaginaryComponent().doubleValue(),1e-6);
+
+            }
+        }
+    }
 
 }

@@ -36,11 +36,19 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         assertEquals(d.columns,d2.columns());
         verifyElements(d,d2);
 
-        INDArray toMmulD2 = NDArrays.create(mmul).reshape(new int[]{mmul.length,1});
+        INDArray toMmulD2 = NDArrays.create(mmul).transpose();
         DoubleMatrix toMmulD = new DoubleMatrix(mmul);
+
+
+        assertEquals(d.rows,d2.rows());
+        assertEquals(d.columns,d2.columns());
+
+        assertEquals(toMmulD.rows,toMmulD2.rows());
+        assertEquals(toMmulD.columns,toMmulD2.columns());
 
         DoubleMatrix mmulResultD = d.mmul(toMmulD);
         INDArray mmulResultD2 = d2.mmul(toMmulD2);
+
         verifyElements(mmulResultD,mmulResultD2);
 
 
@@ -125,9 +133,20 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         d.data = new double[]{1,2};
         DoubleMatrix d2 = new DoubleMatrix(1,2);
         d2.data = new double[]{3,4};
-        DoubleMatrix resultMatrix = d.mmul(d2);
+
         INDArray d3 = NDArrays.create(new double[]{1,2}).reshape(2,1);
         INDArray d4 = NDArrays.create(new double[]{3,4});
+
+        assertEquals(d.rows,d3.rows());
+        assertEquals(d.columns,d3.columns());
+
+        assertEquals(d2.rows,d4.rows());
+        assertEquals(d2.columns,d4.columns());
+
+        DoubleMatrix resultMatrix = d.mmul(d2);
+
+
+
         INDArray resultNDArray = d3.mmul(d4);
         verifyElements(resultMatrix,resultNDArray);
 

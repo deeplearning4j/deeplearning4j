@@ -1064,6 +1064,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Gives the indices for the ending of each slice
      * @return the off sets for the beginning of each slice
      */
+    @Override
     public int[] endsForSlices() {
         int[] ret = new int[slices()];
         int currOffset = offset;
@@ -2047,7 +2048,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray mmul(INDArray other) {
         int[] shape = {rows(),other.columns()};
-        return mmuli(other,NDArrays.create(shape));
+        return mmuli(other,NDArrays.createComplex(shape));
     }
 
     /**
@@ -2178,6 +2179,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             return muli(other.getScalar(0), result);
 
 
+        LinAlgExceptions.assertMultiplies(this,other);
+
+
         IComplexNDArray otherArray = NDArrays.createComplex(other);
         IComplexNDArray resultArray = NDArrays.createComplex(result);
 
@@ -2189,17 +2193,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 			/* actually, blas cannot do multiplications in-place. Therefore, we will fake by
 			 * allocating a temporary object on the side and copy the result later.
 			 */
-            otherArray = otherArray.ravel().reshape(otherArray.shape());
 
-            IComplexNDArray temp = NDArrays.createComplex(resultArray.shape(),ArrayUtil.calcStridesFortran(resultArray.shape()));
+            IComplexNDArray temp = NDArrays.createComplex(resultArray.shape(),ArrayUtil.calcStrides(resultArray.shape()));
             NDArrays.getBlasWrapper().gemm(NDArrays.createDouble(1,0), this, otherArray, NDArrays.createDouble(0,0), temp);
 
             NDArrays.getBlasWrapper().copy(temp, resultArray);
 
         }
         else {
-            otherArray = otherArray.ravel().reshape(otherArray.shape());
-            IComplexNDArray thisInput =  this.ravel().reshape(shape());
+            IComplexNDArray thisInput =  this;
             NDArrays.getBlasWrapper().gemm(NDArrays.createDouble(1, 0), thisInput, otherArray, NDArrays.createDouble(0, 0), resultArray);
         }
 
@@ -2565,15 +2567,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public double[] data() {
-        double[] ret = new double[length * 2];
-        IComplexNDArray flattened = ravel();
-        int count = 0;
-        for(int i = 0; i < flattened.length(); i++) {
-            ret[count++] = flattened.getComplex(i).realComponent().doubleValue();
-            ret[count++] = flattened.getComplex(i).imaginaryComponent().doubleValue();
-        }
-
-        return ret;
+      return data;
     }
 
 
