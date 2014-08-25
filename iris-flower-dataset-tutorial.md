@@ -4,7 +4,7 @@ layout: default
 ---
 
 *previous* - [mnist for deep-belief networks](../mnist-tutorial.html)
-# iris flower dataset tutorial
+# Iris Flower Dataset Tutorial
 
 The Iris flower dataset is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of our neural nets. 
 
