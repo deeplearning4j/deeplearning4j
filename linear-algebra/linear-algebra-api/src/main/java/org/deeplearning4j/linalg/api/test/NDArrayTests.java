@@ -270,7 +270,9 @@ public abstract class NDArrayTests {
 
     @Test
     public void testMmul() {
-        NDArrays.factory().setOrder('f');
+
+        NDArrays.factory().setOrder('c');
+
         double[] data = NDArrays.linspace(1,10,10).data();
         INDArray n = NDArrays.create(data,new int[]{10});
         INDArray transposed = n.transpose();
@@ -305,10 +307,12 @@ public abstract class NDArrayTests {
 
 
 
+        INDArray d3 = NDArrays.create(new double[]{1,2}).reshape(2,1);
+        INDArray d4 = NDArrays.create(new double[]{3,4});
+        INDArray resultNDArray = d3.mmul(d4);
+        INDArray result = NDArrays.create(new double[][]{{3,4},{6,8}});
 
-        INDArray mmul = row1.mmul(row2);
-        INDArray result = NDArrays.create(new double[]{3,6,4,8},new int[]{2,2});
-        assertEquals(result,mmul);
+        assertEquals(result,resultNDArray);
 
 
 
@@ -337,7 +341,6 @@ public abstract class NDArrayTests {
         INDArray testVectorVector = k1.mmul(n1);
         assertEquals(vectorVector,testVectorVector);
 
-        NDArrays.factory().setOrder('c');
 
 
     }
@@ -829,7 +832,7 @@ public abstract class NDArrayTests {
         INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
         NDArrays.factory().setOrder('f');
         INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
-        assertEquals(row1.getScalar(0,1),row1Fortran.getScalar(0,1));
+        assertNotEquals(row1.getScalar(0,1),row1Fortran.getScalar(0,1));
         NDArrays.factory().setOrder('c');
     }
 
@@ -845,7 +848,7 @@ public abstract class NDArrayTests {
         INDArray row1Fortran = NDArrays.linspace(1,4,4).reshape(2,2);
         INDArray putFortran = NDArrays.create(new double[]{5,6});
         row1Fortran.putRow(1,putFortran);
-        assertEquals(row1,row1Fortran);
+        assertNotEquals(row1,row1Fortran);
 
         NDArrays.factory().setOrder('c');
 
