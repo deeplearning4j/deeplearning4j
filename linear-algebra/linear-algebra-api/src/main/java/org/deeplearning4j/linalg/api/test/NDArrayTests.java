@@ -630,6 +630,26 @@ public abstract class NDArrayTests {
         assertEquals(arr.length(),reshaped.length());
         assertEquals(true,Arrays.equals(new int[]{4,3,2},arr.shape()));
         assertEquals(true,Arrays.equals(new int[]{2,3,4},reshaped.shape()));
+
+        INDArray n2 = NDArrays.create(NDArrays.linspace(1, 30, 30).data(),new int[]{3,5,2});
+        INDArray swapped   = n2.swapAxes(n2.shape().length - 1,1);
+        INDArray firstSlice2 = swapped.slice(0).slice(0);
+        INDArray oneThreeFiveSevenNine = NDArrays.create(new double[]{1,3,5,7,9});
+        assertEquals(firstSlice2,oneThreeFiveSevenNine);
+        INDArray raveled = oneThreeFiveSevenNine.reshape(5,1);
+        INDArray raveledOneThreeFiveSevenNine = oneThreeFiveSevenNine.reshape(5,1);
+        assertEquals(raveled,raveledOneThreeFiveSevenNine);
+
+
+
+        INDArray firstSlice3 = swapped.slice(0).slice(1);
+        INDArray twoFourSixEightTen = NDArrays.create(new double[]{2,4,6,8,10});
+        assertEquals(firstSlice2,oneThreeFiveSevenNine);
+        INDArray raveled2 = twoFourSixEightTen.reshape(5,1);
+        INDArray raveled3 = firstSlice3.reshape(5,1);
+        assertEquals(raveled2,raveled3);
+
+
     }
 
 

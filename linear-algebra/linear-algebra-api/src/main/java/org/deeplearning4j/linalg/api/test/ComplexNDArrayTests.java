@@ -60,6 +60,7 @@ public abstract class ComplexNDArrayTests {
     @Test
     public void testSum() {
         IComplexNDArray n = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{2,2,2}));
+        n.toString();
         assertEquals(NDArrays.createDouble(36,0),n.sum(Integer.MAX_VALUE).element());
     }
 
@@ -67,7 +68,7 @@ public abstract class ComplexNDArrayTests {
     public void testVectorGet() {
         IComplexNDArray arr = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,8,8).data(),new int[]{8}));
         for(int i = 0; i < arr.length(); i++) {
-            IComplexNumber curr = (IComplexNumber) arr.getScalar(i).element();
+            IComplexNumber curr = arr.getComplex(i);
             assertEquals(NDArrays.createDouble(i + 1,0),curr);
         }
 
@@ -76,11 +77,11 @@ public abstract class ComplexNDArrayTests {
         IComplexNDArray column = matrix.getColumn(1);
 
         IComplexNDArray validate = NDArrays.createComplex(NDArrays.create(new double[]{5,6,7,8},new int[]{4}));
-        IComplexDouble d = (IComplexDouble) row.getScalar(3).element();
+        IComplexNumber d = row.getComplex(3);
         assertEquals(NDArrays.createDouble(8,0), d);
         assertEquals(row,validate);
 
-        IComplexDouble d2 = (IComplexDouble) column.getScalar(1).element();
+        IComplexNumber d2 = column.getComplex(1);
 
         assertEquals(NDArrays.createDouble(6,0),d2);
 
@@ -443,8 +444,8 @@ public abstract class ComplexNDArrayTests {
 
     @Test
     public void testConjugate() {
-        IComplexNDArray negative = NDArrays.createComplex(new double[]{1,-1,2,-1},new int[]{1});
-        IComplexNDArray positive = NDArrays.createComplex(new double[]{1,1,2,1},new int[]{1});
+        IComplexNDArray negative = NDArrays.createComplex(new double[]{1,-1,2,-1},new int[]{2});
+        IComplexNDArray positive = NDArrays.createComplex(new double[]{1,1,2,1},new int[]{2});
         assertEquals(negative,positive.conj());
 
     }
@@ -489,6 +490,7 @@ public abstract class ComplexNDArrayTests {
         assertEquals(row1,testRow1);
 
         IComplexNDArray multiRow = NDArrays.createComplex(NDArrays.create(NDArrays.linspace(1,16,16).data(),new int[]{4,2,2}));
+        multiRow.toString();
         IComplexNDArray test = NDArrays.createComplex(NDArrays.create(new double[]{7,8},new int[]{1,2}));
         IComplexNDArray multiRowSlice1 = multiRow.slice(0);
         IComplexNDArray multiRowSlice = multiRow.slice(1);
@@ -511,6 +513,9 @@ public abstract class ComplexNDArrayTests {
             assertEquals(i + 1,curr,1e-1);
         }
     }
+
+
+
 
 
     @Test
@@ -569,8 +574,8 @@ public abstract class ComplexNDArrayTests {
         assertEquals(8,arr.data().length);
         arr.put(1,1,NDArrays.scalar(5.0));
 
-        IComplexNumber n1 = (IComplexNumber) arr.getScalar(1,1).element();
-        IComplexNumber n2 = (IComplexNumber) arr.getScalar(1,1).element();
+        IComplexNumber n1 = arr.getComplex(1,1);
+        IComplexNumber n2 =  arr.getComplex(1,1);
 
         assertEquals(5.0,n1.realComponent().doubleValue(),1e-1);
         assertEquals(0.0,n2.imaginaryComponent().doubleValue(),1e-1);
@@ -586,6 +591,11 @@ public abstract class ComplexNDArrayTests {
             arr.put(i,NDArrays.scalar(data[i]));
         INDArray arr2 = NDArrays.create(data,shape);
         assertEquals(arr2,arr.getReal());
+
+        INDArray ones = NDArrays.ones(10);
+        IComplexNDArray n2 = NDArrays.complexOnes(10);
+        assertEquals(ones,n2.getReal());
+
     }
 
 
@@ -597,7 +607,7 @@ public abstract class ComplexNDArrayTests {
         IComplexDouble scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         double sum = scalar.realComponent();
         assertEquals(6,sum,1e-1);
-        arr.addi(NDArrays.scalar(1));
+        arr.addi(1);
         scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
         sum = scalar.realComponent();
         assertEquals(10,sum,1e-1);
