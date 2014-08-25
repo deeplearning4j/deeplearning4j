@@ -417,6 +417,7 @@ public class SimpleJCublas {
 
         normal2 = JCublas.cublasDnrm2(x.length(), X, 1);
 
+        JCublas.cublasShutdown();
         return normal2;
     }
 
@@ -432,6 +433,7 @@ public class SimpleJCublas {
 
         max = JCublas.cublasIdamax(x.length(), X, 1);
 
+        JCublas.cublasShutdown();
         return max;
 
     }
@@ -455,6 +457,7 @@ public class SimpleJCublas {
 
         gv(d_B, B);
 
+        JCublas.cublasShutdown();
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
 
@@ -476,6 +479,7 @@ public class SimpleJCublas {
 
         gv(d_A, x);
 
+        JCublas.cublasShutdown();
         JCublas.cublasFree(d_A);
 
         return x;
