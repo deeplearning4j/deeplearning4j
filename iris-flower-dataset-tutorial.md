@@ -22,4 +22,8 @@ The code to run the Iris dataset on DL4J looks like this:
 
 <script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisRBMExample.java?slice=16:32"></script>
 
-[For a deeper dive, see our Iris code on Github](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisExample.java)
+To run the Iris dataset on Deeplearning4j, you can either click "run" on the IrisRBMExample Java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)), or type this into your command line:
+
+    java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
+
+[For a deeper dive, see our Iris code on Github](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisExample.java).
