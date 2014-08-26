@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * NDArrayTests
@@ -52,15 +53,10 @@ public abstract class NDArrayTests {
 
     }
 
-    @Test
-    public void testGetRowAfterSetSlice() {
 
-    }
 
-    @Test
-    public void testGetColumnAfterSetSlice() {
 
-    }
+
 
     @Test
     public void testSlices() {
@@ -107,6 +103,34 @@ public abstract class NDArrayTests {
         assertEquals(row22.columns(),2);
 
 
+
+    }
+
+    @Test
+    public void testGetRowFortran() {
+        NDArrays.factory().setOrder('f');
+        INDArray n = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
+        INDArray column = NDArrays.create(new double[]{1,3});
+        INDArray column2 = NDArrays.create(new double[]{2,4});
+        INDArray testColumn = n.getRow(0);
+        INDArray testColumn1 = n.getRow(1);
+        assertEquals(column,testColumn);
+        assertEquals(column2,testColumn1);
+        NDArrays.factory().setOrder('c');
+
+    }
+
+    @Test
+    public void testGetColumnFortran() {
+        NDArrays.factory().setOrder('f');
+        INDArray n = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
+        INDArray column = NDArrays.create(new double[]{1,2});
+        INDArray column2 = NDArrays.create(new double[]{3,4});
+        INDArray testColumn = n.getColumn(0);
+        INDArray testColumn1 = n.getColumn(1);
+        assertEquals(column,testColumn);
+        assertEquals(column2,testColumn1);
+        NDArrays.factory().setOrder('c');
 
     }
 
@@ -279,8 +303,6 @@ public abstract class NDArrayTests {
 
         INDArray d = NDArrays.create(n.rows(),n.columns());
         d.setData(n.data());
-        INDArray dTransposed = d.transpose();
-        INDArray result2 = d.mmul(dTransposed);
 
 
         INDArray innerProduct = n.mmul(transposed);
@@ -582,6 +604,8 @@ public abstract class NDArrayTests {
 
     }
 
+
+
     @Test
     public void testDimension() {
         INDArray test = NDArrays.create(NDArrays.linspace(1,4,4).data(),new int[]{2,2});
@@ -872,6 +896,25 @@ public abstract class NDArrayTests {
 
     }
 
+
+
+    @Test
+    public void testPutRowFortran() {
+        INDArray row1 = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray put = NDArrays.create(new double[]{5,6});
+        row1.putRow(1,put);
+
+        NDArrays.factory().setOrder('f');
+
+        INDArray row1Fortran =NDArrays.create(new double[][]{{1,2},{3,4}});
+        INDArray putFortran = NDArrays.create(new double[]{5,6});
+        row1Fortran.putRow(1,putFortran);
+        assertEquals(row1,row1Fortran);
+
+        NDArrays.factory().setOrder('c');
+
+
+    }
 
 
     @Test

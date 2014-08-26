@@ -397,6 +397,14 @@ public class ArrayUtil {
         return stride;
     }
 
+    public static int[] times(int[] ints,int mult) {
+        int[] ret = new int[ints.length];
+        for(int i = 0; i < ints.length; i++)
+            ret[i] = ints[i] * mult;
+        return ret;
+    }
+
+
     /**
      * Computes the standard packed array strides for a given shape.
      * @param shape the shape of a matrix:
