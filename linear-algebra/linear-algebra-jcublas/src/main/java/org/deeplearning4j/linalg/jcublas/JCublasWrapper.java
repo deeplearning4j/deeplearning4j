@@ -112,7 +112,7 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
 
     @Override
     public JCublasNDArray gemv(float alpha, JCublasNDArray a, JCublasNDArray x, float beta, JCublasNDArray y) {
-        return null;
+        return SimpleJCublas.gemv(a,x,y, alpha, beta);
     }
 
     @Override
