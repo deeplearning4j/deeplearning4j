@@ -33,7 +33,7 @@ public class Cats {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             next.normalizeZeroMeanZeroUnitVariance();
-            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1, 10000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1f, 10000);
             FilterRenderer render = new FilterRenderer();
             INDArray w = dbn.getLayers()[0].getW();
             render.renderFilters(w, "currimg.png", (int)Math.sqrt(w.rows()) , (int) Math.sqrt(w.rows()),10);

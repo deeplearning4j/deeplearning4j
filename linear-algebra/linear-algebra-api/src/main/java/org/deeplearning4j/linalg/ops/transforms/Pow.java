@@ -52,7 +52,7 @@ public class Pow extends BaseElementWiseOp {
             IComplexNumber n = (IComplexNumber) value.element();
             return NDArrays.scalar(ComplexUtil.pow(n,power));
         }
-        double d = (double) value.element();
+        float d = (float) value.element();
         return NDArrays.scalar(Math.pow(d,power));
     }
 }

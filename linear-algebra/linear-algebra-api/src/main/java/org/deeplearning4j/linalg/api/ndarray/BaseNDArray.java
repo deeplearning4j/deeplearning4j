@@ -1976,7 +1976,7 @@ public abstract class BaseNDArray  implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-         int realStride = getRealStrideForLinearIndex();
+        int realStride = getRealStrideForLinearIndex();
         int idx = offset + i * realStride;
         if(idx >= data.length)
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
@@ -2087,6 +2087,8 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray getScalar(int... indexes) {
         int ix = offset;
+
+
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
@@ -2316,19 +2318,9 @@ public abstract class BaseNDArray  implements INDArray {
             return NDArrays.create(data,new int[]{shape[0],1},offset);
         else if(isColumnVector())
             return NDArrays.create(data,new int[]{shape[0]},offset);
-        if(ordering == NDArrayFactory.C) {
-            INDArray n = NDArrays.create(data, reverseCopy(shape), reverseCopy(stride), offset, ordering);
-            return n;
-        }
-        else if(ordering == NDArrayFactory.FORTRAN) {
-            int[] reverseShape = reverseCopy(shape);
-            int[] newStrides = ArrayUtil.calcStridesFortran(reverseShape);
-            INDArray n = NDArrays.create(data,reverseShape,newStrides,offset,ordering);
-            return n;
-        }
 
 
-        throw new IllegalArgumentException("Illegal ordering " + ordering);
+        return permute(ArrayUtil.range(shape.length -1,-1));
 
     }
 
@@ -2357,97 +2349,71 @@ public abstract class BaseNDArray  implements INDArray {
         if(Shape.shapeEquals(shape(), shape))
             return this;
 
-
-
-
-        //row to column vector
-        if(isRowVector()) {
-            if(Shape.isColumnVectorShape(shape)) {
-                return NDArrays.create(data,shape,new int[]{stride[0],1},offset,ordering);
-            }
-        }
-        //column to row vector
-        if(isColumnVector()) {
-            if(Shape.isRowVectorShape(shape)) {
-                return NDArrays.create(data,shape,new int[]{stride[0]},offset,ordering);
-
-            }
+        if(ArrayUtil.prod(shape) == ArrayUtil.prod(shape) && ordering == NDArrayFactory.FORTRAN) {
+            return NDArrays.create(data,shape,offset);
         }
 
 
+        INDArray create = NDArrays.create(shape,NDArrays.getStrides(shape,ordering));
+        final INDArray flattened = ravel();
+        //individual vector size
+        int vectorSize = create.size(create.shape().length - 1);
+        //current position in the vector
+        final AtomicInteger vectorCounter = new AtomicInteger(0);
+        //row order
+        if(ordering == NDArrayFactory.C) {
+            create.iterateOverAllRows(new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray nd1 = (INDArray) nd.getResult();
+                    for (int i = 0; i < nd1.length(); i++) {
+                        int element = vectorCounter.getAndIncrement();
+                        nd1.put(i, flattened.getScalar(element));
+                    }
+                }
 
-        //returns strides for reshape or null if data needs to be copied
-        int[] newStrides = newStridesReshape(shape);
+                @Override
+                public void operate(INDArray nd) {
+                    for (int i = 0; i < nd.length(); i++) {
+                        int element = vectorCounter.getAndIncrement();
+                        nd.put(i, flattened.getScalar(element));
 
-        if(newStrides != null) {
-            INDArray ndArray = NDArrays.create(data,shape,stride,offset,ordering);
-            return ndArray;
+                    }
+                }
+            });
+        }
+        //column order
+        else if(ordering == NDArrayFactory.FORTRAN) {
+            create.iterateOverAllRows(new SliceOp() {
+                @Override
+                public void operate(DimensionSlice nd) {
+                    INDArray nd1 = (INDArray) nd.getResult();
 
+                    for(int i = 0; i < nd1.length(); i++) {
+                        int element = vectorCounter.getAndIncrement();
+                        nd1.put(i, flattened.getScalar(element));
 
+                    }
+                }
+
+                @Override
+                public void operate(INDArray nd) {
+                    for(int i = 0; i < nd.length(); i++) {
+                        int element = vectorCounter.getAndIncrement();
+                        nd.put(i, flattened.getScalar(element));
+
+                    }
+                }
+            });
         }
 
-        //need to copy data
-        else {
-            INDArray create = NDArrays.create(shape,NDArrays.getStrides(shape,ordering));
-            final INDArray flattened = ravel();
-            //individual vector size
-            int vectorSize = create.size(create.shape().length - 1);
-            //current position in the vector
-            final AtomicInteger vectorCounter = new AtomicInteger(0);
-            //row order
-            if(ordering == NDArrayFactory.C) {
-                create.iterateOverAllRows(new SliceOp() {
-                    @Override
-                    public void operate(DimensionSlice nd) {
-                        INDArray nd1 = (INDArray) nd.getResult();
-                        for (int i = 0; i < nd1.length(); i++) {
-                            int element = vectorCounter.getAndIncrement();
-                            nd1.put(i, flattened.getScalar(element));
-                        }
-                    }
-
-                    @Override
-                    public void operate(INDArray nd) {
-                        for (int i = 0; i < nd.length(); i++) {
-                            int element = vectorCounter.getAndIncrement();
-                            nd.put(i, flattened.getScalar(element));
-
-                        }
-                    }
-                });
-            }
-            //column order
-            else if(ordering == NDArrayFactory.FORTRAN) {
-                create.iterateOverAllColumns(new SliceOp() {
-                    @Override
-                    public void operate(DimensionSlice nd) {
-                        INDArray nd1 = (INDArray) nd.getResult();
-
-                        for(int i = 0; i < nd1.length(); i++) {
-                            int element = vectorCounter.getAndIncrement();
-                            nd1.put(i, flattened.getScalar(element));
-
-                        }
-                    }
-
-                    @Override
-                    public void operate(INDArray nd) {
-                        for(int i = 0; i < nd.length(); i++) {
-                            int element = vectorCounter.getAndIncrement();
-                            nd.put(i, flattened.getScalar(element));
-
-                        }
-                    }
-                });
-            }
-
-            return create;
-
-        }
-
-
+        return create;
 
     }
+
+
+
+
 
 
 
@@ -3015,7 +2981,7 @@ public abstract class BaseNDArray  implements INDArray {
         }
         //column order
         else if(ordering == NDArrayFactory.FORTRAN) {
-            iterateOverAllColumns(op);
+            iterateOverAllRows(op);
         }
 
         return ret;
@@ -3143,6 +3109,7 @@ public abstract class BaseNDArray  implements INDArray {
                         offset + r * columns(),
                         ordering
                 );
+
                 return ret;
             }
             else {
@@ -3317,11 +3284,29 @@ public abstract class BaseNDArray  implements INDArray {
 
         int[] newShape = doPermuteSwap(shape,rearrange);
         int[] newStride = doPermuteSwap(stride,rearrange);
-        return  NDArrays.create(data,newShape,newStride,offset,ordering);
+        if(ordering == NDArrayFactory.C)
+            return  NDArrays.create(data,newShape,newStride,offset,ordering);
+            //not contiguous need to copy elements
+        else {
+            INDArray shape = NDArrays.create(newShape,ordering);
+            copyRealTo(shape);
+            return shape;
+        }
     }
 
 
 
+    protected void copyRealTo(INDArray arr) {
+        INDArray flattened = ravel();
+        int count = 0;
+        for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
+            INDArray vector = arr.vectorAlongDimension(i,0);
+            for(int j = 0; j < vector.length(); j++) {
+                vector.putScalar(j,flattened.get(count++));
+            }
+        }
+
+    }
 
     protected int[] doPermuteSwap(int[] shape,int[] rearrange) {
         int[] ret = new int[shape.length];
@@ -3408,9 +3393,9 @@ public abstract class BaseNDArray  implements INDArray {
                 for(int j = 0; j < columns; j++) {
                     sb.append(getScalar(i,j));
                     if(j < columns - 1)
-                        sb.append(',');
+                        sb.append(" ,");
                 }
-                sb.append(']');
+                sb.append("],\n");
 
             }
 
@@ -3423,12 +3408,12 @@ public abstract class BaseNDArray  implements INDArray {
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             for(int i = 0; i < length; i++) {
-                sb.append(getScalar(i));
+                sb.append(get(i));
                 if(i < length - 1)
-                    sb.append(',');
+                    sb.append(" ,");
             }
 
-            sb.append("]\n");
+            sb.append("]n\n");
             return sb.toString();
         }
 
@@ -3442,7 +3427,7 @@ public abstract class BaseNDArray  implements INDArray {
             for (int i = 1; i < slices(); i++) {
                 sb.append(slice(i).toString());
                 if(i < length - 1)
-                    sb.append(',');
+                    sb.append(" ,");
 
             }
         }

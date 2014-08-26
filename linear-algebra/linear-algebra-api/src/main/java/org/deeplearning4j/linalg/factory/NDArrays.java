@@ -1456,7 +1456,7 @@ public class NDArrays  {
      * @return the instance
      */
     public static INDArray create(float[] data,int[] shape,int[] stride,int offset,char ordering) {
-        return INSTANCE.create(data,shape,stride,offset);
+        return INSTANCE.create(data,shape,stride,offset,ordering);
     }
 
 

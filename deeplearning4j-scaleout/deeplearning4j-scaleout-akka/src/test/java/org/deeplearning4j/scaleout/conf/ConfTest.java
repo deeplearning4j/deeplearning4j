@@ -21,8 +21,8 @@ public class ConfTest {
     @Test
     public void testInit() {
         Conf c = new Conf();
-        c.setSparsity(1e-2);
-        c.setDropOut(0.5);
+        c.setSparsity(1e-2f);
+        c.setDropOut(0.5f);
         c.setUseRegularization(true);
         c.setK(1);
         c.setHiddenUnitByLayer(Collections.singletonMap(0, RBM.HiddenUnit.RECTIFIED));
@@ -38,8 +38,8 @@ public class ConfTest {
 
         DBN d = new DBN.Builder().withHiddenUnitsByLayer(Collections.singletonMap(0, RBM.HiddenUnit.RECTIFIED))
                .withVisibleUnitsByLayer(Collections.singletonMap(0, RBM.VisibleUnit.GAUSSIAN))
-                .withSparsity(1e-2).useRegularization(true)
-                .withDropOut(0.5).hiddenLayerSizes(new int[]{300,300,300})
+                .withSparsity(1e-2f).useRegularization(true)
+                .withDropOut(0.5f).hiddenLayerSizes(new int[]{300,300,300})
                 .numberOfInputs(2).numberOfOutPuts(2).useAdaGrad(true).build();
 
         assertEquals(build,d);

@@ -35,7 +35,7 @@ public class DenoisingAutoEncoderMnistExample {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             for(int i = 0; i < 100; i++) {
-                autoEncoder.train(next.getFeatureMatrix(), 1e-1, 0.3, i);
+                autoEncoder.train(next.getFeatureMatrix(), 1e-1f, 0.3f, i);
 
                 log.info("Error on iteration " + i + " is " + autoEncoder.getReConstructionCrossEntropy());
 
