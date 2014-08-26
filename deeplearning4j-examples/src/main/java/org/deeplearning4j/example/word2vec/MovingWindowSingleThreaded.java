@@ -99,8 +99,8 @@ public class MovingWindowSingleThreaded {
             throw new IllegalStateException("No data found");
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
-                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withL2(2e-4)
-                .useRegularization(true).withSparsity(0.1).withMomentum(0.9)
+                .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).withL2(2e-4f)
+                .useRegularization(true).withSparsity(0.1f).withMomentum(0.9f)
                 .numberOfInputs(vec.getWindow() * vec.getLayerSize())
                 .hiddenLayerSizes(new int[]{200,150,125})
                 .numberOfOutPuts(3).withActivation(Activations.hardTanh())
@@ -109,7 +109,7 @@ public class MovingWindowSingleThreaded {
         while(iter.hasNext()) {
             DataSet d = iter.next();
             dbn.setInput(d.getFeatureMatrix());
-            dbn.finetune(d.getLabels(),1e-6,10000);
+            dbn.finetune(d.getLabels(),1e-6f,10000);
         }
 
         iter.reset();

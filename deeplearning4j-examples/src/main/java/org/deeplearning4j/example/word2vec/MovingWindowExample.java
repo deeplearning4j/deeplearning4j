@@ -84,12 +84,12 @@ public class MovingWindowExample {
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
         c.setPretrainEpochs(10000);
-        c.setFinetuneLearningRate(1e-3);
-        c.setPretrainLearningRate(1e-3);
+        c.setFinetuneLearningRate(1e-3f);
+        c.setPretrainLearningRate(1e-3f);
         c.setLayerSizes(new int[]{iter.inputColumns() / 4,iter.inputColumns() / 4, iter.inputColumns() / 3});
         c.setUseAdaGrad(true);
-        c.setMomentum(0.5);
-        //c.setRenderWeightEpochs(1000);
+        c.setMomentum(0.5f);
+        //c.setRenderWeighftEpochs(1000);
         c.setnOut(2);
         c.setFunction(Activations.hardTanh());
         c.setSplit(10);
@@ -98,7 +98,7 @@ public class MovingWindowExample {
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(false);
-        c.setL2(2e-4);
+        c.setL2(2e-4f);
         c.setDeepLearningParams(new Object[]{1,1e-1,1000});
         ActorNetworkRunner runner = new ActorNetworkRunner("master",iter);
         runner.setModelSaver(new DefaultModelSaver(new File("word2vec-modelsaver.ser")));

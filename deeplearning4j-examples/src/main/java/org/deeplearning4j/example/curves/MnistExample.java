@@ -33,16 +33,16 @@ public class MnistExample {
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         DBN dbn = new DBN.Builder()
                 .hiddenLayerSizes(new int[]{600, 500, 400}).withRng(rng)
-                .useRegularization(true).withL2(2e-5)
+                .useRegularization(true).withL2(2e-5f)
                 .numberOfInputs(784).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
-        dbn.pretrain(iter,1,1e-1,1);
+        dbn.pretrain(iter,1,1e-1f,1);
 
 
         iter.reset();
 
-        dbn.finetune(iter,1e-1,1);
+        dbn.finetune(iter,1e-1f,1);
 
 
 

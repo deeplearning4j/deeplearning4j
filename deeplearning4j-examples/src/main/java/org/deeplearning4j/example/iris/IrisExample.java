@@ -43,12 +43,12 @@ public class IrisExample {
         next.scale();
 
         dbn.setInput(next.getFeatureMatrix());
-        dbn.pretrain(next.getFeatureMatrix(),1,1e-1,100);
+        dbn.pretrain(next.getFeatureMatrix(),1,1e-1f,100);
 
 
 
         //log.info(Info.activationsFor(next.getFeatureMatrix(),dbn));
-        dbn.finetune(next.getLabels(),1e-1,100);
+        dbn.finetune(next.getLabels(),1e-1f,100);
 
 
 

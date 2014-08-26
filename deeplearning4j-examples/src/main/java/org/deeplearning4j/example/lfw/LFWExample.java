@@ -37,9 +37,9 @@ public class LFWExample {
          .withHiddenUnits(RBM.HiddenUnit.RECTIFIED)
          .withVisibleUnits(RBM.VisibleUnit.GAUSSIAN).lineSearchBackProp(true)
 		.hiddenLayerSizes(new int[]{600, 500, 400}).useRegularization(true)
-          .sampleFromHiddenActivations(true).withL2(1e-4).withSparsity(1e-1)
+          .sampleFromHiddenActivations(true).withL2(1e-4f).withSparsity(1e-1f)
                 .renderByLayer(Collections.singletonMap(0,10))
-        .withDropOut(0.5).withActivation(Activations.tanh()).withMomentum(0.5)
+        .withDropOut(0.5f).withActivation(Activations.tanh()).withMomentum(0.5f)
 		.numberOfInputs(iter.inputColumns()).numberOfOutPuts(load.numOutcomes())
 		.build();
 
@@ -58,7 +58,7 @@ public class LFWExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			dbn.setInput(next.getFeatureMatrix());
-			dbn.finetune(next.getLabels(), 1e-3, 100);
+			dbn.finetune(next.getLabels(), 1e-3f, 100);
 		}
 		
 		

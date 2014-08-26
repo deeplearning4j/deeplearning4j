@@ -35,7 +35,7 @@ public class DeepAutoEncoderFromFile {
 
         DBN dbn = SerializationUtils.readObject(new File(args[0]));
         dbn.setOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT);
-        dbn.setMomentum(9e-1);
+        dbn.setMomentum(9e-1f);
 
         DeepAutoEncoder encoder = new DeepAutoEncoder.Builder().withEncoder(dbn).build();
         encoder.setSampleFromHiddenActivations(false);
@@ -62,7 +62,7 @@ public class DeepAutoEncoderFromFile {
             f2.renderFilters(encoder.getOutputLayer().getW(), "outputlayer.png", 28, 28, next.numExamples());
             INDArray recon =  encoder.output(next.getFeatureMatrix());
 
-            encoder.finetune(next.getFeatureMatrix(),1e-3,10);
+            encoder.finetune(next.getFeatureMatrix(),1e-3f,10);
 
             if(count % 10 == 0) {
                 NeuralNetPlotter plotter = new NeuralNetPlotter();

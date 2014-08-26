@@ -33,7 +33,7 @@ public class DenoisingAutoEncoderMnistExample {
         DataSetIterator iter = new MultipleEpochsIterator(50,new MnistDataSetIterator(10,30));
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            autoEncoder.train(next.getFeatureMatrix(),1e-1,0.3,10);
+            autoEncoder.train(next.getFeatureMatrix(),1e-1f,0.3f,10);
 
 
         }
