@@ -89,7 +89,7 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         INDArray toRavelF = NDArrays.create(data);
         INDArray ravel = toRavel.ravel();
         INDArray ravelF = toRavelF.ravel();
-        assertNotEquals(ravel,ravelF);
+        assertEquals(ravel,ravelF);
         NDArrays.factory().setOrder('c');
 
     }
