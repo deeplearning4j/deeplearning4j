@@ -63,7 +63,7 @@ public class TweetOpinionMining {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1, 10000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-1f, 10000);
         }
 
         iter.reset();
@@ -71,7 +71,7 @@ public class TweetOpinionMining {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             dbn.setInput(next.getFeatureMatrix());
-            dbn.finetune(next.getLabels(), 1e-1, 10000);
+            dbn.finetune(next.getLabels(), 1e-1f, 10000);
         }
 
 

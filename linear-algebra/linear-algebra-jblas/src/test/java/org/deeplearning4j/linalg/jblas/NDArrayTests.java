@@ -3,12 +3,14 @@ package org.deeplearning4j.linalg.jblas;
 
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 
 
 /**
@@ -60,11 +62,24 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
     }
 
+   @Test
+   public void testTransposeCompat() {
+       NDArrays.factory().setOrder('f');
+       DoubleMatrix dReshaped = DoubleMatrix.linspace(1,8,8).reshape(2,4);
+       INDArray nReshaped = NDArrays.linspace(1,8,8).reshape(2,4);
+       verifyElements(dReshaped,nReshaped);
+       DoubleMatrix d = dReshaped.transpose();
+       INDArray n = nReshaped.transpose();
+       verifyElements(d,n);
+       assertTrue(ArrayUtil.equals(n.data(),d.data));
+       NDArrays.factory().setOrder('c');
+
+   }
 
 
     @Test
     public void testFortranRavel() {
-        double[][] data = new double[][]{
+        double[][] data = new double[][] {
                 {1,2,3,4},
                 {5,6,7,8}
         };
@@ -74,7 +89,7 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         INDArray toRavelF = NDArrays.create(data);
         INDArray ravel = toRavel.ravel();
         INDArray ravelF = toRavelF.ravel();
-        assertNotEquals(ravel,ravelF);
+        assertEquals(ravel,ravelF);
         NDArrays.factory().setOrder('c');
 
     }

@@ -19,7 +19,7 @@ public class RawDBNFinetuneExample {
 		while(iter.hasNext()) {
 			DataSet d2 = iter.next();
 			d.setInput(d2.getFeatureMatrix());
-			d.finetune(d2.getLabels(), 0.0001, 1000);
+			d.finetune(d2.getLabels(), 0.0001f, 1000);
 		}
 		
 		SerializationUtils.saveObject(d, new File(args[1]));

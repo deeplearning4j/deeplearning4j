@@ -51,7 +51,7 @@ public class LFWRBMExample {
         while(iter.hasNext()) {
             DataSet curr = iter.next();
             curr.normalizeZeroMeanZeroUnitVariance();
-            r.trainTillConvergence(curr.getFeatureMatrix(),1e-1,  new Object[]{1,1e-1,10000});
+            r.trainTillConvergence(curr.getFeatureMatrix(),1e-1f,  new Object[]{1,1e-1f,10000});
             if(numIter % 10 == 0) {
                 FilterRenderer render = new FilterRenderer();
                 try {

@@ -34,16 +34,16 @@ public class DistributedDeepAutoEncoderExample {
 
         Conf c = new Conf();
         c.setFinetuneEpochs(10000);
-        c.setFinetuneLearningRate(1e-2);
-        c.setPretrainLearningRate(1e-1);
+        c.setFinetuneLearningRate(1e-2f);
+        c.setPretrainLearningRate(1e-1f);
         c.setNormalizeCodeLayer(false);
         c.setRoundCodeLayer(false);
         c.setSplit(100);
         c.setSparsity(0);
-        c.setMomentum(9e-1);
+        c.setMomentum(9e-1f);
         c.setMultiLayerClazz(DBN.class);
         c.setUseRegularization(true);
-        c.setL2(2e-4);
+        c.setL2(2e-4f);
         c.setSampleHiddenActivations(false);
         c.setOutputLayerLossFunction(OutputLayer.LossFunction.SQUARED_LOSS);
         c.setOutputActivationFunction(Activations.sigmoid());

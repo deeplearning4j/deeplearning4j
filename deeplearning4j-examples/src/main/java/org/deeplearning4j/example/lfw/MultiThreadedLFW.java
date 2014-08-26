@@ -26,11 +26,11 @@ public class MultiThreadedLFW {
 		
 		Conf c = new Conf();
 		c.setFinetuneEpochs(10000);
-		c.setFinetuneLearningRate(1e-2);
+		c.setFinetuneLearningRate(1e-2f);
 		c.setLayerSizes(new int[]{700,500,250});
 		c.setnIn(28 * 28);
-		c.setMomentum(0.5);
-        c.setDropOut(1e-1);
+		c.setMomentum(0.5f);
+        c.setDropOut(1e-1f);
 		c.setUseAdaGrad(true);
 		//c.setRenderWeightEpochs(1000);
 		c.setnOut(10);
@@ -40,7 +40,7 @@ public class MultiThreadedLFW {
         c.setNormalizeZeroMeanAndUnitVariance(false);
 		c.setMultiLayerClazz(DBN.class);
 		c.setUseRegularization(true);
-        c.setL2(2e-4);
+        c.setL2(2e-4f);
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
 		c.setDeepLearningParams(new Object[]{1,1e-2,10000});

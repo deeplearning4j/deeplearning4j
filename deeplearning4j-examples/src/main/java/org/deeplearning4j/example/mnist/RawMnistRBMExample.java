@@ -21,7 +21,7 @@ public class RawMnistRBMExample {
 	 */
 	public static void main(String[] args) throws Exception {
 		RBM r = new RBM.Builder().withHidden(RBM.HiddenUnit.RECTIFIED).withVisible(RBM.VisibleUnit.GAUSSIAN)
-		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.3)
+		.numberOfVisible(784).useAdaGrad(true).withMomentum(0.3f)
 		.numHidden(600).useRegularization(false)
 		.build();
 
@@ -34,7 +34,7 @@ public class RawMnistRBMExample {
             next.scale();
             log.info("Data " + next);
 			//train with k = 1 0.01 learning rate and 1000 epochs
-			r.trainTillConvergence(next.getFeatureMatrix(),1e-3, new Object[]{1,1e-3,1000});
+			r.trainTillConvergence(next.getFeatureMatrix(),1e-3f, new Object[]{1,1e-3f,1000});
 
 		}
 

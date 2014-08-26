@@ -30,16 +30,16 @@ public class StackedDenoisingAutoEncoderExample {
         //784 input (number of columns in mnist, 10 labels (0-9), no regularization
         StackedDenoisingAutoEncoder sda = new StackedDenoisingAutoEncoder.Builder()
                 .hiddenLayerSizes(new int[]{600, 500, 400}).withRng(rng)
-                .useRegularization(true).withL2(2e-5)
+                .useRegularization(true).withL2(2e-5f)
                 .numberOfInputs(784).numberOfOutPuts(iter.totalOutcomes())
                 .build();
 
-        sda.pretrain(iter, 1, 1e-1, 1);
+        sda.pretrain(iter, 1, 1e-1f, 1);
 
 
         iter.reset();
 
-        sda.finetune(iter, 1e-1, 1);
+        sda.finetune(iter, 1e-1f, 1);
 
 
 
