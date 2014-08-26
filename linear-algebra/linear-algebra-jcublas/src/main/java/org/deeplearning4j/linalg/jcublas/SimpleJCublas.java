@@ -22,7 +22,7 @@ public class SimpleJCublas {
                 A.rows(),
                 A.columns(),
                 Sizeof.DOUBLE,
-                d_A,//.withByteOffset(A.offset()),
+                Pointer.to(A.data()),
                 A.rows(),
                 d_A,
                 A.rows()
@@ -31,7 +31,7 @@ public class SimpleJCublas {
                 B.rows(),
                 B.columns(),
                 Sizeof.DOUBLE,
-                d_B,//.withByteOffset(B.offset()),
+                Pointer.to(B.data()),
                 B.rows(),
                 d_B,
                 B.rows()
@@ -50,7 +50,7 @@ public class SimpleJCublas {
                 A.rows(),
                 A.columns(),
                 Sizeof.DOUBLE,
-                d_A,//.withByteOffset(A.offset()),
+                Pointer.to(A.data()),
                 A.rows(),
                 d_A,
                 A.rows()
@@ -59,7 +59,7 @@ public class SimpleJCublas {
                 B.rows(),
                 B.columns(),
                 Sizeof.DOUBLE,
-                d_B,//.withByteOffset(B.offset()),
+                Pointer.to(B.data()),
                 B.rows(),
                 d_B,
                 B.rows()
@@ -196,12 +196,15 @@ public class SimpleJCublas {
         Pointer d_B = new Pointer();
         Pointer d_C = new Pointer();
 
-        ThreePointersV(d_A, d_B, d_C, A, B);
-
+        ThreePointerM(d_A, d_B, d_C, A, B,C);
+        char trans = 'n';
+        if (A.rows() == B.columns()) {
+            trans = 'T';
+        }
         JCublas.cublasDgemv(
                 'n', //trans
                 A.rows(),  // m
-                B.columns(), // n
+                A.columns(), // n
                 alpha, //alpha
                 d_A, // A
                 A.rows(),  // lda
