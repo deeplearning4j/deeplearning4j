@@ -1745,4 +1745,24 @@ public class NDArrays  {
     public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
         return createComplex(data,shape,offset,NDArrays.order());
     }
+
+    public static INDArray create(float[] data, int[] shape, int offset) {
+        return INSTANCE.create(data,shape,offset);
+    }
+
+    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset, char ordering) {
+        return INSTANCE.createComplex(data,ints,offset,ordering);
+    }
+
+    public static IComplexNDArray createComplex(float[] dim) {
+          return INSTANCE.createComplex(dim);
+    }
+
+    public static IComplexNDArray createComplex(float[] data, int[] ints, int offset) {
+        return INSTANCE.createComplex(data,ints,offset);
+    }
+
+    public static INDArray create(float[][] floats) {
+        return INSTANCE.create(floats);
+    }
 }

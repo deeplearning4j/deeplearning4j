@@ -23,7 +23,7 @@ public class JblasBenchMark {
 
         for(int i = 0; i < 100000; i++) {
             watch.start();
-            NDArray n2 = new NDArray(new double[]{10000},new int[]{2,5000});
+            NDArray n2 = new NDArray(new float[]{10000},new int[]{2,5000});
             watch.stop();
             source += watch.getTime();
             System.out.println("Source " + watch.getTime());

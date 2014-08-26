@@ -80,13 +80,13 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	@Option(name="-k",usage="the k for rbms (default: 1)",handler=IntOptionHandler.class)
 	protected int k = 1;
 	@Option(name="-c",usage="corruption level (for denoising autoencoders) (default: 0.3)",handler=DoubleOptionHandler.class)
-	protected double corruptionLevel = 0.3;
+	protected float corruptionLevel = 0.3f;
 	@Option(name="-h",usage="the host to connect to as a master (default: 127.0.0.1)")
 	protected String host = "localhost";
 	@Option(name="-ftl",usage="the starter fine tune learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	protected double finetuneLearningRate = 0.1;
+	protected float finetuneLearningRate = 0.1f;
 	@Option(name="-ptl",usage="the starter pretrain learning rate (default: 0.1)",handler=DoubleOptionHandler.class)
-	protected double pretrainLearningRate = 0.1;
+	protected float pretrainLearningRate = 0.1f;
 	@Option(name="-hl",usage="hidden layer sizes (comma separated list)")
 	protected String hiddenLayerSizesOption;
 	protected int[] hiddenLayerSizes = {300,300,300};
@@ -308,7 +308,7 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	}
 
 
-	public double getCorruptionLevel() {
+	public float getCorruptionLevel() {
 		return corruptionLevel;
 	}
 
@@ -318,12 +318,12 @@ public class DistributedDeepLearningTrainerApp implements DeepLearningConfigurab
 	}
 
 
-	public double getFinetineLearningRate() {
+	public float getFinetineLearningRate() {
 		return finetuneLearningRate;
 	}
 
 
-	public double getPretrainLearningRate() {
+	public float getPretrainLearningRate() {
 		return pretrainLearningRate;
 	}
 

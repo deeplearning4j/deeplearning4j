@@ -64,7 +64,7 @@ public class DenoisingTests {
 		MersenneTwister rand = new MersenneTwister(123);
 		DataSet xor = DataSets.mnist(10);
         DenoisingAutoEncoder da = new DenoisingAutoEncoder.Builder().numberOfVisible(xor.getFeatureMatrix().columns()).numHidden(1).withRandom(rand).build();
-        da.trainTillConvergence(xor.getFeatureMatrix(),1e-1,0.3,100);
+        da.trainTillConvergence(xor.getFeatureMatrix(),1e-1f,0.3f,100);
 	}
 
 	

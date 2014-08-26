@@ -132,7 +132,7 @@ public class DBN extends BaseMultiLayerNetwork {
     @Override
     public void pretrain(DataSetIterator iter, Object[] otherParams) {
         int k = (Integer) otherParams[0];
-        double lr = (Double) otherParams[1];
+        float lr = (Float) otherParams[1];
         int epochs = (Integer) otherParams[2];
         int passes = otherParams.length > 3 ? (Integer) otherParams[3] : 1;
         for(int i = 0; i < passes; i++)
@@ -143,7 +143,7 @@ public class DBN extends BaseMultiLayerNetwork {
     @Override
     public void pretrain(INDArray input, Object[] otherParams) {
         int k = (Integer) otherParams[0];
-        double lr = (Double) otherParams[1];
+        float lr = (Float) otherParams[1];
         int epochs = (Integer) otherParams[2];
         pretrain(input,k,lr,epochs);
 
@@ -160,7 +160,7 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param learningRate the learning rate to use
      * @param epochs the number of epochs to train
      */
-    public void pretrain(DataSetIterator iter,int k,double learningRate,int epochs) {
+    public void pretrain(DataSetIterator iter,int k,float learningRate,int epochs) {
 
 
         INDArray layerInput;
@@ -178,7 +178,7 @@ public class DBN extends BaseMultiLayerNetwork {
                     else
                         setInput(input);
                     //override learning rate where present
-                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
+                    float realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
                     if(isForceNumEpochs()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
@@ -216,7 +216,7 @@ public class DBN extends BaseMultiLayerNetwork {
 
                     log.info("Training on layer " + (i + 1));
                     //override learning rate where present
-                    double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
+                    float realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
                     if(isForceNumEpochs()) {
                         for(int epoch = 0; epoch < epochs; epoch++) {
                             log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
@@ -248,7 +248,8 @@ public class DBN extends BaseMultiLayerNetwork {
      * @param learningRate the learning rate to use
      * @param epochs the number of epochs to train
      */
-    public void pretrain(INDArray input,int k,double learningRate,int epochs) {
+    public void pretrain(INDArray input,int k, float learningRate,int epochs) {
+
         if(isUseGaussNewtonVectorProductBackProp()) {
             log.warn("WARNING; Gauss newton back vector back propagation is primarily used for hessian free which does not involve pretrain; just finetune. Use this at your own risk");
         }
@@ -285,7 +286,7 @@ public class DBN extends BaseMultiLayerNetwork {
             }
             log.info("Training on layer " + (i + 1));
             //override learning rate where present
-            double realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
+            float realLearningRate = layerLearningRates.get(i) != null ? layerLearningRates.get(i) : learningRate;
             if(isForceNumEpochs()) {
                 for(int epoch = 0; epoch < epochs; epoch++) {
                     log.info("Error on epoch " + epoch + " for layer " + (i + 1) + " is " + getLayers()[i].getReConstructionCrossEntropy());
@@ -332,7 +333,7 @@ public class DBN extends BaseMultiLayerNetwork {
         this.hiddenUnit = hiddenUnit;
     }
 
-    public void pretrain(int k,double learningRate,int epochs) {
+    public void pretrain(int k,float learningRate,int epochs) {
         pretrain(this.getInput(),k,learningRate,epochs);
     }
 
@@ -452,7 +453,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder outputLayerDropout(double outputLayerDropout) {
+        public Builder outputLayerDropout(float outputLayerDropout) {
              super.outputLayerDropout(outputLayerDropout);
             return this;
         }
@@ -488,7 +489,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+        public Builder momentumAfterByLayer(Map<Integer, Map<Integer, Float>> momentumAfterByLayer) {
             super.momentumAfterByLayer(momentumAfterByLayer);
             return this;
         }
@@ -500,7 +501,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @return
          */
         @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
             super.momentumAfter(momentumAfter);
             return this;
         }
@@ -548,7 +549,7 @@ public class DBN extends BaseMultiLayerNetwork {
         }
 
         @Override
-        public Builder learningRateForLayer(Map<Integer, Double> learningRates) {
+        public Builder learningRateForLayer(Map<Integer, Float> learningRates) {
             super.learningRateForLayer(learningRates);
             return this;
         }
@@ -634,7 +635,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @param dropOut the dropout to use
          * @return builder pattern
          */
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -669,7 +670,7 @@ public class DBN extends BaseMultiLayerNetwork {
             return this;
         }
 
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
@@ -741,7 +742,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @param momentum
          * @return
          */
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }
@@ -761,7 +762,7 @@ public class DBN extends BaseMultiLayerNetwork {
          * @param l2
          * @return
          */
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }

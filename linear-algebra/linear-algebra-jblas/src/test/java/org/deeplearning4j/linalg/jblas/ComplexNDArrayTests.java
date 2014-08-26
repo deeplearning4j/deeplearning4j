@@ -120,7 +120,7 @@ public class ComplexNDArrayTests extends org.deeplearning4j.linalg.api.test.Comp
         for(int i = 0; i < d.rows; i++) {
             for(int j = 0; j < d.columns; j++) {
                 double test1 = d.get(i,j);
-                double test2 = (double) d2.getScalar(i,j).element();
+                double test2 = (float) d2.getScalar(i,j).element();
                 assertEquals(test1,test2,1e-6);
             }
         }

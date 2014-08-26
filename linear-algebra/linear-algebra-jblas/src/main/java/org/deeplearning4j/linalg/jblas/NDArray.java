@@ -3,6 +3,7 @@ package org.deeplearning4j.linalg.jblas;
 
 import org.deeplearning4j.linalg.api.ndarray.BaseNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 import org.jblas.DoubleMatrix;
 
 
@@ -42,7 +43,7 @@ public class NDArray extends BaseNDArray {
      * @param shape    the shape of the ndarray
      * @param ordering
      */
-    public NDArray(double[] data, int[] shape, char ordering) {
+    public NDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
@@ -52,7 +53,7 @@ public class NDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the ndarray
      */
-    public NDArray(double[] data, int[] shape, int offset, char ordering) {
+    public NDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
@@ -129,12 +130,8 @@ public class NDArray extends BaseNDArray {
         super(slices, shape, stride, ordering);
     }
 
-    public NDArray(double[] data, int[] shape, int[] stride, char ordering) {
+    public NDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
-    }
-
-    public NDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        super(data, shape, stride, offset, ordering);
     }
 
     public NDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
@@ -147,11 +144,11 @@ public class NDArray extends BaseNDArray {
      * @param data  the data to use
      * @param shape the shape of the ndarray
      */
-    public NDArray(double[] data, int[] shape) {
+    public NDArray(float[] data, int[] shape) {
         super(data, shape);
     }
 
-    public NDArray(double[] data, int[] shape, int offset) {
+    public NDArray(float[] data, int[] shape, int offset) {
         super(data, shape, offset);
     }
 
@@ -223,13 +220,11 @@ public class NDArray extends BaseNDArray {
         super(slices, shape, stride);
     }
 
-    public NDArray(double[] data, int[] shape, int[] stride) {
+    public NDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
     }
 
-    public NDArray(double[] data, int[] shape, int[] stride, int offset) {
-        super(data, shape, stride, offset);
-    }
+
 
     public NDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
@@ -238,7 +233,18 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(DoubleMatrix doubleMatrix) {
         this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
-        this.data = doubleMatrix.data;
+        this.data = ArrayUtil.floatCopyOf(doubleMatrix.data);
 
+    }
+
+    public NDArray(double[] data, int[] shape, int[] stride, int offset) {
+        this.data = ArrayUtil.floatCopyOf(data);
+        this.stride = stride;
+        this.offset = offset;
+        initShape(shape);
+    }
+
+    public NDArray(float[][] floats) {
+        super(floats);
     }
 }

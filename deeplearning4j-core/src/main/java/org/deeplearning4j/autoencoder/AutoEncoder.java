@@ -33,7 +33,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param fanIn
      * @param dist
      */
-    private AutoEncoder(int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
+    private AutoEncoder(int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, float fanIn, RealDistribution dist) {
         super(nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
     }
 
@@ -49,7 +49,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param fanIn
      * @param dist
      */
-    private AutoEncoder(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, double fanIn, RealDistribution dist) {
+    private AutoEncoder(INDArray input, int nVisible, int nHidden, INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng, float fanIn, RealDistribution dist) {
         super(input, nVisible, nHidden, W, hbias, vbias, rng, fanIn, dist);
     }
 
@@ -74,7 +74,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @return the loss function
      */
     @Override
-    public double lossFunction(Object[] params) {
+    public float lossFunction(Object[] params) {
         return squaredLoss();
     }
 
@@ -86,7 +86,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public void train(INDArray input, double lr, Object[] params) {
+    public void train(INDArray input, float lr, Object[] params) {
         NeuralNetworkGradient gradient = getGradient(new Object[]{lr});
         vBias.addi(gradient.getvBiasGradient());
         W.addi(gradient.getwGradient());
@@ -95,7 +95,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
 
     @Override
     public NeuralNetworkGradient getGradient(Object[] params) {
-        double lr = (double) params[0];
+        float lr = (float) params[0];
         int iterations = (int) params[1];
 
 
@@ -158,7 +158,7 @@ public class AutoEncoder extends BaseNeuralNetwork {
      * @param params the params (k,corruption level, max epochs,...)
      */
     @Override
-    public void trainTillConvergence(INDArray input, double lr, Object[] params) {
+    public void trainTillConvergence(INDArray input, float lr, Object[] params) {
         AutoEncoderOptimizer o = new AutoEncoderOptimizer(this,lr,params,optimizationAlgo,lossFunction);
         o.train(input);
     }

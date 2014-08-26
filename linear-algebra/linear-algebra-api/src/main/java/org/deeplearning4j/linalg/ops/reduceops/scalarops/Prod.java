@@ -14,7 +14,7 @@ public class Prod extends BaseScalarOp {
     }
 
     @Override
-    public double accumulate(INDArray arr, int i, double soFar) {
-        return soFar * (double) arr.getScalar(i).element();
+    public float accumulate(INDArray arr, int i, float soFar) {
+        return soFar * (float) arr.getScalar(i).element();
     }
 }

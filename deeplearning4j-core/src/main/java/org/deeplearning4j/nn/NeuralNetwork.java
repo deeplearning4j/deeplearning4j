@@ -54,7 +54,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param epochs the max number of epochs to run
      * @param extraParams implementation specific params
      */
-    public void backProp(double lr,int epochs,Object[] extraParams);
+    public void backProp(float lr,int epochs,Object[] extraParams);
 
     /**
      * The loss function for this network
@@ -103,12 +103,12 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	
 	public WeightInit getWeightInit();
     public void setWeightInit(WeightInit weightInit);
-	public double squaredLoss();
+	public float squaredLoss();
 	
-	public double negativeLogLikelihood();
+	public float negativeLogLikelihood();
 	
-	public double getSparsity();
-	public  void setSparsity(double sparsity);
+	public float getSparsity();
+	public  void setSparsity(float sparsity);
 	
 	public void setDist(RealDistribution dist);
 	public RealDistribution getDist();
@@ -147,24 +147,24 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * L2 regularization coefficient
      * @return
      */
-	public double getL2();
-	public void setL2(double l2);
+	public float getL2();
+	public void setL2(float l2);
 
     /**
      * Mean squared error. Used for regression tasks
      * @return the mean squared error with respect to the output
      * of the network
      */
-    public double mse();
+    public float mse();
 
     /**
      * RMSE for reconstruction entropy
      * @return rmse for reconstruction entropy
      */
-    public double mseRecon();
+    public float mseRecon();
 
-	public double getMomentum();
-	public void setMomentum(double momentum);
+	public float getMomentum();
+	public void setMomentum(float momentum);
 	
 	public void setRenderEpochs(int renderEpochs);
 	public int getRenderIterations();
@@ -172,8 +172,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	public NeuralNetwork transpose();
 	public  NeuralNetwork clone();
 
-	public double fanIn();
-	public void setFanIn(double fanIn);
+	public float fanIn();
+	public void setFanIn(float fanIn);
 	/**
 	 * Sample hidden mean and sample
 	 * given visible
@@ -185,8 +185,8 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 
     public boolean isUseAdaGrad();
 	
-	public void setDropOut(double dropOut);
-	public double dropOut();
+	public void setDropOut(float dropOut);
+	public float dropOut();
 	
 	/**
 	 * Sample visible mean and sample
@@ -196,11 +196,11 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
 	 */
 	public Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h);
 	
-	void resetAdaGrad(double lr);
+	void resetAdaGrad(float lr);
 	
 	void iterationDone(int epoch);
 	
-	public double l2RegularizedCoefficient();
+	public float l2RegularizedCoefficient();
 
 
 
@@ -211,7 +211,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * Error on reconstruction
      * @return the error on reconstruction
      */
-	public double getReConstructionCrossEntropy();
+	public float getReConstructionCrossEntropy();
 
     /**
      * Run one iteration
@@ -219,7 +219,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param lr the learning rate to use
      * @param params the extra params for the neural network(k, corruption level, max epochs,...)
      */
-	public void train(INDArray input,double lr,Object[] params);
+	public void train(INDArray input,float lr,Object[] params);
 
     /**
      * Trains via an optimization algorithm such as SGD or Conjugate Gradient
@@ -227,7 +227,7 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * @param lr the learning rate to use
      * @param params the params (k,corruption level, max epochs,...)
      */
-	public void trainTillConvergence(INDArray input,double lr,Object[] params);
+	public void trainTillConvergence(INDArray input,float lr,Object[] params);
 	/**
 	 * Performs a network merge in the form of
 	 * a += b - a / n
@@ -262,12 +262,12 @@ public interface NeuralNetwork extends Serializable,Cloneable,NeuralNetEpochList
      * Getter for momentum after n iterations
      * @return
      */
-    public Map<Integer, Double> getMomentumAfter();
+    public Map<Integer, Float> getMomentumAfter();
 
     /**
      * Setter for momentum after n iterations
      * @param momentumAfter
      */
-    public void setMomentumAfter(Map<Integer, Double> momentumAfter);
+    public void setMomentumAfter(Map<Integer, Float> momentumAfter);
 
 }

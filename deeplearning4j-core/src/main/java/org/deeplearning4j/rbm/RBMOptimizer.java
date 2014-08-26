@@ -23,7 +23,7 @@ public class RBMOptimizer extends NeuralNetworkOptimizer {
 	protected int k = -1;
 	protected int numTimesIterated = 0;
 	
-	public RBMOptimizer(BaseNeuralNetwork network,double lr, Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
+	public RBMOptimizer(BaseNeuralNetwork network,float lr, Object[] trainingParams,OptimizationAlgorithm optimizationAlgorithm,LossFunction lossFunction) {
 		super(network,lr,trainingParams,optimizationAlgorithm,lossFunction);
 	}
 

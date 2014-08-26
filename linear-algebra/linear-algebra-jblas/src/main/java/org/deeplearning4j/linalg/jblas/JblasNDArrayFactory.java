@@ -143,8 +143,9 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
-        return new ComplexNDArray(data,shape,stride,offset);
+        return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,stride,offset);
     }
+
 
     /**
      * Creates an ndarray with the specified shape
@@ -187,7 +188,7 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return new ComplexNDArray(data,shape,stride,offset,ordering);
+        return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,stride,offset,ordering);
     }
 
     /**
@@ -199,6 +200,55 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
+        return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset,ordering);
+    }
+
+    /**
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+         return new ComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset);
+    }
+
+    /**
+     * Create a complex ndarray with the given data
+     *
+     * @param data     the data to use with tne ndarray
+     * @param shape    the shape of the ndarray
+     * @param stride   the stride for the ndarray
+     * @param offset   the offset of the ndarray
+     * @param ordering the ordering for the ndarray
+     * @return the created complex ndarray
+     */
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new ComplexNDArray(data,shape,stride,offset,ordering);
+    }
+
+    @Override
+    public INDArray create(float[][] floats) {
+        return new NDArray(floats);
+
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] dim) {
+        return new ComplexNDArray(dim);
+    }
+
+    /**
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
         return new ComplexNDArray(data,shape, NDArrays.getComplexStrides(shape,ordering),offset,ordering);
 
     }
@@ -210,7 +260,12 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
      * @return
      */
     @Override
-    public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
         return new ComplexNDArray(data,shape,offset);
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset) {
+        return new NDArray(data,shape,offset);
     }
 }

@@ -69,16 +69,16 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     /* input to the network */
     protected INDArray input;
     /* sparsity target */
-    protected double sparsity = 0;
+    protected float sparsity = 0;
     /* momentum for learning */
-    protected double momentum = 0.5;
+    protected float momentum = 0.5f;
     /* Probability distribution for weights */
     protected transient RealDistribution dist = new NormalDistribution(rng,0,.01,NormalDistribution.DEFAULT_INVERSE_ABSOLUTE_ACCURACY);
     /* L2 Regularization constant */
-    protected double l2 = 0.1;
+    protected float l2 = 0.1f;
     protected transient NeuralNetworkOptimizer optimizer;
     protected int renderWeightsEveryNumEpochs = -1;
-    protected double fanIn = -1;
+    protected float fanIn = -1;
     protected boolean useRegularization = false;
     protected boolean useAdaGrad = true;
     //used to track if adagrad needs to be changed
@@ -87,7 +87,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected boolean normalizeByInputRows = true;
     //use only when binary hidden layers are active
     protected boolean applySparsity = false;
-    protected double dropOut = 0;
+    protected float dropOut = 0;
     protected INDArray doMask;
     protected INDArray gvMask;
     protected OptimizationAlgorithm optimizationAlgo;
@@ -101,7 +101,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     protected int lastMiniBatchSize = 1;
 
     //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
+    protected Map<Integer,Float> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
 
@@ -125,7 +125,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param rng the rng, if not a seed of 1234 is used.
      */
     public BaseNeuralNetwork(int nVisible, int nHidden,
-                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,float fanIn,RealDistribution dist) {
         this(null,nVisible,nHidden,W,hbias,vbias,rng,fanIn,dist);
 
     }
@@ -140,7 +140,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param rng the rng, if not a seed of 1234 is used.
      */
     public BaseNeuralNetwork(INDArray input, int nVisible, int nHidden,
-                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+                             INDArray W, INDArray hbias, INDArray vbias, RandomGenerator rng,float fanIn,RealDistribution dist) {
         this.nVisible = nVisible;
         if(dist != null)
             this.dist = dist;
@@ -184,8 +184,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     @Override
-    public double l2RegularizedCoefficient() {
-        return ((double) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0)  * l2 + 1e-6;
+    public float l2RegularizedCoefficient() {
+        return ((float) pow(getW(),2).sum(Integer.MAX_VALUE).element()/ 2.0f)  * l2 + 1e-6f;
     }
 
     /**
@@ -261,7 +261,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     @Override
-    public void resetAdaGrad(double lr) {
+    public void resetAdaGrad(float lr) {
         if(!firstTimeThrough) {
             this.wAdaGrad = new AdaGrad(this.getW().rows(),this.getW().columns(),lr);
             firstTimeThrough = false;
@@ -279,12 +279,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     @Override
-    public double fanIn() {
+    public float fanIn() {
         return fanIn < 0 ? 1 / nVisible : fanIn;
     }
 
     @Override
-    public void setFanIn(double fanIn) {
+    public void setFanIn(float fanIn) {
         this.fanIn = fanIn;
     }
 
@@ -294,8 +294,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * Backprop with the output being the reconstruction
      */
     @Override
-    public void backProp(double lr,int iterations,Object[] extraParams) {
-        double currRecon = squaredLoss();
+    public void backProp(float lr,int iterations,Object[] extraParams) {
+        float currRecon = squaredLoss();
         boolean train = true;
         NeuralNetwork revert = clone();
         while(train) {
@@ -303,7 +303,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
                 break;
 
 
-            double newRecon = this.squaredLoss();
+            float newRecon = this.squaredLoss();
             //prevent weights from exploding too far in either direction, we want this as close to zero as possible
             if(newRecon > currRecon || currRecon < 0 && newRecon < currRecon) {
                 update((BaseNeuralNetwork) revert);
@@ -348,12 +348,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         this.resetAdaGradIterations = resetAdaGradIterations;
     }
 
-    public Map<Integer, Double> getMomentumAfter() {
+    public Map<Integer, Float> getMomentumAfter() {
 
         return momentumAfter;
     }
 
-    public void setMomentumAfter(Map<Integer, Double> momentumAfter) {
+    public void setMomentumAfter(Map<Integer, Float> momentumAfter) {
         this.momentumAfter = momentumAfter;
     }
 
@@ -387,7 +387,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param hBiasGradient the hbias gradient to apply to
      * @param learningRate the learning rate used
      */
-    protected void applySparsity(INDArray hBiasGradient,double learningRate) {
+    protected void applySparsity(INDArray hBiasGradient,float learningRate) {
 
         if(useAdaGrad) {
             INDArray change = this.hBiasAdaGrad.getLearningRates(hBias).neg().mul(sparsity).mul(hBiasGradient.mul(sparsity));
@@ -416,7 +416,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param iteration the current iteration
      * @param learningRate the learning rate for the current iteration
      */
-    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,double learningRate) {
+    protected void updateGradientAccordingToParams(NeuralNetworkGradient gradient,int iteration,float learningRate) {
         INDArray wGradient = gradient.getwGradient();
 
         INDArray hBiasGradient = gradient.gethBiasGradient();
@@ -442,7 +442,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
         INDArray wLearningRates = wAdaGrad.getLearningRates(wGradient);
         //change up momentum after so many iterations if specified
-        double momentum = this.momentum;
+        float momentum = this.momentum;
         if(momentumAfter != null && !momentumAfter.isEmpty()) {
             int key = momentumAfter.keySet().iterator().next();
             if(iteration >= key) {
@@ -527,11 +527,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
     @Override
-    public void setDropOut(double dropOut) {
+    public void setDropOut(float dropOut) {
         this.dropOut = dropOut;
     }
     @Override
-    public double dropOut() {
+    public float dropOut() {
         return dropOut;
     }
     @Override
@@ -631,8 +631,8 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return rmse for reconstruction entropy
      */
     @Override
-    public double mseRecon() {
-        double recon = (double) sqrt(pow(reconstruct(input).subi(input),2)).sum(Integer.MAX_VALUE).element();
+    public float mseRecon() {
+        float recon = (float) sqrt(pow(reconstruct(input).subi(input),2)).sum(Integer.MAX_VALUE).element();
         return recon / input.rows();
 
 
@@ -761,12 +761,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * given the corruption level
      */
     @Override
-    public double negativeLogLikelihood() {
+    public float negativeLogLikelihood() {
         INDArray z = this.reconstruct(input);
         if(this.useRegularization) {
-            double reg = (2 / l2) * (double) pow(this.W,2).sum(Integer.MAX_VALUE).element();
+            float reg = (2 / l2) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
-            double ret = - (double) input.mul(log(z)).add(
+            float ret = - (float) input.mul(log(z)).add(
                     input.rsub(1).muli(log(z.rsub(1)))).
                     sum(1).mean(Integer.MAX_VALUE).element() + reg;
             if(this.normalizeByInputRows)
@@ -776,7 +776,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
 
-        double likelihood =  - (double) input.mul(log(z)).add(
+        float likelihood =  - (float) input.mul(log(z)).add(
                 input.rsub(1).muli(log(z.rsub(1)))).
                 sum(1).mean(Integer.MAX_VALUE).element();
 
@@ -794,17 +794,17 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @return the negative log likelihood of the auto encoder
      * given the corruption level
      */
-    public double negativeLoglikelihood(INDArray input) {
+    public float negativeLoglikelihood(INDArray input) {
         INDArray z = this.reconstruct(input);
         if(this.useRegularization) {
-            double reg = (2 / l2) * (double) pow(this.W,2).sum(Integer.MAX_VALUE).element();
+            float reg = (2 / l2) * (float) pow(this.W,2).sum(Integer.MAX_VALUE).element();
 
-            return - (double) input.mul(log(z)).add(
+            return - (float) input.mul(log(z)).add(
                     input.rsub(1).muli(log(z.rsub(1)))).
                     sum(1).mean(Integer.MAX_VALUE).element() + reg;
         }
 
-        return - (double) input.mul(log(z)).add(
+        return - (float) input.mul(log(z)).add(
                 input.rsub(1).muli(log(z.rsub(1)))).
                 sum(1).mean(Integer.MAX_VALUE).element();
     }
@@ -819,7 +819,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * depending on the configuration.
      * @return reconstruction error
      */
-    public double getReConstructionCrossEntropy() {
+    public float getReConstructionCrossEntropy() {
        return org.deeplearning4j.linalg.lossfunctions.LossFunctions.reconEntropy(input,hBias,vBias,W);
     }
 
@@ -941,22 +941,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
     }
 
 
-    public double getSparsity() {
+    public float getSparsity() {
         return sparsity;
     }
-    public void setSparsity(double sparsity) {
+    public void setSparsity(float sparsity) {
         this.sparsity = sparsity;
     }
-    public double getMomentum() {
+    public float getMomentum() {
         return momentum;
     }
-    public void setMomentum(double momentum) {
+    public void setMomentum(float momentum) {
         this.momentum = momentum;
     }
-    public double getL2() {
+    public float getL2() {
         return l2;
     }
-    public void setL2(double l2) {
+    public void setL2(float l2) {
         this.l2 = l2;
     }
 
@@ -1020,10 +1020,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * The loss function (cross entropy, reconstruction error,...)
      * @return the loss function
      */
-    public abstract double lossFunction(Object[] params);
+    public abstract float lossFunction(Object[] params);
 
 
-    public double lossFunction() {
+    public float lossFunction() {
         return lossFunction(null);
     }
 
@@ -1049,14 +1049,14 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
      * @param params the extra params (k, corruption level,...)
      */
     @Override
-    public abstract void train(INDArray input,double lr,Object[] params);
+    public abstract void train(INDArray input,float lr,Object[] params);
 
     @Override
-    public double squaredLoss() {
+    public float squaredLoss() {
         INDArray squaredDiff = pow(reconstruct(input).sub(input),2);
-        double loss = (double) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
+        float loss = (float) squaredDiff.sum(Integer.MAX_VALUE).element() / input.rows();
         if(this.useRegularization) {
-            loss += 0.5 * l2 * (double) pow(W,2).sum(Integer.MAX_VALUE).element();
+            loss += 0.5 * l2 * (float) pow(W,2).sum(Integer.MAX_VALUE).element();
         }
 
         return loss;
@@ -1064,10 +1064,10 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
 
 
     @Override
-    public double mse() {
+    public float mse() {
         INDArray reconstructed = reconstruct(input);
         INDArray diff = reconstructed.sub(input);
-        double sum = 0.5 * (double) pow(diff,2).sum(1).sum(Integer.MAX_VALUE).element() / input.rows();
+        float sum = 0.5f * (float) pow(diff,2).sum(1).sum(Integer.MAX_VALUE).element() / input.rows();
         return sum;
     }
 
@@ -1104,22 +1104,22 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         private int numHidden;
         private RandomGenerator gen = new MersenneTwister(123);
         private INDArray input;
-        private double sparsity = 0;
-        private double l2 = 0.01;
-        private double momentum = 0.5;
+        private float sparsity = 0;
+        private float l2 = 0.01f;
+        private float momentum = 0.5f;
         private int renderWeightsEveryNumEpochs = -1;
-        private double fanIn = 0.1;
+        private float fanIn = 0.1f;
         private boolean useRegularization = false;
         private RealDistribution dist;
         private boolean useAdaGrad = true;
         private boolean applySparsity = false;
         private boolean normalizeByInputRows = true;
-        private double dropOut = 0;
+        private float dropOut = 0;
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean cacheInput = true;
         //momentum after n iterations
-        protected Map<Integer,Double> momentumAfter = new HashMap<>();
+        protected Map<Integer,Float> momentumAfter = new HashMap<>();
         //reset adagrad historical gradient after n iterations
         protected int resetAdaGradIterations = -1;
         protected boolean concatBiases = false;
@@ -1162,7 +1162,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return this;
         }
 
-        public Builder<E> momentumAfter(Map<Integer,Double> momentumAfter) {
+        public Builder<E> momentumAfter(Map<Integer,Float> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
         }
@@ -1189,7 +1189,7 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
         }
 
 
-        public Builder<E> withDropOut(double dropOut) {
+        public Builder<E> withDropOut(float dropOut) {
             this.dropOut = dropOut;
             return this;
         }
@@ -1213,12 +1213,12 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return this;
         }
 
-        public Builder<E> fanIn(double fanIn) {
+        public Builder<E> fanIn(float fanIn) {
             this.fanIn = fanIn;
             return this;
         }
 
-        public Builder<E> withL2(double l2) {
+        public Builder<E> withL2(float l2) {
             this.l2 = l2;
             return this;
         }
@@ -1245,11 +1245,11 @@ public abstract class BaseNeuralNetwork implements NeuralNetwork,Persistable {
             return this;
         }
 
-        public Builder<E> withSparsity(double sparsity) {
+        public Builder<E> withSparsity(float sparsity) {
             this.sparsity = sparsity;
             return this;
         }
-        public Builder<E> withMomentum(double momentum) {
+        public Builder<E> withMomentum(float momentum) {
             this.momentum = momentum;
             return this;
         }

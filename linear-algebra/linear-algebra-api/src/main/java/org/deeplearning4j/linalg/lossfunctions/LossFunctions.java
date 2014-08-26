@@ -91,7 +91,7 @@ public class LossFunctions {
      * @param W the weight matrix of the neural network
      * @return the reconstruction cross entropy for the given parameters
      */
-    public static double reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
+    public static float reconEntropy(INDArray input,INDArray hBias,INDArray vBias,INDArray W) {
         INDArray inputTimesW = input.mmul(W);
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = sigmoid(preSigH.dup());
@@ -107,11 +107,11 @@ public class LossFunctions {
         INDArray rows = inner.sum(0);
         INDArray mean = rows.mean(Integer.MAX_VALUE);
 
-        double ret = (double) inner.sum(0).mean(Integer.MAX_VALUE).element();
+        float ret = (float) inner.sum(0).mean(Integer.MAX_VALUE).element();
 
         ret /= input.rows();
 
-        return ret;
+        return (float) ret;
     }
 
 

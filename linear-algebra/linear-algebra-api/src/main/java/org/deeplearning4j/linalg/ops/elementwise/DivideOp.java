@@ -37,7 +37,7 @@ public class DivideOp extends BaseTwoArrayElementWiseOp {
 
             //real + complex
             else {
-                double element = (double) origin.element();
+                float element = (float) origin.element();
                 IComplexNumber result = otherValue.div(element);
                 return NDArrays.scalar(result);
 
@@ -51,7 +51,7 @@ public class DivideOp extends BaseTwoArrayElementWiseOp {
             if(origin instanceof IComplexNDArray) {
                 IComplexNDArray originComplexValue = (IComplexNDArray) origin;
                 IComplexNumber firstValue = (IComplexNumber) originComplexValue.element();
-                double realValue = (double) value.element();
+                float realValue = (float) value.element();
                 IComplexNumber retValue = firstValue.div(realValue);
                 return NDArrays.scalar(retValue);
 
@@ -59,8 +59,8 @@ public class DivideOp extends BaseTwoArrayElementWiseOp {
 
             //both normal
             else {
-                double firstElement = (double) origin.element();
-                double secondElement = (double) value.element();
+                float firstElement = (float) origin.element();
+                float secondElement = (float) value.element();
                 return NDArrays.scalar(firstElement / secondElement);
             }
 

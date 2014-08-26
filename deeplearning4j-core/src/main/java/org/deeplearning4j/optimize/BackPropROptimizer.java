@@ -1,6 +1,5 @@
 package org.deeplearning4j.optimize;
 
-import cc.mallet.optimize.Optimizable;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
 import org.deeplearning4j.nn.BaseMultiLayerNetwork;
@@ -16,7 +15,7 @@ import java.io.Serializable;
  * the r operator, used in hessian free operators
  * @author Adam Gibson
  */
-public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializable,OptimizableByGradientValueMatrix {
+public class BackPropROptimizer implements Serializable,OptimizableByGradientValueMatrix {
 
     private BaseMultiLayerNetwork network;
     private int length = -1;
@@ -42,7 +41,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
         if(!lineSearch) {
             log.info("BEGIN BACKPROP WITH SCORE OF " + network.score());
 
-            Double lastEntropy =  network.score();
+            Float lastEntropy =  network.score();
             //store a copy of the network for when binary cross entropy gets
             //worse after an iteration
             BaseMultiLayerNetwork revert = network.clone();
@@ -73,7 +72,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
                     count++;
                 /* Trains logistic regression post weight updates */
 
-                    Double entropy = network.score();
+                    Float entropy = network.score();
                     if(lastEntropy == null || entropy < lastEntropy) {
                         double diff = Math.abs(entropy - lastEntropy);
                         if(diff < changeTolerance) {
@@ -91,7 +90,7 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
                         train = false;
                     }
 
-                    else if(entropy >= lastEntropy || Double.isNaN(entropy) || Double.isInfinite(entropy)) {
+                    else if(entropy >= lastEntropy || Float.isNaN(entropy) || Float.isInfinite(entropy)) {
                         train = false;
                         network.update(revert);
                         log.info("Reverting to best score " + lastEntropy);
@@ -132,13 +131,13 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
 
     }
 
-    @Override
+
     public void getValueGradient(double[] buffer) {
         System.arraycopy(network.getBackPropRGradient(network.params()).data(),0,buffer,0,buffer.length);
     }
 
     @Override
-    public double getValue() {
+    public float getValue() {
         return - (network.score());
     }
 
@@ -149,22 +148,22 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
         return length;
     }
 
-    @Override
-    public void getParameters(double[] buffer) {
+
+    public void getParameters(float[] buffer) {
         System.arraycopy(getParameters().data(),0,buffer,0,buffer.length);
     }
 
     @Override
-    public double getParameter(int index) {
+    public float getParameter(int index) {
         return 0;
     }
 
-    @Override
-    public void setParameters(double[] params) {
+
+    public void setParameters(float[] params) {
         setParameters(NDArrays.create(params));
     }
 
-    @Override
+
     public void setParameter(int index, double value) {
 
     }
@@ -178,6 +177,11 @@ public class BackPropROptimizer implements Optimizable.ByGradientValue,Serializa
     public void setParameters(INDArray params) {
         network.setParameters(params);
 
+
+    }
+
+    @Override
+    public void setParameter(int index, float value) {
 
     }
 
