@@ -62,11 +62,15 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
         return null;
     }
 
-    @Override
-    public double nrm2(JCublasNDArray x) {
+    public double normal2(JCublasNDArray x) {
         double normal2;
         normal2 = SimpleJCublas.nrm2(x);
         return normal2;
+
+    }
+    @Override
+    public double nrm2(JCublasNDArray x) {
+        return normal2(x);
     }
 
 
@@ -102,7 +106,7 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
     @Override
     public JCublasNDArray gemv(double alpha, JCublasNDArray a, JCublasNDArray b, double beta, JCublasNDArray c) {
 
-        c = SimpleJCublas.gemm(a,b,c, alpha, beta);
+        c = SimpleJCublas.gemv(a,b,c, alpha, beta);
         return c;
     }
 
