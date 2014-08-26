@@ -269,16 +269,23 @@ public class BlasWrapper implements org.deeplearning4j.linalg.factory.BlasWrappe
 
     @Override
     public ComplexNDArray gemm(IComplexDouble alpha, ComplexNDArray a, ComplexNDArray b, IComplexDouble beta, ComplexNDArray c) {
-        NativeBlas.zgemm('N', 'N', c.rows(), c.columns(), a.columns(),
+        NativeBlas.zgemm(
+                'N',
+                'N',
+                c.rows(),
+                c.columns(),
+                a.columns(),
                 new ComplexDouble(alpha.realComponent().doubleValue(),alpha.imaginaryComponent().doubleValue()),
-                a.data(), 0,
-                a.rows(), b.data(), 0, b.rows(), new ComplexDouble(beta.realComponent().doubleValue(),beta.imaginaryComponent().doubleValue()), c.data(), 0, c.rows());
+                a.data(),a.offset() / 2,a.rows(),
+                b.data(),b.offset() / 2,b.rows(),
+                new ComplexDouble(beta.realComponent().doubleValue(),beta.imaginaryComponent().doubleValue())
+                , c.data(), c.offset() / 2, c.rows());
         return c;
 
     }
 
 
-  
+
     /***************************************************************************
      * LAPACK
      */

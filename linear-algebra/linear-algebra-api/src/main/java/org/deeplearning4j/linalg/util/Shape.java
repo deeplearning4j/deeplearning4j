@@ -41,8 +41,25 @@ public class Shape {
      * @return whether the shapes are equivalent
      */
     public static boolean shapeEquals(int[] shape1,int[] shape2) {
-        return scalarEquals(shape1,shape2) || Arrays.equals(shape1,shape2) || squeezeEquals(shape1,shape2);
+        if(isColumnVectorShape(shape1)) {
+            if(isColumnVectorShape(shape2)) {
+                return Arrays.equals(shape1,shape2);
+            }
+
+        }
+
+        if(isRowVectorShape(shape1)) {
+            if(isRowVectorShape(shape2)) {
+               int[] shape1Comp = squeeze(shape1);
+                int[] shape2Comp = squeeze(shape2);
+                return Arrays.equals(shape1Comp,shape2Comp);
+            }
+        }
+
+        return scalarEquals(shape1,shape2) || Arrays.equals(shape1,shape2);
     }
+
+
 
     /**
      * Returns true if the given shapes are both scalars (0 dimension or shape[0] == 1)
