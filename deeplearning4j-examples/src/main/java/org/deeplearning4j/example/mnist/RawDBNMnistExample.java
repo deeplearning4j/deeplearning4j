@@ -13,6 +13,10 @@ import org.jblas.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+	/**
+	 * this data needs to be binarized for accurate models. right now it is continuous. f1 scores close to 1 indicate accuracy.
+	 */
+
 public class RawDBNMnistExample {
 
 	private static Logger log = LoggerFactory.getLogger(RawDBNMnistExample.class);
