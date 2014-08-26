@@ -26,4 +26,6 @@ To run the Iris dataset on Deeplearning4j, you can either click "run" on the Iri
 
     java -cp "lib/*" org.deeplearning4j.example.iris.IrisRBMExample
 
+After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
+
 [For a deeper dive, see our Iris code on Github](https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/iris/IrisExample.java).
