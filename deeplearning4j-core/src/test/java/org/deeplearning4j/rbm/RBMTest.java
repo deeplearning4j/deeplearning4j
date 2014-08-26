@@ -55,11 +55,11 @@ public class RBMTest  {
 
 
 
-		r.trainTillConvergence(d,  0.01,new Object[]{1,0.01,1000});
+		r.trainTillConvergence(d,  0.01f,new Object[]{1,0.01,1000});
 
         double d5 = r.getReConstructionCrossEntropy();
 
-		INDArray v = new NDArray(new double[]
+		INDArray v = new NDArray(new float[]
 				{1, 1, 0, 0, 0, 0,0, 0, 0, 1, 1, 0}, new int[]{2,6});
 
 		log.info("Reconstruction " + r.reconstruct(v).toString());
@@ -70,7 +70,7 @@ public class RBMTest  {
 		assertEquals(r2.getW(),r.getW());
 		assertEquals(r2.gethBias(),r.gethBias());
 		assertEquals(r2.getvBias(),r.getvBias());
-		r2.trainTillConvergence(d, 0.01,new Object[]{1,0.01,1000});
+		r2.trainTillConvergence(d, 0.01f,new Object[]{1,0.01f,1000});
 
 
 	}
@@ -92,7 +92,7 @@ public class RBMTest  {
 		
 
 		
-		r.trainTillConvergence(d.getFeatureMatrix() ,1e-2,new Object[]{1,1e-1,100});
+		r.trainTillConvergence(d.getFeatureMatrix() ,1e-2f,new Object[]{1,1e-1f,100});
 
 
 

@@ -16,7 +16,7 @@ public class DeepAutoEncoderAccumulator {
 
     /**
      * Param averages both the encoder and decoder
-     * @param deepAutoEncoder the deep autoencoder to combine with
+     * @param deepAutoEncoder the deep autoencoder to combineDouble with
      */
     public void accumulate(DeepAutoEncoder deepAutoEncoder) {
         if(averaged == null)

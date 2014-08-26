@@ -39,7 +39,7 @@ public class AddOp extends BaseTwoArrayElementWiseOp {
 
             //real + complex
             else {
-                double element = (double) origin.element();
+                float element = (float) origin.element();
                 IComplexNumber result = firstValue.add(element);
                 return NDArrays.scalar(result);
 
@@ -53,7 +53,7 @@ public class AddOp extends BaseTwoArrayElementWiseOp {
             if(origin instanceof IComplexNDArray) {
                 IComplexNDArray complexValue = (IComplexNDArray) origin;
                 IComplexNumber firstValue = (IComplexNumber) complexValue.element();
-                double realValue = (double) value.element();
+                float realValue = (float) value.element();
                 IComplexNumber retValue = firstValue.add(realValue);
                 return NDArrays.scalar(retValue);
 
@@ -61,8 +61,8 @@ public class AddOp extends BaseTwoArrayElementWiseOp {
 
             //both normal
             else {
-                double firstElement = (double) value.element();
-                double secondElement = (double) origin.element();
+                float firstElement = (float) value.element();
+                float secondElement = (float) origin.element();
                 return NDArrays.scalar(firstElement + secondElement,0);
             }
 

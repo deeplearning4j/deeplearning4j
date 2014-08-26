@@ -80,7 +80,7 @@ public class RBM extends BaseNeuralNetwork {
 
 
     protected RBM(INDArray input, int nVisible, int nHidden, INDArray W,
-                  INDArray hBias, INDArray vBias, RandomGenerator rng,double fanIn,RealDistribution dist) {
+                  INDArray hBias, INDArray vBias, RandomGenerator rng,float fanIn,RealDistribution dist) {
         super(input, nVisible, nHidden, W, hBias, vBias, rng,fanIn,dist);
 
     }
@@ -91,7 +91,7 @@ public class RBM extends BaseNeuralNetwork {
      * @param k
      * @param input
      */
-    public void trainTillConvergence(double learningRate,int k,INDArray input) {
+    public void trainTillConvergence(float learningRate,int k,INDArray input) {
         if(input != null && cacheInput)
             this.input = input;
         if(visibleType == VisibleUnit.GAUSSIAN)
@@ -162,7 +162,7 @@ public class RBM extends BaseNeuralNetwork {
 
 
         int k = (int) params[0];
-        double learningRate = (double) params[1];
+        float learningRate = (float) params[1];
         int iteration = params[params.length - 1] == null ? 0 : (int) params[params.length - 1];
 
         if(wAdaGrad != null)
@@ -511,7 +511,7 @@ public class RBM extends BaseNeuralNetwork {
      * Note: k is the first input in params.
      */
     @Override
-    public void trainTillConvergence(INDArray input, double lr,
+    public void trainTillConvergence(INDArray input, float lr,
                                      Object[] params) {
         if(input != null && cacheInput)
             this.input = Transforms.stabilize(input, 1);
@@ -556,12 +556,12 @@ public class RBM extends BaseNeuralNetwork {
     }
 
     @Override
-    public double lossFunction(Object[] params) {
+    public float lossFunction(Object[] params) {
         return getReConstructionCrossEntropy();
     }
 
     @Override
-    public void train(INDArray input,double lr, Object[] params) {
+    public void train(INDArray input,float lr, Object[] params) {
         if(visibleType == VisibleUnit.GAUSSIAN)
             this.sigma = input.var(1).divi(input.rows());
 
@@ -613,7 +613,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+        public Builder momentumAfter(Map<Integer, Float> momentumAfter) {
             super.momentumAfter(momentumAfter);
             return this;
         }
@@ -643,7 +643,7 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -673,13 +673,13 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder fanIn(double fanIn) {
+        public Builder fanIn(float fanIn) {
             super.fanIn(fanIn);
             return this;
         }
 
         @Override
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }
@@ -702,13 +702,13 @@ public class RBM extends BaseNeuralNetwork {
         }
 
         @Override
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
 
         @Override
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }

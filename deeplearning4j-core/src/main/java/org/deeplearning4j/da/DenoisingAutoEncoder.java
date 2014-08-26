@@ -35,7 +35,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
     private DenoisingAutoEncoder(INDArray input, int nVisible, int nHidden,
                                  INDArray W, INDArray hbias, INDArray vbias,
-                                 RandomGenerator rng,double fanIn,RealDistribution dist) {
+                                 RandomGenerator rng,float fanIn,RealDistribution dist) {
         super(input, nVisible, nHidden, W, hbias, vbias, rng,fanIn,dist);
     }
 
@@ -46,7 +46,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption value
      * @return the binomial sampled corrupted input
      */
-    public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
+    public INDArray getCorruptedInput(INDArray x, float corruptionLevel) {
         INDArray tilde_x = NDArrays.zeros(x.rows(), x.columns());
         for(int i = 0; i < x.rows(); i++)
             for(int j = 0; j < x.columns(); j++)
@@ -115,7 +115,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption level
      * @param iterations to run
      */
-    public void trainTillConvergence(INDArray x, double lr,double corruptionLevel,int iterations) {
+    public void trainTillConvergence(INDArray x, float lr,float corruptionLevel,int iterations) {
         if(x != null)
             input = preProcessInput(x);
         this.lastMiniBatchSize = x.rows();
@@ -130,7 +130,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
      * @param corruptionLevel the corruption level to train with
      * @param iteration the current iteration
      */
-    public void train(INDArray x,double lr,double corruptionLevel,int iteration) {
+    public void train(INDArray x,float lr,float corruptionLevel,int iteration) {
         if(x != null && cacheInput)
             this.input = x;
         this.lastMiniBatchSize = x.rows();
@@ -208,7 +208,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         }
 
         @Override
-        public Builder withDropOut(double dropOut) {
+        public Builder withDropOut(float dropOut) {
             super.withDropOut(dropOut);
             return this;
         }
@@ -238,13 +238,13 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         }
 
         @Override
-        public Builder fanIn(double fanIn) {
+        public Builder fanIn(float fanIn) {
             super.fanIn(fanIn);
             return this;
         }
 
         @Override
-        public Builder withL2(double l2) {
+        public Builder withL2(float l2) {
             super.withL2(l2);
             return this;
         }
@@ -263,13 +263,13 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
         }
 
         @Override
-        public Builder withSparsity(double sparsity) {
+        public Builder withSparsity(float sparsity) {
             super.withSparsity(sparsity);
             return this;
         }
 
         @Override
-        public Builder withMomentum(double momentum) {
+        public Builder withMomentum(float momentum) {
             super.withMomentum(momentum);
             return this;
         }
@@ -323,7 +323,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public void trainTillConvergence(INDArray input,double lr,Object[] params) {
+    public void trainTillConvergence(INDArray input,float lr,Object[] params) {
         if(input != null && cacheInput)
             this.input = input;
         this.lastMiniBatchSize = input.rows();
@@ -335,7 +335,7 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public double lossFunction(Object[] params) {
+    public float lossFunction(Object[] params) {
         return negativeLogLikelihood();
     }
 
@@ -343,8 +343,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
 
 
     @Override
-    public void train(INDArray input,double lr,Object[] params) {
-        double corruptionLevel = (double) params[0];
+    public void train(INDArray input,float lr,Object[] params) {
+        float corruptionLevel = (float) params[0];
         if(input != null && cacheInput)
             this.input = preProcessInput(input);
         this.lastMiniBatchSize = input.rows();
@@ -371,8 +371,8 @@ public class DenoisingAutoEncoder extends BaseNeuralNetwork implements Serializa
     @Override
     public  NeuralNetworkGradient getGradient(Object[] params) {
 
-        double corruptionLevel = (double) params[0];
-        double lr = (double) params[1];
+        float corruptionLevel = (float) params[0];
+        float lr = (float) params[1];
         int iteration = (int) params[2];
 
         if(wAdaGrad != null)

@@ -44,7 +44,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
     //layer wise filter number of filters
     protected int[][] numFilters;
     //sparse gain for each rbm
-    protected double sparseGain;
+    protected float sparseGain;
     //layer type: convolution or subsampling
     protected LayerType[] layerTypes;
     public  static enum LayerType {
@@ -265,7 +265,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @return whether the training should converge or not
      */
     //@Override
-    protected void backPropStep(BaseMultiLayerNetwork revert, double lr, int epoch) {
+    protected void backPropStep(BaseMultiLayerNetwork revert, float lr, int epoch) {
         //feedforward to compute activations
         //initial error
 
@@ -442,7 +442,7 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
      * @param epochs the number of epochs to iterate (this is already called in finetune)
      */
     @Override
-    public void backProp(double lr, int epochs) {
+    public void backProp(float lr, int epochs) {
         super.backProp(lr, epochs);
     }
 
@@ -478,12 +478,12 @@ public class ConvolutionalDBN extends BaseMultiLayerNetwork {
             nFm = this.nFm[i];
             INDArray filterSize = ArrayUtil.toNDArray(this.filterSizes[i]);
             INDArray fmSize = ArrayUtil.toNDArray(new int[]{nInY,nInX}).sub(filterSize).add(1);
-            double prodFilterSize = ArrayUtil.prod(this.filterSizes[i]);
+            float prodFilterSize = ArrayUtil.prod(this.filterSizes[i]);
             INDArray stride = ArrayUtil.toNDArray(this.stride[i]);
-            double fanIn = nInFM * prodFilterSize;
-            double fanOut = nFm * prodFilterSize;
+            float fanIn = nInFM * prodFilterSize;
+            float fanOut = nFm * prodFilterSize;
 
-            double range = 2 * FastMath.sqrt(6 / fanIn + fanOut);
+            float range = 2 * (float) FastMath.sqrt(6 / fanIn + fanOut);
             INDArray W = NDArrays.rand(new int[]{(int) filterSize.getScalar(0).element(),(int) filterSize.getScalar(1).element(),nInFM,nFm},dist).mul(range);
 
             ConvolutionalRBM r = new ConvolutionalRBM.Builder().withDistribution(getDist())

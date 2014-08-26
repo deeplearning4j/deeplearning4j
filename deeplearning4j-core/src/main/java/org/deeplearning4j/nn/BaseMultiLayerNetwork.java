@@ -66,14 +66,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected RandomGenerator rng;
     /* probability distribution for generation of weights */
     protected RealDistribution dist;
-    protected double momentum = 0.1;
+    protected float momentum = 0.1f;
     //default training examples and associated layers
     protected INDArray input,labels;
     protected MultiLayerNetworkOptimizer optimizer;
     //activation function for each hidden layer
     protected ActivationFunction activation = Activations.sigmoid();
     //l2 regularization constant for weight decay
-    protected double l2 = 2e-4;
+    protected float l2 = 2e-4f;
     //whether to initialize layers
     protected boolean shouldInit = true;
     //whether to render weights or not; anything <=0 will not render the weights
@@ -88,9 +88,9 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
 
     //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
+    protected Map<Integer,Float> momentumAfter = new HashMap<>();
     //momentum after n iterations by layer
-    protected Map<Integer,Map<Integer,Double>> momentumAfterByLayer = new HashMap<>();
+    protected Map<Integer,Map<Integer,Float>> momentumAfterByLayer = new HashMap<>();
     //reset adagrad historical gradient after n iterations
     protected Map<Integer,Integer> resetAdaGradIterationsByLayer = new HashMap<>();
     //reset adagrad historical gradient after n iterations
@@ -100,7 +100,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     //whether to only train a certain number of epochs
     protected boolean forceNumEpochs = false;
     //don't use sparsity by default
-    protected double sparsity = 0;
+    protected float sparsity = 0;
     //optional: used in normalizing input. This is used in saving the model for prediction purposes in normalizing incoming data
     protected INDArray columnSums;
     //subtract input by column means for zero mean
@@ -135,7 +135,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      *
      * For biases this can be bigger.
      */
-    protected double learningRateUpdate = 0.95;
+    protected float learningRateUpdate = 0.95f;
     /*
      * Any neural networks used as layers.
      * This will always have an equivalent sigmoid layer
@@ -150,16 +150,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * The delta from the previous iteration to this iteration for
      * cross entropy must change >= this amount in order to continue.
      */
-    protected double errorTolerance = 0.0001;
+    protected float errorTolerance = 0.0001f;
 
     /*
      * Drop out: randomly zero examples
      */
-    protected double dropOut = 0;
+    protected float dropOut = 0;
     /*
      * Output layer drop out
      */
-    protected double outputLayerDropout = 0;
+    protected float outputLayerDropout = 0;
     /*
      * Normalize by input rows with gradients or not
      */
@@ -186,7 +186,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /**
      * Layer specific learning rates
      */
-    protected Map<Integer,Double> layerLearningRates = new HashMap<>();
+    protected Map<Integer,Float> layerLearningRates = new HashMap<>();
     /**
      * Render by layer
      */
@@ -203,7 +203,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     protected Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
 
 
-    protected double fineTuneLearningRate = 1e-2;
+    protected float fineTuneLearningRate = 1e-2f;
 
     /**
      * Whether to use conjugate gradient line search for back prop or
@@ -224,7 +224,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     /*
        Damping factor for gradient
      */
-    protected double dampingFactor = 10;
+    protected float dampingFactor = 10;
 
 
     /*
@@ -455,7 +455,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate to use
      * @param epochs the max number of epochs to finetune with
      */
-    public void finetune(double lr, int epochs) {
+    public void finetune(float lr, int epochs) {
         finetune(this.labels,lr,epochs);
 
     }
@@ -803,7 +803,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
 
     //damping update after line search
-    public void dampingUpdate(double rho,double boost,double decrease) {
+    public void dampingUpdate(float rho,float boost,float decrease) {
         if(rho < 0.25 || Double.isNaN(rho)) {
             this.dampingFactor *= boost;
         }
@@ -814,16 +814,16 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
     /* p and gradient are same length */
-    public double reductionRatio(INDArray p,double currScore,double score,INDArray gradient) {
-        double currentDamp = dampingFactor;
+    public float reductionRatio(INDArray p,float currScore,float score,INDArray gradient) {
+        float currentDamp = dampingFactor;
         this.dampingFactor = 0;
         INDArray denom = getBackPropRGradient(p);
         denom.muli(0.5).muli(p.mul(denom)).sum(0);
         denom.subi(gradient.mul(p).sum(0));
-        double rho = (currScore - score) / (double) denom.getScalar(0).element();
+        float rho = (currScore - score) / (float) denom.getScalar(0).element();
         this.dampingFactor = currentDamp;
         if(score - currScore > 0)
-            return Double.NEGATIVE_INFINITY;
+            return Float.NEGATIVE_INFINITY;
         return rho;
     }
 
@@ -1078,104 +1078,6 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         return true;
     }
 
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        result = nIns;
-        result = 31 * result + (hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0);
-        result = 31 * result + nOuts;
-        result = 31 * result + (sigmoidLayers != null ? Arrays.hashCode(sigmoidLayers) : 0);
-        result = 31 * result + (outputLayer != null ? outputLayer.hashCode() : 0);
-        temp = Double.doubleToLongBits(momentum);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (input != null ? input.hashCode() : 0);
-        result = 31 * result + (labels != null ? labels.hashCode() : 0);
-        result = 31 * result + (optimizer != null ? optimizer.hashCode() : 0);
-        result = 31 * result + (activation != null ? activation.hashCode() : 0);
-        temp = Double.doubleToLongBits(l2);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (shouldInit ? 1 : 0);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + renderWeightsEveryNEpochs;
-        result = 31 * result + (useRegularization ? 1 : 0);
-        result = 31 * result + (weightTransforms != null ? weightTransforms.hashCode() : 0);
-        result = 31 * result + (hiddenBiasTransforms != null ? hiddenBiasTransforms.hashCode() : 0);
-        result = 31 * result + (visibleBiasTransforms != null ? visibleBiasTransforms.hashCode() : 0);
-        result = 31 * result + (shouldBackProp ? 1 : 0);
-        result = 31 * result + (forceNumEpochs ? 1 : 0);
-        temp = Double.doubleToLongBits(sparsity);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (columnSums != null ? columnSums.hashCode() : 0);
-        result = 31 * result + (columnMeans != null ? columnMeans.hashCode() : 0);
-        result = 31 * result + (columnStds != null ? columnStds.hashCode() : 0);
-        result = 31 * result + (initCalled ? 1 : 0);
-        result = 31 * result + (sampleFromHiddenActivations ? 1 : 0);
-        result = 31 * result + (useAdaGrad ? 1 : 0);
-        result = 31 * result + (activationFunctionForLayer != null ? activationFunctionForLayer.hashCode() : 0);
-        temp = Double.doubleToLongBits(learningRateUpdate);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (layers != null ? Arrays.hashCode(layers) : 0);
-        temp = Double.doubleToLongBits(errorTolerance);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        temp = Double.doubleToLongBits(dropOut);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (normalizeByInputRows ? 1 : 0);
-        result = 31 * result + (optimizationAlgorithm != null ? optimizationAlgorithm.hashCode() : 0);
-        result = 31 * result + (lossFunction != null ? lossFunction.hashCode() : 0);
-        result = 31 * result + (outputLossFunction != null ? outputLossFunction.hashCode() : 0);
-        result = 31 * result + (outputActivationFunction != null ? outputActivationFunction.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("BaseMultiLayerNetwork{");
-        sb.append("nIns=").append(nIns);
-        sb.append(", hiddenLayerSizes=").append(Arrays.toString(hiddenLayerSizes));
-        sb.append(", nOuts=").append(nOuts);
-        sb.append(", sigmoidLayers=").append(Arrays.toString(sigmoidLayers));
-        sb.append(", outputLayer=").append(outputLayer);
-        sb.append(", rng=").append(rng);
-        sb.append(", dist=").append(dist);
-        sb.append(", momentum=").append(momentum);
-        sb.append(", input=").append(input);
-        sb.append(", labels=").append(labels);
-        sb.append(", optimizer=").append(optimizer);
-        sb.append(", activation=").append(activation);
-        sb.append(", l2=").append(l2);
-        sb.append(", shouldInit=").append(shouldInit);
-        sb.append(", renderWeightsEveryNEpochs=").append(renderWeightsEveryNEpochs);
-        sb.append(", useRegularization=").append(useRegularization);
-        sb.append(", weightTransforms=").append(weightTransforms);
-        sb.append(", hiddenBiasTransforms=").append(hiddenBiasTransforms);
-        sb.append(", visibleBiasTransforms=").append(visibleBiasTransforms);
-        sb.append(", shouldBackProp=").append(shouldBackProp);
-        sb.append(", forceNumEpochs=").append(forceNumEpochs);
-        sb.append(", sparsity=").append(sparsity);
-        sb.append(", columnSums=").append(columnSums);
-        sb.append(", columnMeans=").append(columnMeans);
-        sb.append(", columnStds=").append(columnStds);
-        sb.append(", initCalled=").append(initCalled);
-        sb.append(", sampleFromHiddenActivations=").append(sampleFromHiddenActivations);
-        sb.append(", useAdaGrad=").append(useAdaGrad);
-        sb.append(", activationFunctionForLayer=").append(activationFunctionForLayer);
-        sb.append(", learningRateUpdate=").append(learningRateUpdate);
-        sb.append(", layers=").append(Arrays.toString(layers));
-        sb.append(", errorTolerance=").append(errorTolerance);
-        sb.append(", dropOut=").append(dropOut);
-        sb.append(", normalizeByInputRows=").append(normalizeByInputRows);
-        sb.append(", optimizationAlgorithm=").append(optimizationAlgorithm);
-        sb.append(", lossFunction=").append(lossFunction);
-        sb.append(", outputLossFunction=").append(outputLossFunction);
-        sb.append(", outputActivationFunction=").append(outputActivationFunction);
-        sb.append(", layerLearningRates=").append(layerLearningRates);
-        sb.append(", renderByLayer=").append(renderByLayer);
-        sb.append(", sampleOrActivate=").append(sampleOrActivate);
-        sb.append(", lossFunctionByLayer=").append(lossFunctionByLayer);
-        sb.append('}');
-        return sb.toString();
-    }
 
     @Override
     public BaseMultiLayerNetwork clone() {
@@ -1255,7 +1157,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param epochs  the number of epochs to iterate (this is already called in finetune)
      * @param eval the evaluator for stopping
      */
-    public void backProp(double lr,int epochs,TrainingEvaluator eval) {
+    public void backProp(float lr,int epochs,TrainingEvaluator eval) {
         if(useGaussNewtonVectorProductBackProp) {
             BackPropROptimizer opt = new BackPropROptimizer(this,lr,epochs);
             opt.optimize(eval,epochs,lineSearchBackProp);
@@ -1273,7 +1175,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate to use
      * @param epochs  the number of epochs to iterate (this is already called in finetune)
      */
-    public void backProp(double lr,int epochs) {
+    public void backProp(float lr,int epochs) {
         backProp(lr,epochs,null);
 
     }
@@ -1301,7 +1203,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @return the params for this neural net
      */
     public INDArray params() {
-        double[][] list = new double[layers.length * 2 + 2][];
+        float[][] list = new float[layers.length * 2 + 2][];
 
         int deltaCount = 0;
 
@@ -1375,7 +1277,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             throw new IllegalArgumentException("Illegal number of layers passed in. Was " + layers.size() + " when should have been " + (this.layers.length + 1));
 
 
-        double[][] allMatrices = new double[(this.layers.length + 1) * 2][];
+        float[][] allMatrices = new float[(this.layers.length + 1) * 2][];
 
         int count = 0;
         for(int i = 0; i < this.layers.length; i++) {
@@ -1655,7 +1557,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(DataSetIterator iter,double lr, int iterations) {
+    public void finetune(DataSetIterator iter,float lr, int iterations) {
         iter.reset();
 
         while(iter.hasNext()) {
@@ -1681,7 +1583,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(DataSetIterator iter,double lr, int iterations,TrainingEvaluator eval) {
+    public void finetune(DataSetIterator iter,float lr, int iterations,TrainingEvaluator eval) {
         iter.reset();
 
         while(iter.hasNext()) {
@@ -1714,7 +1616,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels,double lr, int iterations) {
+    public void finetune(INDArray labels,float lr, int iterations) {
         this.labels = labels;
         feedForward();
         LinAlgExceptions.assertRows(labels,outputLayer.getLabels());
@@ -1732,7 +1634,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param lr the learning rate during training
      * @param iterations the number of times to iterate
      */
-    public void finetune(INDArray labels,double lr, int iterations,TrainingEvaluator eval) {
+    public void finetune(INDArray labels,float lr, int iterations,TrainingEvaluator eval) {
         feedForward();
 
         if(labels != null)
@@ -1926,7 +1828,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param labels the true labels
      * @return the score for the given input,label pairs
      */
-    public double score(INDArray input,INDArray labels) {
+    public float score(INDArray input,INDArray labels) {
         feedForward(input);
         setLabels(labels);
         return score();
@@ -1939,7 +1841,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    public double score(DataSet data) {
+    public float score(DataSet data) {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         return score();
@@ -1950,7 +1852,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * Score of the model (relative to the objective function)
      * @return the score of the model (relative to the objective function)
      */
-    public  double score() {
+    public  float score() {
         feedForward();
         return outputLayer.score();
     }
@@ -1959,11 +1861,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
      * @param param the current parameters
      * @return the score of the model (relative to the objective function)
      */
-    public  double score(INDArray param) {
+    public  float score(INDArray param) {
         INDArray params = params();
         setParameters(param);
-        double ret =  score();
-        double regCost = 0.5 * l2 * (double) Transforms.pow(mask.mul(param),2).sum(Integer.MAX_VALUE).element();
+        float ret =  score();
+        float regCost = 0.5f * l2 * (float) Transforms.pow(mask.mul(param),2).sum(Integer.MAX_VALUE).element();
         setParameters(params);
         return ret + regCost;
     }
@@ -2220,27 +2122,27 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.weightTransforms = weightTransforms;
     }
 
-    public  double getSparsity() {
+    public  float getSparsity() {
         return sparsity;
     }
 
-    public  void setSparsity(double sparsity) {
+    public  void setSparsity(float sparsity) {
         this.sparsity = sparsity;
     }
 
-    public  double getLearningRateUpdate() {
+    public  float getLearningRateUpdate() {
         return learningRateUpdate;
     }
 
-    public  void setLearningRateUpdate(double learningRateUpdate) {
+    public  void setLearningRateUpdate(float learningRateUpdate) {
         this.learningRateUpdate = learningRateUpdate;
     }
 
-    public  double getErrorTolerance() {
+    public  float getErrorTolerance() {
         return errorTolerance;
     }
 
-    public  void setErrorTolerance(double errorTolerance) {
+    public  void setErrorTolerance(float errorTolerance) {
         this.errorTolerance = errorTolerance;
     }
 
@@ -2294,11 +2196,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.outputLayerWeightInit = outputLayerWeightInit;
     }
 
-    public double getFineTuneLearningRate() {
+    public float getFineTuneLearningRate() {
         return fineTuneLearningRate;
     }
 
-    public void setFineTuneLearningRate(double fineTuneLearningRate) {
+    public void setFineTuneLearningRate(float fineTuneLearningRate) {
         this.fineTuneLearningRate = fineTuneLearningRate;
     }
 
@@ -2320,11 +2222,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.normalizeByInputRows = normalizeByInputRows;
     }
 
-    public double getOutputLayerDropout() {
+    public float getOutputLayerDropout() {
         return outputLayerDropout;
     }
 
-    public void setOutputLayerDropout(double outputLayerDropout) {
+    public void setOutputLayerDropout(float outputLayerDropout) {
         this.outputLayerDropout = outputLayerDropout;
     }
 
@@ -2338,11 +2240,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
     }
 
 
-    public double getDropOut() {
+    public float getDropOut() {
         return dropOut;
     }
 
-    public void setDropOut(double dropOut) {
+    public void setDropOut(float dropOut) {
         this.dropOut = dropOut;
     }
 
@@ -2378,19 +2280,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.layers = createNetworkLayers(nLayers);
     }
 
-    public  double getMomentum() {
+    public  float getMomentum() {
         return momentum;
     }
 
-    public  void setMomentum(double momentum) {
+    public  void setMomentum(float momentum) {
         this.momentum = momentum;
     }
 
-    public  double getL2() {
+    public  float getL2() {
         return l2;
     }
 
-    public  void setL2(double l2) {
+    public  void setL2(float l2) {
         this.l2 = l2;
     }
 
@@ -2434,11 +2336,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
     }
 
-    public double getDampingFactor() {
+    public float getDampingFactor() {
         return dampingFactor;
     }
 
-    public void setDampingFactor(double dampingFactor) {
+    public void setDampingFactor(float dampingFactor) {
         this.dampingFactor = dampingFactor;
     }
 
@@ -2496,11 +2398,11 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             outputLayer.setActivationFunction(outputActivationFunction);
     }
 
-    public Map<Integer, Double> getLayerLearningRates() {
+    public Map<Integer, Float> getLayerLearningRates() {
         return layerLearningRates;
     }
 
-    public void setLayerLearningRates(Map<Integer, Double> layerLearningRates) {
+    public void setLayerLearningRates(Map<Integer, Float> layerLearningRates) {
         this.layerLearningRates = layerLearningRates;
     }
 
@@ -2528,19 +2430,19 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         this.resetAdaGradIterationsByLayer = resetAdaGradIterationsByLayer;
     }
 
-    public Map<Integer, Map<Integer, Double>> getMomentumAfterByLayer() {
+    public Map<Integer, Map<Integer, Float>> getMomentumAfterByLayer() {
         return momentumAfterByLayer;
     }
 
-    public void setMomentumAfterByLayer(Map<Integer, Map<Integer, Double>> momentumAfterByLayer) {
+    public void setMomentumAfterByLayer(Map<Integer, Map<Integer, Float>> momentumAfterByLayer) {
         this.momentumAfterByLayer = momentumAfterByLayer;
     }
 
-    public Map<Integer, Double> getMomentumAfter() {
+    public Map<Integer, Float> getMomentumAfter() {
         return momentumAfter;
     }
 
-    public void setMomentumAfter(Map<Integer, Double> momentumAfter) {
+    public void setMomentumAfter(Map<Integer, Float> momentumAfter) {
         this.momentumAfter = momentumAfter;
     }
 
@@ -2660,7 +2562,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
 
     public static class Builder<E extends BaseMultiLayerNetwork> {
         protected Class<? extends BaseMultiLayerNetwork> clazz;
-        private Map<Integer,Double> layerLearningRates = new HashMap<>();
+        private Map<Integer,Float> layerLearningRates = new HashMap<>();
         private int nIns;
         private int[] hiddenLayerSizes;
         private int nOuts;
@@ -2669,20 +2571,20 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private INDArray input,labels;
         private ActivationFunction activation;
         private int renderWeithsEveryNEpochs = -1;
-        private double l2 = 0.01;
+        private float l2 = 0.01f;
         private boolean useRegularization = false;
-        private double momentum;
+        private float momentum;
         private RealDistribution dist;
         protected Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
         protected boolean backProp = true;
         protected boolean shouldForceEpochs = false;
-        private double sparsity = 0;
+        private float sparsity = 0;
         private Map<Integer,MatrixTransform> hiddenBiasTransforms = new HashMap<>();
         private Map<Integer,MatrixTransform> visibleBiasTransforms = new HashMap<>();
         private boolean useAdaGrad = true;
         private boolean normalizeByInputRows = true;
         private boolean useHiddenActivationsForwardProp = true;
-        private double dropOut = 0;
+        private float dropOut = 0;
         private Map<Integer,ActivationFunction> activationForLayer = new HashMap<>();
         private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
@@ -2694,14 +2596,14 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
         private boolean lineSearchBackProp = false;
         private boolean concatBiases = false;
         //momentum after n iterations
-        private Map<Integer,Double> momentumAfter = new HashMap<>();
+        private Map<Integer,Float> momentumAfter = new HashMap<>();
         //momentum after n iterations by layer
-        private Map<Integer,Map<Integer,Double>> momentumAfterByLayer = new HashMap<>();
+        private Map<Integer,Map<Integer,Float>> momentumAfterByLayer = new HashMap<>();
         //reset adagrad historical gradient after n iterations
         private Map<Integer,Integer> resetAdaGradIterationsByLayer = new HashMap<>();
         //reset adagrad historical gradient after n iterations
         private int resetAdaGradIterations = -1;
-        private double outputLayerDropout = 0.0;
+        private float outputLayerDropout = 0.0f;
         private boolean useDropConnect = false;
         private boolean useGaussNewtonVectorProductBackProp = false;
         private boolean constrainGradientToUnitNorm = false;
@@ -2792,7 +2694,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param outputLayerDropout
          * @return
          */
-        public Builder<E> outputLayerDropout(double outputLayerDropout) {
+        public Builder<E> outputLayerDropout(float outputLayerDropout) {
             this.outputLayerDropout = outputLayerDropout;
             return this;
         }
@@ -2823,7 +2725,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param momentumAfterByLayer the by layer momentum changes
          * @return
          */
-        public Builder<E> momentumAfterByLayer(Map<Integer,Map<Integer,Double>> momentumAfterByLayer) {
+        public Builder<E> momentumAfterByLayer(Map<Integer,Map<Integer,Float>> momentumAfterByLayer) {
             this.momentumAfterByLayer = momentumAfterByLayer;
             return this;
         }
@@ -2833,7 +2735,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param momentumAfter the momentum after n iterations
          * @return
          */
-        public Builder<E> momentumAfter(Map<Integer,Double> momentumAfter) {
+        public Builder<E> momentumAfter(Map<Integer,Float> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
         }
@@ -2887,7 +2789,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param learningRates
          * @return
          */
-        public Builder<E> learningRateForLayer(Map<Integer,Double> learningRates) {
+        public Builder<E> learningRateForLayer(Map<Integer,Float> learningRates) {
             this.layerLearningRates.putAll(learningRates);
             return this;
         }
@@ -2950,7 +2852,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param dropOut the dropout to use
          * @return builder pattern
          */
-        public Builder<E> withDropOut(double dropOut) {
+        public Builder<E> withDropOut(float dropOut) {
             this.dropOut = dropOut;
             return this;
         }
@@ -2985,7 +2887,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
             return this;
         }
 
-        public Builder<E> withSparsity(double sparsity) {
+        public Builder<E> withSparsity(float sparsity) {
             this.sparsity = sparsity;
             return this;
         }
@@ -3057,7 +2959,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param momentum
          * @return
          */
-        public Builder<E> withMomentum(double momentum) {
+        public Builder<E> withMomentum(float momentum) {
             this.momentum = momentum;
             return this;
         }
@@ -3077,7 +2979,7 @@ public abstract class BaseMultiLayerNetwork implements Serializable,Persistable,
          * @param l2
          * @return
          */
-        public Builder<E> withL2(double l2) {
+        public Builder<E> withL2(float l2) {
             this.l2 = l2;
             return this;
         }

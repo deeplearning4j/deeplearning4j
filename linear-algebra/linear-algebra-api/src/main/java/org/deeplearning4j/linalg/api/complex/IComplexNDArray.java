@@ -225,13 +225,13 @@ public interface IComplexNDArray extends INDArray {
 
     double getReal(int i);
 
-    IComplexNDArray putReal(int rowIndex, int columnIndex, double value);
+    IComplexNDArray putReal(int rowIndex, int columnIndex, float value);
 
-    IComplexNDArray putImag(int rowIndex, int columnIndex, double value);
+    IComplexNDArray putImag(int rowIndex, int columnIndex, float value);
 
-    IComplexNDArray putReal(int i, double v);
+    IComplexNDArray putReal(int i, float v);
 
-    IComplexNDArray putImag(int i, double v);
+    IComplexNDArray putImag(int i, float v);
 
     INDArray real();
 
@@ -787,7 +787,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray norm1(int dimension);
 
 
-    double[] data();
+    float[] data();
 
     /**
      * Returns the product along a given dimension
@@ -890,7 +890,7 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray transpose();
 
-    IComplexNDArray put(int[] indexes, double value);
+    IComplexNDArray put(int[] indexes, float value);
 
     IComplexNDArray putSlice(int slice, IComplexNDArray put);
 
