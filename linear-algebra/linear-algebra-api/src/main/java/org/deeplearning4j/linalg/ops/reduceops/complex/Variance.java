@@ -5,6 +5,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 
 /**
  * Return the variance of an ndarray
@@ -22,7 +23,7 @@ public class Variance extends BaseScalarOp {
 
     public IComplexNumber var(IComplexNDArray arr) {
         IComplexNumber mean = new Mean().apply(arr);
-        return NDArrays.createDouble(StatUtils.variance(arr.data(), mean.absoluteValue().doubleValue()),0);
+        return NDArrays.createDouble(StatUtils.variance(ArrayUtil.doubleCopyOf(arr.data()), mean.absoluteValue().floatValue()),0);
     }
 
 

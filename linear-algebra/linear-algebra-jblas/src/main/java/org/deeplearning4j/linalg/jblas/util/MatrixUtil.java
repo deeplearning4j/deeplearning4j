@@ -1125,7 +1125,7 @@ public class MatrixUtil {
 
 
 
-        DoubleMatrix ret2 = new DoubleMatrix(ArrayUtil.combine(gradient));
+        DoubleMatrix ret2 = new DoubleMatrix(ArrayUtil.combineDouble(gradient));
         return ret2.reshape(1,ret2.length);
     }
 

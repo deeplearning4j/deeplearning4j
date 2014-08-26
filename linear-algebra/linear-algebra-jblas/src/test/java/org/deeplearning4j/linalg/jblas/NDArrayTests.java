@@ -121,7 +121,7 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
 
         NDArrays.factory().setOrder('f');
-        double[][] mmul = {{1,2,3,4},{5,6,7,8}};
+        float[][] mmul = {{1,2,3,4},{5,6,7,8}};
 
         INDArray d2 = NDArrays.create(data);
         verifyElements(mmul,d2);
@@ -212,11 +212,11 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
 
 
-    protected void verifyElements(double[][] d,INDArray d2) {
+    protected void verifyElements(float[][] d,INDArray d2) {
         for(int i = 0; i < d2.rows(); i++) {
             for(int j = 0; j < d2.columns(); j++) {
-                double test1 =  d[i][j];
-                double test2 = (double) d2.getScalar(i,j).element();
+                float test1 =  d[i][j];
+                float test2 = (float) d2.getScalar(i,j).element();
                 assertEquals(test1,test2,1e-6);
             }
         }
@@ -226,8 +226,8 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
     protected void verifyElements(DoubleMatrix d,INDArray d2) {
         for(int i = 0; i < d.rows; i++) {
             for(int j = 0; j < d.columns; j++) {
-                double test1 = d.get(i,j);
-                double test2 = (double) d2.getScalar(i,j).element();
+                float test1 = (float) d.get(i,j);
+                float test2 = (float) d2.getScalar(i,j).element();
                 assertEquals(test1,test2,1e-6);
             }
         }

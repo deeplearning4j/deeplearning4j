@@ -6,6 +6,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexDouble;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.jblas.NDArray;
 
 import java.util.List;
 
@@ -25,9 +26,7 @@ import java.util.List;
 public class ComplexNDArray extends BaseComplexNDArray {
 
 
-    public ComplexNDArray(double[][] data) {
-        super(data);
-    }
+
 
     /**
      * Create this ndarray with the given data and shape and 0 offset
@@ -36,7 +35,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param shape    the shape of the ndarray
      * @param ordering
      */
-    public ComplexNDArray(double[] data, int[] shape, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
@@ -48,7 +47,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(shape);
     }
 
-    public ComplexNDArray(double[] data, int[] shape, int[] stride, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
     }
 
@@ -147,7 +146,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float[]
      *
      * @param newData the new data for this array
      * @param shape   the shape of the ndarray
@@ -158,7 +157,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float[]
      *
      * @param newData the new data for this array
      * @param shape   the shape of the ndarray
@@ -168,26 +167,16 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(newData, shape, stride);
     }
 
-    /**
-     * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
-     *
-     * @param newData the new data for this array
-     * @param shape   the shape of the ndarray
-     */
-    public ComplexNDArray(IComplexDouble[] newData, int[] shape) {
-        super(newData, shape);
-    }
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float[]
      *
      * @param newData  the new data for this array
      * @param shape    the shape of the ndarray
      * @param ordering the ordering for the ndarray
      */
-    public ComplexNDArray(IComplexDouble[] newData, int[] shape, char ordering) {
+    public ComplexNDArray(IComplexNumber[] newData, int[] shape, char ordering) {
         super(newData, shape, ordering);
     }
 
@@ -198,7 +187,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param shape  the shape of the ndarray
      * @param stride the stride of the ndarray
      */
-    public ComplexNDArray(double[] data, int[] shape, int[] stride) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
     }
 
@@ -211,23 +200,23 @@ public class ComplexNDArray extends BaseComplexNDArray {
      * @param offset   the offset
      * @param ordering the ordering
      */
-    public ComplexNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public ComplexNDArray(double[] data, int[] shape, int[] stride, int offset) {
+    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
     }
 
-    public ComplexNDArray(double[] data, int[] shape) {
+    public ComplexNDArray(float[] data, int[] shape) {
         super(data, shape);
     }
 
-    public ComplexNDArray(double[] data, int[] shape, int offset, char ordering) {
+    public ComplexNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
-    public ComplexNDArray(double[] data, int[] shape, int offset) {
+    public ComplexNDArray(float[] data, int[] shape, int offset) {
         super(data, shape, offset);
     }
 
@@ -308,24 +297,12 @@ public class ComplexNDArray extends BaseComplexNDArray {
         super(newRows, newColumns, ordering);
     }
 
-    /**
-     * Float overloading for constructor
-     *
-     * @param data     the data to use
-     * @param shape    the shape to use
-     * @param stride   the stride of the ndarray
-     * @param offset   the offset of the ndarray
-     * @param ordering the ordering for the ndarrayg
-     */
-    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        super(data, shape, stride, offset, ordering);
-    }
 
-    public ComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
-        super(data, shape, stride, offset);
-    }
-
-    public ComplexNDArray(double[] doubles) {
+    public ComplexNDArray(float[] doubles) {
         super(doubles);
+    }
+
+    public ComplexNDArray(float[][] floats) {
+        this(new NDArray(floats));
     }
 }

@@ -752,9 +752,9 @@ public interface INDArray {
 
 
 
-    public double get(int i);
+    public float get(int i);
 
-    public double get(int i,int j);
+    public float get(int i,int j);
 
 
 
@@ -956,10 +956,10 @@ public interface INDArray {
      * Returns a linear double array representation of this ndarray
      * @return the linear double array representation of this ndarray
      */
-    public double[] data();
+    public float[] data();
 
 
-    void setData(double[] data);
+    void setData(float[] data);
 
 
     /**
@@ -969,7 +969,6 @@ public interface INDArray {
     public float[] floatData();
 
 
-    void setData(float[] data);
 
 
 

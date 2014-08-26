@@ -14,7 +14,7 @@ public class Norm1 extends BaseScalarOp {
     }
 
     @Override
-    public double accumulate(INDArray arr, int i, double soFar) {
-        return soFar + Math.abs((double)arr.getScalar(i).element());
+    public float accumulate(INDArray arr, int i, float soFar) {
+        return soFar + Math.abs((float)arr.getScalar(i).element());
     }
 }
