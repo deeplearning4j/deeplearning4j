@@ -1,15 +1,15 @@
 package org.deeplearning4j.linalg.jcublas;
 
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexDouble;
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexFloat;
-import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexDouble;
 import org.deeplearning4j.linalg.api.complex.IComplexFloat;
 import org.deeplearning4j.linalg.api.complex.IComplexNDArray;
 import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.linalg.factory.BaseNDArrayFactory;
-
+import org.deeplearning4j.linalg.factory.NDArrays;
+import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexDouble;
+import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexFloat;
+import org.deeplearning4j.linalg.jcublas.complex.JCublasComplexNDArray;
 import org.deeplearning4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -215,27 +215,27 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, int offset) {
-        return null;
+        return new JCublasNDArray(data,shape,offset);
     }
 
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
-        return null;
+        return new JCublasComplexNDArray(data,shape, NDArrays.getComplexStrides(shape, ordering),offset,ordering);
     }
 
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
-        return null;
+        return new JCublasComplexNDArray(data,shape,offset);
     }
 
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return null;
+        return new JCublasComplexNDArray(data,shape,stride,offset,ordering);
     }
 
     @Override
     public INDArray create(float[][] floats) {
-        return null;
+        return new JCublasNDArray(floats);
     }
 
     @Override
