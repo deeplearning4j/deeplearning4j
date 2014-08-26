@@ -56,15 +56,15 @@ public class SdaTest {
 
         StackedDenoisingAutoEncoder stackedDenoisingAutoEncoder = new StackedDenoisingAutoEncoder.Builder()
                 .hiddenLayerSizes(new int[]{500,250,100})
-                .withMomentum(0.5)
+                .withMomentum(0.5f)
                 .numberOfInputs(784)
                 .numberOfOutPuts(fetcher.totalOutcomes())
                 .build();
 
         watch.start();
 
-        stackedDenoisingAutoEncoder.pretrain(d.getFeatureMatrix(), 1, 1e-2, 300);
-        stackedDenoisingAutoEncoder.finetune(d.getLabels(), 1e-2, 100);
+        stackedDenoisingAutoEncoder.pretrain(d.getFeatureMatrix(), 1, 1e-2f, 300);
+        stackedDenoisingAutoEncoder.finetune(d.getLabels(), 1e-2f, 100);
 
         watch.stop();
 

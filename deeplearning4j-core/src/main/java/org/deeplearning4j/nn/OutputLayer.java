@@ -154,7 +154,7 @@ public class OutputLayer implements Serializable,Output {
 
         if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
-            g.setTolerance(1e-3);
+            g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.setMaxIterations(numEpochs);
             g.optimize(numEpochs);
@@ -162,14 +162,14 @@ public class OutputLayer implements Serializable,Output {
         }
         else if(optimizationAlgorithm == OptimizationAlgorithm.HESSIAN_FREE) {
             StochasticHessianFree o = new StochasticHessianFree(opt,null);
-            o.setTolerance(1e-3);
+            o.setTolerance(1e-3f);
             o.setTrainingEvaluator(eval);
             o.optimize(numEpochs);
         }
 
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
-            g.setTolerance(1e-3);
+            g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.optimize(numEpochs);
 
@@ -191,7 +191,7 @@ public class OutputLayer implements Serializable,Output {
 
         if(optimizationAlgorithm == OptimizationAlgorithm.CONJUGATE_GRADIENT) {
             VectorizedNonZeroStoppingConjugateGradient g = new VectorizedNonZeroStoppingConjugateGradient(opt);
-            g.setTolerance(1e-3);
+            g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.setMaxIterations(numEpochs);
             g.optimize(numEpochs);
@@ -200,7 +200,7 @@ public class OutputLayer implements Serializable,Output {
 
         else {
             VectorizedDeepLearningGradientAscent g = new VectorizedDeepLearningGradientAscent(opt);
-            g.setTolerance(1e-3);
+            g.setTolerance(1e-3f);
             g.setTrainingEvaluator(eval);
             g.optimize(numEpochs);
 
@@ -244,37 +244,37 @@ public class OutputLayer implements Serializable,Output {
      * Objective function:  the specified objective
      * @return the score for the objective
      */
-    public  double score() {
+    public  float score() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray z = output(input);
-        double ret = 0;
+        float ret = 0;
         double reg = 0.5 * l2;
 
 
         switch (lossFunction) {
             case MCXENT:
                 INDArray mcXEntLogZ = log(z);
-                ret = -(double) labels.mul(mcXEntLogZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = -(float) labels.mul(mcXEntLogZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ = log(z).rsub(1);
-                ret = -(double) labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = -(float) labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).mul(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case RMSE_XENT:
-                ret = (double) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = (float) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
-                ret =  0.5 * (double) (pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE)).element() / labels.rows();
+                ret =  0.5f * (float) (pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE)).element() / labels.rows();
                 break;
             case EXPLL:
                 INDArray expLLLogZ = log(z);
-                ret = -(double) z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = -(float) z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
                 break;
             case SQUARED_LOSS:
-                ret = (double) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
+                ret = (float) pow(labels.sub(z),2).sum(1).sum(Integer.MAX_VALUE).element() / labels.rows();
 
 
         }

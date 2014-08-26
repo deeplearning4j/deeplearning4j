@@ -52,23 +52,23 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
     }
 
     final int maxIterations = 100;
-    double stpmax = 100;
-    final double EPS = 3.0e-12;
+    float stpmax = 100;
+    final float EPS = 3.0e-12f;
 
     // termination conditions: either
     //   a) abs(delta x/x) < REL_TOLX for all coordinates
     //   b) abs(delta x) < ABS_TOLX for all coordinates
     //   c) sufficient function increase (uses ALF)
-    private double relTolx = 1e-10;
-    private double absTolx = 1e-4; // tolerance on absolute value difference
-    final double ALF = 1e-4;
+    private float relTolx = 1e-10f;
+    private float absTolx = 1e-4f; // tolerance on absolute value difference
+    final float ALF = 1e-4f;
 
-    public void setStpmax(double stpmax) {
+    public void setStpmax(float stpmax) {
         this.stpmax = stpmax;
     }
 
 
-    public double getStpmax() {
+    public float getStpmax() {
         return stpmax;
     }
 
@@ -76,13 +76,13 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
      * Sets the tolerance of relative diff in function value.
      *  Line search converges if <tt>abs(delta x / x) < tolx</tt>
      *  for all coordinates. */
-    public void setRelTolx (double tolx) { relTolx = tolx; }
+    public void setRelTolx (float tolx) { relTolx = tolx; }
 
     /**
      * Sets the tolerance of absolute diff in function value.
      *  Line search converges if <tt>abs(delta x) < tolx</tt>
      *  for all coordinates. */
-    public void setAbsTolx (double tolx) { absTolx = tolx; }
+    public void setAbsTolx (float tolx) { absTolx = tolx; }
 
     // initialStep is ignored.  This is b/c if the initial step is not 1.0,
     //   it sometimes confuses the backtracking for reasons I don't
@@ -90,27 +90,27 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
-    public double optimize (INDArray line, int lineSearchIteration,double initialStep) throws InvalidStepException
+    public float optimize (INDArray line, int lineSearchIteration,float initialStep) throws InvalidStepException
     {
         INDArray g, x, oldParameters;
-        double slope, test, alamin, alam, alam2, tmplam;
-        double rhs1, rhs2, a, b, disc, oldAlam;
-        double f, fold, f2;
+        float slope, test, alamin, alam, alam2, tmplam;
+        float rhs1, rhs2, a, b, disc, oldAlam;
+        float f, fold, f2;
         g = function.getValueGradient(lineSearchIteration); // gradient
         x = function.getParameters(); // parameters
         oldParameters = x.dup();
 
 
-        alam2 = tmplam = 0.0;
+        alam2 = tmplam = 0.0f;
         f2 = fold = function.getValue();
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLnSrch, value="+fold+",\ndirection.oneNorm:"
-                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Double.NEGATIVE_INFINITY,(double) Transforms.abs(line).max(Integer.MAX_VALUE).element()));
+                    +	line.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,(float) Transforms.abs(line).max(Integer.MAX_VALUE).element()));
         }
 
         LinAlgExceptions.assertValidNum(g);
-        double sum = (double) line.norm2(Integer.MAX_VALUE).element();
+        float sum = (float) line.norm2(Integer.MAX_VALUE).element();
         if(sum > stpmax) {
             logger.warn("attempted step too big. scaling: sum= " + sum +
                     ", stpmax= "+ stpmax);
@@ -133,19 +133,19 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
         //  precomputed and saved in alamin
         INDArray maxOldParams = NDArrays.create(line.length());
         for(int i = 0;i < line.length(); i++) {
-            maxOldParams.putScalar(i,Math.max(Math.abs((double) oldParameters.getScalar(i).element()), 1.0));
+            maxOldParams.putScalar(i,Math.max(Math.abs((float) oldParameters.getScalar(i).element()), 1.0));
 
         }
 
         INDArray testMatrix = Transforms.abs(line).div(maxOldParams);
 
-        test = (double) testMatrix.max(Integer.MAX_VALUE).element();
+        test = (float) testMatrix.max(Integer.MAX_VALUE).element();
 
 
         alamin = relTolx / test;
 
-        alam  = 1.0;
-        oldAlam = 0.0;
+        alam  = 1.0f;
+        oldAlam = 0.0f;
         int iteration = 0;
         // look for step size in direction given by "line"
         for(iteration = 0; iteration < maxIterations; iteration++) {
@@ -171,7 +171,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
                 function.setParameters(oldParameters);
                 f = function.getValue();
                 logger.trace("EXITING BACKTRACK: Jump too small (alamin="+ alamin + "). Exiting and using xold. Value="+f);
-                return 0.0;
+                return 0.0f;
             }
 
             function.setParameters(x);
@@ -195,52 +195,52 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
 
             // if value is infinite, i.e. we've
             // jumped to unstable territory, then scale down jump
-            else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
+            else if(Float.isInfinite(f) || Float.isInfinite(f2)) {
                 logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
-                tmplam = .2 * alam;
+                tmplam = .2f * alam;
                 if(alam < alamin) { //convergence on delta x
                     function.setParameters(oldParameters);
                     f = function.getValue();
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
-                    return 0.0;
+                    return 0.0f;
                 }
             }
             else { // backtrack
                 if(alam == 1.0) // first time through
-                    tmplam = -slope / (2.0 * ( f - fold - slope ));
+                    tmplam = -slope / (2.0f * ( f - fold - slope ));
                 else {
                     rhs1 = f - fold- alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
                     assert((alam - alam2) != 0): "FAILURE: dividing by alam-alam2. alam="+alam;
-                    a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 / ( FastMath.pow(alam2, 2) )) / (alam-alam2);
+                    a = ( rhs1 / (float) (FastMath.pow(alam, 2)) - rhs2 /(float)  ( FastMath.pow(alam2, 2) )) / (alam-alam2);
                     b = ( -alam2* rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
                     if(a == 0.0)
-                        tmplam = -slope / (2.0 * b);
+                        tmplam = -slope / (2.0f * b);
                     else {
-                        disc = b * b - 3.0 * a * slope;
+                        disc = b * b - 3.0f * a * slope;
                         if(disc < 0.0) {
-                            tmplam = .5 * alam;
+                            tmplam = .5f * alam;
                         }
                         else if (b <= 0.0)
-                            tmplam = (-b + FastMath.sqrt(disc))/(3.0 * a );
+                            tmplam = (-b + (float) FastMath.sqrt(disc))/(3.0f * a );
                         else
-                            tmplam = -slope / (b + FastMath.sqrt(disc));
+                            tmplam = -slope / (b + (float) FastMath.sqrt(disc));
                     }
-                    if (tmplam > .5 * alam)
-                        tmplam = .5 * alam;    // lambda <= .5 lambda_1
+                    if (tmplam > .5f * alam)
+                        tmplam = .5f * alam;    // lambda <= .5 lambda_1
                 }
             }
 
             alam2 = alam;
             f2 = f;
             logger.debug("tmplam:" + tmplam);
-            alam = Math.max(tmplam, .1*alam);  // lambda >= .1*Lambda_1
+            alam = Math.max(tmplam, .1f * alam);  // lambda >= .1*Lambda_1
 
         }
 
         if(iteration >= maxIterations)
             throw new IllegalStateException ("Too many iterations.");
-        return 0.0;
+        return 0.0f;
     }
 
     // returns true iff we've converged based on absolute x difference
@@ -248,7 +248,7 @@ public class VectorizedBackTrackLineSearch implements LineOptimizerMatrix
     {
 
         for (int i = 0; i < x.length(); i++) {
-            double comp = Math.abs ((double) x.getScalar(i).element() - (double) xold.getScalar(i).element());
+            float comp = Math.abs ((float) x.getScalar(i).element() - (float) xold.getScalar(i).element());
             if ( comp > absTolx) {
                 return false;
             }

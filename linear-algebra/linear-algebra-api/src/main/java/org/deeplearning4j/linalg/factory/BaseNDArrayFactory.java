@@ -125,7 +125,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray toFlattened(int length,Iterator<? extends INDArray>...matrices) {
 
 
-        List<double[]> gradient = new ArrayList<>();
+        List<float[]> gradient = new ArrayList<>();
         for(Iterator<? extends INDArray> iter : matrices) {
             while(iter.hasNext()) {
                 INDArray d = iter.next();
@@ -359,16 +359,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return result;
     }
 
-    /**
-     * Create an ndarray with the given data layout
-     *
-     * @param data the data to create the ndarray with
-     * @return the ndarray with the given data layout
-     */
-    @Override
-    public INDArray create(double[][] data) {
-        return null;
-    }
 
 
     /**
@@ -1481,6 +1471,5 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public abstract IComplexNDArray createComplex(double[] data, int[] shape, int offset);
-
 
 }

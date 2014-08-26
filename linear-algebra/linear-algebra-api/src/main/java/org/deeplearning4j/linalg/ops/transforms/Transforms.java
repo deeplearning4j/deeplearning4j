@@ -94,9 +94,9 @@ public class Transforms {
      * @return the scaled ndarray
      */
     public static INDArray unitVec(INDArray toScale) {
-        double length = (double) toScale.norm2(Integer.MAX_VALUE).element();
+        float length = (float) toScale.norm2(Integer.MAX_VALUE).element();
         if (length > 0)
-            return NDArrays.getBlasWrapper().scal(1.0 / length,toScale);
+            return NDArrays.getBlasWrapper().scal(1.0f / length,toScale);
         return toScale;
     }
 

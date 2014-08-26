@@ -33,24 +33,24 @@ public class Conf implements Serializable,Cloneable {
     private Class<? extends NeuralNetwork> neuralNetworkClazz;
     private int k;
     private long seed = 123;
-    private double corruptionLevel = 0.3;
-    private double sparsity = 0;
+    private float corruptionLevel = 0.3f;
+    private float sparsity = 0;
     private ActivationFunction function = Activations.sigmoid();
     private ActivationFunction outputActivationFunction = Activations.softmax();
     private int[] layerSizes = new int[]{300,300,300};
     private int pretrainEpochs = 1000;
     private int finetuneEpochs = 1000;
-    private double pretrainLearningRate = 0.01;
-    private double finetuneLearningRate = 0.01;
+    private float pretrainLearningRate = 0.01f;
+    private float finetuneLearningRate = 0.01f;
     private int split = 10;
     private int nIn = 1;
     private int nOut = 1;
     private int numPasses = 1;
-    private double momentum = 0.1;
+    private float momentum = 0.1f;
     private boolean useRegularization = false;
     private Object[] deepLearningParams;
     private String masterUrl;
-    private double l2;
+    private float l2;
     private Map<Integer,MatrixTransform> weightTransforms = new HashMap<>();
     private Map<Integer,ActivationFunction> activationFunctionForLayer = new HashMap<>();
     private Map<Integer,Integer> renderEpochsByLayer = new HashMap<>();
@@ -60,7 +60,7 @@ public class Conf implements Serializable,Cloneable {
     private INDArray columnStds;
     private boolean useAdaGrad = false;
     private boolean useBackProp = true;
-    private double dropOut;
+    private float dropOut;
     private LossFunction lossFunction = LossFunction.RECONSTRUCTION_CROSSENTROPY;
     private OptimizationAlgorithm optimizationAlgorithm = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     private boolean normalizeZeroMeanAndUnitVariance;
@@ -70,7 +70,7 @@ public class Conf implements Serializable,Cloneable {
     private String stateTrackerConnectionString;
     private Map<Integer,RBM.VisibleUnit> visibleUnitByLayer = new HashMap<>();
     private Map<Integer,RBM.HiddenUnit> hiddenUnitByLayer = new HashMap<>();
-    private Map<Integer,Double> learningRateForLayer = new HashMap<>();
+    private Map<Integer,Float> learningRateForLayer = new HashMap<>();
     private Map<Integer,LossFunction> lossFunctionByLayer = new HashMap<>();
     private boolean roundCodeLayer = false;
     private OutputLayer.LossFunction outputLayerLossFunction = OutputLayer.LossFunction.MCXENT;
@@ -79,7 +79,7 @@ public class Conf implements Serializable,Cloneable {
     private boolean sampleHiddenActivations = false;
     private Map<Integer,Boolean> sampleHiddenActivationsByLayer = new HashMap<>();
     private boolean useDropConnect = false;
-    private double outputLayerDropOut = 0.0;
+    private float outputLayerDropOut = 0.0f;
 
 
     public boolean isUseDropConnect() {
@@ -90,11 +90,11 @@ public class Conf implements Serializable,Cloneable {
         this.useDropConnect = useDropConnect;
     }
 
-    public double getOutputLayerDropOut() {
+    public float getOutputLayerDropOut() {
         return outputLayerDropOut;
     }
 
-    public void setOutputLayerDropOut(double outputLayerDropOut) {
+    public void setOutputLayerDropOut(float outputLayerDropOut) {
         this.outputLayerDropOut = outputLayerDropOut;
     }
 
@@ -154,7 +154,7 @@ public class Conf implements Serializable,Cloneable {
         this.roundCodeLayer = roundCodeLayer;
     }
 
-    public Map<Integer, Double> getLearningRateForLayer() {
+    public Map<Integer, Float> getLearningRateForLayer() {
         return learningRateForLayer;
     }
 
@@ -166,7 +166,7 @@ public class Conf implements Serializable,Cloneable {
         this.lossFunctionByLayer = lossFunctionByLayer;
     }
 
-    public void setLearningRateForLayer(Map<Integer, Double> learningRateForLayer) {
+    public void setLearningRateForLayer(Map<Integer, Float> learningRateForLayer) {
         this.learningRateForLayer = learningRateForLayer;
     }
 
@@ -242,12 +242,12 @@ public class Conf implements Serializable,Cloneable {
         this.normalizeZeroMeanAndUnitVariance = normalizeZeroMeanAndUnitVariance;
     }
 
-    public double getDropOut() {
+    public float getDropOut() {
         return dropOut;
     }
 
 
-    public void setDropOut(double dropOut) {
+    public void setDropOut(float dropOut) {
         this.dropOut = dropOut;
     }
 
@@ -275,10 +275,10 @@ public class Conf implements Serializable,Cloneable {
     public synchronized void setMasterAbsPath(String masterAbsPath) {
         this.masterAbsPath = masterAbsPath;
     }
-    public synchronized double getSparsity() {
+    public synchronized float getSparsity() {
         return sparsity;
     }
-    public synchronized void setSparsity(double sparsity) {
+    public synchronized void setSparsity(float sparsity) {
         this.sparsity = sparsity;
     }
     public Map<Integer, MatrixTransform> getWeightTransforms() {
@@ -287,10 +287,10 @@ public class Conf implements Serializable,Cloneable {
     public void setWeightTransforms(Map<Integer, MatrixTransform> weightTransforms) {
         this.weightTransforms = weightTransforms;
     }
-    public double getL2() {
+    public float getL2() {
         return l2;
     }
-    public void setL2(double l2) {
+    public void setL2(float l2) {
         this.l2 = l2;
     }
     public String getMasterUrl() {
@@ -299,10 +299,10 @@ public class Conf implements Serializable,Cloneable {
     public void setMasterUrl(String masterUrl) {
         this.masterUrl = masterUrl;
     }
-    public double getMomentum() {
+    public float getMomentum() {
         return momentum;
     }
-    public void setMomentum(double momentum) {
+    public void setMomentum(float momentum) {
         this.momentum = momentum;
     }
     public boolean isUseRegularization() {
@@ -337,10 +337,10 @@ public class Conf implements Serializable,Cloneable {
     public void setSeed(long seed) {
         this.seed = seed;
     }
-    public double getCorruptionLevel() {
+    public float getCorruptionLevel() {
         return corruptionLevel;
     }
-    public void setCorruptionLevel(double corruptionLevel) {
+    public void setCorruptionLevel(float corruptionLevel) {
         this.corruptionLevel = corruptionLevel;
     }
     public ActivationFunction getFunction() {
@@ -392,7 +392,7 @@ public class Conf implements Serializable,Cloneable {
     public void setPretrainEpochs(int pretrainEpochs) {
         this.pretrainEpochs = pretrainEpochs;
     }
-    public double getPretrainLearningRate() {
+    public float getPretrainLearningRate() {
         return pretrainLearningRate;
     }
 
@@ -402,10 +402,10 @@ public class Conf implements Serializable,Cloneable {
      * pretrain master learning rate
      * @param pretrainLearningRate the learning rate to use
      */
-    public void setPretrainLearningRate(double pretrainLearningRate) {
+    public void setPretrainLearningRate(float pretrainLearningRate) {
         this.pretrainLearningRate = pretrainLearningRate;
     }
-    public double getFinetuneLearningRate() {
+    public float getFinetuneLearningRate() {
         return finetuneLearningRate;
     }
 
@@ -417,7 +417,7 @@ public class Conf implements Serializable,Cloneable {
      * finetune master learning rate
      * @param finetuneLearningRate the learning rate to use
      */
-    public void setFinetuneLearningRate(double finetuneLearningRate) {
+    public void setFinetuneLearningRate(float finetuneLearningRate) {
         this.finetuneLearningRate = finetuneLearningRate;
     }
     public int getSplit() {
