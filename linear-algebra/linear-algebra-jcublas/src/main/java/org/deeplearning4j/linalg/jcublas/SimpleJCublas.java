@@ -209,7 +209,7 @@ public class SimpleJCublas {
                 d_A, // A
                 A.rows(),  // lda
                 d_B, // x
-                1, // incx
+                B.rows(), // incx
                 beta,  // beta
                 d_C, // y
                 1); // incy
@@ -526,5 +526,37 @@ public class SimpleJCublas {
         JCublas.cublasShutdown();
 
         return dott;
+    }
+
+    public static JCublasNDArray ger(JCublasNDArray A, JCublasNDArray B, JCublasNDArray C, double alpha) {
+        // = alpha * A * tranpose(B) + C
+
+        Pointer d_A = new Pointer();
+        Pointer d_B = new Pointer();
+        Pointer d_C = new Pointer();
+        init();
+
+        ThreePointerM(d_A,d_B,d_C,A,B,C);
+        JCublas.cublasDger(
+                A.rows(),   // m
+                A.columns(),// n
+                alpha,      // alpha
+                d_A,        // d_A or x
+                A.rows(),   // incx
+                d_B,        // d_B or y
+                B.rows(),   // incy
+                d_C,        // d_C or A
+                C.rows()    // lda
+        );
+
+        gm(d_C,C);
+
+        JCublas.cublasFree(d_A);
+        JCublas.cublasFree(d_B);
+        JCublas.cublasFree(d_C);
+
+        JCublas.cublasShutdown();
+
+        return C;
     }
 }

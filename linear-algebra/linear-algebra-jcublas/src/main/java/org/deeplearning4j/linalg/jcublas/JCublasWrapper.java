@@ -112,7 +112,9 @@ public class JCublasWrapper implements org.deeplearning4j.linalg.factory.BlasWra
 
     @Override
     public JCublasNDArray ger(double alpha, JCublasNDArray x, JCublasNDArray y, JCublasNDArray a) {
-        return null;
+        a = SimpleJCublas.ger(x,y, a,alpha);
+        return a;
+
     }
 
     @Override
