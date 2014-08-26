@@ -16,6 +16,13 @@ public class SimpleJCublas {
     static {
         JCublas.cublasInit();
         JCublas.setExceptionsEnabled(true);
+
+        final Thread mainThread = Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                JCublas.cublasShutdown();
+            }
+        });
     }
     private static void ThreePointerM(Pointer d_A, Pointer d_B, Pointer d_C,
                                       JCublasNDArray A, JCublasNDArray B, JCublasNDArray C, int sze) {
