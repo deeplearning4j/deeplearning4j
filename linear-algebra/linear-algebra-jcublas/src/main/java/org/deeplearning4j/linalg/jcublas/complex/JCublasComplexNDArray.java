@@ -15,21 +15,6 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
 
 
 
-    public JCublasComplexNDArray(double[][] data) {
-        super(data);
-    }
-
-    /**
-     * Create this ndarray with the given data and shape and 0 offset
-     *
-     * @param data     the data to use
-     * @param shape    the shape of the ndarray
-     * @param ordering
-     */
-    public JCublasComplexNDArray(double[] data, int[] shape, char ordering) {
-        super(data, shape, ordering);
-    }
-
     public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
         super(shape, offset, ordering);
     }
@@ -38,9 +23,6 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
         super(shape);
     }
 
-    public JCublasComplexNDArray(double[] data, int[] shape, int[] stride, char ordering) {
-        super(data, shape, stride, ordering);
-    }
 
     public JCublasComplexNDArray(int[] shape, char ordering) {
         super(shape, ordering);
@@ -181,45 +163,6 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
         super(newData, shape, ordering);
     }
 
-    /**
-     * Initialize with the given data,shape and stride
-     *
-     * @param data   the data to use
-     * @param shape  the shape of the ndarray
-     * @param stride the stride of the ndarray
-     */
-    public JCublasComplexNDArray(double[] data, int[] shape, int[] stride) {
-        super(data, shape, stride);
-    }
-
-    /**
-     * THe ordering of the ndarray
-     *
-     * @param data     the data to use
-     * @param shape    the final shape of the ndarray
-     * @param stride   the stride of the ndarray
-     * @param offset   the offset
-     * @param ordering the ordering
-     */
-    public JCublasComplexNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        super(data, shape, stride, offset, ordering);
-    }
-
-    public JCublasComplexNDArray(double[] data, int[] shape, int[] stride, int offset) {
-        super(data, shape, stride, offset);
-    }
-
-    public JCublasComplexNDArray(double[] data, int[] shape) {
-        super(data, shape);
-    }
-
-    public JCublasComplexNDArray(double[] data, int[] shape, int offset, char ordering) {
-        super(data, shape, offset, ordering);
-    }
-
-    public JCublasComplexNDArray(double[] data, int[] shape, int offset) {
-        super(data, shape, offset);
-    }
 
     /**
      * Construct an ndarray of the specified shape
@@ -315,8 +258,19 @@ public class JCublasComplexNDArray  extends BaseComplexNDArray {
         super(data, shape, stride, offset);
     }
 
-    public JCublasComplexNDArray(double[] doubles) {
-        super(doubles);
+
+    public JCublasComplexNDArray(double[] data, int[] shape, int[] stride, int offset) {
+        //super(data, shape, stride, offset);
+
+
     }
 
+    public JCublasComplexNDArray(float[] floats, int[] shape, int offset, char ordering) {
+        super(floats, shape, offset, ordering);
+
+    }
+
+    public JCublasComplexNDArray(float[] floats, int[] shape, int offset) {
+        super(floats, shape, offset);
+    }
 }

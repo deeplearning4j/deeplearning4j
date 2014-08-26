@@ -8,6 +8,7 @@ package org.deeplearning4j.linalg.jcublas;
 
 import org.deeplearning4j.linalg.api.ndarray.BaseNDArray;
 import org.deeplearning4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.linalg.util.ArrayUtil;
 
 
 import java.util.*;
@@ -27,7 +28,7 @@ public class JCublasNDArray extends BaseNDArray {
      * @param shape    the shape of the JCublasNDArray
      * @param ordering
      */
-    public JCublasNDArray(double[] data, int[] shape, char ordering) {
+    public JCublasNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
@@ -37,7 +38,7 @@ public class JCublasNDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the JCublasNDArray
      */
-    public JCublasNDArray(double[] data, int[] shape, int offset, char ordering) {
+    public JCublasNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
@@ -114,12 +115,8 @@ public class JCublasNDArray extends BaseNDArray {
         super(slices, shape, stride, ordering);
     }
 
-    public JCublasNDArray(double[] data, int[] shape, int[] stride, char ordering) {
+    public JCublasNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
-    }
-
-    public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        super(data, shape, stride, offset, ordering);
     }
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
@@ -132,11 +129,11 @@ public class JCublasNDArray extends BaseNDArray {
      * @param data  the data to use
      * @param shape the shape of the JCublasNDArray
      */
-    public JCublasNDArray(double[] data, int[] shape) {
+    public JCublasNDArray(float[] data, int[] shape) {
         super(data, shape);
     }
 
-    public JCublasNDArray(double[] data, int[] shape, int offset) {
+    public JCublasNDArray(float[] data, int[] shape, int offset) {
         super(data, shape, offset);
     }
 
@@ -208,18 +205,31 @@ public class JCublasNDArray extends BaseNDArray {
         super(slices, shape, stride);
     }
 
-    public JCublasNDArray(double[] data, int[] shape, int[] stride) {
+    public JCublasNDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
     }
 
-    public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset) {
-        super(data, shape, stride, offset);
-    }
+
 
     public JCublasNDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
     }
 
 
+    public JCublasNDArray(JCublasNDArray doubleMatrix) {
+        this(new int[]{doubleMatrix.rows,doubleMatrix.columns});
+        this.data = dup().data();
 
+    }
+
+    public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset) {
+        this.data = ArrayUtil.floatCopyOf(data);
+        this.stride = stride;
+        this.offset = offset;
+        initShape(shape);
+    }
+
+    public JCublasNDArray(float[][] floats) {
+        super(floats);
+    }
 }
