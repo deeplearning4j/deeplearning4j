@@ -925,4 +925,6 @@ public interface NDArrayFactory  {
     INDArray create(float[][] floats);
 
     IComplexNDArray createComplex(float[] dim);
+
+    INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering);
 }
