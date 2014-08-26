@@ -64,7 +64,7 @@ public class SimpleJCublas {
                 A.rows(),
                 A.columns(),
                 sze,
-                Pointer.to(A.data()),
+                Pointer.to(A.data()).withByteOffset((A.offset())),
                 A.rows(),
                 d_A,
                 A.rows()
@@ -73,7 +73,7 @@ public class SimpleJCublas {
                 B.rows(),
                 B.columns(),
                 sze,
-                Pointer.to(B.data()),
+                Pointer.to(B.data()).withByteOffset((B.offset())),
                 B.rows(),
                 d_B,
                 B.rows()
@@ -88,14 +88,14 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 A.length(),
                 sze,
-                Pointer.to(A.data()),
+                Pointer.to(A.data()).withByteOffset((A.offset())),
                 1,
                 d_A,
                 1);
         JCublas.cublasSetVector(
                 B.length(),
                 sze,
-                Pointer.to(B.data()),
+                Pointer.to(B.data()).withByteOffset((B.offset())),
                 1,
                 d_B,
                 1);
@@ -108,7 +108,7 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 A.length(),
                 sze,
-                Pointer.to(A.data()),
+                Pointer.to(A.data()).withByteOffset((A.offset())),
                 1,
                 d_A,
                 1);
@@ -116,7 +116,7 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 B.length(),
                 sze,
-                Pointer.to(B.data()),
+                Pointer.to(B.data()).withByteOffset((B.offset())),
                 1,
                 d_B,
                 1);
@@ -130,7 +130,7 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 A.length(),
                 sze,
-                Pointer.to(A.data()),
+                Pointer.to(A.data()).withByteOffset((A.offset())),
                 1,
                 d_A,
                 1);
@@ -138,7 +138,7 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 B.length(),
                 sze,
-                Pointer.to(B.data()),
+                Pointer.to(B.data()).withByteOffset((B.offset())),
                 1,
                 d_B,
                 1);
@@ -159,19 +159,19 @@ public class SimpleJCublas {
         JCublas.cublasSetVector(
                 A.length(),
                 sze,
-                Pointer.to(A.data()),
+                Pointer.to(A.data()).withByteOffset((A.offset())),
                 1,
                 d_A,
                 1);
     }
 
-    private static void gv(Pointer d_A, JCublasNDArray B, int sze) {
+    private static void gv(Pointer d_A, JCublasNDArray A, int sze) {
         JCublas.cublasGetVector(
-                B.length(),
+                A.length(),
                 sze,
                 d_A,
                 1,
-                Pointer.to(B.data()),
+                Pointer.to(A.data()),
                 1);
     }
 
@@ -205,18 +205,18 @@ public class SimpleJCublas {
                 sze,
                 d_C,
                 C.rows(),
-                Pointer.to(C.data()),
+                Pointer.to(C.data()).withByteOffset((C.offset())),
                 C.rows());
     }
 
     public static JCublasNDArray gemv(JCublasNDArray A, JCublasNDArray B, JCublasNDArray C, float alpha, float beta) {
-        
+
 
         Pointer d_A = new Pointer();
         Pointer d_B = new Pointer();
         Pointer d_C = new Pointer();
 
-        ThreePointerM(d_A, d_B, d_C, A, B,C, Sizeof.FLOAT);
+        ThreePointersV(d_A, d_B, d_C, A, B, Sizeof.FLOAT);
         char trans = 'n';
         if (A.rows() == B.columns()) {
             trans = 'T';
@@ -229,18 +229,19 @@ public class SimpleJCublas {
                 d_A, // A
                 A.rows(),  // lda
                 d_B, // x
-                B.rows(), // incx
+                B.rows(), // ldb
                 beta,  // beta
                 d_C, // y
-                A.rows()); // incy
+                A.rows()); // ldc
 
         gv(d_C, C, Sizeof.FLOAT);
+        System.err.println(JCublas.cublasGetError());
 
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
     }
@@ -276,7 +277,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
     }
@@ -315,7 +316,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
 
@@ -354,7 +355,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
 
@@ -368,7 +369,7 @@ public class SimpleJCublas {
         Pointer d_B = new Pointer();
         Pointer d_C = new Pointer();
 
-        ThreePointerM(d_A,d_B,d_C,A,B,C, Sizeof.DOUBLE);
+        ThreePointerM(d_A,d_B,d_C,A,B,C, Sizeof.FLOAT);
 
         JCublas.cublasDgemm(
                 'n', //trans
@@ -376,19 +377,19 @@ public class SimpleJCublas {
                 A.rows(),  // m
                 B.columns(), // n
                 B.rows(), //k,
-                alpha,
+                (float)alpha,
                 d_A, // A
                 A.rows(),  // lda
                 d_B, // x
-                B.rows(), // incx
-                beta,  // beta
+                B.rows(), // ldb
+                (float)beta,  // beta
                 d_C, // y
                 C.rows()); // incy
 
 
-        gm(d_C, C, Sizeof.DOUBLE);
+        gm(d_C, C, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
 
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
@@ -410,7 +411,7 @@ public class SimpleJCublas {
 
         double s = JCublas.cublasDnrm2(A.length(),d_A,2);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
 
         return s;
@@ -433,7 +434,7 @@ public class SimpleJCublas {
 
         gvi(Y, y, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
 
         JCublas.cublasFree(X);
         JCublas.cublasFree(Y);
@@ -451,7 +452,7 @@ public class SimpleJCublas {
 
         max = JCublas.cublasIzamax(x.length(), X, 1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(X);
         return max;
     }
@@ -466,7 +467,7 @@ public class SimpleJCublas {
         double sum = 0;
         sum = JCublas.cublasDzasum(x.length(),X,1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(X);
 
         return sum;
@@ -508,7 +509,7 @@ public class SimpleJCublas {
 
         gv(Y, y, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
 
         JCublas.cublasFree(X);
         JCublas.cublasFree(Y);
@@ -526,7 +527,7 @@ public class SimpleJCublas {
         double sum = 0;
         sum = JCublas.cublasDasum(x.length(),X,1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(X);
 
         return sum;
@@ -543,7 +544,7 @@ public class SimpleJCublas {
 
         normal2 = JCublas.cublasDnrm2(x.length(), X, 1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(X);
 
         return normal2;
@@ -561,7 +562,7 @@ public class SimpleJCublas {
 
         max = JCublas.cublasIdamax(x.length(), X, 1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(X);
         return max;
 
@@ -586,7 +587,7 @@ public class SimpleJCublas {
 
         gv(d_B, B, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
 
@@ -617,7 +618,7 @@ public class SimpleJCublas {
 
         gvi(d_B, B, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
     }
@@ -638,7 +639,7 @@ public class SimpleJCublas {
 
         gv(d_A, x, Sizeof.FLOAT);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
 
         return x;
@@ -665,7 +666,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(X);
         JCublas.cublasFree(Y);
 
-        JCublas.cublasShutdown();
+
     }
 
     public static double dot(JCublasNDArray x, JCublasNDArray y) {
@@ -679,7 +680,7 @@ public class SimpleJCublas {
         double dott = 0;
         dott = JCublas.cublasDdot(x.length(),d_A,1,d_B,1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
         return dott;
@@ -695,7 +696,7 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = jcuda.cuDoubleComplex.cuCmplx(0,0);
         dott = JCublas.cublasZdotc(x.length(),d_A,1,d_B,1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
 
@@ -729,7 +730,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
     }
@@ -751,7 +752,7 @@ public class SimpleJCublas {
         gvi(d_A,x, Sizeof.FLOAT);
         JCublas.cublasFree(d_A);
 
-        JCublas.cublasShutdown();
+
         return x;
     }
 
@@ -766,7 +767,7 @@ public class SimpleJCublas {
         jcuda.cuDoubleComplex dott = jcuda.cuDoubleComplex.cuCmplx(0,0);
         dott = JCublas.cublasZdotu(x.length(), d_A, 1, d_B, 1);
 
-        JCublas.cublasShutdown();
+
         JCublas.cublasFree(d_A);
         JCublas.cublasFree(d_B);
 
@@ -804,7 +805,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
     }
@@ -840,7 +841,7 @@ public class SimpleJCublas {
         JCublas.cublasFree(d_B);
         JCublas.cublasFree(d_C);
 
-        JCublas.cublasShutdown();
+
 
         return C;
     }
