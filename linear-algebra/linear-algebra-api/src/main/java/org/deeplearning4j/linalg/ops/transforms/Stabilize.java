@@ -40,16 +40,16 @@ public class Stabilize extends BaseElementWiseOp {
         double cutOff = FastMath.log(realMin);
         if(value instanceof IComplexNDArray) {
             IComplexNumber c = (IComplexNumber) value.element();
-            double curr = c.realComponent().doubleValue();
+            float curr = c.realComponent().floatValue();
             if(curr * k > -cutOff)
-                return NDArrays.scalar(NDArrays.createDouble(-cutOff / k,c.imaginaryComponent().doubleValue()));
+                return NDArrays.scalar(NDArrays.createDouble(-cutOff / k,c.imaginaryComponent().floatValue()));
             else if(curr * k < cutOff)
-                return NDArrays.scalar(NDArrays.createDouble(cutOff / k,c.imaginaryComponent().doubleValue()));
+                return NDArrays.scalar(NDArrays.createDouble(cutOff / k,c.imaginaryComponent().floatValue()));
 
 
         }
         else {
-            double curr = (double) value.element();
+            float curr = (float) value.element();
             if(curr * k > -cutOff)
                 return NDArrays.scalar(-cutOff / k);
             else if(curr * k < cutOff)

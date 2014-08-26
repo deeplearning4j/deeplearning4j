@@ -22,13 +22,13 @@ public class Sigmoid extends BaseElementWiseOp {
     public INDArray apply(INDArray input, int i) {
         if (input instanceof IComplexNDArray) {
             IComplexNumber number = (IComplexNumber) input.element();
-            double arg = number.complexArgument().doubleValue();
-            double sigArg = 1 / 1 + (Math.exp(-arg)) - 1 + .5;
-            double ret = Math.exp(sigArg);
+            float arg = number.complexArgument().floatValue();
+            float sigArg = 1 / 1 + ((float) Math.exp(-arg)) - 1 + .5f;
+            float ret = (float) Math.exp(sigArg);
             return NDArrays.scalar(NDArrays.createDouble(ret, 0));
 
         } else {
-            double val = 1 / (1 + Math.exp(-(double) input.element()));
+            float val = 1 / (1 + (float) Math.exp(-(float) input.element()));
             return NDArrays.scalar(val);
         }
     }
