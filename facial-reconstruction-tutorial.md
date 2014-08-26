@@ -32,4 +32,6 @@ To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either c
 
     java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
 
+After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
+
 For a deeper dive into our LFW code, see this [Github page](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw).
