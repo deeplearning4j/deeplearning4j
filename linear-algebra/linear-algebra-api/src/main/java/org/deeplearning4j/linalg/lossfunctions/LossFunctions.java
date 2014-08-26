@@ -96,6 +96,7 @@ public class LossFunctions {
         INDArray preSigH = input.mmul(W).addRowVector(hBias);
         INDArray sigH = sigmoid(preSigH.dup());
 
+        //transpose doesn't go in right
         INDArray preSigV = sigH.mmul(W.transpose()).addRowVector(vBias);
         INDArray sigV = sigmoid(preSigV.dup());
         INDArray inner =

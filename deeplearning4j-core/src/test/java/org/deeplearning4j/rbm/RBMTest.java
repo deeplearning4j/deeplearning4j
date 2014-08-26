@@ -45,6 +45,9 @@ public class RBMTest  {
         ClassPathResource r3 = new ClassPathResource("/test-matrix.ser");
 
 
+        NDArrays.factory().setOrder('f');
+
+
 		INDArray d =  NDArrays.create(data);
 
         RandomGenerator g = new MersenneTwister(123);
