@@ -71,7 +71,7 @@ public class Sampling {
         INDArray ret = p.ravel().dup();
         INDArray p2 = p.ravel();
         for(int i = 0; i < ret.length(); i++) {
-            ret.putScalar(i, MathUtils.binomial(rng, n, (Double) p2.getScalar(i).element()));
+            ret.putScalar(i, MathUtils.binomial(rng, n, (Float) p2.getScalar(i).element()));
         }
         return ret.reshape(p.shape());
     }

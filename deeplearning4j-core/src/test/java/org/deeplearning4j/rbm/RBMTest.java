@@ -55,7 +55,7 @@ public class RBMTest  {
 
 
 
-		r.trainTillConvergence(d,  0.01f,new Object[]{1,0.01,1000});
+		r.trainTillConvergence(d,  0.01f,new Object[]{1,0.01f,1000});
 
         double d5 = r.getReConstructionCrossEntropy();
 
