@@ -29,7 +29,7 @@ public class IrisMultiThreaded {
 
         Conf c = new Conf();
         c.setFinetuneEpochs(30000);
-        c.setFinetuneLearningRate(1e-3);
+        c.setFinetuneLearningRate(1e-3f);
         c.setLayerSizes(new int[]{4,3,3});
         c.setnIn(4);
         c.setUseAdaGrad(true);
@@ -41,9 +41,9 @@ public class IrisMultiThreaded {
         c.setHiddenUnit(RBM.HiddenUnit.RECTIFIED);
         c.setVisibleUnit(RBM.VisibleUnit.GAUSSIAN);
         c.setUseRegularization(false);
-        c.setL2(1e-3);
+        c.setL2(1e-3f);
         c.setDeepLearningParams(new Object[]{1, 1e-6, 30000});
-        c.setMomentum(0.5);
+        c.setMomentum(0.5f);
 
         ActorNetworkRunner runner = new ActorNetworkRunner("master",list);
         runner.setModelSaver(new DefaultModelSaver(new File("/home/agibsonccc/models/iris-multithreaded.bin")));

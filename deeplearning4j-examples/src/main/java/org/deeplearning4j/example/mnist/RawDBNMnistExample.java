@@ -32,7 +32,7 @@ public class RawDBNMnistExample {
 		while(iter.hasNext()) {
 			DataSet next = iter.next();
 			next.normalizeZeroMeanZeroUnitVariance();
-			dbn.pretrain(next.getFeatureMatrix(), 1, 0.0001, 10000);
+			dbn.pretrain(next.getFeatureMatrix(), 1, 0.0001f, 10000);
 		}
 
 		iter.reset();
@@ -45,7 +45,7 @@ public class RawDBNMnistExample {
 			next.normalizeZeroMeanZeroUnitVariance();
 
 			dbn.setInput(next.getFeatureMatrix());
-			dbn.finetune(next.getLabels(), 0.001, 10000);
+			dbn.finetune(next.getLabels(), 0.001f, 10000);
 		}
 
 
