@@ -35,12 +35,12 @@ public class DBNTest {
 
     @Test
     public void testParams() {
-        double preTrainLr = 0.01;
+        float preTrainLr = 0.01f;
         int preTrainEpochs = 10000;
         int k = 1;
         int nIns = 4,nOuts = 3;
         int[] hiddenLayerSizes = new int[] {4,3,2};
-        double fineTuneLr = 0.01;
+        float fineTuneLr = 0.01f;
         int fineTuneEpochs = 10000;
 
 
@@ -66,12 +66,12 @@ public class DBNTest {
 
     @Test
     public void testParamLength() {
-        double preTrainLr = 0.01;
+        float preTrainLr = 0.01f;
         int preTrainEpochs = 10000;
         int k = 1;
         int nIns = 4,nOuts = 3;
         int[] hiddenLayerSizes = new int[] {4,3,2};
-        double fineTuneLr = 0.01;
+        float fineTuneLr = 0.01f;
         int fineTuneEpochs = 10000;
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
@@ -91,12 +91,12 @@ public class DBNTest {
     public void testDbnStructure() {
         RandomGenerator rng = new MersenneTwister(123);
 
-        double preTrainLr = 0.01;
+        float preTrainLr = 0.01f;
         int preTrainEpochs = 10000;
         int k = 1;
         int nIns = 4,nOuts = 3;
         int[] hiddenLayerSizes = new int[] {4,3,2};
-        double fineTuneLr = 0.01;
+        float fineTuneLr = 0.01f;
         int fineTuneEpochs = 10000;
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
@@ -133,14 +133,14 @@ public class DBNTest {
 
         while(iter.hasNext()) {
             DataSet next = iter.next();
-            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-5, 1000);
+            dbn.pretrain(next.getFeatureMatrix(), 1, 1e-5f, 1000);
         }
 
         iter.reset();
         while(iter.hasNext()) {
             DataSet next = iter.next();
             dbn.setInput(next.getFeatureMatrix());
-            dbn.finetune(next.getLabels(), 1e-4, 1000);
+            dbn.finetune(next.getLabels(), 1e-4f, 1000);
         }
 
 
@@ -165,12 +165,12 @@ public class DBNTest {
     public void testIris() {
         RandomGenerator rng = new MersenneTwister(123);
 
-        double preTrainLr = 0.01;
+        float preTrainLr = 0.01f;
         int preTrainEpochs = 10000;
         int k = 1;
         int nIns = 4,nOuts = 3;
         int[] hiddenLayerSizes = new int[] {4,3,3};
-        double fineTuneLr = 0.01;
+        float fineTuneLr = 0.01f;
         int fineTuneEpochs = 10000;
 
         DBN dbn = new DBN.Builder().withHiddenUnits(RBM.HiddenUnit.RECTIFIED).withVisibleUnits(RBM.VisibleUnit.GAUSSIAN)
@@ -257,15 +257,15 @@ public class DBNTest {
         DBN dbn = new DBN.Builder()
                 .withActivation(Activations.sigmoid())
                 .hiddenLayerSizes(new int[]{500,250,100})
-                .withMomentum(0.5).normalizeByInputRows(true)
+                .withMomentum(0.5f).normalizeByInputRows(true)
                 .numberOfInputs(784).useAdaGrad(true)
                 .numberOfOutPuts(2)
                 .build();
 
         watch.start();
 
-        dbn.pretrain(d.getFeatureMatrix(), 1, 1e-2, 300);
-        dbn.finetune(d.getLabels(), 1e-2, 100);
+        dbn.pretrain(d.getFeatureMatrix(), 1, 1e-2f, 300);
+        dbn.finetune(d.getLabels(), 1e-2f, 100);
 
         watch.stop();
 
@@ -285,7 +285,7 @@ public class DBNTest {
         DBN dbn = new DBN.Builder()
                 .withActivation(Activations.sigmoid())
                 .hiddenLayerSizes(new int[]{500,250,100})
-                .withMomentum(0.5).normalizeByInputRows(true)
+                .withMomentum(0.5f).normalizeByInputRows(true)
                 .numberOfInputs(784).useAdaGrad(true)
                 .numberOfOutPuts(2)
                 .build();

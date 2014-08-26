@@ -49,7 +49,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public BaseComplexNDArray() {}
 
 
-    public BaseComplexNDArray(double[][] data) {
+    public BaseComplexNDArray(float[] data) {
         super(data);
     }
 
@@ -60,28 +60,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param shape    the shape of the ndarray
      * @param ordering
      */
-    public BaseComplexNDArray(double[] data, int[] shape, char ordering) {
+    public BaseComplexNDArray(float[] data, int[] shape, char ordering) {
         this(data,shape,NDArrays.getComplexStrides(shape,ordering),0,ordering);
     }
 
     public BaseComplexNDArray(int[] shape, int offset, char ordering) {
-        this(new double[ArrayUtil.prod(shape) * 2],
+        this(new float[ArrayUtil.prod(shape) * 2],
                 shape,NDArrays.getComplexStrides(shape,ordering),
                 offset,ordering);
     }
 
     public BaseComplexNDArray(int[] shape) {
-        this(new double[ArrayUtil.prod(shape) * 2],shape,NDArrays.getComplexStrides(shape));
+        this(new float[ArrayUtil.prod(shape) * 2],shape,NDArrays.getComplexStrides(shape));
     }
 
 
 
-    public BaseComplexNDArray(double[] data, int[] shape, int[] stride, char ordering) {
+    public BaseComplexNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         this(data,shape,stride,0,ordering);
     }
 
     public BaseComplexNDArray(int[] shape, char ordering) {
-        this(new double[ArrayUtil.prod(shape) * 2],shape,NDArrays.getComplexStrides(shape,ordering),ordering);
+        this(new float[ArrayUtil.prod(shape) * 2],shape,NDArrays.getComplexStrides(shape,ordering),ordering);
     }
 
 
@@ -143,7 +143,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      *
      */
     public BaseComplexNDArray(List<IComplexNDArray> slices,int[] shape,int[] stride,char ordering) {
-        this(new double[ArrayUtil.prod(shape) * 2]);
+        this(new float[ArrayUtil.prod(shape) * 2]);
         List<IComplexNumber> list = new ArrayList<>();
         for(int i = 0; i < slices.size(); i++) {
             IComplexNDArray flattened = slices.get(i).ravel();
@@ -153,7 +153,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         this.ordering = ordering;
-        this.data = new double[ArrayUtil.prod(shape) * 2 ];
+        this.data = new float[ArrayUtil.prod(shape) * 2 ];
         this.stride = stride;
         initShape(shape);
 
@@ -180,6 +180,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     }
+
+    public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
+        this.data = data;
+        this.stride = stride;
+        this.offset = offset;
+        this.ordering = order;
+        initShape(shape);
+    }
+
+
 
     protected void copyFromReal(INDArray real) {
         for(int i = 0; i < vectorsAlongDimension(0); i++) {
@@ -218,12 +228,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float
      * @param newData the new data for this array
      * @param shape the shape of the ndarray
      */
     public BaseComplexNDArray(IComplexNumber[] newData,int[] shape) {
-        super(new double[ArrayUtil.prod(shape) * 2]);
+        super(new float[ArrayUtil.prod(shape) * 2]);
         initShape(shape);
         for(int i = 0;i  < length; i++)
             put(i, newData[i].asDouble());
@@ -232,12 +242,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float
      * @param newData the new data for this array
      * @param shape the shape of the ndarray
      */
     public BaseComplexNDArray(IComplexNumber[] newData,int[] shape,int[] stride) {
-        super(new double[ArrayUtil.prod(shape) * 2]);
+        super(new float[ArrayUtil.prod(shape) * 2]);
         this.stride = stride;
         initShape(shape);
         for(int i = 0;i  < length; i++)
@@ -247,26 +257,17 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
 
-    /**
-     * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
-     * @param newData the new data for this array
-     * @param shape the shape of the ndarray
-     */
-    public BaseComplexNDArray(IComplexDouble[] newData,int[] shape) {
-        this(newData,shape,NDArrays.order());
 
-    }
 
     /**
      * Create a complex ndarray with the given complex doubles.
-     * Note that this maybe an easier setup than the new double[]
+     * Note that this maybe an easier setup than the new float
      * @param newData the new data for this array
      * @param shape the shape of the ndarray
      * @param ordering the ordering for the ndarray
      */
-    public BaseComplexNDArray(IComplexDouble[] newData,int[] shape,char ordering) {
-        super(new double[ArrayUtil.prod(shape) * 2]);
+    public BaseComplexNDArray(IComplexNumber[] newData,int[] shape,char ordering) {
+        super(new float[ArrayUtil.prod(shape) * 2]);
         this.ordering = ordering;
         initShape(shape);
         for(int i = 0;i  < length; i++)
@@ -280,55 +281,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param shape the shape of the ndarray
      * @param stride the stride of the ndarray
      */
-    public BaseComplexNDArray(double[] data,int[] shape,int[] stride) {
+    public BaseComplexNDArray(float[] data,int[] shape,int[] stride) {
         this(data,shape,stride,0,NDArrays.order());
     }
 
 
-    /**
-     * THe ordering of the ndarray
-     * @param data the data to use
-     * @param shape the final shape of the ndarray
-     * @param stride the stride of the ndarray
-     * @param offset the offset
-     * @param ordering the ordering
-     */
-    public BaseComplexNDArray(double[] data,int[] shape,int[] stride,int offset,char ordering) {
-        super(data);
-        if(offset >= data.length)
-            throw new IllegalArgumentException("Invalid offset: must be < data.length");
-        this.ordering = ordering;
-        this.stride = stride;
-        initShape(shape);
 
 
 
-        this.offset = offset;
 
 
 
-        if(data != null  && data.length > 0)
-            this.data = data;
-    }
 
-
-
-    public BaseComplexNDArray(double[] data,int[] shape,int[] stride,int offset) {
-        this(data,shape,stride,offset,NDArrays.order());
-    }
-
-
-
-    public BaseComplexNDArray(double[] data,int[] shape) {
+    public BaseComplexNDArray(float[] data,int[] shape) {
         this(data,shape,0);
     }
 
 
-    public BaseComplexNDArray(double[] data,int[] shape,int offset,char ordering) {
+    public BaseComplexNDArray(float[] data,int[] shape,int offset,char ordering) {
         this(data,shape,ordering == NDArrayFactory.C ? calcStrides(shape,2) : calcStridesFortran(shape,2),offset,ordering);
     }
 
-    public BaseComplexNDArray(double[] data,int[] shape,int offset) {
+    public BaseComplexNDArray(float[] data,int[] shape,int offset) {
         this(data,shape,offset,NDArrays.order());
     }
 
@@ -341,7 +315,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param offset the desired offset
      */
     public BaseComplexNDArray(int[] shape,int[] stride,int offset) {
-        this(new double[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+        this(new float[ArrayUtil.prod(shape) * 2],shape,stride,offset);
     }
 
     /**
@@ -353,7 +327,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param ordering the ordering for the ndarray
      */
     public BaseComplexNDArray(int[] shape,int[] stride,int offset,char ordering) {
-        this(new double[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+        this(new float[ArrayUtil.prod(shape) * 2],shape,stride,offset);
+        this.ordering = ordering;
     }
 
 
@@ -413,26 +388,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
-    /**
-     * Float overloading for constructor
-     * @param data the data to use
-     * @param shape the shape to use
-     * @param stride the stride of the ndarray
-     * @param offset the offset of the ndarray
-     * @param ordering the ordering for the ndarrayg
-     */
-    public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset,char ordering) {
-        this(ArrayUtil.doubleCopyOf(data),shape,stride,offset,ordering);
-    }
 
 
     public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
         this(data,shape,stride,offset,NDArrays.order());
     }
 
-    public BaseComplexNDArray(double[] doubles) {
-        super(doubles);
-    }
 
 
 
@@ -453,8 +414,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray putScalar(int j, int i, IComplexNumber conji) {
         int idx = index(j,i);
-        data[idx] = conji.realComponent().doubleValue();
-        data[idx + 1] = conji.imaginaryComponent().doubleValue();
+        data[idx] = conji.realComponent().floatValue();
+        data[idx + 1] = conji.imaginaryComponent().floatValue();
         return this;
     }
 
@@ -522,7 +483,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray dup() {
-        double[] dupData = new double[data.length];
+        float[] dupData = new float[data.length];
         System.arraycopy(data,0,dupData,0,dupData.length);
         IComplexNDArray ret = NDArrays.createComplex(dupData,shape,stride,offset,ordering);
         return ret;
@@ -588,7 +549,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @return
      */
     @Override
-    public IComplexNDArray put(int[] indexes, double value) {
+    public IComplexNDArray put(int[] indexes, float value) {
         int ix = offset;
         if (indexes.length != shape.length)
             throw new IllegalArgumentException("Unable to applyTransformToDestination values: number of indices must be equal to the shape");
@@ -731,7 +692,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
-    public IComplexNDArray putReal(int rowIndex, int columnIndex, double value) {
+    public IComplexNDArray putReal(int rowIndex, int columnIndex, float value) {
         data[2 * index(rowIndex, columnIndex) + offset] = value;
         return this;
     }
@@ -751,20 +712,20 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     @Override
-    public IComplexNDArray putImag(int rowIndex, int columnIndex, double value) {
+    public IComplexNDArray putImag(int rowIndex, int columnIndex, float value) {
         data[index(rowIndex, columnIndex) + 1 + offset] = value;
         return this;
     }
 
     @Override
-    public IComplexNDArray putReal(int i, double v) {
+    public IComplexNDArray putReal(int i, float v) {
         int idx = linearIndex(i);
         data[idx] = v;
         return this;
     }
 
     @Override
-    public IComplexNDArray putImag(int i, double v) {
+    public IComplexNDArray putImag(int i, float v) {
         int idx = linearIndex(i);
         data[idx * 2 + 1] = v;
         return this;
@@ -828,8 +789,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                 if(modify && slice.getIndices() != null) {
                     IComplexNDArray result = (IComplexNDArray) slice.getResult();
                     for(int i = 0; i < slice.getIndices().length; i++) {
-                        data[slice.getIndices()[i]] = result.getComplex(i).realComponent().doubleValue();
-                        data[slice.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().doubleValue();
+                        data[slice.getIndices()[i]] = result.getComplex(i).realComponent().floatValue();
+                        data[slice.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().floatValue();
                     }
                 }
             }
@@ -844,8 +805,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                 if(modify && slice.getIndices() != null) {
                     IComplexNDArray result = (IComplexNDArray) slice.getResult();
                     for(int i = 0; i < slice.getIndices().length; i++) {
-                        data[slice.getIndices()[i]] = result.getComplex(i).realComponent().doubleValue();
-                        data[slice.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().doubleValue();
+                        data[slice.getIndices()[i]] = result.getComplex(i).realComponent().floatValue();
+                        data[slice.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().floatValue();
                     }
                 }
             }
@@ -856,8 +817,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     if(modify && slice.getIndices() != null) {
                         IComplexNDArray result = (IComplexNDArray) slice.getResult();
                         for(int j = 0; j < slice.getIndices().length; j++) {
-                            data[slice.getIndices()[j]] = result.getComplex(j).realComponent().doubleValue();
-                            data[slice.getIndices()[j] + 1] = result.getComplex(j).imaginaryComponent().doubleValue();
+                            data[slice.getIndices()[j]] = result.getComplex(j).realComponent().floatValue();
+                            data[slice.getIndices()[j] + 1] = result.getComplex(j).imaginaryComponent().floatValue();
                         }
                     }
                 }
@@ -885,8 +846,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     if(modify && vector.getIndices() != null) {
                         IComplexNDArray result = (IComplexNDArray) vector.getResult();
                         for(int i = 0; i < vector.getIndices().length; i++) {
-                            data[vector.getIndices()[i]] = result.getComplex(i).realComponent().doubleValue();
-                            data[vector.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().doubleValue();
+                            data[vector.getIndices()[i]] = result.getComplex(i).realComponent().floatValue();
+                            data[vector.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().floatValue();
                         }
                     }
 
@@ -896,7 +857,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
             else {
                 //needs to be 2 * shape: this is due to both realComponent and imaginary components
-                double[] data2 = new double[ArrayUtil.prod(shape) ];
+                float[] data2 = new float[ArrayUtil.prod(shape) ];
                 int dataIter = 0;
                 //want the milestone to slice[1] and beyond
                 int[] sliceIndices = endsForSlices();
@@ -918,8 +879,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                     if(modify && pair.getIndices() != null) {
                         IComplexNDArray result = (IComplexNDArray) pair.getResult();
                         for(int i = 0; i < pair.getIndices().length; i++) {
-                            data[pair.getIndices()[i]] = result.getComplex(i).realComponent().doubleValue();
-                            data[pair.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().doubleValue();
+                            data[pair.getIndices()[i]] = result.getComplex(i).realComponent().floatValue();
+                            data[pair.getIndices()[i] + 1] = result.getComplex(i).imaginaryComponent().floatValue();
                         }
                     }
 
@@ -1019,8 +980,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         assert element.isScalar() : "Unable to insert non scalar element";
         int idx = linearIndex(i);
         IComplexNumber n = element.getComplex(0);
-        data[idx] = n.realComponent().doubleValue();
-        data[idx + 1] = n.imaginaryComponent().doubleValue();
+        data[idx] = n.realComponent().floatValue();
+        data[idx + 1] = n.imaginaryComponent().floatValue();
         return this;
     }
 
@@ -1029,11 +990,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     //getFromOrigin one result along one dimension based on the given offset
     private ComplexIterationResult op(int dimension, int offset, Ops.DimensionOp op,int currOffsetForSlice) {
-        double[] dim = new double[this.shape[dimension]];
+        float[] dim = new float[this.shape[dimension]];
         int count = 0;
         boolean newSlice = false;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
-            double d = data[j];
+            float d = data[j];
             dim[count++] = d;
             if(j >= currOffsetForSlice)
                 newSlice = true;
@@ -1046,11 +1007,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     //getFromOrigin one result along one dimension based on the given offset
-    private IComplexDouble op(int dimension, int offset, Ops.DimensionOp op) {
-        double[] dim = new double[this.shape[dimension]];
+    private IComplexNumber op(int dimension, int offset, Ops.DimensionOp op) {
+        float[] dim = new float[this.shape[dimension]];
         int count = 0;
         for(int j = offset; count < dim.length; j+= this.stride[dimension]) {
-            double d = data[j];
+            float d = data[j];
             dim[count++] = d;
         }
 
@@ -1142,16 +1103,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         int[] shape = ArrayUtil.removeIndex(this.shape,dimension);
 
         if(dimension == 0) {
-            double[] data2 = new double[ArrayUtil.prod(shape) * 2];
+            float[] data2 = new float[ArrayUtil.prod(shape) * 2];
             int dataIter = 0;
 
             //iterating along the dimension is relative to the number of slices
             //in the return dimension
             int numTimes = ArrayUtil.prod(shape);
             for(int offset = this.offset; offset < numTimes; offset++) {
-                IComplexDouble reduce = op(dimension, offset, op);
-                data2[dataIter++] = reduce.realComponent();
-                data2[dataIter++] = reduce.imaginaryComponent();
+                IComplexNumber reduce = op(dimension, offset, op);
+                data2[dataIter++] = reduce.realComponent().floatValue();
+                data2[dataIter++] = reduce.imaginaryComponent().floatValue();
 
 
             }
@@ -1160,7 +1121,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
 
         else {
-            double[] data2 = new double[ArrayUtil.prod(shape)];
+            float[] data2 = new float[ArrayUtil.prod(shape)];
             int dataIter = 0;
             //want the milestone to slice[1] and beyond
             int[] sliceIndices = endsForSlices();
@@ -1177,8 +1138,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
                 ComplexIterationResult pair = op(dimension, offset, op,sliceIndices[currOffset]);
                 //append the result
                 IComplexNumber reduce = pair.getNumber();
-                data2[dataIter++] = reduce.realComponent().doubleValue();
-                data2[dataIter++] = reduce.imaginaryComponent().doubleValue();
+                data2[dataIter++] = reduce.realComponent().floatValue();
+                data2[dataIter++] = reduce.imaginaryComponent().floatValue();
                 //go to next slice and iterate over that
                 if(pair.isNextIteration()) {
                     //will update to next step
@@ -1294,11 +1255,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
         if(element instanceof IComplexNDArray) {
             IComplexNumber element2 = (IComplexNumber) element.element();
-            data[ix] = (double) element2.realComponent();
-            data[ix + 1]= (double) element2.imaginaryComponent();
+            data[ix] = (float) element2.realComponent();
+            data[ix + 1]= (float) element2.imaginaryComponent();
         }
         else {
-            double element2 = (double) element.element();
+            float element2 = (float) element.element();
             data[ix] = element2;
             data[ix + 1]= 0;
         }
@@ -1567,8 +1528,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNDArray putScalar(int i, IComplexNumber value) {
         int idx = linearIndex(i);
-        data[idx] = value.realComponent().doubleValue();
-        data[idx + 1] = value.imaginaryComponent().doubleValue();
+        data[idx] = value.realComponent().floatValue();
+        data[idx + 1] = value.imaginaryComponent().floatValue();
         return this;
     }
 
@@ -1882,16 +1843,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return this;
     }
 
-    private void put(int i, double element) {
+    private void put(int i, float element) {
         int idx = linearIndex(i);
         data[idx] = element;
-        data[idx + 1] = 0.0;
+        data[idx + 1] = 0.0f;
     }
 
     public void put(int i, IComplexNumber element) {
         int idx = linearIndex(i);
-        data[idx] = element.realComponent().doubleValue();
-        data[idx + 1] = element.imaginaryComponent().doubleValue();
+        data[idx] = element.realComponent().floatValue();
+        data[idx + 1] = element.imaginaryComponent().floatValue();
     }
 
     /**
@@ -2250,14 +2211,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 			 */
 
             IComplexNDArray temp = NDArrays.createComplex(resultArray.shape(),ArrayUtil.calcStrides(resultArray.shape()));
-            NDArrays.getBlasWrapper().gemm(NDArrays.createDouble(1,0), this, otherArray, NDArrays.createDouble(0,0), temp);
+            NDArrays.getBlasWrapper().gemm(NDArrays.createFloat(1,0), this, otherArray, NDArrays.createFloat(0,0), temp);
 
             NDArrays.getBlasWrapper().copy(temp, resultArray);
 
         }
         else {
             IComplexNDArray thisInput =  this;
-            NDArrays.getBlasWrapper().gemm(NDArrays.createDouble(1, 0), thisInput, otherArray, NDArrays.createDouble(0, 0), resultArray);
+            NDArrays.getBlasWrapper().gemm(NDArrays.createFloat(1, 0), thisInput, otherArray, NDArrays.createFloat(0, 0), resultArray);
         }
 
 
@@ -2621,7 +2582,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @return all of the data in order
      */
     @Override
-    public double[] data() {
+    public float[] data() {
         return data;
     }
 
@@ -2961,8 +2922,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         StandardDeviation dev = new StandardDeviation();
         INDArray real = getReal();
         INDArray imag = imag();
-        double std = dev.evaluate(real.data());
-        double std2 = dev.evaluate(imag.data());
+        double std = dev.evaluate(ArrayUtil.doubleCopyOf(real.data()));
+        double std2 = dev.evaluate(ArrayUtil.doubleCopyOf(imag.data()));
         return NDArrays.createDouble(std, std2);
     }
 
@@ -3188,14 +3149,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         //epsilon equals
         if(isScalar() && n.isScalar()) {
             IComplexNumber c = n.getComplex(0);
-            return Math.abs(getComplex(0).sub(c).realComponent().doubleValue()) < 1e-6;
+            return Math.abs(getComplex(0).sub(c).realComponent().floatValue()) < 1e-6;
         }
         else if(isVector() && n.isVector()) {
             for(int i = 0; i < length; i++) {
-                double curr = getComplex(i).realComponent().doubleValue();
-                double comp = n.getComplex(i).realComponent().doubleValue();
-                double currImag = getComplex(i).imaginaryComponent().doubleValue();
-                double compImag = n.getComplex(i).imaginaryComponent().doubleValue();
+                float curr = getComplex(i).realComponent().floatValue();
+                float comp = n.getComplex(i).realComponent().floatValue();
+                float currImag = getComplex(i).imaginaryComponent().floatValue();
+                float compImag = n.getComplex(i).imaginaryComponent().floatValue();
                 if(Math.abs(curr - comp) > 1e-6 || Math.abs(currImag - compImag) > 1e-6)
                     return false;
             }
@@ -3275,11 +3236,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return NDArrays.createDouble(data[idx],data[idx+ 1]);
     }
 
-    @Override
-    public double get(int i) {
-        int idx = linearIndex(i);
-        return data[idx];
-    }
+
     /**
      * See: http://www.mathworks.com/help/matlab/ref/permute.html
      * @param rearrange the dimensions to swap to

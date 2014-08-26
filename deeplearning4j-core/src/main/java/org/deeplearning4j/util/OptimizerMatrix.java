@@ -37,7 +37,7 @@ public interface OptimizerMatrix {
      * The tolerance for change when running
      * @param tolerance
      */
-    void setTolerance(double tolerance);
+    void setTolerance(float tolerance);
 
     /**
      * Sets the training evaluator

@@ -51,7 +51,7 @@ public class DeepAutoEncoderTest {
         assertEquals(encoder.getLayers()[2].getW().length(),encoder.getLayers()[encoder.getLayers().length - 2].getW().length());
         //7 activations + 1 output
         assertEquals(7,encoder.getSigmoidLayers().length);
-        encoder.finetune(data.getFeatureMatrix(),1e-1,1000);
+        encoder.finetune(data.getFeatureMatrix(),1e-1f,1000);
 
         //output layer is transpose of first should be same length
         assertEquals(encoder.getLayers()[0].getW().length(),encoder.getOutputLayer().getW().length());

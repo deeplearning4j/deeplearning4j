@@ -13,11 +13,11 @@ public class Mean extends BaseScalarOp {
     }
 
     @Override
-    public double accumulate(INDArray arr, int i, double soFar) {
+    public float accumulate(INDArray arr, int i, float soFar) {
        if(i < arr.length() - 1)
-           return soFar + (double) arr.getScalar(i).element();
+           return soFar + (float) arr.getScalar(i).element();
         else {
-           soFar += (double) arr.getScalar(i).element();
+           soFar += (float) arr.getScalar(i).element();
            return soFar / arr.length();
        }
 

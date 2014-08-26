@@ -11,9 +11,6 @@ import org.deeplearning4j.nn.gradient.OutputLayerGradient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cc.mallet.optimize.Optimizable;
-
-
 
 /**
  * Optimizes the logistic layer for finetuning
@@ -22,7 +19,7 @@ import cc.mallet.optimize.Optimizable;
  * @author Adam Gibson
  *
  */
-public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,Serializable,OptimizableByGradientValueMatrix {
+public class MultiLayerNetworkOptimizer implements Serializable,OptimizableByGradientValueMatrix {
 
     private static final long serialVersionUID = -3012638773299331828L;
 
@@ -42,7 +39,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         this.currentIteration = value;
     }
 
-    public void optimize(INDArray labels,double lr,int epochs,TrainingEvaluator eval) {
+    public void optimize(INDArray labels,float lr,int epochs,TrainingEvaluator eval) {
         network.getOutputLayer().setLabels(labels);
 
         if(!network.isForceNumEpochs()) {
@@ -81,7 +78,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
      * @param lr
      * @param iteration
      */
-    public void optimize(INDArray labels,double lr,int iteration) {
+    public void optimize(INDArray labels,float lr,int iteration) {
         network.getOutputLayer().setLabels(labels);
         if(!network.isForceNumEpochs()) {
             if(network.isShouldBackProp())
@@ -115,34 +112,34 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 
-    @Override
-    public void getParameters(double[] buffer) {
+
+    public void getParameters(float[] buffer) {
         int idx = 0;
         for(int i = 0; i < network.getOutputLayer().getW().length(); i++) {
-            buffer[idx++] = (double) network.getOutputLayer().getW().getScalar(i).element();
+            buffer[idx++] = (float) network.getOutputLayer().getW().getScalar(i).element();
 
         }
         for(int i = 0; i < network.getOutputLayer().getB().length(); i++) {
-            buffer[idx++] = (double) network.getOutputLayer().getB().getScalar(i).element();
+            buffer[idx++] = (float) network.getOutputLayer().getB().getScalar(i).element();
         }
     }
 
 
 
     @Override
-    public double getParameter(int index) {
+    public float getParameter(int index) {
         if(index >= network.getOutputLayer().getW().length()) {
             int i = index - network.getOutputLayer().getB().length();
-            return (double) network.getOutputLayer().getB().getScalar(i).element();
+            return (float) network.getOutputLayer().getB().getScalar(i).element();
         }
         else
-            return (double) network.getOutputLayer().getW().getScalar(index).element();
+            return (float) network.getOutputLayer().getW().getScalar(index).element();
     }
 
 
 
-    @Override
-    public void setParameters(double[] params) {
+
+    public void setParameters(float[] params) {
         int idx = 0;
         for(int i = 0; i < network.getOutputLayer().getW().length(); i++) {
             network.getOutputLayer().getW().putScalar(i, params[idx++]);
@@ -157,7 +154,7 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
     @Override
-    public void setParameter(int index, double value) {
+    public void setParameter(int index, float value) {
         if(index >= network.getOutputLayer().getW().length()) {
             int i = index - network.getOutputLayer().getB().length();
             network.getOutputLayer().getB().putScalar(i, value);
@@ -168,8 +165,8 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 
-    @Override
-    public void getValueGradient(double[] buffer) {
+
+    public void getValueGradient(float[] buffer) {
         OutputLayerGradient gradient = network.getOutputLayer().getGradient(lr);
 
         INDArray weightGradient = gradient.getwGradient();
@@ -178,24 +175,24 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
         int idx = 0;
 
         for(int i = 0; i < weightGradient.length(); i++)
-            buffer[idx++] = (double) weightGradient.getScalar(i).element();
+            buffer[idx++] = (float) weightGradient.getScalar(i).element();
         for(int i = 0; i < biasGradient.length(); i++)
-            buffer[idx++] = (double) biasGradient.getScalar(i).element();
+            buffer[idx++] = (float) biasGradient.getScalar(i).element();
 
     }
 
 
 
     @Override
-    public double getValue() {
-        return network.score();
+    public float getValue() {
+        return (float) network.score();
     }
 
 
 
     @Override
     public INDArray getParameters() {
-        double[] d = new double[getNumParameters()];
+        float[] d = new float[getNumParameters()];
         this.getParameters(d);
         return NDArrays.create(d);
     }
@@ -209,9 +206,10 @@ public class MultiLayerNetworkOptimizer implements Optimizable.ByGradientValue,S
 
 
 
+
     @Override
     public INDArray getValueGradient(int iteration) {
-        double[] buffer = new double[getNumParameters()];
+        float[] buffer = new float[getNumParameters()];
         getValueGradient(buffer);
         return NDArrays.create(buffer);
     }

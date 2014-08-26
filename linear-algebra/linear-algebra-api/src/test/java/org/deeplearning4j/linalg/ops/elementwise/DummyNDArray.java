@@ -1137,12 +1137,12 @@ public class DummyNDArray implements INDArray {
     }
 
     @Override
-    public double get(int i) {
+    public float get(int i) {
         return 0;
     }
 
     @Override
-    public double get(int i, int j) {
+    public float get(int i, int j) {
         return 0;
     }
 
@@ -1446,14 +1446,10 @@ public class DummyNDArray implements INDArray {
      * @return the linear double array representation of this ndarray
      */
     @Override
-    public double[] data() {
-        return new double[0];
+    public float[] data() {
+        return new float[0];
     }
 
-    @Override
-    public void setData(double[] data) {
-
-    }
 
     /**
      * Returns a linear float array representation of this ndarray
