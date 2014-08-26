@@ -6,7 +6,7 @@ import org.deeplearning4j.linalg.api.complex.IComplexNumber;
 /**
  * Created by mjk on 8/20/14.
  */
-public class JCublasComplexDouble extends org.deeplearning4j.linalg.jcublas.complex.ComplexDouble implements IComplexDouble  {
+public class JCublasComplexDouble extends ComplexDouble implements IComplexDouble  {
 
 
     public JCublasComplexDouble(double real, double imag) {
@@ -61,7 +61,7 @@ public class JCublasComplexDouble extends org.deeplearning4j.linalg.jcublas.comp
 
     @Override
     public JCublasComplexDouble conji() {
-        super.set(realComponent(), -imaginaryComponent());
+        super.set((double)realComponent(), -imaginaryComponent());
         return this;
     }
 

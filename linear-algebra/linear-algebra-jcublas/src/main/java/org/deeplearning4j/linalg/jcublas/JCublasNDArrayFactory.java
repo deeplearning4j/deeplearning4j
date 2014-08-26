@@ -200,16 +200,46 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return null;
+        return new JCublasComplexNDArray(ArrayUtil.floatCopyOf(data),shape,stride,offset,ordering);
     }
 
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
-        return null;
+        return new JCublasComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset,ordering);
     }
 
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+        return new JCublasComplexNDArray(ArrayUtil.floatCopyOf(data),shape,offset);
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[][] floats) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] dim) {
         return null;
     }
 }
