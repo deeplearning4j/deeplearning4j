@@ -38,7 +38,7 @@ Passing an iterator to pretrain and finetune makes them automatically iterate ov
 
 Note that the eval class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
 
-The f1 score will be a percentage. It's basically the probability that your guesses are correct correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
+The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
 
 If you run into trouble, try modifying the hidden layer sizes, and tweaking other parameters to get the f1 score up.
 
