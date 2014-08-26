@@ -2087,6 +2087,8 @@ public abstract class BaseNDArray  implements INDArray {
     @Override
     public INDArray getScalar(int... indexes) {
         int ix = offset;
+
+
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
@@ -2312,6 +2314,12 @@ public abstract class BaseNDArray  implements INDArray {
      */
     @Override
     public INDArray transpose() {
+        if(isRowVector())
+            return NDArrays.create(data,new int[]{shape[0],1},offset);
+        else if(isColumnVector())
+            return NDArrays.create(data,new int[]{shape[0]},offset);
+
+
         return permute(ArrayUtil.range(shape.length -1,-1));
 
     }
@@ -2340,6 +2348,11 @@ public abstract class BaseNDArray  implements INDArray {
 
         if(Shape.shapeEquals(shape(), shape))
             return this;
+
+        if(ArrayUtil.prod(shape) == ArrayUtil.prod(shape) && ordering == NDArrayFactory.FORTRAN) {
+            return NDArrays.create(data,shape,offset);
+        }
+
 
         INDArray create = NDArrays.create(shape,NDArrays.getStrides(shape,ordering));
         final INDArray flattened = ravel();
@@ -2371,7 +2384,7 @@ public abstract class BaseNDArray  implements INDArray {
         }
         //column order
         else if(ordering == NDArrayFactory.FORTRAN) {
-            create.iterateOverAllColumns(new SliceOp() {
+            create.iterateOverAllRows(new SliceOp() {
                 @Override
                 public void operate(DimensionSlice nd) {
                     INDArray nd1 = (INDArray) nd.getResult();
