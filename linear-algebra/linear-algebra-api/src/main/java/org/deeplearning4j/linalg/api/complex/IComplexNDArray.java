@@ -12,6 +12,17 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface IComplexNDArray extends INDArray {
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray)
+     *
+     * @param rows    the rows of the matrix
+     * @param columns the columns of the matrix
+     * @return the reshaped ndarray
+     */
+    @Override
+    IComplexNDArray reshape(int rows, int columns);
+
+
 
     /**
      * Cumulative sum along a dimension
@@ -248,6 +259,8 @@ public interface IComplexNDArray extends INDArray {
      */
     @Override
     IComplexNDArray reduce(Ops.DimensionOp op, int dimension);
+
+    IComplexNDArray put(int i, IComplexNDArray element);
 
     /**
      * Fetch a particular number on a multi dimensional scale.

@@ -60,6 +60,29 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
 
     }
 
+
+
+    @Test
+    public void testFortranRavel() {
+        double[][] data = new double[][]{
+                {1,2,3,4},
+                {5,6,7,8}
+        };
+
+        INDArray toRavel = NDArrays.create(data);
+        NDArrays.factory().setOrder('f');
+        INDArray toRavelF = NDArrays.create(data);
+        INDArray ravel = toRavel.ravel();
+        INDArray ravelF = toRavelF.ravel();
+        assertNotEquals(ravel,ravelF);
+        NDArrays.factory().setOrder('c');
+
+    }
+
+
+
+
+
     @Test
     public void testFortranReshapeMatrix() {
         double[][] data = new double[][]{
@@ -79,9 +102,15 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         DoubleMatrix reshapedD = d.reshape(4,2);
         INDArray reshapedD2 = d2.reshape(4,2);
         verifyElements(reshapedD,reshapedD2);
+        NDArrays.factory().setOrder('c');
 
 
     }
+
+
+
+
+
 
     @Test
     public void testFortranCreation() {
@@ -151,6 +180,35 @@ public class NDArrayTests extends org.deeplearning4j.linalg.api.test.NDArrayTest
         verifyElements(resultMatrix,resultNDArray);
 
     }
+
+
+    @Test
+    public void testVector() {
+        NDArrays.factory().setOrder('f');
+
+        DoubleMatrix dJblas = DoubleMatrix.linspace(1,4,4);
+        INDArray d = NDArrays.linspace(1,4,4);
+        verifyElements(dJblas,d);
+        NDArrays.factory().setOrder('c');
+
+
+    }
+
+
+    @Test
+    public void testReshapeCompatibility() {
+        NDArrays.factory().setOrder('f');
+        DoubleMatrix oneThroughFourJblas = DoubleMatrix.linspace(1,4,4).reshape(2,2);
+        DoubleMatrix fiveThroughEightJblas = DoubleMatrix.linspace(5,8,4).reshape(2,2);
+        INDArray oneThroughFour = NDArrays.linspace(1,4,4).reshape(2,2);
+        INDArray fiveThroughEight = NDArrays.linspace(5,8,4).reshape(2,2);
+        verifyElements(oneThroughFourJblas,oneThroughFour);
+        verifyElements(fiveThroughEightJblas,fiveThroughEight);
+        NDArrays.factory().setOrder('c');
+
+    }
+
+
 
 
 
