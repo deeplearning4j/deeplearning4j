@@ -242,4 +242,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public IComplexNDArray createComplex(float[] dim) {
         return null;
     }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return new JCublasNDArray(data,shape,stride,offset,ordering);
+    }
 }
