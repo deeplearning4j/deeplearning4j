@@ -37,8 +37,8 @@ public class DeepAutoEncoderExample {
         /*
           Reduction of dimensionality with neural nets Hinton 2006
          */
-        Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-1);
+        Map<Integer,Float> layerLearningRates = new HashMap<>();
+        layerLearningRates.put(codeLayer,1e-1f);
         RandomGenerator rng = new MersenneTwister(123);
 
 
@@ -50,9 +50,9 @@ public class DeepAutoEncoderExample {
                 .withHiddenUnitsByLayer(Collections.singletonMap(codeLayer, RBM.HiddenUnit.GAUSSIAN))
                 .numberOfInputs(784).withOptimizationAlgorithm(NeuralNetwork.OptimizationAlgorithm.HESSIAN_FREE)
                 .sampleFromHiddenActivations(true)
-                .useRegularization(true).withL2(2e-5).resetAdaGradIterations(10)
-                .numberOfOutPuts(784).withMomentum(0.5)
-                .momentumAfter(Collections.singletonMap(10,0.9))
+                .useRegularization(true).withL2(2e-5f).resetAdaGradIterations(10)
+                .numberOfOutPuts(784).withMomentum(0.5f)
+                .momentumAfter(Collections.singletonMap(10,0.9f))
                 .build();
 
         log.info("Training with layers of " + RBMUtil.architecture(dbn));
@@ -67,7 +67,7 @@ public class DeepAutoEncoderExample {
 
         encoder.setForceNumEpochs(false);
         encoder.setLineSearchBackProp(true);
-        encoder.finetune(iter,1e-2,1000);
+        encoder.finetune(iter,1e-2f,1000);
         iter.reset();
 
 

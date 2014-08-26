@@ -46,8 +46,8 @@ public class DeepAutoEncoderSDA {
 
         //Reduction of dimensionality with neural nets Hinton 2006
         
-        Map<Integer,Double> layerLearningRates = new HashMap<>();
-        layerLearningRates.put(codeLayer,1e-1);
+        Map<Integer,Float> layerLearningRates = new HashMap<>();
+        layerLearningRates.put(codeLayer,1e-1f);
         RandomGenerator rng = new MersenneTwister(123);
 
         StackedDenoisingAutoEncoder dbn = new StackedDenoisingAutoEncoder.Builder()
@@ -70,7 +70,7 @@ public class DeepAutoEncoderSDA {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             a.setInput(next.getFeatureMatrix());
-            a.finetune(next.getFeatureMatrix(),1e-1,50);
+            a.finetune(next.getFeatureMatrix(),1e-1f,50);
         }
 
         iter.reset();

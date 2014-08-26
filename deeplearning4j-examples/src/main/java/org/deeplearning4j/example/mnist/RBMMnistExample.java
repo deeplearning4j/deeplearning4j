@@ -31,7 +31,7 @@ public class RBMMnistExample {
         while(iter.hasNext()) {
             DataSet next = iter.next();
             //log.info(String.valueOf(next.labelDistribution()));
-            r.trainTillConvergence(next.getFeatureMatrix(), 1e-1, new Object[]{1, 1e-1, 5000});
+            r.trainTillConvergence(next.getFeatureMatrix(), 1e-1f, new Object[]{1, 1e-1f, 5000});
 
         }
 

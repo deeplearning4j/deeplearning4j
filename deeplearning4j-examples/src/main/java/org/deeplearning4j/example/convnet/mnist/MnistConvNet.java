@@ -39,9 +39,9 @@ public class MnistConvNet {
                 .Builder().withFilterSize(new int[]{7, 7})
                 .withNumFilters(new int[]{9,9}).withStride(new int[]{2, 2}).withVisibleSize(new int[]{rows,cols}).withLossFunction(NeuralNetwork.LossFunction.NEGATIVELOGLIKELIHOOD)
                 .withOptmizationAlgo(NeuralNetwork.OptimizationAlgorithm.CONJUGATE_GRADIENT).withRandom(gen)
-                .withSparsity(5e-2).withSparseGain(5)
+                .withSparsity(5e-2f).withSparseGain(5)
                 .numberOfVisible(28).numHidden(28)
-                .withMomentum(0.5)
+                .withMomentum(0.5f)
                 .build();
 
 
@@ -55,7 +55,7 @@ public class MnistConvNet {
             INDArray reshape = next.getFeatureMatrix().reshape(rows,cols);
             INDArray W = (INDArray) r.getW();
             log.info("W shape " + W.shape());
-            r.trainTillConvergence(reshape, 5e-2, new Object[]{1, 5e-2, 20});
+            r.trainTillConvergence(reshape, 5e-2f, new Object[]{1, 5e-2f, 20});
 
 
         };
